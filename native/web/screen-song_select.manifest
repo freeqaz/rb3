@@ -1,0 +1,28 @@
+# RB3 web screen-song_select dependency manifest (A2) — GENERATED, do not hand-edit.
+# Source: scripts/web/gen-boot-manifest.mjs --screen song_select <netlog.json>
+# The extra .milo_xbox/.dta the 'song_select' screen ENTER reads (boot-bundle
+# entries already MEMFS-resident are subtracted), served as one async bundle by
+# server.py /api/bundle/screen/song_select fired at transition-START so the
+# reads hit warm MEMFS instead of freezing the wasm thread on a sync XHR.
+# Venue/vignette/song milos are excluded (lazily streamed during dwell).
+# 20 files. Regenerate when this screen's load graph changes.
+ui/resource/fonts/gen/icons_esrb.milo_xbox
+ui/resource/fonts/gen/rats.milo_xbox
+ui/resource/gen/leaderb_score_display.milo_xbox
+ui/resource/gen/mini_leaderboard_display.milo_xbox
+ui/resource/gen/score_display.milo_xbox
+ui/resource/gen/star_display_ml.milo_xbox
+ui/resource/gen/star_display_mlhead.milo_xbox
+ui/resource/list/gen/list_filter_categories.milo_xbox
+ui/resource/list/gen/list_filters.milo_xbox
+ui/resource/list/gen/list_header_performance.milo_xbox
+ui/resource/list/gen/list_leaderboards.milo_xbox
+ui/resource/list/gen/list_mini_leaderboard.milo_xbox
+ui/resource/list/gen/list_song_select_browser.milo_xbox
+ui/resource/list/gen/list_song_select_setlist.milo_xbox
+ui/resource/list/gen/list_song_select_shortcut.milo_xbox
+ui/resource/list/gen/list_widespinner.milo_xbox
+ui/resource/list/gen/list_widespinner2.milo_xbox
+ui/song_select/gen/song_select.milo_xbox
+ui/song_select/gen/song_select_filter.milo_xbox
+ui/song_select/gen/song_select_shortcut.milo_xbox

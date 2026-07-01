@@ -59,6 +59,12 @@ static inline ssize_t rb3_httplib_send(int fd, const void* buf, size_t n, int fl
 
 RB3HttpServer* TheRB3HttpServer = nullptr;
 
+// milo-trace W9 replay API (rb3_replay_api.cpp): gated by RB3_REPLAY_API=1.
+// RB3ReplayApiHandle services the kCmdReplay* command types on the main thread;
+// RB3ReplayApiEnabled reports whether the endpoints should be registered.
+extern bool RB3ReplayApiHandle(int type, RB3HttpServer::Command& cmd);
+extern bool RB3ReplayApiEnabled();
+
 // ---------------------------------------------------------------------------
 // JSON helpers — hand-rolled to avoid pulling in a JSON library.
 // ---------------------------------------------------------------------------
@@ -201,6 +207,10 @@ void RB3HttpServer::ProcessCommands() {
         switch (cmd->type) {
             case kCmdDtaEval: HandleDtaEval(*cmd); break;
             case kCmdInput:   HandleInput(*cmd); break;
+            case kCmdReplayMemory:
+            case kCmdReplayCall:
+            case kCmdReplayInfo:
+                RB3ReplayApiHandle(cmd->type, *cmd); break;
             default: cmd->result.error = "Unknown command type"; break;
         }
         {
@@ -341,6 +351,36 @@ void RB3HttpServer::RegisterEndpoints() {
             res.set_content(JsonError(result.error), "application/json");
         }
     });
+
+    // -----------------------------------------------------------------------
+    // milo-trace W9 replay API (opt-in via RB3_REPLAY_API=1). All three route
+    // the JSON body to the main thread via QueueAndWait; the handlers live in
+    // rb3_replay_api.cpp. Registered only when enabled so the surface is absent
+    // (404) in a normal RB3_HTTP deployment.
+    // -----------------------------------------------------------------------
+    if (RB3ReplayApiEnabled()) {
+        auto replayRoute = [this](CommandType type) {
+            return [this, type](const httplib::Request& req, httplib::Response& res) {
+                auto result = QueueAndWait(type, req.body);
+                if (result.ok) {
+                    res.set_content(JsonOk(result.jsonData), "application/json");
+                } else {
+                    res.status = result.httpStatus;
+                    res.set_content(JsonError(result.error), "application/json");
+                }
+            };
+        };
+        // POST /api/memory — {op:alloc|read|write|clear|info, ...} on the arena.
+        svr->Post("/api/memory", replayRoute(kCmdReplayMemory));
+        // POST /api/call — {symbol|static_addr, args:[...], readback:[...]} invoke.
+        svr->Post("/api/call", replayRoute(kCmdReplayCall));
+        // GET /api/replay/info — {base (PIE load bias), arena_size}.
+        svr->Get("/api/replay/info", [this](const httplib::Request&, httplib::Response& res) {
+            auto result = QueueAndWait(kCmdReplayInfo);
+            if (result.ok) res.set_content(JsonOk(result.jsonData), "application/json");
+            else { res.status = result.httpStatus; res.set_content(JsonError(result.error), "application/json"); }
+        });
+    }
 }
 
 // ---------------------------------------------------------------------------

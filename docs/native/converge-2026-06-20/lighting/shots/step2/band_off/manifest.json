@@ -1,0 +1,37 @@
+{
+  "tag": "band_off",
+  "member": "guitar",
+  "override": "",
+  "song_downs": 0,
+  "frames": 1,
+  "frame_dt": 500,
+  "anchor_ms": -1.0,
+  "forced_shots": [
+    "coop_g_cg.shot",
+    "coop_g_n01.shot"
+  ],
+  "skipped": [],
+  "frames_manifest": [
+    {
+      "shot": "coop_g_cg",
+      "shot_full": "coop_g_cg.shot",
+      "frame_idx": 0,
+      "songMs": 17362.0,
+      "cur_shot": "coop_g_cg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/band_off/band_off_coop_g_cg_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_g_n01",
+      "shot_full": "coop_g_n01.shot",
+      "frame_idx": 0,
+      "songMs": 18382.5,
+      "cur_shot": "coop_g_n01.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/band_off/band_off_coop_g_n01_0.png",
+      "ok": true
+    }
+  ],
+  "env": {}
+}

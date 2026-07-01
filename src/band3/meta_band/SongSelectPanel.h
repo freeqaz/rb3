@@ -26,6 +26,12 @@ public:
     Leaderboard *GetLeaderboard(LocalBandUser *, ScoreType, int, Leaderboard::Mode);
     void RestartLeaderboardTimer();
     void CancelLeaderboardTimer();
+#ifdef HX_NATIVE
+    // Native-only: directly toggle the mini-leaderboard group (live_lb.grp) vs
+    // the difficulty grid (live_diffs.grp). The Wii relies on EventTrigger env-
+    // alpha anims the native renderer doesn't honor for hide; see FinishLoad.
+    void SetMiniLeaderboardGroupShowing(bool showing);
+#endif
 
     Leaderboard *mLeaderboard; // 0x44
     AppMiniLeaderboardDisplay *unk48; // 0x48

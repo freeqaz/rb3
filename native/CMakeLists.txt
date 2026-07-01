@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "58901477afda72415a5d02bf77eb3b9d16a2ef90"
+set(MILO_ENGINE_PIN "f130b5562d94b5239c4904980f7642feb6382768"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -489,8 +489,9 @@ add_executable(rb3-native
     # Session telemetry recorder CORE (RB3_SESSION_TRACE=<path|1>, RB3_FRAME_TRACE
     # alias). Unified NDJSON event stream (hdr/fr/in/nav/boot/song/log/mark) with
     # a string interner + bounded ring + monotonic client_seq/sid. Subsumes the
-    # old rb3_frame_trace.cpp; keeps RB3FrameTraceRecord as the back-compat shim
-    # so src/App.cpp's frame tap still links. See
+    # old rb3_frame_trace.cpp (deleted); keeps RB3FrameTraceRecord as the back-compat
+    # shim so src/App.cpp's frame tap still links, and ports master's load-perf
+    # attribution (gFrameTrace* fields) into the RB3_FRAME_TRACE line. See
     # docs/native/SESSION_TELEMETRY_DESIGN.md "Locked v1 contract".
     ${CMAKE_SOURCE_DIR}/src/rb3_session_trace.cpp
     # Session telemetry engine TAPS: the UIScreenChangeMsg nav sink + the
@@ -508,6 +509,34 @@ add_executable(rb3-native
     # input is re-recorded for a record->replay->compare round-trip. See
     # docs/native/SESSION_TELEMETRY_DESIGN.md §8 "Tier 1".
     ${CMAKE_SOURCE_DIR}/src/rb3_replay.cpp
+    # Frame-degradation fix (2026-06-21): periodic glibc heap trim to cap in-song
+    # RSS growth from arena fragmentation (RB3NativeHeapMaintenance, called once
+    # per frame from App::Run's native loop). Opt-out RB3_HEAP_TRIM_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_heap_maint_native.cpp
+    # NOTE: rb3_frame_trace.cpp (the old TASK A4 per-frame stutter tracer) was
+    # DELETED by the session-telemetry merge — rb3_session_trace.cpp is now the sole
+    # owner of RB3FrameTraceRecord and ports its load-perf attribution fields. The
+    # gFrameTrace* counters it read are still DEFINED in src/system/utl/Loader.cpp.
+    # TASK T2 (incremental-load-perf Wave 5): loading-dwell GPU warm driver +
+    # reveal-frame drain pre-kick. GamePanel.cpp's HX_NATIVE arm calls
+    # RB3GameWarmPollDwell during the vignette to sweep the gameplay dir roots
+    # through BandRnd::WarmGpuForDir (move 97 tex + 113 mesh uploads off the
+    # reveal frame) + pre-kick the Enter ForceGetLoader drain. Flag RB3_GAMEWARM_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_gamewarm_native.cpp
+    # research/13 T1 (progressive in-session texture sharpen): the I/O + gameplay-
+    # gating DRIVER around the engine sharpen manager (milo-native-engine
+    # RB3TexSharpen.cpp). Game::Poll (HX_NATIVE) calls RB3TexSharpenPoll once
+    # gameplay is running; this TU resolves the venue + `.sharpen` sidecar, fetches
+    # it low-priority async on web (local file on native), and hands the bytes to
+    # the engine manager which recreates each stripped venue texture at full-res.
+    # Flag RB3_PROGRESSIVE_SHARPEN (default ON). Native+web glue (HX_NATIVE).
+    ${CMAKE_SOURCE_DIR}/src/rb3_texsharpen_native.cpp
+    # TASK T3 (incremental-load-perf): preview-hover mogg prefetch + residency
+    # primitives. The matched SongPreview/MusicLibrary HX_NATIVE arms call these to
+    # warm the preview mogg async during the ~1 s debounce window and to defer the
+    # blocking NewStream open until the bytes are MEMFS-resident. Web = async fetch;
+    # native = no-op (host file already resident). Flag: RB3_PREVIEW_PREFETCH_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_prefetch_native.cpp
     # REAL live input: keyboard (+ USB gamepad) -> JoypadData -> SendButtonMessages.
     # Strong JoypadInit/Poll/Reset/Terminate defs override the weak no-op stubs in
     # dta_link_stubs.s; SystemPoll(false) -> JoypadPoll() (System.cpp:673) drives it
@@ -526,6 +555,13 @@ add_executable(rb3-native
     # std::vector<Viewport>::resize -> SIGSEGV. See the TU header for the full
     # root-cause writeup.
     ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
+    # 2D bowl-imposter crowd (render-polish Fix B): strong WiiRnd::GetSharedTex
+    # returning one persistent square render-target RndTex. Wires the arena/
+    # festival/big_club bowl-crowd imposter path (WorldCrowd::DrawShowing 2D path)
+    # to the engine's lazy mid-frame RTT (BandRnd::BeginDrawTarget). Replaces the
+    # weak no-op stub in band3_link_stubs.s (strong def wins; the GetSharedTex stub
+    # is removed there). Opt-out RB3_CROWD_IMPOSTER_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_crowd_imposter_native.cpp
     # Disc base-class -> App* subclass label/inline-help factory remap so the
     # retail-disc BandLabel/InlineHelp milo objects handle the proto's set_*
     # dynamic-text messages (song/player/intro names, star rating, MOTD).
@@ -542,6 +578,24 @@ add_executable(rb3-native
     # use the MWCC compat flags, while the httplib TU must NOT — see the
     # set_source_files_properties note after rb3_configure_target below).
     ${CMAKE_SOURCE_DIR}/src/rb3_http_handlers.cpp
+    # milo-trace W9 replay API (RB3_REPLAY_API=1): /api/memory + /api/call +
+    # /api/replay/info. The native-side half of milo-trace mode (c) differential
+    # replay (run the SHIPPING native code vs a captured guest-BE record). Ordinary
+    # clang C++ (no decomp headers, no httplib) — needs the same MS-compat-OFF
+    # override as rb3_http_server.cpp (set below) because it uses normal RTTI/dlfcn.
+    # NOTE: commit this entry ATOMICALLY with src/rb3_replay_api.cpp + the
+    # rb3_http_server.{h,cpp} call sites (dd584cdc un-wired it while untracked).
+    ${CMAKE_SOURCE_DIR}/src/rb3_replay_api.cpp
+    # milo-trace W9B native-side INPUT capture (RB3_REPLAY_CAPTURE=<out.ndjson>):
+    # the CAPTURE half of the inverted-direction port-fidelity campaign. Records
+    # real-gameplay-distribution function-entry inputs for the high-risk leaf
+    # surfaces (endian/string/hash/math) from live engine state during a headless
+    # session; tools/w9_campaign.py replays them on the Wii DOL + the native port
+    # and diffs. Includes decomp headers (obj/Data.h, math/Vec.h, ui/UI.h,
+    # obj/Task.h) so it uses the target-wide MWCC compat flags (NOT the
+    # MS-compat-OFF override rb3_replay_api.cpp needs). One exported entry point
+    # (rb3rc_capture_sweep), reached over the existing /api/call endpoint.
+    ${CMAKE_SOURCE_DIR}/src/rb3_replay_capture.cpp
     # C2: save/profile/settings persistence (keystone). Host-FS blob store behind
     # IPersistBackend, backing ProfileMgr's self-contained global-options +
     # profile-0 GameplayOptions serializers. Bypasses the EXCLUDED Wii
@@ -595,6 +649,11 @@ rb3_configure_target(rb3-native)
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_http_server.cpp
     PROPERTIES COMPILE_OPTIONS
     "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
+# rb3_replay_api.cpp is the same kind of std-only / dlfcn TU — no decomp headers,
+# normal RTTI ABI; compile it MS-compat-OFF too (later flags win).
+set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_replay_api.cpp
+    PROPERTIES COMPILE_OPTIONS
+    "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
 
 # ============================================================================
 # rb3-tests — native convergence/regression test suite (GoogleTest).
@@ -621,6 +680,11 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_binstream.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_subsystems.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_session_trace.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_bandpatchmesh.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_charload5b.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_overpress.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)
@@ -707,6 +771,24 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_guestprofile_native.cpp
     # Faithful native OFFLINE TheServer (see native list above) — web is HX_NATIVE.
     ${CMAKE_SOURCE_DIR}/src/rb3_server_native.cpp
+    # Frame-degradation fix (2026-06-21): RB3NativeHeapMaintenance. On web the
+    # malloc_trim is compiled out (wasm dlmalloc never returns to the host), so this
+    # is a no-op there, but the TU must link so App.cpp's extern call resolves.
+    ${CMAKE_SOURCE_DIR}/src/rb3_heap_maint_native.cpp
+    # Wave-3/M1 measurement: per-frame JSONL frame-trace recorder
+    # (RB3_FRAME_TRACE=<path>). Web defines HX_NATIVE so the recorder + the
+    # gFrameTraceActive-gated attribution counters compile; the web run loop in
+    # main_web.cpp calls RB3FrameTraceRecord (App::RunWithoutDebugging's native
+    # frame loop is never entered on web). Without this the symbol resolves to a
+    # no-op JS link-stub and the trace file is never created.
+    ${CMAKE_SOURCE_DIR}/src/rb3_frame_trace.cpp
+    # TASK T2 (incremental-load-perf Wave 5): loading-dwell GPU warm driver +
+    # reveal-frame drain pre-kick. Same TU as native — GamePanel.cpp's HX_NATIVE
+    # arm (web defines HX_NATIVE) calls RB3GameWarmPollDwell during the vignette to
+    # move the venue first-draw GPU work (97 tex + 113 mesh uploads + CPU unpack)
+    # off the reveal frame into the idle dwell, killing the ~0.7-1.0 s web
+    # game-content freeze. Flag RB3_GAMEWARM_OFF. See the TU header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_gamewarm_native.cpp
     # REAL live input on web: keyboard -> JoypadData -> SendButtonMessages (same
     # TU as native; its #ifdef __EMSCRIPTEN__ branch reads window._rb3Keys +
     # navigator.getGamepads()). Strong JoypadPoll etc. drive frets/strum through
@@ -717,6 +799,11 @@ set(RB3_WEB_NATIVE_GLUE
     # /api/file/videos/...). Routed from the matched Movie under HX_NATIVE. Native
     # desktop skips. See the TU header.
     ${CMAKE_SOURCE_DIR}/src/rb3_movie_native.cpp
+    # TASK T3 (incremental-load-perf): preview-hover mogg prefetch + residency.
+    # Web arm = async WebAssetsFetch into MEMFS (kills the cold-hover sync-XHR
+    # freeze); native arm = no-op (resident=true). Called from the matched
+    # SongPreview/MusicLibrary HX_NATIVE arms. Flag: RB3_PREVIEW_PREFETCH_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_prefetch_native.cpp
     # W3a: web-only weak-null definitions for the pointer globals that the native
     # build gets from the x86 GAS .s link stubs (not assembled under emcc) — e.g.
     # TheTour / TheSessionMgr / TheSongDB. Without these they're undefined data
@@ -726,6 +813,9 @@ set(RB3_WEB_NATIVE_GLUE
     # multi-chunk milos (main_hub, tracksystem) that embed bandobj Dir subclasses
     # load without desyncing. See the TU header for the root-cause writeup.
     ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
+    # 2D bowl-imposter crowd (render-polish Fix B): strong WiiRnd::GetSharedTex.
+    # Same as the native list entry — see that TU's header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_crowd_imposter_native.cpp
     # Disc base-class -> App* subclass label/inline-help factory remap (set_*
     # dynamic text). Same as the native list entry — see that TU's header.
     ${CMAKE_SOURCE_DIR}/src/rb3_disc_label_classes.cpp
@@ -916,12 +1006,16 @@ endif()
 # helper supplies USE_ZLIB / USE_OGG / USE_VORBIS via Emscripten ports.
 
 # ============================================================================
-# W4a — size-optimised release build. Default OFF (dev keeps -O0 / -g2 for
+# Size-optimised release build. Default OFF (dev keeps -O0 / -g2 for
 # debug-friendly stack traces); release mode (`scripts/web/build.sh --release`)
-# strips debug info (`-g0`) for the main size win and exposes opt-in knobs:
-#   RB3_WEB_OPT_LEVEL=Oz/Os/O3/O2/O1   — see RB3_WEB_OPT_LEVEL block below;
-#                                        currently BROKEN, defaults to O0
-#   RB3_WEB_CLOSURE=ON                  — also BROKEN, see comment below
+# now ships -O2 -fno-inline -g0 — raw wasm 16.7M -> 6.2M, brotli 2.39M -> 1.50M.
+# Two -O>0 faults were root-caused + fixed to get here (boot inline-discard via
+# -fno-inline, and a render-time GPU crash isolated to OutfitConfig.cpp pinned to
+# -O0 — both documented below). Opt-in knobs:
+#   RB3_WEB_OPT_LEVEL=Oz/Os/O3/O2/O1/O0 — -O level; defaults to O2 (release).
+#                                         `--opt L` on build.sh overrides it,
+#                                         always adding -fno-inline at -O>0.
+#   RB3_WEB_CLOSURE=ON                  — BROKEN, see comment below
 #
 # Order matters in emcc: later -O / -g override earlier ones, so we append to
 # both compile and link. The engine helper's -g2 stays in the command but is
@@ -938,26 +1032,45 @@ endif()
 option(RB3_WEB_RELEASE "Size-optimised release build (strip debug info)" OFF)
 option(RB3_WEB_CLOSURE "Run --closure 1 on the JS glue (BROKEN — see comment)" OFF)
 # RB3_WEB_OPT_LEVEL controls the compile/link -O level when RB3_WEB_RELEASE
-# is ON.
+# is ON. Default O2 — both historical -O>0 blockers are now fixed (below).
 #
-# W4a investigation: ANY -O>0 (-O1, -Os, -Oz, -O3) currently throws an
-# uncaught exception during App construction, right after the missing-stub
-# returns from `SystemConfig(Symbol)`. The matched-fork is brittle to
-# optimizer-driven null-pointer / exception-edge codegen — same class of
-# issue as the W3 missing-stub work. Reproducing the symptom: build with
-# `--release --opt O1` then run smoke; you'll see "boot error — exception
-# during App construction" in the console.
+# BOOT crash (the old "W4a BROKEN" note) is ROOT-CAUSED and FIXED by the
+# `-fno-inline` below. It was NOT optimizer UB: 109 functions are defined
+# `inline`/`FORCE_LOCAL_INLINE` in .cpp files but called cross-TU (the decomp
+# matching idiom — an ODR violation C++ tolerates). At -O0 clang emits the
+# linkonce_odr bodies so wasm-ld resolves them; at any -O>0 clang inlines +
+# DISCARDS those bodies, so the cross-TU calls become undefined symbols, which
+# `-sERROR_ON_UNDEFINED_SYMBOLS=0` silently turns into env imports that
+# rb3_pre.js stubs to warn-and-return-undefined. The first such stub whose value
+# matters — `SystemConfig(Symbol)` (src/system/os/System.cpp) — returns NULL on
+# the boot path → deref → the "exception during App construction". `-fno-inline`
+# keeps the bodies out-of-line, restoring the import table to exactly the -O0 set
+# (verified: O0=339 imports, plain -O1=449, but -O1/-O2 -fno-inline back to
+# 340/337; SystemConfig stub gone; App ctor passes). Source-true fix
+# (HX_NATIVE-gate the `inline`, drop the flag) is the follow-up; see
+# docs/native/web-perf-handoffs/03-diagnosis-results.md.
 #
-# Until that's fixed, the default is `O0` — i.e. no -O change vs dev mode.
-# -g0 alone (debug-info stripping) is the major size win that's safe.
-#
-# When the matched-fork is stable at -Os/-Oz, flip the default here.
-set(RB3_WEB_OPT_LEVEL "O0" CACHE STRING
+# RENDER crash (2026-06-10): a SECOND, distinct -O>0 fault — a headless-Chromium
+# renderer "Page crashed" (GPU-process death, no WebGPU validation error) that
+# fired deterministically (NOT box-contention: reproduced 3/3 at load avg 2.6,
+# and with --disable-gpu-watchdog) ~78s into smoke-test.mjs, during the
+# tv11/ridingincab transition-vignette char-extras draw. Isolated by a per-TU
+# -O0 binary search (15 builds) to a SINGLE translation unit:
+# src/system/bandobj/OutfitConfig.cpp. At -O>0 (both -O1 and -O2) it miscompiles
+# the outfit-mesh deform/AO data feeding the char-extras draw, corrupting a GPU
+# buffer → process death; at -O0 the venue loads cleanly. Pinned to -O0 below
+# (one ~1.1k-line TU; negligible size cost). Root-causing the exact UB/codegen
+# trigger so the pin can be dropped is a follow-up (see
+# docs/native/web-perf-handoffs/03-diagnosis-results.md). NOT the boot bug above
+# (that's -fno-inline, global); this is one TU's render-data codegen.
+set(RB3_WEB_OPT_LEVEL "O2" CACHE STRING
     "emcc -O level for rb3-web release builds (O0/Oz/Os/O3/O2/O1)")
 set_property(CACHE RB3_WEB_OPT_LEVEL PROPERTY STRINGS O0 Oz Os O3 O2 O1)
 if(RB3_WEB_RELEASE)
-    message(STATUS "rb3-web: RELEASE strip + opt build (-${RB3_WEB_OPT_LEVEL} -g0)")
-    target_compile_options(rb3-web PRIVATE -${RB3_WEB_OPT_LEVEL} -g0)
+    message(STATUS "rb3-web: RELEASE strip + opt build (-${RB3_WEB_OPT_LEVEL} -fno-inline -g0)")
+    # -fno-inline is REQUIRED at -O>0 (cross-TU inline-discard boot fix above);
+    # harmless at -O0. Kept unconditionally so flipping --opt needs no other edit.
+    target_compile_options(rb3-web PRIVATE -${RB3_WEB_OPT_LEVEL} -fno-inline -g0)
     target_link_options(rb3-web PRIVATE
         -${RB3_WEB_OPT_LEVEL}
         -g0
@@ -968,6 +1081,22 @@ if(RB3_WEB_RELEASE)
     if(RB3_WEB_CLOSURE)
         message(STATUS "rb3-web: --closure 1 enabled (verify exports post-link)")
         target_link_options(rb3-web PRIVATE --closure 1)
+    endif()
+    # -O>0 RENDER-CRASH WORKAROUND: OutfitConfig.cpp miscompiles at -O>0 (both
+    # -O1/-O2), corrupting the char-extras outfit-mesh draw data → GPU-process
+    # death at the tv11 vignette load. Pin it to -O0 (COMPILE_OPTIONS appends
+    # after the target's -O${LEVEL}; emcc honors the last -O). Bisect-confirmed:
+    # this one TU at -O0 (rest -O2) makes smoke-test.mjs PASS. Drop this once the
+    # underlying codegen/UB is root-caused. Harmless at RB3_WEB_OPT_LEVEL=O0.
+    set_source_files_properties(
+        ${REPO_ROOT}/src/system/bandobj/OutfitConfig.cpp
+        PROPERTIES COMPILE_OPTIONS "-O0")
+    # Escape hatch for re-testing the underlying fault / further bisects:
+    # cmake -DRB3_WEB_O0_GLOB="<paths-or-globs>" forces extra TUs to -O0.
+    if(RB3_WEB_O0_GLOB)
+        file(GLOB _rb3_o0_srcs ${RB3_WEB_O0_GLOB})
+        set_source_files_properties(${_rb3_o0_srcs} PROPERTIES COMPILE_OPTIONS "-O0")
+        message(STATUS "rb3-web: extra -O0 on ${RB3_WEB_O0_GLOB} (${_rb3_o0_srcs})")
     endif()
 endif()
 

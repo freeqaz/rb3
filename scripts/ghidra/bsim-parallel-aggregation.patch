@@ -1,0 +1,288 @@
+BSim correlator: exact-result-preserving aggregation (Tier 2a pre-sizing + Tier 2b parallel)
+=============================================================================================
+
+Task: T3 follow-up to docs/decomp/ghidra-bsim-perf-investigation-2026-06-10.md (rb3 1691fcbc).
+Target tree: /home/free/code/milohax/ghidra (Ghidra 12.2_DEV fork). Apply with `git apply -p1`.
+Compile-checked 2026-06-10: javac --release 21 (JAVA_HOME=/usr/lib/jvm/java-26-openjdk),
+whole package dir together, classpath = all jars under
+build/ghidra-dist/ghidra_12.2_DEV/ — PASS (no warnings/errors). NOT benchmarked; NOT applied
+to any live tree. Companion (independent) change: Tier-1 candidate cap on branch
+bsim-perf-candidatecap.
+
+WHAT IT CHANGES
+---------------
+The serial result-aggregation loop in BSimProgramCorrelatorMatching.discoverPotentialMatches
+(old lines 220-237) is replaced by two phases:
+
+  PHASE A (serial, order-preserving): drain the ConcurrentQ results IN COLLECTION ORDER into
+  discoveredMatches — byte-for-byte the same pair order the old loop produced — while grouping
+  pairs into two per-role maps (node -> ArrayList<FunctionPair>). Cost: one map lookup + one
+  list append per pair; no per-node HashMap rehash storms.
+
+  PHASE B (parallel via ConcurrentQ/GThreadPool, matching the VT reference-correlator
+  precedent of docs/decomp/ghidra-vt-optimization-2026-06-09.md): one work item per
+  FunctionNode builds that node's entire associates map, pre-sized to its exact final entry
+  count (new package-private FunctionNode.presizeAssociates), inserting in deterministic
+  Phase A order.
+
+MUTATION-SITE AUDIT (STEP 1) — phase boundary CONFIRMED
+-------------------------------------------------------
+Every read/write of FunctionNode.associates (field :36):
+  FunctionNode.java     ctor :54 (init empty), addAssociate :144-146 (put),
+                        removeAssociate :152-154, clearAssociates :159-161,
+                        getAssociateIterator :166-168, findEdge :175-177 (get)
+  BSimProgramCorrelatorMatching.java
+    :232-233  aggregation loop addAssociate x2          <- the ONLY site this patch parallelizes
+    :154-172  acceptMatch: getAssociateIterator + removeAssociate + clearAssociates
+              — called only from doMatching (:462, :502, :535), strictly serial, strictly
+              AFTER aggregation completes
+    :500,:531 findEdge (read) in doMatching; :585 findEdge (read) in findAcceptedSeeds
+    :742-756  calculateBestNeighbor: getAssociateIterator (read) in doMatching
+  NeighborGenerator.java
+    :66 findEdge (read); :76-77 addAssociate x2 in searchForNewMatches — reached only via
+    fillOutPairs <- generate <- analyze <- doMatching: serial, AFTER aggregation.
+  chooseSeeds (:280-371) never touches associates (it consumes discoveredMatches +
+  getChildren/getLen only).
+CONFIRMED: all writes that this patch makes concurrent happen exclusively in the
+post-waitForResults aggregation window; every other associates mutation is single-threaded
+and strictly later. The Phase B partition-by-node means each map still has exactly ONE
+writer, so FunctionNode keeps a plain HashMap — no ConcurrentHashMap, no locks.
+
+WHY NOT ConcurrentHashMap + parallel drain over QResults (the doc's Option B as written)
+----------------------------------------------------------------------------------------
+Partition-by-node strictly dominates it:
+ - CHM adds CAS/volatile overhead to every later serial read/remove in doMatching.
+ - A CHM built by interleaved threads has collision-chain order determined by thread
+   arrival -> map ITERATION order becomes run-to-run nondeterministic, and
+   calculateBestNeighbor (:750, `>=` keeps the LAST tied entry) tie-breaks on exactly that
+   iteration order. Exact confidence ties are common in real binaries (duplicate/templated
+   functions produce identical vectors). Partitioning keeps insertion single-threaded and
+   in deterministic Phase A order.
+
+DETERMINISM FINDINGS (the trap the task asked about)
+----------------------------------------------------
+1. chooseSeeds IS order-sensitive. Acceptance in each round depends on hasConflicts against
+   the evolving matchedSource/matchedDest sets, and the final Collections.sort(finalPairs,
+   CONF_COMPARATOR) is a stable sort whose tie order is input order. So discoveredMatches
+   ORDER (not just set) feeds the outcome. Phase A therefore stays serial and preserves the
+   baseline drain order exactly; only the addAssociate map-building is parallelized.
+2. The BASELINE is ALREADY run-to-run nondeterministic upstream of this patch:
+   ConcurrentQ.itemProcessed (Generic/.../ConcurrentQ.java:645) appends QResults in
+   COMPLETION order under a lock, so the results collection order — and hence
+   discoveredMatches order — varies with thread scheduling run to run. This patch is
+   exactly as deterministic as the baseline GIVEN the same results collection (identical
+   drain), and strictly more deterministic within Phase B (fixed insertion order per map
+   vs. arrival order). Anyone wanting full run-to-run determinism must additionally sort
+   the QResult collection by query-node address before draining — out of scope here, noted
+   as a follow-up since it would also de-flake the baseline.
+3. Residual bit-identity caveat: pre-sizing changes a HashMap's capacity history vs.
+   organic growth, which can change its (content-identical) ITERATION order, which
+   calculateBestNeighbor uses for tie-breaks. The associates CONTENT and the
+   discoveredMatches order are identical to the baseline; an exact-score tie in
+   calculateBestNeighbor may resolve to a different (equally-scoring) partner than a
+   specific baseline run would have — but the baseline itself does not control that order
+   (it varies with the completion-order-dependent insertion sequence). True bit-identity
+   of map iteration order is unattainable for ANY change that touches map capacity; if
+   insertion-order iteration is preferred, swap the HashMap in presizeAssociates for a
+   LinkedHashMap (one line).
+4. Cross-program key hazard: FunctionNode.equals compares only the entry Address, and a
+   source-program address can equal a destination-program address. Grouping therefore uses
+   TWO maps (pairsBySource / pairsByDest); a single combined map could merge a source node
+   with a destination node. Within one program entry points are unique, so per-role maps
+   are safe, and each FunctionNode INSTANCE lands in exactly one Phase B work item.
+
+STEP 3 — THE MEMORY QUESTION: CAN TIER 2 REPLACE THE CAP? NO.
+-------------------------------------------------------------
+Exact preservation still materializes every FunctionPair. Per surviving pair (compressed
+oops, 64-bit JVM):
+    FunctionPair object            ~40 B  (16 hdr + 2 refs + 2 doubles)
+    discoveredMatches LinkedList   ~32 B  (node: hdr + item/next/prev)
+    2x HashMap.Node (assoc maps)   ~64 B
+    2x table-slot share @0.75 LF   ~11 B
+    --------------------------------------
+    ~150 B per pair steady-state, plus the transient QResult LinkedList nodes (~32 B/pair)
+    that exist BEFORE aggregation even starts.
+Degenerate 40k x 65k case: if ~10k stripped-Xenon dest nodes each pair with ~40k sources
+(the observed degenerate-bin shape), that is ~4e8 pairs -> ~60 GB; the absolute worst case
+2.6e9 pairs -> ~390 GB. Even an optimistic 1e8 pairs needs ~15 GB live heap plus GC
+headroom — far beyond ghidriff/analyzeHeadless defaults (2-4 GB). Crucially, the pairs are
+allocated in MatchingCallback.findSimilarNodes during the ALREADY-PARALLEL lookup phase:
+the blowup happens before the loop this patch optimizes, so no aggregation-side fix can
+prevent it, and chooseSeeds' O(pairs x rounds) serial round loop remains untouched.
+
+VERDICT: this Tier-2 patch COMPLEMENTS the Tier-1 candidate cap; it cannot replace it.
+ - Cap (Tier 1): the only defense for degenerate inputs — it stops pair CREATION.
+ - This patch (Tier 2a+2b): for large NON-degenerate workloads (order 5-20M valid pairs,
+   ~1-3 GB heap, feasible), it removes the rehash-doubling storm (~12 incremental rehashes
+   for a 40k-entry map) and fans map-building across cores: expected 5-10x serial win from
+   pre-sizing alone, 4-16x additional headroom from parallelism, while keeping pair set,
+   discoveredMatches order, and associates content exactly identical.
+Recommended deployment: BOTH — cap first (correctness of runtime), this patch second
+(throughput for valid large inputs).
+
+Files:
+  Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/FunctionNode.java
+  Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/BSimProgramCorrelatorMatching.java
+
+--- a/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/FunctionNode.java
++++ b/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/FunctionNode.java
+@@ -146,6 +146,25 @@
+ 	}
+ 
+ 	/**
++	 * Replace the (still empty) associates map with one pre-sized for an exact,
++	 * already-known number of entries.  This eliminates the incremental
++	 * rehash/doubling cost of populating a default-sized HashMap one put at a time,
++	 * which dominates the correlator's result-aggregation phase when a node has
++	 * thousands of potential matches.
++	 *
++	 * Package-private by design: only the aggregation phase of
++	 * {@link BSimProgramCorrelatorMatching#discoverPotentialMatches} may call this,
++	 * and only BEFORE any associate has been added (the map is replaced, not copied).
++	 * @param expectedCount the exact number of associates about to be added
++	 */
++	void presizeAssociates(int expectedCount) {
++		// Smallest capacity that holds expectedCount entries without a resize at the
++		// default 0.75 load factor (HashMap rounds up to a power of two internally).
++		int capacity = (int) (expectedCount / 0.75f) + 1;
++		associates = new HashMap<FunctionNode, FunctionPair>(capacity);
++	}
++
++	/**
+ 	 * Remove what was previously considered a potential match.
+ 	 * @param other is the matching FunctionNode
+ 	 */
+--- a/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/BSimProgramCorrelatorMatching.java
++++ b/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/BSimProgramCorrelatorMatching.java
+@@ -217,7 +217,28 @@
+ 			queue.dispose();
+ 		}
+ 
++		//
++		// Exact-result-preserving aggregation (Tier 2a pre-sizing + Tier 2b parallel build).
++		//
++		// PHASE A (serial, order-preserving): drain the QResults IN COLLECTION ORDER into
++		// discoveredMatches, grouping pairs by node as we go.  The order of
++		// discoveredMatches MUST match what the original one-by-one loop produced:
++		// chooseSeeds() is order-sensitive (acceptance depends on the evolving
++		// matchedSource/matchedDest sets, and the final confidence sort is a stable sort
++		// whose tie order is the iteration order).  Grouping is cheap: one map lookup and
++		// one ArrayList append per pair, with no per-node HashMap rehash storms.
++		//
++		// NOTE: source and destination pairs are grouped in SEPARATE maps.
++		// FunctionNode.equals() compares only the entry-point Address, and an address in
++		// the source program can compare equal to an address in the destination program —
++		// a single combined map could incorrectly merge a source node with a destination
++		// node.  Within one program, entry points are unique, so each per-role map is safe.
++		monitor.setMessage("Aggregating potential matches...");
+ 		discoveredMatches = new LinkedList<FunctionPair>();
++		Map<FunctionNode, ArrayList<FunctionPair>> pairsBySource =
++			new HashMap<FunctionNode, ArrayList<FunctionPair>>();
++		Map<FunctionNode, ArrayList<FunctionPair>> pairsByDest =
++			new HashMap<FunctionNode, ArrayList<FunctionPair>>();
+ 		for (QResult<FunctionNode, List<FunctionPair>> result : results) {
+ 			monitor.checkCancelled();
+ 			List<FunctionPair> pieces = result.getResult();
+@@ -227,14 +248,98 @@
+ 			for (FunctionPair bridge : pieces) {
+ 				monitor.checkCancelled();
+ 				if (bridge != null) {
+-					FunctionNode sourceNode = bridge.getSourceNode();
+-					FunctionNode destNode = bridge.getDestNode();
+-					sourceNode.addAssociate(destNode, bridge);
+-					destNode.addAssociate(sourceNode, bridge);
+ 					discoveredMatches.add(bridge);
++					pairsBySource.computeIfAbsent(bridge.getSourceNode(),
++						n -> new ArrayList<FunctionPair>()).add(bridge);
++					pairsByDest.computeIfAbsent(bridge.getDestNode(),
++						n -> new ArrayList<FunctionPair>()).add(bridge);
+ 				}
+ 			}
+ 		}
++
++		//
++		// PHASE B (parallel, deterministic): build each node's associates map.
++		// Work is partitioned BY NODE: each FunctionNode instance appears in exactly one
++		// work item (source nodes and destination nodes are distinct object instances from
++		// distinct containers), so each associates map is built by exactly one thread —
++		// no concurrent map and no locking is required, and insertion order within each
++		// map is the deterministic Phase A pair order.  Each map is pre-sized to its
++		// exact final entry count, eliminating all incremental rehashing (Tier 2a) even
++		// when this phase runs on a single thread.
++		//
++		// Content is identical to the original loop: within one node's pair list the
++		// "other side" keys are unique (one query node produces at most one pair per
++		// binning neighbor, and node addresses are unique within a program), so there are
++		// no overwrites and put order cannot affect the final map content.
++		//
++		List<NodeAssociateWork> aggregationWork =
++			new ArrayList<NodeAssociateWork>(pairsBySource.size() + pairsByDest.size());
++		for (Entry<FunctionNode, ArrayList<FunctionPair>> entry : pairsBySource.entrySet()) {
++			aggregationWork.add(new NodeAssociateWork(entry.getKey(), entry.getValue(), true));
++		}
++		for (Entry<FunctionNode, ArrayList<FunctionPair>> entry : pairsByDest.entrySet()) {
++			aggregationWork.add(new NodeAssociateWork(entry.getKey(), entry.getValue(), false));
++		}
++
++		monitor.setMessage("Building associate maps...");
++		monitor.initialize(aggregationWork.size());
++
++		GThreadPool aggregationPool =
++			GThreadPool.getPrivateThreadPool("BSimProgramCorrelatorAggregation");
++		// @formatter:off
++		ConcurrentQ<NodeAssociateWork, Object> aggregationQueue =
++			new ConcurrentQBuilder<NodeAssociateWork, Object>()
++				.setThreadPool(aggregationPool)
++				.setCollectResults(false)
++				.setMonitor(monitor)
++				.build(new AggregationCallback());
++		// @formatter:on
++		try {
++			aggregationQueue.add(aggregationWork.iterator());
++			aggregationQueue.waitUntilDone();
++		}
++		finally {
++			aggregationQueue.dispose();
++		}
++	}
++
++	/**
++	 * One unit of Phase B aggregation work: populate a single FunctionNode's associates
++	 * map from its complete, pre-grouped pair list.
++	 */
++	private static class NodeAssociateWork {
++		private final FunctionNode node;
++		private final ArrayList<FunctionPair> pairs;
++		private final boolean nodeIsSource;	// true if -node- is the source side of its pairs
++
++		NodeAssociateWork(FunctionNode node, ArrayList<FunctionPair> pairs,
++				boolean nodeIsSource) {
++			this.node = node;
++			this.pairs = pairs;
++			this.nodeIsSource = nodeIsSource;
++		}
++
++		void apply() {
++			node.presizeAssociates(pairs.size());
++			for (FunctionPair pair : pairs) {
++				FunctionNode other = nodeIsSource ? pair.getDestNode() : pair.getSourceNode();
++				node.addAssociate(other, pair);
++			}
++		}
++	}
++
++	/**
++	 * Parallel callback for Phase B: each work item touches exactly one node, so the
++	 * plain HashMap inside FunctionNode is safe without synchronization.
++	 */
++	private static class AggregationCallback implements QCallback<NodeAssociateWork, Object> {
++		@Override
++		public Object process(NodeAssociateWork item, TaskMonitor monitor) throws Exception {
++			monitor.checkCancelled();
++			item.apply();
++			monitor.incrementProgress(1);
++			return null;
++		}
+ 	}
+ 
+ 	/**

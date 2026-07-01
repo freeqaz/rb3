@@ -43,6 +43,18 @@
 
 #include <sys/stat.h>
 
+// W5-T2: also encode a compact <hexkey>.ogg (libvorbis) next to each .pcm so the
+// web wire ships ~10% of the raw PCM bytes. Uses the already-linked libav.
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavformat/avio.h>
+#include <libavutil/avutil.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/opt.h>
+#include <libavutil/samplefmt.h>
+}
+
 namespace {
 
 std::vector<uint8_t> read_file(const char* path) {
@@ -104,6 +116,145 @@ const char* basename_of(const char* p) {
     return b ? b + 1 : p;
 }
 
+// Quality knob for the vorbis sidecars: maps to ffmpeg's `-q:a` (libvorbis VBR
+// 0..10). Plan §4.2 picked q4 (~11% of PCM, well above the source XMA fidelity).
+// Override via RB3_OGG_QUALITY for A/B tuning.
+double ogg_quality() {
+    if (const char* q = getenv("RB3_OGG_QUALITY")) {
+        double v = atof(q);
+        if (v >= -1.0 && v <= 10.0) return v;
+    }
+    return 4.0;
+}
+
+// Encode interleaved int16 PCM -> in-memory Ogg/Vorbis (libvorbis VBR @ quality).
+// Returns the encoded bytes, or empty on failure (caller still has the .pcm).
+// The runtime stb_vorbis decoder recovers numSamples/channels/rate straight from
+// the stream, so this carries the SAME per-channel sample count / rate / channels
+// the .pcm header records (the decode is the single source of truth).
+std::vector<uint8_t> encode_vorbis_ogg(const int16_t* pcm, int perChanSamples,
+                                       int channels, int sampleRate, double quality) {
+    std::vector<uint8_t> result;
+    if (!pcm || perChanSamples <= 0 || channels < 1 || channels > 8 || sampleRate <= 0)
+        return result;
+
+    const AVCodec* enc = avcodec_find_encoder_by_name("libvorbis");
+    if (!enc) {
+        fprintf(stderr, "ogg: libvorbis encoder unavailable in this libav build\n");
+        return result;
+    }
+
+    AVCodecContext* cctx = avcodec_alloc_context3(enc);
+    if (!cctx) return result;
+
+    cctx->sample_fmt = AV_SAMPLE_FMT_FLTP; // libvorbis only accepts planar float
+    cctx->sample_rate = sampleRate;
+    av_channel_layout_default(&cctx->ch_layout, channels);
+    // VBR quality: ffmpeg maps -q:a N to global_quality = N * FF_QP2LAMBDA.
+    cctx->flags |= AV_CODEC_FLAG_QSCALE;
+    cctx->global_quality = (int)lround(quality * FF_QP2LAMBDA);
+
+    AVFormatContext* ofmt = nullptr;
+    AVStream* st = nullptr;
+    AVPacket* pkt = nullptr;
+    AVFrame* frame = nullptr;
+    bool headerWritten = false;
+    uint8_t* dynbuf = nullptr;
+
+    auto cleanup = [&](bool freeDyn) {
+        if (frame) av_frame_free(&frame);
+        if (pkt) av_packet_free(&pkt);
+        if (ofmt) {
+            if (ofmt->pb) {
+                int sz = avio_close_dyn_buf(ofmt->pb, &dynbuf);
+                ofmt->pb = nullptr;
+                if (freeDyn && sz >= 0 && dynbuf) {
+                    result.assign(dynbuf, dynbuf + sz);
+                }
+                if (dynbuf) { av_free(dynbuf); dynbuf = nullptr; }
+            }
+            avformat_free_context(ofmt);
+            ofmt = nullptr;
+        }
+        if (cctx) avcodec_free_context(&cctx);
+    };
+
+    if (avcodec_open2(cctx, enc, nullptr) < 0) { cleanup(false); return result; }
+
+    if (avformat_alloc_output_context2(&ofmt, nullptr, "ogg", nullptr) < 0 || !ofmt) {
+        cleanup(false); return result;
+    }
+    if (avio_open_dyn_buf(&ofmt->pb) < 0) { cleanup(false); return result; }
+
+    st = avformat_new_stream(ofmt, nullptr);
+    if (!st) { cleanup(false); return result; }
+    if (avcodec_parameters_from_context(st->codecpar, cctx) < 0) { cleanup(false); return result; }
+    st->time_base = (AVRational){1, sampleRate};
+
+    if (avformat_write_header(ofmt, nullptr) < 0) { cleanup(false); return result; }
+    headerWritten = true;
+
+    pkt = av_packet_alloc();
+    frame = av_frame_alloc();
+    if (!pkt || !frame) { cleanup(false); return result; }
+
+    // Vorbis is variable-frame; use the encoder's preferred frame size (or a
+    // sane default if it reports 0). Each frame is planar float per channel.
+    int frameSize = cctx->frame_size > 0 ? cctx->frame_size : 1024;
+    frame->format = AV_SAMPLE_FMT_FLTP;
+    frame->sample_rate = sampleRate;
+    av_channel_layout_copy(&frame->ch_layout, &cctx->ch_layout);
+    frame->nb_samples = frameSize;
+    if (av_frame_get_buffer(frame, 0) < 0) { cleanup(false); return result; }
+
+    auto write_packets = [&]() -> bool {
+        while (true) {
+            int ret = avcodec_receive_packet(cctx, pkt);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) return true;
+            if (ret < 0) return false;
+            pkt->stream_index = st->index;
+            av_packet_rescale_ts(pkt, cctx->time_base.num ? cctx->time_base
+                                                          : (AVRational){1, sampleRate},
+                                 st->time_base);
+            int w = av_interleaved_write_frame(ofmt, pkt);
+            av_packet_unref(pkt);
+            if (w < 0) return false;
+        }
+    };
+
+    bool ok = true;
+    int64_t pts = 0;
+    int pos = 0;
+    while (pos < perChanSamples && ok) {
+        int n = perChanSamples - pos;
+        if (n > frameSize) n = frameSize;
+        if (av_frame_make_writable(frame) < 0) { ok = false; break; }
+        frame->nb_samples = n;
+        for (int c = 0; c < channels; c++) {
+            float* dst = reinterpret_cast<float*>(frame->data[c]);
+            for (int s = 0; s < n; s++)
+                dst[s] = pcm[(size_t)(pos + s) * channels + c] * (1.0f / 32768.0f);
+        }
+        frame->pts = pts;
+        pts += n;
+        pos += n;
+        if (avcodec_send_frame(cctx, frame) < 0) { ok = false; break; }
+        if (!write_packets()) { ok = false; break; }
+    }
+    // Flush.
+    if (ok) {
+        if (avcodec_send_frame(cctx, nullptr) < 0) ok = false;
+        else if (!write_packets()) ok = false;
+    }
+    if (ok && headerWritten) {
+        if (av_write_trailer(ofmt) < 0) ok = false;
+    }
+
+    cleanup(ok); // on success, harvests the dyn-buf bytes into `result`
+    if (!ok) result.clear();
+    return result;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -112,18 +263,29 @@ int main(int argc, char** argv) {
     // a SynthSample loop tail). Default (no flag) = RB3. Either way the sidecar
     // key + file format are identical, so one shared out-dir serves both engines.
     bool dc3 = false;
+    bool oggDisabled = false; // W5-T2: skip the .ogg sibling (raw-.pcm-only run)
     int argi = 1;
-    if (argc > 1 && std::strcmp(argv[1], "--dc3") == 0) { dc3 = true; argi = 2; }
-    else if (argc > 1 && std::strcmp(argv[1], "--rb3") == 0) { dc3 = false; argi = 2; }
+    // Leading flags (any order before the out-dir): --dc3/--rb3, --no-ogg.
+    while (argc > argi) {
+        if (std::strcmp(argv[argi], "--dc3") == 0) { dc3 = true; argi++; }
+        else if (std::strcmp(argv[argi], "--rb3") == 0) { dc3 = false; argi++; }
+        else if (std::strcmp(argv[argi], "--no-ogg") == 0) { oggDisabled = true; argi++; }
+        else break;
+    }
     if (getenv("XMA_CONVERT_DC3")) dc3 = true;
+    if (getenv("RB3_NO_OGG")) oggDisabled = true;
+    const double oggQuality = ogg_quality();
 
     if (argc - argi < 2) {
         fprintf(stderr,
                 "usage: %s [--dc3|--rb3] <out-dir> <bank.milo_xbox> [<bank2> ...]\n"
                 "  Decodes every kXMA SampleData blob to a <hexkey>.pcm sidecar\n"
-                "  in <out-dir>; writes <out-dir>/manifest.txt. Originals untouched.\n"
-                "  --dc3 : parse DC3 SampleData (rev 0x10, mCRC, per-blob channels)\n"
-                "  --rb3 : parse RB3 SampleData (default; mono SFX banks)\n",
+                "  AND a compact <hexkey>.ogg (libvorbis VBR) sibling in <out-dir>;\n"
+                "  writes <out-dir>/manifest.txt. Originals untouched.\n"
+                "  --dc3    : parse DC3 SampleData (rev 0x10, mCRC, per-blob channels)\n"
+                "  --rb3    : parse RB3 SampleData (default; mono SFX banks)\n"
+                "  --no-ogg : emit only .pcm (skip the vorbis sibling)\n"
+                "  env RB3_OGG_QUALITY (default 4, 0..10) tunes the vorbis VBR level\n",
                 argv[0]);
         return 2;
     }
@@ -140,6 +302,8 @@ int main(int argc, char** argv) {
     manifest += "# bank\tsample\tformat\tnumSamples\tsampleRate\tchannels\tdecodedSamples\trms\tkey\n";
 
     int totalBanks = 0, totalXma = 0, converted = 0, failed = 0, silent = 0;
+    int oggWritten = 0, oggFailed = 0;        // W5-T2 vorbis sidecar tallies
+    long long oggBytes = 0, pcmBytes = 0;     // for the ratio in the summary
 
     for (int ai = argi; ai < argc; ai++) {
         const char* bankPath = argv[ai];
@@ -226,8 +390,8 @@ int main(int argc, char** argv) {
             put_le32(sidecar, (uint32_t)perChanDecoded);   // per-channel sample count
             put_le32(sidecar, (uint32_t)chans);
             put_le32(sidecar, 0);
-            const uint8_t* pcmBytes = (const uint8_t*)pcm;
-            sidecar.insert(sidecar.end(), pcmBytes, pcmBytes + pcmSize);
+            const uint8_t* pcmRaw = (const uint8_t*)pcm;
+            sidecar.insert(sidecar.end(), pcmRaw, pcmRaw + pcmSize);
 
             char keyHex[24];
             snprintf(keyHex, sizeof(keyHex), "%016llx", (unsigned long long)key);
@@ -237,6 +401,31 @@ int main(int argc, char** argv) {
                 failed++;
                 free(pcm);
                 continue;
+            }
+
+            // W5-T2: also emit the compact <hexkey>.ogg sibling (libvorbis VBR).
+            // Same key, same per-channel sample count / rate / channels as the PCM
+            // header — the runtime tries .ogg first, falls back to .pcm. A failed
+            // encode is non-fatal: the .pcm above is the guaranteed fallback.
+            if (!oggDisabled) {
+                std::vector<uint8_t> ogg =
+                    encode_vorbis_ogg((const int16_t*)pcm, perChanDecoded, chans,
+                                      b.sampleRate, oggQuality);
+                if (!ogg.empty()) {
+                    std::string oggPath = outDir + "/" + keyHex + ".ogg";
+                    if (write_file(oggPath, ogg.data(), ogg.size())) {
+                        oggWritten++;
+                        oggBytes += (long long)ogg.size();
+                        pcmBytes += (long long)sidecar.size();
+                    } else {
+                        fprintf(stderr, "WARN ogg write: %s\n", oggPath.c_str());
+                        oggFailed++;
+                    }
+                } else {
+                    fprintf(stderr, "WARN ogg encode failed: %s :: %s\n",
+                            bankName, b.file.c_str());
+                    oggFailed++;
+                }
             }
 
             char line[512];
@@ -261,8 +450,17 @@ int main(int argc, char** argv) {
     printf("kXMA blobs found  : %d\n", totalXma);
     printf("converted (sidecars): %d\n", converted);
     printf("failed            : %d (silent: %d)\n", failed, silent);
+    if (!oggDisabled) {
+        double ratio = pcmBytes > 0 ? 100.0 * (double)oggBytes / (double)pcmBytes : 0.0;
+        printf("ogg sidecars      : %d written, %d failed (q=%.1f)\n",
+               oggWritten, oggFailed, oggQuality);
+        printf("ogg vs pcm bytes  : %.2f MB ogg / %.2f MB pcm = %.1f%%\n",
+               oggBytes / 1048576.0, pcmBytes / 1048576.0, ratio);
+    }
     printf("manifest          : %s\n", manifestPath.c_str());
     printf("out dir           : %s\n", outDir.c_str());
 
+    // ogg encode failures are non-fatal (the .pcm fallback is always present), so
+    // they don't flip the exit code; only PCM decode/write failures do.
     return (failed == 0) ? 0 : 1;
 }

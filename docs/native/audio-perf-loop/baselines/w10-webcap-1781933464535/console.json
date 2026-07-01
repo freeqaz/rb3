@@ -1,0 +1,1602 @@
+[
+  {
+    "t": "40.99",
+    "text": "NOTIFY: stagekit_reset not function or object (file world/world_objects.dta, line 1303)"
+  },
+  {
+    "t": "41.00",
+    "text": "NOTIFY: memcardmgr not function or object (file ui/overshell/overshell.dta, line 219)"
+  },
+  {
+    "t": "41.00",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/.claude/worktrees/audio-underrun/src/system/obj/Object.cpp(742): main/saveload_mgr unhandled msg: add_sink"
+  },
+  {
+    "t": "41.00",
+    "text": "NOTIFY: crowd_intro.mogg not found in small_club_01_bank.milo"
+  },
+  {
+    "t": "41.01",
+    "text": "[rb3-stub] env._ZN10TrackPanel19TrackerDisplayResetEv"
+  },
+  {
+    "t": "41.02",
+    "text": "NOTIFY: player1 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "41.02",
+    "text": ""
+  },
+  {
+    "t": "41.02",
+    "text": "NOTIFY: player3 (char/main/main.milo) could not find group sit in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "41.02",
+    "text": ""
+  },
+  {
+    "t": "41.02",
+    "text": "NOTIFY: player0 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "41.02",
+    "text": ""
+  },
+  {
+    "t": "41.02",
+    "text": "NOTIFY: player2 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "41.02",
+    "text": ""
+  },
+  {
+    "t": "41.02",
+    "text": "RB3 screen: frame 2117  currentScreen = 'game_screen'"
+  },
+  {
+    "t": "41.09",
+    "text": "WebAssets: char/main/rigging/gen/drum.milo_xbox (78800 bytes)"
+  },
+  {
+    "t": "41.15",
+    "text": "WebAssets: char/main/rigging/gen/guitar_rh.milo_xbox (25995 bytes)"
+  },
+  {
+    "t": "41.20",
+    "text": "WebAssets: char/main/anim/rigging/guitar/gen/strum_right.milo_xbox (68198 bytes)"
+  },
+  {
+    "t": "41.27",
+    "text": "WebAssets: char/main/rigging/gen/vocal.milo_xbox (97450 bytes)"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.33",
+    "text": "WebAssets: char/main/anim/drum/body/female/gen/medium_rocker.milo_xbox (346173 bytes)"
+  },
+  {
+    "t": "41.33",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.33",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.33",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.33",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.34",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.34",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.34",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.34",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.34",
+    "text": "NOTIFY: player3 (char/main/main.milo) no clip w. flags IR in body_clips/sit"
+  },
+  {
+    "t": "41.39",
+    "text": "WebAssets: char/main/anim/drum/body/female/gen/realtime_rocker.milo_xbox (893787 bytes)"
+  },
+  {
+    "t": "41.40",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.40",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.40",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.40",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.40",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.40",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.40",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.41",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.41",
+    "text": "NOTIFY: main_add.drv (char/main/main.milo) could not find still clip"
+  },
+  {
+    "t": "41.46",
+    "text": "WebAssets: char/main/anim/drum/body_add/female/gen/body_add_base.milo_xbox (3386 bytes)"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.51",
+    "text": "AudioDevice: latency GROW -> 240 ms (sustained underrun, pressure 512/256)"
+  },
+  {
+    "t": "41.52",
+    "text": "WebAssets: char/main/anim/drum/body_add/female/gen/medium_rocker.milo_xbox (196596 bytes)"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.53",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.61",
+    "text": "WebAssets: char/main/anim/guitar/body/female/gen/medium_rocker.milo_xbox (1475913 bytes)"
+  },
+  {
+    "t": "41.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.63",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.63",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.70",
+    "text": "WebAssets: char/main/anim/guitar/body/female/gen/realtime_rocker.milo_xbox (1486965 bytes)"
+  },
+  {
+    "t": "41.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.72",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.72",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.72",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.72",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.79",
+    "text": "WebAssets: char/main/anim/guitar/body/male/gen/medium_rocker.milo_xbox (1823538 bytes)"
+  },
+  {
+    "t": "41.82",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.82",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.82",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.82",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.82",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.82",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.83",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.83",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.83",
+    "text": "NOTIFY: player0 (char/main/main.milo) no clip w. flags IR|0x100000 in body_clips/stand"
+  },
+  {
+    "t": "41.90",
+    "text": "WebAssets: char/main/anim/guitar/body/male/gen/realtime_rocker.milo_xbox (1688698 bytes)"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "41.93",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "41.97",
+    "text": "WebAssets: char/main/anim/guitar/dircut/female/gen/cam_duo_gb_bass_03.milo_xbox (70315 bytes)"
+  },
+  {
+    "t": "42.01",
+    "text": "WebAssets: char/main/anim/guitar/dircut/female/gen/cam_duo_gb_bass_04.milo_xbox (52813 bytes)"
+  },
+  {
+    "t": "42.07",
+    "text": "WebAssets: char/main/anim/guitar/dircut/female/gen/cam_rhythm.milo_xbox (27543 bytes)"
+  },
+  {
+    "t": "42.13",
+    "text": "WebAssets: char/main/anim/guitar/dircut/female/gen/cam_rhythm_kneel.milo_xbox (38314 bytes)"
+  },
+  {
+    "t": "42.20",
+    "text": "WebAssets: char/main/anim/guitar/dircut/female/gen/trio_jamming_bass_03.milo_xbox (43188 bytes)"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "42.26",
+    "text": "WebAssets: char/main/anim/guitar/dircut/male/gen/cam_duo_gb_03.milo_xbox (64953 bytes)"
+  },
+  {
+    "t": "42.32",
+    "text": "WebAssets: char/main/anim/guitar/dircut/male/gen/cam_duo_gb_04.milo_xbox (49728 bytes)"
+  },
+  {
+    "t": "42.39",
+    "text": "WebAssets: char/main/anim/guitar/dircut/male/gen/cam_rhythm.milo_xbox (27547 bytes)"
+  },
+  {
+    "t": "42.45",
+    "text": "WebAssets: char/main/anim/guitar/dircut/male/gen/cam_rhythm_jump.milo_xbox (44444 bytes)"
+  },
+  {
+    "t": "42.51",
+    "text": "WebAssets: char/main/anim/guitar/dircut/male/gen/cut_shoot_cam_c_rocker.milo_xbox (35509 bytes)"
+  },
+  {
+    "t": "42.57",
+    "text": "WebAssets: char/main/anim/guitar/dircut/male/gen/trio_jamming_03.milo_xbox (41185 bytes)"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.57",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "42.70",
+    "text": "WebAssets: char/main/anim/mic/body/male/gen/medium_rocker.milo_xbox (3616667 bytes)"
+  },
+  {
+    "t": "42.70",
+    "text": "NOTIFY: mDoNotCompress ms_idle_norm_med_01 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.70",
+    "text": ""
+  },
+  {
+    "t": "42.72",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_b_med_02 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.72",
+    "text": ""
+  },
+  {
+    "t": "42.72",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_b_med_03 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.72",
+    "text": ""
+  },
+  {
+    "t": "42.73",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_c_med_04 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.73",
+    "text": ""
+  },
+  {
+    "t": "42.73",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_norm_b_med_05 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.73",
+    "text": ""
+  },
+  {
+    "t": "42.75",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.75",
+    "text": ""
+  },
+  {
+    "t": "42.75",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_local_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.75",
+    "text": ""
+  },
+  {
+    "t": "42.76",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_right_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.77",
+    "text": ""
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_right_ext_med_02 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "42.77",
+    "text": ""
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.77",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "42.78",
+    "text": "NOTIFY: player2 (char/main/main.milo) no clip w. flags IR in body_clips/stand"
+  },
+  {
+    "t": "42.89",
+    "text": "WebAssets: char/main/anim/mic/body/male/gen/realtime_rocker.milo_xbox (3747809 bytes)"
+  },
+  {
+    "t": "42.92",
+    "text": "NOTIFY: mDoNotCompress ms_stand_lose_c_05 (char/main/anim/mic/body/male/realtime_rocker.milo)"
+  },
+  {
+    "t": "42.92",
+    "text": ""
+  },
+  {
+    "t": "42.94",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "42.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "42.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "42.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "42.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.00",
+    "text": "WebAssets: char/main/anim/mic/dircut/male/gen/cam_hand_walk_01.milo_xbox (67819 bytes)"
+  },
+  {
+    "t": "43.06",
+    "text": "WebAssets: char/main/anim/mic/dircut/male/gen/cam_ms_scream_08.milo_xbox (42216 bytes)"
+  },
+  {
+    "t": "43.12",
+    "text": "WebAssets: char/main/anim/mic/dircut/male/gen/cam_ms_spinpumpfist_01_rocker.milo_xbox (63684 bytes)"
+  },
+  {
+    "t": "43.18",
+    "text": "WebAssets: char/main/anim/mic/dircut/male/gen/cam_msd_spin_01_rocker.milo_xbox (24813 bytes)"
+  },
+  {
+    "t": "43.24",
+    "text": "WebAssets: char/main/anim/mic/dircut/male/gen/cam_turn_around_walk_02.milo_xbox (38096 bytes)"
+  },
+  {
+    "t": "43.30",
+    "text": "WebAssets: char/main/anim/mic/dircut/male/gen/trio_jamming_03.milo_xbox (84891 bytes)"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.31",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.37",
+    "text": "WebAssets: char/main/anim/rigging/drum/gen/pedal_left_female.milo_xbox (3509 bytes)"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.43",
+    "text": "WebAssets: char/main/anim/rigging/drum/gen/pedal_right_female.milo_xbox (4964 bytes)"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.50",
+    "text": "WebAssets: char/main/anim/rigging/drum/gen/stick_left_female.milo_xbox (264136 bytes)"
+  },
+  {
+    "t": "43.50",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_long_l (char/main/anim/rigging/drum/stick_left_female.milo)"
+  },
+  {
+    "t": "43.50",
+    "text": ""
+  },
+  {
+    "t": "43.50",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_med_l (char/main/anim/rigging/drum/stick_left_female.milo)"
+  },
+  {
+    "t": "43.50",
+    "text": ""
+  },
+  {
+    "t": "43.50",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_short_l (char/main/anim/rigging/drum/stick_left_female.milo)"
+  },
+  {
+    "t": "43.50",
+    "text": ""
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.56",
+    "text": "WebAssets: char/main/anim/rigging/drum/gen/stick_right_female.milo_xbox (346809 bytes)"
+  },
+  {
+    "t": "43.56",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_long_r (char/main/anim/rigging/drum/stick_right_female.milo)"
+  },
+  {
+    "t": "43.56",
+    "text": ""
+  },
+  {
+    "t": "43.56",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_med_r (char/main/anim/rigging/drum/stick_right_female.milo)"
+  },
+  {
+    "t": "43.56",
+    "text": ""
+  },
+  {
+    "t": "43.57",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_short_r (char/main/anim/rigging/drum/stick_right_female.milo)"
+  },
+  {
+    "t": "43.57",
+    "text": ""
+  },
+  {
+    "t": "43.62",
+    "text": "WebAssets: char/main/anim/rigging/guitar/gen/fret_left.milo_xbox (43143 bytes)"
+  },
+  {
+    "t": "43.66",
+    "text": "WebAssets: char/main/anim/rigging/guitar/gen/fret_left_female.milo_xbox (54406 bytes)"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.67",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.73",
+    "text": "WebAssets: char/main/bass/gen/precision01_paint.milo_xbox (825122 bytes)"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: precision01_strings.mesh (char/main/bass/precision01/precision01_resource.milo)"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: precision01_base_swap.mat (char/main/bass/precision01_paint.milo) couldn't find instruments.cube in precision01_paint (char/main/bass/precision01_paint.milo)"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.74",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.75",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.82",
+    "text": "WebAssets: char/main/drum/gen/ludclassic_sparkle_small_club.milo_xbox (1016685 bytes)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: ludclassic_chrome.mat (char/main/drum/ludclassic/ludclassic_small_club_resource.milo) couldn't find instruments.cube in uniq1 (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: ludclassic_misc.mat (char/main/drum/ludclassic/ludclassic_small_club_resource.milo) couldn't find instruments.cube in uniq1 (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: logo.mesh (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: ludclassic_small_club_resource.1.mesh (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: ludclassic_small_club_resource.2.mesh (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: ludclassic_small_club_resource.3.mesh (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: ludclassic_small_club_resource.4.mesh (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: ludclassic_small_club_resource.5.mesh (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: ludclassic_small_club_resource.mesh (char/main/drum/ludclassic/ludclassic_small_club_resource.milo)"
+  },
+  {
+    "t": "43.83",
+    "text": "NOTIFY: ludclassic_shell_swap.mat (char/main/drum/ludclassic_sparkle_small_club.milo) couldn't find instruments.cube in ludclassic_sparkle_small_club (char/main/drum/ludclassic_sparkle_small_club.milo)"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.84",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.85",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.85",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.85",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.85",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.85",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.90",
+    "text": "WebAssets: char/main/guitar/gen/d2010_woodmaple.milo_xbox (981234 bytes)"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: d2010_strings.mesh (char/main/guitar/d2010/d2010_resource.milo)"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: guitar_d2010_base_swap.mat (char/main/guitar/d2010_woodmaple.milo) couldn't find instruments.cube in d2010_woodmaple (char/main/guitar/d2010_woodmaple.milo)"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.96",
+    "text": "WebAssets: char/main/mic/gen/beta57_resource.milo_xbox (294686 bytes)"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: beta57_mic.mat (char/main/mic/beta57_resource.milo) couldn't find instruments.cube in beta57_resource (char/main/mic/beta57_resource.milo)"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: mic_stand.mesh (char/main/mic/beta57_resource.milo)"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "43.97",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "44.02",
+    "text": "WebAssets: char/crowd/anim/gen/female_medium.milo_xbox (337408 bytes)"
+  },
+  {
+    "t": "44.09",
+    "text": "WebAssets: char/crowd/anim/gen/male_medium.milo_xbox (298474 bytes)"
+  },
+  {
+    "t": "47.67",
+    "text": "WebAssets: sfx/gen/xma_pcm/e4d4c543ca1382e0.ogg (16642 bytes)"
+  },
+  {
+    "t": "47.68",
+    "text": "WebAssets: sfx/gen/xma_pcm/dbdaf65c918c01b9.ogg (16680 bytes)"
+  },
+  {
+    "t": "47.68",
+    "text": "WebAssets: sfx/gen/xma_pcm/19180812713c4247.ogg (25384 bytes)"
+  },
+  {
+    "t": "47.68",
+    "text": "WebAssets: sfx/gen/xma_pcm/38d412e248fc9120.ogg (5009 bytes)"
+  },
+  {
+    "t": "47.68",
+    "text": "WebAssets: sfx/gen/xma_pcm/3e8ac6ca36ce3f1c.ogg (4900 bytes)"
+  },
+  {
+    "t": "47.68",
+    "text": "WebAssets: sfx/gen/xma_pcm/81b99eb068e8abc9.ogg (5026 bytes)"
+  },
+  {
+    "t": "47.68",
+    "text": "WebAssets: sfx/gen/xma_pcm/95c1345b10f06601.ogg (5069 bytes)"
+  },
+  {
+    "t": "47.69",
+    "text": "WebAssets: sfx/gen/xma_pcm/b24151a08fbfc482.ogg (5312 bytes)"
+  },
+  {
+    "t": "47.69",
+    "text": "WebAssets: sfx/gen/xma_pcm/10a3757594d1a3aa.ogg (5007 bytes)"
+  },
+  {
+    "t": "47.69",
+    "text": "WebAssets: sfx/gen/xma_pcm/9d6d11aa686c7cad.ogg (20384 bytes)"
+  },
+  {
+    "t": "47.69",
+    "text": "WebAssets: sfx/gen/xma_pcm/64357bd266b2e0fd.ogg (5722 bytes)"
+  },
+  {
+    "t": "47.69",
+    "text": "WebAssets: sfx/gen/xma_pcm/ab381b3fd5becd73.ogg (29190 bytes)"
+  },
+  {
+    "t": "47.69",
+    "text": "WebAssets: sfx/gen/xma_pcm/20ecfef717c58e63.ogg (26505 bytes)"
+  },
+  {
+    "t": "47.69",
+    "text": "WebAssets: sfx/gen/xma_pcm/451c35af62032837.ogg (19853 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/3c1f2c3b3de2fce6.ogg (26965 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/6a61356c42357679.ogg (19829 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/1dc2615fee9299a1.ogg (28900 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/9be7acf3d25c3d17.ogg (19287 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/a9771c69222ce160.ogg (21063 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/04c3ec25cf2564ef.ogg (27588 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/0d923c9932be559a.ogg (6228 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/f56201333b0067ad.ogg (21104 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/0d6130be5f4140fe.ogg (19830 bytes)"
+  },
+  {
+    "t": "47.70",
+    "text": "WebAssets: sfx/gen/xma_pcm/0c985b7f66987fa5.ogg (5186 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/5c9344db51442f1a.ogg (6567 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/ad1ecb1dd707c467.ogg (7094 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/59608864e4af15ed.ogg (6643 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/1e08f008ad0117cd.ogg (4786 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/77dd314455fd8b86.ogg (6802 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/b6c2b11cc3394da9.ogg (7151 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/95b1c926856dea01.ogg (4917 bytes)"
+  },
+  {
+    "t": "47.71",
+    "text": "WebAssets: sfx/gen/xma_pcm/09fd7512eed4bb58.ogg (4837 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/058418b6b83ce33e.ogg (4693 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/a2feaacb25557d61.ogg (5496 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/7253a11c338743e2.ogg (4616 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/5509b7ad250643ed.ogg (6489 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/f48aae90b8f8a28a.ogg (7039 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/3086f93813723f03.ogg (7026 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/c237ea662e47ac41.ogg (6404 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/bbdd5525f63058bf.ogg (6706 bytes)"
+  },
+  {
+    "t": "47.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/beeaca979203cfa6.ogg (7054 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/410990186f575423.ogg (7726 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/996365dc5d80b318.ogg (6963 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/8398bd9254553aa9.ogg (7229 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/8da2c26346d39c6b.ogg (6510 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/efb403fc52e0ceba.ogg (17172 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/50105ae1c7c4a598.ogg (15606 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/8aa7372019153278.ogg (12771 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/8eb999aa0d89f341.ogg (17753 bytes)"
+  },
+  {
+    "t": "47.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/d6e8f0d18441785f.ogg (23555 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/d0dfd10b08997854.ogg (16836 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/4d4105b0b2546b4c.ogg (19892 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/2b690cd5df5fc776.ogg (14365 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/c5530a48cc459dd6.ogg (13920 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/d040f7c10bb1456d.ogg (28077 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/aaa9c9a1485a6dad.ogg (25698 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/0c2b64e1e39b922c.ogg (28101 bytes)"
+  },
+  {
+    "t": "47.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/60a5a2d5f3ced7cf.ogg (27985 bytes)"
+  },
+  {
+    "t": "47.75",
+    "text": "WebAssets: sfx/gen/xma_pcm/0538b5cd3624a1e6.ogg (25802 bytes)"
+  },
+  {
+    "t": "47.75",
+    "text": "WebAssets: sfx/gen/xma_pcm/e94744f4bbcb6e39.ogg (19237 bytes)"
+  },
+  {
+    "t": "47.75",
+    "text": "WebAssets: sfx/gen/xma_pcm/18f2a7d74c4fef67.ogg (23062 bytes)"
+  },
+  {
+    "t": "47.75",
+    "text": "WebAssets: sfx/gen/xma_pcm/336a9cb569a79dc4.ogg (27287 bytes)"
+  },
+  {
+    "t": "47.75",
+    "text": "WebAssets: sfx/gen/xma_pcm/f22b553e3deb0098.ogg (14997 bytes)"
+  },
+  {
+    "t": "47.75",
+    "text": "WebAssets: sfx/gen/xma_pcm/d3e33182791dbcd2.ogg (15325 bytes)"
+  },
+  {
+    "t": "47.76",
+    "text": "STREAM_DBG: StandardStream::PollStream state 2 -> 3 (chans=15)"
+  },
+  {
+    "t": "47.78",
+    "text": "[rb3-stub] env._ZN5WiiFX8IsReverbEi"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5)"
+  },
+  {
+    "t": "47.91",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11)"
+  },
+  {
+    "t": "47.91",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5)"
+  },
+  {
+    "t": "48.03",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5) [further repeats suppressed]"
+  },
+  {
+    "t": "48.15",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15)"
+  },
+  {
+    "t": "48.15",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11)"
+  },
+  {
+    "t": "48.36",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11) [further repeats suppressed]"
+  },
+  {
+    "t": "48.59",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15)"
+  },
+  {
+    "t": "49.06",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15) [further repeats suppressed]"
+  },
+  {
+    "t": "51.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/992d9b07b272793c.ogg (38457 bytes)"
+  },
+  {
+    "t": "51.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/87b97c7e33a41fd0.ogg (5511 bytes)"
+  },
+  {
+    "t": "51.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/73ff82a57a2a0797.ogg (6019 bytes)"
+  },
+  {
+    "t": "51.72",
+    "text": "WebAssets: sfx/gen/xma_pcm/0ca415e05241f192.ogg (38624 bytes)"
+  },
+  {
+    "t": "51.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/deaf314e3b3e114f.ogg (5732 bytes)"
+  },
+  {
+    "t": "51.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/a071db26c543ebcb.ogg (5611 bytes)"
+  },
+  {
+    "t": "51.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/9aebfb24bc99a047.ogg (67268 bytes)"
+  },
+  {
+    "t": "51.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/bc073edb30ac5a28.ogg (5681 bytes)"
+  },
+  {
+    "t": "51.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/4bc40e60363ec0ac.ogg (48310 bytes)"
+  },
+  {
+    "t": "51.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/3d8b74b4ec031b6f.ogg (5772 bytes)"
+  },
+  {
+    "t": "51.73",
+    "text": "WebAssets: sfx/gen/xma_pcm/742fc02125d6ed1d.ogg (37968 bytes)"
+  },
+  {
+    "t": "51.74",
+    "text": "WebAssets: sfx/gen/xma_pcm/caeec0f3f366411e.ogg (44648 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/03e373cbad29ccdb.ogg (56361 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/adaef58a624ffa8e.ogg (40168 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/b98bf4e2be5ae00d.ogg (63844 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/23369f3e6cdcdbab.ogg (118027 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/d517204206b120b5.ogg (32973 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/f72cca4946b2f6fc.ogg (52693 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/23a32c3214d29afa.ogg (13529 bytes)"
+  },
+  {
+    "t": "51.76",
+    "text": "WebAssets: sfx/gen/xma_pcm/99f57433bbfd5563.ogg (63818 bytes)"
+  },
+  {
+    "t": "51.77",
+    "text": "WebAssets: sfx/gen/xma_pcm/087be8291700cb7d.ogg (52765 bytes)"
+  },
+  {
+    "t": "52.73",
+    "text": "NOTIFY: crowd_good.mogg not found in small_club_01_bank.milo"
+  },
+  {
+    "t": "60.81",
+    "text": "NOTIFY: crowd_peak.mogg not found in small_club_01_bank.milo"
+  }
+]

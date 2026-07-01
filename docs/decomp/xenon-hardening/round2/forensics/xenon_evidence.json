@@ -1,0 +1,1305 @@
+{
+  "01": {
+    "pair_id": "01",
+    "xenon_addr": "0x8252a9f0",
+    "wii_symbol": "RebuildSharedSongData__12MusicLibraryFv",
+    "found": true,
+    "size_bytes": 268,
+    "xenon_func_name": "Function_8252A9F0",
+    "entry_addr": "0x8252a9f0",
+    "callees": [
+      {
+        "addr": "0x8257e7b0",
+        "xenon_name": "FUN_8257e7b0",
+        "wii_match": "GetSort__11SongSortMgrF12SongSortType"
+      },
+      {
+        "addr": "0x82560170",
+        "xenon_name": "Function_82560170",
+        "wii_match": null
+      },
+      {
+        "addr": "0x825a1e50",
+        "xenon_name": "Function_825A1E50",
+        "wii_match": "UpdateSharedStatus__10SongRecordFv"
+      },
+      {
+        "addr": "0x82529df0",
+        "xenon_name": "Function_82529DF0",
+        "wii_match": "PushHighlightToScreen__12MusicLibraryFb"
+      },
+      {
+        "addr": "0x82803f2c",
+        "xenon_name": "FUN_82803f2c",
+        "wii_match": "FUN_80a39378"
+      },
+      {
+        "addr": "0x825a6b38",
+        "xenon_name": "FUN_825a6b38",
+        "wii_match": "GetNode__8NodeSortCFi"
+      },
+      {
+        "addr": "0x82261818",
+        "xenon_name": "FUN_82261818",
+        "wii_match": "_M_increment__Q211stlpmtx_std13_Rb_global<b>FPQ211stlpmtx_std18_Rb_tree_node_base"
+      },
+      {
+        "addr": "0x8252a408",
+        "xenon_name": "Function_8252A408",
+        "wii_match": "PushSonglistToScreen__12MusicLibraryFv"
+      },
+      {
+        "addr": "0x82804da8",
+        "xenon_name": "Function_82804DA8",
+        "wii_match": null
+      },
+      {
+        "addr": "0x825a1ec0",
+        "xenon_name": "Function_825A1EC0",
+        "wii_match": null
+      }
+    ],
+    "n_callees": 10,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_8252A9F0(void)\n\n{\n  bool bVar1;\n  bool bVar2;\n  int iVar3;\n  int iVar5;\n  undefined8 uVar4;\n  int iVar6;\n  char cVar8;\n  int iVar7;\n  char cVar9;\n  \n  iVar5 = FUN_82803f2c();\n  Function_82560170(PTR_DAT_82c424e0);\n  uVar4 = FUN_8257e7b0(DAT_82dcd8a8,*(undefined4 *)(iVar5 + 0xfc));\n  uVar4 = FUN_825a6b38(uVar4,*(undefined4 *)(iVar5 + 0xf0));\n  iVar6 = Function_82804DA8(uVar4,0,0xffffffff82c41ed8,0xffffffff82c41ef0,0);\n  iVar3 = DAT_82dcd8a8;\n  if (iVar6 != 0) {\n    cVar9 = '\\x01';\n    if (*(char *)(*(int *)(iVar6 + 0x40) + 0x2e) != '\\0') goto LAB_8252aa60;\n  }\n  cVar9 = '\\0';\nLAB_8252aa60:\n  bVar1 = false;\n  for (iVar7 = *(int *)(DAT_82dcd8a8 + 0xc); iVar7 != iVar3 + 4; iVar7 = FUN_82261818(iVar7)) {\n    cVar8 = Function_825A1EC0(iVar7 + 0x14);\n    if (cVar8 != '\\0') {\n      bVar1 = true;\n      Function_825A1E50(iVar7 + 0x14);\n    }\n  }\n  if ((iVar6 == 0) || (bVar2 = true, *(char *)(*(int *)(iVar6 + 0x40) + 0x2e) == cVar9)) {\n    bVar2 = false;\n  }\n  if ((bVar1) && (Function_8252A408(iVar5), bVar2)) {\n    Function_82529DF0(iVar5,0);\n  }\n  return;\n}\n\n"
+  },
+  "02": {
+    "pair_id": "02",
+    "xenon_addr": "0x82679b40",
+    "wii_symbol": "SaveForEndGame__5StatsCFR9BinStream",
+    "found": true,
+    "size_bytes": 1024,
+    "xenon_func_name": "Function_82679B40",
+    "entry_addr": "0x82679b40",
+    "callees": [
+      {
+        "addr": "0x827a0108",
+        "xenon_name": "Function_827A0108",
+        "wii_match": "WriteEndian__9BinStreamFPCvi"
+      },
+      {
+        "addr": "0x826796d0",
+        "xenon_name": "Function_826796D0",
+        "wii_match": "__ls<Q25Stats11SectionInfo,Us>__FR9BinStreamRCQ211stlpmtx_std85vector<Q25Stats11SectionInfo,Us,Q211stlpmtx_std35StlNodeAlloc<Q25Stats11SectionInfo>>_R9BinStream"
+      },
+      {
+        "addr": "0x8279ffc8",
+        "xenon_name": "?Write@BinStream@@QAAXPBXH@Z",
+        "wii_match": "Read__9BinStreamFPvi"
+      },
+      {
+        "addr": "0x8228cb00",
+        "xenon_name": "Function_8228CB00",
+        "wii_match": "__ls<Q25Stats10StreakInfo,Us>__FR9BinStreamRCQ211stlpmtx_std83vector<Q25Stats10StreakInfo,Us,Q211stlpmtx_std34StlNodeAlloc<Q25Stats10StreakInfo>>_R9BinStream"
+      },
+      {
+        "addr": "0x826799d0",
+        "xenon_name": "Function_826799D0",
+        "wii_match": "SaveSingerStats__5StatsCFR9BinStream"
+      }
+    ],
+    "n_callees": 5,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_82679B40(undefined4 *param_1,undefined8 param_2)\n\n{\n  undefined1 local_20 [4];\n  undefined4 local_1c;\n  \n  local_1c = *param_1;\n  Function_827A0108(param_2,&local_1c,4);\n  Function_8228CB00(param_2,param_1 + 0x34);\n  local_1c = param_1[4];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[5];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[6];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x71];\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 7);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_1c = param_1[0x42];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[9];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0xb];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[10];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[8];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0xe];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x13];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x14];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x15];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x16];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x11];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x12];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x25];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x26];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x28];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x27];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x29];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x2a];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x2b];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x2c];\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 0x2d);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_20[0] = *(undefined1 *)((int)param_1 + 0xb5);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_1c = param_1[100];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x65];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x66];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x67];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x2e];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x2f];\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 0x30);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_1c = param_1[0x31];\n  Function_827A0108(param_2,&local_1c,4);\n  Function_826796D0(param_2,param_1 + 0x7a);\n  local_1c = param_1[0x7d];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x7e];\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = param_1[0x7f];\n  Function_827A0108(param_2,&local_1c,4);\n  Function_826799D0(param_1,param_2);\n  return;\n}\n\n"
+  },
+  "03": {
+    "pair_id": "03",
+    "xenon_addr": "0x825c1698",
+    "wii_symbol": "UpdateState__13OvershellSlotFv",
+    "found": true,
+    "size_bytes": 2132,
+    "xenon_func_name": "Function_825C1698",
+    "entry_addr": "0x825c1698",
+    "callees": [
+      {
+        "addr": "0x823cd938",
+        "xenon_name": "FUN_823cd938",
+        "wii_match": "MainPerformer__4BandCFv"
+      },
+      {
+        "addr": "0x826e0908",
+        "xenon_name": "Function_826E0908",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82643300",
+        "xenon_name": "Function_82643300",
+        "wii_match": "InCharEditFlow__18OvershellSlotStateFv"
+      },
+      {
+        "addr": "0x82725d28",
+        "xenon_name": "Function_82725D28",
+        "wii_match": "__as__8DataNodeFRC8DataNode"
+      },
+      {
+        "addr": "0x827362a0",
+        "xenon_name": "Function_827362A0",
+        "wii_match": "SetTrackType__8BandUserF9TrackType"
+      },
+      {
+        "addr": "0x82804da8",
+        "xenon_name": "Function_82804DA8",
+        "wii_match": null
+      },
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      },
+      {
+        "addr": "0x82664dd0",
+        "xenon_name": "Function_82664DD0",
+        "wii_match": "GetUserFromSlot__11BandUserMgrCFi"
+      },
+      {
+        "addr": "0x82260570",
+        "xenon_name": "Function_82260570",
+        "wii_match": "MakeString<PCc,i,PCc>__FPCcPCciPCc_PCc"
+      },
+      {
+        "addr": "0x82642c90",
+        "xenon_name": "Function_82642C90",
+        "wii_match": null
+      },
+      {
+        "addr": "0x828050f8",
+        "xenon_name": "Function_828050F8",
+        "wii_match": "MsToTick__Ff"
+      },
+      {
+        "addr": "0x825bed40",
+        "xenon_name": "Function_825BED40",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82803f28",
+        "xenon_name": "FUN_82803f28",
+        "wii_match": "__nw__FUl"
+      },
+      {
+        "addr": "0x82642300",
+        "xenon_name": "Function_82642300",
+        "wii_match": "HandleMsg__18OvershellSlotStateFRC7Message"
+      },
+      {
+        "addr": "0x8259a258",
+        "xenon_name": "Function_8259A258",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82642740",
+        "xenon_name": "Function_82642740",
+        "wii_match": null
+      },
+      {
+        "addr": "0x8259ace8",
+        "xenon_name": "Function_8259ACE8",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82726008",
+        "xenon_name": "Function_82726008",
+        "wii_match": "GetObj__8DataNodeCFPC9DataArray"
+      },
+      {
+        "addr": "0x82261bc0",
+        "xenon_name": "Function_82261BC0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82665a98",
+        "xenon_name": "Function_82665A98",
+        "wii_match": "Array__9DataArrayCFi"
+      },
+      {
+        "addr": "0x825c0680",
+        "xenon_name": "Function_825C0680",
+        "wii_match": "ShowEnterFlowPrompt__13OvershellSlotF20OvershellSlotStateID"
+      },
+      {
+        "addr": "0x825c0050",
+        "xenon_name": "Function_825C0050",
+        "wii_match": "GenerateCurrentState__13OvershellSlotFv"
+      }
+    ],
+    "n_callees": 22,
+    "strings": [
+      "overshell_up.cue",
+      "overshell_down.cue",
+      "enter",
+      "swap_user"
+    ],
+    "n_strings": 4,
+    "pseudo_c": "\n/* WARNING: Removing unreachable block (ram,0x825c18f0) */\n\nvoid Function_825C1698(void)\n\n{\n  bool bVar1;\n  int iVar3;\n  int *piVar4;\n  undefined8 uVar2;\n  int iVar5;\n  int iVar6;\n  undefined4 *puVar7;\n  char cVar9;\n  char cVar10;\n  int iVar8;\n  double dVar11;\n  undefined1 auStack_70 [8];\n  undefined1 local_68 [8];\n  undefined4 local_60;\n  uint local_5c;\n  undefined4 local_58;\n  uint local_54;\n  \n  iVar3 = FUN_82803f28();\n  piVar4 = (int *)Function_82664DD0(*(undefined4 *)(iVar3 + 0x38),*(undefined4 *)(iVar3 + 0x40));\n  uVar2 = Function_825C0050(iVar3);\n  if (*(int *)(iVar3 + 0x2c) != 0) {\n    iVar5 = FUN_823cd938();\n    iVar6 = FUN_823cd938(uVar2);\n    if (iVar6 == iVar5) goto LAB_825c1990;\n  }\n  bVar1 = false;\n  if (*(int *)(iVar3 + 0x2c) != 0) {\n    if ((DAT_82dce544 & 1) == 0) {\n      DAT_82dce544 = DAT_82dce544 | 1;\n      puVar7 = (undefined4 *)__0Symbol__QAA_PBD_Z(auStack_70,0xffffffff82049358);\n      Function_82261BC0(0xffffffff82dce53c,*puVar7);\n      Function_828050F8(0xffffffff82c0e430);\n    }\n    Function_82642300(&local_60,*(undefined4 *)(iVar3 + 0x2c),0xffffffff82dce53c);\n    if ((local_5c & 0x10) != 0) {\n      Function_82260570(local_60);\n    }\n    if ((piVar4 == (int *)0x0) ||\n       (cVar9 = (**(code **)(*(int *)((int)piVar4 + *(int *)(piVar4[1] + 4) + 4) + 0x5c))\n                          ((int)piVar4 + *(int *)(piVar4[1] + 4) + 4), cVar9 != '\\0')) {\n      cVar9 = Function_82642C90(*(undefined4 *)(iVar3 + 0x2c));\n      dVar11 = (double)DAT_82000d6c;\n      if ((cVar9 != '\\0') && (cVar9 = Function_82642C90(uVar2), cVar9 == '\\0')) {\n        Function_826E0908(dVar11,dVar11,dVar11,DAT_82dd1f94,0xffffffff820b2968);\n      }\n      cVar9 = Function_82642C90(*(undefined4 *)(iVar3 + 0x2c));\n      if ((cVar9 == '\\0') && (cVar9 = Function_82642C90(uVar2), cVar9 != '\\0')) {\n        Function_826E0908(dVar11,dVar11,dVar11,DAT_82dd1f94,0xffffffff820b2954);\n      }\n    }\n    cVar9 = Function_82642740(*(undefined4 *)(iVar3 + 0x2c));\n    cVar10 = Function_82642740(uVar2);\n    if (cVar9 != cVar10) {\n      bVar1 = true;\n    }\n  }\n  *(int *)(iVar3 + 0x2c) = (int)uVar2;\n  if (bVar1) {\n    if ((DAT_82dce544 & 2) == 0) {\n      DAT_82dce544 = DAT_82dce544 | 2;\n      uVar2 = Function_82664DD0(*(undefined4 *)(iVar3 + 0x38),*(undefined4 *)(iVar3 + 0x40));\n      Function_8259ACE8(0xffffffff82dce534,uVar2);\n      Function_828050F8(0xffffffff82c0e410);\n    }\n    Function_82664DD0(*(undefined4 *)(iVar3 + 0x38),*(undefined4 *)(iVar3 + 0x40));\n    Function_82725D28((ulonglong)*DAT_82dce538 + 0x10,local_68);\n    iVar5 = *(int *)(*(int *)(*(int *)(iVar3 + 0x34) + 4) + 4) + *(int *)(iVar3 + 0x34);\n    (**(code **)(*(int *)(iVar5 + 4) + 0x38))(iVar5 + 4,DAT_82dce538,1);\n  }\n  if ((DAT_82dce544 & 4) == 0) {\n    DAT_82dce544 = DAT_82dce544 | 4;\n    puVar7 = (undefined4 *)__0Symbol__QAA_PBD_Z(auStack_70,0xffffffff8203b97c);\n    Function_82261BC0(0xffffffff82dce52c,*puVar7);\n    Function_828050F8(0xffffffff82c0e3f0);\n  }\n  Function_82642300(&local_58,*(undefined4 *)(iVar3 + 0x2c),0xffffffff82dce52c);\n  if ((local_54 & 0x10) != 0) {\n    Function_82260570(local_58);\n  }\nLAB_825c1990:\n  if ((piVar4 != (int *)0x0) &&\n     (cVar9 = (**(code **)(*(int *)((int)piVar4 + *(int *)(piVar4[1] + 4) + 4) + 0x5c))\n                        ((int)piVar4 + *(int *)(piVar4[1] + 4) + 4), cVar9 != '\\0')) {\n    iVar5 = (**(code **)(*piVar4 + 0x18))(piVar4);\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x2f) &&\n       (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n       cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 0x18))(iVar6 + 4), cVar9 == '\\0')) {\n      Function_825BED40(iVar3,0x2d);\n    }\n    cVar9 = Function_82643300(*(undefined4 *)(iVar3 + 0x2c));\n    if ((cVar9 != '\\0') &&\n       (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n       cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 0x18))(iVar6 + 4), cVar9 == '\\0')) {\n      Function_825BED40(iVar3,6);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x18) &&\n       (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n       cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 0x18))(iVar6 + 4), cVar9 == '\\0')) {\n      Function_825BED40(iVar3,6);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x33) &&\n       (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n       cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 0x18))(iVar6 + 4), cVar9 != '\\0')) {\n      Function_825BED40(iVar3,6);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if (((iVar6 == 0x10) &&\n        (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n        cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 0x14))(iVar6 + 4), cVar9 != '\\0')) &&\n       (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n       cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 8))(iVar6 + 4), cVar9 == '\\0')) {\n      Function_825BED40(iVar3,0x11);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x18) && (cVar9 = (**(code **)(**(int **)(iVar3 + 0x3c) + 0x24))(), cVar9 == '\\0')\n       ) {\n      Function_825BED40(iVar3,0x30);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x17) && (cVar9 = (**(code **)(**(int **)(iVar3 + 0x3c) + 0x24))(), cVar9 == '\\0')\n       ) {\n      Function_825BED40(iVar3,0x31);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x3b) && (cVar9 = (**(code **)(**(int **)(iVar3 + 0x3c) + 0x24))(), cVar9 == '\\0')\n       ) {\n      Function_825BED40(iVar3,0x3c);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x1e) && (iVar6 = (**(code **)(**(int **)(iVar3 + 0xb4) + 0x28))(), iVar6 == 0)) {\n      Function_825BED40(iVar3,0x48);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if (((iVar6 == 0x13) &&\n        (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n        cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 8))(iVar6 + 4), cVar9 != '\\0')) &&\n       (cVar9 = Function_82665A98(*(undefined4 *)(iVar3 + 0x38)), cVar9 == '\\0')) {\n      Function_825BED40(iVar3,0x14);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if (((iVar6 == 0x33) &&\n        (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n        cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 8))(iVar6 + 4), cVar9 != '\\0')) &&\n       (cVar9 = Function_82665A98(*(undefined4 *)(iVar3 + 0x38)), cVar9 == '\\0')) {\n      Function_825C0680(iVar3,0x18);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x36) &&\n       (cVar9 = Function_8259A258(*(undefined4 *)(iVar3 + 0x34),*(undefined4 *)(iVar3 + 0x90)),\n       cVar9 != '\\0')) {\n      Function_825BED40(iVar3,0x42);\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x1a) && (cVar9 = (**(code **)(**(int **)(iVar3 + 0x3c) + 0x24))(), cVar9 != '\\0')\n       ) {\n      Function_825BED40(iVar3,7);\n    }\n    iVar6 = *(int *)(*(int *)(*(int *)(iVar3 + 0x3c) + 0x54) + 0x28);\n    if (iVar6 == 0) {\n      iVar6 = 0;\n    }\n    else {\n      iVar6 = *(int *)(*(int *)(iVar6 + 4) + 8) + iVar6 + 4;\n    }\n    iVar8 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if (iVar8 == 0x41) {\n      if (iVar5 == 0) {\n        iVar8 = 0;\n      }\n      else {\n        iVar8 = *(int *)(*(int *)(iVar5 + 4) + 8) + iVar5 + 4;\n      }\n      if (iVar6 != iVar8) {\n        Function_825BED40(iVar3,5);\n        *(undefined1 *)(iVar3 + 0x61) = 1;\n      }\n    }\n    iVar6 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if ((iVar6 == 0x37) &&\n       (iVar5 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n       cVar9 = (**(code **)(*(int *)(iVar5 + 4) + 0x18))(iVar5 + 4), cVar9 == '\\0')) {\n      Function_825BED40(iVar3,5);\n      *(undefined1 *)(iVar3 + 0x61) = 1;\n    }\n    iVar5 = FUN_823cd938(*(undefined4 *)(iVar3 + 0x2c));\n    if (iVar5 == 0x20) {\n      puVar7 = (undefined4 *)__0Symbol__QAA_PBD_Z(auStack_70,0xffffffff820b2948);\n      uVar2 = Function_827362A0(*(undefined4 *)(iVar3 + 0x2c),*puVar7,1);\n      uVar2 = Function_82726008(uVar2,0);\n      iVar5 = Function_82804DA8(uVar2,0,0xffffffff82c349c4,0xffffffff82c41e80,0);\n      iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5;\n      cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 0x10))(iVar6 + 4);\n      if (((cVar9 == '\\0') ||\n          (iVar6 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n          cVar9 = (**(code **)(*(int *)(iVar6 + 4) + 4))(iVar6 + 4), cVar9 == '\\0')) ||\n         (iVar5 = *(int *)(*(int *)(iVar5 + 4) + 0xc) + iVar5,\n         cVar9 = (**(code **)(*(int *)(iVar5 + 4) + 0xc))(iVar5 + 4), cVar9 != '\\0')) {\n        Function_825BED40(iVar3,0x1f);\n      }\n    }\n  }\n  return;\n}\n\n"
+  },
+  "04": {
+    "pair_id": "04",
+    "xenon_addr": "0x82586258",
+    "wii_symbol": "Poll__7NetSyncFv",
+    "found": true,
+    "size_bytes": 224,
+    "xenon_func_name": "Function_82586258",
+    "entry_addr": "0x82586258",
+    "callees": [
+      {
+        "addr": "0x82593d30",
+        "xenon_name": "Function_82593D30",
+        "wii_match": "DispatchRMCCall__Q26Quazal17_DOC_VoiceChannelFRCQ26Quazal19CallMethodOperation"
+      },
+      {
+        "addr": "0x82592570",
+        "xenon_name": "FUN_82592570",
+        "wii_match": "InLock__11LockStepMgrCFv"
+      },
+      {
+        "addr": "0x82585328",
+        "xenon_name": "Function_82585328",
+        "wii_match": "AttemptTransition__7NetSyncFP8UIScreeni"
+      }
+    ],
+    "n_callees": 3,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_82586258(int param_1)\n\n{\n  int *piVar1;\n  char cVar2;\n  \n  if (*(int *)(PTR_DAT_82c41b48 + 0x10) == 0) {\n    if ((*(int *)(param_1 + 0x2c) != 0) && (*(int *)(PTR_DAT_82c41b48 + 0x2c) != 0)) {\n      Function_82585328(param_1,*(int *)(param_1 + 0x2c),*(undefined4 *)(param_1 + 0x30));\n    }\n  }\n  else {\n    piVar1 = *(int **)(PTR_DAT_82c41b48 + 0x2c);\n    if ((*(int **)(PTR_DAT_82c41b48 + 0x30) != (int *)0x0) &&\n       (cVar2 = (**(code **)(**(int **)(PTR_DAT_82c41b48 + 0x30) + 0x60))(), cVar2 == '\\0')) {\n      return;\n    }\n    if ((piVar1 != (int *)0x0) && (cVar2 = (**(code **)(*piVar1 + 0x7c))(piVar1), cVar2 != '\\0')) {\n      return;\n    }\n    cVar2 = FUN_82592570(*(undefined4 *)(param_1 + 0x38));\n    if ((cVar2 != '\\0') && (*(char *)(*(int *)(param_1 + 0x38) + 0x38) == '\\0')) {\n      Function_82593D30(*(int *)(param_1 + 0x38),1);\n    }\n  }\n  return;\n}\n\n"
+  },
+  "05": {
+    "pair_id": "05",
+    "xenon_addr": "0x8268d410",
+    "wii_symbol": "Poll__15GemTrainerPanelFv",
+    "found": true,
+    "size_bytes": 792,
+    "xenon_func_name": "Function_8268D410",
+    "entry_addr": "0x8268d410",
+    "callees": [
+      {
+        "addr": "0x82803f30",
+        "xenon_name": "FUN_82803f30",
+        "wii_match": "FUN_80a3937c"
+      },
+      {
+        "addr": "0x82b565d8",
+        "xenon_name": "FUN_82b565d8",
+        "wii_match": "GetGuideTrack__15VocalGuidePitchCFv"
+      },
+      {
+        "addr": "0x8269fbc8",
+        "xenon_name": "Function_8269FBC8",
+        "wii_match": "ResetGemStates__9GemPlayerFf"
+      },
+      {
+        "addr": "0x826790b8",
+        "xenon_name": "FUN_826790b8",
+        "wii_match": "Radius__11CharCollideCFv"
+      },
+      {
+        "addr": "0x827dd308",
+        "xenon_name": "FUN_827dd308",
+        "wii_match": "FocusPanel__9UIManagerFv"
+      },
+      {
+        "addr": "0x827a3e90",
+        "xenon_name": "thunk_FUN_827ad150",
+        "wii_match": null
+      },
+      {
+        "addr": "0x826aa980",
+        "xenon_name": "FUN_826aa980",
+        "wii_match": "GetStartTick__14TrainerSectionCFv"
+      },
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      },
+      {
+        "addr": "0x8268bee8",
+        "xenon_name": "Function_8268BEE8",
+        "wii_match": "AddBeatMask__15GemTrainerPanelFi"
+      },
+      {
+        "addr": "0x82b699b0",
+        "xenon_name": "Function_82B699B0",
+        "wii_match": "ClearMissedPhrases__10GemManagerFv"
+      },
+      {
+        "addr": "0x826d2098",
+        "xenon_name": "Function_826D2098",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82260570",
+        "xenon_name": "Function_82260570",
+        "wii_match": "MakeString<PCc,i,PCc>__FPCcPCciPCc_PCc"
+      },
+      {
+        "addr": "0x827b8dc0",
+        "xenon_name": "Function_827B8DC0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82263eb0",
+        "xenon_name": "FUN_82263eb0",
+        "wii_match": "TrackNum__11TrackConfigCFv"
+      },
+      {
+        "addr": "0x82261bc0",
+        "xenon_name": "Function_82261BC0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x8268bc08",
+        "xenon_name": "Function_8268BC08",
+        "wii_match": "HandleTrackShifting__15GemTrainerPanelFv"
+      },
+      {
+        "addr": "0x826aad78",
+        "xenon_name": "Function_826AAD78",
+        "wii_match": "Obj<13LocalBandUser>__9DataArrayCFi_P13LocalBandUser"
+      },
+      {
+        "addr": "0x8265a0f0",
+        "xenon_name": "Function_8265A0F0",
+        "wii_match": "IsWaiting__4GameFv"
+      },
+      {
+        "addr": "0x82769680",
+        "xenon_name": "Function_82769680",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82b67f58",
+        "xenon_name": "Function_82B67F58",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82667218",
+        "xenon_name": "FUN_82667218",
+        "wii_match": "RecalculateGemTimes__6SongDBFi"
+      },
+      {
+        "addr": "0x826aa990",
+        "xenon_name": "FUN_826aa990",
+        "wii_match": "GetListString__20TokenRedemptionPanelCFi"
+      },
+      {
+        "addr": "0x8268c550",
+        "xenon_name": "Function_8268C550",
+        "wii_match": null
+      },
+      {
+        "addr": "0x828050f8",
+        "xenon_name": "Function_828050F8",
+        "wii_match": "MsToTick__Ff"
+      },
+      {
+        "addr": "0x824590d8",
+        "xenon_name": "FUN_824590d8",
+        "wii_match": "GetCurrSection__12TrainerPanelCFv"
+      },
+      {
+        "addr": "0x826aa890",
+        "xenon_name": "FUN_826aa890",
+        "wii_match": "GetTick__12TrainerPanelCFv"
+      },
+      {
+        "addr": "0x827ee118",
+        "xenon_name": "Function_827EE118",
+        "wii_match": "Poll__7UIPanelFv"
+      }
+    ],
+    "n_callees": 27,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_8268D410(void)\n\n{\n  int *piVar5;\n  int iVar6;\n  char cVar9;\n  undefined8 uVar1;\n  undefined8 uVar2;\n  longlong lVar3;\n  longlong lVar4;\n  undefined4 *puVar7;\n  int *piVar8;\n  double dVar10;\n  undefined1 local_50 [8];\n  undefined1 local_48 [8];\n  undefined4 local_40;\n  uint local_3c;\n  \n  piVar5 = (int *)FUN_82803f30();\n  Function_827EE118();\n  if ((piVar5[0x21] != 0) && (piVar5[0x1b] != 0)) {\n    iVar6 = FUN_824590d8(piVar5);\n    if (-1 < iVar6) {\n      cVar9 = Function_8265A0F0(DAT_82dd09e8);\n      if (cVar9 == '\\0') {\n        *(undefined1 *)(piVar5 + 0x3c) = 0;\n        if (*(char *)((int)piVar5 + 0xc9) != '\\0') {\n          uVar1 = FUN_824590d8(piVar5);\n          uVar1 = FUN_826aa980(piVar5,uVar1);\n          uVar2 = FUN_824590d8(piVar5);\n          lVar3 = FUN_826aa990(piVar5,uVar2);\n          lVar4 = FUN_82b565d8(uVar1);\n          Function_8268BEE8(piVar5,lVar3 + lVar4);\n          *(undefined1 *)((int)piVar5 + 0xc9) = 0;\n        }\n        uVar1 = FUN_826aa890(piVar5);\n        if ((piVar5[0x25] <= (int)uVar1) && (piVar5[0x25] != 0)) {\n          if (0 < piVar5[0x33]) {\n            if ((DAT_82dd12a8 & 1) == 0) {\n              DAT_82dd12a8 = DAT_82dd12a8 | 1;\n              puVar7 = (undefined4 *)__0Symbol__QAA_PBD_Z(local_48,0xffffffff8201ca90);\n              Function_82261BC0(0xffffffff82dd12a0,*puVar7);\n              Function_828050F8(0xffffffff82c106c8);\n            }\n            (**(code **)(*(int *)((int)piVar5 + *(int *)(piVar5[1] + 4) + 4) + 0x18))\n                      (&local_40,(int)piVar5 + *(int *)(piVar5[1] + 4) + 4,DAT_82dd12a4,1);\n            if ((local_3c & 0x10) != 0) {\n              Function_82260570(local_40);\n            }\n          }\n          uVar2 = FUN_824590d8(piVar5);\n          iVar6 = Function_826AAD78(piVar5,uVar2);\n          piVar5[0x25] = iVar6 + piVar5[0x25];\n          piVar5[0x33] = piVar5[0x33] + 1;\n        }\n        uVar2 = 0;\n        piVar8 = (int *)FUN_827dd308(PTR_DAT_82c41b48);\n        if (piVar8 == piVar5) {\n          dVar10 = (double)FUN_826790b8(DAT_82dd09e8);\n          if (dVar10 != (double)DAT_8200099c) {\n            uVar2 = 1;\n          }\n        }\n        else {\n          uVar2 = 2;\n        }\n        Function_826D2098(piVar5[0x36],uVar1,uVar2);\n        Function_8268BC08(piVar5);\n        uVar2 = FUN_82263eb0(*(int *)(*(int *)(piVar5[0x23] + 4) + 8) + piVar5[0x23] + 4);\n        if (piVar5[0x22] != (int)uVar2) {\n          (**(code **)(*piVar5 + 0x58))(piVar5,uVar1,uVar2);\n        }\n      }\n      else {\n        iVar6 = FUN_82263eb0(*(int *)(*(int *)(piVar5[0x23] + 4) + 8) + piVar5[0x23] + 4);\n        if ((piVar5[0x22] != iVar6) && (*(char *)(piVar5 + 0x3c) == '\\0')) {\n          if (piVar5[0x18] != piVar5[0x19]) {\n            Function_8268C550(piVar5 + 0x18,piVar5[0x18],piVar5[0x19],local_50);\n          }\n          Function_82769680(piVar5[iVar6 + 0x1c],0,0,0x1e0,piVar5 + 0x18,1);\n          Function_82B67F58(piVar5[0x21]);\n          Function_82B699B0(piVar5[0x21]);\n          Function_827B8DC0(*(undefined4 *)(piVar5[0x20] + 0x84));\n          FUN_82667218(DAT_82dd0c98,*(undefined4 *)(piVar5[0x1b] + 0x278));\n          iVar6 = FUN_826aa890(piVar5);\n          thunk_FUN_827ad150((double)(longlong)iVar6);\n          Function_8269FBC8(piVar5[0x1b]);\n          *(undefined1 *)(piVar5 + 0x3c) = 1;\n        }\n      }\n    }\n  }\n  return;\n}\n\n"
+  },
+  "06": {
+    "pair_id": "06",
+    "xenon_addr": "0x826b1f50",
+    "wii_symbol": "Poll__7TrackerFf",
+    "found": true,
+    "size_bytes": 176,
+    "xenon_func_name": "Function_826B1F50",
+    "entry_addr": "0x826b1f50",
+    "callees": [
+      {
+        "addr": "0x826b1c78",
+        "xenon_name": "Function_826B1C78",
+        "wii_match": "SetupDisplays__7TrackerFv"
+      },
+      {
+        "addr": "0x82b5fe98",
+        "xenon_name": "Function_82B5FE98",
+        "wii_match": "SetSuppressPlayerFeedback__10TrackPanelFb"
+      },
+      {
+        "addr": "0x826b1b48",
+        "xenon_name": "Function_826B1B48",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82b5e878",
+        "xenon_name": "FUN_82b5e878",
+        "wii_match": "GetTrackPanel__Fv"
+      },
+      {
+        "addr": "0x82b5fe00",
+        "xenon_name": "Function_82B5FE00",
+        "wii_match": "SetSuppressTambourineDisplay__10TrackPanelFb"
+      }
+    ],
+    "n_callees": 5,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_826B1F50(undefined8 param_1,int *param_2)\n\n{\n  undefined1 uVar1;\n  undefined8 uVar2;\n  \n  if (*(char *)(param_2 + 1) != '\\0') {\n    Function_826B1B48(param_2,0xffffffffffffffff);\n    (**(code **)(*param_2 + 0x30))(param_1,param_2);\n    *(undefined1 *)(param_2 + 1) = 0;\n    uVar1 = *(undefined1 *)((int)param_2 + 0x2d);\n    uVar2 = FUN_82b5e878();\n    Function_82B5FE00(uVar2,uVar1);\n    uVar1 = *(undefined1 *)((int)param_2 + 0x2e);\n    uVar2 = FUN_82b5e878();\n    Function_82B5FE98(uVar2,uVar1);\n    Function_826B1C78(param_2);\n  }\n  (**(code **)(*param_2 + 0x34))(param_1,param_2);\n  return;\n}\n\n"
+  },
+  "07": {
+    "pair_id": "07",
+    "xenon_addr": "0x82b6e140",
+    "wii_symbol": "ProcessStaticLyrics__10VocalTrackFbP5LyricRfRfRP5LyricRP5LyricRfbP10LyricPlate",
+    "found": true,
+    "size_bytes": 312,
+    "xenon_func_name": "Function_82B6E140",
+    "entry_addr": "0x82b6e140",
+    "callees": [
+      {
+        "addr": "0x82b7cad0",
+        "xenon_name": "FUN_82b7cad0",
+        "wii_match": "EstimateLyricWidth__10LyricPlateFPC5Lyric"
+      },
+      {
+        "addr": "0x82b7cab8",
+        "xenon_name": "FUN_82b7cab8",
+        "wii_match": "SetChunkEnd__5LyricFb"
+      },
+      {
+        "addr": "0x82b7cac8",
+        "xenon_name": "FUN_82b7cac8",
+        "wii_match": "SetAfterMidPhraseLyricShift__5LyricFb"
+      },
+      {
+        "addr": "0x82803f2c",
+        "xenon_name": "FUN_82803f2c",
+        "wii_match": "FUN_80a39378"
+      }
+    ],
+    "n_callees": 4,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_82B6E140(undefined8 param_1,ulonglong param_2,undefined8 param_3,float *param_4,\n                      float *param_5,int *param_6,int *param_7,float *param_8)\n\n{\n  float fVar1;\n  int iVar2;\n  double dVar3;\n  double dVar4;\n  double dVar5;\n  char in_stack_00000057;\n  undefined4 in_stack_0000005c;\n  \n  iVar2 = FUN_82803f2c();\n  if ((param_2 & 0xff) != 0) {\n    if (in_stack_00000057 != '\\0') {\n      fVar1 = *param_5;\n      *param_4 = fVar1;\n      *param_8 = fVar1;\n      *param_6 = 0;\n      *param_7 = 0;\n    }\n    dVar5 = (double)(*(float *)(*(int *)(iVar2 + 0x98) + 0x480) -\n                    *(float *)(*(int *)(iVar2 + 0x98) + 0x47c));\n    dVar4 = (double)(float)(dVar5 * (double)DAT_8200108c);\n    dVar3 = (double)FUN_82b7cad0(in_stack_0000005c,param_3);\n    fVar1 = *param_5;\n    *param_5 = (float)(dVar3 + (double)fVar1);\n    dVar3 = (double)((float)(dVar3 + (double)fVar1) - *param_4);\n    iVar2 = (int)param_3;\n    if (*param_6 != 0) {\n      if (*param_7 == 0) {\n        *param_7 = iVar2;\n      }\n      if (*param_6 != 0) {\n        if (dVar5 < dVar3) {\n          FUN_82b7cab8(*param_6,1);\n          *param_6 = 0;\n          *param_4 = *param_8;\n          dVar3 = (double)(*param_5 - *param_4);\n          FUN_82b7cac8(*param_7,1);\n          *param_7 = 0;\n        }\n        if (*param_6 != 0) {\n          return;\n        }\n      }\n    }\n    if ((dVar4 < dVar3) && (*(char *)(iVar2 + 0x4c) != '\\0')) {\n      *param_6 = iVar2;\n      *param_8 = *param_5;\n    }\n  }\n  return;\n}\n\n"
+  },
+  "08": {
+    "pair_id": "08",
+    "xenon_addr": "0x82617830",
+    "wii_symbol": "SendSongsToMetaPerformer__17SetlistMergePanelFRCQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>",
+    "found": true,
+    "size_bytes": 328,
+    "xenon_func_name": "Function_82617830",
+    "entry_addr": "0x82617830",
+    "callees": [
+      {
+        "addr": "0x82563f98",
+        "xenon_name": "FUN_82563f98",
+        "wii_match": "Current__13MetaPerformerFv"
+      },
+      {
+        "addr": "0x825691d0",
+        "xenon_name": "Function_825691D0",
+        "wii_match": "SetBattle__13MetaPerformerFPC18BattleSavedSetlist"
+      },
+      {
+        "addr": "0x825692d0",
+        "xenon_name": "Function_825692D0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x8256af10",
+        "xenon_name": "Function_8256AF10",
+        "wii_match": "SetSetlist__13MetaPerformerFPC12SavedSetlist"
+      },
+      {
+        "addr": "0x82804da8",
+        "xenon_name": "Function_82804DA8",
+        "wii_match": null
+      }
+    ],
+    "n_callees": 5,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_82617830(undefined8 param_1,int *param_2)\n\n{\n  int *piVar1;\n  char cVar4;\n  int iVar3;\n  undefined8 uVar2;\n  bool bVar5;\n  int iVar6;\n  int iVar7;\n  \n  bVar5 = false;\n  iVar3 = param_2[1] - *param_2 >> 2;\n  piVar1 = *(int **)(DAT_82dcbf70 + 0x160);\n  if ((piVar1 != (int *)0x0) && (piVar1[5] - piVar1[4] >> 2 == iVar3)) {\n    bVar5 = true;\n    iVar6 = 0;\n    if (0 < iVar3) {\n      iVar7 = 0;\n      do {\n        if (*(int *)(iVar7 + *param_2) != *(int *)(iVar7 + piVar1[4])) {\n          bVar5 = false;\n          break;\n        }\n        iVar6 = iVar6 + 1;\n        iVar7 = iVar7 + 4;\n      } while (iVar6 < iVar3);\n    }\n  }\n  if (bVar5) {\n    cVar4 = (**(code **)(*piVar1 + 0x14))(piVar1);\n    if (cVar4 != '\\0') {\n      iVar3 = Function_82804DA8(piVar1,0,0xffffffff82c42080,0xffffffff82c4209c,0);\n      if ((*(int *)(iVar3 + 0x30) == 6) || (bVar5 = false, *(int *)(iVar3 + 0x30) == 7)) {\n        bVar5 = true;\n      }\n      if (!bVar5) {\n        uVar2 = FUN_82563f98();\n        Function_825691D0(uVar2,iVar3);\n        return;\n      }\n    }\n    uVar2 = FUN_82563f98();\n    Function_8256AF10(uVar2,piVar1);\n  }\n  else {\n    uVar2 = FUN_82563f98();\n    Function_825692D0(uVar2,param_2);\n  }\n  return;\n}\n\n"
+  },
+  "09": {
+    "pair_id": "09",
+    "xenon_addr": "0x8265a168",
+    "wii_symbol": "SetGameOver__4GameFb",
+    "found": true,
+    "size_bytes": 144,
+    "xenon_func_name": "Function_8265A168",
+    "entry_addr": "0x8265a168",
+    "callees": [
+      {
+        "addr": "0x824fedf8",
+        "xenon_name": "?SetCollectStats@AutoTimer@@SAX_N0@Z",
+        "wii_match": "SetCollectStats__9AutoTimerFbb"
+      },
+      {
+        "addr": "0x823d2a58",
+        "xenon_name": "Function_823D2A58",
+        "wii_match": "EndGame__10NetSessionFibf"
+      },
+      {
+        "addr": "0x82659ec0",
+        "xenon_name": "Function_82659EC0",
+        "wii_match": "GetResult__4GameFb"
+      }
+    ],
+    "n_callees": 3,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_8265A168(int param_1,ulonglong param_2)\n\n{\n  undefined8 uVar1;\n  \n  if (*(int *)(DAT_82dd0ea4 + 0x74) != 3) {\n    if ((param_2 & 0xff) == 0) {\n      *(undefined4 *)(param_1 + 0x128) = *(undefined4 *)(param_1 + 0xb4);\n    }\n    _SetCollectStats_AutoTimer__SAX_N0_Z(0,PTR_DAT_82c45ba8[0x104]);\n    uVar1 = Function_82659EC0(param_1,param_2);\n    Function_823D2A58((double)*(float *)(param_1 + 0x128),DAT_82c8e6f0,uVar1,0);\n  }\n  return;\n}\n\n"
+  },
+  "10": {
+    "pair_id": "10",
+    "xenon_addr": "0x82b743e8",
+    "wii_symbol": "UpdateVocalStyle__10VocalTrackFv",
+    "found": true,
+    "size_bytes": 512,
+    "xenon_func_name": "Function_82B743E8",
+    "entry_addr": "0x82b743e8",
+    "callees": [
+      {
+        "addr": "0x82563f98",
+        "xenon_name": "FUN_82563f98",
+        "wii_match": "Current__13MetaPerformerFv"
+      },
+      {
+        "addr": "0x82564f80",
+        "xenon_name": "Function_82564F80",
+        "wii_match": "OSSetCurrentContext"
+      },
+      {
+        "addr": "0x82b727b8",
+        "xenon_name": "Function_82B727B8",
+        "wii_match": "RebuildHUD__10VocalTrackFv"
+      },
+      {
+        "addr": "0x82803f28",
+        "xenon_name": "FUN_82803f28",
+        "wii_match": "__nw__FUl"
+      },
+      {
+        "addr": "0x82659f08",
+        "xenon_name": "FUN_82659f08",
+        "wii_match": "GetActivePlayers__4GameFv"
+      },
+      {
+        "addr": "0x82263eb0",
+        "xenon_name": "FUN_82263eb0",
+        "wii_match": "TrackNum__11TrackConfigCFv"
+      },
+      {
+        "addr": "0x82804da8",
+        "xenon_name": "Function_82804DA8",
+        "wii_match": null
+      },
+      {
+        "addr": "0x822e9450",
+        "xenon_name": "Function_822E9450",
+        "wii_match": "UpdateConfiguration__13VocalTrackDirFv"
+      },
+      {
+        "addr": "0x825864e8",
+        "xenon_name": "FUN_825864e8",
+        "wii_match": "ScrollSpeed__16BandSongMetadataCFv"
+      },
+      {
+        "addr": "0x822a7fa0",
+        "xenon_name": "Function_822A7FA0",
+        "wii_match": null
+      }
+    ],
+    "n_callees": 10,
+    "strings": [
+      "tambourine_preview.anim"
+    ],
+    "n_strings": 1,
+    "pseudo_c": "\n/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */\n\nvoid Function_82B743E8(void)\n\n{\n  int iVar1;\n  int iVar3;\n  int *piVar4;\n  char cVar7;\n  int iVar5;\n  int *piVar6;\n  undefined8 uVar2;\n  uint uVar8;\n  int iVar9;\n  double dVar10;\n  undefined4 local_50 [20];\n  \n  iVar3 = FUN_82803f28();\n  piVar4 = (int *)FUN_82659f08(DAT_82dd09e8);\n  if (*(int **)(iVar3 + 0xa4) != (int *)0x0) {\n    cVar7 = (**(code **)(**(int **)(iVar3 + 0xa4) + 0x1c))();\n    if (cVar7 == '\\0') {\n      iVar1 = *piVar4;\n      uVar8 = 0;\n      if (piVar4[1] - iVar1 >> 2 != 0) {\n        iVar9 = 0;\n        do {\n          piVar6 = *(int **)(iVar9 + iVar1);\n          if (((piVar6 != (int *)0x0) && (piVar6[0x9f] == 3)) &&\n             (iVar1 = piVar6[0x9e], iVar5 = FUN_82263eb0(iVar3 + 0x28), iVar1 != iVar5)) {\n            cVar7 = (**(code **)(*piVar6 + 0x1c))(piVar6);\n            if (cVar7 != '\\0') {\n              piVar6 = (int *)Function_82804DA8(*(undefined4 *)(piVar6[0x98] + 0x88),0,\n                                                0xffffffff82c44eb4,0xffffffff82c44fac,0);\n              if (piVar6 != (int *)0x0) {\n                (**(code **)(*piVar6 + 0x180))(piVar6,*(undefined4 *)(iVar3 + 0x7c));\n              }\n            }\n          }\n          iVar1 = *piVar4;\n          uVar8 = uVar8 + 1;\n          iVar9 = iVar9 + 4;\n        } while (uVar8 < (uint)(piVar4[1] - iVar1 >> 2));\n      }\n    }\n  }\n  if ((*(int *)(iVar3 + 0x98) != 0) &&\n     ((*(int *)(iVar3 + 0xa4) == 0 ||\n      ((iVar1 = *(int *)(*(int *)(iVar3 + 0xa4) + 0x280), iVar1 != 1 && (iVar1 != 4)))))) {\n    Function_822E9450();\n    *(float *)(iVar3 + 0x88) =\n         *(float *)(*(int *)(iVar3 + 0x98) + 0x468) - *(float *)(*(int *)(iVar3 + 0x98) + 0x464);\n    uVar2 = FUN_82563f98();\n    Function_82564F80(local_50,uVar2);\n    uVar2 = (**(code **)(*(int *)PTR_DAT_82c424e0 + 0x5c))(PTR_DAT_82c424e0,local_50[0],1);\n    (**(code **)(*(int *)PTR_DAT_82c424e0 + 0x40))(PTR_DAT_82c424e0,uVar2);\n    dVar10 = (double)FUN_825864e8();\n    *(float *)(iVar3 + 0x84) = (float)((double)*(float *)(iVar3 + 0x88) * dVar10) * _DAT_82199358;\n    piVar4 = (int *)Function_822A7FA0(*(undefined4 *)(iVar3 + 0x98),0xffffffff82198f50,1);\n    (**(code **)(*piVar4 + 0xc))((double)DAT_82000d6c,(double)DAT_8200099c);\n    Function_82B727B8(iVar3);\n  }\n  return;\n}\n\n"
+  },
+  "11": {
+    "pair_id": "11",
+    "xenon_addr": "0x8259df90",
+    "wii_symbol": "ResolveSlotStates__14OvershellPanelFv",
+    "found": true,
+    "size_bytes": 1448,
+    "xenon_func_name": "Function_8259DF90",
+    "entry_addr": "0x8259df90",
+    "callees": [
+      {
+        "addr": "0x82642eb0",
+        "xenon_name": "Function_82642EB0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82642a70",
+        "xenon_name": "Function_82642A70",
+        "wii_match": null
+      },
+      {
+        "addr": "0x8259cda0",
+        "xenon_name": "Function_8259CDA0",
+        "wii_match": "ResolveReadyToPlayStates__14OvershellPanelFv"
+      },
+      {
+        "addr": "0x825bfa88",
+        "xenon_name": "Function_825BFA88",
+        "wii_match": null
+      },
+      {
+        "addr": "0x827362a0",
+        "xenon_name": "Function_827362A0",
+        "wii_match": "SetTrackType__8BandUserF9TrackType"
+      },
+      {
+        "addr": "0x82725d28",
+        "xenon_name": "Function_82725D28",
+        "wii_match": "__as__8DataNodeFRC8DataNode"
+      },
+      {
+        "addr": "0x8259a370",
+        "xenon_name": "Function_8259A370",
+        "wii_match": null
+      },
+      {
+        "addr": "0x825bed30",
+        "xenon_name": "FUN_825bed30",
+        "wii_match": "GetUser__13OvershellSlotCFv"
+      },
+      {
+        "addr": "0x8266d3d8",
+        "xenon_name": "FUN_8266d3d8",
+        "wii_match": "PostSave__13WiiProfileMgrFv"
+      },
+      {
+        "addr": "0x82735fe0",
+        "xenon_name": "Function_82735FE0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82804da8",
+        "xenon_name": "Function_82804DA8",
+        "wii_match": null
+      },
+      {
+        "addr": "0x825bf690",
+        "xenon_name": "Function_825BF690",
+        "wii_match": null
+      },
+      {
+        "addr": "0x8259c790",
+        "xenon_name": "Function_8259C790",
+        "wii_match": "NHTTPi_free"
+      },
+      {
+        "addr": "0x8259a4c0",
+        "xenon_name": "Function_8259A4C0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x823f5f60",
+        "xenon_name": "FUN_823f5f60",
+        "wii_match": "OSGetArenaHi"
+      },
+      {
+        "addr": "0x825bfa20",
+        "xenon_name": "Function_825BFA20",
+        "wii_match": "SetOverrideFlowReturnState__13OvershellSlotF20OvershellSlotStateID"
+      },
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      },
+      {
+        "addr": "0x8254ef10",
+        "xenon_name": "FUN_8254ef10",
+        "wii_match": "GetGfxMode__Fv"
+      },
+      {
+        "addr": "0x82260570",
+        "xenon_name": "Function_82260570",
+        "wii_match": "MakeString<PCc,i,PCc>__FPCcPCciPCc_PCc"
+      },
+      {
+        "addr": "0x82803f10",
+        "xenon_name": "FUN_82803f10",
+        "wii_match": "FUN_80a3935c"
+      },
+      {
+        "addr": "0x825bfb80",
+        "xenon_name": "FUN_825bfb80",
+        "wii_match": "InOverrideFlow__13OvershellSlotCF21OvershellOverrideFlow"
+      },
+      {
+        "addr": "0x825c0580",
+        "xenon_name": "FUN_825c0580",
+        "wii_match": null
+      },
+      {
+        "addr": "0x823cd938",
+        "xenon_name": "FUN_823cd938",
+        "wii_match": "MainPerformer__4BandCFv"
+      },
+      {
+        "addr": "0x825beec0",
+        "xenon_name": "Function_825BEEC0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x827a9b78",
+        "xenon_name": "FUN_827a9b78",
+        "wii_match": "GetControllerType__8BandUserCFv"
+      },
+      {
+        "addr": "0x82642960",
+        "xenon_name": "Function_82642960",
+        "wii_match": null
+      },
+      {
+        "addr": "0x825bef60",
+        "xenon_name": "Function_825BEF60",
+        "wii_match": "ShowSongOptions__13OvershellSlotFv"
+      },
+      {
+        "addr": "0x8259b2f0",
+        "xenon_name": "Function_8259B2F0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x828050f8",
+        "xenon_name": "Function_828050F8",
+        "wii_match": "MsToTick__Ff"
+      },
+      {
+        "addr": "0x825bed40",
+        "xenon_name": "Function_825BED40",
+        "wii_match": null
+      },
+      {
+        "addr": "0x825beda0",
+        "xenon_name": "Function_825BEDA0",
+        "wii_match": "LeaveOptions__13OvershellSlotFv"
+      },
+      {
+        "addr": "0x825c5eb8",
+        "xenon_name": "Function_825C5EB8",
+        "wii_match": "AttemptRemoveUser__13OvershellSlotFv"
+      },
+      {
+        "addr": "0x82726008",
+        "xenon_name": "Function_82726008",
+        "wii_match": "GetObj__8DataNodeCFPC9DataArray"
+      },
+      {
+        "addr": "0x826430e0",
+        "xenon_name": "Function_826430E0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x8259d948",
+        "xenon_name": "Function_8259D948",
+        "wii_match": null
+      },
+      {
+        "addr": "0x826431f0",
+        "xenon_name": "Function_826431F0",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82261ca8",
+        "xenon_name": "Function_82261CA8",
+        "wii_match": null
+      },
+      {
+        "addr": "0x82642850",
+        "xenon_name": "Function_82642850",
+        "wii_match": null
+      }
+    ],
+    "n_callees": 38,
+    "strings": [
+      "kick_user",
+      "hide_connect_controller_mesh"
+    ],
+    "n_strings": 2,
+    "pseudo_c": "\n/* WARNING: Removing unreachable block (ram,0x8259e488) */\n/* WARNING: Removing unreachable block (ram,0x8259e4f8) */\n\nvoid Function_8259DF90(void)\n\n{\n  int iVar1;\n  int iVar3;\n  int iVar4;\n  char cVar9;\n  int *piVar5;\n  int iVar6;\n  undefined4 *puVar7;\n  int iVar8;\n  undefined8 uVar2;\n  undefined4 uVar10;\n  undefined4 uVar11;\n  uint uVar12;\n  int iVar13;\n  int *piVar14;\n  undefined4 local_a0 [2];\n  undefined1 auStack_98 [8];\n  undefined1 local_90 [8];\n  undefined1 local_88 [8];\n  undefined4 local_80;\n  uint local_7c;\n  \n  iVar3 = FUN_82803f10();\n  Function_8259D948();\n  Function_8259CDA0(iVar3);\n  Function_8259C790(iVar3);\n  Function_8259A370(iVar3);\n  Function_8259A4C0(iVar3);\n  iVar1 = *(int *)(iVar3 + 0x74);\n  piVar14 = (int *)(iVar3 + 0x74);\n  uVar12 = 0;\n  if (*(int *)(iVar3 + 0x78) - iVar1 >> 2 != 0) {\n    iVar13 = 0;\n    do {\n      iVar1 = *(int *)(iVar13 + iVar1);\n      iVar4 = FUN_825bed30(iVar1);\n      if (iVar4 == 0) {\nLAB_8259e3f4:\n        FUN_823f5f60(iVar1);\n        FUN_823cd938();\n      }\n      else {\n        iVar4 = FUN_825bed30(iVar1);\n        iVar4 = *(int *)(*(int *)(iVar4 + 4) + 4) + iVar4;\n        cVar9 = (**(code **)(*(int *)(iVar4 + 4) + 0x5c))(iVar4 + 4);\n        if (cVar9 == '\\0') goto LAB_8259e3f4;\n        piVar5 = (int *)FUN_825bed30(iVar1);\n        iVar4 = (**(code **)(*piVar5 + 0x18))();\n        FUN_823f5f60(iVar1);\n        iVar6 = FUN_823cd938();\n        if (iVar6 == 0x32) {\n          piVar5 = (int *)FUN_825bed30(iVar1);\n          (**(code **)(*(int *)((int)piVar5 + *(int *)(piVar5[1] + 4) + 4) + 0x5c))\n                    ((int)piVar5 + *(int *)(piVar5[1] + 4) + 4);\n          puVar7 = (undefined4 *)(**(code **)(*piVar5 + 0x18))(piVar5);\n          iVar6 = (**(code **)*puVar7)();\n          iVar8 = FUN_827a9b78(piVar5);\n          if (iVar6 == iVar8) {\n            Function_825BFA88(iVar1);\n          }\n          else if ((*(int *)(iVar3 + 0x90) == 1) || (*(int *)(iVar3 + 0x90) == 2)) {\n            Function_825C5EB8(iVar1);\n          }\n        }\n        uVar10 = *(undefined4 *)(*(int *)(*(int *)(iVar4 + 4) + 8) + iVar4 + 0x24);\n        FUN_823f5f60(iVar1);\n        cVar9 = Function_82642850();\n        if (cVar9 == '\\0') {\n          cVar9 = Function_8259B2F0(iVar3,iVar4,local_a0);\n          if (cVar9 == '\\0') {\n            iVar6 = FUN_8254ef10();\n            FUN_823f5f60(iVar1);\n            cVar9 = Function_826431F0();\n            if (((cVar9 == '\\0') || (iVar6 == 0)) || (*(int *)(iVar6 + 0x18) != iVar4)) {\n              if (((*(int *)(iVar3 + 0x8c) == 1) || (*(char *)(iVar3 + 0x94) != '\\0')) ||\n                 (cVar9 = FUN_825bfb80(*(undefined4 *)(iVar13 + *piVar14),1), cVar9 == '\\0')) {\n                FUN_823f5f60(iVar1);\n                cVar9 = Function_82642EB0();\n                if (cVar9 == '\\0') {\n                  cVar9 = FUN_825bfb80(iVar1,1);\n                  if (cVar9 != '\\0') {\n                    uVar11 = uVar10;\n                    if (*(char *)(iVar1 + 0x69) != '\\0') {\n                      uVar11 = 5;\n                    }\n                    Function_825BFA20(iVar1,uVar11);\n                    Function_825BEF60(iVar1);\n                  }\n                }\n                else {\n                  cVar9 = FUN_825bfb80(iVar1,1);\n                  if (cVar9 == '\\0') {\n                    Function_825BFA88(iVar1);\n                  }\n                }\n                if (*(char *)(iVar1 + 0x6a) == '\\0') {\n                  FUN_823f5f60(iVar1);\n                  cVar9 = Function_826430E0();\n                  if (cVar9 == '\\0') {\n                    cVar9 = FUN_825bfb80(iVar1,2);\n                    if (cVar9 != '\\0') {\n                      Function_825BFA20(iVar1,uVar10);\n                      Function_825BED40(iVar1,0x14);\n                    }\n                  }\n                  else {\n                    cVar9 = FUN_825bfb80(iVar1,2);\n                    if (cVar9 == '\\0') {\n                      Function_825BFA88(iVar1);\n                    }\n                  }\n                  FUN_823f5f60(iVar1);\n                  cVar9 = Function_82642960();\n                  if ((cVar9 != '\\0') &&\n                     (cVar9 = (**(code **)(**(int **)(iVar3 + 0xa4) + 0x20))(), cVar9 == '\\0')) {\n                    Function_825BEDA0(iVar1);\n                  }\n                  FUN_823f5f60(iVar1);\n                  cVar9 = Function_82642A70();\n                  if ((cVar9 != '\\0') &&\n                     (cVar9 = (**(code **)(**(int **)(iVar3 + 0xa4) + 0x24))(), cVar9 != '\\0')) {\n                    Function_825BEEC0(iVar1);\n                  }\n                  FUN_823f5f60(iVar1);\n                  iVar4 = FUN_823cd938();\n                  if (iVar4 == 0x29) {\n                    puVar7 = (undefined4 *)__0Symbol__QAA_PBD_Z(auStack_98,0xffffffff820aa338);\n                    uVar10 = *puVar7;\n                    uVar2 = FUN_823f5f60(iVar1);\n                    uVar2 = Function_827362A0(uVar2,uVar10,1);\n                    uVar2 = Function_82726008(uVar2,0);\n                    iVar4 = Function_82804DA8(uVar2,0,0xffffffff82c349c4,0xffffffff82c3d3d0,0);\n                    if (iVar4 == 0) {\n                      iVar4 = 0;\n                    }\n                    else {\n                      iVar4 = *(int *)(*(int *)(iVar4 + 4) + 4) + iVar4 + 4;\n                    }\n                    cVar9 = (**(code **)(**(int **)(iVar3 + 0xa4) + 0x30))\n                                      (*(int **)(iVar3 + 0xa4),iVar4);\n                    if (cVar9 == '\\0') {\n                      Function_825BF690(iVar1);\n                    }\n                  }\n                  FUN_823f5f60(iVar1);\n                  iVar4 = FUN_823cd938();\n                  if ((iVar4 == 0x1e) &&\n                     (cVar9 = (**(code **)(**(int **)(iVar3 + 0xa4) + 0x3c))(), cVar9 == '\\0')) {\n                    Function_825BEEC0(iVar1);\n                  }\n                }\n              }\n              else {\n                FUN_825c0580(*(undefined4 *)(iVar13 + *piVar14),1,1);\n              }\n              goto LAB_8259e40c;\n            }\n            uVar10 = 0x49;\n          }\n          else {\n            FUN_8266d3d8(iVar4);\n            uVar10 = local_a0[0];\n          }\n          Function_825BED40(iVar1,uVar10);\n        }\n      }\nLAB_8259e40c:\n      iVar1 = *piVar14;\n      uVar12 = uVar12 + 1;\n      iVar13 = iVar13 + 4;\n    } while (uVar12 < (uint)(*(int *)(iVar3 + 0x78) - iVar1 >> 2));\n  }\n  if ((DAT_82dcde40 & 1) == 0) {\n    DAT_82dcde40 = DAT_82dcde40 | 1;\n    puVar7 = (undefined4 *)__0Symbol__QAA_PBD_Z(auStack_98,0xffffffff820aa318);\n    Function_82261CA8(0xffffffff82dcde38,*puVar7,local_90);\n    Function_828050F8(0xffffffff82c0e070);\n  }\n  Function_82725D28((ulonglong)*DAT_82dcde3c + 0x10,local_88);\n  Function_82735FE0(&local_80,*(int *)(*(int *)(iVar3 + 4) + 4) + iVar3 + 4,DAT_82dcde3c);\n  if ((local_7c & 0x10) != 0) {\n    Function_82260570(local_80);\n  }\n  return;\n}\n\n"
+  },
+  "12": {
+    "pair_id": "12",
+    "xenon_addr": "0x8269ea00",
+    "wii_symbol": "UpdateGameCymbalLanes__9GemPlayerFv",
+    "found": true,
+    "size_bytes": 348,
+    "xenon_func_name": "Function_8269EA00",
+    "entry_addr": "0x8269ea00",
+    "callees": [
+      {
+        "addr": "0x82803f30",
+        "xenon_name": "FUN_82803f30",
+        "wii_match": "FUN_80a3937c"
+      },
+      {
+        "addr": "0x82563f98",
+        "xenon_name": "FUN_82563f98",
+        "wii_match": "Current__13MetaPerformerFv"
+      },
+      {
+        "addr": "0x8274b8b0",
+        "xenon_name": "FUN_8274b8b0",
+        "wii_match": "GetUsingRealDrums__8SongDataCFv"
+      },
+      {
+        "addr": "0x8274b8b8",
+        "xenon_name": "FUN_8274b8b8",
+        "wii_match": "GetTrackType__8BandUserCFv"
+      },
+      {
+        "addr": "0x825116e0",
+        "xenon_name": "Function_825116E0",
+        "wii_match": "UserHasGHDrums__FP9LocalUser"
+      },
+      {
+        "addr": "0x8266d140",
+        "xenon_name": "Function_8266D140",
+        "wii_match": "GetGameplayOptions__8BandUserFv"
+      },
+      {
+        "addr": "0x827abe80",
+        "xenon_name": "FUN_827abe80",
+        "wii_match": "GetResponseMessage__Q26Quazal10RMCContextFv"
+      },
+      {
+        "addr": "0x82753450",
+        "xenon_name": "FUN_82753450",
+        "wii_match": "SetUseDiscoUnflip__8SongDataFb"
+      }
+    ],
+    "n_callees": 8,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_8269EA00(void)\n\n{\n  char cVar1;\n  undefined4 uVar2;\n  int *piVar3;\n  int iVar4;\n  char cVar6;\n  int *piVar5;\n  undefined8 uVar7;\n  \n  piVar3 = (int *)FUN_82803f30();\n  iVar4 = FUN_827abe80(piVar3[0x98]);\n  if (iVar4 != 0) {\n    return;\n  }\n  cVar6 = (**(code **)(*piVar3 + 0x1c))(piVar3);\n  if (cVar6 == '\\0') {\n    iVar4 = (**(code **)(*(int *)piVar3[0x98] + 0x18))();\n    if (iVar4 == 0) {\n      iVar4 = 0;\n    }\n    else {\n      iVar4 = *(int *)(*(int *)(iVar4 + 4) + 0xc) + iVar4 + 4;\n    }\n    cVar6 = Function_825116E0(iVar4);\n    if (cVar6 != '\\0') {\n      piVar5 = (int *)Function_8266D140(piVar3[0x98]);\n      cVar6 = (**(code **)(*piVar5 + 0x10))();\n      uVar7 = 1;\n      if (cVar6 == '\\0') goto LAB_8269eaa8;\n    }\n  }\n  uVar7 = 0;\nLAB_8269eaa8:\n  uVar2 = *(undefined4 *)(DAT_82dd0c98 + 4);\n  cVar6 = FUN_8274b8b0(uVar2);\n  if (cVar6 == '\\0') {\n    uVar7 = 0;\n    piVar3[0xc5] = 0;\n  }\n  else {\n    iVar4 = (**(code **)(*(int *)piVar3[0x98] + 0x10))();\n    piVar3[0xc5] = iVar4;\n    cVar6 = *(char *)(DAT_82dd09e8 + 0x31);\n    cVar1 = *(char *)(DAT_82dd09e8 + 0x32);\n    iVar4 = FUN_82563f98();\n    if ((*(char *)(iVar4 + 0x379) == '\\0') && (cVar6 == '\\0')) {\n      if (cVar1 != '\\0') {\n        piVar3[0xc5] = 0;\n      }\n    }\n    else {\n      piVar3[0xc5] = 0x1c;\n    }\n    if ((piVar3[0xc5] & 4U) != 0) {\n      uVar7 = 1;\n    }\n  }\n  FUN_82753450(uVar2,uVar7);\n  FUN_8274b8b8(uVar2,piVar3[0xc5]);\n  return;\n}\n\n"
+  },
+  "13": {
+    "pair_id": "13",
+    "xenon_addr": "0x82518de0",
+    "wii_symbol": "clear__Q211stlpmtx_std120_List_base<Q211stlpmtx_std21pair<6Symbol,6Symbol>,Q211stlpmtx_std52StlNodeAlloc<Q211stlpmtx_std21pair<6Symbol,6Symbol>>>Fv",
+    "found": true,
+    "size_bytes": 88,
+    "xenon_func_name": "?clear@?$_List_base@VAsyncTask@@V?$StlNodeAlloc@VAsyncTask@@@stlpmtx_std@@@stlpmtx_std@@QAAXXZ",
+    "entry_addr": "0x82518de0",
+    "callees": [
+      {
+        "addr": "0x82798278",
+        "xenon_name": "FUN_82798278",
+        "wii_match": "_MemOrPoolFreeSTL__Fi8PoolTypePv"
+      }
+    ],
+    "n_callees": 1,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\n/* [decomp] public: void __cdecl stlpmtx_std::_List_base<class AsyncTask, class\n   stlpmtx_std::StlNodeAlloc<class AsyncTask> >::clear(void) */\n\nvoid _clear____List_base_VAsyncTask__V__StlNodeAlloc_VAsyncTask___stlpmtx_std___stlpmtx_std__QAAXXZ\n               (undefined4 *param_1)\n\n{\n  undefined4 *puVar1;\n  undefined4 *puVar2;\n  \n  puVar2 = (undefined4 *)*param_1;\n  while (puVar2 != param_1) {\n    puVar1 = (undefined4 *)*puVar2;\n    FUN_82798278(0x24,puVar2);\n    puVar2 = puVar1;\n  }\n  *param_1 = param_1;\n  param_1[1] = param_1;\n  return;\n}\n\n"
+  },
+  "14": {
+    "pair_id": "14",
+    "xenon_addr": "0x82b7e618",
+    "wii_symbol": "Hit__4TailFv",
+    "found": true,
+    "size_bytes": 108,
+    "xenon_func_name": "Function_82B7E618",
+    "entry_addr": "0x82b7e618",
+    "callees": [
+      {
+        "addr": "0x82805b10",
+        "xenon_name": "FUN_82805b10",
+        "wii_match": null
+      }
+    ],
+    "n_callees": 1,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_82B7E618(int param_1)\n\n{\n  *(undefined4 *)(param_1 + 0x18) = 2;\n  if (*(char *)(param_1 + 0x4f8) == '\\0') {\n    *(undefined1 *)(*(int *)(param_1 + 0xc) + 8) = 1;\n  }\n  if (*(char *)(param_1 + 0x28) != '\\0') {\n    FUN_82805b10(param_1 + 0x2c,0,0x4b0);\n    *(undefined4 *)(param_1 + 0x4dc) = 0;\n  }\n  return;\n}\n\n"
+  },
+  "15": {
+    "pair_id": "15",
+    "xenon_addr": "0x826035a8",
+    "wii_symbol": "Unload__21CampaignSongInfoPanelFv",
+    "found": true,
+    "size_bytes": 84,
+    "xenon_func_name": "Function_826035A8",
+    "entry_addr": "0x826035a8",
+    "callees": [
+      {
+        "addr": "0x827eecf8",
+        "xenon_name": "Function_827EECF8",
+        "wii_match": null
+      }
+    ],
+    "n_callees": 1,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_826035A8(int param_1)\n\n{\n  undefined4 *puVar1;\n  \n  Function_827EECF8();\n  puVar1 = *(undefined4 **)(param_1 + 0x44);\n  if (puVar1 != (undefined4 *)0x0) {\n    (**(code **)*puVar1)(puVar1,1);\n  }\n  *(undefined4 *)(param_1 + 0x44) = 0;\n  return;\n}\n\n"
+  },
+  "16": {
+    "pair_id": "16",
+    "xenon_addr": "0x824e51e0",
+    "wii_symbol": "__ct<PCc,i>__Q211stlpmtx_std24pair<C6Symbol,8DataNode>FRCQ211stlpmtx_std11pair<PCc,i>_Pv",
+    "found": true,
+    "size_bytes": 80,
+    "xenon_func_name": "Function_824E51E0",
+    "entry_addr": "0x824e51e0",
+    "callees": [
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      }
+    ],
+    "n_callees": 1,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nint Function_824E51E0(int param_1,undefined4 *param_2)\n\n{\n  __0Symbol__QAA_PBD_Z(param_1,*param_2);\n  *(undefined4 *)(param_1 + 4) = param_2[1];\n  *(undefined4 *)(param_1 + 8) = 1;\n  return param_1;\n}\n\n"
+  },
+  "17": {
+    "pair_id": "17",
+    "xenon_addr": "0x82603958",
+    "wii_symbol": "Load__Q226@unnamed@MainHubPanel_cpp@17MainHubAdvanceMsgFR9BinStream",
+    "found": true,
+    "size_bytes": 88,
+    "xenon_func_name": "Function_82603958",
+    "entry_addr": "0x82603958",
+    "callees": [
+      {
+        "addr": "0x8279ff18",
+        "xenon_name": "Function_8279FF18",
+        "wii_match": "Write__9BinStreamFPCvi"
+      },
+      {
+        "addr": "0x827a0358",
+        "xenon_name": "??5BinStream@@QAAAAV0@AAVString@@@Z",
+        "wii_match": "__rs__9BinStreamFR6String"
+      }
+    ],
+    "n_callees": 2,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_82603958(int param_1,undefined8 param_2)\n\n{\n  byte local_20 [8];\n  \n  Function_8279FF18(param_2,local_20,1);\n  *(uint *)(param_1 + 4) = (uint)local_20[0];\n  __5BinStream__QAAAAV0_AAVString___Z(param_2,param_1 + 8);\n  return;\n}\n\n"
+  },
+  "18": {
+    "pair_id": "18",
+    "xenon_addr": "0x8266ecb0",
+    "wii_symbol": "SetLoadedPrefabChar__8BandUserFi",
+    "found": true,
+    "size_bytes": 76,
+    "xenon_func_name": "Function_8266ECB0",
+    "entry_addr": "0x8266ecb0",
+    "callees": [
+      {
+        "addr": "0x8266eaf8",
+        "xenon_name": "Function_8266EAF8",
+        "wii_match": "SetChar__8BandUserFP8CharData"
+      },
+      {
+        "addr": "0x82540840",
+        "xenon_name": "FUN_82540840",
+        "wii_match": "GetPrefabMgr__9PrefabMgrFv"
+      },
+      {
+        "addr": "0x826fbef0",
+        "xenon_name": "FUN_826fbef0",
+        "wii_match": "TrackName__8SongDataCFi"
+      }
+    ],
+    "n_callees": 3,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_8266ECB0(undefined8 param_1,undefined8 param_2)\n\n{\n  undefined8 uVar1;\n  \n  uVar1 = FUN_82540840();\n  uVar1 = FUN_826fbef0(uVar1,param_2);\n  Function_8266EAF8(param_1,uVar1);\n  return;\n}\n\n"
+  },
+  "19": {
+    "pair_id": "19",
+    "xenon_addr": "0x82532b48",
+    "wii_symbol": "SaveGlobalOptions__10ProfileMgrFR23FixedSizeSaveableStream",
+    "found": true,
+    "size_bytes": 532,
+    "xenon_func_name": "Function_82532B48",
+    "entry_addr": "0x82532b48",
+    "callees": [
+      {
+        "addr": "0x827a0108",
+        "xenon_name": "Function_827A0108",
+        "wii_match": "WriteEndian__9BinStreamFPCvi"
+      },
+      {
+        "addr": "0x8279ffc8",
+        "xenon_name": "?Write@BinStream@@QAAXPBXH@Z",
+        "wii_match": "Read__9BinStreamFPvi"
+      },
+      {
+        "addr": "0x82571cc8",
+        "xenon_name": "Function_82571CC8",
+        "wii_match": "Save__11ModifierMgrFR23FixedSizeSaveableStream"
+      }
+    ],
+    "n_callees": 3,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid Function_82532B48(int param_1,undefined8 param_2)\n\n{\n  undefined1 local_20 [4];\n  undefined4 local_1c;\n  \n  local_1c = 7;\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = *(undefined4 *)(param_1 + 0x58);\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = *(undefined4 *)(param_1 + 0x5c);\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = *(undefined4 *)(param_1 + 0x3c);\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = *(undefined4 *)(param_1 + 0x40);\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = *(undefined4 *)(param_1 + 0x44);\n  Function_827A0108(param_2,&local_1c,4);\n  local_1c = *(undefined4 *)(param_1 + 0x4c);\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 0x60);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_1c = *(undefined4 *)(param_1 + 0x48);\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 0x61);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_1c = *(undefined4 *)(param_1 + 100);\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 0x68);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_20[0] = *(undefined1 *)(param_1 + 0x69);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_1c = *(undefined4 *)(param_1 + 0x50);\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 0x54);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_20[0] = *(undefined1 *)(param_1 + 0x55);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_1c = *(undefined4 *)(param_1 + 0x98);\n  Function_827A0108(param_2,&local_1c,4);\n  local_20[0] = *(undefined1 *)(param_1 + 0x6a);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  local_20[0] = *(undefined1 *)(param_1 + 0x6b);\n  _Write_BinStream__QAAXPBXH_Z(param_2,local_20,1);\n  Function_82571CC8(DAT_82dcd660,param_2);\n  *(undefined1 *)(param_1 + 0x38) = 0;\n  return;\n}\n\n"
+  },
+  "20": {
+    "pair_id": "20",
+    "xenon_addr": "0x826d0108",
+    "wii_symbol": "__ct__14PlayerBehaviorFv",
+    "found": true,
+    "size_bytes": 100,
+    "xenon_func_name": "Function_826D0108",
+    "entry_addr": "0x826d0108",
+    "callees": [
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      }
+    ],
+    "n_callees": 1,
+    "strings": [
+      "default"
+    ],
+    "n_strings": 1,
+    "pseudo_c": "\nundefined1 * Function_826D0108(undefined1 *param_1)\n\n{\n  param_1[1] = 0;\n  *param_1 = 1;\n  param_1[2] = 0;\n  param_1[3] = 0;\n  param_1[4] = 0;\n  param_1[5] = 0;\n  __0Symbol__QAA_PBD_Z(param_1 + 8,0xffffffff82085e20);\n  *(undefined4 *)(param_1 + 0xc) = 2;\n  return param_1;\n}\n\n"
+  },
+  "21": {
+    "pair_id": "21",
+    "xenon_addr": "0x826966f0",
+    "wii_symbol": "CreateController__14ChordbookPanelFv",
+    "found": true,
+    "size_bytes": 232,
+    "xenon_func_name": "Function_826966F0",
+    "entry_addr": "0x826966f0",
+    "callees": [
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      },
+      {
+        "addr": "0x82803f34",
+        "xenon_name": "FUN_82803f34",
+        "wii_match": "memset"
+      },
+      {
+        "addr": "0x8276aef0",
+        "xenon_name": "Function_8276AEF0",
+        "wii_match": "NewController__FP4UserPC9DataArrayP23BeatMatchControllerSinkbb9TrackType"
+      },
+      {
+        "addr": "0x8266d140",
+        "xenon_name": "Function_8266D140",
+        "wii_match": "GetGameplayOptions__8BandUserFv"
+      },
+      {
+        "addr": "0x824fce58",
+        "xenon_name": "Function_824FCE58",
+        "wii_match": "SystemConfig__F6Symbol6Symbol6Symbol"
+      },
+      {
+        "addr": "0x8266adb0",
+        "xenon_name": "Function_8266ADB0",
+        "wii_match": null
+      }
+    ],
+    "n_callees": 6,
+    "strings": [
+      "controller",
+      "beatmatcher"
+    ],
+    "n_strings": 2,
+    "pseudo_c": "\nvoid Function_826966F0(void)\n\n{\n  int iVar1;\n  int iVar4;\n  undefined4 *puVar5;\n  undefined4 *puVar6;\n  undefined8 uVar2;\n  int *piVar7;\n  undefined8 uVar3;\n  undefined4 uVar8;\n  int iVar9;\n  undefined4 local_40;\n  undefined1 auStack_3c [4];\n  undefined1 auStack_38 [56];\n  \n  iVar4 = FUN_82803f34();\n  puVar5 = *(undefined4 **)(iVar4 + 0x6c);\n  if (puVar5 != (undefined4 *)0x0) {\n    (**(code **)*puVar5)(puVar5,1);\n  }\n  iVar9 = 0;\n  *(undefined4 *)(iVar4 + 0x6c) = 0;\n  iVar1 = *(int *)(*(int *)(iVar4 + 0x44) + 0x260);\n  Function_8266ADB0(&local_40,DAT_82dd0cb8,iVar1);\n  puVar5 = (undefined4 *)__0Symbol__QAA_PBD_Z(auStack_3c,0xffffffff820e5804);\n  puVar6 = (undefined4 *)__0Symbol__QAA_PBD_Z(auStack_38,0xffffffff820e57f8);\n  uVar2 = Function_824FCE58(*puVar6,*puVar5,local_40);\n  if (iVar1 != 0) {\n    iVar9 = *(int *)(*(int *)(iVar1 + 4) + 4) + iVar1 + 4;\n  }\n  piVar7 = (int *)Function_8266D140(iVar1);\n  uVar3 = (**(code **)(*piVar7 + 0x10))();\n  uVar8 = Function_8276AEF0(iVar9,uVar2,iVar4 + 0x3c,0,uVar3,10);\n  *(undefined4 *)(iVar4 + 0x6c) = uVar8;\n  return;\n}\n\n"
+  },
+  "22": {
+    "pair_id": "22",
+    "xenon_addr": "0x825a8520",
+    "wii_symbol": "SetPrimaryMetaScore__16LocalBandMachineFi",
+    "found": true,
+    "size_bytes": 28,
+    "xenon_func_name": "FUN_825a8520",
+    "entry_addr": "0x825a8520",
+    "callees": [
+      {
+        "addr": "0x825aa600",
+        "xenon_name": "Function_825AA600",
+        "wii_match": "SyncLocalMachine__14BandMachineMgrFUc"
+      }
+    ],
+    "n_callees": 1,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nvoid FUN_825a8520(int param_1,int param_2)\n\n{\n  if (param_2 == *(int *)(param_1 + 0x6c)) {\n    return;\n  }\n  *(int *)(param_1 + 0x6c) = param_2;\n  Function_825AA600(*(undefined4 *)(param_1 + 0x70),4);\n  return;\n}\n\n"
+  },
+  "23": {
+    "pair_id": "23",
+    "xenon_addr": "0x82b7d078",
+    "wii_symbol": "PitchNote__5LyricCFv",
+    "found": true,
+    "size_bytes": 24,
+    "xenon_func_name": "FUN_82b7d078",
+    "entry_addr": "0x82b7d078",
+    "callees": [],
+    "n_callees": 0,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nbool FUN_82b7d078(int param_1)\n\n{\n  return *(char *)(**(int **)(param_1 + 0x3c) + 0x2a) == '\\0';\n}\n\n"
+  },
+  "24": {
+    "pair_id": "24",
+    "xenon_addr": "0x82532198",
+    "wii_symbol": "GlobalOptionsNeedsSave__10ProfileMgrFv",
+    "found": true,
+    "size_bytes": 28,
+    "xenon_func_name": "FUN_82532198",
+    "entry_addr": "0x82532198",
+    "callees": [],
+    "n_callees": 0,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nundefined1 FUN_82532198(int param_1)\n\n{\n  if (*(int *)(param_1 + 0x34) != 1) {\n    return 0;\n  }\n  return *(undefined1 *)(param_1 + 0x38);\n}\n\n"
+  },
+  "25": {
+    "pair_id": "25",
+    "xenon_addr": "0x826d99b0",
+    "wii_symbol": "GetFrameMatchType__6SingerFv",
+    "found": true,
+    "size_bytes": 44,
+    "xenon_func_name": "FUN_826d99b0",
+    "entry_addr": "0x826d99b0",
+    "callees": [],
+    "n_callees": 0,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nundefined4 FUN_826d99b0(int *param_1)\n\n{\n  if (param_1[0x1c] != -1) {\n    return *(undefined4 *)(*(int *)(*(int *)(*param_1 + 0x390) + param_1[0x1c] * 4) + 0x9c);\n  }\n  return 4;\n}\n\n"
+  },
+  "26": {
+    "pair_id": "26",
+    "xenon_addr": "0x826dbaa8",
+    "wii_symbol": "TambourineGems__17TambourineManagerCFv",
+    "found": true,
+    "size_bytes": 24,
+    "xenon_func_name": "FUN_826dbaa8",
+    "entry_addr": "0x826dbaa8",
+    "callees": [],
+    "n_callees": 0,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nlonglong FUN_826dbaa8(int param_1)\n\n{\n  return (ulonglong)*(uint *)(**(int **)(*(int *)(param_1 + 0x28) + 0x390) + 8) + 0x24;\n}\n\n"
+  },
+  "27": {
+    "pair_id": "27",
+    "xenon_addr": "0x8252c728",
+    "wii_symbol": "DifficultySortPart__12MusicLibraryCFv",
+    "found": true,
+    "size_bytes": 584,
+    "xenon_func_name": "Function_8252C728",
+    "entry_addr": "0x8252c728",
+    "callees": [
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      },
+      {
+        "addr": "0x8252b900",
+        "xenon_name": "Function_8252B900",
+        "wii_match": "Save__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgCFR9BinStream"
+      },
+      {
+        "addr": "0x82803f14",
+        "xenon_name": "FUN_82803f14",
+        "wii_match": "__restore_gpr"
+      }
+    ],
+    "n_callees": 3,
+    "strings": [
+      "guitar",
+      "vocals",
+      "real_guitar",
+      "real_bass",
+      "real_keys"
+    ],
+    "n_strings": 5,
+    "pseudo_c": "\nundefined4 * Function_8252C728(undefined8 param_1,undefined8 param_2)\n\n{\n  undefined4 *puVar1;\n  undefined4 uVar2;\n  \n  puVar1 = (undefined4 *)FUN_82803f14();\n  if ((DAT_82dcc0e8 & 1) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 1;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0e4,0xffffffff820105d0);\n  }\n  if ((DAT_82dcc0e8 & 2) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 2;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0e0,0xffffffff82013988);\n  }\n  if ((DAT_82dcc0e8 & 4) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 4;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0dc,0xffffffff82013980);\n  }\n  if ((DAT_82dcc0e8 & 8) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 8;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0d8,0xffffffff820108e4);\n  }\n  if ((DAT_82dcc0e8 & 0x10) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 0x10;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0d4,0xffffffff8201d27c);\n  }\n  if ((DAT_82dcc0e8 & 0x20) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 0x20;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0d0,0xffffffff8201d274);\n  }\n  if ((DAT_82dcc0e8 & 0x40) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 0x40;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0cc,0xffffffff8201d268);\n  }\n  if ((DAT_82dcc0e8 & 0x80) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 0x80;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0c8,0xffffffff8201d250);\n  }\n  if ((DAT_82dcc0e8 & 0x100) == 0) {\n    DAT_82dcc0e8 = DAT_82dcc0e8 | 0x100;\n    __0Symbol__QAA_PBD_Z(0xffffffff82dcc0c4,0xffffffff8201d25c);\n  }\n  uVar2 = Function_8252B900(param_2);\n  switch(uVar2) {\n  case 0:\n  case 6:\n    uVar2 = DAT_82dcc0d8;\n    break;\n  case 1:\n    uVar2 = DAT_82dcc0dc;\n    break;\n  case 2:\n    uVar2 = DAT_82dcc0e0;\n    break;\n  case 3:\n  case 4:\n    uVar2 = DAT_82dcc0d4;\n    break;\n  case 5:\n    uVar2 = DAT_82dcc0d0;\n    break;\n  case 7:\n    uVar2 = DAT_82dcc0cc;\n    break;\n  case 8:\n    uVar2 = DAT_82dcc0c8;\n    break;\n  case 9:\n    uVar2 = DAT_82dcc0c4;\n    break;\n  case 10:\n    uVar2 = DAT_82dcc0e4;\n    break;\n  default:\n    __0Symbol__QAA_PBD_Z(puVar1,PTR_DAT_82c411b0);\n    return puVar1;\n  }\n  *puVar1 = uVar2;\n  return puVar1;\n}\n\n"
+  },
+  "28": {
+    "pair_id": "28",
+    "xenon_addr": "0x82670e70",
+    "wii_symbol": "TrackTypeToScoreType__F9TrackTypebb",
+    "found": true,
+    "size_bytes": 160,
+    "xenon_func_name": "FUN_82670e70",
+    "entry_addr": "0x82670e70",
+    "callees": [],
+    "n_callees": 0,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nbyte FUN_82670e70(undefined4 param_1,char param_2,char param_3)\n\n{\n  switch(param_1) {\n  case 0:\n    return -(param_3 != '\\0') & 6;\n  case 1:\n    return 2;\n  case 2:\n    return 1;\n  case 3:\n    return (param_2 != '\\0') + 3;\n  case 4:\n    return 5;\n  case 5:\n    return 9;\n  case 6:\n    return 7;\n  default:\n    return 0xb;\n  case 8:\n    return 8;\n  case 10:\n  case 0xb:\n  case 0xc:\n    return 10;\n  }\n}\n\n"
+  },
+  "29": {
+    "pair_id": "29",
+    "xenon_addr": "0x8233afb0",
+    "wii_symbol": "ActiveScoreType__12MusicLibraryCFv",
+    "found": true,
+    "size_bytes": 632,
+    "xenon_func_name": "Function_8233AFB0",
+    "entry_addr": "0x8233afb0",
+    "callees": [
+      {
+        "addr": "0x8279b788",
+        "xenon_name": "??0Symbol@@QAA@PBD@Z",
+        "wii_match": "Enter__11RndPollableFv"
+      },
+      {
+        "addr": "0x82803f10",
+        "xenon_name": "FUN_82803f10",
+        "wii_match": "FUN_80a3935c"
+      },
+      {
+        "addr": "0x8227caa0",
+        "xenon_name": "Function_8227CAA0",
+        "wii_match": "MakeString<i>__FPCci_PCc"
+      }
+    ],
+    "n_callees": 3,
+    "strings": [
+      "guitar",
+      "vocals",
+      "real_guitar",
+      "real_bass",
+      "real_keys",
+      "pending",
+      "unrecognized instrument type \"%d\""
+    ],
+    "n_strings": 7,
+    "pseudo_c": "\nvoid Function_8233AFB0(undefined8 param_1,undefined8 param_2)\n\n{\n  int iVar1;\n  undefined4 uVar2;\n  \n  iVar1 = FUN_82803f10();\n  *(int *)(iVar1 + 0x10) = (int)param_2;\n  if ((DAT_82c8d094 & 1) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 1;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d090,0xffffffff82013988);\n  }\n  if ((DAT_82c8d094 & 2) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 2;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d08c,0xffffffff82013980);\n  }\n  if ((DAT_82c8d094 & 4) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 4;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d088,0xffffffff820108e4);\n  }\n  if ((DAT_82c8d094 & 8) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 8;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d084,0xffffffff8201d27c);\n  }\n  if ((DAT_82c8d094 & 0x10) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 0x10;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d080,0xffffffff8201d274);\n  }\n  if ((DAT_82c8d094 & 0x20) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 0x20;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d07c,0xffffffff8201d268);\n  }\n  if ((DAT_82c8d094 & 0x40) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 0x40;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d078,0xffffffff8201d250);\n  }\n  if ((DAT_82c8d094 & 0x80) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 0x80;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d074,0xffffffff8201d25c);\n  }\n  if ((DAT_82c8d094 & 0x100) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 0x100;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d070,0xffffffff820126fc);\n  }\n  if ((DAT_82c8d094 & 0x200) == 0) {\n    DAT_82c8d094 = DAT_82c8d094 | 0x200;\n    __0Symbol__QAA_PBD_Z(0xffffffff82c8d06c,0xffffffff8201d248);\n  }\n  switch((int)param_2 + 2) {\n  case 0:\n    uVar2 = DAT_82c8d06c;\n    break;\n  case 1:\n    uVar2 = DAT_82c8d070;\n    break;\n  case 2:\n    uVar2 = DAT_82c8d090;\n    break;\n  case 3:\n    uVar2 = DAT_82c8d088;\n    break;\n  case 4:\n    uVar2 = DAT_82c8d08c;\n    break;\n  case 5:\n    uVar2 = DAT_82c8d084;\n    break;\n  case 6:\n    uVar2 = DAT_82c8d080;\n    break;\n  case 7:\n    uVar2 = DAT_82c8d07c;\n    break;\n  case 8:\n    uVar2 = DAT_82c8d078;\n    break;\n  case 9:\n    uVar2 = DAT_82c8d074;\n    break;\n  default:\n    Function_8227CAA0(0xffffffff82039384,param_2);\n    return;\n  }\n  *(undefined4 *)(iVar1 + 0xc) = uVar2;\n  return;\n}\n\n"
+  },
+  "30": {
+    "pair_id": "30",
+    "xenon_addr": "0x826798b0",
+    "wii_symbol": "GetRankData__11SingerStatsCFi",
+    "found": true,
+    "size_bytes": 16,
+    "xenon_func_name": "FUN_826798b0",
+    "entry_addr": "0x826798b0",
+    "callees": [],
+    "n_callees": 0,
+    "strings": [],
+    "n_strings": 0,
+    "pseudo_c": "\nlonglong FUN_826798b0(uint *param_1,ulonglong param_2)\n\n{\n  return (param_2 & 0x1fffffff) * 8 + (ulonglong)*param_1;\n}\n\n"
+  }
+}

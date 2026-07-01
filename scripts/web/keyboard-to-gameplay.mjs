@@ -28,6 +28,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
 const arg = (n, d) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : d; };
 const PORT = parseInt(arg('--port', '8421'), 10) || 8421;
+const QUERY = arg('--query', '');   // e.g. 'env=RB3_LOADER_READAHEAD%3D0' — raw query string appended to /
 const DIFF = arg('--diff', 'hard');
 const SONG_DOWNS = parseInt(arg('--song-downs', '3'), 10);
 const OUT = resolve(__dirname, 'results/kbd2game');
@@ -97,7 +98,7 @@ page.on('console', (m) => logs.push(m.text()));
 
 let rc = 1;
 try {
-  await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(`http://127.0.0.1:${PORT}/${QUERY ? '?' + QUERY : ''}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   // PURE KEYBOARD: disable the splash verb-inject hook so EVERY menu crossing —
   // splash included — flows through the raw SendButtonMessages path with one
   // consistent pad-0 user. (rb3WebUseAids is left unset, so song-select/part

@@ -1,0 +1,17 @@
+{
+  "pair": 11,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "DoFileRead__12VorbisReaderFv",
+  "category": "system",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Control-flow shape is an exact cross-compiler match. Both bodies open with an early single-byte flag guard (Xenon +0xEF, Wii unkE3=+0xE3) that returns 0/falls through, then a compound (byte-flag != 0 && int/ptr-field == 0) gate (Xenon +0x3c/+0x38, Wii unk34/unk30), then a vtable-dispatched predicate call whose == 0 result gates the read. The distinctive buffer-fill gate is identical: load a sub-object pointer (Xenon +0x50, Wii unk48), compute (*(p+8) - *(p+0xc)) and compare < 0x10000. On pass, both call ogg_sync_buffer with arg 0x4000 -- the SINGLE Xenon callee 0x82BF8EF8 resolves via matches.json to the Wii callee ogg_sync_buffer (the strongest cross-compiler signal), and both store its result into the buffer-pointer field. Both then issue a vtable-slot read of 0x4000 bytes (Xenon slot +0xc, Wii slot 0x14) with (obj, buf, 0x4000) args, store an EOF byte via another vtable slot into the +0xEF/+0xE3 flag, and set the return flag to 1. The second block matches too: a vtable call taking a stack out-param (Xenon +0x34/local_20, Wii unk3C/&sp10) gated on an int field == 0 (Xenon +0x40, Wii unk38), with parallel return-1 success paths and a final vtable EOF-flag refresh. The 0x4000 (read size) and 0x10000 (threshold) literals appear identically on both sides. All divergences are expected MWCC/MSVC artifacts: uniform struct-field offset shifts (0xEF vs 0xE3, +0x50 vs +0x48, +0x30 vs +0x28, vtable slots offset by +8) from different struct packing, and the Wii-only inlined AutoTimer profiling + MILO_ASSERT (Fail__5Debug/MakeString at line 0x1F9, drawing on the VorbisReader.cpp assert string pool) which is a MWCC debug-build feature absent from the MSVC build. No genuine discriminator exists: no differing node-size literal, no valid-vs-valid type tag, and no Xenon-side string naming a different function/TU.",
+  "key_evidence": [
+    "Single resolved callee agrees across compilers: Xenon 0x82BF8EF8 -> ogg_sync_buffer, same as Wii body's ogg_sync_buffer call, both with literal 0x4000.",
+    "Distinctive buffer gate identical: ptr-field load then (*(p+8)-*(p+0xc)) < 0x10000 on both sides (0x10000 literal matches).",
+    "Parallel two-block control flow: early byte-flag guard, (flag && field==0) gate, ogg_sync_buffer fill, vtable read of 0x4000, EOF-flag store, then out-param vtable call gated on int field==0 with return-1 success paths.",
+    "Offset shifts are uniform packing differences (0xEF/0xE3, 0x50/0x48, 0x30/0x28, vtable +8); no discriminating literal or type tag.",
+    "Wii-only AutoTimer/MILO_ASSERT instrumentation (VorbisReader.cpp assert pool, Fail__5Debug) is an expected MWCC-debug-vs-MSVC artifact, not a difference.",
+    "Xenon body references no strings; Wii string pool names VorbisReader.cpp and confirms (does not contradict) the identity."
+  ]
+}

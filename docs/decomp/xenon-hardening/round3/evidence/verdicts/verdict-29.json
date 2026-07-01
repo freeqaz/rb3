@@ -1,0 +1,16 @@
+{
+  "pair": 29,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "__ct__Q26Quazal11IDGeneratorFv",
+  "category": "network",
+  "stratum": "BSIM 15-20",
+  "reasoning": "Both bodies are the same constructor shape, step-for-step: (1) call the DO base-class ctor, (2) store the vtable at this+0, (3) two small sub-object ctors, (4) an RMCContext ctor with the exact 3-arg form (&field, &localZero, 1), (5) zero a contiguous block of fields, (6) a trailing float/DAT store. The DECISIVE signal is callee Function_82A6E688 resolving EXACTLY to __ct__Q26Quazal10RMCContextFQ26Quazal8DOHandleb -- the same callee the Wii body calls, at the SAME byte offset 0x90, with the same trailing literal 1 argument. An exact 3-arg callee agreement across the MWCC/MSVC boundary is very hard to fake. The only callee discrepancy (Function_82AC26D0 resolves to __ct__Q26Quazal16_DO_VoiceChannelFv whereas Wii calls __ct__Q26Quazal15_DO_IDGeneratorFv) is a matches.json sibling-resolution collision: both are near-identical _DO_* DuplicatedObject base ctors (0x54 vs 0x5C bytes, confirmed distinct symbols in symbols.txt) that BSim could not disambiguate -- and the resolved partner being a sibling DO base ctor weakly CORROBORATES the Quazal-DO family rather than refuting it. The layout offset deltas (Range ctors at byte 0x7C/0x84 on Wii vs the two 0x78/0x80 sub-object ctors on Xenon; trailing float at 0x138 vs DAT at 0x150) are consistent with MWCC-vs-MSVC struct packing/alignment shifts, i.e. the validated cross-compiler artifact class (shifted struct-field offsets), not a genuine discriminator. No referenced strings on either side, so no string-based refutation.",
+  "key_evidence": [
+    "Function_82A6E688 -> __ct__Q26Quazal10RMCContextFQ26Quazal8DOHandleb: EXACT callee match, same byte offset 0x90, same 3-arg (&field, &localZero, 1) shape -- decisive cross-compiler identity signal.",
+    "Identical constructor control-flow shape: base DO ctor -> vtable store at this+0 -> two sub-object ctors -> RMCContext ctor -> field-zeroing block -> trailing float store.",
+    "_DO_VoiceChannel vs _DO_IDGenerator base-ctor mismatch is a known BSim sibling-resolution collision (both ~0x54-0x5C-byte _DO_* base ctors); the resolved sibling is itself a DuplicatedObject base ctor, weakly corroborating the Quazal-DO family.",
+    "Offset deltas (Range ctors 0x7C/0x84 vs 0x78/0x80; float 0x138 vs DAT 0x150) are validated MWCC-vs-MSVC struct-packing artifacts, not discriminators.",
+    "No referenced strings on either side -- no string refutation possible."
+  ]
+}

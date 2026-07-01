@@ -1,0 +1,17 @@
+{
+  "pair": 8,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "Conceal__8BandListFv",
+  "category": "system",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Exact cross-compiler structural match. Both bodies are the identical small guarded pattern: if (intField != 2) { intField = 1; floatField = (float)Call(&TheTaskMgr_singleton); }. The guard constant (2) and store constant (1) agree exactly between Wii and Xenon. The single resolved callee is the strongest signal: Xenon's FUN_82722790 maps via matches.json to UISeconds__7TaskMgrCFv, which is precisely the callee the Wii body calls (UISeconds__7TaskMgrCFv(&TheTaskMgr)); the Xenon arg 0xffffffff82dd3a38 is the Xenon TheTaskMgr singleton address, mirroring Wii's &TheTaskMgr. The only deltas are the systematic, expected struct-offset shift (int/float fields at 0x2E8/0x2EC on Wii vs 0x33c/0x340 on Xenon) — the two fields remain adjacent and 4 bytes apart on both sides, a packing/base-size artifact explicitly validated as non-discriminating. No referenced strings refute the identity (0 strings). No genuine sibling-alias discriminator (no node-size literal or valid-vs-valid type-tag mismatch).",
+  "key_evidence": [
+    "Resolved callee FUN_82722790 -> UISeconds__7TaskMgrCFv matches the exact Wii callee (cross-compiler agreement, strongest signal)",
+    "Identical control flow: if (field != 2) { field = 1; floatField = (float)call(singleton); }",
+    "Guard constant 2 and store constant 1 agree exactly on both sides",
+    "Xenon call arg 0xffffffff82dd3a38 = Xenon TheTaskMgr singleton, mirroring Wii &TheTaskMgr",
+    "Field-offset shift (0x2E8/0x2EC vs 0x33c/0x340) is a validated struct-packing artifact; fields stay 4 bytes apart on both",
+    "No refuting strings (0 referenced); no genuine sibling discriminator present"
+  ]
+}

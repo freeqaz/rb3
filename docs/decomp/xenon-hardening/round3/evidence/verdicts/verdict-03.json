@@ -1,0 +1,15 @@
+{
+  "pair": 3,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "deflateInit_",
+  "category": "system",
+  "stratum": "HIGH",
+  "reasoning": "Both bodies are trivial thunk-forwarders that tail-call the same partner: the single Xenon callee FUN_82B29018 resolves via matches.json to Wii deflateInit2_, which is exactly the only function the Wii body calls. The forwarded literal arguments are identical on both sides (method=8, windowBits=0xF, memLevel=8, strategy=0) -- these are the canonical zlib deflateInit_ defaults that forward to deflateInit2_(level=8/0xF/8/0, stream, version). The level/stream/version passthrough args (param_1/param_2/param_3/param_4 on Xenon; arg2/arg3 + implicit on Wii) differ only in argument-position rendering, an expected calling-convention/regalloc artifact. Control-flow shape (single tail call, tiny body: Wii 0x1C, Xenon 28 bytes) agrees. No referenced strings on either side (expected for a leaf forwarder), so no string contradiction. No sibling-aliasing discriminator present: no differing node-size literal, no conflicting type tag, no contradicting partner name -- the constant set and resolved callee both point unambiguously at deflateInit_.",
+  "key_evidence": [
+    "Resolved-callee agreement: Xenon FUN_82B29018 -> Wii deflateInit2_; Wii body's only call is deflateInit2_ (cross-compiler match).",
+    "Identical forwarded literals on both sides: 8, 0xF, 8, 0 -- the canonical zlib deflateInit_ defaults passed to deflateInit2_.",
+    "Both are single-tail-call thunks of consistent tiny size (Wii 0x1C / Xenon 28 bytes).",
+    "No strings to refute; argument-order differences are calling-convention rendering artifacts, not discriminators."
+  ]
+}

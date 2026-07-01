@@ -30,7 +30,7 @@ void PassiveMessageQueue::Poll() {
         }
     }
     bool running = mTimer.Running();
-    if (running && mCallback->Handle(is_message_hiding_msg, true).Int() == 0) {
+    if (!running && mCallback->Handle(is_message_hiding_msg, true).Int() == 0) {
         if (!mQueue.empty()) {
             PassiveMessage *message = GetAndPreProcessFirstMessage();
             MILO_ASSERT(message, 0x33);
@@ -40,7 +40,16 @@ void PassiveMessageQueue::Poll() {
             mTimer.Restart();
             mCallback->Handle(show_message_msg, true);
         } else {
+#ifdef HX_NATIVE
+            // The passive_messages.milo in this build defines no clear_pics DTA
+            // handler, so warn=true spams the log at panel-enter whenever the queue
+            // is empty. The warn flag ONLY gates the unhandled-msg warning, not
+            // handler dispatch, so warn=false still runs any handler that exists and
+            // merely silences the noise. Wii keeps warn=true below (byte-identical).
+            mCallback->Handle(clear_pics_msg, false);
+#else
             mCallback->Handle(clear_pics_msg, true);
+#endif
         }
     }
 }

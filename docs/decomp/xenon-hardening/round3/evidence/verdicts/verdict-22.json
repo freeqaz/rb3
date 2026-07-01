@@ -1,0 +1,15 @@
+{
+  "pair": 22,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "GetURL__Q26Quazal14ConnectionInfoCFi",
+  "category": "network",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Both bodies are an exact structural match for Quazal::ConnectionInfo::GetURL(int) const, a 5-case accessor returning one of five consecutive pointer fields with an empty-string fallback. (1) Field offsets are IDENTICAL and in the same case order on both sides: index 0->+0x4, 1->+0x8, 2->+0xc, 3->+0x10, 4->+0x14 (Wii lwz r5,0xN(r3); Xenon *(param_1+0xN)). No shifted-offset / different-instantiation discriminator. (2) Same number of cases (0-4). (3) Same NULL-fallback-to-string-pool structure: both load the field, test for zero, and on zero substitute a static string-pool constant (Wii @stringBase0 empty-string base; Xenon &DAT_82000c2d), then return the pointer. (4) Leaf function with no callees on both sides -- consistent, nothing to mis-resolve and nothing contradicting. The only divergence is the out-of-range path: MSVC emits an outer 'if (param_2 < 5)' range guard while MWCC falls through (b .L_800768B4) leaving r5=0; both yield NULL->fallback for any unmatched index. This is an expected MWCC-vs-MSVC switch-lowering difference, not a real discriminator. No contradicting strings (none referenced).",
+  "key_evidence": [
+    "Identical, unshifted field-offset sequence 0x4/0x8/0xc/0x10/0x14 mapped to the same case indices 0-4 on both sides",
+    "Same 5-case count and same NULL-check + string-pool fallback + pointer-return control-flow shape",
+    "Both are leaf functions (0 callees) -- consistent",
+    "Out-of-range divergence (Xenon 'param_2 < 5' guard vs Wii fall-through) is benign, semantically identical switch lowering"
+  ]
+}

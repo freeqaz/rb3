@@ -1,0 +1,40 @@
+{
+ "note": "Round-2 judge verdicts over the 30-pair band3 ACCEPT non-seed evidence sample (docs/decomp/xenon-hardening/round2/evidence/pair-NN.md). Human-grade ground truth injected by the round-2 runner; consumed by tools/ghidra/grow_xenon_holdout.py. precision over all 30 = 27/30 = 0.900 (bsim 19/21, non_bsim 8/9).",
+ "summary": {
+  "all": {"correct": 27, "wrong": 3, "uncertain": 0, "precision": 0.9},
+  "bsim": {"correct": 19, "wrong": 2, "uncertain": 0, "precision": 0.9047619047619048},
+  "non_bsim": {"correct": 8, "wrong": 1, "uncertain": 0, "precision": 0.8888888888888888}
+ },
+ "per_pair": [
+  {"pair_id": "01", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "02", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "03", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "04", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "05", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "06", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "07", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "08", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "09", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "10", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "11", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "12", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "13", "verdict": "wrong", "confidence": "medium", "evidence": "Node-size literal to _MemOrPoolFreeSTL differs: Wii passes 16 (pair<Symbol,Symbol> = 8-byte payload) vs Xenon 0x24=36 (28-byte payload) -> different template instantiation."},
+  {"pair_id": "14", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "15", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "16", "verdict": "wrong", "confidence": "high", "evidence": "Xenon stores DataNode type tag 1 (kDataFloat) at this+8; Wii __ct<PCc,i> stores 6 (kDataInt) -- the float sibling __ct<PCc,f> at 0x803e6740 is the true partner."},
+  {"pair_id": "17", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "18", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "19", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "20", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "21", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "22", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "23", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "24", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "25", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "26", "verdict": "correct", "confidence": "medium"},
+  {"pair_id": "27", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "28", "verdict": "correct", "confidence": "high"},
+  {"pair_id": "29", "verdict": "wrong", "confidence": "high", "evidence": "Xenon strings 'unrecognized instrument type \"%d\"' + guitar/vocals/real_* match BandTrack::SetInstrument (BandTrack.cpp:510), not MusicLibrary::ActiveScoreType."},
+  {"pair_id": "30", "verdict": "correct", "confidence": "medium"}
+ ]
+}

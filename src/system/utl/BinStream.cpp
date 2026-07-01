@@ -7,6 +7,9 @@
 #include "utl/TextStream.h"
 #include "os/Debug.h"
 #include "os/Endian.h"
+#ifdef HX_NATIVE
+#include "mtrace_wrap.h"  // milo-trace W3 per-call-site capture (env-gated, no-op unless RB3_MTRACE_WRAP=1)
+#endif
 
 #define BIN_STREAM_BUF_SIZE 0x200U
 
@@ -43,6 +46,9 @@ void BinStream::ReadString(char *c, int i) {
         MILO_FAIL("String chars %d > %d", (unsigned int)(a + 1), i);
     Read(c, a);
     c[a] = 0;
+#ifdef HX_NATIVE
+    MTRACE_WRAP_READSTRING(a, i, *this, c);  // milo-trace W5 length-prefixed read site
+#endif
 }
 
 BinStream &BinStream::operator>>(Symbol &s) {
@@ -128,6 +134,9 @@ void BinStream::Seek(int offset, SeekType type) {
     MILO_ASSERT(!Fail(), 0xDF);
     MILO_ASSERT(!mCrypto, 0xE2);
     SeekImpl(offset, type);
+#ifdef HX_NATIVE
+    MTRACE_WRAP_SEEK(offset, type, *this);  // milo-trace W5 SeekType offset-arithmetic site
+#endif
 }
 
 inline void SwapData(const void *v1, void *v2, int num_bytes) {
@@ -161,6 +170,7 @@ inline void SwapData(const void *v1, void *v2, int num_bytes) {
 void BinStream::ReadEndian(void *data, int bytes) {
     Read(data, bytes);
 #ifdef HX_NATIVE
+    MTRACE_WRAP_READENDIAN_PRE(data, bytes);
     // mLittleEndian describes the FILE's endianness, not the host's.
     // On a little-endian host (x86_64/clang LP64), the file matches the host when
     // it is LE, so we only swap when the file is big-endian (!mLittleEndian).
@@ -169,6 +179,7 @@ void BinStream::ReadEndian(void *data, int bytes) {
     if (!mLittleEndian) {
         SwapData(data, data, bytes);
     }
+    MTRACE_WRAP_READENDIAN_POST(data, bytes, mLittleEndian, Tell(), *this);
 #else
     if (mLittleEndian) {
         SwapData(data, data, bytes);
@@ -178,17 +189,28 @@ void BinStream::ReadEndian(void *data, int bytes) {
 
 void BinStream::WriteEndian(const void *void_data, int bytes) {
 #ifdef HX_NATIVE
+    // milo-trace W5 write-side endian site. PRE snapshots the caller's source
+    // bytes; POST records the bytes that actually get written (swapped or not).
+    MTRACE_WRAP_WRITEENDIAN_PRE(void_data, bytes);
     // See ReadEndian: on a little-endian host, swap only when the target file is
     // big-endian (!mLittleEndian).
     if (!mLittleEndian) {
+        u64 output[2];
+        SwapData(void_data, output, bytes);
+        MTRACE_WRAP_WRITEENDIAN_POST(output, bytes, mLittleEndian, *this);
+        Write(output, bytes);
+    } else {
+        MTRACE_WRAP_WRITEENDIAN_POST(void_data, bytes, mLittleEndian, *this);
+        Write(void_data, bytes);
+    }
 #else
     if (mLittleEndian) {
-#endif
         u64 output[2];
         SwapData(void_data, output, bytes);
         Write(output, bytes);
     } else
         Write(void_data, bytes);
+#endif
 }
 
 #ifdef MILO_DEBUG

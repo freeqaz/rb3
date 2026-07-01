@@ -57,6 +57,12 @@ void RB3TraceLogRateLimited(const char *lvl, const char *msg) {
 const char *kAssertStr = "File: %s Line: %d Error: %s\n";
 Debug TheDebug;
 jmp_buf TheDebugJump;
+#ifdef HX_NATIVE
+// MILO_TRY message passed out-of-band. longjmp's int value truncates a 64-bit
+// `const char*` on LP64, so the fail path stashes the message here right before
+// the longjmp and MILO_TRY reads it back (instead of recovering a garbage ptr).
+const char *TheDebugFailMsg = 0;
+#endif
 DebugNotifier TheDebugNotifier;
 DebugFailer TheDebugFailer;
 
@@ -197,6 +203,50 @@ void Debug::Fail(const char *msg) {
     }
     return;
 #endif
+#ifdef HX_NATIVE
+    // Re-entrancy / stack-overflow guard (native only — Wii path below is byte-
+    // identical). On native, a hard-fail BURST (e.g. the /api/dta/eval debug tool
+    // firing ~15 consecutive misses) can drive Debug::Fail into an unbounded
+    // self-recursion that overflows the C stack and SIGSEGVs:
+    //   Debug::Fail -> MemPushHeap (line below) -> MemPushHeap's own MILO_ASSERT
+    //   re-enters Debug::Fail -> MemPushHeap -> ...   (643-frame coredump observed)
+    // The Wii build can't recurse here this way (no longjmp leak accelerant, fewer
+    // nested MILO_TRY scopes, and a Debug::Modal that halts), but on the host a
+    // run-time tool can. Two native-only safeguards, both gated so the Wii code
+    // generation is unchanged:
+    //   (1) When inside a MILO_TRY scope (mTry != 0), take the clean longjmp BEFORE
+    //       touching MemPushHeap. The matching MemPopHeap never runs on the longjmp
+    //       path anyway (the longjmp skips it), so the push is pure overhead AND the
+    //       thing that overflows the heap-stack -> the recursion's first link. Doing
+    //       the longjmp first removes that link entirely for the common (caught) case.
+    //   (2) A depth counter that, on genuine re-entry (MemPushHeap or MakeString
+    //       itself failing), breaks the loop instead of recursing: log once and
+    //       return so the stack unwinds rather than overflowing.
+    static int sFailDepth = 0;
+    if (sFailDepth > 0) {
+        // We are already inside Debug::Fail and something it called (MemPushHeap's
+        // assert, MakeString, the heap) re-failed. Do NOT recurse: that is the
+        // burst stack-overflow. If a try-scope is active, longjmp out cleanly;
+        // otherwise just return so the outer Fail finishes/unwinds.
+        if (mTry != 0) {
+            mTry--;
+            TheDebugFailMsg = msg;
+            longjmp(TheDebugJump, 1);
+        }
+        return;
+    }
+    if (!mNoDebug && MainThread() && mTry != 0) {
+        // Common caught-fail fast path: clean longjmp without the MemPushHeap that
+        // seeds the recursion. msg is passed out-of-band (see note below).
+        mTry--;
+        TheDebugFailMsg = msg;
+        longjmp(TheDebugJump, 1);
+    }
+    sFailDepth++;
+    struct FailDepthGuard {
+        ~FailDepthGuard() { sFailDepth--; }
+    } failDepthGuard;
+#endif
     static int x = MemFindHeap("main");
     MemPushHeap(x);
     if (mNoDebug)
@@ -215,7 +265,17 @@ void Debug::Fail(const char *msg) {
             mTry--;
 #ifdef HX_NATIVE
             // glibc longjmp takes jmp_buf (array, decays to ptr); MWCC took &buf.
-            longjmp(TheDebugJump, (int)msg);
+            // (int)msg would truncate the 64-bit ptr on LP64 -> garbage in
+            // MILO_CATCH; pass it out-of-band and longjmp a non-zero sentinel.
+            // NOTE: with the native fast-path above (mTry!=0 longjmps before the
+            // MemPushHeap), this branch is now effectively unreachable on native
+            // (it would need !MainThread(), which loops forever above). Kept for
+            // structural fidelity with the Wii path. longjmp skips the
+            // FailDepthGuard destructor, so decrement sFailDepth by hand first to
+            // avoid wedging the guard at >0.
+            sFailDepth--;
+            TheDebugFailMsg = msg;
+            longjmp(TheDebugJump, 1);
 #else
             longjmp(&TheDebugJump, (int)msg);
 #endif

@@ -158,7 +158,6 @@ void CharEyes::Exit() {
 }
 
 void CharEyes::Highlight() {
-bool matchesFilter;
 #ifdef MILO_DEBUG
     if (GetHead()) {
         RndGraph *oneframe = RndGraph::GetOneFrame();
@@ -168,11 +167,8 @@ bool matchesFilter;
             if (trans) {
                 const Transform &tf1 = trans->WorldXfm();
                 const Transform &tf2 = trans->WorldXfm();
-                Vector3 v100(
-                    tf1.m.y.x * 3.0f + tf2.v.x,
-                    tf1.m.y.y * 3.0f + tf2.v.y,
-                    tf1.m.y.z * 3.0f + tf2.v.z
-                );
+                Vector3 v100;
+                ScaleAdd(tf2.v, tf1.m.y, 3, v100);
                 if (it->mEye->unkb1)
                     oneframe->AddLine(
                         trans->WorldXfm().v, v100, Hmx::Color(1.0f, 0.0f, 0.0f), true
@@ -185,49 +181,47 @@ bool matchesFilter;
         }
         Vector3 v10c(GetHead()->WorldXfm().v);
         if (trans) {
-            float f1 = unkc8 ? unkc8->mMaxViewAngleCos : unkb8;
-            float f2 = unkb0;
-            bool f2ltf1 = f1 > f2;
+            bool fcmp = unkb0 >= (unkc8 ? unkc8->mMaxViewAngleCos : unkb8);
             if (unk124) {
                 oneframe->AddSphere(
                     unk58, mEyeDartRulesetData.mMaxRadius, Hmx::Color(0.9f, 0.9f, 0.9f)
                 );
-                Vector3 v118(unk58.x + unk130.x, unk58.y + unk130.y, unk58.z + unk130.z);
+                Vector3 v118;
+                Add(unk58, unk130, v118);
                 EnforceMinimumTargetDistance(v10c, v118, v118);
                 oneframe->AddSphere(v118, 0.5f, Hmx::Color(0.0f, 0.0f, 1.0f));
                 oneframe->AddLine(
                     trans->WorldXfm().v,
                     v118,
-                    f2ltf1 ? Hmx::Color(1.0f, 0.0f, 0.0f) : Hmx::Color(0.2f, 0.2f, 1.0f),
+                    fcmp ? Hmx::Color(0.2f, 0.2f, 1.0f) : Hmx::Color(1, 0, 0),
                     true
                 );
             } else {
                 oneframe->AddLine(
                     trans->WorldXfm().v,
                     unk58,
-                    f2ltf1 ? Hmx::Color(1.0f, 0.0f, 0.0f) : Hmx::Color(1.0f, 1.0f, 1.0f),
+                    fcmp ? Hmx::Color(1, 1, 1) : Hmx::Color(1, 0, 0),
                     true
                 );
             }
             if (unk13c) {
                 oneframe->AddString3D(
-                    "p blink!", trans->WorldXfm().v, Hmx::Color(1.0f, 1.0f, 1.0f)
+                    "p blink!", trans->WorldXfm().v, Hmx::Color(1, 1, 1)
                 );
             }
         }
+
         if (unkd4) {
             if (unkc8 != unkd4) {
                 const char *nametouse = unkc8 ? unkc8->Name() : "GENERATED";
                 oneframe->AddString3D(
                     MakeString("focus = '%s' (looking at %s)", unkd4->Name(), nametouse),
                     v10c,
-                    Hmx::Color(1.0f, 0.0f, 0.0f)
+                    Hmx::Color(1, 0, 0)
                 );
             } else {
                 oneframe->AddString3D(
-                    MakeString("focus = '%s'", unkd4->Name()),
-                    v10c,
-                    Hmx::Color(0.0f, 1.0f, 0.0f)
+                    MakeString("focus = '%s'", unkd4->Name()), v10c, Hmx::Color(0, 1, 0)
                 );
             }
         } else {
@@ -235,63 +229,53 @@ bool matchesFilter;
                 oneframe->AddString3D(
                     MakeString("interest = '%s'", unkc8->Name()),
                     v10c,
-                    Hmx::Color(0.0f, 1.0f, 0.0f)
+                    Hmx::Color(0, 1, 0)
                 );
             }
         }
+
         if (mInterests.size() != 0) {
-            RndTransformable *head = GetHead();
-            const Transform &headxfm = head->WorldXfm();
-            Vector3 headFwd(headxfm.m.y);
-            Normalize(headFwd, headFwd);
+            const Transform &headXfm = GetHead()->WorldXfm();
+            Vector3 headMY = headXfm.m.y;
+            Normalize(headMY, headMY);
+            Vector3 va0 = headXfm.v;
             for (ObjVector<CharInterestState>::iterator it = mInterests.begin();
                  it != mInterests.end();
                  ++it) {
-                                matchesFilter = true;
-                if (!it->mInterest->IsMatchingFilterFlags(mInterestFilterFlags)) {
-                    bool defaultOK = false;
-                    if (mInterestFilterFlags == mDefaultFilterFlags) {
-                        if (it->mInterest->mCategoryFlags == 0) {
-                            defaultOK = true;
-                        }
-                    }
-                    if (!defaultOK)
-                        matchesFilter = false;
-                }
+                bool b7 = it->mInterest->IsMatchingFilterFlags(mInterestFilterFlags)
+                    || ((mInterestFilterFlags == mDefaultFilterFlags)
+                        && !it->mInterest->CategoryFlags());
                 if (unkc8 == it->mInterest) {
                     oneframe->AddSphere(
-                        it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(0.0f, 1.0f, 0.0f, 1.0f)
+                        it->mInterest->WorldXfm().v, 2, Hmx::Color(0, 1, 0)
                     );
-                    Vector2 screen;
-                    if (RndCam::Current()->WorldToScreen(it->mInterest->WorldXfm().v, screen) > 0.0f) {
-                        screen.x = screen.x * TheRnd->Width() - 30.0f;
-                        screen.y = screen.y * TheRnd->Height() + 15.0f;
-                        screen.y = -screen.y;
+                    Vector2 v2;
+                    if (RndCam::Current()->WorldToScreen(it->mInterest->WorldXfm().v, v2)
+                        > 0) {
+                        v2.x *= TheRnd->Width();
+                        v2.y *= TheRnd->Height();
+                        v2.y += 15.0;
+                        v2.x -= 30.0;
                         oneframe->AddString(
                             MakeString("%s", it->mInterest->Name()),
-                            screen,
-                            Hmx::Color(1.0f, 1.0f, 1.0f, 1.0f)
-                        );
-                    }
-                } else if (it->mInterest->IsWithinViewCone(headxfm.v, unke8)
-                           && it->mInterest->IsWithinViewCone(headxfm.v, headFwd)) {
-                    if (matchesFilter) {
-                        oneframe->AddSphere(
-                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(1.0f, 1.0f, 0.0f, 1.0f)
-                        );
-                    } else {
-                        oneframe->AddSphere(
-                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(1.0f, 0.64705884f, 0.0f, 1.0f)
+                            v2,
+                            Hmx::Color(1, 1, 1)
                         );
                     }
                 } else {
-                    if (matchesFilter) {
+                    if (it->mInterest->IsWithinViewCone(va0, unke8)
+                        && it->mInterest->IsWithinViewCone(va0, headMY)) {
                         oneframe->AddSphere(
-                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(1.0f, 0.0f, 0.0f, 1.0f)
+                            it->mInterest->WorldXfm().v,
+                            2,
+                            b7 ? Hmx::Color(1, 1, 0) : Hmx::Color(1, 0.64705884f, 0)
                         );
                     } else {
                         oneframe->AddSphere(
-                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(0.6901961f, 0.1882353f, 0.3764706f, 1.0f)
+                            it->mInterest->WorldXfm().v,
+                            2,
+                            b7 ? Hmx::Color(1, 0, 0)
+                               : Hmx::Color(0.6901961f, 0.1882353f, 0.3764706f)
                         );
                     }
                 }
@@ -299,7 +283,7 @@ bool matchesFilter;
                     oneframe->AddString3D(
                         MakeString("r=%f", it->RefractoryTimeRemaining()),
                         it->mInterest->WorldXfm().v,
-                        Hmx::Color(1.0f, 1.0f, 1.0f, 1.0f)
+                        Hmx::Color(1, 1, 1)
                     );
                 }
             }

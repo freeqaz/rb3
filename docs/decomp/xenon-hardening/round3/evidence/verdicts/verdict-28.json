@@ -1,0 +1,18 @@
+{
+  "pair": 28,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "SetSessionName__Q26Quazal11SessionInfoFPCc",
+  "category": "network",
+  "stratum": "BSIM 15-20",
+  "reasoning": "Near-identical control-flow and constant pool across the MWCC/MSVC boundary. Both bodies are 2-param string setters that branch on the source pointer: when source is null/empty they store a single zero byte at this+0x4; otherwise they call a strncpy-like CRT primitive copying 0x80 bytes into this+0x4 and then write a zero terminator at this+0x83. The branch polarity differs (Wii tests arg!=0 / taken-true does the copy, Xenon tests param==0 / taken-true does the zero) but both compute the identical two outcomes -- that is ordinary compiler condition-sense selection, not a semantic difference. The three load-bearing constants are IDENTICAL on both sides: copy size 0x80, destination base offset +0x4, and the post-copy null terminator at the highly specific offset +0x83 (== 0x4 + 0x80 - 1, the last byte of the 0x80-wide buffer that begins at offset 4). The unresolved Xenon callee FUN_82b89958 invoked as FUN(param_1+4, param_2, 0x80) exactly mirrors the Wii strncpy(this+4, arg0, 0x80) -- strncpy is a libc/CRT primitive not expected to have a Wii matches.json entry, so its non-resolution is consistent rather than refuting. No referenced strings (none on the Xenon side), so no string can name a different partner. No conflicting node-size literal or type-tag discriminator exists. No sibling-alias discriminator present.",
+  "key_evidence": [
+    "Identical copy size literal 0x80 in both bodies",
+    "Identical destination buffer base offset +0x4 in both bodies",
+    "Identical post-copy null terminator at the specific offset +0x83 (= 4 + 0x80 - 1) in both bodies",
+    "Xenon FUN_82b89958(param_1+4, param_2, 0x80) exactly mirrors Wii strncpy(this+4, arg0, 0x80) arg-for-arg",
+    "Same 2-parameter signature and same two-outcome branch (null/empty -> single zero byte at +4; non-null -> copy then terminate)",
+    "Branch polarity inversion is benign compiler condition-sense selection, not a discriminator",
+    "No Xenon strings reference any other function/TU; no conflicting type-tag or node-size literal"
+  ]
+}

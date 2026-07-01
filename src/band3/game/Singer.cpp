@@ -311,6 +311,13 @@ void Singer::AllScoresAreIn(const std::vector<int> &assignedParts) {
         mResultsData[i].centsVariance += mScoreCaches[i].unkc;
         mResultsData[i].centsDeviation += mScoreCaches[i].unk0;
     }
+#ifdef HX_NATIVE
+    // &mAmbiguousData[0] calls operator[](0); on the native toolchain libstdc++
+    // is built with _GLIBCXX_ASSERTIONS, so forming this begin-pointer on an
+    // empty vector aborts (harmless on Wii / non-hardened builds). Guard the
+    // empty case match-neutrally — the loop is a no-op when empty anyway.
+    if (!mAmbiguousData.empty())
+#endif
     for (AmbiguousData *entry = &mAmbiguousData[0]; entry != &mAmbiguousData[0] + mAmbiguousData.size(); entry++) {
         if (entry->isResolved)
             continue;
@@ -455,6 +462,11 @@ float Singer::AddToFreestyleDeployment(float val) {
 }
 
 void Singer::ResolveAmbiguity() {
+#ifdef HX_NATIVE
+    // See AllScoresAreIn: &mAmbiguousData[0] on an empty vector aborts under
+    // _GLIBCXX_ASSERTIONS. Match-neutral empty guard (no-op loop when empty).
+    if (!mAmbiguousData.empty())
+#endif
     for (AmbiguousData *entry = &mAmbiguousData[0];
          entry != &mAmbiguousData[0] + mAmbiguousData.size(); entry++) {
         if (!entry->isResolved || entry->winningPart == -1)
@@ -600,6 +612,11 @@ void Singer::Poll(float ms, const SongPos &pos, float f3, float f4) {
 void Singer::AddAmbiguousPart(int i_iPart1, int i_iPart2) {
     MILO_ASSERT(i_iPart1 < i_iPart2, 0x13E);
     bool bFound = false;
+#ifdef HX_NATIVE
+    // See AllScoresAreIn: &mAmbiguousData[0] on an empty vector aborts under
+    // _GLIBCXX_ASSERTIONS. Match-neutral empty guard (no-op loop when empty).
+    if (!mAmbiguousData.empty())
+#endif
     for (AmbiguousData *iter = &mAmbiguousData[0];
          iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
         if (iter->part1 == i_iPart1 || iter->part1 == i_iPart2) {
@@ -621,6 +638,9 @@ void Singer::AddAmbiguousPart(int i_iPart1, int i_iPart2) {
 void Singer::DisableAmbiguousPart(int i_iPart1, int i_iPart2) {
     if (mAmbiguousData.size() != 0) {
         MILO_ASSERT(i_iPart1 < i_iPart2, 0x16C);
+        // NOTE: this site is already inside `mAmbiguousData.size() != 0`, so the
+        // &mAmbiguousData[0] below never forms a begin-pointer on an empty
+        // vector — no _GLIBCXX_ASSERTIONS abort here. Guarded for symmetry only.
         for (AmbiguousData *iter = &mAmbiguousData[0];
              iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
             bool match = false;
@@ -656,6 +676,11 @@ void Singer::SetAssignedPart(int part, float f2) {
     mResultsData[part].targetPitchHitScore = std::min(total, cap);
     float vibPts = mScoreCaches[part].unk10;
     mPossibleVibratoPoints.Set(vibPts);
+#ifdef HX_NATIVE
+    // See AllScoresAreIn: &mAmbiguousData[0] on an empty vector aborts under
+    // _GLIBCXX_ASSERTIONS. Match-neutral empty guard (no-op loop when empty).
+    if (!mAmbiguousData.empty())
+#endif
     for (AmbiguousData *iter = &mAmbiguousData[0];
          iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
         if ((iter->part1 != part && iter->part2 != part) || iter->isResolved)

@@ -6,8 +6,12 @@
 #
 # Builds the standalone converter (rb3-xma-convert; links libav + DC3's
 # DecodeXMAToPCM, NOT the milo engine) if needed, then converts every kXMA
-# SampleData blob in the RB3 SFX banks to a 16-bit-LE PCM sidecar in a DERIVED
-# directory. ORIGINAL banks are never mutated.
+# SampleData blob in the RB3 SFX banks to a 16-bit-LE PCM sidecar AND a compact
+# <hexkey>.ogg sibling (libvorbis VBR q4, ~10-15% of the raw PCM bytes — W5-T2
+# bytes-reduction) in a DERIVED directory. ORIGINAL banks are never mutated.
+# The runtime (native/src/rb3_xma_sidecar.h) tries .ogg first, falls back to .pcm
+# (default ON; RB3_SFX_OGG_OFF=1 forces the raw .pcm path). Re-run this script to
+# regenerate both; it is the one entry point. Set RB3_NO_OGG=1 to skip the .ogg.
 #
 # kXMA samples are NOT only in sfx/gen — they are spread across MANY .milo_xbox
 # containers (UI endgame/tour/trainers, venue crowd loops under world/venue/*,

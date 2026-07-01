@@ -81,6 +81,27 @@
 class TrainerPanel;
 extern TrainerPanel *TheTrainerPanel;
 
+#ifdef HX_NATIVE
+// incremental-load-perf Wave 5 (task T2) — loading-dwell GPU warm driver
+// (native/src/rb3_gamewarm_native.cpp). Called from Game::IsLoaded() once
+// mLoadState==kReady to sweep the gameplay dir roots through
+// BandRnd::WarmGpuForDir during the vignette dwell. Returns true while still
+// warming (hold the vignette). See the TU header + GamePanel.cpp. RB3_GAMEWARM_OFF.
+extern "C" bool RB3GameWarmPollDwell(class ObjectDir *selfDir, class ObjectDir *trackDir);
+// frame-stall-2026-06-20 — venue-milo prewarm. Called every loading-dwell frame
+// from Game::IsLoaded() (before the kReady gate) to pre-create the venue milo's
+// background DirLoader so the reveal frame's WorldInstance::SetProxyFile shares
+// it (DirLoader::Find) instead of paying a ~548ms synchronous PollUntilLoaded
+// texture-drain on the game_screen reveal. Idempotent. RB3_TEX_PREWARM_OFF=1.
+extern "C" void RB3VenuePrewarmPoll();
+// A4-progressive (research/13 T1) — progressive in-session texture sharpen. Called
+// each gameplay-running Game::Poll frame (songMs > 0, off the critical path) to
+// background-fetch the downscaled venue's `.sharpen` sidecar and restore each
+// stripped texture to full resolution live, a few per frame. Default ON for web;
+// opt-out RB3_PROGRESSIVE_SHARPEN=0 keeps the A4 stripped venue stripped.
+extern "C" void RB3TexSharpenPoll(bool gameplayRunning);
+#endif
+
 Game *TheGame;
 bool gDebugFullQuota;
 bool gKickAutoplay;
@@ -272,6 +293,12 @@ void Game::LoadSong() {
 
 bool Game::IsLoaded() {
 #ifdef HX_NATIVE
+    // frame-stall-2026-06-20: pre-create the venue milo's background DirLoader
+    // during the loading-vignette dwell so the game_screen reveal frame shares it
+    // (no ~548ms synchronous PollUntilLoaded venue/normal-map texture-drain).
+    // Idempotent (one kick per song); runs from the first dwell frame the venue
+    // Symbol is valid. Opt-out RB3_TEX_PREWARM_OFF=1.
+    RB3VenuePrewarmPoll();
     // K6 diagnostic — fires on mLoadState transitions only (no per-frame spam).
     if (getenv("GAME_DBG")) {
         static int sLastState = -1;
@@ -281,8 +308,26 @@ bool Game::IsLoaded() {
         }
     }
 #endif
-    if (mLoadState == kReady)
+    if (mLoadState == kReady) {
+#ifdef HX_NATIVE
+        // Wave 5 / T2: Game::IsLoaded() is the per-frame poll that actually
+        // drives the tv3_* loading vignette -> game_screen transition in the
+        // headless/native flow (GamePanel::PollForLoading short-circuits via
+        // UIPanel::CheckIsLoaded when mState != kUnloaded, so its arm never fires
+        // here). Now that mLoadState == kReady (song + audio + MIDI + chars all
+        // parsed), sweep the gameplay dir roots through BandRnd::WarmGpuForDir
+        // during the remaining vignette dwell so the venue first-draw GPU work
+        // (97 tex + 113 mesh uploads + CPU unpack) + the Enter ForceGetLoader
+        // drain happen here (idle frames) instead of all at once on the reveal
+        // frame. Hold not-loaded until the sweep drains (bounded by a ~2 s
+        // max-hold inside the driver). Opt-out RB3_GAMEWARM_OFF=1.
+        if (RB3GameWarmPollDwell(
+                TheGamePanel ? TheGamePanel->LoadedDir() : nullptr,
+                GetTrackPanelDir()))
+            return false; // still warming — keep the vignette up one more frame
+#endif
         return true;
+    }
     else if (mMaster && mMaster->GetAudio()->GetSongStream()
              && mMaster->GetAudio()->Fail()) {
         return true;
@@ -296,6 +341,31 @@ bool Game::IsLoaded() {
 #endif
             if (!mMaster->IsLoaded())
                 return false;
+#ifdef HX_NATIVE
+            // No-chart native gate. Most extract songs ship only their visual
+            // .milo, not their .mid, so SongData::Load hit the missing-asset
+            // boundary and produced no tracks (mNumTracks == 0, no tempo map).
+            // The entire gameplay/gem/track pipeline downstream of PostLoad
+            // assumes a parsed chart and OOB-aborts on the empty vectors. Since
+            // a chartless song genuinely cannot be played, do NOT advance to
+            // gameplay: hold the load incomplete so the GamePanel stays on the
+            // loading screen and the app survives (the user backs out to pick a
+            // playable song) instead of SIGABRTing. The PostLoad/Restart/Poll/
+            // BeatMatcher guards below remain as defense-in-depth.
+            if (mSongDB && mSongDB->GetData()
+                && mSongDB->GetData()->GetNumTracks() == 0) {
+                static bool sLoggedNoChart = false;
+                if (!sLoggedNoChart) {
+                    sLoggedNoChart = true;
+                    MILO_LOG("RB3 native: Game::IsLoaded — selected song has no "
+                             "chart (.mid absent from extract); it cannot be "
+                             "played. Holding at the loading screen instead of "
+                             "entering the chartless gameplay pipeline (which "
+                             "would OOB-abort). Back out to pick another song.\n");
+                }
+                return false;
+            }
+#endif
 #ifdef HX_NATIVE
             if (getenv("GAME_DBG"))
                 MILO_LOG("GAME_DBG: IsLoaded -> kWaitingForAudio (PostLoad next)\n");
@@ -335,6 +405,26 @@ bool Game::IsLoaded() {
 void Game::PostLoad() {
     int i24 = -1;
     std::vector<Player *> &players = GetActivePlayers();
+#ifdef HX_NATIVE
+    // No-chart native guard. Most songs in the 360-ARK extract ship only their
+    // visual .milo, not their .mid — so SongData::Load hits the missing-asset
+    // boundary and returns early WITHOUT parsing tracks (mTrackInfos empty,
+    // mNumTracks == 0, mTempoMap == NULL). The console always has a chart, so
+    // this never happens there; natively, the per-player track-watcher setup
+    // below then indexes the empty mTrackInfos and SIGABRTs deep in
+    // NewTrackWatcherImpl -> SongData::TrackTypeAt (operator[] bounds check),
+    // taking down the whole app. Skip the gem/track setup for a chartless song:
+    // the song cannot play (no notes, no audio), but the engine must stay alive
+    // so the user can back out and pick a playable song. Game::Poll has a
+    // matching guard so the inert game does not deref the null tempo map.
+    if (mSongDB && mSongDB->GetData() && mSongDB->GetData()->GetNumTracks() == 0) {
+        MILO_LOG("RB3 native: Game::PostLoad — song has no chart tracks "
+                 "(missing .mid in extract); skipping track-watcher setup to "
+                 "avoid an empty-mTrackInfos OOB abort. Song is non-playable.\n");
+        ResetVoiceChatState();
+        return;
+    }
+#endif
     FOREACH (it, players) {
 #ifdef HX_NATIVE
         {
@@ -718,6 +808,15 @@ void Game::RebuildData() {
 }
 
 void Game::Restart(bool doSave) {
+#ifdef HX_NATIVE
+    // No-chart native guard (see Game::PostLoad). GamePanel::Enter -> Reset ->
+    // Game::Restart -> Band::Restart -> GemPlayer::JumpReset ->
+    // MasterAudio::RestoreDrums indexes the empty mTrackInfos/mTrackData and
+    // SIGABRTs for a chartless song. Skip the per-player restart entirely; the
+    // song is inert (Game::Poll is also guarded) so there is nothing to restart.
+    if (mSongDB && mSongDB->GetData() && mSongDB->GetData()->GetNumTracks() == 0)
+        return;
+#endif
     if (!mMaster->GetAudio()->Fail()) {
         TheBandUI.mOvershell->RemoveUsersRequiringSongOptions();
         TheGamePanel->mDeJitter.Reset();
@@ -1592,6 +1691,14 @@ void Game::Poll() {
         Rollback(ms, rollbackTarget);
     }
     unk6b = false;
+#ifdef HX_NATIVE
+    // No-chart native guard (see Game::PostLoad). A chartless song has no tempo
+    // map; the poll body below calls SongData::CalcSongPos -> mTempoMap deref
+    // (MILO_ASSERT(mTempoMap)) and mMaster->Poll over empty track data, both of
+    // which abort. Keep the inert game from advancing so the app stays alive.
+    if (mSongDB && mSongDB->GetData() && mSongDB->GetData()->GetNumTracks() == 0)
+        return;
+#endif
     if (HandleRollbackAnimation() && HandleAudioLoad()) {
         if (!unk6f && !mIsPaused) {
             unk6f = true;
@@ -1675,6 +1782,16 @@ void Game::Poll() {
         }
         CheckRollbackEnd(songMs);
         mLastPollMs = songMs;
+#ifdef HX_NATIVE
+        // A4-progressive (research/13 T1): once the song is actually playing
+        // (songMs > 0 — gameplay reached, off the load critical path), drive the
+        // progressive texture-sharpen. It background-fetches the downscaled venue's
+        // full-res top-mips and restores each stripped texture to full resolution
+        // live, a few per frame (no hitch), so fast users get full quality without
+        // paying the load-time cost up front. Cheap once the venue's sharpen
+        // session is complete / the venue wasn't downscaled. Native-only.
+        RB3TexSharpenPoll(songMs > 0.0f && !isGameOver);
+#endif
         if (mResumeTime == 0 && !mIsPaused) {
             unk130 = mLastPollMs / mSongDB->GetSongDurationMs();
         }

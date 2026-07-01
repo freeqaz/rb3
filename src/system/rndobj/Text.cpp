@@ -19,6 +19,9 @@
 #include "utl/UTF8.h"
 #include "utl/Symbols.h"
 #include <string.h>
+#ifdef HX_NATIVE
+#include <cstring>
+#endif
 
 std::set<RndText *> RndText::mTextMeshSet;
 float gSuperscriptScale = 0.7f;
@@ -949,8 +952,24 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
          it != mMeshMap.end();
          ++it) {
         RndFont *font = (RndFont *)it->first;
+#ifdef HX_NATIVE
+        // The vertical-centering metric here MUST use the same cell-diff the
+        // glyph quads use for their height (SetupCharVerts: style.size *
+        // definingFont->CellDiff()). On a non-square Xbox atlas CellDiff()
+        // applies the wide-atlas correction while the raw mCellSize.y/.x does
+        // not, so the middle/bottom-aligned text block (mAlign & 0x20 / 0x40)
+        // gets centered against a height that no longer matches the rendered
+        // glyph height — the whole block drifts ~half a line off its origin.
+        // (Symptom: overshell choose-instrument / choose-difficulty list rows
+        // render ~half a slot above their UIListHighlight box.) Use the
+        // corrected CellDiff() so the centering and the glyph height agree.
+        // Square-atlas / letter fonts have CellDiff()==raw, so this is a no-op
+        // for them; the Wii path below is byte-identical.
+        float diff = font->CellDiff();
+#else
         float cx = font->mCellSize.x;
         float diff = font->mCellSize.y / cx;
+#endif
         if (diff > ratio)
             ratio = diff;
     }
@@ -1182,10 +1201,37 @@ void SetupCharVerts(
         font->GetTexCoords(us1, vert[0].uv, vert[2].uv);
         vert[1].uv.Set(vert[0].uv.x, vert[2].uv.y);
         vert[3].uv.Set(vert[2].uv.x, vert[0].uv.y);
-        vert[0].pos.Set(fref + f7, f4, f5);
-        vert[1].pos.Set(fref - f7, f4, f5 - f6);
-        vert[2].pos.Set(f1 + (fref - f7), f4, f5 - f6);
-        vert[3].pos.Set(f1 + fref + f7, f4, f5);
+        float topZ = f5;
+        float botZ = f5 - f6;
+#ifdef HX_NATIVE
+        // Native-only: the wide-atlas CellDiff() correction (see Font.h) grows
+        // the instrument-icon glyph height, but the quad stays anchored at the
+        // line top (f5), pushing the icon's visual CENTER ~half the added height
+        // below the milo-authored anchor. In the song-select difficulty grid the
+        // dots are fixed-transform meshes authored at the icon's center, so the
+        // grown-but-top-anchored icon hangs ~22-28px below its dot row. Re-center
+        // the glyph quad on its anchor by exactly the height the correction added
+        // (0.5 * (f6_corrected - f6_raw)); keep the corrected height (f6) so the
+        // icon SHAPE stays right. Scoped to the color-icon font via its material
+        // name containing "icon" — the same heuristic the engine uses
+        // (Rnd_Wgpu_RB3.cpp isColorIconFont). Square-atlas / letter fonts have
+        // CellDiff()==RawCellDiff() (delta 0) AND no "icon" in their name, so
+        // normal UI text is untouched.
+        RndMat *iconMat = font->GetMat();
+        if (iconMat) {
+            const char *matName = iconMat->Name();
+            if (matName && matName[0] && std::strstr(matName, "icon") != nullptr) {
+                float f6Raw = style.size * font->RawCellDiff();
+                float shift = 0.5f * (f6 - f6Raw);
+                topZ += shift;
+                botZ += shift;
+            }
+        }
+#endif
+        vert[0].pos.Set(fref + f7, f4, topZ);
+        vert[1].pos.Set(fref - f7, f4, botZ);
+        vert[2].pos.Set(f1 + (fref - f7), f4, botZ);
+        vert[3].pos.Set(f1 + fref + f7, f4, topZ);
         vert[0].norm.Set(0, -1, 0);
         vert[1].norm = vert[2].norm = vert[3].norm = vert[0].norm;
         vert[0].color = vert[1].color = vert[2].color = vert[3].color = style.color;

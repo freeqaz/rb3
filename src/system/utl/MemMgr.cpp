@@ -1057,6 +1057,18 @@ void *_MemAlloc(int iSizeBytes, int align) {
     void *p = nullptr;
     if (posix_memalign(&p, a, want) != 0)
         p = nullptr;
+    // ABA hardening for the ObjRef freed-address guard (obj/Object.cpp): this
+    // freshly-allocated block recycles memory that may still carry a stale
+    // "freed" mark from an earlier object. The offset-0 case is cleared by
+    // Hmx::Object::Object()'s HxNoteReusedAddr(this), but an interior subobject
+    // of a multiply-inherited recycled type would otherwise keep its mark.
+    // Erasing the whole returned range [p, p+want) closes that hole so the
+    // ObjPtr_p.h guards can never skip Release on a live pointee. See
+    // docs/native/char-load-5b/viseme-uaf-plan.md ("Optional hardening").
+    if (p != nullptr) {
+        extern void HxNoteFreedRangeReused(const void *, size_t);
+        HxNoteFreedRangeReused(p, want);
+    }
     return p;
 #else
     if (!gMemInited) {

@@ -1,0 +1,16 @@
+{
+  "pair": 25,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "Trace__Q26Quazal18StationContactInfoFUi",
+  "category": "network",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Control flow is structurally identical: prologue chain GetInstance->GetOutputFormat->IncreaseIndent(format,2), then a circular linked-list loop walking this+4 (terminating when node==&this->unk4 sentinel), calling Trace(node+8, arg0) per element and advancing node=*node, then an epilogue chain GetInstance->GetOutputFormat->DecreaseIndent(format,2). 4 of 5 Xenon callees resolve via matches.json to the SAME Wii callees the Wii body calls, in the SAME positions: GetInstance (TraceLog), GetOutputFormat (Log), IncreaseIndent(OutputFormat,2) in the prologue, DecreaseIndent(OutputFormat,2) in the epilogue. The lone unmatched callee FUN_82a75d28 sits in the loop body exactly where Wii calls Trace__Q26Quazal10StationURLCFUi (unmatched StationURL::Trace) -- fully consistent. Immediate constant 2 to Increase/DecreaseIndent matches on both sides; per-node offset matches (Wii addi r3,r31,0x8 = byte offset 8; Xenon local_20+2 words = 8 bytes); list head at this+4 on both sides. No node-size or type-tag discriminator conflicts; no referenced strings on either side to refute. The extra local_* temps and dropped trailing call-args in the Xenon pseudo-C are the validated systematic MWCC<->MSVC decompiler artifacts, not differences.",
+  "key_evidence": [
+    "4/4 matched Xenon callees resolve to identical Wii callees in identical positions (GetInstance/GetOutputFormat/IncreaseIndent prologue + GetInstance/GetOutputFormat/DecreaseIndent epilogue)",
+    "Both sides pass constant arg 2 to IncreaseIndent and DecreaseIndent",
+    "Identical circular linked-list walk: head at this+4, sentinel terminate node==&this->unk4, per-node call at node+8, advance node=*node",
+    "5th unmatched callee FUN_82a75d28 occupies the loop-body slot where Wii calls Trace__Q26Quazal10StationURLCFUi -- consistent, not contradictory",
+    "No referenced strings on either side; no conflicting node-size literal or type-tag"
+  ]
+}

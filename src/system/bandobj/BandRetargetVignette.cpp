@@ -9,7 +9,13 @@ INIT_REVS(BandRetargetVignette);
 const char *BandRetargetVignette::sIkfs[] = {
     "bone_pelvis.ikf", "bone_L-ankle.ikf",   "bone_R-ankle.ikf", "bone_L-foreArm.ikf",
     "bone_L-hand.ikf", "bone_R-foreArm.ikf", "bone_R-hand.ikf",  "bone_prop0.ikf",
-    "bone_prop1.ikf",  "bone_prop2.ikf",     "bone_prop3.ikf",   "bone_head.ikf"
+    "bone_prop1.ikf",  "bone_prop2.ikf",     "bone_prop3.ikf",   "bone_head.ikf",
+    // Null terminator — the EnterDir loop walks `for (...; *ptr != 0; ptr++)`, so
+    // the array must end in a null. The target symbol is 0x34 = 13 pointers (12
+    // names + this terminator); without it the loop reads past the array (ASan
+    // global-buffer-overflow 8 bytes past sIkfs[96] on LP64) relying on adjacent
+    // .data being zero. Match-positive: restores the target's 13-element layout.
+    0
 };
 
 BandRetargetVignette::BandRetargetVignette()

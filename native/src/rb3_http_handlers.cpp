@@ -16,6 +16,7 @@
 #include "obj/DataFile.h"   // DataReadString
 #include "obj/DataFunc.h"   // DataRegisterFunc — live camera-tweak DTA func
 #include "obj/Object.h"
+#include "os/Debug.h"       // MILO_TRY/MILO_CATCH + TheDebug — clean eval-fail recovery
 
 #include "rb3_native_settings.h"  // TheNativeSettings() — live render/camera knobs
 
@@ -42,6 +43,20 @@
 #include "bandobj/BandCharacter.h"    // C13 probe
 #include "rndobj/Mesh.h"             // C13 probe: ObjDirItr<RndMesh>, NumBones/Verts
 #include "obj/Dir.h"                 // ObjDirItr
+
+// crowd-origin position-dump tool ({rb3_pos_dump}): walk the live object tree and
+// emit world positions for crowd members + band gear + static props. See
+// docs/native/crowd-origin/PLAN.md §2.
+#include "world/Crowd.h"             // WorldCrowd, CharData::Char3D::unk0 (per-member xfm)
+#include "world/Dir.h"               // WorldDir::mCrowds (live ObjPtrList<WorldCrowd>), TheWorld
+#include "bandobj/BandDirector.h"    // TheBandDirector->mVenue.Dir() = live per-song venue WorldDir
+#include "rndobj/MultiMesh.h"        // RndMultiMesh::Instance::mXfm (pre-Set3DCharAll crowd positions)
+#include "rndobj/Trans.h"            // RndTransformable::WorldXfm()/TransParent()
+#include "math/Vec.h"                // Length(Vector3)
+#include "obj/DirLoader.h"           // DirLoader::Find/GetDir (resident venue dir)
+#include "ui/UIPanel.h"             // UIPanel::LoadedDir (world_panel)
+#include "utl/FilePath.h"           // FilePath for the resident world.milo lookups
+#include <set>                       // de-dup objects reachable from multiple roots
 
 #include <cstdio>
 #include <cstring>
@@ -219,12 +234,32 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
     sInDtaEval = 1;
     sDtaEvalSignal = 0;
 
+    // Snapshot the engine's global FAIL / data-call-stack state so we can RESTORE
+    // it on the recovery path. This is the fix for the "latent SIGSEGV across
+    // waves": when the sigsetjmp below catches an abort, the C-level siglongjmp
+    // unwinds out of the recursive DataArray::Execute WITHOUT running the
+    // ~DataCallStackFrame dtors that pop gCallStackPtr, and the Debug::Fail that
+    // reached Modal leaves mTry / mFailing dirty. Left uncorrected, gCallStackPtr
+    // stays advanced at stale DataArray* and mFailing stays true, so the NEXT
+    // eval's DataCallStackFrame ctor / DataAppendStackTrace walks freed pointers
+    // -> a delayed crash. Restoring this snapshot in the recovery block leaves
+    // the engine in the exact pre-eval state, so a recovered eval never bleeds
+    // corruption into the next one.
+    DataArray** const savedCallStackPtr = gCallStackPtr;
+    const int savedTry = TheDebug.mTry;
+    const bool savedFailing = TheDebug.mFailing;
+
     if (sigsetjmp(sDtaEvalJmpBuf, 1) != 0) {
         sInDtaEval = 0;
         sigaction(SIGSEGV, &old_segv, nullptr);
         sigaction(SIGBUS,  &old_bus,  nullptr);
         sigaction(SIGFPE,  &old_fpe,  nullptr);
         sigaction(SIGABRT, &old_abrt, nullptr);
+        // Undo the skipped ~DataCallStackFrame pops + the dirty Debug fail flags
+        // so the next eval starts clean (no latent corruption).
+        gCallStackPtr = savedCallStackPtr;
+        TheDebug.mTry = savedTry;
+        TheDebug.mFailing = savedFailing;
         const char* sigName = "unknown signal";
         switch (sDtaEvalSignal) {
             case SIGSEGV: sigName = "SIGSEGV (null pointer or bad memory access)"; break;
@@ -232,7 +267,16 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
             case SIGFPE:  sigName = "SIGFPE (arithmetic error)"; break;
             case SIGABRT: sigName = "SIGABRT (abort)"; break;
         }
-        cmd.result.error = std::string("DTA eval crashed: ") + sigName;
+        // A miss / bad-type read that tripped a hard MILO_FAIL is a graceful
+        // outcome for this debug tool, not a server fault: report it as a clean
+        // 400 error (not a 500 "crashed") with a null value so callers can
+        // distinguish it from a real crash and keep inspecting.
+        cmd.result.ok = false;
+        cmd.result.httpStatus = 400;
+        cmd.result.error =
+            std::string("DTA eval hit a hard fail (") + sigName +
+            ") — likely a missing key or a type-mismatched property read; "
+            "value is null";
         fprintf(stderr, "[RB3HttpServer] DTA eval recovered from %s for: %.200s\n",
                 sigName, cmd.param1.c_str());
         return;
@@ -246,47 +290,101 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
         goto cleanup;
     }
     {
-        DataNode result(0);
-        for (int i = 0; i < parsed->Size(); i++)
-            result = parsed->Evaluate(i);
-        parsed->Release();
+        // A bad eval (a {find ...} miss, an {exists <expr>} whose sub-expr
+        // executes an object handler that reads an out-of-range arg, a
+        // Color/Array/Str sub-property read on a wrong-typed node) reaches a
+        // hard MILO_FAIL deep inside DataArray::Execute / DataNode::Str /
+        // DataNode::Array. On native, Debug::Fail with NO try-scope active
+        // rides the full Debug::Modal path, where formatting the fail message
+        // (String temporaries on the failing heap) can ABORT inside _MemFree /
+        // hit OSFatal. The sigsetjmp guard catches the signal, but recovering
+        // from a glibc malloc-abort leaves the allocator lock held -> the MAIN
+        // THREAD then WEDGES on its next malloc (observed: every later eval
+        // times out with "main thread not polling"). So we must avoid reaching
+        // Modal at all for the common miss.
+        //
+        // MILO_TRY sets TheDebug.mTry, so Debug::Fail takes its clean
+        // longjmp-back branch BEFORE Modal -> no Modal, no heap abort, no main-
+        // thread wedge; we land in MILO_CATCH with the fail message and return a
+        // graceful 400. The longjmp skips the in-flight ~DataCallStackFrame
+        // pops, so we restore gCallStackPtr (snapshotted above) in the catch.
+        // The sigsetjmp guard remains a backstop for a genuine non-MILO_FAIL
+        // fault (stack overflow, a real null-deref) and also restores state.
+        MILO_TRY {
+            DataNode result(0);
+            for (int i = 0; i < parsed->Size(); i++)
+                result = parsed->Evaluate(i);
 
-        cmd.result.ok = true;
-        switch (result.Type()) {
-            case kDataInt:
-                cmd.result.jsonData = "{\"type\":\"int\",\"value\":" +
-                    std::to_string(result.UncheckedInt()) + "}";
-                break;
-            case kDataFloat:
-                cmd.result.jsonData = "{\"type\":\"float\",\"value\":" +
-                    std::to_string(result.Float()) + "}";
-                break;
-            case kDataSymbol: {
-                const char* s = result.UncheckedStr();
-                cmd.result.jsonData = "{\"type\":\"symbol\",\"value\":\"" +
-                    HJsonEscape(s ? s : "") + "\"}";
-                break;
+            cmd.result.ok = true;
+            switch (result.Type()) {
+                case kDataInt:
+                    cmd.result.jsonData = "{\"type\":\"int\",\"value\":" +
+                        std::to_string(result.UncheckedInt()) + "}";
+                    break;
+                case kDataFloat:
+                    cmd.result.jsonData = "{\"type\":\"float\",\"value\":" +
+                        std::to_string(result.Float()) + "}";
+                    break;
+                case kDataSymbol: {
+                    const char* s = result.UncheckedStr();
+                    cmd.result.jsonData = "{\"type\":\"symbol\",\"value\":\"" +
+                        HJsonEscape(s ? s : "") + "\"}";
+                    break;
+                }
+                case kDataString: {
+                    // kDataString stores mValue.array (a DataArray*), NOT a raw
+                    // char*; UncheckedStr() would reinterpret that pointer as a
+                    // string (garbage). Str() dereferences the array correctly.
+                    const char* s = result.Str();
+                    cmd.result.jsonData = "{\"type\":\"string\",\"value\":\"" +
+                        HJsonEscape(s ? s : "") + "\"}";
+                    break;
+                }
+                case kDataObject: {
+                    // A node CAN carry kDataObject with a NULL object pointer
+                    // (e.g. a missing {... find <key>} or {find_obj} returns a
+                    // null kDataObject). GetObj() returns null then; report a
+                    // clean "null" rather than dereferencing it.
+                    Hmx::Object* obj = result.GetObj(nullptr);
+                    const char* name = obj ? obj->Name() : "null";
+                    cmd.result.jsonData = "{\"type\":\"object\",\"value\":\"" +
+                        HJsonEscape(name ? name : "null") + "\"}";
+                    break;
+                }
+                default:
+                    cmd.result.jsonData = "{\"type\":" +
+                        std::to_string((int)result.Type()) + ",\"value\":null}";
+                    break;
             }
-            case kDataString: {
-                // kDataString stores mValue.array (a DataArray*), NOT a raw
-                // char*; UncheckedStr() would reinterpret that pointer as a
-                // string (garbage). Str() dereferences the array correctly.
-                const char* s = result.Str();
-                cmd.result.jsonData = "{\"type\":\"string\",\"value\":\"" +
-                    HJsonEscape(s ? s : "") + "\"}";
-                break;
-            }
-            case kDataObject: {
-                Hmx::Object* obj = result.GetObj(nullptr);
-                const char* name = obj ? obj->Name() : "null";
-                cmd.result.jsonData = "{\"type\":\"object\",\"value\":\"" +
-                    HJsonEscape(name ? name : "null") + "\"}";
-                break;
-            }
-            default:
-                cmd.result.jsonData = "{\"type\":" +
-                    std::to_string((int)result.Type()) + ",\"value\":null}";
-                break;
+            parsed->Release();
+        } MILO_CATCH(failMsg) {
+            // Debug::Fail longjmped here (clean — never reached Modal). Restore
+            // the data-call-stack pointer the longjmp skipped, then report a
+            // graceful error. (mTry is reset by MILO_CATCH's SetTry(false);
+            // mFailing was never set since we never reached the mFailing branch
+            // of Debug::Fail.)
+            gCallStackPtr = savedCallStackPtr;
+            // Release the parsed DataArray on the fail path. The earlier comment
+            // here claimed re-touching the heap was "avoided for safety" and let
+            // `parsed` LEAK on every bad eval — but the MILO_TRY longjmp is a
+            // CLEAN unwind (it fires at Debug.cpp:175 BEFORE Debug::Modal, so the
+            // allocator is fully intact and unlocked). The leak was the
+            // accelerant for the burst stack-overflow SIGSEGV (wave-6 residual):
+            // ~15 consecutive hard-fails leaked enough that the heap-stack
+            // bookkeeping (MemPushHeap) overflowed -> its MILO_ASSERT re-entered
+            // Debug::Fail -> recursive MemPushHeap->Debug::Fail->MakeString loop
+            // -> stack overflow. Freeing `parsed` here removes the accelerant.
+            // gCallStackPtr was already restored to its pre-eval value above, so
+            // ~DataArray's bookkeeping sees the same call-stack state as a normal
+            // release. Null after release: `cleanup`/the signal path never touch
+            // it, but keep it tidy in case future edits add a use.
+            if (parsed) { parsed->Release(); parsed = nullptr; }
+            cmd.result.ok = false;
+            cmd.result.httpStatus = 400;
+            cmd.result.error = std::string("DTA eval failed: ") +
+                (failMsg ? failMsg : "missing key or type-mismatched read");
+            fprintf(stderr, "[RB3HttpServer] DTA eval MILO_FAIL for %.200s: %s\n",
+                    cmd.param1.c_str(), failMsg ? failMsg : "(no message)");
         }
     }
 
@@ -412,10 +510,332 @@ static DataNode RB3DtaCharProbe(DataArray *da) {
     return DataNode(sCharProbe.c_str());
 }
 
+// crowd-origin debug tool: {rb3_pos_dump} -> dump live world positions for the
+// crowd members, the band characters (+ their instrument dir = the drum kit), and
+// static venue props (the dartboard control). Adjudicates H1 (shared venue
+// reparent collapse) vs H2 (band root never placed) vs H4 (crowd decode-to-zero)
+// from docs/native/crowd-origin/PLAN.md §2. Read-only. Verbose per-object
+// [POSDUMP] stderr lines are gated behind env POS_DUMP_VERBOSE; the HTTP call
+// always returns a one-line summary for the harness verdict.
+// Dump every authored per-member world position for one WorldCrowd. Returns the
+// number of members emitted; accumulates into the at-origin counters. The
+// audience positions live in CharData::m3DChars[i].unk0 (the Transform the draw
+// loop SetWorldXfm's, Crowd.cpp:328-408) once WorldCrowd::Set3DCharAll() has run.
+// BEFORE that runs, the same positions still live in mMMesh->mInstances[i].mXfm
+// (Set3DCharAll copies instances -> m3DChars THEN clears mInstances,
+// Crowd.cpp:227-230) — so we fall back to the live multimesh instance list when
+// m3DChars is empty, to never report a spurious crowd=0 just because the copy
+// step hasn't happened yet. `src` records which source the positions came from.
+static int DumpOneWorldCrowd(WorldCrowd *crowd, const char *fromTag, bool verbose,
+                             int &atOrigin, int &crowdAtOrigin) {
+    int emitted = 0;
+    const char *cname = crowd->Name() ? crowd->Name() : "?";
+    int archIdx = 0;
+    FOREACH (charIt, crowd->mCharacters) {
+        const char *aname =
+            charIt->mDef.mChar.mPtr && charIt->mDef.mChar->Name()
+                ? charIt->mDef.mChar->Name()
+                : cname;
+        unsigned int n3d = (unsigned int)charIt->m3DChars.size();
+        if (n3d > 0) {
+            for (unsigned int i = 0; i < n3d; i++) {
+                const Vector3 &p = charIt->m3DChars[i].unk0.v;
+                float mag = Length(p);
+                emitted++;
+                if (mag < 1.0f) { crowdAtOrigin++; atOrigin++; }
+                if (verbose) {
+                    fprintf(stderr,
+                            "[POSDUMP] kind=crowd   name=%s i=%u  pos=%.2f,%.2f,%.2f "
+                            "src=m3DChars crowd=%s arch=%d from=%s\n",
+                            aname, i, p.x, p.y, p.z, cname, archIdx, fromTag);
+                }
+            }
+        } else if (charIt->mMMesh) {
+            // Pre-Set3DCharAll fallback: read the authored xfm straight off the
+            // multimesh instance list (the source Set3DCharAll copies from).
+            unsigned int i = 0;
+            FOREACH (inst, charIt->mMMesh->mInstances) {
+                const Vector3 &p = inst->mXfm.v;
+                float mag = Length(p);
+                emitted++;
+                if (mag < 1.0f) { crowdAtOrigin++; atOrigin++; }
+                if (verbose) {
+                    fprintf(stderr,
+                            "[POSDUMP] kind=crowd   name=%s i=%u  pos=%.2f,%.2f,%.2f "
+                            "src=mInstances crowd=%s arch=%d from=%s\n",
+                            aname, i, p.x, p.y, p.z, cname, archIdx, fromTag);
+                }
+                ++i;
+            }
+        }
+        ++archIdx;
+    }
+    return emitted;
+}
+
+static std::string sPosDump;
+static DataNode RB3DtaPosDump(DataArray *) {
+    const bool verbose = ::getenv("POS_DUMP_VERBOSE") != nullptr;
+
+    // The live venue / band / crowd are NOT merged into the walkable sMainDir
+    // tree on native — they live in resident DirLoader dirs (world/world.milo,
+    // world/shared/chars.milo, world/shared/director.milo) plus the world_panel's
+    // LoadedDir(). Walk sMainDir AND those roots (mirrors the gameplay-warm root
+    // gather in rb3_gamewarm_native.cpp:402-427). De-dup by object pointer since
+    // some objects are reachable from more than one root.
+    //
+    // CROWD GAP (audience-measure.md): the audience WorldCrowd lives in the
+    // PER-SONG venue WorldDir (world/venue/<class>/<name>/<name>.milo), loaded
+    // into TheBandDirector->mVenue.Dir() (== mCurWorld). That dir is NOT in the
+    // mSubDirs chain of world/world.milo or world_panel — the resident roots
+    // above — so a recursive ObjDirItr from them never reaches it (the prior
+    // `crowd=0`). Add the live venue dir(s) as explicit roots, AND read each
+    // WorldDir's live `mCrowds` list directly (populated by SyncObjects via the
+    // SAME ObjDirItr<WorldCrowd> recursion; reading the cached list does not
+    // depend on the crowd being in OUR walk's reachable subtree).
+    static const char *kResidentDirMilos[] = {
+        "world/world.milo",            // venue base (+ per-song venue proxy subdir)
+        "world/shared/director.milo",  // venue director / lighting / props
+        "world/shared/chars.milo",     // band character meshes
+    };
+    const int kMaxRoots = 12;
+    ObjectDir *roots[kMaxRoots] = {nullptr};
+    const char *rootTags[kMaxRoots] = {nullptr};
+    int nroots = 0;
+    if (ObjectDir::sMainDir) {
+        roots[nroots] = ObjectDir::sMainDir; rootTags[nroots] = "sMainDir"; nroots++;
+    }
+    if (ObjectDir::sMainDir) {
+        if (UIPanel *worldPanel =
+                ObjectDir::sMainDir->Find<UIPanel>("world_panel", true)) {
+            if (ObjectDir *wd = worldPanel->LoadedDir()) {
+                roots[nroots] = wd; rootTags[nroots] = "world_panel"; nroots++;
+            }
+        }
+    }
+    for (size_t i = 0;
+         i < sizeof(kResidentDirMilos) / sizeof(kResidentDirMilos[0]); ++i) {
+        FilePath fp(kResidentDirMilos[i]);
+        DirLoader *dl = DirLoader::Find(fp);
+        if (dl && dl->IsLoaded() && nroots < kMaxRoots) {
+            if (ObjectDir *d = dl->GetDir()) {
+                roots[nroots] = d; rootTags[nroots] = kResidentDirMilos[i]; nroots++;
+            }
+        }
+    }
+    // The live per-song venue WorldDir (where the audience WorldCrowd lives).
+    // mVenue.Dir() is the loaded venue; mCurWorld is the entered one (== mVenue
+    // after EnterVenue). Add both as roots (de-dup handles overlap). Also keep
+    // them as explicit WorldDir handles so we can read mCrowds directly below.
+    WorldDir *venueDirs[2] = {nullptr, nullptr};
+    int nVenue = 0;
+    if (TheBandDirector) {
+        WorldDir *vd = TheBandDirector->mVenue.Dir();
+        if (vd) {
+            venueDirs[nVenue++] = vd;
+            if (nroots < kMaxRoots) {
+                roots[nroots] = vd; rootTags[nroots] = "venue(mVenue.Dir)"; nroots++;
+            }
+        }
+        WorldDir *cw = TheBandDirector->mCurWorld;
+        if (cw && cw != vd) {
+            venueDirs[nVenue++] = cw;
+            if (nroots < kMaxRoots) {
+                roots[nroots] = cw; rootTags[nroots] = "venue(mCurWorld)"; nroots++;
+            }
+        }
+    }
+    // TheWorld is transiently set during DrawShowing and usually NULL at HTTP
+    // time, but include it opportunistically when live.
+    if (TheWorld && nroots < kMaxRoots) {
+        roots[nroots] = TheWorld; rootTags[nroots] = "TheWorld"; nroots++;
+    }
+
+    if (nroots == 0) {
+        sPosDump = "posdump no_roots";
+        return DataNode(sPosDump.c_str());
+    }
+
+    int crowdMembers = 0, bandCount = 0, propCount = 0;
+    int crowdContainers = 0;  // distinct WorldCrowd objects reached
+    int atOrigin = 0;        // objects whose |pos| < 1.0 (any kind)
+    int bandAtOrigin = 0;    // band roots with |WorldXfm().v| < 1.0
+    int crowdAtOrigin = 0;   // crowd members with |unk0.v| < 1.0
+
+    std::set<const Hmx::Object *> seen;
+    std::set<const WorldCrowd *> seenCrowd;  // de-dup crowds across roots + mCrowds
+
+    // PRIMARY PATH: read each live venue WorldDir's cached mCrowds list directly.
+    // This does NOT rely on the crowd being inside OUR walk's reachable mSubDirs
+    // subtree — WorldDir::SyncObjects already enumerated the crowds at Enter and
+    // cached the pointers. This is the path that closes the `crowd=0` gap.
+    for (int vi = 0; vi < nVenue; ++vi) {
+        WorldDir *wd = venueDirs[vi];
+        if (!wd) continue;
+        const char *wn = wd->Name() ? wd->Name() : "?";
+        if (verbose) {
+            fprintf(stderr,
+                    "[POSDUMP] venue_dir name=%s nCrowds=%d\n",
+                    wn, wd->mCrowds.size());
+        }
+        FOREACH (cit, wd->mCrowds) {
+            WorldCrowd *crowd = *cit;
+            if (!crowd) continue;
+            if (!seenCrowd.insert(crowd).second) continue;
+            seen.insert(crowd);  // keep the ObjDirItr pass from re-emitting it
+            crowdContainers++;
+            crowdMembers += DumpOneWorldCrowd(crowd, "mCrowds", verbose,
+                                              atOrigin, crowdAtOrigin);
+        }
+    }
+
+  for (int ri = 0; ri < nroots; ++ri) {
+    // Cast in PLAN.md §2 order: WorldCrowd first (members are NOT separate
+    // objects), then BandCharacter, then any other RndTransformable (props).
+    for (ObjDirItr<Hmx::Object> it(roots[ri], true); it; ++it) {
+        Hmx::Object *o = it;
+        if (!seen.insert(o).second) continue;  // already counted via another root
+
+        if (WorldCrowd *crowd = dynamic_cast<WorldCrowd *>(o)) {
+            // Secondary path: any WorldCrowd we reach by recursive walk that the
+            // mCrowds sweep above missed (e.g. a crowd in a dir whose WorldDir we
+            // didn't enumerate). De-dup against the mCrowds sweep.
+            if (seenCrowd.insert(crowd).second) {
+                crowdContainers++;
+                crowdMembers += DumpOneWorldCrowd(crowd, rootTags[ri] ? rootTags[ri] : "walk",
+                                                  verbose, atOrigin, crowdAtOrigin);
+            }
+            continue;
+        }
+
+        if (BandCharacter *bc = dynamic_cast<BandCharacter *>(o)) {
+            const char *bname = bc->Name() ? bc->Name() : "?";
+            const Vector3 &root_v = bc->WorldXfm().v;
+            float rootMag = Length(root_v);
+            RndTransformable *parent = bc->TransParent();
+            const char *pname = (parent && parent->Name()) ? parent->Name() : "NULL";
+            bandCount++;
+            if (rootMag < 1.0f) { bandAtOrigin++; atOrigin++; }
+
+            // The drum kit / instrument geometry lives in mInstDir and rides the
+            // character bones; its world-sphere center is the kit position. If the
+            // kit is far from the root while the root is staged, that's H5 (merge).
+            float ix = 0.f, iy = 0.f, iz = 0.f;
+            bool haveInst = false;
+            Character *inst = bc->mInstDir.mPtr;
+            if (inst) {
+                Sphere sph;
+                if (inst->MakeWorldSphere(sph, false)) {
+                    ix = sph.center.x; iy = sph.center.y; iz = sph.center.z;
+                    haveInst = true;
+                }
+            }
+            if (verbose) {
+                fprintf(stderr,
+                        "[POSDUMP] kind=band    name=%s root=%.2f,%.2f,%.2f parent=%s "
+                        "inst=%.2f,%.2f,%.2f%s\n",
+                        bname, root_v.x, root_v.y, root_v.z, pname,
+                        ix, iy, iz, haveInst ? "" : " (no_inst_sphere)");
+            }
+            continue;
+        }
+
+        if (RndTransformable *t = dynamic_cast<RndTransformable *>(o)) {
+            const Vector3 &w = t->WorldXfm().v;
+            float mag = Length(w);
+            propCount++;
+            if (mag < 1.0f) atOrigin++;
+            if (verbose) {
+                const char *tn = t->Name() ? t->Name() : "?";
+                const char *cn = t->ClassName().Str() ? t->ClassName().Str() : "?";
+                fprintf(stderr,
+                        "[POSDUMP] kind=prop    name=%s class=%s world=%.2f,%.2f,%.2f\n",
+                        tn, cn, w.x, w.y, w.z);
+            }
+            continue;
+        }
+    }
+  }
+
+    if (verbose) ::fflush(stderr);  // durably flush [POSDUMP] lines for the harness
+
+    char buf[320];
+    snprintf(buf, sizeof(buf),
+             "posdump roots=%d crowd_containers=%d crowd=%d band=%d props=%d "
+             "at_origin=%d band_at_origin=%d/%d crowd_at_origin=%d/%d",
+             nroots, crowdContainers, crowdMembers, bandCount, propCount, atOrigin,
+             bandAtOrigin, bandCount, crowdAtOrigin, crowdMembers);
+    sPosDump = buf;
+    return DataNode(sPosDump.c_str());
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic "force band closeup" harness hooks (converge-2026-06-20).
+//
+// The native build registers NO `band_director` DTA accessor and TheBandDirector
+// is a C++ global, not a name-resolvable DTA object — so the editor verbs
+// `{band_director force_shot ...}` / `{$band_director set disabled 1}` are SILENT
+// no-ops (probe-data §1). Without a way to PIN a venue camera shot, every A/B
+// capture lands on a different auto-director angle (the camera-desync
+// false-positive). These three native-only accessors give the Python harness a
+// real signal + a hard determinism gate.
+//
+// Pinning needs BOTH: ForceShot(shot) (sets mNextShot + mDisablePicking) AND
+// mDisabled=1 (stops OnSelectCamera's per-frame re-pick, BandDirector.cpp:1446).
+// Set mDisabled FIRST so no intervening frame can re-pick over the forced shot.
+// Everything touched (mDisabled, mVenue, mCurShot, ForceShot) lives on the RB3
+// BandDirector (src/, not the shared engine) and is already reachable via the
+// existing rb3_pos_dump plumbing — no engine change, no pin bump, Wii-neutral.
+// See docs/native/converge-2026-06-20/scout-harness.md §1.
+// ---------------------------------------------------------------------------
+
+// {rb3_force_shot "<name>"} -> pin a venue camera shot by name. Idempotent once
+// mDisabled is set: the forced shot applies on the next OnSelectCamera and then
+// stays (mNextShot is consumed, nothing re-picks). Returns a status STRING so the
+// harness gets a real signal instead of the silent 0 the probe saw.
+static std::string sForceShotResult;  // back the not_found:%s branch (MakeString is transient)
+static DataNode RB3DtaForceShot(DataArray* a) {
+    if (!TheBandDirector) return DataNode("force_shot no_director");
+    WorldDir* wdir = TheBandDirector->mVenue.Dir();   // same handle rb3_pos_dump uses
+    if (!wdir)            return DataNode("force_shot no_venue");
+    const char* name = a->Size() > 1 ? a->Str(1) : "";  // 1-based: index 0 is the func sym
+    BandCamShot* shot = wdir->Find<BandCamShot>(name, false);
+    if (!shot) {
+        sForceShotResult = std::string("force_shot not_found:") + (name ? name : "");
+        return DataNode(sForceShotResult.c_str());
+    }
+    TheBandDirector->mDisabled = true;   // STOP the per-frame auto re-pick FIRST
+    TheBandDirector->ForceShot(shot);    // then queue our shot (sets mNextShot + mDisablePicking)
+    return DataNode("force_shot ok");
+}
+
+// {rb3_director_disable <0|1>} -> explicit director freeze/unfreeze. Echoes the
+// current state so the harness can (a) freeze before forcing, (b) assert the
+// echo, (c) unfreeze so the auto-director resumes (for multi-member capture).
+static DataNode RB3DtaDirectorDisable(DataArray* a) {
+    if (!TheBandDirector) return DataNode(0);
+    if (a->Size() > 1) TheBandDirector->mDisabled = (a->Int(1) != 0);
+    return DataNode(TheBandDirector->mDisabled ? 1 : 0);  // echo current state
+}
+
+// {rb3_cur_shot} -> the live mCurShot name. The cheapest machine-checkable
+// determinism proof: after forcing, poll across N frames — it must equal the
+// forced name every frame. (mCurShot is an ObjPtr<BandCamShot>; it converts to a
+// raw BandCamShot* via operator T1*.)
+static DataNode RB3DtaCurShot(DataArray*) {
+    if (!TheBandDirector) return DataNode("");
+    BandCamShot* s = TheBandDirector->mCurShot;
+    return DataNode(s && s->Name() ? s->Name() : "");
+}
+
 void RB3HttpRegisterDtaFuncs() {
     DataRegisterFunc(Symbol("rb3_set"), RB3DtaSetSetting);
     DataRegisterFunc(Symbol("rb3_overshell"), RB3DtaOvershellState);
     DataRegisterFunc(Symbol("rb3_char_probe"), RB3DtaCharProbe);
+    DataRegisterFunc(Symbol("rb3_pos_dump"), RB3DtaPosDump);
+    DataRegisterFunc(Symbol("rb3_force_shot"), RB3DtaForceShot);            // NEW
+    DataRegisterFunc(Symbol("rb3_director_disable"), RB3DtaDirectorDisable);  // NEW
+    DataRegisterFunc(Symbol("rb3_cur_shot"), RB3DtaCurShot);               // NEW
 }
 
 // ---------------------------------------------------------------------------

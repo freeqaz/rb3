@@ -1,0 +1,477 @@
+{
+  "generated": "2026-06-23",
+  "sample": "system+network net-new ACCEPT (30 stratified)",
+  "method": "30 independent Opus judges over self-contained evidence packs; verdicts written to disk; adversarial spot-check of cited evidence (pair-30 TU string, pair-26 callees, pair-15) confirmed real",
+  "verdicts": [
+    {
+      "pair": 1,
+      "verdict": "same",
+      "confidence": "medium",
+      "claimed_wii_symbol": "CompressTextures__12OutfitConfigFv",
+      "category": "system",
+      "stratum": "HIGH",
+      "reasoning": "Both bodies implement the identical trivial setter pattern: load a single struct field, if it already equals 2 return immediately (early-return / beqlr), otherwise store 1 into that same field. The discriminating immediates match exactly across the compiler boundary -- compare-constant = 2 and store-constant = 1 on BOTH sides. The only divergence is the field offset (Wii 0x3c vs Xenon 0x44), which is precisely the struct-field-offset shift caused by different struct packing between MWCC/Gekko and MSVC/Xenon (different base-class size / alignment), an explicitly VALIDATED cross-compiler artifact that must NOT drive a DIFFERENT verdict. No genuine sibling-alias discriminator is present: no differing node-size literal (e.g. 16 vs 36), no valid-vs-valid type-tag divergence (e.g. 6 vs 1), and no referenced strings that name a different function/TU (neither side references any string). Both are leaf functions (0 callees), so no callee evidence either direction, but nothing contradicts the identity. Confidence is medium rather than high only because this is a very small (9-line / 24-byte) leaf whose shape could in principle be shared by another trivial single-field setter; however, the exact agreement of BOTH literal constants (2 and 1) plus the single-field toggle structure is a reasonably specific fingerprint, and the ExactInstructionsFunctionHasher HIGH-stratum match with zero contradicting evidence supports SAME.",
+      "key_evidence": [
+        "Identical control-flow shape: load field, cmp==2 -> early return (beqlr), else store 1 to same field.",
+        "Both discriminating immediates agree: compare-constant=2 and store-constant=1 on Wii and Xenon.",
+        "Only difference is field offset 0x3c (Wii) vs 0x44 (Xenon) -- a validated struct-packing offset-shift artifact, not a discriminator.",
+        "No sibling-alias discriminator present: no differing node-size literal, no valid type-tag divergence, no contradicting strings.",
+        "Both leaf functions (0 callees); no callee disagreement.",
+        "HIGH stratum, ExactInstructionsFunctionHasher match."
+      ]
+    },
+    {
+      "pair": 2,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "TypeToString__F8DataType",
+      "category": "system",
+      "stratum": "HIGH",
+      "reasoning": "The Wii body is TypeToString(DataType): a bound-checked switch (cmplwi r3,0x14 / bgt -> UNEXPECTED) over a 21-entry jump table that returns a global Symbol per DataType enum value (Int, Float, Var, Func, Object, Sym, Unhandled, Array, Command, String, Property, Glob, default UNEXPECTED). The Xenon body matches this on three independent axes. (1) STRINGS: the Xenon body references 'Float','Object','Unhandled','Array','Command','String','Property','UNEXPECTED' -- exactly the DataType type-name set the Wii body loads as Symbol globals. The Xenon side constructs these Symbols inline (MSVC local-static lazy init) whereas MWCC pre-constructed them as file-scope statics; same names, different toolchain idiom. (2) CALLEE: the Xenon callee demangles to ??0Symbol@@QAA@PBD@Z = Symbol::Symbol(char const*), precisely the constructor needed to build the type-name Symbols. (3) SWITCH SHAPE: both switch on the type value with cases 0-6, a gap (7-0xF) routed to the default = UNEXPECTED, then cases 0x10-0x14 -- the Wii 0x15-entry jump table has indices 7-15 all pointing at the UNEXPECTED default, identical distinctive shape. The 'resolved Wii symbol' column (NumPotentialUsers, IsNoFailActive) is clearly mis-resolution noise from the stripped XEX's matches.json; the demangled MSVC name on the second callee (Symbol ctor) is the real, agreeing signal. No genuine discriminator (differing node-size literal, contradictory valid type tag, or string naming a different partner) is present.",
+      "key_evidence": [
+        "Xenon referenced strings (Float/Object/Unhandled/Array/Command/String/Property/UNEXPECTED) == the DataType type-name Symbol set loaded by the Wii body",
+        "Xenon callee ??0Symbol@@QAA@PBD@Z demangles to Symbol::Symbol(char const*) -- constructs the type-name Symbols (matches.json's NumPotentialUsers/IsNoFailActive resolutions are stripped-binary noise)",
+        "Identical distinctive switch shape: cases 0-6 + 0x10-0x14 + default->UNEXPECTED; Wii 21-entry jump table has indices 7-15 all -> UNEXPECTED default",
+        "Both are bound-checked (Wii cmplwi 0x14/bgt; Xenon switch default) type-to-Symbol mappers -- a tiny leaf function whose constant pool/string set is hard to fake"
+      ]
+    },
+    {
+      "pair": 3,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "deflateInit_",
+      "category": "system",
+      "stratum": "HIGH",
+      "reasoning": "Both bodies are trivial thunk-forwarders that tail-call the same partner: the single Xenon callee FUN_82B29018 resolves via matches.json to Wii deflateInit2_, which is exactly the only function the Wii body calls. The forwarded literal arguments are identical on both sides (method=8, windowBits=0xF, memLevel=8, strategy=0) -- these are the canonical zlib deflateInit_ defaults that forward to deflateInit2_(level=8/0xF/8/0, stream, version). The level/stream/version passthrough args (param_1/param_2/param_3/param_4 on Xenon; arg2/arg3 + implicit on Wii) differ only in argument-position rendering, an expected calling-convention/regalloc artifact. Control-flow shape (single tail call, tiny body: Wii 0x1C, Xenon 28 bytes) agrees. No referenced strings on either side (expected for a leaf forwarder), so no string contradiction. No sibling-aliasing discriminator present: no differing node-size literal, no conflicting type tag, no contradicting partner name -- the constant set and resolved callee both point unambiguously at deflateInit_.",
+      "key_evidence": [
+        "Resolved-callee agreement: Xenon FUN_82B29018 -> Wii deflateInit2_; Wii body's only call is deflateInit2_ (cross-compiler match).",
+        "Identical forwarded literals on both sides: 8, 0xF, 8, 0 -- the canonical zlib deflateInit_ defaults passed to deflateInit2_.",
+        "Both are single-tail-call thunks of consistent tiny size (Wii 0x1C / Xenon 28 bytes).",
+        "No strings to refute; argument-order differences are calling-convention rendering artifacts, not discriminators."
+      ]
+    },
+    {
+      "pair": 4,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "UpdateTargetEdge__13BandHighlightFP16RndTransformable",
+      "category": "system",
+      "stratum": "BSIM>=30",
+      "reasoning": "Control-flow shape and call sequence are identical across the compiler boundary. Both bodies: (1) guard on an object pointer member (Wii unk148 vs Xenon +0x18c -- a shifted field offset, validated MWCC/MSVC packing artifact); (2) call __dynamic_cast with two RTTI pointer args + trailing 0 (Wii __dynamic_cast(arg0,4,&__RTTI__7UILabel,&__RTTI__16RndTransformable,0) vs Xenon Function_82804DA8(param_2,0,...82c3b018,...82c3ce84,0)) and bail if null; (3) call TextObj (Wii TextObj__7UILabelFv vs Xenon FUN_827ccf10, a no-arg call returning the text object); (4) if non-null call GetStringWidthUTF8(text, text->stringPtr, 0,0,0) else use 0.0; (5) copy the source object's edge fields into 6 destination float members, reusing two values, with the GetStringWidthUTF8 result stored last as a float. The STRONGEST corroboration is the resolved-callee agreement: Xenon Function_82443020 maps via matches.json to GetStringWidthUTF8__7RndTextCFPCcPCcbPQ27RndText5Style -- the exact same callee the Wii body calls. The only differences are shifted struct-field offsets (0x148 vs 0x18c, 0x130-0x144 vs 0x16c-0x188, source 0x40/0x44/0x48 vs 0x4c/0x50/0x54/0x58, string member 0xd4 vs 0x108) which are the validated cross-compiler packing artifact, plus the expected dynamic_cast arg-shape/inlining differences. No referenced strings to refute. No genuine discriminator (no differing node-size literal, no valid-vs-valid type tag, no string naming a different partner).",
+      "key_evidence": "Xenon Function_82443020 resolves to GetStringWidthUTF8__7RndTextCFPCcPCcbPQ27RndText5Style -- the exact callee the Wii body calls; identical 3-call sequence (dynamic_cast -> TextObj -> GetStringWidthUTF8/0.0) and identical 6-field edge-copy block with float result written last; differences are only shifted struct offsets (MWCC vs MSVC packing) and dynamic_cast arg shape -- all validated cross-compiler artifacts."
+    },
+    {
+      "pair": 5,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "AddUV__Q213BandPatchMesh8MeshVertFPCQ213BandPatchMesh8MeshVertRC7Vector2PC7Vector2",
+      "category": "system",
+      "stratum": "BSIM>=30",
+      "reasoning": "The Wii m2c and Xenon pseudo-C describe the same source function (BandPatchMesh::MeshVert::AddUV) with structural agreement across the MWCC/MSVC compiler boundary that is far too detailed to be a sibling-alias coincidence. (1) IDENTICAL CONTROL-FLOW SHAPE: both compute the three vertex-position deltas (this->vert - mv->vert in x/y/z), a dot-product projection scalar fVar6/temp_f1 = -(...), the squared-length comparison with a leaf two-magnitude branch (if projected-len > 0: normalize, else if orig-len > 0: return 0), an inverse-sqrt Newton refinement, an optional arg2!=NULL UV-distance early-return (return 0), and a final identical 8-field accumulation. (2) MATCHING CONSTANT POOL: the rsqrt refinement uses the exact same magic constants -- 3.0 (Wii @F_00004040 / Xenon DAT_8201419c) and 0.5 (Wii @F_0000003f / Xenon DAT_8200108c) and 1.0 (@F_0000803f) in the same Newton-Raphson 1/sqrt formula `-(x*x*v - 3.0)*x*0.5`. (3) FIELD OFFSETS AGREE: both treat the vert struct as {ptr@[0], 3x3-ish basis@[1..7], UV-accum@[9],[10]} and the final accumulation adds exactly fields [1],[2],[3],[5],[6],[7] plus the UV pair -- the same skip pattern (skips the [0] pointer, [4], and [8]). (4) The Wii body's referenced strings (BandPatchMesh.cpp, asserts 'this != mv', 'mv->mVert') positively confirm the claimed symbol; the Xenon leaf has its MSVC asserts/strings inlined/stripped (expected cross-compiler artifact) and references none that contradict. No genuine discriminator (no differing node-size literal, no valid-vs-valid type tag mismatch, no contradicting partner string). The only differences are expected MWCC-vs-MSVC codegen artifacts (psq_/paired-single vs scalar, fmadds fusion, the inlined assert calls present on Wii, register/schedule). Verdict SAME.",
+      "key_evidence": "Identical normalize-and-accumulate algorithm with matching Newton 1/sqrt constants (3.0, 0.5, 1.0), matching field-offset layout and the exact same [1,2,3,5,6,7]+UV accumulation skip pattern, plus arg2!=NULL distance-gate early-return; Wii strings positively name BandPatchMesh.cpp / 'this != mv' / 'mv->mVert', no contradicting Xenon strings or discriminating literals."
+    },
+    {
+      "pair": 6,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "Deploy__9BandTrackFv",
+      "category": "system",
+      "stratum": "BSIM>=30",
+      "reasoning": "Structural and callee evidence is overwhelming. The Xenon pseudo-C and Wii m2c bodies have identical control flow: five blocks in the same order. Every struct field offset matches exactly across the compiler boundary: unkBC at 0xbc (vtable-dispatched call when non-null), GetCrowdMeter result then Deploy with this->unk10C at 0x10c, unk40 at 0x40 (Overdrive), unk98 at 0x98 (vtable-dispatched call with arg 0), and the final byte store of 1 to this->unk18 at 0x18 (stb on Wii, *(p+0x18)=1 byte store on Xenon). The vtable slot deltas (0x50 vs 0x24, 0x138 vs 0x130) are expected MWCC-vs-MSVC vtable-layout/index artifacts and do not count as differences. Two of three Xenon callees resolve via matches.json to the EXACT same Wii callees: Function_8233C848 -> GetCrowdMeter__9BandTrackFv and FUN_822c4868 -> Overdrive__11StreakMeterCFv. The third unmatched callee Function_822AAE38 is called positionally with the crowd-meter result and *(param_1+0x10c), exactly the Wii Deploy__14BandCrowdMeterFi(crowdMeter, this->unk10C) call site. No referenced strings exist to contradict. No genuine sibling discriminator (no differing node-size literal, no valid-vs-valid type tag).",
+      "key_evidence": [
+        "Resolved callee Function_8233C848 -> GetCrowdMeter__9BandTrackFv (exact Wii match)",
+        "Resolved callee FUN_822c4868 -> Overdrive__11StreakMeterCFv (exact Wii match)",
+        "Unmatched callee Function_822AAE38(crowdMeter, *(p+0x10c)) positionally == Wii Deploy__14BandCrowdMeterFi(temp_r3, this->unk10C)",
+        "Identical field offsets across both bodies: 0xbc, 0x10c, 0x40, 0x98, 0x18",
+        "Identical 5-block control-flow shape in same order; final stb 1 -> off 0x18",
+        "Vtable-slot deltas (0x50/0x24, 0x138/0x130) are expected cross-compiler vtable-layout artifacts, not discriminators",
+        "No Xenon strings; nothing to refute the claim"
+      ]
+    },
+    {
+      "pair": 7,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "ReconcileFretState__22JoypadGuitarControllerFv",
+      "category": "system",
+      "stratum": "BSIM>=30",
+      "reasoning": "The Xenon pseudo-C and Wii m2c share an identical control-flow signature for JoypadGuitarController::ReconcileFretState. (1) Same prologue chain: get controller, call vtable method (Wii 0x64 / Xenon 0x5c) guarding an early-out; if nonzero call a second vtable method (Wii 0x68 / Xenon 0x64) to fetch a LocalUser. (2) RESOLVED-CALLEE AGREEMENT: Xenon Function_825116B0 -> UserHasController__FP9LocalUser, which is exactly the call the Wii body makes (bl UserHasController__FP9LocalUser) at the same position guarding the body. (3) Identical 5-iteration loop: both do { mask = 1<<i; read fret-state bitfield (Wii this->unk40 / Xenon piVar4[0x13]); virtual call (Wii 0x60 / Xenon 0x58) with (this, i); compute a bool predicate; OR into accumulator; on disagreement, two-way branch calling one of two virtuals (Wii 0x20/0x24 / Xenon 0x18/0x1c) with (i, -1) vs (i) } while (i < 5). The -1 literal matches exactly (Wii 'li r5, -0x1' / Xenon 0xffffffffffffffff). (4) Identical loop-exit: write back accumulator to the bitfield field, then one final virtual call (Wii 0x1c / Xenon 0x14) with a bool of (padData & (1<<otherField)) and that other field. All offset shifts (0x64 vs 0x5c, 0x68 vs 100, 0x60 vs 0x58, 0x20/0x24 vs 0x18/0x1c, 0x1c vs 0x14, this->unk40 vs piVar4[0x13]) are exactly the documented cross-compiler struct-packing / vtable-layout artifacts, not real discriminators. The bool-materialization difference ((-x|x)>>31 on MWCC vs (mask & v)!=0 on MSVC) is a codegen artifact for the same predicate. No referenced strings to contradict. No sibling-alias discriminator present: no differing node-size literal, no valid-vs-valid type tag.",
+      "key_evidence": [
+        "resolved-callee: Xenon Function_825116B0 -> UserHasController__FP9LocalUser, exactly matching the bl UserHasController__FP9LocalUser in the Wii body at the same guard position",
+        "identical 5-iteration fret loop (i<5) with 1<<i mask, accumulator OR, and two-way virtual dispatch",
+        "the -1 / 0xffffffffffffffff argument to the first branch's virtual call matches on both sides",
+        "loop-exit writes accumulator back to the fret-state bitfield then makes one final virtual call with a derived bool, on both sides",
+        "offset/vtable-slot shifts and bool-materialization are documented MWCC-vs-MSVC artifacts, not discriminators"
+      ]
+    },
+    {
+      "pair": 8,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "Conceal__8BandListFv",
+      "category": "system",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Exact cross-compiler structural match. Both bodies are the identical small guarded pattern: if (intField != 2) { intField = 1; floatField = (float)Call(&TheTaskMgr_singleton); }. The guard constant (2) and store constant (1) agree exactly between Wii and Xenon. The single resolved callee is the strongest signal: Xenon's FUN_82722790 maps via matches.json to UISeconds__7TaskMgrCFv, which is precisely the callee the Wii body calls (UISeconds__7TaskMgrCFv(&TheTaskMgr)); the Xenon arg 0xffffffff82dd3a38 is the Xenon TheTaskMgr singleton address, mirroring Wii's &TheTaskMgr. The only deltas are the systematic, expected struct-offset shift (int/float fields at 0x2E8/0x2EC on Wii vs 0x33c/0x340 on Xenon) \u2014 the two fields remain adjacent and 4 bytes apart on both sides, a packing/base-size artifact explicitly validated as non-discriminating. No referenced strings refute the identity (0 strings). No genuine sibling-alias discriminator (no node-size literal or valid-vs-valid type-tag mismatch).",
+      "key_evidence": [
+        "Resolved callee FUN_82722790 -> UISeconds__7TaskMgrCFv matches the exact Wii callee (cross-compiler agreement, strongest signal)",
+        "Identical control flow: if (field != 2) { field = 1; floatField = (float)call(singleton); }",
+        "Guard constant 2 and store constant 1 agree exactly on both sides",
+        "Xenon call arg 0xffffffff82dd3a38 = Xenon TheTaskMgr singleton, mirroring Wii &TheTaskMgr",
+        "Field-offset shift (0x2E8/0x2EC vs 0x33c/0x340) is a validated struct-packing artifact; fields stay 4 bytes apart on both",
+        "No refuting strings (0 referenced); no genuine sibling discriminator present"
+      ]
+    },
+    {
+      "pair": 9,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "UserName__9BandTrackCFv",
+      "category": "system",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Control-flow shape is identical across the compiler boundary: both bodies load/test the same struct field at offset +0x98, and on null fall through to construct a FormatString from a string-literal pointer then call Str(); on non-null they make a virtual dispatch via the object's vtable. The two resolved Xenon callees map (via matches.json) to the EXACT two Wii callees the Wii body invokes in the same null-branch: 0x8279f3f0 -> __ct__12FormatStringFPCc (FormatString ctor from const char*) and 0x8279edb0 -> Str__12FormatStringFv (FormatString::Str). Agreeing callees in the same code path are the strongest cross-compiler signal. The large FormatString stack buffer matches EXACTLY: Wii allocates stwu r1,-0x820 (2080 bytes) and Xenon declares auStack_820[2080] (2080 bytes). The only divergence is the virtual-call slot offset (Wii 0x8c vs Xenon 0x7c), which is a systematic MWCC-vs-MSVC vtable/struct-packing layout artifact (validated as expected, NOT a discriminator), and the branch-inversion (test ==0 first) which is an instruction-selection artifact. The Xenon ctor arg 0xffffffff8203932c is the sign-extended string-base pointer, matching Wii's @stringBase0 arg. No referenced strings contradict the claimed partner (Xenon references 0 strings). No genuine sibling-alias discriminator present: no differing node-size literal, no valid-vs-valid type tag, no string naming a different function/TU.",
+      "key_evidence": [
+        "Both resolved callees agree across the boundary: Xenon 0x8279f3f0->__ct__12FormatStringFPCc and 0x8279edb0->Str__12FormatStringFv, exactly the two Wii callees in the null-branch.",
+        "Exact stack-frame match: Wii stwu r1,-0x820 (2080B) == Xenon auStack_820[2080].",
+        "Identical struct field offset tested in both bodies: +0x98 (this->unk98).",
+        "Same control-flow: guarded virtual dispatch on this->0x98 else FormatString-construct-and-Str fallback.",
+        "Only difference is vtable slot 0x8c vs 0x7c = systematic vtable/struct-packing artifact (expected, not a discriminator); branch inversion is instruction-selection artifact.",
+        "No contradicting strings (Xenon references 0), no differing node-size/type-tag literal."
+      ]
+    },
+    {
+      "pair": 10,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "RemoveAt__11TrackWidgetFfi",
+      "category": "system",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Strong cross-compiler structural identity. (1) RESOLVED CALLEE: the single Xenon callee FUN_827b7cd0 resolves via matches.json to SecondsToY__8TrackDirCFf, which is exactly the only function the Wii body calls (bl SecondsToY__8TrackDirCFf). A single-callee perfect agreement across the MWCC/MSVC boundary is the strongest possible signal. (2) CONTROL FLOW: both bodies call the callee on a TrackDir-pointer member (Wii unk80 / Xenon +0xa8), add a float field to its result, index an array (base at member 0x1FC / 0x260) by the int arg, then branch on the sign of the index (Wii arg1>0 vs Xenon param_3<1 = exact complements) to compute either current-minus-previous or next-minus-current element difference, take its absolute value (same fcmpo/fneg vs <=0-negate Abs idiom), multiply by a float constant (@F_0000003f / DAT_8200108c), and finish with a 3-float-arg virtual call through a member's vtable. Every semantic block lines up. (3) DIFFERENCES ARE ALL EXPECTED ARTIFACTS: shifted struct offsets (0x80/0x78/0x74/0x84 Wii vs 0xa8/0x98/0x9c/0xac Xenon = MSVC vs MWCC packing), array stride 0x30 vs 0x40 and element field 0x24 vs 0x30/0x70/-0x10 (different element sizeof/layout), vtable slot 0x24 vs 0x1c (different vtable layout), and the branch-sense swap. No referenced strings (0) and none contradict the partner. No genuine sibling discriminator (no valid-vs-valid type tag, no differing node-size literal). This is a faithful same-function match.",
+      "key_evidence": [
+        "Xenon callee FUN_827b7cd0 -> SecondsToY__8TrackDirCFf == the only Wii callee (perfect single-callee agreement)",
+        "Branch predicate complement: Wii arg1>0 vs Xenon param_3<1, with matching prev/next element difference logic in each arm",
+        "Identical abs-then-multiply-by-float-constant idiom followed by a 3-float-arg member vtable virtual call",
+        "All offset/stride/vtable-slot differences are systematic MWCC-vs-MSVC packing/codegen artifacts, not logic differences",
+        "0 referenced strings; none refute the claimed TrackWidget::RemoveAt identity"
+      ]
+    },
+    {
+      "pair": 11,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "DoFileRead__12VorbisReaderFv",
+      "category": "system",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Control-flow shape is an exact cross-compiler match. Both bodies open with an early single-byte flag guard (Xenon +0xEF, Wii unkE3=+0xE3) that returns 0/falls through, then a compound (byte-flag != 0 && int/ptr-field == 0) gate (Xenon +0x3c/+0x38, Wii unk34/unk30), then a vtable-dispatched predicate call whose == 0 result gates the read. The distinctive buffer-fill gate is identical: load a sub-object pointer (Xenon +0x50, Wii unk48), compute (*(p+8) - *(p+0xc)) and compare < 0x10000. On pass, both call ogg_sync_buffer with arg 0x4000 -- the SINGLE Xenon callee 0x82BF8EF8 resolves via matches.json to the Wii callee ogg_sync_buffer (the strongest cross-compiler signal), and both store its result into the buffer-pointer field. Both then issue a vtable-slot read of 0x4000 bytes (Xenon slot +0xc, Wii slot 0x14) with (obj, buf, 0x4000) args, store an EOF byte via another vtable slot into the +0xEF/+0xE3 flag, and set the return flag to 1. The second block matches too: a vtable call taking a stack out-param (Xenon +0x34/local_20, Wii unk3C/&sp10) gated on an int field == 0 (Xenon +0x40, Wii unk38), with parallel return-1 success paths and a final vtable EOF-flag refresh. The 0x4000 (read size) and 0x10000 (threshold) literals appear identically on both sides. All divergences are expected MWCC/MSVC artifacts: uniform struct-field offset shifts (0xEF vs 0xE3, +0x50 vs +0x48, +0x30 vs +0x28, vtable slots offset by +8) from different struct packing, and the Wii-only inlined AutoTimer profiling + MILO_ASSERT (Fail__5Debug/MakeString at line 0x1F9, drawing on the VorbisReader.cpp assert string pool) which is a MWCC debug-build feature absent from the MSVC build. No genuine discriminator exists: no differing node-size literal, no valid-vs-valid type tag, and no Xenon-side string naming a different function/TU.",
+      "key_evidence": [
+        "Single resolved callee agrees across compilers: Xenon 0x82BF8EF8 -> ogg_sync_buffer, same as Wii body's ogg_sync_buffer call, both with literal 0x4000.",
+        "Distinctive buffer gate identical: ptr-field load then (*(p+8)-*(p+0xc)) < 0x10000 on both sides (0x10000 literal matches).",
+        "Parallel two-block control flow: early byte-flag guard, (flag && field==0) gate, ogg_sync_buffer fill, vtable read of 0x4000, EOF-flag store, then out-param vtable call gated on int field==0 with return-1 success paths.",
+        "Offset shifts are uniform packing differences (0xEF/0xE3, 0x50/0x48, 0x30/0x28, vtable +8); no discriminating literal or type tag.",
+        "Wii-only AutoTimer/MILO_ASSERT instrumentation (VorbisReader.cpp assert pool, Fail__5Debug) is an expected MWCC-debug-vs-MSVC artifact, not a difference.",
+        "Xenon body references no strings; Wii string pool names VorbisReader.cpp and confirms (does not contradict) the identity."
+      ]
+    },
+    {
+      "pair": 12,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "UpdateExcitement__14BandCrowdMeterFb",
+      "category": "system",
+      "stratum": "BSIM 15-20",
+      "reasoning": "The two bodies are control-flow isomorphic with multiple semantic (non-packing) constants matching exactly. Both: (1) early-out on a byte guard field (Wii 0x19C / Xenon 0x1F0 -- offset-shifted by struct packing, an expected MWCC/MSVC artifact); (2) load a current-state int (Wii 0x1A8 / Xenon 0x200) and a pointer field (Wii 0x1AC / Xenon 0x204); (3) if the pointer is non-null, make a virtual call to recompute the state; (4) if (state changed || force-arg != 0): store the new state, then test the maxed-flag byte (Wii 0x194 / Xenon 0x1E8) against (state == 4) and update it; (5) if a this-only predicate returns false, index an array (base field Wii 0x208 / Xenon 0x264) with stride 0xC and element offset +8, then make a virtual call. The genuine semantic discriminators are IDENTICAL across both compilers: the maxed comparison literal '== 4' (Wii computes var_r3-4==0 via subi/cntlzw/srwi; Xenon writes iVar1==4), the array stride 0xC (Wii mulli r0,r0,0xc; Xenon *0xc), and the element offset +8 (Wii lwz r3,0x8(r3); Xenon +8). The one structural divergence -- Wii calls SetMaxed__14BandCrowdMeterFb out-of-line while Xenon inlines it (storing the bool flag and then making a vtable-slot-0x58 notify vcall) -- is precisely an expected inlining artifact, not a real difference; the inlined Xenon flag-store/notify is exactly what an out-of-line SetMaxed would do. The Xenon this-only callee FUN_822aac18 is the positional/semantic analog of Wii's Draining__14BandCrowdMeterCFv (both gate the final array-index vcall) though unmatched in matches.json. No referenced strings contradict the partner; no differing node-size literal or differing-but-valid type tag exists. All field-offset deltas are uniform struct-packing shifts. This is a clean cross-compiler identity match.",
+      "key_evidence": [
+        "Identical semantic constant: maxed test '== 4' present on both (Wii subi/cntlzw/srwi idiom; Xenon iVar1==4)",
+        "Identical array stride 0xC (Wii mulli r0,r0,0xc / Xenon *0xc) and element offset +8 (Wii lwz r3,0x8(r3) / Xenon +8)",
+        "One-to-one control flow: guard -> optional vcall-recompute-state -> (changed || force) -> maxed-flag-update+notify -> draining-gated array-index final vcall",
+        "Only divergence is Xenon inlining SetMaxed (the out-of-line Wii callee) -- an expected MWCC/MSVC inlining artifact; the inlined store+vcall(slot 0x58) matches SetMaxed semantics",
+        "All field-offset deltas (0x19C/0x1F0, 0x1A8/0x200, 0x1AC/0x204, 0x194/0x1E8, 0x208/0x264) are uniform struct-packing shifts, an expected non-difference",
+        "No referenced strings on the Xenon side -- nothing contradicts the claimed BandCrowdMeter::UpdateExcitement partner"
+      ]
+    },
+    {
+      "pair": 13,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "__ct__12BandSongPrefFv",
+      "category": "system",
+      "stratum": "BSIM 15-20",
+      "reasoning": "Both bodies are the same constructor shape: (1) call the Hmx::Object base ctor, (2) install the vtable at offset 0, (3) construct exactly FOUR Symbol(const char*) members at a 4-byte stride, (4) return this. Callee agreement is strong: Xenon callee 0x82737fe8 resolves to __ct__Q23Hmx6ObjectFv, exactly the Wii first call. Xenon callee 0x8279b788 carries the MSVC name ??0Symbol@@QAA@PBD@Z which demangles to Symbol::Symbol(char const*) == __ct__6SymbolFPCc, exactly the Wii Symbol ctor (the matches.json resolution to IsNoFailActive__13MetaPerformerCFv is a mis-resolution artifact, but the embedded MSVC symbol name is unambiguous). Referenced strings 'guitar' and 'rocker' are the bookends of the Wii string base \"guitar\\0bass\\0drum\\0rocker\\0\" \u2014 exactly the four Symbol args, strongly corroborating. Field offsets differ only in base (Wii 0x1C..0x28 vs Xenon 0x28..0x34) due to a larger MSVC Hmx::Object base subobject \u2014 same count, same 4-byte stride. No sibling-alias discriminator present (no differing node-size literal, no differing valid-vs-valid type tag, no contradicting string).",
+      "key_evidence": [
+        "Identical structure: base-ctor + vtable install + 4x Symbol(const char*) + return this",
+        "Xenon callee -> __ct__Q23Hmx6ObjectFv matches Wii base ctor call exactly",
+        "Xenon callee MSVC name ??0Symbol@@QAA@PBD@Z == Symbol::Symbol(const char*) == Wii __ct__6SymbolFPCc",
+        "Strings 'guitar' + 'rocker' are bookends of Wii string base 'guitar\\0bass\\0drum\\0rocker'",
+        "Same Symbol member count (4) and 4-byte stride; offset base shift (0x1C vs 0x28) is expected MSVC vs MWCC base-subobject packing"
+      ]
+    },
+    {
+      "pair": 14,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "Reveal__8BandListFv",
+      "category": "system",
+      "stratum": "BSIM 15-20",
+      "reasoning": "Both bodies have an identical 3-statement shape with no branches: (1) store integer 0 to a member, (2) call a function returning a float and store the result to the adjacent (member+4) float field, (3) tail-call a sibling member function passing `this`. The two Xenon callees resolve via matches.json to EXACTLY the two Wii callees in the SAME order: FUN_82722790 -> UISeconds__7TaskMgrCFv (the float-returning UISeconds on TaskMgr; the Xenon arg 0xffffffff82dd3a38 is the static TheTaskMgr instance, mirroring the Wii lis/addi of TheTaskMgr) and Function_8232B280 -> UpdateShowingState__8BandListFv (a same-TU BandList sibling). Agreeing callees across the MWCC/MSVC compiler boundary in matching order are the strongest possible identity signal. The member-offset difference (0x2E8/0x2EC on Wii vs 0x33c/0x340 on Xenon) is an expected struct-packing shift, and on BOTH sides the int and float members stay exactly 4 bytes apart (s32 then f32), confirming the same two fields. No referenced strings on either side, so no contradicting-string refutation. No genuine discriminator (no differing node-size literal, no valid-vs-valid type tag, no contradicting partner string) present. This is a textbook same-function match.",
+      "key_evidence": [
+        "Xenon FUN_82722790 resolves to UISeconds__7TaskMgrCFv == Wii's first callee (float-returning TaskMgr method)",
+        "Xenon Function_8232B280 resolves to UpdateShowingState__8BandListFv == Wii's second callee (same-TU BandList sibling)",
+        "Callees agree in the same order across compilers (strongest signal)",
+        "Identical 3-statement control-flow shape: store-0; call+store-float-at-+4; tail-call sibling(this)",
+        "Field-offset shift (0x2E8/0x2EC vs 0x33c/0x340) is expected struct-packing; both keep s32 then adjacent f32 (4-byte gap)",
+        "No referenced strings on either side -> no contradicting-string refutation",
+        "Xenon arg 0xffffffff82dd3a38 corresponds to Wii's static TheTaskMgr address loaded via lis/addi"
+      ]
+    },
+    {
+      "pair": 15,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "Init__11TrackWidgetFv",
+      "category": "system",
+      "stratum": "BSIM 15-20",
+      "reasoning": "Both bodies are the identical one-line forwarding stub TrackWidget::Init(){ mImp->Init(); }: load an object pointer from a member of 'this', load its vtable, and indirect tail-call a virtual slot. Wii asm: lwz r3,0x84(r3) (mImp) -> lwz r12,0(r3) (vtable) -> lwz r12,0x44(r12) -> mtctr/bctr. Xenon pseudo-C: (**(code**)(**(int**)(param_1+0xac)+0xc))() -- same member-load -> vtable-load -> indirect tail call (the 'Treating indirect jump as call' / 'could not recover jumptable' warning is Ghidra's rendering of bctr). The source is independently verified: TrackWidget.h line 89 puts mImp at offset 0x84, TrackWidget.cpp:150 is literally 'void TrackWidget::Init(){ mImp->Init(); }', and TrackWidgetImp.h:41 confirms 'virtual void Init() {} // 0x44' is exactly the Wii vtable slot. The only two differences -- member offset 0x84 (Wii) vs 0xac (Xenon) and vtable slot 0x44 (Wii) vs 0xc (Xenon) -- are the systematic MWCC-vs-MSVC struct-packing and vtable-ordering artifacts that are explicitly NOT a basis for a DIFFERENT verdict. Sibling-alias check: the other mImp-forwarders in this TU all have distinguishing shape (Poll has an if(mTrackDir) guard + 2 calls; DrawShowing has nested conditionals; Empty/Size return values and use slot 0xC). Init is the unique zero-branch, no-arg, void, single-virtual-tail-call one-liner -- matching both bodies. No strings and no resolved callees (leaf indirect tail call), so no string/callee refutation possible; corroboration is the perfect structural match plus source confirmation. BSim sim 1.0 / conf 15.142.",
+      "key_evidence": [
+        "Wii asm is a pure forwarding tail call: lwz mImp(0x84) -> lwz vtable(0x0) -> lwz slot(0x44) -> mtctr/bctr (no branches, no args, void)",
+        "Xenon pseudo-C (**(code**)(**(int**)(param_1+0xac)+0xc))() is the identical member->vtable->indirect-tail-call shape (bctr rendered as the indirect-jump-as-call warning)",
+        "Source confirms identity: TrackWidget.cpp:150 'void TrackWidget::Init(){ mImp->Init(); }', TrackWidget.h:89 mImp@0x84, TrackWidgetImp.h:41 'virtual void Init() {} // 0x44'",
+        "Offset diffs (member 0x84 vs 0xac, vtable slot 0x44 vs 0xc) are systematic MWCC/MSVC struct-packing + vtable-ordering artifacts, explicitly excluded as DIFFERENT evidence",
+        "Sibling discriminator: Init is the unique no-guard, no-arg, void single-virtual-tail-call one-liner among TrackWidget's mImp forwarders (Poll/DrawShowing/Empty all have distinguishing control flow or return values)",
+        "BSim similarity 1.0, confidence 15.142"
+      ]
+    },
+    {
+      "pair": 16,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "ValidOperation__Q26Quazal7StationFPQ26Quazal11DOOperation",
+      "category": "network",
+      "stratum": "BSIM>=30",
+      "reasoning": "Control-flow shapes are isomorphic across the compiler boundary. Wii Quazal::Station::ValidOperation: reads a u16 state field (offset 0xB4), checks ==4||==5, calls a virtual through the operation arg's vtable, switches on the result (case 6, case 0xE), re-dispatches the virtual on the 0xE path, checks a byte flag (0x28), signals error 0xE000000E in two paths returning 0, and otherwise tail-calls DuplicatedObject::ValidOperation(this, arg0). The Xenon body Function_82A4DFD8 reproduces this exactly: state field (0xB0, packing-shifted from 0xB4 \u2014 a validated cross-compiler artifact), ==4||==5 check, virtual dispatch (slot 8 vs Wii slot 0x10 \u2014 normal differing vtable layout), result==6 -> error(0,0,0xE000000E,0) return 0, result==0xE -> re-dispatch + 0xE check selecting arg or NULL, byte-flag check (local_1c+0xb), error 0xE000000E return 0, else tail-call Function_82A46638(param_1, param_2). The decisive evidence is the resolved-callee agreement: Function_82A46638 maps via matches.json to ValidOperation__Q26Quazal16DuplicatedObjectFPQ26Quazal11DOOperation, which is EXACTLY the tail-call target in the Wii body. The error-code constant 0xE000000E and the switch literals (6, 0xE) are byte-identical across both bodies. No referenced strings contradict the partner. No genuine sibling discriminator (no valid-vs-valid type tag, no differing node-size literal). Field-offset and vtable-slot shifts are the expected MWCC-vs-MSVC packing/layout artifacts. The first callee resolving to Station::ConvertIDToDOHandle rather than SignalError is a minor matches.json resolution wrinkle (same TU/class, used in the error-signal slot) and does not refute.",
+      "key_evidence": [
+        "Xenon callee Function_82A46638 resolves to ValidOperation__Q26Quazal16DuplicatedObjectFPQ26Quazal11DOOperation, the exact tail-call target in the Wii body (strongest cross-compiler signal).",
+        "Identical error-code constant 0xE000000E in both error paths and identical switch literals (state 4||5, result 6 and 0xE).",
+        "Isomorphic control flow: state check -> virtual dispatch -> switch(6,0xE) -> 0xE-path re-dispatch + NULL/arg select -> byte flag check -> error+return0, else tail-call sibling.",
+        "Field-offset (0xB4 vs 0xB0) and vtable-slot (0x10 vs 8) differences are validated MWCC/MSVC packing+layout artifacts, not discriminators.",
+        "No referenced strings (Xenon side has none) to refute the claimed Station partner."
+      ]
+    },
+    {
+      "pair": 17,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "ProcessJoinResponse__Q26Quazal14ObjDupProtocolFPQ26Quazal7MessageRUc",
+      "category": "network",
+      "stratum": "BSIM>=30",
+      "reasoning": "Control-flow shape is identical between the Xenon pseudo-C and the Wii body: (1) guard on session-pointer field non-null (Wii 0x2c / Xenon +0x30 -- a struct-packing offset shift, a validated cross-compiler artifact, not a discriminator), (2) GetInstance(StationConnectionManager)+IsDisconnectingFromSession early-return-if-disconnecting gate, (3) branch on *arg1 (the char& message-type byte) == 1 vs == 2, (4) case 1: zero two DOHandle locals, two byte-stream extract reads, GetInstance(StationManager)/ExtractBootstrapStationURLs, then 'if (field & 4) == 4' virtual call (Wii vtable slot +0x10 vs Xenon +8 -- vtable-offset artifact) and ProcessPositiveJoinResponse, (5) case 2: ExtractString -> construct StationURL -> SetNewContactPoint -> destruct, then fall-through Extract(ByteStream) + ProcessNegativeJoinResponse. Resolved callees are the decisive corroboration: Xenon 0x82a9c718 -> ProcessPositiveJoinResponse__Q26Quazal14JobJoinSession..., 0x82a9c988 -> ProcessNegativeJoinResponse__Q26Quazal14JobJoinSession..., 0x82a69f70 -> Extract__Q26Quazal10ByteStreamFPUcUiUi (with args (stream,&buf,4,1) matching Wii exactly), plus 0x82a6ac50 -> Extract__Q26Quazal21_DDL_BasicAccountInfo and 0x82a73c98 -> Router routing-address construct (StationURL cleanup). Three of five resolved callees are the SAME three JobJoinSession Process/Extract functions the Wii body calls, in the SAME branch positions -- cross-compiler callee agreement that is essentially impossible to fake. No referenced strings to contradict the claim, and no genuine sibling-alias discriminator (no differing node-size literal or valid-vs-valid type tag). The only divergences are validated MWCC-vs-MSVC artifacts (field-offset shift, vtable-slot offset, dropped trailing call-args).",
+      "key_evidence": [
+        "Resolved callee 0x82a9c718 -> ProcessPositiveJoinResponse__Q26Quazal14JobJoinSession... matches Wii case-1 callee",
+        "Resolved callee 0x82a9c988 -> ProcessNegativeJoinResponse__Q26Quazal14JobJoinSession... matches Wii fall-through callee",
+        "Resolved callee 0x82a69f70 -> Extract__Q26Quazal10ByteStreamFPUcUiUi with args (stream,&buf,4,1) identical on both sides",
+        "Identical branch structure: char& message-type == 1 (positive path) vs == 2 (negative/contact-point path), with (field & 4)==4 virtual-dispatch sub-branch in case 1",
+        "No referenced strings to refute; offset (0x2c vs 0x30) and vtable-slot (0x10 vs 8) differences are validated cross-compiler artifacts"
+      ]
+    },
+    {
+      "pair": 18,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "ProcessPositiveJoinResponse__Q26Quazal14JobJoinSessionFUcQ26Quazal8DOHandleQ26Quazal8DOHandle",
+      "category": "network",
+      "stratum": "BSIM>=30",
+      "reasoning": "All 5 resolved Xenon callees map to the exact same Wii callees in identical control-flow positions: 82A4E4C0=SetLocalStation (first, after copying *arg to stack), 82AC8950=SetConnectionID (on the EndPoint member), 82aa3fe8=GetTopology (whose result is compared ==1), 82ABE288=SetRouterAddress (inside the ==1 branch), 82a8aae0=SetInitialConnectionPoint (final call). The control-flow shape is byte-equivalent: setup -> SetLocalStation -> SetConnectionID -> GetInstance -> GetTopology -> if(==1){ GetInetAddress(member+8) -> GetInstance -> SetRouterAddress -> vcall } -> SetInitialConnectionPoint -> final byte store. The unmatched Function_ callees (GetInstance x2, GetInetAddress) are structurally consistent (instance-getters / the +8 StationURL accessor) and simply lack matches.json entries. The only divergences are the validated MWCC<->MSVC artifacts: the EndPoint-pointer member sits at +0x68 on Xenon vs +0x60 on Wii and the final byte field at +0x6d vs +0x65 (a perfectly CONSISTENT +8 struct-packing shift across BOTH accesses), the vtable slot rendered at byte offset 0x1c vs 0x24, and dropped trailing decompiler args. No discriminator present: no differing node-size literal, no conflicting type tag, and no referenced strings on either side (so no refutation). This is the same source function.",
+      "key_evidence": [
+        "5/5 resolved callees agree across the compiler boundary in identical positions (SetLocalStation, SetConnectionID, GetTopology, SetRouterAddress, SetInitialConnectionPoint)",
+        "Identical control flow including the GetTopology()==1 guard and the conditional GetInetAddress/SetRouterAddress/vcall block",
+        "Consistent +8 struct-packing shift across both member accesses (0x60->0x68 pointer field, 0x65->0x6d byte field) = validated MWCC<->MSVC layout artifact, not a discriminator",
+        "Same +8 sub-offset into the EndPoint to reach the StationURL before GetInetAddress (Wii &unk60->unk8 vs Xenon *(+0x68)+8)",
+        "No referenced strings on either side (no refutation), no differing node-size literal or type tag"
+      ]
+    },
+    {
+      "pair": 19,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "OperationEnd__Q26Quazal12SessionStateFPCQ26Quazal11DOOperation",
+      "category": "network",
+      "stratum": "BSIM>=30",
+      "reasoning": "Control-flow shape is structurally identical across both bodies and the single resolved callee agrees across the compiler boundary. Both bodies execute the same distinctive guard: call arg's vtable method, check result == 8; if not, call the same vtable method again and check == 6; only on (8 || 6) proceed. The same two literal constants (8 then 6) appear in both. Both then load a single byte from the second/first parameter, call GetCurrentContext (Xenon FUN_82a414b8 resolves via matches.json to GetCurrentContext__Q26Quazal15PseudoSingletonFv -- the exact callee the Wii body calls via bl), and branch on its return: if ==0 store the byte into one global, else store it into a second global indexed by ctx*4. The two Xenon globals DAT_82ddecd4 (==0 branch) and DAT_82ddecd0 (indexed branch) correspond to adjacent fields of the Wii static s_ulPersistantSystemState (unkC at 0xC and the pointer at unk8), rendered as separate DAT_ symbols by the stripped-binary decompiler. The vtable slot offset difference (Wii 0x10 vs Xenon 0x8) is an expected MWCC-vs-MSVC vtable-layout artifact, not a discriminator.",
+      "key_evidence": [
+        "Resolved callee: Xenon FUN_82a414b8 -> Wii GetCurrentContext__Q26Quazal15PseudoSingletonFv (the only call, matches the only bl in the Wii body).",
+        "Distinctive double vtable-call guard with the same constants (==8 then ==6) in both bodies.",
+        "Byte load from second param + branch on context return: ==0 stores to one global, else stores at global+ctx*4 -- identical in both; the two DAT_ globals map to adjacent fields (unk8/unkC) of the single Wii static s_ulPersistantSystemState.",
+        "No referenced strings on either side -> no refutation; no genuine discriminator (no differing node-size literal, no valid-vs-valid type tag, no contradicting string)."
+      ]
+    },
+    {
+      "pair": 20,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "CallSynchronizeTermination__Q26Quazal11_DO_SessionFPQ26Quazal10RMCContextPbRCQ26Quazal8DOHandle",
+      "category": "network",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Control-flow shape is structurally identical between the Wii and Xenon bodies, and three high-specificity resolved callees agree exactly in the same positions: FUN_82a6d360 -> GetCallMessage (ActiveDOCallContext), 0x82a69ec0 -> Append (ByteStream), and 0x82a6d370 -> PerformCallAndWait (ActiveDOCallContext). Both bodies: (1) load a session state field and mask it with & 0x3fffff (low-22-bit clrlwi on Wii); (2) on zero, call an error path with the SystemError code 0xE000000E and store 0, else store the field value; (3) construct a String and look up a MethodID; (4) prepare the call message and early-return 0 on failure; (5) get the call message, conditionally add a return-value ptr when arg0 != NULL; (6) append a 4-byte value (count 1) to the byte stream; (7) return PerformCallAndWait. The single referenced Xenon string is 'SynchronizeTermination', which is exactly the string the Wii body references (string pool + 0x24) and matches the function name CallSynchronizeTermination -- a direct corroboration, not a refutation. The two callee resolutions that look off (0x82a53558 -> ConvertIDToDOHandle at the SignalError site, 0x82a58d00 -> __ls__ByteStream at the String-ctor site) are imperfect matches.json entries at low-signal leaf sites; they do not contradict identity. The field offset differs (0x50 Wii vs 0x48 Xenon), which is the validated systematic struct-packing shift artifact and must not drive a DIFFERENT verdict. No genuine discriminator (differing node-size literal, valid-vs-valid type tag, or refuting string) is present.",
+      "key_evidence": [
+        "3 high-specificity callees agree exactly and in-order: GetCallMessage, Append, PerformCallAndWait",
+        "Referenced string 'SynchronizeTermination' matches the Wii body's string-pool reference and the function name",
+        "Identical constants across both bodies: mask 0x3fffff and SystemError code 0xE000000E",
+        "Identical control flow: state-mask -> error/store -> String+MethodID -> PrepareCallMessage early-return -> GetCallMessage -> conditional AddReturnValuePtr -> Append(4,1) -> PerformCallAndWait",
+        "Field-offset shift (0x50 vs 0x48) is a known systematic packing artifact, not a discriminator"
+      ]
+    },
+    {
+      "pair": 21,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "SetLength__Q26Quazal10ByteStreamFUi",
+      "category": "network",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Both bodies are the identical small function Quazal::ByteStream::SetLength(unsigned int). Control flow matches exactly: load the Buffer* at this+4, call GetSize() on it, compare the unsigned arg to the returned size; if arg <= size, call SetContentSize(buffer, arg) and return true/1, otherwise return false/0. The Wii asm cmplw r31,r3 + ble-success encodes arg0 <= size, which is exactly the Xenon 'bVar1 = uStack0000001c <= uVar2' success path. The two Xenon callees resolve via matches.json to the SAME two Wii callees the Wii body calls, in the SAME order, on the SAME field (offset 4), with the SAME arguments: FUN_82a79c58 -> GetSize__Q26Quazal6BufferCFv (first, on field+4) and FUN_82a79c40 -> SetContentSize__Q26Quazal6BufferFUi (second, on field+4 with arg). Agreeing callees across the compiler boundary plus identical CFG and field offset is decisive. No referenced strings on either side; no discriminating immediates or node-size literals to contradict. No sibling-alias discriminator present.",
+      "key_evidence": [
+        "Both resolved callees (FUN_82a79c58 -> GetSize__Q26Quazal6BufferCFv, FUN_82a79c40 -> SetContentSize__Q26Quazal6BufferFUi) match the exact Wii callees in the same call order.",
+        "Both call on the same struct field offset 4 (the Quazal::Buffer* member) with matching args.",
+        "Identical control flow: size-bound guard returning bool, success path calls SetContentSize and returns true.",
+        "Wii cmplw r31,r3 + ble (arg0 <= size success) equals Xenon 'param_2 <= uVar2' success condition.",
+        "No contradicting strings on either side; no sibling-alias discriminator (no differing node-size literal or type-tag)."
+      ]
+    },
+    {
+      "pair": 22,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "GetURL__Q26Quazal14ConnectionInfoCFi",
+      "category": "network",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Both bodies are an exact structural match for Quazal::ConnectionInfo::GetURL(int) const, a 5-case accessor returning one of five consecutive pointer fields with an empty-string fallback. (1) Field offsets are IDENTICAL and in the same case order on both sides: index 0->+0x4, 1->+0x8, 2->+0xc, 3->+0x10, 4->+0x14 (Wii lwz r5,0xN(r3); Xenon *(param_1+0xN)). No shifted-offset / different-instantiation discriminator. (2) Same number of cases (0-4). (3) Same NULL-fallback-to-string-pool structure: both load the field, test for zero, and on zero substitute a static string-pool constant (Wii @stringBase0 empty-string base; Xenon &DAT_82000c2d), then return the pointer. (4) Leaf function with no callees on both sides -- consistent, nothing to mis-resolve and nothing contradicting. The only divergence is the out-of-range path: MSVC emits an outer 'if (param_2 < 5)' range guard while MWCC falls through (b .L_800768B4) leaving r5=0; both yield NULL->fallback for any unmatched index. This is an expected MWCC-vs-MSVC switch-lowering difference, not a real discriminator. No contradicting strings (none referenced).",
+      "key_evidence": [
+        "Identical, unshifted field-offset sequence 0x4/0x8/0xc/0x10/0x14 mapped to the same case indices 0-4 on both sides",
+        "Same 5-case count and same NULL-check + string-pool fallback + pointer-return control-flow shape",
+        "Both are leaf functions (0 callees) -- consistent",
+        "Out-of-range divergence (Xenon 'param_2 < 5' guard vs Wii fall-through) is benign, semantically identical switch lowering"
+      ]
+    },
+    {
+      "pair": 23,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "Trace__Q26Quazal16StationProbeListFUi",
+      "category": "network",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Control-flow shape is identical: both bodies iterate an intrusive linked list whose head/container is the loop sentinel (Wii: while var_r31 != this; Xenon: while puStack00000014 == local_20 break). Both load the iterator from the first member (Wii lwz r31,0x0(r3) / m2c this->unk0; Xenon local_20 = *param_1), advance via the next pointer at offset 0 (Wii lwz r31,0x0(r31); Xenon local_20 = *local_20), and on each node invoke a callee on the node + 8 bytes (Wii addi r3,r31,0x8; Xenon local_20 + 2 where local_20 is undefined4* = +8 bytes). The single resolved callee is decisive: Xenon 0x82ad9540 maps via matches.json to Trace__Q26Quazal12StationProbeFUi, which is EXACTLY the callee the Wii body calls (Quazal::StationProbe::Trace). This is the canonical list-Trace-calls-element-Trace relationship (StationProbeList::Trace iterating and calling StationProbe::Trace on each embedded node at +8), agreeing across the MWCC/MSVC boundary. No referenced strings to contradict, and no discriminating literals (no node-size or type-tag mismatch) that would indicate a sibling/template alias.",
+      "key_evidence": [
+        "Resolved callee agreement: Xenon 0x82ad9540 -> Trace__Q26Quazal12StationProbeFUi, identical to the sole Wii callee Trace__Q26Quazal12StationProbeFUi (Quazal::StationProbe::Trace)",
+        "Identical intrusive-list iteration: iterator from *this, sentinel-terminated against the container head, advance via *node (offset 0)",
+        "Same per-node element offset +8 bytes (Wii addi r3,r31,0x8; Xenon local_20+2 on undefined4*)",
+        "Argument forwarding matches: both forward the u32 arg (arg0 / uStack0000001c) unchanged to the element Trace",
+        "No referenced strings and no discriminating immediates to refute the claim"
+      ]
+    },
+    {
+      "pair": 24,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "Trace__Q26Quazal12StationProbeFUi",
+      "category": "network",
+      "stratum": "BSIM 20-30",
+      "reasoning": "The Xenon body's full call sequence is an exact match to the Wii body's, callee-for-callee and in order. Wii calls: GetInstance(TraceLog) -> GetOutputFormat(Log) -> IncreaseIndent(OutputFormat, 2) -> StationContactInfo::Trace(this, arg0) -> GetInstance(TraceLog) -> GetOutputFormat(Log) -> DecreaseIndent(OutputFormat, 2). Xenon calls (resolved via matches.json): FUN_82a911f0=GetInstance, FUN_82abd290=GetOutputFormat, FUN_82abc908(uVar1,2)=IncreaseIndent, Function_82B01368(stack14,stack1c)=StationContactInfo::Trace, then GetInstance, GetOutputFormat, FUN_82abc930(uVar1,2)=DecreaseIndent. All 5 distinct callees resolve to the identical Quazal symbols; the constant indent arg (2) and the pass-through of (this, arg0) into StationContactInfo::Trace agree precisely. This trace-logging wrapper pattern (Increase/DecreaseIndent bracketing a nested Trace call) is a same-source-function fingerprint that is extremely hard to fake. No referenced strings exist to contradict the identity, and no genuine discriminator (no diverging node-size literal or valid-vs-valid type tag) appears. The only cross-compiler differences (Xenon staging args on stack, decompiler dropping/rendering details) are the validated MWCC-vs-MSVC artifacts, not real distinctions.",
+      "key_evidence": "All 7 call sites match in order and arity; 5/5 distinct Xenon callees resolve to the same Wii Quazal symbols (GetInstance/GetOutputFormat/IncreaseIndent/StationContactInfo::Trace/DecreaseIndent), same indent constant (2), same (this,arg0) forwarding into StationContactInfo::Trace."
+    },
+    {
+      "pair": 25,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "Trace__Q26Quazal18StationContactInfoFUi",
+      "category": "network",
+      "stratum": "BSIM 20-30",
+      "reasoning": "Control flow is structurally identical: prologue chain GetInstance->GetOutputFormat->IncreaseIndent(format,2), then a circular linked-list loop walking this+4 (terminating when node==&this->unk4 sentinel), calling Trace(node+8, arg0) per element and advancing node=*node, then an epilogue chain GetInstance->GetOutputFormat->DecreaseIndent(format,2). 4 of 5 Xenon callees resolve via matches.json to the SAME Wii callees the Wii body calls, in the SAME positions: GetInstance (TraceLog), GetOutputFormat (Log), IncreaseIndent(OutputFormat,2) in the prologue, DecreaseIndent(OutputFormat,2) in the epilogue. The lone unmatched callee FUN_82a75d28 sits in the loop body exactly where Wii calls Trace__Q26Quazal10StationURLCFUi (unmatched StationURL::Trace) -- fully consistent. Immediate constant 2 to Increase/DecreaseIndent matches on both sides; per-node offset matches (Wii addi r3,r31,0x8 = byte offset 8; Xenon local_20+2 words = 8 bytes); list head at this+4 on both sides. No node-size or type-tag discriminator conflicts; no referenced strings on either side to refute. The extra local_* temps and dropped trailing call-args in the Xenon pseudo-C are the validated systematic MWCC<->MSVC decompiler artifacts, not differences.",
+      "key_evidence": [
+        "4/4 matched Xenon callees resolve to identical Wii callees in identical positions (GetInstance/GetOutputFormat/IncreaseIndent prologue + GetInstance/GetOutputFormat/DecreaseIndent epilogue)",
+        "Both sides pass constant arg 2 to IncreaseIndent and DecreaseIndent",
+        "Identical circular linked-list walk: head at this+4, sentinel terminate node==&this->unk4, per-node call at node+8, advance node=*node",
+        "5th unmatched callee FUN_82a75d28 occupies the loop-body slot where Wii calls Trace__Q26Quazal10StationURLCFUi -- consistent, not contradictory",
+        "No referenced strings on either side; no conflicting node-size literal or type-tag"
+      ]
+    },
+    {
+      "pair": 26,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "MakeString<i>__FPCci_PCc",
+      "category": "network",
+      "stratum": "BSIM 15-20",
+      "reasoning": "The Wii body is a trivial 3-call sequence with no branches: __ct__12FormatStringFPCc (construct FormatString from a const char* format), __ls__12FormatStringFi (operator<<(int) to stream the integer arg), then Str__12FormatStringFv (extract the C-string). This is exactly the MakeString<i>(const char* fmt, int) template: build a FormatString, feed the int, return its string. The Xenon body Function_8227CAA0 has the IDENTICAL control-flow shape: three sequential calls, no branches, returning void/pointer, over a large fixed stack buffer (Wii -2096 / Xenon [2080], consistent with FormatString's internal buffer). All THREE Xenon callees resolve via matches.json, in the SAME ORDER, to the SAME THREE Wii callees: 0x8279f3f0->__ct__12FormatStringFPCc, 0x8279f158->__ls__12FormatStringFi, 0x8279edb0->Str__12FormatStringFv. Three agreeing callees across the compiler boundary -- including the discriminating operator<<(int) which encodes the <i> template parameter directly -- is the strongest corroboration available. No referenced strings to contradict the claim, and no node-size/type-tag discriminator in conflict. The sibling-alias failure mode would require a near-identical sibling separated by a real discriminator (e.g. MakeString<f> calling __ls__12FormatStringFf instead of ...Fi); here the int operator<< callee matches exactly, ruling that out.",
+      "key_evidence": [
+        "All 3 Xenon callees resolve to the SAME 3 Wii callees in the SAME order: __ct__12FormatStringFPCc, __ls__12FormatStringFi, Str__12FormatStringFv",
+        "Discriminating callee __ls__12FormatStringFi (operator<<(int)) encodes the <i> template parameter and matches exactly -- rules out a MakeString<f>/<u> sibling alias",
+        "Identical control-flow shape: three sequential branchless calls over a large fixed FormatString buffer (Wii -2096 / Xenon 2080 bytes)",
+        "No referenced strings and no type-tag/node-size discriminator to contradict the identity"
+      ]
+    },
+    {
+      "pair": 27,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "StopToListen__Q26Quazal14ObjDupProtocolFv",
+      "category": "network",
+      "stratum": "BSIM 15-20",
+      "reasoning": "The Xenon body (0x82a69020) and the Wii StopToListen body share an essentially identical control-flow skeleton and field-offset signature, with the single most-reliable resolved callee agreeing across the toolchain boundary. (1) STRUCTURE: both functions are built from up-to-four guarded instance-lookup blocks, each one opening with a GetCurrentContext call followed by an InstanceControl-table lookup, gated by boolean member flags, with member-flag resets after the gated blocks, and closing with a single call on a sub-object embedded at +8. (2) FIELD OFFSETS match exactly where not subject to struct packing: the gate at offset 5 (Wii this->unk5 / Xenon iStack+5), the gate at offset 4 (this->unk4 / iStack+4), the '*flag = 0' resets at offsets 5 and 4 after each gated block, the 0x40 then 0x10 indirection on the looked-up instance, and the closing call taking 'this + 8' (Wii CancelPendingCalls(&this->unk8) on the CallRegister member). (3) RESOLVED CALLEE AGREEMENT: Xenon 0x82a414b8 -> GetCurrentContext__Q26Quazal15PseudoSingletonFv, which is exactly the call the Wii body issues at the head of each lookup block; this named library-singleton accessor agreeing is a strong, hard-to-fake cross-compiler signal. (4) The only divergences are validated systematic MWCC-vs-MSVC artifacts: struct-packing offset shifts (Wii unk48/unk4A vs Xenon 0x4c/0x4e on the same trailing virtual-dispatch args; vtable slot rendered +0x18 vs +0x10) and MSVC inlining the GetInstance(s_oInstanceTable, N) lookup chain into single helper calls (Function_823D7DC8(0x82ddde90 = the Xenon s_oInstanceTable, N, context)). (5) NO STRING REFUTATION: zero referenced strings, and no callee resolves to a competing sibling/template partner of StopToListen. CAVEAT (does not change verdict): two callees carry imperfect BSim labels -- 0x823d7dc8 -> HasStartedTermination and 0x82a8db10 -> Cancel(DOCallContext) -- but these are best read as unreliable BSim resolutions of small inlined/sibling helpers on the Xenon side; the 0x82a8db10 call site passes 'this+8' (the CallRegister sub-object) which structurally matches CancelPendingCalls, and neither label names a discriminating literal (node-size, valid-vs-valid type tag) or a contradicting partner that would indicate a same-TU sibling alias.",
+      "key_evidence": [
+        "Xenon callee 0x82a414b8 -> GetCurrentContext__Q26Quazal15PseudoSingletonFv: agrees with the Wii body's per-block opening call (strongest signal).",
+        "Identical control-flow skeleton: up-to-4 guarded instance-lookup blocks, each preceded by GetCurrentContext + InstanceControl-table lookup, gated by boolean member flags.",
+        "Exact field-offset matches: gate flags at offsets 4 and 5, '*flag = 0' resets at 4 and 5, 0x40->0x10 instance indirection, trailing call on sub-object at +8 (Wii CancelPendingCalls(&this->unk8)).",
+        "Divergences are validated systematic artifacts only: struct-packing shifts (0x48/0x4A vs 0x4c/0x4e; vtable slot 0x18 vs 0x10) and MSVC inlining of the GetInstance lookup chain (Function_823D7DC8 takes 0x82ddde90 = Xenon s_oInstanceTable).",
+        "Zero referenced strings; no callee names a competing sibling/template partner; no discriminating node-size or type-tag literal differs.",
+        "Soft caveat: 0x823d7dc8->HasStartedTermination and 0x82a8db10->Cancel(DOCallContext) are imperfect BSim labels on inlined/helper callees, not refutations of the outer-function identity."
+      ]
+    },
+    {
+      "pair": 28,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "SetSessionName__Q26Quazal11SessionInfoFPCc",
+      "category": "network",
+      "stratum": "BSIM 15-20",
+      "reasoning": "Near-identical control-flow and constant pool across the MWCC/MSVC boundary. Both bodies are 2-param string setters that branch on the source pointer: when source is null/empty they store a single zero byte at this+0x4; otherwise they call a strncpy-like CRT primitive copying 0x80 bytes into this+0x4 and then write a zero terminator at this+0x83. The branch polarity differs (Wii tests arg!=0 / taken-true does the copy, Xenon tests param==0 / taken-true does the zero) but both compute the identical two outcomes -- that is ordinary compiler condition-sense selection, not a semantic difference. The three load-bearing constants are IDENTICAL on both sides: copy size 0x80, destination base offset +0x4, and the post-copy null terminator at the highly specific offset +0x83 (== 0x4 + 0x80 - 1, the last byte of the 0x80-wide buffer that begins at offset 4). The unresolved Xenon callee FUN_82b89958 invoked as FUN(param_1+4, param_2, 0x80) exactly mirrors the Wii strncpy(this+4, arg0, 0x80) -- strncpy is a libc/CRT primitive not expected to have a Wii matches.json entry, so its non-resolution is consistent rather than refuting. No referenced strings (none on the Xenon side), so no string can name a different partner. No conflicting node-size literal or type-tag discriminator exists. No sibling-alias discriminator present.",
+      "key_evidence": [
+        "Identical copy size literal 0x80 in both bodies",
+        "Identical destination buffer base offset +0x4 in both bodies",
+        "Identical post-copy null terminator at the specific offset +0x83 (= 4 + 0x80 - 1) in both bodies",
+        "Xenon FUN_82b89958(param_1+4, param_2, 0x80) exactly mirrors Wii strncpy(this+4, arg0, 0x80) arg-for-arg",
+        "Same 2-parameter signature and same two-outcome branch (null/empty -> single zero byte at +4; non-null -> copy then terminate)",
+        "Branch polarity inversion is benign compiler condition-sense selection, not a discriminator",
+        "No Xenon strings reference any other function/TU; no conflicting type-tag or node-size literal"
+      ]
+    },
+    {
+      "pair": 29,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "__ct__Q26Quazal11IDGeneratorFv",
+      "category": "network",
+      "stratum": "BSIM 15-20",
+      "reasoning": "Both bodies are the same constructor shape, step-for-step: (1) call the DO base-class ctor, (2) store the vtable at this+0, (3) two small sub-object ctors, (4) an RMCContext ctor with the exact 3-arg form (&field, &localZero, 1), (5) zero a contiguous block of fields, (6) a trailing float/DAT store. The DECISIVE signal is callee Function_82A6E688 resolving EXACTLY to __ct__Q26Quazal10RMCContextFQ26Quazal8DOHandleb -- the same callee the Wii body calls, at the SAME byte offset 0x90, with the same trailing literal 1 argument. An exact 3-arg callee agreement across the MWCC/MSVC boundary is very hard to fake. The only callee discrepancy (Function_82AC26D0 resolves to __ct__Q26Quazal16_DO_VoiceChannelFv whereas Wii calls __ct__Q26Quazal15_DO_IDGeneratorFv) is a matches.json sibling-resolution collision: both are near-identical _DO_* DuplicatedObject base ctors (0x54 vs 0x5C bytes, confirmed distinct symbols in symbols.txt) that BSim could not disambiguate -- and the resolved partner being a sibling DO base ctor weakly CORROBORATES the Quazal-DO family rather than refuting it. The layout offset deltas (Range ctors at byte 0x7C/0x84 on Wii vs the two 0x78/0x80 sub-object ctors on Xenon; trailing float at 0x138 vs DAT at 0x150) are consistent with MWCC-vs-MSVC struct packing/alignment shifts, i.e. the validated cross-compiler artifact class (shifted struct-field offsets), not a genuine discriminator. No referenced strings on either side, so no string-based refutation.",
+      "key_evidence": [
+        "Function_82A6E688 -> __ct__Q26Quazal10RMCContextFQ26Quazal8DOHandleb: EXACT callee match, same byte offset 0x90, same 3-arg (&field, &localZero, 1) shape -- decisive cross-compiler identity signal.",
+        "Identical constructor control-flow shape: base DO ctor -> vtable store at this+0 -> two sub-object ctors -> RMCContext ctor -> field-zeroing block -> trailing float store.",
+        "_DO_VoiceChannel vs _DO_IDGenerator base-ctor mismatch is a known BSim sibling-resolution collision (both ~0x54-0x5C-byte _DO_* base ctors); the resolved sibling is itself a DuplicatedObject base ctor, weakly corroborating the Quazal-DO family.",
+        "Offset deltas (Range ctors 0x7C/0x84 vs 0x78/0x80; float 0x138 vs DAT 0x150) are validated MWCC-vs-MSVC struct-packing artifacts, not discriminators.",
+        "No referenced strings on either side -- no string refutation possible."
+      ]
+    },
+    {
+      "pair": 30,
+      "verdict": "same",
+      "confidence": "high",
+      "claimed_wii_symbol": "__ct__Q26Quazal27TransportSignatureGeneratorFv",
+      "category": "network",
+      "stratum": "BSIM 15-20",
+      "reasoning": "Overwhelming cross-compiler agreement. (1) The Xenon body references the string '.\\Transport\\Interface\\TransportSignatureGenerator.cpp', naming the EXACT same TU as the claimed Wii symbol (TransportSignatureGenerator.o) -- strongest possible string corroboration, the inverse of the round-2 pair-29 refutation. (2) The resolved-callee table agrees on ~13 of 14 callees in matching call order: __nw__RootObject (with the same 0x14 string-length arg), HMACChecksum::ctor, GetTime (called twice), BitStream::ctor, __opUx Time, BitStream::Append (with identical 8,1 args), GetContentSize/GetContentPtr Buffer, and SetKey KeyedChecksumAlgorithm, plus the trailing dtors. (3) Control-flow shape is identical: zero the field, __nw alloc, conditional HMACChecksum ctor, NULL-check + vtable-slot vcall(this,1), store result, GetTime/Buffer(0x400)/BitStream/GetTime/__opUx/Append(8,1)/Buffer(0x400)/vcall(slot)/GetContentSize+Ptr/Key ctor/SetKey, then the four -1 dtors and return this. (4) Constant pool agrees: 0x14, 0x400 (twice), 8, 1, vcall arg 1. The only deltas are VALIDATED cross-compiler artifacts: __nw size arg 0xa8 (Wii) vs 0xb0 (Xenon) = different struct packing; vtable slot rendered as 0x8/0xc on Wii vs +0/+4 on Xenon = offset-packing; the Buffer-ctor callees resolving to GetBuffer/Message names is a matches.json mapping nuance but the 0x400 buffer-size arg and call position are identical. No genuine sibling-alias discriminator present (no differing node-size literal, no valid-vs-valid type-tag mismatch, no contradicting string).",
+      "key_evidence": [
+        "Xenon string '.\\Transport\\Interface\\TransportSignatureGenerator.cpp' names the same TU as the claimed Wii symbol",
+        "13/14 resolved callees agree in call order across the compiler boundary (RootObject __nw, HMACChecksum ctor, GetTime x2, BitStream ctor, __opUx Time, BitStream Append, Buffer GetContentSize/Ptr, KeyedChecksumAlgorithm SetKey)",
+        "Identical control-flow: zero-field, conditional new+HMACChecksum ctor, NULL-check vtable vcall(this,1), store, GetTime/Buffer(0x400)/BitStream/Append(8,1)/vcall/Key+SetKey, four -1 dtors, return this",
+        "Matching constant pool: 0x14 string len, 0x400 buffer size x2, Append args 8 and 1, vcall arg 1",
+        "All deltas (0xa8 vs 0xb0 alloc size, vtable slot 0x8/0xc vs +0/+4) are validated MWCC-vs-MSVC packing/rendering artifacts, not real discriminators"
+      ]
+    }
+  ]
+}

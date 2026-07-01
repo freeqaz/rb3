@@ -91,4 +91,17 @@ public:
     const char *unk88; // 0x88
     bool unk8c; // 0x8c
     std::vector<int> mStartTimes; // 0x90 - basing this off of the ChooseStartMs function
+
+#ifdef HX_NATIVE
+    // Q7 (incremental-load): deferred MetaMusic stream-FX wiring. On Wii the six
+    // eq.send dirs are PostLoad-drained synchronously inside Start(); on native/web
+    // each PostLoad → PollUntilLoaded blocks the frame for a 6-file fetch chain.
+    // Instead LoadStreamFx() kicks the loads async (no eager PostLoad) and Start()
+    // arms mNativeFxWiringPending; PollFxWiring() (driven from Poll()) finishes the
+    // PostLoad + SetFXSend wiring once all six dirs IsLoaded(). RB3_METAMUSIC_SYNC=1
+    // restores the eager (blocking) path. No new members touch the Wii layout.
+    bool mNativeFxWiringPending; // set true when Start() defers FX wiring
+    static bool NativeMetaMusicSync(); // RB3_METAMUSIC_SYNC opt-out (cached getenv)
+    void PollFxWiring(); // completes deferred wiring when all six dirs are loaded
+#endif
 };

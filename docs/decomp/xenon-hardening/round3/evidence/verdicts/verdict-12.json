@@ -1,0 +1,17 @@
+{
+  "pair": 12,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "UpdateExcitement__14BandCrowdMeterFb",
+  "category": "system",
+  "stratum": "BSIM 15-20",
+  "reasoning": "The two bodies are control-flow isomorphic with multiple semantic (non-packing) constants matching exactly. Both: (1) early-out on a byte guard field (Wii 0x19C / Xenon 0x1F0 -- offset-shifted by struct packing, an expected MWCC/MSVC artifact); (2) load a current-state int (Wii 0x1A8 / Xenon 0x200) and a pointer field (Wii 0x1AC / Xenon 0x204); (3) if the pointer is non-null, make a virtual call to recompute the state; (4) if (state changed || force-arg != 0): store the new state, then test the maxed-flag byte (Wii 0x194 / Xenon 0x1E8) against (state == 4) and update it; (5) if a this-only predicate returns false, index an array (base field Wii 0x208 / Xenon 0x264) with stride 0xC and element offset +8, then make a virtual call. The genuine semantic discriminators are IDENTICAL across both compilers: the maxed comparison literal '== 4' (Wii computes var_r3-4==0 via subi/cntlzw/srwi; Xenon writes iVar1==4), the array stride 0xC (Wii mulli r0,r0,0xc; Xenon *0xc), and the element offset +8 (Wii lwz r3,0x8(r3); Xenon +8). The one structural divergence -- Wii calls SetMaxed__14BandCrowdMeterFb out-of-line while Xenon inlines it (storing the bool flag and then making a vtable-slot-0x58 notify vcall) -- is precisely an expected inlining artifact, not a real difference; the inlined Xenon flag-store/notify is exactly what an out-of-line SetMaxed would do. The Xenon this-only callee FUN_822aac18 is the positional/semantic analog of Wii's Draining__14BandCrowdMeterCFv (both gate the final array-index vcall) though unmatched in matches.json. No referenced strings contradict the partner; no differing node-size literal or differing-but-valid type tag exists. All field-offset deltas are uniform struct-packing shifts. This is a clean cross-compiler identity match.",
+  "key_evidence": [
+    "Identical semantic constant: maxed test '== 4' present on both (Wii subi/cntlzw/srwi idiom; Xenon iVar1==4)",
+    "Identical array stride 0xC (Wii mulli r0,r0,0xc / Xenon *0xc) and element offset +8 (Wii lwz r3,0x8(r3) / Xenon +8)",
+    "One-to-one control flow: guard -> optional vcall-recompute-state -> (changed || force) -> maxed-flag-update+notify -> draining-gated array-index final vcall",
+    "Only divergence is Xenon inlining SetMaxed (the out-of-line Wii callee) -- an expected MWCC/MSVC inlining artifact; the inlined store+vcall(slot 0x58) matches SetMaxed semantics",
+    "All field-offset deltas (0x19C/0x1F0, 0x1A8/0x200, 0x1AC/0x204, 0x194/0x1E8, 0x208/0x264) are uniform struct-packing shifts, an expected non-difference",
+    "No referenced strings on the Xenon side -- nothing contradicts the claimed BandCrowdMeter::UpdateExcitement partner"
+  ]
+}

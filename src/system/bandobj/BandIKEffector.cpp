@@ -822,7 +822,7 @@ float BandIKEffector::ApplyPosConstraints(
         }
     }
     if (mMore) {
-        totalWeight += bool(mMore->ApplyPosConstraints(dst, src, root));
+        totalWeight += mMore->ApplyPosConstraints(dst, src, root);
     }
     return totalWeight;
 }

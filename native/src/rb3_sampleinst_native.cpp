@@ -33,7 +33,14 @@
 #include "synth/ADSR.h"
 #include "synth/FxSend.h"
 #include "audio/AudioDevice.h"
-#include "rb3_xma_sidecar.h"  // offline XMA->PCM sidecar loader (native + web)
+
+// W5-T2: this TU owns the single stb_vorbis IMPLEMENTATION for the whole port.
+// rb3_xma_sidecar.h (below) includes stb_vorbis.h in header-only mode everywhere
+// it is pulled in (App.cpp / main_native.cpp); defining RB3_STB_VORBIS_IMPL here
+// makes rb3_xma_sidecar.h emit the implementation in exactly this one TU, so the
+// decoder symbols link once. Keep this define BEFORE the sidecar include.
+#define RB3_STB_VORBIS_IMPL 1
+#include "rb3_xma_sidecar.h"  // offline XMA->{PCM,OGG} sidecar loader (native + web)
 
 #include <algorithm>
 #include <atomic>
@@ -103,7 +110,8 @@ public:
         AudioDevice::GetInstance().RemoveSource(this);
         mPlaying.store(false, std::memory_order_release);
         // Free any sidecar PCM we decoded for a kXMA sample (the bank-resident
-        // mData is owned by SampleData; mOwnedPCM is ours).
+        // mData is owned by SampleData; mOwnedPCM is ours; cached buffers are NOT
+        // ours — mOwnedPCM stays null for those).
         if (mOwnedPCM) {
             std::free(mOwnedPCM);
             mOwnedPCM = nullptr;
@@ -178,8 +186,14 @@ void RB3SampleInstNative::StartImpl() {
     // sidecar exists, play it as little-endian mono PCM; otherwise skip (the
     // bank wasn't converted yet — warn once). Native + web (HX_NATIVE).
     if (fmt == SampleData::kXMA) {
+        // TryLoadCached returns a BORROWED, process-lifetime-cached PCM buffer
+        // (side.owned==false) for each distinct SFX, so re-triggering the same
+        // sound does not malloc a fresh buffer every time — this was the in-song
+        // memory leak (finished one-shot SfxInsts were not reaped, so per-trigger
+        // PCM buffers piled up at ~150 KB/s). RB3_SFX_CACHE_OFF restores the
+        // legacy per-trigger owned-malloc path (A/B lever).
         rb3_xma::SidecarPCM side =
-            rb3_xma::TryLoad(data.mData, data.mSizeBytes, data.GetSampleRate());
+            rb3_xma::TryLoadCached(data.mData, data.mSizeBytes, data.GetSampleRate());
         if (!side.data) {
             static int sLoggedXma = 0;
             if (!sLoggedXma) {
@@ -193,11 +207,15 @@ void RB3SampleInstNative::StartImpl() {
             }
             return;
         }
-        if (mOwnedPCM) std::free(mOwnedPCM);
-        mOwnedPCM = side.data; // freed in dtor
+        // Only take ownership (free in dtor) when the loader handed us a fresh
+        // owned buffer. Cached buffers (side.owned==false) belong to the decode
+        // cache for the process lifetime — point mPCMData at them but do NOT free.
+        if (mOwnedPCM) { std::free(mOwnedPCM); mOwnedPCM = nullptr; }
+        if (side.owned)
+            mOwnedPCM = side.data; // freed in dtor
         mBigEndian = false;    // sidecar PCM is little-endian
         mSrcSampleRate = side.sampleRate > 0 ? side.sampleRate : kOutputSampleRate;
-        mPCMData = mOwnedPCM;
+        mPCMData = side.data;
         mPCMSamples = side.numSamples;  // mono sample count
         if (mEndSample <= 0 || mEndSample > mPCMSamples) mEndSample = mPCMSamples;
         if (mPlayPos < 0.0 || mPlayPos >= static_cast<double>(mPCMSamples)) mPlayPos = 0.0;

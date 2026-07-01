@@ -105,7 +105,7 @@ struct less_equal : public binary_function<_Tp,_Tp,bool>
 };
 
 template <class _Tp>
-less<_Tp> __less(_Tp* ) { return less<_Tp>(); }
+inline less<_Tp> __less(_Tp* ) { return less<_Tp>(); }
 
 template <class _Tp>
 equal_to<_Tp> __equal_to(_Tp* ) { return equal_to<_Tp>(); }

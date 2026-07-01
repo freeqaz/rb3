@@ -1,0 +1,18 @@
+{
+  "pair": 14,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "Reveal__8BandListFv",
+  "category": "system",
+  "stratum": "BSIM 15-20",
+  "reasoning": "Both bodies have an identical 3-statement shape with no branches: (1) store integer 0 to a member, (2) call a function returning a float and store the result to the adjacent (member+4) float field, (3) tail-call a sibling member function passing `this`. The two Xenon callees resolve via matches.json to EXACTLY the two Wii callees in the SAME order: FUN_82722790 -> UISeconds__7TaskMgrCFv (the float-returning UISeconds on TaskMgr; the Xenon arg 0xffffffff82dd3a38 is the static TheTaskMgr instance, mirroring the Wii lis/addi of TheTaskMgr) and Function_8232B280 -> UpdateShowingState__8BandListFv (a same-TU BandList sibling). Agreeing callees across the MWCC/MSVC compiler boundary in matching order are the strongest possible identity signal. The member-offset difference (0x2E8/0x2EC on Wii vs 0x33c/0x340 on Xenon) is an expected struct-packing shift, and on BOTH sides the int and float members stay exactly 4 bytes apart (s32 then f32), confirming the same two fields. No referenced strings on either side, so no contradicting-string refutation. No genuine discriminator (no differing node-size literal, no valid-vs-valid type tag, no contradicting partner string) present. This is a textbook same-function match.",
+  "key_evidence": [
+    "Xenon FUN_82722790 resolves to UISeconds__7TaskMgrCFv == Wii's first callee (float-returning TaskMgr method)",
+    "Xenon Function_8232B280 resolves to UpdateShowingState__8BandListFv == Wii's second callee (same-TU BandList sibling)",
+    "Callees agree in the same order across compilers (strongest signal)",
+    "Identical 3-statement control-flow shape: store-0; call+store-float-at-+4; tail-call sibling(this)",
+    "Field-offset shift (0x2E8/0x2EC vs 0x33c/0x340) is expected struct-packing; both keep s32 then adjacent f32 (4-byte gap)",
+    "No referenced strings on either side -> no contradicting-string refutation",
+    "Xenon arg 0xffffffff82dd3a38 corresponds to Wii's static TheTaskMgr address loaded via lis/addi"
+  ]
+}

@@ -46,6 +46,31 @@ extern bool gFrameTraceActive;
 extern int  gFrameTraceLoaderAdds;
 extern int  gFrameTraceStreamOpens;
 
+// Incremental-load-perf (PLAN.md T1) per-frame ATTRIBUTION counters. Also DEFINED
+// in src/system/utl/Loader.cpp; incremented behind gFrameTraceActive at the
+// engine choke points (DirLoader/StandardStream/DataFile/ChunkStream/Loader). We
+// only extern them here; RB3RecordFrame reads + zeroes them each frame so the
+// RB3_FRAME_TRACE back-compat line carries master's full per-frame attribution
+// (field names preserved so scripts/native/frame_profiler.py + the load-perf
+// tooling keep working). This subsumes the old rb3_frame_trace.cpp (deleted).
+extern float  gFetchSyncMsThisFrame;
+extern int    gFetchSyncCountThisFrame;
+extern double gFetchSyncBytesThisFrame;
+extern float  gDtaParseMsThisFrame;
+extern float  gObjLoadMsThisFrame;
+extern float  gObjLoadWorstMs;
+extern char   gObjLoadWorstName[64];
+extern float  gAudioPrimeMsThisFrame;
+extern float  gTexUploadMsThisFrame;
+extern int    gTexUploadCountThisFrame;
+extern float  gMeshUploadMsThisFrame;
+extern int    gMeshUploadCountThisFrame;
+extern float  gVertUnpackMsThisFrame;
+extern int    gVertUnpackCountThisFrame;
+extern float  gPipelineCreateMsThisFrame;
+extern int    gPipelineCreateCountThisFrame;
+extern float  gStreamReadMsThisFrame;
+
 // ---------------------------------------------------------------------------
 // Exported toggle gate + frame counter.
 // ---------------------------------------------------------------------------
@@ -70,7 +95,21 @@ struct TraceEvent {
         // sdt = sim dt in SECONDS (the menu/UI clock advance this frame, from the
         // TaskMgr.mTime cycle delta), captured so RB3_REPLAY_FIXED_CLOCK can drive
         // seam 1 (Task.cpp) deterministically. Serialized only when > 0.
-        struct { float dt, lp, lpu, sdt; uint16_t pend; uint16_t scrId; int ld, st; } fr;
+        // atr = per-frame load-perf ATTRIBUTION (ported from the deleted
+        // rb3_frame_trace.cpp). Read+zeroed from the engine gFrameTrace* counters
+        // each frame; serialized with master's exact field names so the
+        // RB3_FRAME_TRACE back-compat line keeps frame_profiler.py + the load-perf
+        // tooling working. objWNm is interned (objWNmId). All zero => a plain fr.
+        struct {
+            float dt, lp, lpu, sdt; uint16_t pend; uint16_t scrId; int ld, st;
+            struct {
+                float  fetchMs; int fetchN; double fetchB;
+                float  dtaMs, objMs, objWMs; uint16_t objWNmId;
+                float  primeMs, texMs; int texN;
+                float  meshMs; int meshN; float unpackMs; int unpackN;
+                float  pipeMs; int pipeN; float inflMs;
+            } atr;
+        } fr;
         struct { uint32_t bits, dn, up; int16_t whammy, tilt; } in;
         struct { uint16_t fromId, toId, focusId; uint8_t wentBack; } nav;
         struct { uint16_t phaseId; } boot;
@@ -159,6 +198,11 @@ struct Recorder {
     // fr decimation knobs (§4.7).
     float       frameLongMs  = 20.0f;
     int         frameDecim   = 30;
+
+    // RB3_FRAME_TRACE back-compat alias mode (vs RB3_SESSION_TRACE). When true the
+    // hdr is a `#`-comment line (skipped by frame_profiler.py) instead of the
+    // {"k":"hdr"} envelope line, so the master frame-trace consumers parse cleanly.
+    bool        frameCompat  = false;
 
     Interner    interner;
 
@@ -372,6 +416,31 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
             std::snprintf(num, sizeof(num), ",\"ld\":%d", e.fr.ld); out += num;
             std::snprintf(num, sizeof(num), ",\"st\":%d", e.fr.st); out += num;
             std::snprintf(num, sizeof(num), ",\"pend\":%u", (unsigned)e.fr.pend); out += num;
+            // Load-perf ATTRIBUTION (ported from the deleted rb3_frame_trace.cpp).
+            // Master's exact field names + precision so scripts/native/
+            // frame_profiler.py + the load-perf .mjs tooling read the same keys off
+            // the RB3_FRAME_TRACE line (they use .get()/|| 0, so the extra session
+            // envelope keys are harmless). Emitted for every fr row.
+            {
+                const char *wn = gRec.interner.str(e.fr.atr.objWNmId);
+                out += ",\"fetchMs\":"; AppendNum3(out, e.fr.atr.fetchMs);
+                std::snprintf(num, sizeof(num), ",\"fetchN\":%d", e.fr.atr.fetchN); out += num;
+                std::snprintf(num, sizeof(num), ",\"fetchB\":%.0f", e.fr.atr.fetchB); out += num;
+                out += ",\"dtaMs\":"; AppendNum3(out, e.fr.atr.dtaMs);
+                out += ",\"objMs\":"; AppendNum3(out, e.fr.atr.objMs);
+                out += ",\"objWMs\":"; AppendNum3(out, e.fr.atr.objWMs);
+                out += ",\"objWNm\":\""; JsonEscape(out, wn); out += '"';
+                out += ",\"primeMs\":"; AppendNum3(out, e.fr.atr.primeMs);
+                out += ",\"texMs\":"; AppendNum3(out, e.fr.atr.texMs);
+                std::snprintf(num, sizeof(num), ",\"texN\":%d", e.fr.atr.texN); out += num;
+                out += ",\"meshMs\":"; AppendNum3(out, e.fr.atr.meshMs);
+                std::snprintf(num, sizeof(num), ",\"meshN\":%d", e.fr.atr.meshN); out += num;
+                out += ",\"unpackMs\":"; AppendNum3(out, e.fr.atr.unpackMs);
+                std::snprintf(num, sizeof(num), ",\"unpackN\":%d", e.fr.atr.unpackN); out += num;
+                out += ",\"pipeMs\":"; AppendNum3(out, e.fr.atr.pipeMs);
+                std::snprintf(num, sizeof(num), ",\"pipeN\":%d", e.fr.atr.pipeN); out += num;
+                out += ",\"inflMs\":"; AppendNum3(out, e.fr.atr.inflMs);
+            }
             break;
         }
         case TK_INPUT: {
@@ -558,6 +627,31 @@ void WebEgressPush(const std::string &chunk) {
 void WriteHeader() {
     if (gRec.hdrWritten) return;
     if (!gRec.sink && !HaveWebSink()) return;
+    // RB3_FRAME_TRACE back-compat alias: master's frame trace opened with a
+    // `#`-comment header line that scripts/native/frame_profiler.py (and the
+    // load-perf .mjs tooling) SKIP (they do `line.startswith("#")`). Emitting the
+    // {"k":"hdr"} JSON envelope instead would make frame_profiler's unconditional
+    // r["dt"] read KeyError on the header row. So in frameCompat mode we write the
+    // master-shaped comment header (carrying the sid for provenance) and suppress
+    // the JSON hdr envelope. The per-frame `fr` rows still carry every attribution
+    // field with master's exact names.
+    if (gRec.frameCompat) {
+        std::string h = "# rb3 session trace (RB3_FRAME_TRACE alias) sid=";
+        h += gRec.sid;
+        h += " f=frame dt=frameMs lp=loadPollMs lpu=pollUntilMs scr=screen "
+             "ld=loaderAdds st=streamOpens pend=pendingLoaders "
+             "fetchMs/fetchN/fetchB dtaMs objMs objWMs/objWNm primeMs texMs/texN "
+             "meshMs/meshN unpackMs/unpackN pipeMs/pipeN inflMs\n";
+        if (gRec.sink) {
+            std::fwrite(h.data(), 1, h.size(), gRec.sink);
+            std::fflush(gRec.sink);
+        } else {
+            WebEgressPush(h);
+        }
+        gRec.hdrWritten = true;
+        if (gRec.clientSeq == 0) gRec.clientSeq = 1;
+        return;
+    }
     std::string out;
     out += "{\"k\":\"hdr\",\"v\":1,";
     AppendQuotedKV(out, "sid", gRec.sid.c_str());
@@ -672,6 +766,13 @@ bool MakeRoom() {
 //    driven by the pre-js timer, drains the remainder on cadence). (D5 §7)
 // ---------------------------------------------------------------------------
 void PushEvent(TraceEvent &e) {
+    // RB3_FRAME_TRACE back-compat alias: master's frame trace was a PURE per-frame
+    // JSONL (only `fr` rows after the `#` header). scripts/native/frame_profiler.py
+    // reads r["dt"] on EVERY non-`#` line, so interleaving the session stream's
+    // clk/log/nav/boot/chk rows (which have no `dt`) would KeyError it. In this
+    // alias mode we emit ONLY `fr` rows — the full multi-kind stream is what
+    // RB3_SESSION_TRACE is for. (The fr rows still carry every attribution field.)
+    if (gRec.frameCompat && e.kind != TK_FRAME) return;
     if (!gRec.hdrWritten) WriteHeader();
     e.t  = NowMs();
     e.cs = gRec.clientSeq++;
@@ -767,6 +868,7 @@ void RB3TraceInit() {
 
     gRec.frameLongMs = ParseFloatEnv("RB3_TRACE_FRAME_MS", 20.0f);
     gRec.frameDecim  = ParseIntEnv("RB3_TRACE_FRAME_DECIMATE", 30);
+    gRec.frameCompat = frameAlias;
     if (frameAlias) gRec.frameDecim = 1;   // back-compat: every frame
 
     // Identity + header fields. (sid is minted per-sink above.)
@@ -810,6 +912,33 @@ void RB3RecordFrame(float dt, float lp, float lpu, const char *scr, int pend) {
     gFrameTraceLoaderAdds  = 0;
     gFrameTraceStreamOpens = 0;
 
+    // Read + ZERO the per-frame load-perf ATTRIBUTION counters (ported from the
+    // deleted rb3_frame_trace.cpp). Snapshot ALL of them BEFORE the decimation
+    // early-return so they never leak into a later frame (exactly the old TU's
+    // read-then-zero-every-frame contract). The snapshot is emitted with master's
+    // field names in SerializeEvent's fr path.
+    float  aFetchMs = gFetchSyncMsThisFrame;   int aFetchN = gFetchSyncCountThisFrame;
+    double aFetchB  = gFetchSyncBytesThisFrame;
+    float  aDtaMs   = gDtaParseMsThisFrame;
+    float  aObjMs   = gObjLoadMsThisFrame;     float aObjWMs = gObjLoadWorstMs;
+    const char *aObjWNm = gObjLoadWorstName;
+    float  aPrimeMs = gAudioPrimeMsThisFrame;
+    float  aTexMs   = gTexUploadMsThisFrame;   int aTexN = gTexUploadCountThisFrame;
+    float  aMeshMs  = gMeshUploadMsThisFrame;  int aMeshN = gMeshUploadCountThisFrame;
+    float  aUnpMs   = gVertUnpackMsThisFrame;  int aUnpN = gVertUnpackCountThisFrame;
+    float  aPipeMs  = gPipelineCreateMsThisFrame; int aPipeN = gPipelineCreateCountThisFrame;
+    float  aInflMs  = gStreamReadMsThisFrame;
+    gFetchSyncMsThisFrame = 0.0f;    gFetchSyncCountThisFrame = 0;
+    gFetchSyncBytesThisFrame = 0.0;
+    gDtaParseMsThisFrame = 0.0f;
+    gObjLoadMsThisFrame = 0.0f;      gObjLoadWorstMs = 0.0f;  gObjLoadWorstName[0] = '\0';
+    gAudioPrimeMsThisFrame = 0.0f;
+    gTexUploadMsThisFrame = 0.0f;    gTexUploadCountThisFrame = 0;
+    gMeshUploadMsThisFrame = 0.0f;   gMeshUploadCountThisFrame = 0;
+    gVertUnpackMsThisFrame = 0.0f;   gVertUnpackCountThisFrame = 0;
+    gPipelineCreateMsThisFrame = 0.0f; gPipelineCreateCountThisFrame = 0;
+    gStreamReadMsThisFrame = 0.0f;
+
     // fr decimation (§4.7): always emit long frames + frames with asset events;
     // otherwise sample 1/N (decim 0 => long-frames-only; decim 1 => every frame).
     bool isLong  = dt > gRec.frameLongMs;
@@ -835,6 +964,14 @@ void RB3RecordFrame(float dt, float lp, float lpu, const char *scr, int pend) {
     e.fr.scrId = gRec.interner.intern(scr ? scr : "?");
     e.fr.ld = ld;
     e.fr.st = st;
+    // Attribution snapshot (master field names). objWNm interned like other strings.
+    e.fr.atr.fetchMs = aFetchMs; e.fr.atr.fetchN = aFetchN; e.fr.atr.fetchB = aFetchB;
+    e.fr.atr.dtaMs = aDtaMs; e.fr.atr.objMs = aObjMs; e.fr.atr.objWMs = aObjWMs;
+    e.fr.atr.objWNmId = gRec.interner.intern((aObjWNm && aObjWNm[0]) ? aObjWNm : "");
+    e.fr.atr.primeMs = aPrimeMs; e.fr.atr.texMs = aTexMs; e.fr.atr.texN = aTexN;
+    e.fr.atr.meshMs = aMeshMs; e.fr.atr.meshN = aMeshN;
+    e.fr.atr.unpackMs = aUnpMs; e.fr.atr.unpackN = aUnpN;
+    e.fr.atr.pipeMs = aPipeMs; e.fr.atr.pipeN = aPipeN; e.fr.atr.inflMs = aInflMs;
     PushEvent(e);
 }
 
@@ -1127,6 +1264,7 @@ void RB3TraceShutdown() {
     gRec.droppedTotal = 0;
     gRec.frameLongMs = 20.0f;
     gRec.frameDecim  = 30;
+    gRec.frameCompat = false;
     gRec.interner.reset();
     gRec.clockBaseSet  = false;
     gRec.lastInputBits = 0;

@@ -11,6 +11,7 @@
 # Usage:
 #   tools/setup-worktree.sh <name> [base-ref]
 #   tools/setup-worktree.sh <name> [base-ref] --cold-cache
+#   tools/setup-worktree.sh <name> [base-ref] --engine
 #
 #   <name>      Worktree + branch name. Worktree is created at
 #               .claude/worktrees/<name>, branch is wt-<name>.
@@ -20,6 +21,38 @@
 #   --cold-cache  Do NOT warm-start the object cache (skip reflinking the
 #               compiled-object dir). Use for a guaranteed-clean A/B test or
 #               if a warm cache triggers a full rebuild on your setup.
+#   --engine    ALSO create a PAIRED milo-native-engine worktree, isolating
+#               engine edits from the shared engine tree (see below). Opt-in;
+#               omit it for the default (shared-engine) behavior.
+#
+# Paired engine worktree (--engine)
+# ---------------------------------
+# By default every rb3 worktree shares ONE engine tree via the symlink at
+# .claude/worktrees/milo-native-engine -> the sibling milo-native-engine repo.
+# That's fine for read-only / rb3-side-only work, but it means ANY engine edit
+# leaks into every agent's build — unacceptable for HIGH-RISK work that must
+# change BOTH repos at once. `--engine` fixes that: it adds a private
+# milo-native-engine worktree (branch wt-<name>, based at the engine's current
+# HEAD) and records its path in <wt>/.engine-path. You then point the worktree's
+# build at that private engine via the CACHE override:
+#
+#   cmake -B native/build-native -S native \
+#         -DMILO_ENGINE_PATH="$(cat .engine-path)"
+#
+# native/CMakeLists.txt declares MILO_ENGINE_PATH as a CACHE PATH (default
+# ${CMAKE_SOURCE_DIR}/../../milo-native-engine, which resolves to the shared
+# symlink from a worktree) and uses it for add_subdirectory + include dirs, so
+# the -D override redirects the ENTIRE engine build to the private worktree.
+# Because it's a CACHE var, the override only takes on a FRESH build dir (first
+# configure wins, then it's sticky) — always pass it to the first `cmake -B`.
+#
+# Location: the paired engine worktree lives OUTSIDE both repos, at
+#   /home/free/code/milohax/milo-native-engine-worktrees/<name>/
+# (a sibling dir of the engine repo). Not inside the engine repo (a registered
+# worktree there shows as `?? .worktrees/` in the engine repo's git status,
+# tripping concurrent agents) and not inside the rb3 worktree (would entangle
+# with rb3's reflink/exclude machinery and risk the rb3 build globbing engine
+# files). Tear it down with the command printed at the end (and in the docs).
 #
 # What gets shared, and WHY symlink vs reflink-copy per directory
 # ----------------------------------------------------------------
@@ -97,9 +130,11 @@ shift
 
 BASE_REF="HEAD"
 WARM_CACHE=1
+PAIR_ENGINE=0
 for arg in "$@"; do
     case "$arg" in
         --cold-cache) WARM_CACHE=0 ;;
+        --engine) PAIR_ENGINE=1 ;;
         *) BASE_REF="$arg" ;;
     esac
 done
@@ -238,6 +273,18 @@ if [ -d "$ORIG_ASSETS_REAL" ]; then
     done
 fi
 
+# ---- song charts : wire the full 83-song set into the native loader root -------
+# The loader reads orig-assets/extracted/songs; a dev extract may ship only a few
+# songs' .mid charts there while the full set lives in extracted-xbox-full/.
+# link-song-charts.sh symlinks the missing charts (idempotent). Worktrees share
+# the MAIN tree's extracted/ via the symlink above, so we populate the main tree's
+# extract — that benefits this worktree and every other. gitignored => per-machine.
+if [ -x "$SCRIPT_DIR/link-song-charts.sh" ] && [ -d "$ORIG_ASSETS_REAL/extracted-xbox-full" ]; then
+    echo "==> song charts  (symlink full 83-song set into the loader root)"
+    "$SCRIPT_DIR/link-song-charts.sh" "$ORIG_ASSETS_REAL" || \
+        echo "WARN: link-song-charts.sh failed — chartless songs will hold at the loading screen." >&2
+fi
+
 # ---- node_modules : per-script symlinks (avoid slow per-agent npm install) --
 # Find every node_modules dir in the main tree and symlink each one into the
 # worktree at the same relative path. Silent if none exist.
@@ -313,15 +360,52 @@ printf '%s\n' "$WT_PORT" > "$WORKTREE_PATH/.worktree-port"
 WT_GITDIR="$(git -C "$WORKTREE_PATH" rev-parse --git-path info 2>/dev/null || true)"
 if [ -n "$WT_GITDIR" ] && [ -d "$WT_GITDIR" ]; then
     EXCLUDE_FILE="$WT_GITDIR/exclude"
-    for pat in '/.worktree-port' '/scripts/web/node_modules'; do
+    for pat in '/.worktree-port' '/scripts/web/node_modules' '/.engine-path'; do
         grep -qxF "$pat" "$EXCLUDE_FILE" 2>/dev/null || printf '%s\n' "$pat" >> "$EXCLUDE_FILE"
     done
+fi
+
+# ---- --engine : paired milo-native-engine worktree (opt-in) -----------------
+# Create a PRIVATE engine worktree so engine edits in this worktree don't leak
+# into the shared engine tree every other agent builds against. Lives OUTSIDE
+# both repos (sibling of the engine repo) to avoid git-status noise in the
+# engine repo and entanglement with the rb3 worktree. Idempotent: re-running
+# reuses an existing worktree/branch. The rb3 build opts in via
+# `-DMILO_ENGINE_PATH="$(cat .engine-path)"` (a CACHE override; see header).
+ENGINE_WT_PATH=""
+if [ "$PAIR_ENGINE" -eq 1 ]; then
+    if [ ! -d "$ENGINE_REAL/.git" ]; then
+        echo "WARN: --engine requested but $ENGINE_REAL is not a git repo — skipping paired engine worktree." >&2
+    else
+        ENGINE_WT_NAME="$(basename "$WORKTREE_PATH")"
+        ENGINE_WT_PARENT="$(dirname "$ENGINE_REAL")/$(basename "$ENGINE_REAL")-worktrees"
+        ENGINE_WT_PATH="$ENGINE_WT_PARENT/$ENGINE_WT_NAME"
+        ENGINE_BRANCH="wt-$ENGINE_WT_NAME"
+        mkdir -p "$ENGINE_WT_PARENT"
+        if [ -e "$ENGINE_WT_PATH/.git" ]; then
+            echo "==> engine worktree already exists at $ENGINE_WT_PATH (reusing)"
+        else
+            ENGINE_HEAD="$(git -C "$ENGINE_REAL" rev-parse --short HEAD 2>/dev/null || echo HEAD)"
+            echo "==> Creating paired engine worktree at $ENGINE_WT_PATH"
+            echo "    branch=$ENGINE_BRANCH  base=engine HEAD ($ENGINE_HEAD)"
+            if git -C "$ENGINE_REAL" show-ref --verify --quiet "refs/heads/$ENGINE_BRANCH"; then
+                git -C "$ENGINE_REAL" worktree add "$ENGINE_WT_PATH" "$ENGINE_BRANCH"
+            else
+                git -C "$ENGINE_REAL" worktree add "$ENGINE_WT_PATH" -b "$ENGINE_BRANCH" HEAD
+            fi
+        fi
+        # Record the engine path for the build override (and for teardown).
+        printf '%s\n' "$ENGINE_WT_PATH" > "$WORKTREE_PATH/.engine-path"
+    fi
 fi
 
 echo ""
 echo "Worktree ready:  $WORKTREE_PATH"
 echo "  branch:        $BRANCH  (from $BASE_COMMIT)"
 echo "  dev port:      $WT_PORT  (deterministic from name; cat .worktree-port; safe to override)"
+if [ -n "$ENGINE_WT_PATH" ]; then
+    echo "  engine wt:     $ENGINE_WT_PATH  (branch $ENGINE_BRANCH; path in .engine-path)"
+fi
 echo ""
 echo "Next:"
 echo "  cd $WORKTREE_PATH"
@@ -330,5 +414,18 @@ echo "  build/tools/objdiff-cli diff -u <unit> <symbol> --format json-pretty -o 
 echo ""
 echo "  # Web dev server (W3+ agents): use the per-worktree port to avoid 8421/8431 collisions:"
 echo "  python3 native/web/server.py --port \$(cat .worktree-port)"
+if [ -n "$ENGINE_WT_PATH" ]; then
+    echo ""
+    echo "  # Dual-repo (engine + rb3) build — point rb3-native at the PRIVATE engine worktree."
+    echo "  # MILO_ENGINE_PATH is a CACHE var: pass it on the FIRST configure of a FRESH build dir."
+    echo "  cmake -B native/build-native -S native -DMILO_ENGINE_PATH=\"\$(cat .engine-path)\""
+    echo "  cmake --build native/build-native --target rb3-native -j\"\$(nproc)\""
+    echo "  # Landing rule: commit the engine worktree FIRST, then bump MILO_ENGINE_PIN"
+    echo "  # in native/CMakeLists.txt to that SHA in the matching rb3 commit."
+fi
 echo ""
 echo "Remove when done:  git -C $MAIN_REPO worktree remove --force $WORKTREE_PATH"
+if [ -n "$ENGINE_WT_PATH" ]; then
+    echo "                   git -C $ENGINE_REAL worktree remove --force $ENGINE_WT_PATH"
+    echo "                   git -C $ENGINE_REAL branch -D $ENGINE_BRANCH   # if no longer needed"
+fi

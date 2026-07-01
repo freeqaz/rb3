@@ -84,13 +84,52 @@
 
 namespace {
 
+// ---- Native under-run probe (env-gated: RB3_AUDIO_UNDERRUN_LOG=1, off by default) ----
+// Aggregate consumer-side starvation counters across all channels. The audio
+// thread increments these (relaxed); a process-atexit hook prints a summary.
+// Retained because the native real-device path can't be exercised on every host
+// (a box with no PulseAudio/PipeWire has no consumer thread to starve) — this is
+// how you verify the native fade mirror below on a host that DOES have audio.
+// See docs/native/audio-underrun-2026-06-20/.
+static std::atomic<unsigned long long> sUnderrunEvents{0};   // callbacks with a zero-fill tail
+static std::atomic<unsigned long long> sUnderrunFrames{0};   // total zero-filled frames
+static std::atomic<unsigned long long> sActiveCallbacks{0};  // callbacks while playing
+static std::atomic<int>                sMinAvailFrames{0x7fffffff}; // low-water ring depth (frames)
+static std::atomic<int>                sMaxUnderrunRun{0};    // longest single-callback zero-fill (frames)
+static bool sUnderrunLogEnabled = false;
+static bool sUnderrunHookInstalled = false;
+
+static void DumpUnderrunSummary() {
+    if (!sUnderrunLogEnabled) return;
+    unsigned long long ev = sUnderrunEvents.load(std::memory_order_relaxed);
+    unsigned long long fr = sUnderrunFrames.load(std::memory_order_relaxed);
+    unsigned long long cb = sActiveCallbacks.load(std::memory_order_relaxed);
+    int mn = sMinAvailFrames.load(std::memory_order_relaxed);
+    int mx = sMaxUnderrunRun.load(std::memory_order_relaxed);
+    std::fprintf(stderr,
+        "[UNDERRUN-SUMMARY] activeCallbacks=%llu underrunEvents=%llu (%.3f%% of callbacks) "
+        "underrunFrames=%llu minAvailFrames=%d maxUnderrunRunFrames=%d\n",
+        cb, ev, cb ? (100.0 * (double)ev / (double)cb) : 0.0, fr,
+        (mn == 0x7fffffff ? -1 : mn), mx);
+    std::fflush(stderr);
+}
+
 static inline void ComputePanGains(float volume, float pan, float &left, float &right) {
     pan = std::max(-1.0f, std::min(1.0f, pan));
     left = volume * (pan <= 0.0f ? 1.0f : 1.0f - pan);
     right = volume * (pan >= 0.0f ? 1.0f : 1.0f + pan);
 }
 
+// Off-main mix (RB3_WEB_OFFMAIN_MIX, web only): a music stem additionally
+// implements WebMusicStem so the AudioWorklet mixes its decoded ring on the
+// audio thread. Native (miniaudio) builds keep the AudioSource-only path.
+#ifdef __EMSCRIPTEN__
+class RB3StreamReceiverNative : public StreamReceiver,
+                                public AudioSource,
+                                public WebMusicStem {
+#else
 class RB3StreamReceiverNative : public StreamReceiver, public AudioSource {
+#endif
 public:
     RB3StreamReceiverNative(int numBuffers, int sampleRate, bool slip, int channel)
         // IMPORTANT: force the base mSlipEnabled to false. V1 does not implement
@@ -120,6 +159,16 @@ public:
           mSendActive(false) {
         const char *dbg = getenv("RB3_STREAM_AUDIO_DBG");
         mDebug = (dbg && dbg[0] == '1');
+        {
+            const char *ul = getenv("RB3_AUDIO_UNDERRUN_LOG");
+            if (ul && ul[0] == '1') {
+                sUnderrunLogEnabled = true;
+                if (!sUnderrunHookInstalled) {
+                    sUnderrunHookInstalled = true;
+                    std::atexit(DumpUnderrunSummary);
+                }
+            }
+        }
         if (mDebug) {
             std::fprintf(stderr, "RB3STREAM ch=%d ctor numBuffers=%d sr=%d slip=%d\n",
                          mChannel, numBuffers, sampleRate, (int)slip);
@@ -129,7 +178,12 @@ public:
 
     ~RB3StreamReceiverNative() override {
         if (mRegistered) {
-            AudioDevice::GetInstance().RemoveSource(this);
+#ifdef __EMSCRIPTEN__
+            if (AudioDevice::OffMainMixEnabled())
+                AudioDevice::GetInstance().UnregisterMusicStem(this);
+            else
+#endif
+                AudioDevice::GetInstance().RemoveSource(this);
             mRegistered = false;
         }
     }
@@ -169,7 +223,15 @@ public:
             }
         }
         if (!mRegistered) {
-            AudioDevice::GetInstance().AddSource(this);
+#ifdef __EMSCRIPTEN__
+            // Off-main: register as a WebMusicStem (publishes to a per-stem SAB;
+            // the worklet mixes it on the audio thread) instead of AddSource —
+            // the music bus does NOT run through the main-thread MixSources.
+            if (AudioDevice::OffMainMixEnabled())
+                AudioDevice::GetInstance().RegisterMusicStem(this);
+            else
+#endif
+                AudioDevice::GetInstance().AddSource(this);
             mRegistered = true;
         }
     }
@@ -284,6 +346,25 @@ public:
         int framesToRender = bytesToRead / bytesPerFrame;
         if (framesToRender < 0) framesToRender = 0;
 
+        // DIAGNOSIS-ONLY under-run telemetry (RB3_AUDIO_UNDERRUN_LOG=1).
+        if (sUnderrunLogEnabled) {
+            sActiveCallbacks.fetch_add(1, std::memory_order_relaxed);
+            int availFrames = available / bytesPerFrame;
+            int prevMin = sMinAvailFrames.load(std::memory_order_relaxed);
+            while (availFrames < prevMin &&
+                   !sMinAvailFrames.compare_exchange_weak(prevMin, availFrames,
+                                                          std::memory_order_relaxed)) {}
+            if (framesToRender < frameCount) {
+                int shortBy = frameCount - framesToRender;
+                sUnderrunEvents.fetch_add(1, std::memory_order_relaxed);
+                sUnderrunFrames.fetch_add((unsigned long long)shortBy, std::memory_order_relaxed);
+                int prevMax = sMaxUnderrunRun.load(std::memory_order_relaxed);
+                while (shortBy > prevMax &&
+                       !sMaxUnderrunRun.compare_exchange_weak(prevMax, shortBy,
+                                                             std::memory_order_relaxed)) {}
+            }
+        }
+
         // Volume + pan (constant-amplitude-ish: just scale L/R independently).
         float volL = 0.0f;
         float volR = 0.0f;
@@ -291,22 +372,45 @@ public:
 
         const int16_t *ringS16 = reinterpret_cast<const int16_t *>(mBuffer);
 
+        // Lazy-init the fade length (~3 ms) now that mSampleRate is known.
+        if (mFadeFrames <= 0) {
+            int ff = (int)((mSampleRate > 0 ? mSampleRate : 44100) * 0.003f);
+            mFadeFrames = ff < 64 ? 64 : ff;
+        }
+        const float fadeStep = 1.0f / (float)mFadeFrames;
+        float g = mFadeGain;
+        float lastL = mLastL;
+        float lastR = mLastR;
+
         for (int i = 0; i < framesToRender; i++) {
             // readPos is in BYTES into mBuffer; convert to sample index.
             int sampleIdx = readPos >> 1; // /2
             int16_t s = ringS16[sampleIdx];
             float fs = static_cast<float>(s) * (1.0f / 32768.0f);
-            output[i * 2 + 0] = fs * volL;
-            output[i * 2 + 1] = fs * volR;
+            float oL = fs * volL;
+            float oR = fs * volR;
+            // Ramp the fade-gain back up to 1.0 on recovery (de-zipper re-entry).
+            if (g < 1.0f) { g += fadeStep; if (g > 1.0f) g = 1.0f; }
+            output[i * 2 + 0] = oL * g;
+            output[i * 2 + 1] = oR * g;
+            lastL = oL;
+            lastR = oR;
             readPos += bytesPerFrame;
             if (readPos >= ringSize) readPos -= ringSize;
         }
 
-        // Zero-fill any remainder (ring starved: caught up to write frontier).
+        // Under-run concealment (ring starved: caught up to write frontier).
+        // Hold the last delivered sample and ramp the gain to 0 instead of a hard
+        // step — the same dip, but a smooth smear rather than an audible click.
         for (int i = framesToRender; i < frameCount; i++) {
-            output[i * 2 + 0] = 0.0f;
-            output[i * 2 + 1] = 0.0f;
+            if (g > 0.0f) { g -= fadeStep; if (g < 0.0f) g = 0.0f; }
+            output[i * 2 + 0] = lastL * g;
+            output[i * 2 + 1] = lastR * g;
         }
+
+        mFadeGain = g;
+        mLastL = lastL;
+        mLastR = lastR;
 
         // Publish the advanced play cursor. The producer reads this via
         // GetPlayCursor() (drives the send loop) and SendDoneImpl() (back-pressure).
@@ -341,6 +445,73 @@ public:
         if (mSendActive.load(std::memory_order_acquire)) return false;
         return mDoneBufferCounter > mNumBuffers + 2;
     }
+
+#ifdef __EMSCRIPTEN__
+    // ----------------------- WebMusicStem vtable (off-main) -----------------------
+    bool OffMainActive() const override {
+        // Live while armed and not fully drained. (A paused stem stays active so
+        // it can resume; the worklet honors the paused flag.)
+        if (!mPlayStarted) return false;
+        return !IsFinished();
+    }
+
+    bool OffMainArmed() const override { return mPlayStarted; }
+
+    void OffMainSnapshot(OffMainStemState *out) const override {
+        const int ringSize = mRingSize;               // bytes
+        const int ringFrames = ringSize >> 1;         // int16 mono frames
+        out->ringPcm = reinterpret_cast<const int16_t *>(mBuffer);
+        out->ringFrames = ringFrames;
+
+        // DATA frontier: the producer write position (where decode has filled to).
+        out->writeFrame = mRingWritePos >> 1;
+
+        // Consumer play cursor + availability — EXACTLY RenderAudio's math:
+        //   consumed = (mAudioReadPos - mRingReadPos) mod ringSize
+        //   available = mRingWrittenSpace - consumed   (bytes)
+        int readPos = mAudioReadPos.load(std::memory_order_acquire); // bytes
+        int baseReadPos = mRingReadPos;               // producer free frontier (bytes)
+        int written = mRingWrittenSpace;              // valid buffered bytes
+        int consumed = readPos - baseReadPos;
+        if (consumed < 0) consumed += ringSize;
+        int available = written - consumed;
+        if (available < 0) available = 0;
+        if (available > ringSize) available = ringSize;
+
+        out->readFrame = readPos >> 1;
+        int availFrames = available >> 1;
+        // The SAB uses (writePos - readPos) for availability, which cannot
+        // represent a FULL ring (writePos == readPos reads as EMPTY). Cap at
+        // ringFrames - 1 so the full-ring handoff (mRingWrittenSpace == ringSize)
+        // doesn't publish "0 available" to the worklet. Loses 1 frame; harmless.
+        if (availFrames > ringFrames - 1) availFrames = ringFrames - 1;
+        out->availFrames = availFrames;
+        // startFrame is only consumed once (the seed at first publish); the
+        // current play cursor IS the song start at that point (PlayImpl set
+        // mAudioReadPos = mRingReadPos).
+        out->startFrame = readPos >> 1;
+        out->gain = mVolume;
+        out->pan = mPan;
+        out->paused = mPaused;
+        out->finished = IsFinished();
+    }
+
+    void OffMainAdvanceConsumed(int frameDelta) override {
+        // The worklet consumed `frameDelta` more frames since the last pump.
+        // Advance the play cursor + monotonic counter by that many BYTES, exactly
+        // as RenderAudio would have. A monotonic frame delta has no wrap ambiguity
+        // (unlike diffing a wrapped readPos), so a stall that drains many frames
+        // advances the producer correctly when the pump resumes.
+        if (frameDelta <= 0) return;
+        int bytes = frameDelta << 1;
+        int oldReadPos = mAudioReadPos.load(std::memory_order_acquire);
+        int newReadPos = oldReadPos + bytes;
+        newReadPos %= mRingSize;
+        if (newReadPos < 0) newReadPos += mRingSize;
+        mAudioReadPos.store(newReadPos, std::memory_order_release);
+        mPlayedTotal.fetch_add((long long)bytes, std::memory_order_acq_rel);
+    }
+#endif
 
 #ifdef HX_WEB
     void DebugDescribe(char *buf, size_t bufSize) const override {
@@ -384,6 +555,17 @@ private:
     long long mSendStartPlayed;
     int mSendSize;                     // size of current pending chunk (bytes)
     std::atomic<bool> mSendActive;     // is there a pending chunk?
+
+    // ---- Graceful under-run concealment (mirrors the web AudioWorklet) ----
+    // On ring starvation we used to hard-zero the remainder of the callback,
+    // and on recovery snap straight back to the live sample — that step is the
+    // audible click. Instead hold the last delivered (post-volume) sample and
+    // linearly ramp it to zero over ~mFadeFrames, then ramp back up from 0 on
+    // recovery. Audio-thread-only state; no locking needed.
+    float mLastL = 0.0f;
+    float mLastR = 0.0f;
+    float mFadeGain = 1.0f;            // 1.0 = live, 0.0 = fully faded out
+    int mFadeFrames = 0;              // ~3 ms; set lazily from mSampleRate
 };
 
 } // anonymous namespace

@@ -9,7 +9,7 @@ worktree buildable + diffable in ~1.5s using btrfs copy-on-write reflinks.
 ## Usage
 
 ```bash
-tools/setup-worktree.sh <name> [base-ref] [--cold-cache]
+tools/setup-worktree.sh <name> [base-ref] [--cold-cache] [--engine]
 ```
 
 - `<name>` → worktree at `.claude/worktrees/<name>`, branch `wt-<name>`
@@ -17,6 +17,8 @@ tools/setup-worktree.sh <name> [base-ref] [--cold-cache]
 - `base-ref` defaults to current `HEAD`.
 - `--cold-cache` skips the warm object cache (reflinks only `obj/` + `config.json`);
   use for a guaranteed-clean A/B or if a warm cache ever forces a full rebuild.
+- `--engine` ALSO creates a paired, private `milo-native-engine` worktree for
+  edits that span both repos (see [Dual-repo worktrees](#dual-repo-worktrees---engine--isolated-engine-edits) below).
 
 Then:
 
@@ -66,6 +68,93 @@ relative path then resolves correctly, with no per-script defense needed.
 
 The symlink persists across `git worktree remove` (it's shared infrastructure,
 not per-worktree state). Safe to leave; re-created idempotently if deleted.
+
+## Dual-repo worktrees (`--engine`) — isolated engine edits
+
+The shared engine symlink above is exactly that: **shared**. Every rb3 worktree
+builds against the one real `milo-native-engine` tree, so any engine source edit
+leaks into every concurrent agent's build. That's fine for rb3-side-only or
+read-only work, but **unsafe for HIGH-RISK work that must change BOTH the engine
+and rb3 at once**. The `--engine` flag fixes this by pairing the rb3 worktree
+with a **private engine worktree**:
+
+```bash
+tools/setup-worktree.sh <name> --engine
+```
+
+This:
+
+1. Creates the rb3 worktree exactly as the no-flag run does (byte-for-byte same).
+2. Adds a private `milo-native-engine` worktree on branch `wt-<name>`, based at
+   the engine repo's **current HEAD**, at
+   `…/milo-native-engine-worktrees/<name>/` (a sibling of the engine repo).
+3. Records that path in `<wt>/.engine-path` (and adds `/.engine-path` to the
+   worktree's `.git/info/exclude` so it never shows in `git status`).
+
+**Why that location?** Not inside the engine repo: a registered worktree at
+`milo-native-engine/.worktrees/<name>` shows as `?? .worktrees/` in the engine
+repo's `git status` (git only auto-hides the *registered* path, not its untracked
+parent dir), tripping concurrent agents. Not inside the rb3 worktree either: it
+would entangle with the rb3 worktree's reflink/exclude machinery and risk the rb3
+build globbing engine `.cpp` files. A sibling dir keeps both repos' `git status`
+clean.
+
+### Build (the CACHE override)
+
+`native/CMakeLists.txt` declares `MILO_ENGINE_PATH` as a `CACHE PATH` (default
+`${CMAKE_SOURCE_DIR}/../../milo-native-engine`, i.e. the shared symlink from a
+worktree) and uses it for `add_subdirectory` + the engine include dirs. Override
+it to redirect the **entire** engine build at the private worktree:
+
+```bash
+cd <wt>
+cmake -B native/build-native -S native -DMILO_ENGINE_PATH="$(cat .engine-path)"
+cmake --build native/build-native --target rb3-native -j"$(nproc)"
+```
+
+Because `MILO_ENGINE_PATH` is a **cache** variable, **first configure wins** and
+the value is then sticky — always pass `-DMILO_ENGINE_PATH=…` on the **first**
+`cmake -B` against a **fresh** build dir (re-running `cmake` on an existing build
+dir without the flag keeps the cached value; passing a *different* value on a
+re-run does update it). Verified: a whitespace-only edit in the engine worktree
+recompiles only that engine TU → relinks `libmilo-engine.a` → relinks the
+worktree's `rb3-native`, while the main repo's engine tree and every other
+agent's engine objects are left untouched.
+
+> If a fresh configure fails with `Could not find … Dawn`, the rb3 CMakeLists'
+> default `Dawn_DIR` (`${REPO_ROOT}/../dc3-decomp-deps/dawn/…`) resolves to the
+> wrong relative path from a worktree. Pass it absolutely, same as the main
+> build's cache has it:
+> `-DDawn_DIR=/home/free/code/milohax/dc3-decomp-deps/dawn/lib/cmake/Dawn`.
+
+### Landing rule (commit order)
+
+The two repos have a one-way dependency (rb3 pins an engine SHA), so land in this
+order:
+
+1. **Commit the engine worktree FIRST** (`git -C "$(cat .engine-path)" commit …`),
+   then push/merge that engine commit so its SHA is reachable from engine `main`.
+2. **Bump `MILO_ENGINE_PIN`** in `native/CMakeLists.txt` to that engine SHA in the
+   matching **rb3** commit.
+
+This keeps the soft pin honest: an rb3 commit never references an engine SHA that
+doesn't exist yet.
+
+### Teardown (BOTH repos)
+
+`git worktree remove` only knows about its own repo, so remove both, and delete
+both branches:
+
+```bash
+git -C <rb3-repo>    worktree remove --force <wt>
+git -C <rb3-repo>    branch -D wt-<name>
+git -C <engine-repo> worktree remove --force "$(cat <wt>/.engine-path)"   # read .engine-path BEFORE removing the rb3 wt
+git -C <engine-repo> branch -D wt-<name>
+```
+
+The full commands (with absolute paths) are printed in the script's "Remove when
+done:" footer. `--engine` is idempotent: re-running it on an existing worktree
+reuses the existing engine worktree/branch instead of erroring.
 
 ## bin/ overlay (`git status` cleanliness)
 

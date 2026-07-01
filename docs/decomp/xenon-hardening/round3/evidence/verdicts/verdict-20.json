@@ -1,0 +1,16 @@
+{
+  "pair": 20,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "CallSynchronizeTermination__Q26Quazal11_DO_SessionFPQ26Quazal10RMCContextPbRCQ26Quazal8DOHandle",
+  "category": "network",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Control-flow shape is structurally identical between the Wii and Xenon bodies, and three high-specificity resolved callees agree exactly in the same positions: FUN_82a6d360 -> GetCallMessage (ActiveDOCallContext), 0x82a69ec0 -> Append (ByteStream), and 0x82a6d370 -> PerformCallAndWait (ActiveDOCallContext). Both bodies: (1) load a session state field and mask it with & 0x3fffff (low-22-bit clrlwi on Wii); (2) on zero, call an error path with the SystemError code 0xE000000E and store 0, else store the field value; (3) construct a String and look up a MethodID; (4) prepare the call message and early-return 0 on failure; (5) get the call message, conditionally add a return-value ptr when arg0 != NULL; (6) append a 4-byte value (count 1) to the byte stream; (7) return PerformCallAndWait. The single referenced Xenon string is 'SynchronizeTermination', which is exactly the string the Wii body references (string pool + 0x24) and matches the function name CallSynchronizeTermination -- a direct corroboration, not a refutation. The two callee resolutions that look off (0x82a53558 -> ConvertIDToDOHandle at the SignalError site, 0x82a58d00 -> __ls__ByteStream at the String-ctor site) are imperfect matches.json entries at low-signal leaf sites; they do not contradict identity. The field offset differs (0x50 Wii vs 0x48 Xenon), which is the validated systematic struct-packing shift artifact and must not drive a DIFFERENT verdict. No genuine discriminator (differing node-size literal, valid-vs-valid type tag, or refuting string) is present.",
+  "key_evidence": [
+    "3 high-specificity callees agree exactly and in-order: GetCallMessage, Append, PerformCallAndWait",
+    "Referenced string 'SynchronizeTermination' matches the Wii body's string-pool reference and the function name",
+    "Identical constants across both bodies: mask 0x3fffff and SystemError code 0xE000000E",
+    "Identical control flow: state-mask -> error/store -> String+MethodID -> PrepareCallMessage early-return -> GetCallMessage -> conditional AddReturnValuePtr -> Append(4,1) -> PerformCallAndWait",
+    "Field-offset shift (0x50 vs 0x48) is a known systematic packing artifact, not a discriminator"
+  ]
+}

@@ -21,6 +21,8 @@
 #ifdef HX_NATIVE
 
 #include "net/NetSession.h"
+#include "net/Net.h" // TheNet — wire TheNet.mSession to the native session
+#include "net/Server.h" // TheServer — wire TheNet.mServer to the native offline server
 #include "obj/Dir.h"
 #include "utl/Symbols.h"
 #include "game/BandUser.h" // AddUserResultMsg
@@ -294,6 +296,33 @@ void BandNetGameData::Poll() {}
 void RB3InitNativeNetSession() {
     if (!TheNetSession)
         new RB3NativeNetSession(); // ctor sets TheNetSession = this
+    // On console Net::Init() sets TheNet.mSession = NetSession::New() (the same
+    // object whose ctor sets the TheNetSession global). network/Net.cpp is NOT
+    // compiled natively, so TheNet is a zero-filled weak blob and
+    // TheNet.GetNetSession() returns null. The vocal path
+    // (Singer::CreateMicClientID -> TheNet.GetNetSession()->HasUser()) then
+    // null-derefs (SIGSEGV at 0x48). Mirror Net::Init's wiring so
+    // TheNet.GetNetSession() == the valid session — fixes all 7
+    // TheNet.GetNetSession() call sites at once.
+    TheNet.mSession = TheNetSession;
+
+    // On console Net::Init() also sets `mServer = &TheServer` (network/net/Net.cpp:73).
+    // network/Net.cpp is NOT compiled natively, so TheNet.mServer stays null in the
+    // zero-filled weak TheNet blob and TheNet.GetServer() returns null. The
+    // SONG-COMPLETION / score-upload path then aborts:
+    // MetaPerformer::CompleteSong -> SaveAndUploadScores -> UpdateScores does
+    // `Server *netServer = TheNet.GetServer(); MILO_ASSERT(netServer, ...)` and
+    // OSFatal's at the endgame transition (ui/endgame/endgame_helpers.dta:meta_performer)
+    // — instrument-agnostic, blocking ALL score-screen playthroughs. There are ~15
+    // `TheNet.GetServer()` derefs in MetaPerformer.cpp alone (and more elsewhere).
+    // TheServer is the faithful native OFFLINE server (rb3_server_native.cpp): real
+    // vtable, GetPlayerID(pad)==0 (no online player id) + IsConnected()==false. Wiring
+    // it here mirrors Net::Init exactly and fixes every TheNet.GetServer() site at once
+    // with correct offline semantics — `GetPlayerID(padnum)==0` drives the local/offline
+    // score branch (b8=false → profile->UpdateScore(...false)), which is correct: a
+    // console not signed into online play uploads no leaderboard score but still saves
+    // the local profile score.
+    TheNet.mServer = &TheServer;
 }
 
 #endif // HX_NATIVE

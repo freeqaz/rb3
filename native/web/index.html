@@ -181,13 +181,47 @@
         const progressFill = document.getElementById('progress-fill');
         const loadingStatus = document.getElementById('loading-status');
 
+        // Frame-stall fix (2026-06-20): the old log() did appendChild + a
+        // scrollHeight/scrollTop READ on every call. During song load the engine
+        // emits hundreds of console lines per frame, so each call (a) forced a
+        // synchronous full-document relayout (read-after-write layout thrash) and
+        // (b) grew the #console DOM unboundedly (measured: 17,691 nodes, ~3.8s of
+        // Layout = 36% of the main thread across the song-start window, ~+4s added
+        // load time). New log(): coalesce all lines emitted in one frame into a
+        // single rAF-batched DOM write, cap the buffer to MAX_LOG_LINES, and never
+        // read layout in the hot path. Purely page-chrome; no engine/match impact.
+        var MAX_LOG_LINES = 200;
+        var _logPending = [];
+        var _logFlushScheduled = false;
+        function _flushLog() {
+            _logFlushScheduled = false;
+            if (!_logPending.length) return;
+            var frag = document.createDocumentFragment();
+            for (var i = 0; i < _logPending.length; i++) {
+                var p = _logPending[i];
+                var line = document.createElement('div');
+                line.textContent = p.text;
+                if (p.isErr) line.className = 'err';
+                frag.appendChild(line);
+            }
+            _logPending.length = 0;
+            logDiv.appendChild(frag);
+            // Cap DOM size: drop oldest lines past the cap (bounded relayout cost).
+            while (logDiv.childElementCount > MAX_LOG_LINES && logDiv.firstChild)
+                logDiv.removeChild(logDiv.firstChild);
+            // Single layout read+write per frame (not per line): keep pinned to bottom.
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
         function log(text, isErr) {
-            const atBottom = logDiv.scrollHeight - logDiv.clientHeight - logDiv.scrollTop < 4;
-            const line = document.createElement('div');
-            line.textContent = text;
-            if (isErr) line.className = 'err';
-            logDiv.appendChild(line);
-            if (atBottom) logDiv.scrollTop = logDiv.scrollHeight;
+            _logPending.push({ text: text, isErr: isErr });
+            // Hard-cap the in-flight queue too, so a single frame that emits
+            // thousands of lines doesn't build a giant fragment.
+            if (_logPending.length > MAX_LOG_LINES)
+                _logPending.splice(0, _logPending.length - MAX_LOG_LINES);
+            if (!_logFlushScheduled) {
+                _logFlushScheduled = true;
+                requestAnimationFrame(_flushLog);
+            }
         }
 
         // ── Loading overlay management ────────────────────────────────────────

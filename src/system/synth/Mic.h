@@ -29,7 +29,7 @@ public:
     virtual void SetVolume(float) {}
     virtual void SetFxSend(FxSend *) {}
     virtual bool IsMultiMicDevice() const { return false; }
-    virtual bool IsConnected() const { return IsRunning(); }
+    virtual bool IsConnected() const { return GetType() != 0; }
     virtual void SetChangeNotify(bool) {}
     virtual void StartPlayback() {}
     virtual void StopPlayback() {}

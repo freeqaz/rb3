@@ -1,0 +1,10 @@
+{
+  "pair": 4,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "UpdateTargetEdge__13BandHighlightFP16RndTransformable",
+  "category": "system",
+  "stratum": "BSIM>=30",
+  "reasoning": "Control-flow shape and call sequence are identical across the compiler boundary. Both bodies: (1) guard on an object pointer member (Wii unk148 vs Xenon +0x18c -- a shifted field offset, validated MWCC/MSVC packing artifact); (2) call __dynamic_cast with two RTTI pointer args + trailing 0 (Wii __dynamic_cast(arg0,4,&__RTTI__7UILabel,&__RTTI__16RndTransformable,0) vs Xenon Function_82804DA8(param_2,0,...82c3b018,...82c3ce84,0)) and bail if null; (3) call TextObj (Wii TextObj__7UILabelFv vs Xenon FUN_827ccf10, a no-arg call returning the text object); (4) if non-null call GetStringWidthUTF8(text, text->stringPtr, 0,0,0) else use 0.0; (5) copy the source object's edge fields into 6 destination float members, reusing two values, with the GetStringWidthUTF8 result stored last as a float. The STRONGEST corroboration is the resolved-callee agreement: Xenon Function_82443020 maps via matches.json to GetStringWidthUTF8__7RndTextCFPCcPCcbPQ27RndText5Style -- the exact same callee the Wii body calls. The only differences are shifted struct-field offsets (0x148 vs 0x18c, 0x130-0x144 vs 0x16c-0x188, source 0x40/0x44/0x48 vs 0x4c/0x50/0x54/0x58, string member 0xd4 vs 0x108) which are the validated cross-compiler packing artifact, plus the expected dynamic_cast arg-shape/inlining differences. No referenced strings to refute. No genuine discriminator (no differing node-size literal, no valid-vs-valid type tag, no string naming a different partner).",
+  "key_evidence": "Xenon Function_82443020 resolves to GetStringWidthUTF8__7RndTextCFPCcPCcbPQ27RndText5Style -- the exact callee the Wii body calls; identical 3-call sequence (dynamic_cast -> TextObj -> GetStringWidthUTF8/0.0) and identical 6-field edge-copy block with float result written last; differences are only shifted struct offsets (MWCC vs MSVC packing) and dynamic_cast arg shape -- all validated cross-compiler artifacts."
+}

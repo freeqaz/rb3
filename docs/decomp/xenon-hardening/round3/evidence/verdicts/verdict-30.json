@@ -1,0 +1,16 @@
+{
+  "pair": 30,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "__ct__Q26Quazal27TransportSignatureGeneratorFv",
+  "category": "network",
+  "stratum": "BSIM 15-20",
+  "reasoning": "Overwhelming cross-compiler agreement. (1) The Xenon body references the string '.\\Transport\\Interface\\TransportSignatureGenerator.cpp', naming the EXACT same TU as the claimed Wii symbol (TransportSignatureGenerator.o) -- strongest possible string corroboration, the inverse of the round-2 pair-29 refutation. (2) The resolved-callee table agrees on ~13 of 14 callees in matching call order: __nw__RootObject (with the same 0x14 string-length arg), HMACChecksum::ctor, GetTime (called twice), BitStream::ctor, __opUx Time, BitStream::Append (with identical 8,1 args), GetContentSize/GetContentPtr Buffer, and SetKey KeyedChecksumAlgorithm, plus the trailing dtors. (3) Control-flow shape is identical: zero the field, __nw alloc, conditional HMACChecksum ctor, NULL-check + vtable-slot vcall(this,1), store result, GetTime/Buffer(0x400)/BitStream/GetTime/__opUx/Append(8,1)/Buffer(0x400)/vcall(slot)/GetContentSize+Ptr/Key ctor/SetKey, then the four -1 dtors and return this. (4) Constant pool agrees: 0x14, 0x400 (twice), 8, 1, vcall arg 1. The only deltas are VALIDATED cross-compiler artifacts: __nw size arg 0xa8 (Wii) vs 0xb0 (Xenon) = different struct packing; vtable slot rendered as 0x8/0xc on Wii vs +0/+4 on Xenon = offset-packing; the Buffer-ctor callees resolving to GetBuffer/Message names is a matches.json mapping nuance but the 0x400 buffer-size arg and call position are identical. No genuine sibling-alias discriminator present (no differing node-size literal, no valid-vs-valid type-tag mismatch, no contradicting string).",
+  "key_evidence": [
+    "Xenon string '.\\Transport\\Interface\\TransportSignatureGenerator.cpp' names the same TU as the claimed Wii symbol",
+    "13/14 resolved callees agree in call order across the compiler boundary (RootObject __nw, HMACChecksum ctor, GetTime x2, BitStream ctor, __opUx Time, BitStream Append, Buffer GetContentSize/Ptr, KeyedChecksumAlgorithm SetKey)",
+    "Identical control-flow: zero-field, conditional new+HMACChecksum ctor, NULL-check vtable vcall(this,1), store, GetTime/Buffer(0x400)/BitStream/Append(8,1)/vcall/Key+SetKey, four -1 dtors, return this",
+    "Matching constant pool: 0x14 string len, 0x400 buffer size x2, Append args 8 and 1, vcall arg 1",
+    "All deltas (0xa8 vs 0xb0 alloc size, vtable slot 0x8/0xc vs +0/+4) are validated MWCC-vs-MSVC packing/rendering artifacts, not real discriminators"
+  ]
+}

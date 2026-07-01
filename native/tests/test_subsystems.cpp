@@ -84,3 +84,24 @@ TEST_F(NativeSubsystems, BandFaceDeformDeltaArrayLoadBE) {
     EXPECT_EQ(*(unsigned short *)d1, 0x0A15u) << "second record landed at the right offset";
     EXPECT_EQ(d1->num, 1);
 }
+
+// MILO_TRY/MILO_CATCH regression (LP64). Before the fix, Debug::Fail longjmp'd
+// `(int)msg`, truncating the 64-bit message pointer; MILO_CATCH then recovered a
+// garbage pointer and deref'd it -> SIGSEGV (which forced test_charload5b to work
+// around the macro via SetModalCallback). The fix passes the message out-of-band
+// (TheDebugFailMsg) and longjmps a sentinel. This proves: (a) MILO_FAIL unwinds
+// out of the try body, and (b) the caught message survives the longjmp intact.
+TEST_F(NativeSubsystems, MiloTryCatchPropagatesMessageLP64) {
+    const char *caught = nullptr;
+    int reached = 0;
+    MILO_TRY {
+        reached = 1;
+        MILO_FAIL("milo-try probe %d", 1234);
+        reached = 2; // must NOT execute — MILO_FAIL longjmps before this
+    }
+    MILO_CATCH(m) { caught = m; }
+    EXPECT_EQ(reached, 1) << "MILO_FAIL must longjmp out before the post-fail line";
+    ASSERT_NE(caught, nullptr) << "MILO_CATCH must receive the failure message";
+    EXPECT_STREQ(caught, "milo-try probe 1234")
+        << "message must survive the longjmp intact (not a truncated/garbage ptr)";
+}

@@ -1,0 +1,137 @@
+{
+  "verdict": "PASS",
+  "override": "video_01",
+  "venue": "UNKNOWN",
+  "song_downs": 10,
+  "shots": 5,
+  "frames": 2,
+  "pinned": "10/10",
+  "drops_total": 1405,
+  "drops_band": 0,
+  "drops_other": 1405,
+  "drop_meshes": {
+    "male_extras_hair02.mesh": 62,
+    "male_extras_eyebrows11.mesh": 62,
+    "scrollbar_bg.mesh": 1281
+  },
+  "max_band_ratio": 2.73,
+  "closest_band_to_cap": "rolledjeans_skin.2.mesh:2.73",
+  "ratio_lines": 11398,
+  "skipped": [
+    [
+      "coop_all_far.shot",
+      "force_shot not_found:coop_all_far.shot"
+    ]
+  ],
+  "forced_shots": [
+    "coop_g_cg.shot",
+    "coop_g_n04.shot",
+    "coop_k_cg00.shot",
+    "coop_v_c.shot",
+    "coop_dir_crowdb.shot"
+  ],
+  "log": "/tmp/groupB-video_sd10_on-46761.log",
+  "out": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on",
+  "frames_manifest": [
+    {
+      "shot": "coop_g_cg",
+      "shot_full": "coop_g_cg.shot",
+      "frame_idx": 0,
+      "songMs": 22110.0,
+      "cur_shot": "coop_g_cg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_g_cg_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_g_cg",
+      "shot_full": "coop_g_cg.shot",
+      "frame_idx": 1,
+      "songMs": 22709.4,
+      "cur_shot": "coop_g_cg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_g_cg_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_g_n04",
+      "shot_full": "coop_g_n04.shot",
+      "frame_idx": 0,
+      "songMs": 23434.1,
+      "cur_shot": "coop_g_n04.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_g_n04_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_g_n04",
+      "shot_full": "coop_g_n04.shot",
+      "frame_idx": 1,
+      "songMs": 24009.3,
+      "cur_shot": "coop_g_n04.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_g_n04_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_k_cg00",
+      "shot_full": "coop_k_cg00.shot",
+      "frame_idx": 0,
+      "songMs": 24682.8,
+      "cur_shot": "coop_k_cg00.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_k_cg00_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_k_cg00",
+      "shot_full": "coop_k_cg00.shot",
+      "frame_idx": 1,
+      "songMs": 25264.0,
+      "cur_shot": "coop_k_cg00.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_k_cg00_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_v_c",
+      "shot_full": "coop_v_c.shot",
+      "frame_idx": 0,
+      "songMs": 25943.1,
+      "cur_shot": "coop_v_c.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_v_c_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_v_c",
+      "shot_full": "coop_v_c.shot",
+      "frame_idx": 1,
+      "songMs": 26518.9,
+      "cur_shot": "coop_v_c.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_v_c_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_dir_crowdb",
+      "shot_full": "coop_dir_crowdb.shot",
+      "frame_idx": 0,
+      "songMs": 27189.3,
+      "cur_shot": "coop_dir_crowdb.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_dir_crowdb_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_dir_crowdb",
+      "shot_full": "coop_dir_crowdb.shot",
+      "frame_idx": 1,
+      "songMs": 27775.6,
+      "cur_shot": "coop_dir_crowdb.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_video_sd10_on/video_sd10_on_coop_dir_crowdb_1.png",
+      "ok": true
+    }
+  ]
+}

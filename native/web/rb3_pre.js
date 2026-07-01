@@ -111,6 +111,92 @@
     }
 
     // -----------------------------------------------------------------------
+    // Generic URL-param -> ENV bridge (incremental-load-perf PLAN.md T1).
+    //
+    // The existing per-flag bridge lives in native/src/main_web.cpp
+    // (ApplyUrlLoaderEnv: ?loaderBudgetMs=8 -> RB3_LOADER_BUDGET_MS, a fixed
+    // allowlist). To let ANY RB3_* flag be toggled in a browser without a
+    // rebuild or a code edit per flag, this parses a single generic param:
+    //
+    //     ?env=RB3_FRAME_TRACE=/trace.jsonl;RB3_BC_TEX_OFF=1
+    //
+    // Pairs are ';'-separated, each "NAME=VALUE". We seed Module.ENV (Emscripten
+    // copies it into `environ` before main, so the wasm's getenv() sees it) AND
+    // stash the same map on window.__rb3ExtraEnv as a hook for any C++-side
+    // draining a later wave may add (the existing main_web.cpp ApplyUrlLoaderEnv
+    // is a fixed per-flag allowlist; this generic path complements it). Names
+    // are restricted to /^RB3_[A-Z0-9_]+$/ so a stray param can't clobber
+    // arbitrary process env (e.g. PATH).
+    try {
+        var __envParam = new URLSearchParams(window.location.search).get('env');
+        if (__envParam) {
+            origModule.ENV = origModule.ENV || {};
+            window.__rb3ExtraEnv = window.__rb3ExtraEnv || {};
+            __envParam.split(';').forEach(function(pair) {
+                if (!pair) return;
+                var eq = pair.indexOf('=');
+                var name = (eq < 0 ? pair : pair.slice(0, eq)).trim();
+                var val = (eq < 0 ? '1' : pair.slice(eq + 1)).trim();
+                // RB3_* flags pass freely; a fixed second list admits the
+                // engine's draw-path diagnostic probes (read via getenv in
+                // milo-native-engine Rnd_Wgpu_RB3.cpp) so visual bugs can be
+                // probed in-browser without a rebuild. Anything else (PATH,
+                // HOME, ...) is still rejected.
+                var dbgProbes = /^(SKIN_PROBE|SHARD_CATCH|SKIN_CLAMP_PROBE|GEM_VTX|SLOT_PROBE|CAM_DBG|XBONE|XBONE_TRACK|BAND_ANIM_PROBE|REBIND_DRAW_SKINPOS|REBIND_DRAW_FLING)$/;
+                if (!/^RB3_[A-Z0-9_]+$/.test(name) && !dbgProbes.test(name)) {
+                    console.warn('[rb3-pre] ignoring non-RB3 env param: ' + name);
+                    return;
+                }
+                window.__rb3ExtraEnv[name] = val;
+                origModule.ENV[name] = val;
+                console.log('[rb3-pre] env ' + name + '=' + val + ' (from ?env)');
+            });
+        }
+    } catch (e) {
+        console.warn('[rb3-pre] ?env bridge failed: ' + e);
+    }
+
+    // -----------------------------------------------------------------------
+    // A1 (incremental-load-perf PLAN.md T6) — manifest size/existence oracle.
+    //
+    // The async-open seam (native_file.cpp WebPendingFile/WebRangeFile) needs a
+    // SYNCHRONOUS answer to "does this asset exist, and how big is it?" the
+    // instant the engine's File ctor runs, with zero network. /api/manifest
+    // already enumerates every curated asset with its size (server.py:414-435);
+    // we pre-warm it into window.__rb3ManifestSizes (Map<path, sizeBytes>) racing
+    // the wasm download — the same pattern as the IDB cache below. The engine's
+    // WebAssetsManifestLoad() copies this Map across the wasm boundary in one
+    // EM_ASM at WebAssetsInit(); if it isn't ready in time, the engine falls back
+    // to a one-shot synchronous /api/manifest fetch (no correctness loss, just a
+    // slightly later first answer). Keys are server-relative ('ui/gen/x.milo_xbox',
+    // 'songs/x/x.mogg', '(..)/(..)/system/run/...'); the engine de-mangles the
+    // '(..)/' system prefix to match its request form.
+    window.__rb3ManifestSizes = new Map();
+    window.__rb3ManifestReady = 0;
+    (function preWarmManifest() {
+        try {
+            fetch('/api/manifest')
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(j) {
+                    if (j && j.files) {
+                        for (var i = 0; i < j.files.length; i++) {
+                            window.__rb3ManifestSizes.set(j.files[i].path, j.files[i].size);
+                        }
+                        console.log('[rb3-pre] manifest oracle: ' + window.__rb3ManifestSizes.size + ' assets');
+                    }
+                    window.__rb3ManifestReady = 1;
+                })
+                .catch(function(e) {
+                    console.warn('[rb3-pre] manifest prewarm failed: ' + e);
+                    window.__rb3ManifestReady = 1;
+                });
+        } catch (e) {
+            console.warn('[rb3-pre] manifest prewarm threw: ' + e);
+            window.__rb3ManifestReady = 1;
+        }
+    })();
+
+    // -----------------------------------------------------------------------
     // W4b — IndexedDB asset cache.
     //
     // Design constraints. The engine's WebAssetsFetchSync is a synchronous
@@ -180,21 +266,58 @@
             tx.onerror = function() { reject(tx.error); };
         });
     }
+    // Q6 (incremental-load-perf PLAN §5 T5) — IDB pre-warm cap.
+    //
+    // loadAllRows() pulls every cached row into window.__rb3IdbCache, a JS Map
+    // held in the renderer's ArrayBuffer heap, BEFORE wasm even starts. The
+    // synchronous warm-boot path (native_file.cpp cacheTryHit) needs that Map
+    // because IDB can't be read synchronously inside the File ctor. But a hovered
+    // preview/gameplay mogg is 31-36 MB; hover ten songs and the NEXT boot would
+    // eager-load ~360 MB into JS memory — a latent OOM (the same heap-growth class
+    // as the runtime-put OOM FIX above, but on the boot path).
+    //
+    // Fix: exclude oversized rows (and .mogg keys, which are always oversized)
+    // from the eager Map. These are NEVER on the synchronous boot-critical path —
+    // the warm-boot Map exists to satisfy the small milo/texture/dta opens the App
+    // ctor does; large moggs are opened later (preview hover / song start), off the
+    // boot frame. An excluded row stays in IDB (not deleted); its first
+    // session-touch misses cacheTryHit and falls to the network exactly as a
+    // never-cached asset's first touch does today (one fetch → MEMFS-resident for
+    // the rest of the session → written back through to IDB), so correctness is
+    // unchanged. Only the unbounded eager-load is removed. Q2/Q3/A1 (range moggs +
+    // hover prefetch) are the real fix for the mogg fetch cost; this just stops the
+    // cache from OOMing the renderer at boot.
+    var PREWARM_MAX_ROW_BYTES = 4 * 1024 * 1024; // 4 MB — boot-critical assets are
+                                                 // well under this; moggs are far over.
+    function isOversizedKey(key) {
+        // .mogg (and any future large-media key) is excluded by name as a belt-and-
+        // suspenders even if its byteLength were somehow missing.
+        return typeof key === 'string' && /\.mogg$/i.test(key);
+    }
     function loadAllRows(db) {
         return new Promise(function(resolve, reject) {
             var tx = db.transaction(STORE, 'readonly');
             var store = tx.objectStore(STORE);
-            var bytes = 0, rows = 0;
+            var bytes = 0, rows = 0, skipped = 0, skippedBytes = 0;
             var cursorReq = store.openCursor();
             cursorReq.onsuccess = function(e) {
                 var c = e.target.result;
-                if (!c) { resolve({ rows: rows, bytes: bytes }); return; }
+                if (!c) {
+                    resolve({ rows: rows, bytes: bytes, skipped: skipped, skippedBytes: skippedBytes });
+                    return;
+                }
                 var v = c.value;
                 if (v && v.byteLength != null) {
-                    var u8 = v instanceof Uint8Array ? v : new Uint8Array(v);
-                    window.__rb3IdbCache.set(c.key, u8);
-                    bytes += u8.byteLength;
-                    rows++;
+                    if (v.byteLength > PREWARM_MAX_ROW_BYTES || isOversizedKey(c.key)) {
+                        // Oversized: leave it in IDB, keep it out of the heap Map.
+                        skipped++;
+                        skippedBytes += v.byteLength;
+                    } else {
+                        var u8 = v instanceof Uint8Array ? v : new Uint8Array(v);
+                        window.__rb3IdbCache.set(c.key, u8);
+                        bytes += u8.byteLength;
+                        rows++;
+                    }
                 }
                 c.continue();
             };
@@ -283,7 +406,10 @@
                 }
                 return loadAllRows(db).then(function(stats) {
                     window.__rb3IdbReady = 1;
-                    console.log('[rb3-idb] loaded ' + stats.rows + ' rows (' + (stats.bytes/1048576).toFixed(2) + ' MB) — version=' + liveVersion);
+                    var msg = '[rb3-idb] loaded ' + stats.rows + ' rows (' + (stats.bytes/1048576).toFixed(2) + ' MB) — version=' + liveVersion;
+                    if (stats.skipped)
+                        msg += '; skipped ' + stats.skipped + ' oversized row(s) (' + (stats.skippedBytes/1048576).toFixed(2) + ' MB, lazy via network on first touch)';
+                    console.log(msg);
                 });
             });
         }).catch(function(err) {

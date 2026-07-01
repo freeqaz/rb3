@@ -269,9 +269,22 @@ void OvershellPanel::BeginOverrideFlow(OvershellOverrideFlow type) {
 
 void OvershellPanel::EndOverrideFlow(OvershellOverrideFlow type, bool b2) {
 #ifdef HX_NATIVE
-    if (getenv("GAME_DBG"))
-        MILO_LOG("GAME_DBG: OvershellPanel::EndOverrideFlow(type=%d, cancel=%d) "
-                 "curFlow=%d\n", type, b2, mPanelOverrideFlow);
+    // OVER-PRESS HARDEN (native debug HTTP surface). A DOUBLE / out-of-order
+    // `end_override_flow` debug verb ends a flow that is no longer active: the
+    // first end set mPanelOverrideFlow to kOverrideFlow_None, so InOverrideFlow
+    // (type) is now false and the Wii assert below fatally Debug::Fail's
+    // ("InOverrideFlow(type)", OvershellPanel.cpp:0x1B0 == line 432). Treat a
+    // redundant / mismatched end as an inert no-op on native so abnormal
+    // debug-verb sequences (our own review harness's failure mode) don't crash
+    // the process. Wii keeps the assert — a double-end never happens in normal
+    // play (it's only reachable by the headless /api/input debug surface).
+    if (!InOverrideFlow(type)) {
+        if (getenv("GAME_DBG"))
+            MILO_LOG("GAME_DBG: OvershellPanel::EndOverrideFlow no-op — flow not "
+                     "active (type=%d cancel=%d curFlow=%d)\n",
+                     type, b2, mPanelOverrideFlow);
+        return;
+    }
 #endif
     MILO_ASSERT(InOverrideFlow(type), 0x1B0);
     mPanelOverrideFlow = kOverrideFlow_None;

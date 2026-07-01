@@ -49,6 +49,19 @@
 #include "utl/Symbols4.h"
 #include <algorithm>
 
+#ifdef HX_NATIVE
+// incremental-load-perf Wave 5 (task T2) — loading-dwell GPU warm driver +
+// reveal-frame drain pre-kick. Implemented in native/src/rb3_gamewarm_native.cpp
+// (native + web). RB3GameWarmPollDwell sweeps the gameplay dir roots through
+// BandRnd::WarmGpuForDir during the vignette once UIPanel::IsLoaded() is true,
+// returning true while still warming (so we hold IsLoaded() false until drained,
+// bounded by a ~2 s max-hold). RB3GameWarmShouldHoldLoaded reports that hold;
+// RB3GameWarmReset clears the per-song state on Unload. Disable: RB3_GAMEWARM_OFF.
+extern "C" bool RB3GameWarmPollDwell(class ObjectDir *selfDir, class ObjectDir *trackDir);
+extern "C" bool RB3GameWarmShouldHoldLoaded();
+extern "C" void RB3GameWarmReset();
+#endif
+
 GamePanel *TheGamePanel;
 LatencyCallback gGamePanelCallback;
 
@@ -188,6 +201,21 @@ void GamePanel::PollForLoading() {
             if (!mGame)
                 CreateGame();
             if (mGame->IsReady()) {
+#ifdef HX_NATIVE
+                // Wave 5 / T2: the song + venue + char milos have all parsed
+                // (we are about to flip IsLoaded() true, which triggers the
+                // meta->game transition + the reveal frame's full venue first-
+                // draw). Sweep the gameplay dir roots through BandRnd::
+                // WarmGpuForDir during the remaining vignette dwell so the GPU
+                // uploads (97 tex + 113 mesh) + CPU unpack happen here (idle
+                // frames) instead of all at once on the reveal frame. Hold
+                // kLoadingState below Ready until the sweep drains (bounded by a
+                // ~2 s max-hold inside the driver); the dwell vignette keeps
+                // polling us every frame. Opt-out RB3_GAMEWARM_OFF=1.
+                TrackPanelDirBase *warmTrackDir = GetTrackPanelDir();
+                if (RB3GameWarmPollDwell(LoadedDir(), warmTrackDir))
+                    return; // still warming — stay at kLoadingState_CharsLoaded
+#endif
                 mLoadingState = kLoadingState_Ready;
             }
         }
@@ -219,6 +247,15 @@ bool GamePanel::IsLoaded() const {
         return false;
     if (!mDirectInstrument->IsLoaded())
         return false;
+#ifdef HX_NATIVE
+    // Wave 5 / T2: while the dwell GPU warm sweep is still draining, report not-
+    // loaded so the meta->game transition holds in the vignette (PollForLoading
+    // keeps mLoadingState below Ready, but guard here too in case IsLoaded() is
+    // queried before PollForLoading on a given frame). Bounded by the driver's
+    // max-hold safety. No-op when RB3_GAMEWARM_OFF=1.
+    if (RB3GameWarmShouldHoldLoaded())
+        return false;
+#endif
     return mLoadingState == kLoadingState_Ready;
 }
 
@@ -228,6 +265,10 @@ void GamePanel::Unload() {
     RELEASE(mDrumKitBank);
     RELEASE(mGame);
     mLoadingState = kLoadingState_NotReady;
+#ifdef HX_NATIVE
+    // Wave 5 / T2: clear the dwell-warm state so a second song re-arms cleanly.
+    RB3GameWarmReset();
+#endif
 }
 
 void GamePanel::Enter() {

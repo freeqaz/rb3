@@ -1,6 +1,13 @@
 #include "world/Crowd.h"
 #include "CameraShot.h"
 #include "char/Character.h"
+#ifdef HX_NATIVE
+#include "char/CharUtl.h" // CharUtlFindBoneTrans — crowd skeleton rebind (native)
+#include <vector>
+#include <list>
+#include <algorithm>
+#include <cstdlib> // getenv
+#endif
 #include "decomp.h"
 #include "math/Color.h"
 #include "math/Mtx.h"
@@ -33,6 +40,10 @@ RndCam *gImpostorCamera;
 RndMat *gImpostorMat;
 int gNumCrowd;
 WorldCrowd *gParent;
+
+#ifdef HX_NATIVE
+static void RebindCrowdCharBonesToOwnSkeleton(Character *curChar);
+#endif
 
 INIT_REVS(WorldCrowd)
 
@@ -395,6 +406,13 @@ void WorldCrowd::Draw3DChars() {
                     curChar->mSpotCutout = false;
                 }
                 curChar->SetWorldXfm(spXfm);
+#ifdef HX_NATIVE
+                // DRAW-TIME crowd skeleton rebind: right before each 3D-char
+                // instance draws, ensure this archetype's skinned meshes bind
+                // THIS archetype's own bones (not a same-named instance from a
+                // co-resident world). See RebindCrowdCharBonesToOwnSkeleton.
+                RebindCrowdCharBonesToOwnSkeleton(curChar);
+#endif
                 RndDrawable &drawable = *curChar;
                 drawable.DrawShowing();
                 curChar->mSelfShadow = savedSelfShadow;
@@ -844,6 +862,189 @@ void WorldCrowd::ListPollChildren(std::list<RndPollable *> &polls) const {
     }
 }
 
+#ifdef HX_NATIVE
+// ---------------------------------------------------------------------------
+// Crowd skeleton rebind (native-only, Wii path byte-identical).
+//
+// SYMPTOM: the crowd renders "merged into a single location and not animating."
+//
+// ROOT CAUSE (probe-proven here; refines scout-crowd.md). The crowd body/outfit
+// meshes are SHARED master geometry: the gameplay-venue WorldCrowd and the
+// co-resident tv3-intro-vignette WorldCrowd each hold their own archetype
+// Characters of the SAME NAME (crowd_male01 ...), placed ~2040u apart (venue
+// floor vs theater). Both archetypes' same-named body mesh INSTANCES draw
+// through the SAME GeomOwner master mesh, which has a single shared mBones
+// array. The engine renderer builds the GPU bone palette from
+// `mesh->GeomOwner()->BoneTransAt(b)` (Rnd_Wgpu_RB3.cpp:3148 / palette :3782),
+// i.e. the OWNER's bones — never the drawn instance's. So whichever world posed
+// the shared owner last wins: when the vignette poses it to the theater and the
+// gameplay crowd then draws an instance, the engine reads the owner's
+// vignette-posed bones, the blended AABB spans ~2240u (bindExt ~80u → ratio
+// ~25x), and the V24 shard guard drops every *_crowd_body*/outfit mesh ~20k
+// times/song. The visible "crowd" is only the meshes that pass (heads/props),
+// bunched and apparently static.
+//
+// (The scout correctly identified the two co-resident same-named instances and
+// the 2040u span, but attributed it to a mixed-instance bone PALETTE on the
+// drawn mesh. A drawn-instance rebind is a no-op: the drawn instance's own bones
+// already read clean — the engine just never looks at them. The real seam is the
+// SHARED GeomOwner.)
+//
+// Same bug FAMILY as the band fix (BandCharacter::RebindOutfitBonesToOwnSkeleton,
+// acd9c19a) — meshes skinned against the wrong skeleton — but a different seam
+// (shared GeomOwner vs shared magnet). We deliberately do NOT share code with
+// BandCharacter.cpp (sibling task owns it).
+//
+// FIX: right before each crowd instance draws (Draw3DChars, before DrawShowing),
+// re-resolve the shared OWNER mesh's bones BY NAME inside THIS archetype's own
+// dir and SetBone(owner, own, /*calcOffset=*/false) so the owner's palette is
+// this crowd's skeleton. Done UNLATCHED, per draw, so it re-wins against any
+// re-poison the co-resident world applied since. Once the owner is bound to the
+// drawing crowd's bones, its AABB collapses to ~bind extent (ratio ~1.0), the
+// shard guard passes the bodies, and the crowd renders posed + idle-animating at
+// its spread positions. We do NOT set RndMesh::mNativeBonesRebound (that would
+// latch and let the other world's pose stick); the offset is left authored
+// (calcOffset=false) — the archetype's own mesh+skeleton already agree, so there
+// is no gender-bind basis mismatch like the band's shared magnet had.
+//
+// Opt-out: RB3_NO_CROWD_REBIND=1. Diagnostics: CROWD_REBIND_PROBE=1.
+static void RebindCrowdCharBonesToOwnSkeleton(Character *curChar) {
+    static int sDisabled = -1;
+    if (sDisabled < 0) sDisabled = getenv("RB3_NO_CROWD_REBIND") ? 1 : 0;
+    if (sDisabled) return;
+    if (!curChar) return;
+
+    bool probe = getenv("CROWD_REBIND_PROBE") != 0;
+
+    // Collect every skinned mesh this archetype draws. Body clothing meshes are
+    // merged resources with an empty dir name (not in any hashtable) and live in
+    // the LOD draw groups, so we walk: (1) the hashtable, (2) the dir's mDraws,
+    // (3) each LOD's draw+trans group, recursing the draw tree via
+    // RndDrawable::ListDrawChildren — exactly the band fix's collection.
+    std::vector<RndMesh *> targets;
+    std::vector<RndDrawable *> work;
+    RndDir *dd = curChar;
+    for (ObjDirItr<RndMesh> mit(dd, true); mit != 0; ++mit) {
+        RndMesh *m = mit;
+        if (m && m->NumBones() != 0 &&
+            std::find(targets.begin(), targets.end(), m) == targets.end())
+            targets.push_back(m);
+    }
+    for (std::vector<RndDrawable *>::iterator it = dd->mDraws.begin();
+         it != dd->mDraws.end(); ++it)
+        work.push_back(*it);
+    for (int li = 0; li < curChar->mLods.size(); li++) {
+        if (curChar->mLods[li].Group()) work.push_back(curChar->mLods[li].Group());
+        if (curChar->mLods[li].TransGroup())
+            work.push_back(curChar->mLods[li].TransGroup());
+    }
+    std::vector<RndDrawable *> visited;
+    while (!work.empty()) {
+        RndDrawable *dr = work.back();
+        work.pop_back();
+        if (!dr) continue;
+        if (std::find(visited.begin(), visited.end(), dr) != visited.end()) continue;
+        visited.push_back(dr);
+        RndMesh *m = dynamic_cast<RndMesh *>(dr);
+        if (m && m->NumBones() != 0 &&
+            std::find(targets.begin(), targets.end(), m) == targets.end())
+            targets.push_back(m);
+        std::list<RndDrawable *> kids;
+        dr->ListDrawChildren(kids);
+        for (std::list<RndDrawable *>::iterator k = kids.begin(); k != kids.end(); ++k)
+            if (*k && std::find(visited.begin(), visited.end(), *k) == visited.end())
+                work.push_back(*k);
+    }
+
+    int meshes = 0, slots = 0, reboundBones = 0, reboundMeshes = 0;
+    int diffInstance = 0; // owner bones where own != currently-bound (the poison)
+    for (std::vector<RndMesh *>::iterator mi = targets.begin();
+         mi != targets.end(); ++mi) {
+        RndMesh *drawn = *mi;
+        // THE KEY: the engine renderer builds the GPU bone palette from
+        // `drawn->GeomOwner()->BoneTransAt(b)` — NOT from the drawn instance's
+        // own bones (Rnd_Wgpu_RB3.cpp:3148 `owner = mesh->GeomOwner()`, palette
+        // at :3782). Crowd body/outfit meshes are SHARED master geometry: the
+        // gameplay-venue archetype and the co-resident tv3-vignette archetype of
+        // the same name draw through the SAME GeomOwner mesh, whose single
+        // mBones array is (re)bound by whichever world posed it last. So when the
+        // vignette poses the shared owner to the theater (~2040u away) and then
+        // the gameplay crowd draws an instance, the engine reads the owner's
+        // vignette-posed bones → palette spans ~2240u → shard guard drops it.
+        // (The drawn instance's own bones read clean here, which is why an
+        // earlier instance-level rebind was a no-op — the engine never reads
+        // them.) FIX: re-resolve the OWNER's bones, by name, inside THIS
+        // archetype's own dir and SetBone the owner so its palette is this
+        // crowd's skeleton. Done at draw time (Draw3DChars, before DrawShowing)
+        // and UNLATCHED so it re-applies each draw, overriding any re-poison the
+        // co-resident world applied since.
+        // The engine reads the GPU bone palette from drawn->GeomOwner() (NOT the
+        // drawn instance), composing BoneOffsetAt(b) * BoneTransAt(b)->WorldXfm()
+        // (Rnd_Wgpu_RB3.cpp:3148 owner, :3833 palette). For these crowd meshes
+        // GeomOwner()==self (verified — NOT shared between the venue and vignette
+        // worlds, despite the same archetype names), and the bones already ARE
+        // this archetype's own (Find returns the bound bone). The poison is the
+        // OFFSET: each mesh's authored inverse-bind BoneOffsetAt does NOT match
+        // the native skeleton's bind pose, so composing it with the bone's posed
+        // WorldXfm flings vertices ~2000u → 25x AABB → V24 shard guard drop.
+        // (This is exactly what the engine's own crowd skin-clamp comment calls
+        // out: "crowd ... bind does not match their meshes' inverse-bind offsets
+        // under the native load.") FIX: recompute each bone's inverse-bind offset
+        // against the CURRENT (rest) pose — SetBone(b, own, /*calcOffset=*/true)
+        // bakes offset = meshWorld * inverse(boneWorld), the true rest inverse-
+        // bind. Done ONCE per mesh at first Poll (the archetype is at/near its
+        // idle rest then), and latched via mNativeBonesRebound so the offset is
+        // captured at rest, not mid-animation (re-baking every frame would track
+        // the animating pose and freeze the mesh). With the rest offset baked,
+        // skinVertexWorld = boneAnimWorld * inverse(boneRestWorld) * v — correct
+        // skinning that ANIMATES with the idle bob.
+        RndMesh *owner = drawn->GeomOwner();
+        if (!owner) owner = drawn;
+        // Capture-once latch via RndMesh::mNativeBonesRebound. This MUST be set:
+        // it both (a) prevents us re-baking against the animating pose each frame
+        // (which would freeze the mesh to the current frame) and (b) tells the
+        // engine's own default-on SKEL_REBAKE pre-pass + crowd skin-clamp to
+        // LEAVE THIS MESH ALONE (Rnd_Wgpu_RB3.cpp:3692/3860 both gate on
+        // !owner->mNativeBonesRebound). If we leave it false the engine re-bakes
+        // the offset against the wrong (mid-idle) pose every frame and the body
+        // flings right back to ~2700u — so latching here is load-bearing.
+        if (owner->mNativeBonesRebound) continue; // offset already baked at rest
+        meshes++;
+        int meshRebound = 0;
+        for (int b = 0; b < owner->NumBones(); b++) {
+            RndTransformable *bound = owner->BoneTransAt(b);
+            if (!bound || !bound->Name()) continue;
+            slots++;
+            // Resolve the bone name inside THIS archetype's own dir (parentDirs
+            // false → cannot reach a sibling world's same-named instance), then
+            // SetBone with calcOffset=true to re-bake the inverse-bind against
+            // the bone's current rest WorldXfm.
+            RndTransformable *own = curChar->Find<RndTransformable>(bound->Name(), false);
+            if (!own) own = CharUtlFindBoneTrans(bound->Name(), curChar); // fallback
+            if (!own) continue;
+            if (own != bound) diffInstance++; // also corrects any wrong instance
+            owner->SetBone(b, own, true);
+            reboundBones++;
+            meshRebound++;
+        }
+        if (meshRebound > 0) {
+            owner->mNativeBonesRebound = true; // latch: rest offset captured once
+            reboundMeshes++;
+        }
+    }
+
+    if (probe && (meshes > 0 || reboundBones > 0)) {
+        static int sThrottle = 0;
+        if ((sThrottle++ % 60) == 0)
+            fprintf(stderr,
+                "[CROWD_REBIND] arch='%s' meshes=%d slots=%d reboundBones=%d "
+                "reboundMeshes=%d diffInstance=%d\n",
+                curChar->Name() ? curChar->Name() : "?", meshes, slots,
+                reboundBones, reboundMeshes, diffInstance);
+    }
+}
+#endif
+
 void WorldCrowd::Poll() {
     if (Showing()) {
         FOREACH (it, mCharacters) {
@@ -853,6 +1054,12 @@ void WorldCrowd::Poll() {
             }
         }
     }
+    // NOTE (native): the crowd skeleton inverse-bind rebake is done at DRAW time
+    // (Draw3DChars, right before each instance's DrawShowing), not here — that is
+    // where the archetype's skinned body/outfit meshes are guaranteed posed AND
+    // reachable, so the one-time rest rebake captures a valid pose. It is latched
+    // (capture-once) so this is cheap after the first draw of each mesh. See
+    // RebindCrowdCharBonesToOwnSkeleton.
 }
 
 void WorldCrowd::Enter() {

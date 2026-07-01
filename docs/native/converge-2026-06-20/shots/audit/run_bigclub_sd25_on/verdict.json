@@ -1,0 +1,157 @@
+{
+  "verdict": "FAIL",
+  "override": "big_club_01",
+  "venue": "UNKNOWN",
+  "song_downs": 25,
+  "shots": 6,
+  "frames": 2,
+  "pinned": "12/12",
+  "drops_total": 7312,
+  "drops_band": 3458,
+  "drops_other": 3854,
+  "drop_meshes": {
+    "male_extras_hair02.mesh": 62,
+    "male_extras_eyebrows11.mesh": 62,
+    "scrollbar_bg.mesh": 2582,
+    "eyebrows.mesh": 566,
+    "male_extras_eyebrows10_low.mesh": 566,
+    "saddleshoe_skin.2.mesh": 3458,
+    "clap.mesh": 16
+  },
+  "max_band_ratio": 4.41,
+  "closest_band_to_cap": "saddleshoe_skin.2.mesh:4.00",
+  "ratio_lines": 12176,
+  "skipped": [],
+  "forced_shots": [
+    "coop_g_cg.shot",
+    "coop_g_n01.shot",
+    "coop_k_cg.shot",
+    "coop_d_c01.shot",
+    "coop_dir_crowdg.shot",
+    "coop_all_n00.shot"
+  ],
+  "log": "/tmp/groupB-bigclub_sd25_on-38883.log",
+  "out": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on",
+  "frames_manifest": [
+    {
+      "shot": "coop_g_cg",
+      "shot_full": "coop_g_cg.shot",
+      "frame_idx": 0,
+      "songMs": 19805.4,
+      "cur_shot": "coop_g_cg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_g_cg_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_g_cg",
+      "shot_full": "coop_g_cg.shot",
+      "frame_idx": 1,
+      "songMs": 20381.3,
+      "cur_shot": "coop_g_cg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_g_cg_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_g_n01",
+      "shot_full": "coop_g_n01.shot",
+      "frame_idx": 0,
+      "songMs": 21174.1,
+      "cur_shot": "coop_g_n01.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_g_n01_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_g_n01",
+      "shot_full": "coop_g_n01.shot",
+      "frame_idx": 1,
+      "songMs": 21733.3,
+      "cur_shot": "coop_g_n01.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_g_n01_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_k_cg",
+      "shot_full": "coop_k_cg.shot",
+      "frame_idx": 0,
+      "songMs": 22531.4,
+      "cur_shot": "coop_k_cg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_k_cg_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_k_cg",
+      "shot_full": "coop_k_cg.shot",
+      "frame_idx": 1,
+      "songMs": 23098.6,
+      "cur_shot": "coop_k_cg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_k_cg_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_d_c01",
+      "shot_full": "coop_d_c01.shot",
+      "frame_idx": 0,
+      "songMs": 23897.5,
+      "cur_shot": "coop_d_c01.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_d_c01_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_d_c01",
+      "shot_full": "coop_d_c01.shot",
+      "frame_idx": 1,
+      "songMs": 24435.7,
+      "cur_shot": "coop_d_c01.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_d_c01_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_dir_crowdg",
+      "shot_full": "coop_dir_crowdg.shot",
+      "frame_idx": 0,
+      "songMs": 25198.1,
+      "cur_shot": "coop_dir_crowdg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_dir_crowdg_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_dir_crowdg",
+      "shot_full": "coop_dir_crowdg.shot",
+      "frame_idx": 1,
+      "songMs": 25756.6,
+      "cur_shot": "coop_dir_crowdg.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_dir_crowdg_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_all_n00",
+      "shot_full": "coop_all_n00.shot",
+      "frame_idx": 0,
+      "songMs": 26570.3,
+      "cur_shot": "coop_all_n00.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_all_n00_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_all_n00",
+      "shot_full": "coop_all_n00.shot",
+      "frame_idx": 1,
+      "songMs": 27123.0,
+      "cur_shot": "coop_all_n00.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/docs/native/converge-2026-06-20/shots/audit/run_bigclub_sd25_on/bigclub_sd25_on_coop_all_n00_1.png",
+      "ok": true
+    }
+  ]
+}

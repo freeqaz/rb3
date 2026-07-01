@@ -436,7 +436,7 @@ int SetlistSortNode::GetTotalStars(bool b) {
         SongRecord *rec = TheSongSortMgr->GetRecord(*it);
         if (rec) {
             int stars = rec->mStars[rec->mActiveScoreType];
-            sum += Min<int>((b != 0) + 5, stars);
+            sum += Min<int>(b ? 6 : 5, stars);
         }
     }
     return sum;

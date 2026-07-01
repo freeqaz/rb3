@@ -155,21 +155,18 @@ static void InitWebInput() {
     EM_ASM({
         window._rb3Keys = 0;
         var m = new Object();
-        // Arrows + WASD → d-pad
+        // Arrows → d-pad menu nav. WASD is intentionally NOT mapped here: a/s/d/
+        // f/g are the gameplay fret keys (rb3_joypad_native.cpp InitWebGameplayKeys)
+        // and both JS listener sets stay installed, so mapping a key to a d-pad bit
+        // here AND a fret bit there would OR both onto one keypress — the collision
+        // that caused a stuck red fret + phantom strums. Nav is arrows-only.
         m['ArrowUp']    = 1<<12;  // kPad_DUp
         m['ArrowDown']  = 1<<14;  // kPad_DDown
         m['ArrowLeft']  = 1<<15;  // kPad_DLeft
         m['ArrowRight'] = 1<<13;  // kPad_DRight
-        m['w'] = 1<<12;
-        m['W'] = 1<<12;
-        m['s'] = 1<<14;
-        m['S'] = 1<<14;
-        m['a'] = 1<<15;
-        m['A'] = 1<<15;
-        m['d'] = 1<<13;
-        m['D'] = 1<<13;
-        // Face / menu buttons
-        m['Enter']     = 1<<6;   // kPad_X → kAction_Confirm
+        // Face / menu buttons. Enter → green fret (kPad_R2); button_meanings in
+        // config/joypad.dta maps R2 → kAction_Confirm so Enter still confirms menus.
+        m['Enter']     = 1<<1;   // kPad_R2 (green fret) → kAction_Confirm
         m['Escape']    = 1<<5;   // kPad_Circle → kAction_Cancel
         m['Backspace'] = 1<<5;   // kPad_Circle → kAction_Cancel
         m[' ']         = 1<<11;  // kPad_Start → kAction_Start

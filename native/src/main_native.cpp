@@ -337,7 +337,7 @@ static int RunXmaValidate(int argc, char **argv, const char *bankPath) {
                 resolved++;
                 printf("  [OK ] %-40s xma=%d -> pcm %d samples @ %d Hz\n",
                        b.file.c_str(), b.sizeBytes, s.numSamples, s.sampleRate);
-                free(s.data);
+                if (s.owned) free(s.data); // TryLoad always returns owned; guard the contract
             } else {
                 missing++;
                 printf("  [MISS] %-40s key=%016llx size=%d rate=%d\n", b.file.c_str(),
@@ -656,6 +656,15 @@ static int RunGame(int argc, char **argv) {
     // matched-fork TrackDir camera-frame fix reads it live every frame, and the
     // (future) HTTP /api/settings endpoint can mutate it at runtime.
     TheNativeSettings().InitFromEnv();
+
+    // Lock the note-highway clock to the audio clock. The Wii applies a fixed
+    // -20ms A/V calibration (mInGameExtraVideoLatency=70 vs mSongToTaskMgrMs=50)
+    // every frame in Game::Poll to compensate the GX display pipeline; the
+    // native WebGPU renderer has no such latency, so that -20ms reads as "audio
+    // leads the visuals". Zero the offset term here (opt out: RB3_NO_AV_CALIBRATION).
+    // See RB3ApplyNativeAVCalibration() in rb3_synth_native.cpp.
+    extern void RB3ApplyNativeAVCalibration();
+    RB3ApplyNativeAVCalibration();
 
     // Stand up the GpuDevice FIRST (before chdir + RB3 MemMgr boot) — same
     // ordering rationale as RB3_RENDER_MESH.

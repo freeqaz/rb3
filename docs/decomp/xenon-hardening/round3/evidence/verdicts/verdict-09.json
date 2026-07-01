@@ -1,0 +1,17 @@
+{
+  "pair": 9,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "UserName__9BandTrackCFv",
+  "category": "system",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Control-flow shape is identical across the compiler boundary: both bodies load/test the same struct field at offset +0x98, and on null fall through to construct a FormatString from a string-literal pointer then call Str(); on non-null they make a virtual dispatch via the object's vtable. The two resolved Xenon callees map (via matches.json) to the EXACT two Wii callees the Wii body invokes in the same null-branch: 0x8279f3f0 -> __ct__12FormatStringFPCc (FormatString ctor from const char*) and 0x8279edb0 -> Str__12FormatStringFv (FormatString::Str). Agreeing callees in the same code path are the strongest cross-compiler signal. The large FormatString stack buffer matches EXACTLY: Wii allocates stwu r1,-0x820 (2080 bytes) and Xenon declares auStack_820[2080] (2080 bytes). The only divergence is the virtual-call slot offset (Wii 0x8c vs Xenon 0x7c), which is a systematic MWCC-vs-MSVC vtable/struct-packing layout artifact (validated as expected, NOT a discriminator), and the branch-inversion (test ==0 first) which is an instruction-selection artifact. The Xenon ctor arg 0xffffffff8203932c is the sign-extended string-base pointer, matching Wii's @stringBase0 arg. No referenced strings contradict the claimed partner (Xenon references 0 strings). No genuine sibling-alias discriminator present: no differing node-size literal, no valid-vs-valid type tag, no string naming a different function/TU.",
+  "key_evidence": [
+    "Both resolved callees agree across the boundary: Xenon 0x8279f3f0->__ct__12FormatStringFPCc and 0x8279edb0->Str__12FormatStringFv, exactly the two Wii callees in the null-branch.",
+    "Exact stack-frame match: Wii stwu r1,-0x820 (2080B) == Xenon auStack_820[2080].",
+    "Identical struct field offset tested in both bodies: +0x98 (this->unk98).",
+    "Same control-flow: guarded virtual dispatch on this->0x98 else FormatString-construct-and-Str fallback.",
+    "Only difference is vtable slot 0x8c vs 0x7c = systematic vtable/struct-packing artifact (expected, not a discriminator); branch inversion is instruction-selection artifact.",
+    "No contradicting strings (Xenon references 0), no differing node-size/type-tag literal."
+  ]
+}

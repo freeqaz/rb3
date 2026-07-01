@@ -48,17 +48,16 @@ void CharCache::InitMe() {
     // C13 (roadmap): the band-member preview cache. world/shared/chars.milo's
     // player0..3 are milo PROXIES (mProxyFile = ../../char/main/main.milo) — the
     // proxy-load binds mFileMerger (main.milo has FileMerger.fm + outfit + IK +
-    // body_clips), the same body machinery the gameplay band uses. OPT-IN
-    // (RB3_CHAR_PREVIEW=1, default OFF). Default-on was attempted + REVERTED: WITH the
-    // guest profile, the menu-wide char-material composite hits the domino-②
-    // PropSync<RndTex> dangling-object SIGSEGV on the song_select transition (see
-    // rb3_guestprofile_native.cpp + CUSTOMIZE_PREVIEW_FINDINGS UPDATE 8). Only useful
-    // WITH the guest profile (which gates the closet), so both are opt-in together until
-    // domino ② is fixed. The load must happen here at boot (before any UpdateCharCache).
+    // body_clips), the same body machinery the gameplay band uses. DEFAULT-ON again
+    // (opt-out RB3_NO_CHAR_PREVIEW). Default-on was previously REVERTED because, WITH
+    // the guest profile, the menu-wide char-material composite hit the "domino ②"
+    // song_select SIGSEGV — now FIXED at its source (BandProfile::GetPictureTex()
+    // returns null on native; see rb3_guestprofile_native.cpp + BandProfile.cpp). The
+    // load must happen here at boot (before any UpdateCharCache).
     // NOTE: the closet preview char IS fully skinned at draw (SKIN_PROBE: 81 SKINNED-PATH
     // meshes; the old "skinned=0" was a probe-traversal artifact) and animates when
     // ClosetMgr drives an idle clip; the head deform is the separate C7/C8 item.
-    if (getenv("RB3_CHAR_PREVIEW")) {
+    if (!getenv("RB3_NO_CHAR_PREVIEW")) {
         unk1c.LoadFile(
             FilePath("../world/shared/chars.milo"), false, true, kLoadFront, false
         );
@@ -93,6 +92,9 @@ void CharCache::Request(
             return;
 #endif
         bchar->CopyCharDesc(descs.front());
+#ifdef HX_NATIVE
+        gNativeStartLoadTag = "CharCache::Request";
+#endif
         bchar->StartLoad(true, b1, b2);
     }
 }

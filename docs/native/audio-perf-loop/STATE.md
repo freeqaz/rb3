@@ -1,5 +1,52 @@
 # audio-perf-loop — STATE (canonical living brief)
 
+## WAVE 10 — VERIFICATION (2026-06-10, quiet box, deployed -O2 release): jitter FIXED end-to-end. ✅
+### The wave-10 diagnosis (below) was consumed by a parallel session that implemented + shipped the fixes
+### (engine pin 5ac9501 + rb3 -O2 release 735fff11; see docs/native/WEB_PERF_ROADMAP.md + web-perf-handoffs/).
+### Fixes shipped: mesh-cache v2 (persistent per-mesh GPU buffers, ~2.3× native p50) + -O2 release wasm
+### (was -O0!) → the render-fps root cause; low-water-mark telemetry (L2) + edge-triggered adaptive buffer
+### (P3.1) → audio resilience; CleanupGpuTex erase (L1) → texture leak. I (orchestrator) INDEPENDENTLY
+### verified on the deployed -O2 release (native/web/build/release, served on :8421), box load 2.2 (QUIET —
+### this IS the P0.2 quiet-box gate the roadmap flagged as pending; it cleared while waiting on user input).
+### `scripts/web/audio-jitter-profile.mjs --play-secs 45/40` ×2 runs, gameplay phase. Baselines:
+### docs/native/audio-perf-loop/baselines/w10verify-rel-{1,2}/.
+### | metric | wave-10 BROKEN | NOW (verified ×2) |
+### | gameplay fps | p50 33.33ms ~25fps; 1151+ gaps>33ms | **p50/p95/p99=16.67ms = 60fps**; 15-23 gaps>33ms; **0 gaps>50ms** |
+### | underruns | ~22/s, 5-9% silence | **0/s** (Δevents=0 over 80-90 samples, both runs) |
+### | ring low-water | n/a | p50 1437f (~33ms), min 157-541f, ≤1 dip<5ms — healthy |
+### | latency (buffer) | n/a | **~33-62ms steady** (grows to ~175ms during loads/transitions, decays back; NOT the 500ms loaded-box artifact) |
+### | heap (steady) | flat | flat (JS/wasm/idb 0 MB/min) |
+### | GC (steady) | 0.8% wall | major p50 ~4ms / minor ~9ms, gcDurMax 14-15ms — small, not the cause (unchanged) |
+### | -O2 stability | n/a | boot→hub→select→gameplay, NO crash (×2); gameplay screenshot = coherent scene, no corruption |
+### CONCLUSION: root cause (web ran ~25fps at -O0 with per-draw vbuf/ibuf recreation, starving the main-thread
+### audio pump) is FIXED by mesh-cache v2 + -O2 → 60fps; the low-water adaptive bandage holds underruns at 0 with
+### LOW steady latency (user's priority met — the 500ms ceiling was purely the loaded-box artifact noted in
+### handoff 01). User's top goal "clean audio that doesn't drop" = ACHIEVED + independently verified. NOTE: the
+### 1120 cumulative underruns logged BEFORE the steady window are the BOOT backlog (App-ctor ~12s load stalls,
+### no song playing → inaudible); reducing those is the SEPARATE P1 boot-time track (13s→~6s), not the jitter.
+### OPEN (deferred, not the jitter): P1 boot-time (sync-read fast path + already-shipped -O2 cold-compile win),
+### P2.4 song_select prewarm (150ms ENTER hitch), P3.2 off-main-thread mix (now UNNECESSARY — 60fps+bandage
+### suffices; revisit only if a real-user report shows residual drops). cf docs/native/WEB_PERF_ROADMAP.md.
+
+## WAVE 10 (2026-06-09) — audio JITTER / buffer stalls during playback. User hypothesis (memory LEAK → GC sweep → underrun) is **REFUTED** (adversarially verified). Real cause = main-thread starvation; two real *unrelated* bugs also found.
+### Symptom (user): web song audio jitters slightly during playback; "stalls in the audio buffer." Theory offered: a leak triggers a GC that pauses the main thread → audio ring underruns.
+### METHOD: 4 parallel probes (web-capture / native-mem / web-leak-audit / pump-telemetry-audit) + adversarial verify. Tool built: `scripts/web/audio-jitter-profile.mjs` (ONE Playwright session → perf.now-aligned unified timeline of rAF gaps + longtasks + JS/wasm/idbCache heap + per-0.5s `window._rb3Audio.underruns` + **V8 GC via CDP Tracing**). Baselines: `baselines/w10-webcap-{1,2,3}/{summary,timeline,console}.json`.
+### *** ROOT CAUSE: NOT a leak, NOT GC — main-thread audio-pump STARVATION by slow render frames. ***
+### - JITTER REPRODUCES (3 runs, 50s steady GAMEPLAY, real 15-ch MOGG): rAF **p50=33.33ms (=2×vsync ≈ 25fps)**, p95=66.7, p99=83.3, max 133-200ms; 1151-1184 gaps >33ms/run. The exact-2×-vsync bimodal (9%@16 / 67%@33-50 / 23%@50-67) = frames just MISS the 16.67ms vblank → land at 33.33ms.
+### - UNDERRUNS real & material: ~22 events/s; 4.9-8.6% of audio frames silence-padded in steady region.
+### - **HEAP FLAT (no leak during playback):** web JS 0 MB/min (9.5→9.5), wasm 0 MB/min (190.5→190.5), idbCache 0 (b79cbafa holds). Native RSS FLAT too: ~442MB mean, NET **−10 to −12 MB** over 120/200s, bounded ±36MB oscillation, no trend → **engine does not leak** during steady playback.
+### - **GC negligible:** total GC pause = 0.8% of wall, 1.3% of rAF lost-time; MajorGC p50 ~4-5ms (max 29). Only 9-11% of big gaps coincide with GC; underruns track **longtasks 77-86%** vs GC 38-41% (and most of those GC are NESTED INSIDE a longtask). rAF lost-time = 57-59% of wall; longtasks = 24-30% of wall (n≈215, 53-117ms each).
+### - **RIGOR CATCH:** run1 showed fake MajorGC p50=85ms — a TRACING OBSERVER EFFECT (`disabled-by-default-v8.gc_stats` runs V8.GC_OBJECT_DUMP_STATISTICS *inside* MajorGC, 60-140ms). Removed that category in runs 2&3 → real GC is small. Without this catch the GC theory would have FALSELY confirmed. (Lesson: never enable v8.gc_stats when timing GC pauses.)
+### - WHY: `AudioDevice::PumpAudio()` runs INSIDE `App::RunOneFrame` on the single JSPI main thread (no -pthread). A render frame of 33-117ms can't refill the SAB ring → underrun. Audio fragility is a CONSEQUENCE of slow frames, regardless of GC.
+### TWO REAL BUGS FOUND (neither causes the within-song jitter — do not conflate):
+### - **(L1) `sTexGpu` GPU-texture leak (CONFIRMED, 0/2 refuted):** `std::unordered_map<RndTex*, RB3TexEntry>` (live wgpu::Texture+TextureView) in `milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp` — inserts at :469/:1356, cleared ONLY at :726 (BandRnd::Shutdown=exit). **0 per-RndTex-destroy erase sites.** Grows per **screen/song TRANSITION** (hundreds of tex per hub→select→song→results loop), ~0 within a single steady song → a multi-song-session BASELINE CLIMB (→ bigger/longer GCs over a long session), NOT the within-song jitter. FIX = add a real RB3 CleanupGpuTex doing `sTexGpu.erase(tex)` on RndTex destroy. (Engine repo is CLEAN/at-pin → safe to fix. Mesh side: CleanupGpuMesh weak no-op leaks NOTHING for RB3 — DrawMesh recreates vbuf/ibuf as RAII locals, no sMeshGpu map; the concurrent `rndobj_synth_link_stubs.s` edit is for DC3/mesh parity, independent of L1.)
+### - **(L2) Underrun telemetry UNDERCOUNTS (CONFIRMED decisive):** worklet counts an underrun only when ring <128f = **<2.67ms** (audio-worklet.js:65,76-90), but PumpAudio keeps it topped to the ADAPTIVE TARGET 50-500ms (NOT the full 682.7ms ring). So a stall 120ms→5ms is a severe near-miss = **ZERO counted underruns**. ⇒ prior "underruns=0" (wave-09) was MISLEADING; it only proves the ring never *fully* emptied. This is ALSO why the adaptive buffer barely engaged (stayed ~90ms): it's gated on ≥2 consecutive *counted*-underrun windows it rarely sees. FIX = worklet tracks per-window MIN ring-depth (low-water-mark) + posts it; treat dips as the real stall signal. Per-frame C++ hot path allocates 0 bytes (sMix/sOut once at Init; MixSources steady no-op); JS glue mints ~few-hundred B/frame young-gen (not a leak).
+### FIX OPTIONS for the jitter (ranked, with trade-offs):
+### - (A) BUFFER RESILIENCE (low-risk, fast): land L2 telemetry fix, then make the adaptive buffer grow on low-water-mark dips so it rides over 33-117ms frame stalls. Cost = added OUTPUT LATENCY (gameplay A/V sync — needs the song clock to account for buffer depth; menu/preview unaffected). Directly targets the symptom.
+### - (B) RENDER PERF (root cause, bigger): drive web gameplay fps up so RunOneFrame fits the refill window. CAVEAT/CONFOUND: the 25fps capture ran with CONCURRENT agents/builds + sibling rb3-native GPU users on the box → **must re-confirm gameplay fps on a QUIET box** before committing (the exact-2×-vsync pattern means a ~14ms frame pushed over 16.67ms by contention is indistinguishable from a genuinely 33ms frame here).
+### - (C) OFF-MAIN-THREAD MIX (structural, risky): move MixSources into the AudioWorklet/wasm-worker → decouples audio from render. BLOCKED on -pthread/SHARED_MEMORY vs the JSPI single-thread build (repeatedly deferred build spike).
+### NEXT: converge → user picks direction. Recommend (A)+L2 (safe symptom fix) + L1 (clean leak fix) now; (B) gated on a quiet-box fps re-measure.
+
 ## WAVE 09 (2026-06-09) — web static PERSISTS after wave-08 carry-all fix; RE-DIAGNOSED.
 ### User: web song audio = "static mixed with chipmunks, wayyy too high frequency" + SFX latency ~few-hundred-ms.
 ### DECISIVE NEW MEASUREMENTS (orchestrator inline; user-provided REAL browser capture `fucked-audio1.m4a` = "Beast and the Harlot", 11.3s):

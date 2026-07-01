@@ -1,0 +1,931 @@
+{
+  "tag": "steady-run2",
+  "phase": "gameplay",
+  "debugBuild": true,
+  "budgetMs": 16.7,
+  "steadyWindow": {
+    "startPerfMs": 54495.4,
+    "endPerfMs": 95361.8,
+    "secs": 40.87,
+    "startFrame": 1694,
+    "endFrame": 2172,
+    "wasmFrames": 478,
+    "wasmFps": 11.7
+  },
+  "jitter": {
+    "n": 486,
+    "windowSecs": 40.87,
+    "p50": 66.67,
+    "p90": 133.34,
+    "p95": 150,
+    "p99": 166.66,
+    "max": 183.33,
+    "overBudget": 481,
+    "over33": 481,
+    "over50": 321,
+    "over100": 159,
+    "pctOverBudget": 99,
+    "histLabels": [
+      "<=8",
+      "<=12",
+      "<=16.7",
+      "<=20",
+      "<=25",
+      "<=33",
+      "<=50",
+      "<=75",
+      "<=100",
+      "<=150",
+      "<=250",
+      "<=500",
+      ">500"
+    ],
+    "hist": [
+      0,
+      0,
+      5,
+      0,
+      0,
+      0,
+      160,
+      130,
+      32,
+      142,
+      17,
+      0,
+      0
+    ]
+  },
+  "traceAvailable": true,
+  "traceErr": null,
+  "traceStats": {
+    "nFrames": 479,
+    "p50": 55.09,
+    "p99": 156.09,
+    "max": 502.67
+  },
+  "spikeCount": 479,
+  "big100Count": 125,
+  "spikeBucketAgg": {
+    "dtSum": 34487.5,
+    "residueSum": 32678.9,
+    "agg": {
+      "lp": 1062.6400000000106,
+      "lpu": 0.15500000000000003,
+      "fetchMs": 493.315,
+      "dtaMs": 0,
+      "objMs": 225.72,
+      "primeMs": 0.09,
+      "texMs": 9.209999999999997,
+      "meshMs": 13.819999999999993,
+      "unpackMs": 3.679999999999982,
+      "pipeMs": 0,
+      "inflMs": 0
+    },
+    "n": 479
+  },
+  "allBucketAgg": {
+    "dtSum": 34487.5,
+    "residueSum": 32678.9,
+    "agg": {
+      "lp": 1062.6400000000106,
+      "lpu": 0.15500000000000003,
+      "fetchMs": 493.315,
+      "dtaMs": 0,
+      "objMs": 225.72,
+      "primeMs": 0.09,
+      "texMs": 9.209999999999997,
+      "meshMs": 13.819999999999993,
+      "unpackMs": 3.679999999999982,
+      "pipeMs": 0,
+      "inflMs": 0
+    },
+    "n": 479
+  },
+  "worstFrames": [
+    {
+      "f": 1703,
+      "dt": 502.7,
+      "scr": "game_screen",
+      "residue": 65.2,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.135,
+      "primeMs": 0.09,
+      "unpackMs": 0.03,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 4
+    },
+    {
+      "f": 1742,
+      "dt": 167.4,
+      "scr": "game_screen",
+      "residue": 32.1,
+      "lpu": 0.055,
+      "objMs": 12.595,
+      "objWNm": "Mesh:ludclassic_small_club_resource.mesh",
+      "texMs": 0.645,
+      "meshMs": 0.935,
+      "primeMs": 0,
+      "unpackMs": 0.425,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 2
+    },
+    {
+      "f": 1892,
+      "dt": 160.3,
+      "scr": "game_screen",
+      "residue": 160.3,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1946,
+      "dt": 158,
+      "scr": "game_screen",
+      "residue": 157.8,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.145,
+      "primeMs": 0,
+      "unpackMs": 0.015,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1972,
+      "dt": 156.1,
+      "scr": "game_screen",
+      "residue": 155.9,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.125,
+      "primeMs": 0,
+      "unpackMs": 0.01,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1948,
+      "dt": 155.1,
+      "scr": "game_screen",
+      "residue": 154.9,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.145,
+      "primeMs": 0,
+      "unpackMs": 0.035,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1734,
+      "dt": 150.2,
+      "scr": "game_screen",
+      "residue": 53,
+      "lpu": 0,
+      "objMs": 0.11,
+      "objWNm": "OutfitConfig:bass.cfg",
+      "texMs": 0,
+      "meshMs": 0.19,
+      "primeMs": 0,
+      "unpackMs": 0.135,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 3
+    },
+    {
+      "f": 1909,
+      "dt": 146.9,
+      "scr": "game_screen",
+      "residue": 146.9,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1882,
+      "dt": 142.4,
+      "scr": "game_screen",
+      "residue": 142.3,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.08,
+      "primeMs": 0,
+      "unpackMs": 0.03,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1899,
+      "dt": 141,
+      "scr": "game_screen",
+      "residue": 141,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1916,
+      "dt": 139.8,
+      "scr": "game_screen",
+      "residue": 139.7,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.05,
+      "primeMs": 0,
+      "unpackMs": 0.015,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1930,
+      "dt": 138.6,
+      "scr": "game_screen",
+      "residue": 138.6,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1975,
+      "dt": 136.8,
+      "scr": "game_screen",
+      "residue": 136.8,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1949,
+      "dt": 135.9,
+      "scr": "game_screen",
+      "residue": 135.9,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.05,
+      "primeMs": 0,
+      "unpackMs": 0.01,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1970,
+      "dt": 135.3,
+      "scr": "game_screen",
+      "residue": 135.2,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.055,
+      "primeMs": 0,
+      "unpackMs": 0.015,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1756,
+      "dt": 134.6,
+      "scr": "game_screen",
+      "residue": 62.5,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.05,
+      "primeMs": 0,
+      "unpackMs": 0.01,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 1
+    },
+    {
+      "f": 1929,
+      "dt": 134.6,
+      "scr": "game_screen",
+      "residue": 134.6,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1942,
+      "dt": 132.3,
+      "scr": "game_screen",
+      "residue": 132.2,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.035,
+      "primeMs": 0,
+      "unpackMs": 0.01,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1959,
+      "dt": 132.1,
+      "scr": "game_screen",
+      "residue": 132.1,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1996,
+      "dt": 132,
+      "scr": "game_screen",
+      "residue": 132,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1931,
+      "dt": 131.5,
+      "scr": "game_screen",
+      "residue": 131.5,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1971,
+      "dt": 131.3,
+      "scr": "game_screen",
+      "residue": 131.3,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1873,
+      "dt": 130.3,
+      "scr": "game_screen",
+      "residue": 130.3,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0.04,
+      "primeMs": 0,
+      "unpackMs": 0.005,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1939,
+      "dt": 130.2,
+      "scr": "game_screen",
+      "residue": 130.2,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    },
+    {
+      "f": 1991,
+      "dt": 128.6,
+      "scr": "game_screen",
+      "residue": 128.6,
+      "lpu": 0,
+      "objMs": 0,
+      "objWNm": "",
+      "texMs": 0,
+      "meshMs": 0,
+      "primeMs": 0,
+      "unpackMs": 0,
+      "pipeMs": 0,
+      "ld": 0,
+      "st": 0,
+      "pend": 0
+    }
+  ],
+  "cpu": {
+    "totalMs": 40879,
+    "busyMs": 40853,
+    "samples": 37056,
+    "cats": [
+      {
+        "cat": "program",
+        "ms": 30186,
+        "pct": 73.8
+      },
+      {
+        "cat": "wasm",
+        "ms": 9863,
+        "pct": 24.1
+      },
+      {
+        "cat": "other",
+        "ms": 584,
+        "pct": 1.4
+      },
+      {
+        "cat": "js-glue",
+        "ms": 176,
+        "pct": 0.4
+      },
+      {
+        "cat": "gc",
+        "ms": 45,
+        "pct": 0.1
+      },
+      {
+        "cat": "idle",
+        "ms": 26,
+        "pct": 0.1
+      }
+    ],
+    "top": [
+      {
+        "name": "(program)",
+        "ms": 30185.9,
+        "pct": 73.84,
+        "pctBusy": 73.89
+      },
+      {
+        "name": "BandRnd::DrawMesh(RndMesh*)",
+        "ms": 989.3,
+        "pct": 2.42,
+        "pctBusy": 2.42
+      },
+      {
+        "name": "__dynamic_cast",
+        "ms": 678.7,
+        "pct": 1.66,
+        "pctBusy": 1.66
+      },
+      {
+        "name": "log",
+        "ms": 570.9,
+        "pct": 1.4,
+        "pctBusy": 1.4
+      },
+      {
+        "name": "writeBuffer",
+        "ms": 406.1,
+        "pct": 0.99,
+        "pctBusy": 0.99
+      },
+      {
+        "name": "submit",
+        "ms": 238.3,
+        "pct": 0.58,
+        "pctBusy": 0.58
+      },
+      {
+        "name": "DirtyCache::SetDirty()",
+        "ms": 206.7,
+        "pct": 0.51,
+        "pctBusy": 0.51
+      },
+      {
+        "name": "__cxxabiv1::__base_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info*, voi",
+        "ms": 193.6,
+        "pct": 0.47,
+        "pctBusy": 0.47
+      },
+      {
+        "name": "KeylessHash<char const*, ObjectDir::Entry>::FirstFrom(ObjectDir::Entry*)",
+        "ms": 161.8,
+        "pct": 0.4,
+        "pctBusy": 0.4
+      },
+      {
+        "name": "setBindGroup",
+        "ms": 148.9,
+        "pct": 0.36,
+        "pctBusy": 0.36
+      },
+      {
+        "name": "__cxxabiv1::__vmi_class_type_info::search_above_dst(__cxxabiv1::__dynamic_cast_info*, void",
+        "ms": 140.8,
+        "pct": 0.34,
+        "pctBusy": 0.34
+      },
+      {
+        "name": "DirtyCache::SetDirty_Force()",
+        "ms": 132.7,
+        "pct": 0.32,
+        "pctBusy": 0.32
+      },
+      {
+        "name": "AudioDevice::MixSources(float*, int)",
+        "ms": 126.8,
+        "pct": 0.31,
+        "pctBusy": 0.31
+      },
+      {
+        "name": "ObjDirItr<RndMesh>::Advance()",
+        "ms": 123,
+        "pct": 0.3,
+        "pctBusy": 0.3
+      },
+      {
+        "name": "unsigned long long std::__2::__cxx_atomic_fetch_add[abi:nn210108]<unsigned long long>(std:",
+        "ms": 100.9,
+        "pct": 0.25,
+        "pctBusy": 0.25
+      },
+      {
+        "name": "__cxxabiv1::__vmi_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info*, void",
+        "ms": 95.4,
+        "pct": 0.23,
+        "pctBusy": 0.23
+      },
+      {
+        "name": "__cxxabiv1::__si_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info*, void ",
+        "ms": 83.3,
+        "pct": 0.2,
+        "pctBusy": 0.2
+      },
+      {
+        "name": "RndTransformable::SetDirty()",
+        "ms": 79.2,
+        "pct": 0.19,
+        "pctBusy": 0.19
+      },
+      {
+        "name": "RndTransformable::WorldXfm()",
+        "ms": 77.2,
+        "pct": 0.19,
+        "pctBusy": 0.19
+      },
+      {
+        "name": "createBindGroup",
+        "ms": 77,
+        "pct": 0.19,
+        "pctBusy": 0.19
+      },
+      {
+        "name": "decode_packed_entry_number",
+        "ms": 76.5,
+        "pct": 0.19,
+        "pctBusy": 0.19
+      },
+      {
+        "name": "(anonymous namespace)::RB3StreamReceiverNative::RenderAudio(float*, int)",
+        "ms": 75.5,
+        "pct": 0.18,
+        "pctBusy": 0.18
+      },
+      {
+        "name": "RndDir::Poll()",
+        "ms": 70.3,
+        "pct": 0.17,
+        "pctBusy": 0.17
+      },
+      {
+        "name": "StandardStream::ConsumeData(void**, int, int)",
+        "ms": 65.7,
+        "pct": 0.16,
+        "pctBusy": 0.16
+      },
+      {
+        "name": "twoway_strstr",
+        "ms": 63.9,
+        "pct": 0.16,
+        "pctBusy": 0.16
+      },
+      {
+        "name": "__strchrnul",
+        "ms": 55.8,
+        "pct": 0.14,
+        "pctBusy": 0.14
+      },
+      {
+        "name": "setVertexBuffer",
+        "ms": 55.4,
+        "pct": 0.14,
+        "pctBusy": 0.14
+      },
+      {
+        "name": "getenv",
+        "ms": 54.2,
+        "pct": 0.13,
+        "pctBusy": 0.13
+      },
+      {
+        "name": "DataArray::FindArray(Symbol, bool) const",
+        "ms": 53.6,
+        "pct": 0.13,
+        "pctBusy": 0.13
+      },
+      {
+        "name": "setIndexBuffer",
+        "ms": 52.6,
+        "pct": 0.13,
+        "pctBusy": 0.13
+      },
+      {
+        "name": "WebAssetsFetchDone(int)",
+        "ms": 51.8,
+        "pct": 0.13,
+        "pctBusy": 0.13
+      },
+      {
+        "name": "std::__2::vector<RndDrawable*, std::__2::allocator<RndDrawable*>>::__make_iter[abi:ne21010",
+        "ms": 50.8,
+        "pct": 0.12,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "wasm-to-js",
+        "ms": 47.1,
+        "pct": 0.12,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "now",
+        "ms": 46.5,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "std::__2::vector<DirtyCache*, std::__2::allocator<DirtyCache*>>::__make_iter[abi:ne210108]",
+        "ms": 45.8,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "RndDrawable** std::__2::__find[abi:ne210108]<RndDrawable*, RndDrawable*, std::__2::__ident",
+        "ms": 45.5,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "(garbage collector)",
+        "ms": 44.8,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "(anonymous namespace)::LerpMono(short const*, int, double, bool)",
+        "ms": 44,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "HxNoteFreedRangeReused(void const*, unsigned long)",
+        "ms": 43.7,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "mdct_backward",
+        "ms": 43.4,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "emscripten_builtin_malloc",
+        "ms": 42.1,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "bool std::__2::operator!=[abi:ne210108]<DirtyCache**>(std::__2::__wrap_iter<DirtyCache**> ",
+        "ms": 41.5,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "BandCharacter::NativeCollectSkinnedMeshes(std::__2::vector<RndMesh*, std::__2::allocator<R",
+        "ms": 40.3,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "std::__2::__tree_iterator<void const*, std::__2::__tree_node<void const*, void*>*, long> s",
+        "ms": 39.9,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "beginRenderPass",
+        "ms": 39.4,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "std::__2::__wrap_iter<DirtyCache**>::base[abi:ne210108]() const",
+        "ms": 37.3,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "emscripten_builtin_free",
+        "ms": 36.5,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "RndDir::DrawShowing()",
+        "ms": 36.1,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "Multiply(Hmx::Matrix3 const&, Hmx::Matrix3 const&, Hmx::Matrix3&)",
+        "ms": 33.3,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "std::__2::__tree_iterator<void const*, std::__2::__tree_node<void const*, void*>*, long> s",
+        "ms": 33,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "mdct_butterflies",
+        "ms": 32.6,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "std::__2::vector<RndDrawable*, std::__2::allocator<RndDrawable*>>::data[abi:ne210108]() co",
+        "ms": 32.2,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "UTF8ArrayToString @js",
+        "ms": 32.1,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "std::__2::__hash_iterator<std::__2::__hash_node<std::__2::__hash_value_type<RndTex*, RB3Te",
+        "ms": 31.8,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "std::__2::__wrap_iter<RndDrawable**>::base[abi:ne210108]() const",
+        "ms": 31.5,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "std::__2::less<void const*>::operator()[abi:ne210108](void const* const&, void const* cons",
+        "ms": 31.4,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "RndTransformable::SetLocalPos(Vector3 const&)",
+        "ms": 31,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "vorbis_book_decodev_add",
+        "ms": 30.7,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      },
+      {
+        "name": "KeylessHash<char const*, ObjectDir::Entry>::Find(char const* const&)",
+        "ms": 29.6,
+        "pct": 0.07,
+        "pctBusy": 0.07
+      },
+      {
+        "name": "RndTransformable::TransParent() const",
+        "ms": 28.7,
+        "pct": 0.07,
+        "pctBusy": 0.07
+      }
+    ]
+  }
+}

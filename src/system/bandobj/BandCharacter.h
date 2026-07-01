@@ -1,4 +1,10 @@
 #pragma once
+#ifdef HX_NATIVE
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+#endif
 #include "char/Character.h"
 #include "char/CharCollide.h"
 #include "char/CharCuff.h"
@@ -23,6 +29,14 @@
 #include "obj/Utl.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/MeshDeform.h"
+
+#ifdef HX_NATIVE
+// render-polish 2026-06-11 (char-render): StartLoad caller-attribution tag for the
+// RELOAD_PROBE diagnostics. Every BandCharacter::StartLoad call site sets this just
+// before the call; StartLoad prints + resets it. Diagnostics only (probe-gated
+// output); harmless single pointer write when probes are off.
+extern const char *gNativeStartLoadTag;
+#endif
 
 class BandCharacter : public Character,
                       public BandCharDesc,
@@ -114,6 +128,49 @@ public:
     // member, mNativeReboundOnce guard). Called from Poll once Find resolves to the
     // moving instance. No-op on Wii (HX_NATIVE only). Opt-out RB3_NO_SKEL_REBIND=1.
     void RebindOutfitBonesToOwnSkeleton();
+    // native-only (C7/C8): rebind the head/hair/hands/face (+ remaining non-torso)
+    // skin meshes onto the member's OWN per-member skeleton, baking an EXACT
+    // inverse-bind against each bone's REST WorldXfm captured at the first Poll
+    // (before Character::Poll applies any clip, so the per-member skeleton still holds
+    // the SetDeformation gender-bind rest pose). The thin head/hair/finger geometry
+    // SHARDS under the authored magnet offset (rotation-basis mismatch, R*sin(theta));
+    // an exact rest-baked offset against the LIVE per-member bone -> coherent AND it
+    // animates. Complements RebindOutfitBonesToOwnSkeleton (which owns the torso).
+    // Opt-out RB3_NO_HEAD_REBIND=1. No-op on Wii (HX_NATIVE only).
+    void RebindHeadHandsAtRest();
+    // wave-inststrings (native-only): fix the band lead-guitar *_strings skin
+    // explosion. The "brain"-class special guitars (chainsaw/guitar_brain/...) author
+    // their string-bend rig on the CHARACTER skeleton (skeleton_unshared.milo) and
+    // have NO own-resource neck (mInstDir->Find returns nil); on native the per-member
+    // skeleton basis diverges from the authored bind so the rigid-authored strings
+    // mesh skins to a ~136u world AABB (ratio ~5.0) and the V24 shard guard drops it.
+    // Rigid-anchors every strings bone to the body-end bone (bone_bridge) and rebakes
+    // its offset so the mesh rides that one bone rigidly (world AABB == bind AABB,
+    // ratio ~1.0), matching the FINE instruments. Scoped to mInstDir *_strings.mesh
+    // whose bones resolve to skeleton_unshared.milo only (never touches the FINE
+    // own-resource instruments). Called from Poll AFTER mInstDir->Poll(). Opt-out
+    // RB3_NO_INST_REBIND=1. No-op on Wii (HX_NATIVE only).
+    void RebindInstStringsToRestBasis();
+    // render-polish 2026-06-11 (char-render): shared skinned-mesh collector used by
+    // both Poll-time rebinds and the SyncObjects rest-pose seeding — hashtable
+    // objects + each dir's mDraws + every LOD Group/TransGroup, recursing
+    // RndDrawable::ListDrawChildren. Scope = {this, mOutfitDir}; mInstDir excluded.
+    // frame-stall 2026-06-20 (TRACK A): now serves from mNativeSkinnedMeshCache
+    // (rebuilt only when invalidated), so the RTTI-heavy walk runs once per (re)load
+    // instead of every Poll. Appends the cached meshes to `out`.
+    void NativeCollectSkinnedMeshes(std::vector<RndMesh *> &out);
+    // frame-stall 2026-06-20 (TRACK A): (re)walk the dir/draw tree into the cache.
+    void NativeRebuildSkinnedMeshCache();
+    // frame-stall 2026-06-20 (TRACK A): drop the cache (call at StartLoad/SyncObjects,
+    // where the dir tree may have been re-stuffed). Forces the next collect to rewalk.
+    void NativeInvalidateSkinnedMeshCache();
+    // render-polish 2026-06-11 (char-render): deterministic rest-pose seeding,
+    // called from SyncObjects() right after SetDeformation() (the deform clip's
+    // PoseMeshes leaves the skeleton at the weighted gender-bind REST pose). Seeds
+    // mNativeRestPose for skin-mesh bones that resolve to a DISTINCT live
+    // per-member instance and aren't snapshotted yet, so meshes (re)merged
+    // mid-song bake against true rest instead of a mid-clip Poll pose.
+    void NativeCaptureRestPoseAfterDeform();
 #endif
     CharClipDriver *SetState(const char *, int, int, bool, bool);
     bool InVignetteOrCloset() const;
@@ -170,7 +227,6 @@ public:
     int GetPlayFlags() const;
 
     static void MakeMRU(BandCharacter *, CharClip *);
-    static Symbol NameToDrumVenue(const char *);
     static void Init();
     static void Register() { REGISTER_OBJ_FACTORY(BandCharacter); }
     static void Terminate();
@@ -252,5 +308,40 @@ public:
     int mNativeReboundOnce;
     int mNativeReboundQuiet;
     int mNativeReboundBody; // ever rebound a >=20-bone body/face mesh (latch gate)
+    // C7/C8 head/hands rest-pose rebind bookkeeping (RebindHeadHandsAtRest).
+    // mNativeRestPose snapshots each per-member bone's REST WorldXfm at the first Poll
+    // (before Character::Poll), so late-streamed head meshes still rebake against the
+    // true rest (not a mid-animation pose). mNativeHeadReboundOnce latches when no
+    // head/hands mesh remains to rebind for a quiet window. Appended after the matched
+    // layout so the Wii image stays byte-identical. Default 0/false/empty.
+    int mNativeHeadReboundOnce;
+    int mNativeHeadReboundQuiet;
+    bool mNativeRestCaptured;
+    std::map<std::string, Transform> mNativeRestPose;
+    // render-polish 2026-06-11 (char-render): provenance for mNativeRestPose
+    // entries. A bone name in this set was captured from a DISTINCT per-member
+    // resolve (own != bound — the authoritative rest basis). Entries seeded while
+    // own == bound (post-deform SyncObjects seeding, which may have resolved the
+    // shared magnet) are overwritten ONCE by the first distinct resolve.
+    std::set<std::string> mNativeRestDistinct;
+    // wave-inststrings: rebind bookkeeping for RebindInstStringsToRestBasis (the band
+    // lead-guitar *_strings rebind, called from Poll after mInstDir->Poll()).
+    // mNativeInstReboundOnce latches when no in-scope strings mesh remains to rebind
+    // for a quiet window; mNativeInstReboundQuiet counts consecutive no-rebind scans.
+    // Appended after the matched layout so the Wii image stays byte-identical.
+    // Default 0.
+    int mNativeInstReboundOnce;
+    int mNativeInstReboundQuiet;
+    // frame-stall 2026-06-20 (TRACK A): per-member skinned-mesh collection cache.
+    // NativeCollectSkinnedMeshes used to re-walk the member's ObjectDir hashtable
+    // (ObjDirItr RTTI dynamic_cast per entry) + the whole draw tree
+    // (dynamic_cast<RndMesh*> per drawable) EVERY Poll for the ~10s rebind-latch
+    // window — the #1 __dynamic_cast caller chain at song-start (~650ms). The set
+    // of skinned meshes only changes when the dir tree is re-stuffed (StartLoad /
+    // SyncObjects), so the walk result is cached here and invalidated at exactly
+    // those points (NativeInvalidateSkinnedMeshCache). Appended after the matched
+    // layout so the Wii image stays byte-identical. Default empty/false.
+    std::vector<RndMesh *> mNativeSkinnedMeshCache;
+    bool mNativeSkinnedCacheValid;
 #endif
 };

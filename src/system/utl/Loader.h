@@ -60,6 +60,13 @@ public:
     Loader *ForceGetLoader(const FilePath &);
     void PollFrontLoader();
     int AsyncUnload() const;
+#ifdef HX_NATIVE
+    // N1 (07-network-matrix.md fix #1): kick the engine's async, in-flight-
+    // deduped fetch for the next K queued-but-unopened loaders so whole-file
+    // milo downloads pipeline instead of running 100% serially. Web-effective
+    // only (__EMSCRIPTEN__); cheap no-op on plain native. Wii: not compiled.
+    void KickReadAhead();
+#endif
 
     bool EditMode() { return mEditMode; }
     Platform GetPlatform() const { return (Platform)mPlatform; }

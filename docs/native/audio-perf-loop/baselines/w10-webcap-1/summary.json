@@ -1,0 +1,94 @@
+{
+  "tag": "w10-webcap-1",
+  "phase": "gameplay",
+  "box_loadavg": null,
+  "playSecs": 50,
+  "ctxRate": 44100,
+  "bufFrames": 32768,
+  "finalUnderruns": {
+    "type": "underrun-stats",
+    "underrunEvents": 7757,
+    "underrunFrames": 984951,
+    "totalQuanta": 40309,
+    "totalFrames": 5159552
+  },
+  "steadyWindow": {
+    "startPerfMs": 65995.9,
+    "endPerfMs": 116680.3,
+    "secs": 50.68
+  },
+  "clockAlign": {
+    "offsetUs": 105939911750,
+    "offsetUs2": 105939911765.00002,
+    "driftMsPerSec": 0.00023183252464498125,
+    "traceEvents": 308636,
+    "gcEventsTotal": 6644,
+    "gcEventsSteady": 4478,
+    "alignMark": {
+      "name": "__jit_align_ecb70mad9uv",
+      "perf": 52012.234999999404,
+      "epoch": 1780994255031
+    },
+    "alignMark2": {
+      "name": "__jit_align2_p6ovmomdkt",
+      "perf": 116714.17999999225,
+      "epoch": 1780994319733
+    }
+  },
+  "jitter": {
+    "n": 1263,
+    "p50": 33.33,
+    "p95": 66.66,
+    "p99": 83.33,
+    "max": 199.99,
+    "gapsOver33": 1183,
+    "gapsOver50": 128,
+    "gapsOver100": 7,
+    "windowSecs": 50.68
+  },
+  "underruns": {
+    "perSec": 22.551,
+    "framesPerSec": 2770.7,
+    "eventsDelta": 1129,
+    "framesDelta": 138712,
+    "samples": 90
+  },
+  "heapSlope": {
+    "jsMBperMin": 0,
+    "wasmMBperMin": 0,
+    "idbMBperMin": 0,
+    "jsFirstMB": 9.5,
+    "jsLastMB": 9.5,
+    "wasmFirstMB": 190.5,
+    "wasmLastMB": 190.5,
+    "idbFirstMB": 0,
+    "idbLastMB": 0,
+    "idbN": 0,
+    "samples": 141
+  },
+  "crux": {
+    "coincWindowMs": 50,
+    "bigGaps_over33": 1183,
+    "bigGapsNearGc": 112,
+    "bigGapFracNearGc": 0.095,
+    "urIncrements": 53,
+    "urIncrNearGc": 22,
+    "urIncrFracNearGc": 0.415,
+    "gc": {
+      "totalSteady": 4478,
+      "major": 27,
+      "minor": 4451,
+      "majorDurMs": {
+        "p50": 85.37,
+        "max": 146.04,
+        "sum": 1655.81
+      },
+      "minorDurMs": {
+        "p50": 0.01,
+        "max": 161.73,
+        "sum": 4912.46
+      },
+      "gcDurMaxMs": 161.73
+    }
+  }
+}

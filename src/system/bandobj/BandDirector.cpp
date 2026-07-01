@@ -17,6 +17,29 @@
 // venue-cam-follow.
 #include "world/CameraShot.h"
 #include "rndobj/Cam.h"
+#include <cstdlib> // Q9: getenv for RB3_VENUE_SYNC (guarded out of Wii build)
+// crowd-venues: gDataDir (named-global object lookup) + Message (to Handle the
+// MetaPerformer get_venue_override query) for the venue-override bridge below.
+#include "obj/DataUtl.h"
+#include "obj/Msg.h"
+
+// Q9 (incremental-load): RB3_VENUE_SYNC gates the native-synthetic EnterVenue
+// venue force-load (BandDirector::EnterVenue). Defaults to 1 (sync) because the
+// load's side effect (instancing TheBandWardrobe + mVenue.Dir()) is consumed
+// SYNCHRONOUSLY by the rest of BandDirector::Enter() on the same frame. Setting
+// RB3_VENUE_SYNC=0 opts into an experimental async load (unsafe until Enter() is
+// split into a multi-frame poll — see the note at the call site). Read once.
+static bool NativeVenueSync() {
+    static int sSync = -1;
+    if (sSync < 0) {
+        sSync = 1; // default: keep the venue load synchronous (correct ordering)
+        if (const char *e = ::getenv("RB3_VENUE_SYNC")) {
+            if (e[0] == '0')
+                sSync = 0;
+        }
+    }
+    return sSync != 0;
+}
 #endif
 
 INIT_REVS(BandDirector)
@@ -606,14 +629,61 @@ void BandDirector::EnterVenue() {
     // normal wardrobe path (SetVenueDir / SyncTransProxies) then runs and sets
     // mCurWorld.
     if (!mVenue.Dir() && GetWorld()) {
-        const DataNode *venueProp = GetWorld()->Property(Symbol("venue"), false);
-        Symbol venueSym = venueProp ? venueProp->Sym(nullptr) : Symbol("small_club_01");
-        if (venueSym.Null()) venueSym = Symbol("small_club_01");
+        // Crowd-venues bridge: honor the MetaPerformer venue override before
+        // falling back to the world's authored `venue` prop. The retail
+        // `load_venue` dispatch (which would consult the performer flow) never
+        // fires natively, so {meta_performer set_venue_override <sym>} otherwise
+        // sticks but is ignored and every native run pins small_club_01.
+        //
+        // Cross-layer access without a band3 #include (BandDirector is engine
+        // layer; MetaPerformer is game layer): reach the gDataDir-findable named
+        // global `meta_performer` and Handle the same `get_venue_override` query
+        // DTA uses. GetVenueOverride() (not GetVenue()) is the value that sticks
+        // in the native quickplay flow — SetVenue()/SelectRandomVenue() only run
+        // in the tour/setlist path, so mVenue stays empty natively. When no
+        // override is set the handler returns the `no_venue_override` sentinel,
+        // so this falls straight through to the small_club_01 fallback below
+        // (default behavior byte-for-byte unchanged).
+        Symbol venueSym;
+        if (gDataDir) {
+            if (Hmx::Object *mp = gDataDir->FindObject("meta_performer", true)) {
+                static Message getVenueOverrideMsg("get_venue_override");
+                Symbol ov = mp->Handle(getVenueOverrideMsg, false).Sym();
+                if (!ov.Null() && ov != Symbol("no_venue_override")) {
+                    venueSym = ov;
+                    if (getenv("VENUE_DBG"))
+                        MILO_LOG("VENUE_DBG: EnterVenue honoring MetaPerformer "
+                                 "venue override='%s'\n",
+                                 ov.mStr ? ov.mStr : "(null)");
+                }
+            }
+        }
+        if (venueSym.Null()) {
+            const DataNode *venueProp = GetWorld()->Property(Symbol("venue"), false);
+            venueSym = venueProp ? venueProp->Sym(nullptr) : Symbol("small_club_01");
+            if (venueSym.Null()) venueSym = Symbol("small_club_01");
+        }
         if (getenv("VENUE_DBG"))
             MILO_LOG("VENUE_DBG: EnterVenue force-loading venue='%s'\n",
                      venueSym.mStr ? venueSym.mStr : "(null)");
+        // Q9 (incremental-load): this native-synthetic venue force-load must stay
+        // SYNCHRONOUS for correctness. The retail `load_venue` data dispatch never
+        // fires natively, so this bridge force-loads the venue here; the load is the
+        // side-effect that instances TheBandWardrobe and populates mVenue.Dir(). The
+        // ENCLOSING BandDirector::Enter() then unconditionally dereferences
+        // TheBandWardrobe (->GetPlayMode(), BandDirector.cpp:174) and walks the venue
+        // groups on the SAME frame, with no re-entry/poll. So forcing this load async
+        // here would null-deref TheBandWardrobe and skip the whole wardrobe path.
+        //
+        // A truly-async venue load requires splitting Enter()'s tail (lines ~160-198)
+        // and EnterVenue's wardrobe path into a multi-frame poll gated on venue-load
+        // completion — out of scope for the T4 small-fixes bundle (the wardrobe-
+        // ordering invariant the verifier flagged at :604-607 cannot be preserved at
+        // this single site). RB3_VENUE_SYNC=0 opts INTO the experimental async path
+        // for that future work; it is UNSAFE until Enter() is split, so default = sync.
         bool prevAsync = mAsyncLoad;
-        mAsyncLoad = false;
+        if (NativeVenueSync())
+            mAsyncLoad = false;
         LoadVenue(venueSym, kLoadStayBack);
         mAsyncLoad = prevAsync;
     }

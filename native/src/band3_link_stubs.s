@@ -336,8 +336,6 @@ __hmx_band3_noop_stub:
     .set _ZN12WiiMessenger11SendMessageEiPKcS1_PN3Hmx6ObjectEi, __hmx_band3_noop_stub
     .weak _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE
     .set _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE, __hmx_band3_noop_stub
-    .weak _ZN13BandCharacter15NameToDrumVenueEPKc
-    .set _ZN13BandCharacter15NameToDrumVenueEPKc, __hmx_band3_noop_stub
     .weak _ZN13BandPatchMesh13ConstructQuadEP6RndTex
     .set _ZN13BandPatchMesh13ConstructQuadEP6RndTex, __hmx_band3_noop_stub
     .weak _ZN13CharacterTest4DrawEv
@@ -666,8 +664,11 @@ __hmx_band3_noop_stub:
     // (K8 blocker #3); strong defs win.
     .weak _ZN6Splash4PollEv
     .set _ZN6Splash4PollEv, __hmx_band3_noop_stub
-    .weak _ZN6WiiRnd12GetSharedTexENS_13SharedTexTypeEb
-    .set _ZN6WiiRnd12GetSharedTexENS_13SharedTexTypeEb, __hmx_band3_noop_stub
+    // WiiRnd::GetSharedTex now has a STRONG native def (rb3_crowd_imposter_native.cpp)
+    // returning a persistent square render-target RndTex for the 2D bowl-imposter
+    // crowd (render-polish Fix B). Its weak no-op stub is removed so the strong def
+    // is the sole definition. Prepare/RestoreRenderAlley stay no-op (the engine's
+    // lazy RndCam::TargetTex redirect supersedes them).
     .weak _ZN6WiiRnd18PrepareRenderAlleyEv
     .set _ZN6WiiRnd18PrepareRenderAlleyEv, __hmx_band3_noop_stub
     .weak _ZN6WiiRnd18RestoreRenderAlleyEv

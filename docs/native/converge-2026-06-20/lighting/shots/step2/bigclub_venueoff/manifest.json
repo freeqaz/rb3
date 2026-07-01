@@ -1,0 +1,26 @@
+{
+  "tag": "bigclub_venueoff",
+  "member": "guitar",
+  "override": "big_club_01",
+  "song_downs": 0,
+  "frames": 1,
+  "frame_dt": 500,
+  "anchor_ms": -1.0,
+  "forced_shots": [
+    "coop_dir_crowd.shot"
+  ],
+  "skipped": [],
+  "frames_manifest": [
+    {
+      "shot": "coop_dir_crowd",
+      "shot_full": "coop_dir_crowd.shot",
+      "frame_idx": 0,
+      "songMs": 20637.3,
+      "cur_shot": "coop_dir_crowd.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/bigclub_venueoff/bigclub_venueoff_coop_dir_crowd_0.png",
+      "ok": true
+    }
+  ],
+  "env": {}
+}

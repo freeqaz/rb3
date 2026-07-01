@@ -1,0 +1,10 @@
+{
+  "pair": 24,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "Trace__Q26Quazal12StationProbeFUi",
+  "category": "network",
+  "stratum": "BSIM 20-30",
+  "reasoning": "The Xenon body's full call sequence is an exact match to the Wii body's, callee-for-callee and in order. Wii calls: GetInstance(TraceLog) -> GetOutputFormat(Log) -> IncreaseIndent(OutputFormat, 2) -> StationContactInfo::Trace(this, arg0) -> GetInstance(TraceLog) -> GetOutputFormat(Log) -> DecreaseIndent(OutputFormat, 2). Xenon calls (resolved via matches.json): FUN_82a911f0=GetInstance, FUN_82abd290=GetOutputFormat, FUN_82abc908(uVar1,2)=IncreaseIndent, Function_82B01368(stack14,stack1c)=StationContactInfo::Trace, then GetInstance, GetOutputFormat, FUN_82abc930(uVar1,2)=DecreaseIndent. All 5 distinct callees resolve to the identical Quazal symbols; the constant indent arg (2) and the pass-through of (this, arg0) into StationContactInfo::Trace agree precisely. This trace-logging wrapper pattern (Increase/DecreaseIndent bracketing a nested Trace call) is a same-source-function fingerprint that is extremely hard to fake. No referenced strings exist to contradict the identity, and no genuine discriminator (no diverging node-size literal or valid-vs-valid type tag) appears. The only cross-compiler differences (Xenon staging args on stack, decompiler dropping/rendering details) are the validated MWCC-vs-MSVC artifacts, not real distinctions.",
+  "key_evidence": "All 7 call sites match in order and arity; 5/5 distinct Xenon callees resolve to the same Wii Quazal symbols (GetInstance/GetOutputFormat/IncreaseIndent/StationContactInfo::Trace/DecreaseIndent), same indent constant (2), same (this,arg0) forwarding into StationContactInfo::Trace."
+}

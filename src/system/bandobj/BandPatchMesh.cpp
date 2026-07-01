@@ -4,6 +4,47 @@
 #include "utl/Symbols.h"
 #include <algorithm>
 #include <cmath>
+#ifdef HX_NATIVE
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#endif
+
+// MeshVert per-vert arena layout.
+//
+// Each WorkVerts::mMeshVerts[i] points into the `unkc` byte arena at a slot
+// laid out as: [ MeshVert header ][ unsigned short faceList[valence] ].
+// The face-incidence list lives immediately after the header (at the byte
+// offset where the header ends), and the per-slot stride leaves room for the
+// rounded-up valence.
+//
+// On the Wii (MWCC, 4-byte pointer) the header is exactly 0x32 bytes, the twin
+// flag (MeshVert::unk27) sits at 0x27, and the slot stride base is 0x38. Those
+// literals are baked all over this TU. On a native LP64 build the leading
+// `const RndMesh::Vert *mVert` is 8 bytes, which shifts every field after it
+// by +4 (unk27 -> 0x2b, the header end -> 0x36, struct size -> 0x38). Using the
+// Wii literals on the host writes the trailing face-index list into the high
+// halfword of MeshVert::unk2c (offset 0x30..0x33 on host), scribbling the twin
+// cursor with a face index over the intact 0xFFFF low-half of its -1 sentinel
+// -> later twin-list walk (SetMeshVertAndTwins:476) reads e.g. 0x0752FFFF and
+// subscripts mMeshVerts[] out of bounds -> heap corruption / abort.
+//
+// The Wii path keeps the exact original literals (byte-identical match); only
+// the HX_NATIVE path uses layout-derived offsets so the arena is laid out
+// correctly for the host ABI.
+#ifdef HX_NATIVE
+// End of the MeshVert header == start of the trailing face-index array.
+static const size_t kMVFaceList =
+    offsetof(BandPatchMesh::MeshVert, unk30) + sizeof(unsigned short);
+// MeshVert::unk27 twin flag byte offset.
+static const size_t kMVTwinFlag = offsetof(BandPatchMesh::MeshVert, unk27);
+// Per-slot stride base (faceList start + 6, matching the Wii 0x32+6=0x38).
+static const size_t kMVSlotBase = kMVFaceList + 6;
+#else
+static const size_t kMVFaceList = 0x32;
+static const size_t kMVTwinFlag = 0x27;
+static const size_t kMVSlotBase = 0x38;
+#endif
 
 INIT_REVS(BandPatchMesh);
 
@@ -241,6 +282,24 @@ void BandPatchMesh::WorkVerts::SortWorkVertsByZ() {
 
 void BandPatchMesh::WorkVerts::SetMeshVerts() {
     MILO_ASSERT(mMeshVerts.empty(), 0x10C);
+#ifdef HX_NATIVE
+    if (getenv("RB3_PP_PROBE")) {
+        int maxIdx = -1;
+        for (int i = 0; i < (int)mMesh->Faces().size(); i++) {
+            RndMesh::Face &f = mMesh->Faces()[i];
+            for (int j = 0; j < 3; j++)
+                if ((int)f[j] > maxIdx)
+                    maxIdx = (int)f[j];
+        }
+        fprintf(
+            stderr,
+            "[SMV-ENTRY] mesh=%s verts=%d faces=%d maxFaceIdx=%d oob=%d\n",
+            mMesh->Name(), (int)mMesh->Verts().size(),
+            (int)mMesh->Faces().size(), maxIdx,
+            maxIdx >= (int)mMesh->Verts().size() ? 1 : 0
+        );
+    }
+#endif
     MemDoTempAllocations m(true, false);
     unk10.reserve(mMesh->Verts().size());
     unk20.reserve(mMesh->Faces().size());
@@ -255,6 +314,22 @@ void BandPatchMesh::WorkVerts::SetMeshVerts() {
     for (int i = 0; i < mMesh->Faces().size(); i++) {
         RndMesh::Face &curface = mMesh->Faces()[i];
         for (int j = 0; j < 3; j++) {
+#ifdef HX_NATIVE
+            // Defensive backstop (native only): if a face references a vertex
+            // index past the mesh's vert count (a Faces()/Verts() desync from a
+            // bad decode/merge), the original `mMeshVerts[curface[j]]` write
+            // would corrupt the heap. Skip the out-of-range index instead. A
+            // no-op on a well-formed mesh; HX_NATIVE-only so the Wii match is
+            // byte-identical (the #else keeps the exact original expression).
+            if ((unsigned)(int)curface[j] >= (unsigned)mMeshVerts.size()) {
+                MILO_WARN(
+                    "BandPatchMesh::SetMeshVerts: face %d vert idx %d >= "
+                    "Verts()=%d on %s — skipping",
+                    i, (int)curface[j], (int)mMeshVerts.size(), mMesh->Name()
+                );
+                continue;
+            }
+#endif
             ((int &)mMeshVerts[curface[j]])++;
         }
     }
@@ -262,13 +337,13 @@ void BandPatchMesh::WorkVerts::SetMeshVerts() {
     for (int i = 0; i < mMeshVerts.size(); i++) {
         int c = (int)mMeshVerts[i];
         mMeshVerts[i] = (MeshVert *)count;
-        count += (((c + 1) & ~1) - 2) * 2 + 0x38;
+        count += (((c + 1) & ~1) - 2) * 2 + kMVSlotBase;
     }
     unkc = new char[count];
     for (int i = 0; i < mMeshVerts.size(); i++) {
         mMeshVerts[i] = (MeshVert *)((char *)unkc + (int)mMeshVerts[i]);
         MeshVert *v = mMeshVerts[i];
-        *((unsigned char *)v + 0x27) = 0;
+        *((unsigned char *)v + kMVTwinFlag) = 0;
         v->unk28 = -1;
         v->unk2c = -1;
         v->unk30 = 0;
@@ -278,9 +353,16 @@ void BandPatchMesh::WorkVerts::SetMeshVerts() {
     for (int i = 0; i < mMesh->Faces().size(); i++) {
         RndMesh::Face &curface = mMesh->Faces()[i];
         for (int j = 0; j < 3; j++) {
+#ifdef HX_NATIVE
+            // Backstop, same rationale as the valence loop above: skip any
+            // out-of-range face vertex index so the face-list write can never
+            // overrun the arena. HX_NATIVE-only; Wii match byte-identical.
+            if ((unsigned)(int)curface[j] >= (unsigned)mMeshVerts.size())
+                continue;
+#endif
             MeshVert *mv = mMeshVerts[curface[j]];
             int n = mv->unk30;
-            ((unsigned short *)((char *)mv + 0x32))[n] = i;
+            ((unsigned short *)((char *)mv + kMVFaceList))[n] = i;
             mv->unk30 = n + 1;
         }
     }
@@ -300,12 +382,12 @@ void BandPatchMesh::WorkVerts::SetMeshVerts() {
                     break;
                 int vi2 = v2 - base;
                 mMeshVerts[vi2]->unk28 = vi;
-                *((unsigned char *)mMeshVerts[vi2] + 0x27) = 1;
+                *((unsigned char *)mMeshVerts[vi2] + kMVTwinFlag) = 1;
                 mMeshVerts[prev]->unk2c = vi2;
                 prev = vi2;
             }
             if (prev != vi) {
-                *((unsigned char *)mMeshVerts[vi] + 0x27) = 1;
+                *((unsigned char *)mMeshVerts[vi] + kMVTwinFlag) = 1;
             }
         }
     }
@@ -324,7 +406,7 @@ void BandPatchMesh::WorkVerts::AddEdge(
 ) {
     for (int idx = mv0->unk28; idx != -1; idx = mMeshVerts[idx]->unk2c) {
         MeshVert *mv = mMeshVerts[idx];
-        unsigned short *faceidxptr = (unsigned short *)((char *)mv + 0x32);
+        unsigned short *faceidxptr = (unsigned short *)((char *)mv + kMVFaceList);
         for (int i = 0; i < mv->unk30; i++) {
             int faceidx = faceidxptr[i];
             if (unk28[faceidx].mFlags == -1) {
@@ -448,7 +530,7 @@ int BandPatchMesh::WorkVerts::AddUvs(
     unsigned short *idxptr = (unsigned short *)mv2;
     int ret = 0;
     for (int i = 0; i < mv2->unk30; i++) {
-        RndMesh::Face &curface = mMesh->Faces()[idxptr[0x32 / 2]];
+        RndMesh::Face &curface = mMesh->Faces()[idxptr[kMVFaceList / 2]];
         for (int j = 0; j < 3; j++) {
             MeshVert *curmv = mMeshVerts[curface[j]];
             if (curmv != mv2 && curmv->mVert != 0 && curmv->unk24 != unk0) {
@@ -600,7 +682,7 @@ void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
             MeshVert *cur = unk10[i];
             Vector2 v40(0, 0);
             Vector2 v48(0, 0);
-            ExtendTwin((const MeshVert *)this, v40, v48);
+            ExtendTwin(cur, v40, v48);
             v40 += cur->mVert->uv;
             v48 += cur->unk1c;
             SetRenderToVert(mesh->Verts(i), v40, v48);
@@ -631,7 +713,7 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     const MeshVert *iter = mv;
     const MeshVert *prevTwin = mv;
     const MeshVert *prevOther = mv;
-    unsigned short *facePtr = (unsigned short *)((char *)iter + 0x32);
+    unsigned short *facePtr = (unsigned short *)((char *)iter + kMVFaceList);
     for (int i = 0; i < mv->unk30; i++) {
         unsigned short faceIdx = facePtr[i];
         if (unk28[faceIdx].mFlags == 4) {
@@ -758,7 +840,7 @@ bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
         int vIdx = mv->mVert - &mMesh->Verts(0);
         MeshVert *faceIter = mv;
         for (int j = 0; j < mv->unk30; j++, faceIter = (MeshVert *)((char *)faceIter + 2)) {
-            unsigned short faceIdx = *(unsigned short *)((char *)faceIter + 0x32);
+            unsigned short faceIdx = *(unsigned short *)((char *)faceIter + kMVFaceList);
             RndMesh::Face &face = mMesh->Faces()[faceIdx];
             unsigned short prev = face.v3;
             for (int z = 0; z <= 2; z++) {

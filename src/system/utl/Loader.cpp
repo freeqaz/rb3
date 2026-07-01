@@ -14,10 +14,29 @@
 
 #ifdef HX_WEB
 #include <emscripten/emscripten.h> // emscripten_sleep — JSPI yield in PollUntilLoaded
+
+// --- Boot I/O instrumentation (Step 0, handoff 02-boot-sync-read) ----------
+// Per-PATH JSPI-yield counters so we can tell whether the App-ctor load chain
+// drives the throttled Poll() yield (Loader.cpp ~:405) or the per-slice
+// PollUntilLoaded yield (~:219). native_file.cpp's RB3BootIoStatsDump reads
+// these and prints them at appctor_done (gated on RB3_BOOT_IO_STATS). These are
+// plain globals (web build is single-threaded); the ms accumulation only runs
+// around a yield that actually fires, so the cost is negligible.
+int gLoaderPollYields = 0;           // emscripten_sleep(0) from Poll()/PollUntilEmpty
+double gLoaderPollYieldMs = 0.0;     // wall-ms spent in those yields
+int gLoaderPullSliceYields = 0;      // emscripten_sleep(0) from PollUntilLoaded
+double gLoaderPullSliceYieldMs = 0.0;// wall-ms spent in those yields
+int gLoaderPullCalls = 0;            // PollUntilLoaded invocations (web arm)
 #endif
 
 #ifdef HX_NATIVE
 #include <cstdlib> // QW-1: getenv/atof for RB3_LOADER_BUDGET_MS (guarded out of Wii asm)
+#include <cstring> // N1: strncmp/strlen for the read-ahead path normalization
+#include "obj/DirLoader.h" // N1: detect a DirLoader's pre-open state (mStream == 0)
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include "platform/WebAssets.h" // N1: WebAssetsEnsureResidentAsync — async, in-flight-deduped
 #endif
 
 LoadMgr TheLoadMgr;
@@ -42,6 +61,30 @@ float gLoadPollUntilMsThisFrame = 0.0f;   // PollUntilLoaded + PollUntilEmpty (s
 bool gFrameTraceActive = false;
 int  gFrameTraceLoaderAdds = 0;
 int  gFrameTraceStreamOpens = 0;
+
+// Incremental-load-perf (PLAN.md T1) per-frame attribution counters. STRONG
+// definitions here (every native target links Loader.cpp); the engine TUs carry
+// matching WEAK defs (milo-native-engine PipelineManager.cpp) so the engine
+// links standalone, with these strong defs winning at the rb3 final link. Each
+// g*MsThisFrame accumulates ms spent THIS frame in one choke point; read +
+// zeroed by RB3FrameTraceRecord. See engine platform/FrameTraceCounters.h.
+float  gFetchSyncMsThisFrame = 0.0f;
+int    gFetchSyncCountThisFrame = 0;
+double gFetchSyncBytesThisFrame = 0.0;
+float  gDtaParseMsThisFrame = 0.0f;
+float  gObjLoadMsThisFrame = 0.0f;
+float  gObjLoadWorstMs = 0.0f;
+char   gObjLoadWorstName[64] = {0};
+float  gAudioPrimeMsThisFrame = 0.0f;
+float  gTexUploadMsThisFrame = 0.0f;
+int    gTexUploadCountThisFrame = 0;
+float  gMeshUploadMsThisFrame = 0.0f;
+int    gMeshUploadCountThisFrame = 0;
+float  gVertUnpackMsThisFrame = 0.0f;
+int    gVertUnpackCountThisFrame = 0;
+float  gPipelineCreateMsThisFrame = 0.0f;
+int    gPipelineCreateCountThisFrame = 0;
+float  gStreamReadMsThisFrame = 0.0f;
 #endif
 
 struct LoaderGlitchContext {
@@ -185,6 +228,45 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
     const float kSliceMs = 8.0f;
     int maxIter = 200000; // safety valve; ~big multi-chunk milos finish well under
     int polls = 0;
+    ++gLoaderPullCalls;
+    // Fix B (handoff 02) — yield throttle. The original web arm yielded once PER
+    // ~8 ms slice (UN-throttled), unlike Poll() which gates its yield to one per
+    // RB3_LOADER_YIELD_MS of accumulated work. Step-0 measurement (RB3_BOOT_IO_STATS)
+    // proved the App-ctor load chain drives THIS path almost exclusively (≈1198
+    // PollUntilLoaded calls, loaderPollYields=0) and that its per-slice yields cost
+    // ~2600 JSPI suspends ≈ 11 s of pure event-loop latency — the bulk of the ~16 s
+    // App-ctor idle. Each emscripten_sleep(0) costs a full event-loop round trip
+    // (~4-16 ms) under JSPI; firing one per ~8 ms work-slice is pathological.
+    //
+    // Fix: gate the yield to one per RB3_LOADER_MIN_YIELD_MS of accumulated work
+    // (default 16 ms = ~60 fps), exactly mirroring Poll()'s sinceYield throttle.
+    // Measured: appctor 16.35 s -> 6.48 s, pullSliceYields 2628 -> 178 (~11 s ->
+    // ~0.8 s). One yield per 16 ms still composites the boot overlay at 60 fps
+    // (loadperf-responsiveness.mjs gate). Env-gated for A/B: RB3_LOADER_MIN_YIELD_MS=0
+    // restores the original per-slice yield.
+    static float sMinYieldMs = -1.0f;
+    if (sMinYieldMs < 0.0f) {
+        sMinYieldMs = 16.0f; // default 16 ms (~60 fps); 0 = original per-slice yield
+        if (const char *e = ::getenv("RB3_LOADER_MIN_YIELD_MS")) {
+            if (e[0])
+                sMinYieldMs = (float)atof(e);
+        }
+        if (sMinYieldMs < 0.0f)
+            sMinYieldMs = 0.0f;
+    }
+    Timer sinceYield;
+    sinceYield.Restart();
+    // T3 (wave-5 lpu wire-in): time the entire synchronous drain so the web
+    // frame-trace recorder produces non-zero lpu on drain frames (same as the
+    // HX_NATIVE arm below). Accumulated into gLoadPollUntilMsThisFrame, which
+    // main_web.cpp passes to RB3FrameTraceRecord as loadPollUntilMs. This block
+    // is inside #ifdef HX_WEB, so the Wii build is byte-identical.
+    Timer pulWebTimer;
+    pulWebTimer.Restart();
+    // N1: kick the next K queued loaders' fetches up front so the rest of the
+    // pending chain (e.g. the splash → main_hub → song_select milo sequence the
+    // App boot drives through this path) starts downloading while file k loads.
+    KickReadAhead();
     while (!theLdr->IsLoaded()) {
         if (--maxIter <= 0) {
             MILO_WARN("PollUntilLoaded: web iteration cap hit waiting for %s",
@@ -216,8 +298,27 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
         if (mLoading.front()->IsLoaded()) {
             mLoading.pop_front();
         }
-        emscripten_sleep(0); // JSPI: suspend -> browser event loop -> resume
+        // Throttle gate (Fix B, opt-in): skip this slice's yield if it would fire
+        // sooner than sMinYieldMs after the previous one. When sMinYieldMs==0 the
+        // condition is always true (>= 0) so we yield every slice as before.
+        sinceYield.Split();
+        if (Timer::CyclesToMs(sinceYield.mCycles) >= sMinYieldMs) {
+            Timer yieldTimer;
+            yieldTimer.Restart();
+            emscripten_sleep(0); // JSPI: suspend -> browser event loop -> resume
+            yieldTimer.Split();
+            ++gLoaderPullSliceYields;
+            gLoaderPullSliceYieldMs += Timer::CyclesToMs(yieldTimer.mCycles);
+            sinceYield.Restart();
+            // N1: re-kick (deduped) so loaders that the front's dep chain pushed
+            // onto mLoading since the last kick also start fetching.
+            KickReadAhead();
+        }
     }
+    // T3: accumulate wall time (including JSPI suspend cost) into the sync-drain
+    // attribution bucket so the frame-trace lpu field is non-zero on web.
+    pulWebTimer.Split();
+    gLoadPollUntilMsThisFrame += Timer::CyclesToMs(pulWebTimer.mCycles);
     SetGPHangDetectEnabled(true, funcName);
     return;
 #endif
@@ -302,6 +403,150 @@ int LoadMgr::AsyncUnload() const { return mAsyncUnload; }
 void LoadMgr::StartAsyncUnload() { mAsyncUnload++; }
 void LoadMgr::FinishAsyncUnload() { mAsyncUnload--; }
 
+#ifdef HX_NATIVE
+// ===========================================================================
+// N1 — loader-queue fetch read-ahead (07-network-matrix.md ranked fix #1).
+//
+// LoadMgr only ever advances mLoading.front(), and a file's network fetch is
+// only kicked when its WebPendingFile is *constructed* (native_file.cpp's
+// MaybeOpenAsync, reached only when the loader becomes front and calls
+// OpenFile). So on web every whole-file milo download is strictly serial:
+// queued-but-not-front loaders have ZERO fetch in flight (the matrix measured
+// 0/38 overlapping downloads), and each file pays its full transfer + 1 RTT
+// back-to-back, turning ~85 MB of per-journey milos into a tens-of-seconds
+// (minutes at low bandwidth) serial chain.
+//
+// Fix: each Poll()/PollUntilLoaded turn, walk the next K queued loaders that
+// have NOT yet opened their file and kick the engine's already-async,
+// already-deduped fetch for their paths (WebAssetsEnsureResidentAsync). This
+// overlaps download of file k+1..k+N with the download+parse of file k,
+// pipelining the chain. We only kick the fetch — we never call OpenFile early
+// nor mutate loader state, so MEMFS is simply warm by the time each loader's
+// turn comes and its normal open path takes the resident fast path.
+//
+// Constraints honored: (1) only loaders that have NOT opened yet (a FileLoader
+// with mFile != 0 / a DirLoader with mStream != 0 has already kicked its own
+// fetch); (2) .mogg is skipped — it takes the Range-streaming path and
+// whole-filing it would re-download tens of MB; (3) the actual fetch call is
+// __EMSCRIPTEN__-only (WebAssets.h is web-only) — on plain native this whole
+// helper is a cheap no-op (RB3_LOADER_READAHEAD default still parsed, but the
+// per-loader body does nothing). Env: RB3_LOADER_READAHEAD (default 6, 0 = off).
+//
+// EVERY added line is inside #ifdef HX_NATIVE — the Wii build is byte-identical.
+
+static int LoaderReadAheadCount() {
+    static int sCount = -1;
+    if (sCount < 0) {
+        sCount = 6; // default: pipeline up to 6 queued loaders ahead of front
+        if (const char *e = ::getenv("RB3_LOADER_READAHEAD")) {
+            if (e[0])
+                sCount = atoi(e);
+        }
+        if (sCount < 0)
+            sCount = 0;
+    }
+    return sCount;
+}
+
+#ifdef __EMSCRIPTEN__
+// Normalize an OPEN path (the exact string the loader will pass to NewFile) to
+// the server-relative key MaybeOpenAsync uses (strip a leading "/data/" or
+// "/"), then kick the async fetch unless it is a .mogg (Range path). Mirrors
+// native_file.cpp:1073-1099 so the warmed MEMFS key matches the loader's later
+// open probe.
+static void LoaderKickFetch(const char *path) {
+    if (!path || !path[0])
+        return;
+    const char *rel = path;
+    if (std::strncmp(rel, "/data/", 6) == 0)
+        rel += 6;
+    else if (rel[0] == '/')
+        rel += 1;
+    size_t n = std::strlen(rel);
+    if (n >= 5 && std::strcmp(rel + n - 5, ".mogg") == 0)
+        return; // Range-streamed: warming the whole file would re-download MBs
+    // Already resident (boot bundle / prior fetch / prior warm) → nothing to do;
+    // skip the manifest probe too. Cheap C-side map lookup.
+    if (WebAssetsIsResident(rel))
+        return;
+    // Only warm files the loader's own open would async-fetch: a manifest-known
+    // ASSETS_DIR asset (size >= 0). A -1 means "not a manifest-backed async-open
+    // candidate" — for those MaybeOpenAsync falls back to the legacy sync path
+    // (fallback roots / extraction-gap 404s), so warming them would just issue a
+    // redundant/404 fetch (e.g. patchcreator/og/gen/patch_warpmesh.milo_xbox,
+    // which is absent on the server). This gates the warm to exactly the set the
+    // real open takes the async path for, and kills speculative 404 traffic.
+    if (WebAssetsManifestSize(rel) < 0)
+        return;
+    WebAssetsEnsureResidentAsync(rel);
+}
+#endif
+
+// Classify a queued loader for read-ahead. Returns the OPEN path the loader
+// will use (the same string that reaches NewFile/HmxNativeOpenFile) if the
+// loader has NOT opened its backing file/stream yet and so would benefit from a
+// fetch kick; returns NULL if it has already opened (its own fetch is in flight
+// / resident) or is an unwarmable subclass. CRITICAL: a cache-mode DirLoader
+// rewrites foo.milo -> foo/gen/foo.milo_<plat> via DirLoader::CachedPath before
+// opening, so we warm THAT key (matching the real open) — warming the bare
+// foo.milo would 404 and miss the real fetch.
+static const char *LoaderReadAheadOpenPath(Loader *ldr) {
+    if (FileLoader *fl = dynamic_cast<FileLoader *>(ldr)) {
+        if (fl->mFile != NULL)
+            return NULL; // already opened (fetch already kicked at OpenFile)
+        return ldr->LoaderFile().c_str(); // FileLoader opens its path verbatim
+    }
+    if (DirLoader *dl = dynamic_cast<DirLoader *>(ldr)) {
+        if (dl->mStream != NULL)
+            return NULL; // ChunkStream already created → fetch already kicked
+        // Same transform DirLoader::OpenFile applies (CachedPath), so the warmed
+        // key == the eventual open key under cache mode.
+        return DirLoader::CachedPath(ldr->LoaderFile().c_str(), false);
+    }
+    // Unknown subclass (e.g. NullLoader) — nothing to warm.
+    return NULL;
+}
+
+// Kick async fetches for the next K queued loaders that have not opened yet.
+// Fetch-kick ONLY: never opens a file early nor touches loader state. A no-op
+// when K==0, when nothing is queued, or (on plain native) per-loader.
+void LoadMgr::KickReadAhead() {
+    int k = LoaderReadAheadCount();
+    if (k <= 0 || mLoading.empty())
+        return;
+    int kicked = 0;
+    int queueDepth = 0;
+    for (std::list<Loader *>::iterator it = mLoading.begin();
+         it != mLoading.end() && kicked < k;
+         ++it) {
+        ++queueDepth;
+        const char *openPath = LoaderReadAheadOpenPath(*it);
+        if (!openPath)
+            continue; // already fetching/resident, or unwarmable — skip
+        ++kicked;
+#ifdef __EMSCRIPTEN__
+        LoaderKickFetch(openPath);
+#endif
+    }
+    // Diagnostic (opt-in, RB3_READAHEAD_DEBUG): how deep is the queue when we
+    // run, and how many of the head loaders were actually warmable? If the
+    // dependency milos are enqueued one-at-a-time (queueDepth ~1), there is
+    // nothing to read ahead and the chain stays serial — which is what the
+    // counts will show. Single getenv-latched static; zero cost when off.
+    static int sDbg = -1;
+    if (sDbg < 0) {
+        sDbg = 0;
+        if (const char *e = ::getenv("RB3_READAHEAD_DEBUG"))
+            if (e[0] && e[0] != '0')
+                sDbg = 1;
+    }
+    if (sDbg && (queueDepth > 1 || kicked > 0)) {
+        MILO_LOG("[readahead] queueDepth=%d kicked=%d (k=%d)\n", queueDepth,
+                 kicked, k);
+    }
+}
+#endif // HX_NATIVE
+
 void LoadMgr::Poll() {
     if (mPeriod <= 0)
         return;
@@ -371,6 +616,10 @@ void LoadMgr::Poll() {
         // mPeriod >= sentinel ⇒ PollUntilEmpty's unbudgeted drain: empty the
         // whole queue (no per-frame break), yielding only every sYieldMs.
         bool drainToEmpty = (mPeriod >= 1e29f);
+        // N1: pipeline the queue — kick the next K queued loaders' fetches once
+        // per Poll() turn so file k+1..k+N download while file k loads. Fetch-
+        // kick only (no early open, no state mutation). See KickReadAhead.
+        KickReadAhead();
         // Per-iteration mTimer drives each state func's internal CheckSplit();
         // budgetTimer bounds the cumulative per-frame cost; sinceYield gates how
         // often we pay for a browser composite yield.
@@ -385,7 +634,18 @@ void LoadMgr::Poll() {
                           (int)mLoading.size());
                 break;
             }
-            unk1c = sBudgetMs;
+            // TRACK-B (frame-stall #3): per-frame background path arms each
+            // PollFrontLoader with the REMAINING frame budget so a single object
+            // loop can't drain a fresh full sBudgetMs on top of work already done
+            // (see the HX_NATIVE arm for the full rationale + measurements). The
+            // drainToEmpty (PollUntilEmpty) path keeps the full slice — it has a
+            // synchronous contract and yields via sYieldMs, not the budget break.
+            float spentMs = drainToEmpty ? 0.0f : Timer::CyclesToMs(budgetTimer.mCycles);
+            float remainMs = sBudgetMs - spentMs;
+            const float kSliceFloorMs = 1.5f; // min forward-progress slice per pass
+            if (remainMs < kSliceFloorMs)
+                remainMs = kSliceFloorMs;
+            unk1c = drainToEmpty ? sBudgetMs : remainMs;
             mTimer.Restart();
             PollFrontLoader();
             if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
@@ -402,10 +662,23 @@ void LoadMgr::Poll() {
             // accumulated work, not on every slice (avoids sub-ms yield spam).
             sinceYield.Split();
             if (Timer::CyclesToMs(sinceYield.mCycles) >= sYieldMs) {
+                Timer yieldTimer; // Step-0 instrumentation (handoff 02)
+                yieldTimer.Restart();
                 emscripten_sleep(0);
+                yieldTimer.Split();
+                ++gLoaderPollYields;
+                gLoaderPollYieldMs += Timer::CyclesToMs(yieldTimer.mCycles);
                 sinceYield.Restart();
             }
         }
+        // T3 (wave-5 lp wire-in): attribute budgeted background load time to
+        // gLoadPollMsThisFrame so the frame-trace lp field is non-zero on web.
+        // PollUntilEmpty (drainToEmpty) calls Poll() with mPeriod=1e30f; its own
+        // #ifdef HX_NATIVE re-attribution block (above, compiled on web since
+        // HX_NATIVE is set) snapshots+moves the delta to the sync-drain bucket,
+        // so accumulating unconditionally here is correct for both paths.
+        budgetTimer.Split();
+        gLoadPollMsThisFrame += Timer::CyclesToMs(budgetTimer.mCycles);
         return;
     }
 #endif
@@ -460,7 +733,33 @@ void LoadMgr::Poll() {
                 );
                 break;
             }
-            unk1c = sBudgetMs;
+            // TRACK-B (frame-stall #3, PostLoad overspill): arm each PollFrontLoader
+            // with the budget REMAINING this frame, not a fresh full sBudgetMs.
+            //
+            // The old code set unk1c = sBudgetMs every iteration. CheckSplit() (used
+            // by LoadObjs/LoadStream/CreateObjects to yield between objects) compares
+            // the per-iteration mTimer against unk1c, so a SINGLE PollFrontLoader could
+            // drain a whole sBudgetMs of objects — and the cumulative budgetTimer break
+            // was only checked AFTER it returned. So if budgetTimer was already at
+            // ~6 ms and one pass ran ~8 ms, lp reached ~14 ms before breaking: the
+            // measured 12-19 ms `lp` (≈2× the 8 ms budget) — the per-object PostLoad
+            // overspill that pushed load-in frames over budget (50-194 ms web longtasks
+            // after the JSPI multiplier).
+            //
+            // Fix: unk1c = sBudgetMs - (time already spent this Poll), floored so a
+            // freshly-front loader still advances at least one step (kSliceFloorMs;
+            // CheckSplit already-tripped → the loader's `while(!CheckSplit...)` body
+            // never runs → the documented front-loader stall). This caps the whole
+            // Poll() to ~sBudgetMs, and as the frame fills, each later object-loop's
+            // slice shrinks toward the floor → the heaviest single object can overrun
+            // by at most ~one object instead of a fresh full budget. Trades a fatter
+            // peak for a few more sub-budget frames (load duration measured below).
+            float spentMs = drainToEmpty ? 0.0f : Timer::CyclesToMs(budgetTimer.mCycles);
+            float remainMs = sBudgetMs - spentMs;
+            const float kSliceFloorMs = 1.5f; // min forward-progress slice per pass
+            if (remainMs < kSliceFloorMs)
+                remainMs = kSliceFloorMs;
+            unk1c = drainToEmpty ? sBudgetMs : remainMs;
             mTimer.Restart();
             PollFrontLoader();
             if (!mLoading.empty() && mLoading.front()->IsLoaded()) {

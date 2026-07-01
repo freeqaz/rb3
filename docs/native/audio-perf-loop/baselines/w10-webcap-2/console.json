@@ -1,0 +1,1602 @@
+[
+  {
+    "t": "60.11",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (64) at 57:2:000"
+  },
+  {
+    "t": "60.11",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (59) at 57:4:000"
+  },
+  {
+    "t": "60.11",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (62) at 57:4:240"
+  },
+  {
+    "t": "60.11",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (67) at 59:4:240"
+  },
+  {
+    "t": "60.11",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (61) at 112:4:000"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (58) at 114:2:060"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (50) at 114:4:000"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (63) at 115:2:000"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (57) at 115:4:000"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (51) at 116:3:000"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (49) at 116:4:000"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (54) at 118:2:000"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (66) at 119:4:240"
+  },
+  {
+    "t": "60.12",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_H): Double note-on (69) at 120:1:000"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: AddKeyboardRangeShift: non-positive span -5.00; clamping"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (0) at 1:1:000"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (52) at 9:1:477"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (55) at 9:2:477"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (50) at 57:4:240"
+  },
+  {
+    "t": "60.13",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (59) at 109:2:000"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (62) at 110:1:000"
+  },
+  {
+    "t": "60.13",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (58) at 114:3:000"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (57) at 118:1:240"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_M): Double note-on (54) at 123:3:000"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (0) at 1:1:000"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (52) at 9:1:477"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (55) at 9:4:240"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (50) at 57:4:240"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (59) at 109:2:000"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (62) at 110:1:000"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (57) at 118:1:240"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART REAL_KEYS_E): Double note-on (58) at 128:1:000"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (52) at 9:1:477"
+  },
+  {
+    "t": "60.14",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (55) at 9:2:477"
+  },
+  {
+    "t": "60.14",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.15",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (64) at 57:2:000"
+  },
+  {
+    "t": "60.15",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (59) at 57:4:000"
+  },
+  {
+    "t": "60.15",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (62) at 57:4:240"
+  },
+  {
+    "t": "60.15",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (67) at 59:4:240"
+  },
+  {
+    "t": "60.15",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (57) at 109:3:000"
+  },
+  {
+    "t": "60.15",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (61) at 112:4:000"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (58) at 114:2:120"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (50) at 114:2:360"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (63) at 115:2:000"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (60) at 115:2:360"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (56) at 116:1:120"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (54) at 116:1:360"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (53) at 116:2:120"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (51) at 116:3:000"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (49) at 116:4:000"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (69) at 118:1:240"
+  },
+  {
+    "t": "60.16",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (66) at 118:2:000"
+  },
+  {
+    "t": "60.16",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.17",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART KEYS_ANIM_RH): Double note-on (48) at 125:2:000"
+  },
+  {
+    "t": "60.18",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (105) at 4:1:000"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (65) at 4:2:240"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (64) at 9:1:060"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (59) at 12:4:270"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (61) at 13:1:060"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (57) at 13:2:180"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (1) at 13:4:196"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (60) at 13:4:270"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (55) at 16:1:030"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (52) at 16:3:270"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (56) at 16:4:302"
+  },
+  {
+    "t": "60.19",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (116) at 20:3:420"
+  },
+  {
+    "t": "60.19",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.20",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (54) at 24:1:051"
+  },
+  {
+    "t": "60.20",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (50) at 25:3:240"
+  },
+  {
+    "t": "60.20",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (47) at 32:4:030"
+  },
+  {
+    "t": "60.20",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (62) at 57:3:270"
+  },
+  {
+    "t": "60.20",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (67) at 59:4:240"
+  },
+  {
+    "t": "60.20",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (66) at 63:3:030"
+  },
+  {
+    "t": "60.21",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (49) at 85:3:300"
+  },
+  {
+    "t": "60.21",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (68) at 99:4:240"
+  },
+  {
+    "t": "60.21",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (53) at 110:4:270"
+  },
+  {
+    "t": "60.21",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (58) at 114:4:450"
+  },
+  {
+    "t": "60.21",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (105) at 4:1:000"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (65) at 4:2:240"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (64) at 9:1:060"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (59) at 12:4:270"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (61) at 13:1:060"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (57) at 13:2:180"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (1) at 13:4:193"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (60) at 13:4:270"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (55) at 16:1:030"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (52) at 16:3:270"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (56) at 16:4:302"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (116) at 20:3:420"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (54) at 24:1:051"
+  },
+  {
+    "t": "60.22",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (50) at 25:3:240"
+  },
+  {
+    "t": "60.23",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (47) at 32:4:030"
+  },
+  {
+    "t": "60.23",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.23",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (62) at 57:3:270"
+  },
+  {
+    "t": "60.23",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (67) at 59:4:240"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (66) at 63:3:030"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (49) at 85:3:300"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (68) at 99:4:240"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (53) at 110:4:270"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (58) at 114:4:450"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (105) at 4:1:000"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (65) at 4:2:240"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (71) at 9:1:060"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (73) at 13:1:060"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (64) at 28:3:300"
+  },
+  {
+    "t": "60.24",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (67) at 28:3:450"
+  },
+  {
+    "t": "60.24",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.25",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (69) at 28:4:270"
+  },
+  {
+    "t": "60.25",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (68) at 29:3:300"
+  },
+  {
+    "t": "60.25",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (66) at 31:2:000"
+  },
+  {
+    "t": "60.25",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (62) at 31:3:270"
+  },
+  {
+    "t": "60.25",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (74) at 59:4:240"
+  },
+  {
+    "t": "60.25",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (76) at 65:2:000"
+  },
+  {
+    "t": "60.25",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (79) at 67:4:240"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (68) at 9:1:057"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (69) at 13:1:060"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (64) at 28:3:300"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (67) at 28:3:450"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (71) at 29:2:030"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (73) at 30:2:030"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (66) at 31:2:000"
+  },
+  {
+    "t": "60.26",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (62) at 31:3:270"
+  },
+  {
+    "t": "60.26",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.28",
+    "text": "BEATMASTER_DBG: MIDI parsed -> mLoaded=true; calling FinishLoad"
+  },
+  {
+    "t": "60.28",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.28",
+    "text": "BEATMASTER_DBG: LoaderPoll #2455 phase=2 mLoaded=1 unk2d=0"
+  },
+  {
+    "t": "60.28",
+    "text": "BEATMASTER_DBG: calling mAudio->Load() -- entering audio bring-up phase"
+  },
+  {
+    "t": "60.75",
+    "text": "BEATMASTER_DBG: mAudio->Load() returned; mSongStream=0x58d8360"
+  },
+  {
+    "t": "60.75",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.75",
+    "text": "VORBIS_DBG: Poll #1 hdr=0 fail=0 done=0"
+  },
+  {
+    "t": "60.82",
+    "text": "VORBIS_DBG:   ch=-1 rate=-1 eof=0 queued=0"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: pre-HvDecrypt stuff=6357cd6cb7271a6012f5b07ad70fb671 mKeyIndex(raw)=9"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: post-HvDecrypt mKeyMask=c10e3e13641b32940e86f942f5d0b4bd"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: setupCypher entry moggVersion=0x10 mKeyIndex=9 mMagicA=0x7DBB9925 mMagicB=0x771BC747"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: mNonce=00000000c2fedc4b1f4f15166ac47caf"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: mKeyMask=c10e3e13641b32940e86f942f5d0b4bd"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: masterKey[0:16]=39a2bf537d881d033538a3804524eeca"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: gKey AFTER getKey=a4222a5c8cb3b9aafd0113736b4fa138"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: gKey AFTER GrindArray=28d6f504771dca2b8b5f733dd87e3d67"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: gKey FINAL (XOR mKeyMask)=e9d8cb171306f8bf85d98a7f2dae89da"
+  },
+  {
+    "t": "60.82",
+    "text": "MOGG_DBG: DoFileRead got 16384 bytes BEFORE decrypt[0:32]=2c5f04f51fcc36aee71488c4be3e315b6740807538c85a65bc5b657c7454c590"
+  },
+  {
+    "t": "60.83",
+    "text": "MOGG_DBG: AFTER decrypt[0:32]=4f67675300020000000000000000462f00000000000090aff231011e01766f72 (ASCII: OggS)"
+  },
+  {
+    "t": "60.83",
+    "text": "VORBIS_DBG: All 3 headers read! ch=15 rate=44100 — entering audio decode phase"
+  },
+  {
+    "t": "60.83",
+    "text": "STREAM_DBG: StandardStream::PollStream state -99 -> 1 (chans=15)"
+  },
+  {
+    "t": "60.88",
+    "text": "BEATMASTER_DBG: LoaderPoll #2456 phase=3 mLoaded=1 unk2d=1"
+  },
+  {
+    "t": "60.88",
+    "text": "VORBIS_DBG: Poll #2 hdr=3 fail=0 done=0"
+  },
+  {
+    "t": "60.88",
+    "text": "VORBIS_DBG:   ch=15 rate=44100 eof=0 queued=13051"
+  },
+  {
+    "t": "60.88",
+    "text": "MOGG_DBG: DoFileRead got 16384 bytes BEFORE decrypt[0:32]=e334aea867c4bef2a99a10a812baa418b0681323687f8b020ae487a10d98025c"
+  },
+  {
+    "t": "60.89",
+    "text": "MOGG_DBG: AFTER decrypt[0:32]=23791b55094dc2e5f4d178aaaacd471a9cb7caa86f49a1b9314bd15c0a33c7c2 (ASCII: #y\u001bU)"
+  },
+  {
+    "t": "60.89",
+    "text": "MOGG_DBG: DoFileRead got 16384 bytes BEFORE decrypt[0:32]=c81e194d9128bba786a46d3a7f4d3e7bd3d2242d95646c906af1c5fcdc679d3f"
+  },
+  {
+    "t": "60.90",
+    "text": "Invalid UTF-8 leading byte 0xffffffa9 encountered when deserializing a UTF-8 string in wasm memory to a JS string!"
+  },
+  {
+    "t": "60.90",
+    "text": "MOGG_DBG: AFTER decrypt[0:32]=a940395b9cb4aa87fd94e6b88c5b32771058224121799f7a2a945b2e49607735 (ASCII: 񀹛)"
+  },
+  {
+    "t": "60.92",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.94",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.97",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "60.99",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "61.00",
+    "text": "STREAM_DBG: kBuffering -> kReady (StuffChannels returned true)"
+  },
+  {
+    "t": "61.01",
+    "text": "STREAM_DBG: StandardStream::PollStream state 1 -> 2 (chans=15)"
+  },
+  {
+    "t": "61.01",
+    "text": "BEATMASTER_DBG: mAudio->IsLoaded()=true; RELEASE(mLoader)"
+  },
+  {
+    "t": "61.02",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "61.02",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "61.02",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "61.02",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "61.02",
+    "text": "GAME_DBG: *** Game::mLoadState = kReady — audio loaded, PushAllOptions next ***"
+  },
+  {
+    "t": "61.02",
+    "text": "[rb3-stub] env._ZN12WiiFriendMgr17UseConsoleFriendsEb"
+  },
+  {
+    "t": "61.02",
+    "text": "RB3 web-input: frame 2204  key bit=6 btn=6 action=1 screen='tv3_b_screen'"
+  },
+  {
+    "t": "61.02",
+    "text": "RB3 web part-select: FIRE autohit on 'tv3_b_screen'"
+  },
+  {
+    "t": "61.02",
+    "text": "RB3 input: autohit enabled on 1 active player(s)"
+  },
+  {
+    "t": "61.02",
+    "text": "RB3 web part-select: sequence complete (frame 2204)"
+  },
+  {
+    "t": "62.57",
+    "text": "RB3 web-input: frame 2298  key bit=6 btn=6 action=1 screen='tv3_b_screen'"
+  },
+  {
+    "t": "64.08",
+    "text": "game_panel_load: 4570.12"
+  },
+  {
+    "t": "64.08",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "64.08",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "64.08",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "64.08",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "64.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female01.milo)"
+  },
+  {
+    "t": "64.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body01_lod02.mesh (char/crowd/crowd_female01.milo)"
+  },
+  {
+    "t": "64.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female01.milo)"
+  },
+  {
+    "t": "64.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female01.milo)"
+  },
+  {
+    "t": "64.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.1.mesh (char/crowd/crowd_female01.milo)"
+  },
+  {
+    "t": "64.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female01.milo)"
+  },
+  {
+    "t": "64.61",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female02.milo)"
+  },
+  {
+    "t": "64.61",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body02.mesh (char/crowd/crowd_female02.milo)"
+  },
+  {
+    "t": "64.61",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female02.milo)"
+  },
+  {
+    "t": "64.62",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female02.milo)"
+  },
+  {
+    "t": "64.62",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.1.mesh (char/crowd/crowd_female02.milo)"
+  },
+  {
+    "t": "64.62",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female02.milo)"
+  },
+  {
+    "t": "64.65",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female03.milo)"
+  },
+  {
+    "t": "64.66",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body03.mesh (char/crowd/crowd_female03.milo)"
+  },
+  {
+    "t": "64.66",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female03.milo)"
+  },
+  {
+    "t": "64.66",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female03.milo)"
+  },
+  {
+    "t": "64.66",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female03.milo)"
+  },
+  {
+    "t": "64.69",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female04.milo)"
+  },
+  {
+    "t": "64.70",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body04.mesh (char/crowd/crowd_female04.milo)"
+  },
+  {
+    "t": "64.70",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female04.milo)"
+  },
+  {
+    "t": "64.70",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female04.milo)"
+  },
+  {
+    "t": "64.70",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female04.milo)"
+  },
+  {
+    "t": "64.73",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male01.milo)"
+  },
+  {
+    "t": "64.74",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male01.milo)"
+  },
+  {
+    "t": "64.74",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male01.milo)"
+  },
+  {
+    "t": "64.74",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male01.milo)"
+  },
+  {
+    "t": "64.74",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body01.mesh (char/crowd/crowd_male01.milo)"
+  },
+  {
+    "t": "64.78",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male02.milo)"
+  },
+  {
+    "t": "64.78",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male02.milo)"
+  },
+  {
+    "t": "64.78",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male02.milo)"
+  },
+  {
+    "t": "64.78",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male02.milo)"
+  },
+  {
+    "t": "64.78",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body02.mesh (char/crowd/crowd_male02.milo)"
+  },
+  {
+    "t": "64.82",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male03.milo)"
+  },
+  {
+    "t": "64.82",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male03.milo)"
+  },
+  {
+    "t": "64.82",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male03.milo)"
+  },
+  {
+    "t": "64.82",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male03.milo)"
+  },
+  {
+    "t": "64.82",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body03.mesh (char/crowd/crowd_male03.milo)"
+  },
+  {
+    "t": "64.86",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male04.milo)"
+  },
+  {
+    "t": "64.86",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male04.milo)"
+  },
+  {
+    "t": "64.86",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male04.milo)"
+  },
+  {
+    "t": "64.86",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male04.milo)"
+  },
+  {
+    "t": "64.86",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body04.mesh (char/crowd/crowd_male04.milo)"
+  },
+  {
+    "t": "65.44",
+    "text": "NOTIFY: eyelense.mat (char/main/shared/colorpalettes.milo) couldn't find eyes.cube in palettes (char/main/shared/colorpalettes.milo)"
+  },
+  {
+    "t": "65.44",
+    "text": "NOTIFY: eyes.cube: more than 0 mip levels"
+  },
+  {
+    "t": "65.45",
+    "text": "NOTIFY: instruments.cube: more than 0 mip levels"
+  },
+  {
+    "t": "65.77",
+    "text": "PollUntilLoaded(web): poll 200 front= target_loaded=0"
+  },
+  {
+    "t": "66.98",
+    "text": "PollUntilLoaded(web): poll 400 front=world/venue/small_club/small_club_01/small_club_01_base.milo target_loaded=0"
+  },
+  {
+    "t": "67.25",
+    "text": "[rb3-stub] env._ZN13BandCharacter15NameToDrumVenueEPKc"
+  },
+  {
+    "t": "67.26",
+    "text": "NOTIFY: stagekit_reset not function or object (file world/world_objects.dta, line 1303)"
+  },
+  {
+    "t": "67.26",
+    "text": "NOTIFY: memcardmgr not function or object (file ui/overshell/overshell.dta, line 219)"
+  },
+  {
+    "t": "67.27",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/system/obj/Object.cpp(742): main/saveload_mgr unhandled msg: add_sink"
+  },
+  {
+    "t": "67.28",
+    "text": "NOTIFY: crowd_intro.mogg not found in small_club_01_bank.milo"
+  },
+  {
+    "t": "67.30",
+    "text": "[rb3-stub] env._ZN10TrackPanel19TrackerDisplayResetEv"
+  },
+  {
+    "t": "67.30",
+    "text": "NOTIFY: player1 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "67.30",
+    "text": ""
+  },
+  {
+    "t": "67.30",
+    "text": "NOTIFY: player3 (char/main/main.milo) could not find group sit in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "67.31",
+    "text": ""
+  },
+  {
+    "t": "67.31",
+    "text": "NOTIFY: player0 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "67.31",
+    "text": ""
+  },
+  {
+    "t": "67.31",
+    "text": "NOTIFY: player2 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "67.31",
+    "text": ""
+  },
+  {
+    "t": "67.31",
+    "text": "RB3 screen: frame 2388  currentScreen = 'game_screen'"
+  },
+  {
+    "t": "67.48",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: 51squier_strings.mesh (char/main/guitar/51squier/51squier_resource.milo)"
+  },
+  {
+    "t": "67.54",
+    "text": "NOTIFY: guitar_51squier_base_swap.mat (char/main/guitar/51squier_paint.milo) couldn't find instruments.cube in 51squier_paint (char/main/guitar/51squier_paint.milo)"
+  },
+  {
+    "t": "68.07",
+    "text": "NOTIFY: mDoNotCompress ms_idle_norm_med_01 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.07",
+    "text": ""
+  },
+  {
+    "t": "68.13",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_b_med_02 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.13",
+    "text": ""
+  },
+  {
+    "t": "68.17",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_b_med_03 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.17",
+    "text": ""
+  },
+  {
+    "t": "68.17",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_c_med_04 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.17",
+    "text": ""
+  },
+  {
+    "t": "68.17",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_norm_b_med_05 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.17",
+    "text": ""
+  },
+  {
+    "t": "68.27",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.27",
+    "text": ""
+  },
+  {
+    "t": "68.32",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_local_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.32",
+    "text": ""
+  },
+  {
+    "t": "68.32",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_right_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.32",
+    "text": ""
+  },
+  {
+    "t": "68.33",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_right_ext_med_02 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "68.33",
+    "text": ""
+  },
+  {
+    "t": "68.44",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: saddleshoe_resource.mesh (char/main/feet/female/saddleshoes/saddleshoes_resource.milo)"
+  },
+  {
+    "t": "68.44",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: saddleshoe_skin.2.mesh (char/main/feet/female/saddleshoes/saddleshoes_resource.milo)"
+  },
+  {
+    "t": "68.56",
+    "text": "NOTIFY: player0 (char/main/main.milo) no clip w. flags IR|0x100000 in body_clips/stand"
+  },
+  {
+    "t": "68.61",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: cowboyboots_resource.mesh (char/main/feet/male/cowboyboots/cowboyboots_resource.milo)"
+  },
+  {
+    "t": "68.62",
+    "text": "NOTIFY: player3 (char/main/main.milo) no clip w. flags IR in body_clips/sit"
+  },
+  {
+    "t": "68.71",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: dressshoes_resource.1.mesh (char/main/feet/male/dressshoes/dressshoes_resource.milo)"
+  },
+  {
+    "t": "68.71",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: dressshoes_resource.mesh (char/main/feet/male/dressshoes/dressshoes_resource.milo)"
+  },
+  {
+    "t": "68.71",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: dressshoes_skin.2.mesh (char/main/feet/male/dressshoes/dressshoes_resource.milo)"
+  },
+  {
+    "t": "68.72",
+    "text": "NOTIFY: player2 (char/main/main.milo) no clip w. flags IR in body_clips/stand"
+  },
+  {
+    "t": "68.83",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: nailboots_resource.mesh (char/main/feet/male/nailboots/nailboots_resource.milo)"
+  },
+  {
+    "t": "68.95",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: precision01_strings.mesh (char/main/bass/precision01/precision01_resource.milo)"
+  },
+  {
+    "t": "69.01",
+    "text": "NOTIFY: precision01_base_swap.mat (char/main/bass/precision01_paint.milo) couldn't find instruments.cube in precision01_paint (char/main/bass/precision01_paint.milo)"
+  },
+  {
+    "t": "69.18",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_eyebrows_09_resource.mesh (char/main/eyebrows/female/female_eyebrows_09_resource.milo)"
+  },
+  {
+    "t": "69.24",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fingernails_resource.mesh (char/main/hands/female/female_hands_naked.milo)"
+  },
+  {
+    "t": "69.24",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hands_naked.mesh (char/main/hands/female/female_hands_naked.milo)"
+  },
+  {
+    "t": "69.30",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows1_resource.mesh (char/main/eyebrows/male/male_eyebrows_01_resource.milo)"
+  },
+  {
+    "t": "69.36",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows5_resource.mesh (char/main/eyebrows/male/male_eyebrows_05_resource.milo)"
+  },
+  {
+    "t": "69.41",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows8_resource.mesh (char/main/eyebrows/male/male_eyebrows_08_resource.milo)"
+  },
+  {
+    "t": "69.47",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fingernails_resource.mesh (char/main/hands/male/male_hands_naked.milo)"
+  },
+  {
+    "t": "69.47",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hands_naked.mesh (char/main/hands/male/male_hands_naked.milo)"
+  },
+  {
+    "t": "69.53",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fingernails_resource.mesh (char/main/hands/male/male_hands_naked.milo)"
+  },
+  {
+    "t": "69.53",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hands_naked.mesh (char/main/hands/male/male_hands_naked.milo)"
+  },
+  {
+    "t": "69.53",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fingernails_resource.mesh (char/main/hands/male/male_hands_naked.milo)"
+  },
+  {
+    "t": "69.54",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hands_naked.mesh (char/main/hands/male/male_hands_naked.milo)"
+  },
+  {
+    "t": "69.82",
+    "text": "NOTIFY: brokenmic.mat (char/main/mic/brokenmic_resource.milo) couldn't find instruments.cube in brokenmic_resource (char/main/mic/brokenmic_resource.milo)"
+  },
+  {
+    "t": "69.82",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: mic_stand.mesh (char/main/mic/brokenmic_resource.milo)"
+  },
+  {
+    "t": "69.88",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_facehair_lemmy.mesh (char/main/facehair/male/male_facehair_lemmy.milo)"
+  },
+  {
+    "t": "70.33",
+    "text": "NOTIFY: facehair.cfg (char/main/outfit.milo) MeshAO head.mesh can't find matching mesh to apply"
+  },
+  {
+    "t": "70.53",
+    "text": "NOTIFY: facehair.cfg (char/main/outfit.milo) MeshAO head.mesh can't find matching mesh to apply"
+  },
+  {
+    "t": "70.82",
+    "text": "NOTIFY: mDoNotCompress ms_stand_lose_c_05 (char/main/anim/mic/body/male/realtime_rocker.milo)"
+  },
+  {
+    "t": "70.82",
+    "text": ""
+  },
+  {
+    "t": "71.17",
+    "text": "Resizing string table (2406) adding hihat_hit_big"
+  },
+  {
+    "t": "71.33",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: maleearrings_plug.mesh (char/main/earrings/male/maleearrings_plug.milo)"
+  },
+  {
+    "t": "71.70",
+    "text": "NOTIFY: facehair.cfg (char/main/outfit.milo) MeshAO head.mesh can't find matching mesh to apply"
+  },
+  {
+    "t": "71.89",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/main/head/female/head.milo)"
+  },
+  {
+    "t": "71.89",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: head.mesh (char/main/head/female/head.milo)"
+  },
+  {
+    "t": "71.94",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/main/head/female/head.milo)"
+  },
+  {
+    "t": "72.02",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.02",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: head.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.07",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.07",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.08",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: head.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.13",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.13",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.14",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: head.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.19",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/main/head/male/head.milo)"
+  },
+  {
+    "t": "72.19",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  },
+  {
+    "t": "72.20",
+    "text": "WebAssets: XHR failed /api/file/char/main/drum/gen/dw_billiards_(null).milo_xbox status=404"
+  },
+  {
+    "t": "72.20",
+    "text": "WebAssets: FAILED on-demand fetch char/main/drum/gen/dw_billiards_(null).milo_xbox"
+  },
+  {
+    "t": "72.20",
+    "text": "NOTIFY: Could not load: char/main/drum/gen/dw_billiards_(null).milo_xbox"
+  },
+  {
+    "t": "72.31",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: malewrist_barbedwire_right.mesh (char/main/wrist/male/malewrist_barbedwire_right.milo)"
+  },
+  {
+    "t": "72.37",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: malewrist_hercules_right.mesh (char/main/wrist/male/malewrist_hercules_right.milo)"
+  },
+  {
+    "t": "72.43",
+    "text": "NOTIFY: facehair.cfg (char/main/outfit.milo) can't do piercing piece 0 deform, head verts out of date, need to re-ao"
+  },
+  {
+    "t": "72.61",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: blownback_resource.mesh (char/main/hair/female/female_hair_blownback_resource.milo)"
+  },
+  {
+    "t": "72.76",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: trackjacket_resource.mesh (char/main/torso/female/trackjacket/trackjacket_resource.milo)"
+  },
+  {
+    "t": "72.76",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: trackjacket_skin.2.mesh (char/main/torso/female/trackjacket/trackjacket_resource.milo)"
+  },
+  {
+    "t": "72.95",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "72.96",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "72.96",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "72.96",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "73.04",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_belts.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)"
+  },
+  {
+    "t": "73.04",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_resource.1.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)"
+  },
+  {
+    "t": "73.04",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_resource.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)"
+  },
+  {
+    "t": "73.04",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_saftypin.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)"
+  },
+  {
+    "t": "73.04",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_skin.2.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "73.17",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "73.30",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: bedhead_resource.mesh (char/main/hair/male/male_hair_bedhead_resource.milo)"
+  },
+  {
+    "t": "73.43",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: mohawk_resource.mesh (char/main/hair/male/male_hair_mohawk_resource.milo)"
+  },
+  {
+    "t": "73.62",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: youngozzie_resource.mesh (char/main/hair/male/male_hair_youngozzy_resource.milo)"
+  },
+  {
+    "t": "73.71",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: plaidshirt_resource.mesh (char/main/torso/male/plaid/plaidshirt_resource.milo)"
+  },
+  {
+    "t": "73.72",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: plaidshirt_skin.1.mesh (char/main/torso/male/plaid/plaidshirt_resource.milo)"
+  },
+  {
+    "t": "74.00",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: shred_resource.mesh (char/main/torso/male/shred/shred_resource.milo)"
+  },
+  {
+    "t": "74.00",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: shred_skin.1.mesh (char/main/torso/male/shred/shred_resource.milo)"
+  },
+  {
+    "t": "74.02",
+    "text": "[rb3-stub] env._ZN5WiiFX8IsReverbEi"
+  },
+  {
+    "t": "74.03",
+    "text": "STREAM_DBG: StandardStream::PollStream state 2 -> 3 (chans=15)"
+  },
+  {
+    "t": "74.25",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: vestdenim_resource.mesh (char/main/torso/male/vestdenim/vestdenim_resource.milo)"
+  },
+  {
+    "t": "74.25",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: vestdenim_skin.1.mesh (char/main/torso/male/vestdenim/vestdenim_resource.milo)"
+  },
+  {
+    "t": "74.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.27",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5)"
+  },
+  {
+    "t": "74.38",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: grungepants_resource.mesh (char/main/legs/male/grungepants/grungepants_resource.milo)"
+  },
+  {
+    "t": "74.38",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: grungepants_skin.2.mesh (char/main/legs/male/grungepants/grungepants_resource.milo)"
+  },
+  {
+    "t": "74.39",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11)"
+  },
+  {
+    "t": "74.39",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5)"
+  },
+  {
+    "t": "74.40",
+    "text": "NOTIFY: main_add.drv (char/main/main.milo) could not find still clip"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.45",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.53",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5) [further repeats suppressed]"
+  },
+  {
+    "t": "74.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_resource.1.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)"
+  },
+  {
+    "t": "74.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_resource.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)"
+  },
+  {
+    "t": "74.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_skin.2.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)"
+  },
+  {
+    "t": "74.58",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_skin.3.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.65",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.66",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.66",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.66",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.66",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.73",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15)"
+  },
+  {
+    "t": "74.73",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11)"
+  },
+  {
+    "t": "74.79",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightjeans_resource.mesh (char/main/legs/male/tightjeans/tightjeans_resource.milo)"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "74.91",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "74.97",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11) [further repeats suppressed]"
+  },
+  {
+    "t": "75.25",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15)"
+  },
+  {
+    "t": "75.68",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15) [further repeats suppressed]"
+  },
+  {
+    "t": "79.38",
+    "text": "NOTIFY: crowd_good.mogg not found in small_club_01_bank.milo"
+  },
+  {
+    "t": "87.51",
+    "text": "NOTIFY: crowd_peak.mogg not found in small_club_01_bank.milo"
+  }
+]

@@ -9,10 +9,30 @@
 #include "os/File.h"
 #include "os/Endian.h"
 #include "decomp.h"
+#ifdef HX_NATIVE
+#include "mtrace_wrap.h"  // milo-trace W5 per-call-site capture (env-gated, no-op unless RB3_MTRACE_WRAP=1)
+#endif
 
 namespace {
     std::list<DecompressTask> gDecompressionQueue;
 }
+
+#ifdef HX_NATIVE
+// Incremental-load-perf (PLAN.md T1) frame-trace: charge ChunkStream inflate
+// (zlib/lzx decompress of each milo chunk — the byte-shovel bucket) to
+// gStreamReadMsThisFrame. HX_NATIVE-only; the Wii build is byte-identical. Read
+// + zeroed by RB3FrameTraceRecord (native/src/rb3_frame_trace.cpp).
+#include <chrono>
+extern bool  gFrameTraceActive;
+extern float gStreamReadMsThisFrame;
+namespace {
+    inline double StreamReadNowMs() {
+        return std::chrono::duration<double, std::milli>(
+                   std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    }
+}
+#endif
 
 BinStream &MarkChunk(BinStream &bs) {
     ChunkStream *cs = dynamic_cast<ChunkStream *>(&bs);
@@ -111,6 +131,11 @@ ChunkStream::~ChunkStream() {
             );
         mFile->Seek(0, 0);
         int *chunks = mChunkInfo.mChunks;
+        // The ChunkInfo header is written LITTLE-ENDIAN on disk. The big-endian
+        // Wii host byteswaps to produce LE bytes; a little-endian native host's
+        // in-memory ints are already LE, so no swap is needed (Wii-only — the
+        // write-side mirror of the Eof() read split above).
+#ifndef HX_NATIVE
         for (int i = 0; i < mChunkInfo.mNumChunks; i++) {
             EndianSwapEq(chunks[i]);
         }
@@ -118,6 +143,9 @@ ChunkStream::~ChunkStream() {
         EndianSwapEq(mChunkInfo.mChunkInfoSize);
         EndianSwapEq(mChunkInfo.mNumChunks);
         EndianSwapEq(mChunkInfo.mMaxChunkSize);
+#else
+        (void)chunks;
+#endif
         memset(
             (void *)&mChunkInfo.mChunks[mChunkInfo.mNumChunks],
             0,
@@ -207,6 +235,15 @@ EofType ChunkStream::Eof() {
         if (mFile->ReadDone(x) == 0)
             return TempEof;
         mChunkInfoPending = false;
+        // The ChunkInfo header is stored LITTLE-ENDIAN on disk (e.g. the leading
+        // bytes are `af de be ca` = 0xCABEDEAF in LE). The Wii host is big-endian,
+        // so it must byteswap the header ints to get the host value (the matched
+        // path below). A little-endian native host reads the LE header correctly
+        // WITHOUT swapping — so the swaps are Wii-only. (Mirrors the host-aware
+        // BinStream::ReadEndian HX_NATIVE split: now that EndianSwapEq<int> is a
+        // real byteswap on native too, this read must skip it for the LE header,
+        // exactly as it would have before EndianSwapEq<int> stopped being a no-op.)
+#ifndef HX_NATIVE
         EndianSwapEq(mChunkInfo.mID);
         EndianSwapEq(mChunkInfo.mChunkInfoSize);
         EndianSwapEq(mChunkInfo.mNumChunks);
@@ -214,6 +251,17 @@ EofType ChunkStream::Eof() {
         for (int i = 0; i < mChunkInfo.mNumChunks; i++) {
             EndianSwapEq(mChunkInfo.mChunks[i]);
         }
+#endif
+#ifdef HX_NATIVE
+        // milo-trace W5 chunk-header decode site. Captures the as-decoded logical
+        // header values (after the Wii-only byteswap above) BEFORE the magic-mask
+        // fixup that synthesizes a default header on a non-chunked file. This is
+        // the deep-struct loader state the leaf campaign cannot reach.
+        MTRACE_WRAP_CHUNKHEADER(
+            (unsigned int)mChunkInfo.mID, mChunkInfo.mChunkInfoSize,
+            mChunkInfo.mNumChunks, mChunkInfo.mMaxChunkSize,
+            mFilename.c_str(), &mChunkInfo.mChunks[0]);
+#endif
         if ((mChunkInfo.mID & 0xf0ffffff) != kChunkIDMask) {
             mChunkInfo.mID = 0xCABEDEAF;
             mChunkInfo.mChunkInfoSize = 0;
@@ -402,6 +450,9 @@ void DecompressMemHelper(
 }
 
 void ChunkStream::DecompressChunk(DecompressTask &task) {
+#ifdef HX_NATIVE
+    double ftInflate = gFrameTraceActive ? StreamReadNowMs() : 0.0;
+#endif
     MILO_ASSERT(*task.mState == kDecompressing, 955);
     int data = *task.mChunkSize;
     int dataMsk = data & 0x00ffffff;
@@ -425,6 +476,10 @@ void ChunkStream::DecompressChunk(DecompressTask &task) {
     }
     *task.mChunkSize = out_len;
     *task.mState = kReady;
+#ifdef HX_NATIVE
+    if (gFrameTraceActive)
+        gStreamReadMsThisFrame += (float)(StreamReadNowMs() - ftInflate);
+#endif
 }
 
 ChunkStream::ChunkInfo::ChunkInfo(bool isCompressed) {

@@ -104,7 +104,22 @@ bool PlayerTrackConfigList::TrackUsed(int trk) const {
 void PlayerTrackConfigList::ChangeDifficulty(const UserGuid &u, int i) {
     PlayerTrackConfig &cfg = GetConfigByUserGuid(u);
     cfg.Update(cfg.GetTrackType(), i, cfg.Slot(), cfg.Remote());
+#ifdef HX_NATIVE
+    // OVER-PRESS HARDEN (native debug HTTP surface). The `difficulty:` debug
+    // verb can over-press / arrive out of order before the song is Process()'d
+    // (e.g. a chartless song whose config never resolved a track, so TrackNum()
+    // is still the -1 default and mTrackDiffs is empty). The unguarded write
+    // below indexes mTrackDiffs[(size_t)-1] -> std::vector OOB abort under
+    // _GLIBCXX_ASSERTIONS. The config's difficulty is already recorded via
+    // Update() above, so a later Process() applies it; skip the per-track write
+    // when the index is out of range. Wii keeps the original unconditional write
+    // (only reachable via abnormal native debug verbs).
+    int trackNum = cfg.TrackNum();
+    if (trackNum >= 0 && trackNum < (int)mTrackDiffs.size())
+        mTrackDiffs[trackNum] = i;
+#else
     mTrackDiffs[cfg.TrackNum()] = i;
+#endif
 }
 
 const UserGuid &PlayerTrackConfigList::GetUserGuidByIndex(int idx) const {

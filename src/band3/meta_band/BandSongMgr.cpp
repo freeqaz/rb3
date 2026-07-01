@@ -31,6 +31,10 @@
 #include "utl/Messages2.h"
 #include "utl/Symbols4.h"
 
+#ifdef HX_NATIVE
+#include <sys/stat.h>
+#endif
+
 BandSongMgr gSongMgr;
 BandSongMgr &TheSongMgr = gSongMgr;
 
@@ -339,9 +343,33 @@ const char *BandSongMgr::SongFilePath(Symbol s1, const char *cc, bool b3) const 
 DECOMP_FORCEACTIVE(BandSongMgr, "")
 
 const char *BandSongMgr::GetAlbumArtPath(Symbol s) const {
-    if (HasSong(s, true))
-        return SongFilePath(s, "_keep.png", true);
-    else
+    if (HasSong(s, true)) {
+        const char *path = SongFilePath(s, "_keep.png", true);
+#ifdef HX_NATIVE
+#ifndef __EMSCRIPTEN__
+        // `SongFilePath` returns the LOGICAL art path "songs/<name>/<name>_keep.png",
+        // but the cooked texture the loader actually binds lives at the gen/ subdir
+        // with the platform suffix: "songs/<name>/gen/<name>_keep.png_<plat>" (see
+        // AsyncFile.cpp PrintDiscFile). Stat the COOKED path (not the logical one,
+        // which never exists), and fall back to the shipped blank-art placeholder
+        // when the cover is absent so the box shows the proper "no art" box instead
+        // of a failed-load grey box. Cheap local stat() — the path is relative to
+        // the data dir the native boot chdir'd into. Web (__EMSCRIPTEN__) skips the
+        // stat entirely: the cover is fetched lazily from the server's asset
+        // fallback, so it isn't present in MEMFS at this point — let the loader pull it.
+        if (path && *path) {
+            Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+            String cooked(MakeString(
+                "%s/gen/%s.%s_%s", FileGetPath(path, nullptr), FileGetBase(path, nullptr),
+                FileGetExt(path), plat.Str()));
+            struct stat st;
+            if (::stat(cooked.c_str(), &st) != 0)
+                return "ui/image/blank_album_art_keep.png";
+        }
+#endif
+#endif
+        return path;
+    } else
         return gNullStr;
 }
 

@@ -9,6 +9,16 @@
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 
+#ifdef HX_NATIVE
+// Defined in UIScreen.cpp (the prewarm hook owns the issued-loader set). Gate the
+// adoption branch below on these so the panel only ever adopts+deletes a loader
+// the RB3_PREWARM_SCREENS hook itself issued — never a foreign loader owned by
+// another component. With the flag off the issued set is empty ⇒ always false.
+// (Loader is a complete type here via obj/DirLoader.h -> utl/Loader.h.)
+bool RB3PrewarmIssuedLoader(Loader *);
+void RB3PrewarmForgetLoader(Loader *);
+#endif
+
 int UIPanel::sMaxPanelId = 0;
 
 UIPanel::UIPanel()
@@ -69,6 +79,22 @@ void UIPanel::UnsetLoadedDir() {
     mLoaded = false;
 }
 
+#ifdef HX_NATIVE
+FilePath UIPanel::GetPanelFilePath() {
+    FilePath fp;
+    if (TypeDef()) {
+        static Symbol fileSym("file");
+        DataArray *found = TypeDef()->FindArray(fileSym, false);
+        if (found) {
+            Hmx::Object *thisObj = DataSetThis(this);
+            fp.Set(FileGetPath(found->File(), 0), found->Str(1));
+            DataSetThis(thisObj);
+        }
+    }
+    return fp;
+}
+#endif
+
 void UIPanel::Load() {
     if (mState != kUnloaded)
         MILO_FAIL("Can't load a panel already in state %i", mState);
@@ -94,6 +120,58 @@ void UIPanel::Load() {
         if (!fp.empty()) {
             MemPushHeap(heapInt);
             MILO_ASSERT(!mLoader, 0xAD);
+#ifdef HX_NATIVE
+            // song_select-prewarm adoption (handoff 07): if RB3_PREWARM_SCREENS
+            // pre-issued a background DirLoader for this milo while the user
+            // dwelled on the previous screen, that loader sits in
+            // TheLoadMgr.mLoaders (a finished kLoadBack loader is removed from
+            // mLoading on completion but kept in mLoaders until ~DirLoader). The
+            // unmodified path below would `new DirLoader(fp, ...)` a SECOND
+            // loader that re-opens the ChunkStream and re-parses the (~2.8 MB)
+            // milo on this frame — the whole point of prewarming is to avoid
+            // exactly that. So adopt the prewarmed loader instead: hand its
+            // already-built PanelDir to this panel via the normal
+            // SetLoadedDir()/PollForLoading() machinery and delete the prewarm
+            // loader. SetLoadedDir asserts !mLoader, so this branch must run
+            // before we ever assign mLoader.
+            //
+            // Lifetime: GetDir() sets the loader's mAccessed flag; deleting the
+            // loader then does NOT RELEASE mDir (see DirLoader::~DirLoader), so
+            // the PanelDir survives and is owned by the panel exactly as if the
+            // panel had loaded it itself. If we never adopt (user never enters
+            // the prewarmed screen), the prewarm loader's own ~DirLoader frees
+            // its dir (mAccessed stays false) — no leak, no double-delete.
+            //
+            // CRITICAL ownership gate: only adopt a loader the prewarm hook
+            // ISSUED (RB3PrewarmIssuedLoader, pointer identity). DirLoader::Find
+            // can legitimately return a loader owned by ANOTHER component (e.g.
+            // an ObjDirPtr<T>::LoadFile loader still in flight, or a second
+            // panel's own completed-but-not-yet-polled mLoader for the same
+            // milo) — stealing+`delete`ing that is a use-after-free for its
+            // owner. The issued set is only ever populated by the
+            // RB3_PREWARM_SCREENS hook, so with the flag OFF this is always
+            // false and the stock new-DirLoader path below runs unchanged
+            // (flag-off = byte/behavior identical, the acceptance criterion).
+            if (mLoadRefs == 1) {
+                if (DirLoader *prewarmed = DirLoader::Find(fp)) {
+                    if (RB3PrewarmIssuedLoader(prewarmed) && prewarmed->IsLoaded()) {
+                        class PanelDir *pDir =
+                            dynamic_cast<class PanelDir *>(prewarmed->GetDir());
+                        if (pDir) {
+                            if (getenv("RB3_PREWARM_SCREENS"))
+                                MILO_LOG(
+                                    "RB3_PREWARM: UIPanel %s adopted prewarmed dir for %s\n",
+                                    Name(), fp.c_str());
+                            SetLoadedDir(pDir, false);
+                            RB3PrewarmForgetLoader(prewarmed);
+                            delete prewarmed;
+                            MemPopHeap();
+                            return;
+                        }
+                    }
+                }
+            }
+#endif
             mLoader = new DirLoader(fp, pos, 0, 0, 0, false);
             MILO_ASSERT(mLoader, 0xAF);
             mLoaded = false;

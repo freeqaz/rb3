@@ -18,6 +18,18 @@ Three static checks (no build required):
      Catches the redundant-override-decl pattern that link-errors at
      vtable emission.
 
+  4. ORPHAN_NONVIRTUAL — the non-virtual sibling of (3): a derived class
+     re-declares a NON-virtual member that a base class already
+     declares+implements. C++ name-hiding makes unqualified calls resolve to
+     the body-less derived decl -> undefined symbol. Conditions:
+       a) the derived has no .cpp impl of the method, AND
+       b) a transitive base DOES implement it (the name-hiding signature), AND
+       c) the target binary lacks a derived-specific symbol but HAS the base's.
+     Unlike (3) there's no vtable reference, so on native/web it resolves to a
+     silent no-op stub (returns garbage) instead of link-erroring. Reference
+     bug: BandCharacter::NameToDrumVenue (rb3 727cf01e) -> drum-gear 404s.
+     See docs/decomp/patterns/fixable-struct-layout.md.
+
 This linter is static — it runs in seconds and surfaces issues that would
 otherwise only appear after a full `ninja main.dol` link cycle.
 
@@ -368,6 +380,143 @@ def check_virtuals(
 
 
 # ---------------------------------------------------------------------------
+# Check 4: orphan NON-virtual member redeclarations (name-hiding "phantom stub")
+# ---------------------------------------------------------------------------
+# The non-virtual sibling of ORPHAN_VIRTUAL. A derived class re-declares a
+# non-virtual member that a BASE class already declares+implements. C++
+# name-hiding makes an unqualified call inside the derived class resolve to the
+# (body-less) derived declaration -> undefined symbol. Unlike the virtual case
+# there's no vtable reference, so it only bites when a call site names it; on
+# native/web it resolves to a silent no-op stub returning garbage.
+# Reference bug: BandCharacter::NameToDrumVenue (rb3 727cf01e) -> drum-gear 404.
+# See docs/decomp/patterns/fixable-struct-layout.md.
+
+# Non-virtual member decl: `[static|inline] <ret> <name>(<args>) [const];`
+# with NO `virtual`. The base-defines gate (below) is what makes this precise,
+# so the regex itself can be permissive.
+_NONVIRTUAL_DECL_RE = re.compile(
+    r"""(?P<stor>(?:static|inline)\s+)*
+        (?P<ret>[A-Za-z_][\w:<>,\s*&]*?)
+        \s+
+        (?P<name>[A-Za-z_][A-Za-z0-9_]*)
+        \s*\(
+        (?P<args>[^)]*)
+        \)
+        \s*(?P<const>const)?
+        \s*;""",
+    re.VERBOSE,
+)
+
+
+def _build_inheritance(header_files: list[Path]) -> dict[str, list[str]]:
+    """{class: [direct base names]} parsed from `class X : public A, B {`."""
+    graph: dict[str, list[str]] = {}
+    for hdr in header_files:
+        try:
+            text = strip_comments_and_strings(hdr.read_text("utf-8", errors="replace"))
+        except OSError:
+            continue
+        for m in _CLASS_HEADER_RE.finditer(text):
+            name = m.group("name")
+            derive = m.group("derive") or ""
+            # derive is like "  : public A, public B" — drop leading ws + colon
+            derive = derive.strip().lstrip(":")
+            bases: list[str] = []
+            for b in derive.split(","):
+                b = re.sub(r"\b(public|protected|private|virtual)\b", "", b)
+                b = b.strip().split("<")[0].split("::")[-1].strip()
+                if b:
+                    bases.append(b)
+            if name not in graph or bases:
+                graph[name] = bases
+    return graph
+
+
+def _all_bases(cls: str, graph: dict[str, list[str]],
+               seen: Optional[set[str]] = None) -> set[str]:
+    if seen is None:
+        seen = set()
+    for b in graph.get(cls, ()):
+        if b not in seen:
+            seen.add(b)
+            _all_bases(b, graph, seen)
+    return seen
+
+
+def find_nonvirtual_decls(header_text: str) -> list[tuple[str, str, int]]:
+    """[(class, method, line)] for non-inline, non-virtual member decls."""
+    stripped = strip_comments_and_strings(header_text)
+    out: list[tuple[str, str, int]] = []
+    for m in _NONVIRTUAL_DECL_RE.finditer(stripped):
+        # the matched span must not be a virtual decl (handled separately)
+        line_start = stripped.rfind("\n", 0, m.start()) + 1
+        if "virtual" in stripped[line_start:m.end()]:
+            continue
+        name = m.group("name")
+        ret = m.group("ret").strip()
+        # skip ctors/dtors/operators and control keywords masquerading as ret
+        if ret in ("return", "else", "case", "for", "while", "if", "switch",
+                   "do", "sizeof") or name in ("if", "for", "while", "switch"):
+            continue
+        klass = _enclosing_class(stripped, m.start())
+        if klass is None or name == klass:
+            continue
+        line_no = stripped.count("\n", 0, m.start()) + 1
+        out.append((klass, name, line_no))
+    return out
+
+
+def check_nonvirtual_phantoms(
+    header_files: list[Path],
+    cpp_files: list[Path],
+    map_index: mwcc_symbols.MapIndex,
+    graph_headers: Optional[list[Path]] = None,
+) -> list[Issue]:
+    impl_index = _build_impl_index(cpp_files)
+    # the inheritance graph must span ALL headers (a base may live outside the
+    # scan roots), not just the ones we scan for decls.
+    graph = _build_inheritance(graph_headers if graph_headers is not None
+                              else header_files)
+    issues: list[Issue] = []
+    for hdr in header_files:
+        try:
+            text = hdr.read_text("utf-8", errors="replace")
+        except OSError:
+            continue
+        for klass, method, line_no in find_nonvirtual_decls(text):
+            # derived must NOT implement it (else it's a real override)
+            if method in impl_index.get(klass, set()):
+                continue
+            # a transitive BASE must declare+implement it — this is the
+            # name-hiding signature (and the precision gate)
+            bases = _all_bases(klass, graph)
+            base_definers = [b for b in bases if method in impl_index.get(b, set())]
+            if not base_definers:
+                continue
+            # target binary must lack a derived-specific symbol (proof the
+            # original never had this override) ...
+            if mwcc_symbols.find_override(klass, method, map_index):
+                continue
+            # ... while it DOES have the base's real implementation
+            if not any(mwcc_symbols.find_override(b, method, map_index)
+                       for b in base_definers):
+                continue
+            issues.append(
+                Issue(
+                    kind="ORPHAN_NONVIRTUAL",
+                    name=f"{klass}::{method}",
+                    locations=[f"{hdr.relative_to(REPO_ROOT)}:{line_no}"],
+                    hint=(
+                        f"remove redundant non-virtual decl — {klass} hides "
+                        f"inherited {base_definers[0]}::{method} (name-hiding "
+                        f"phantom; resolves to a silent stub on native/web)"
+                    ),
+                )
+            )
+    return issues
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 
@@ -451,8 +600,62 @@ def collect_sources(
     return cpps, hdrs
 
 
+def _selftest() -> int:
+    """Offline regression test for the parser/attribution logic (no map needed).
+    Locks in the BandCharacter::NameToDrumVenue phantom detection (rb3 727cf01e)
+    and the cross-class-boundary contamination guard."""
+    import tempfile
+
+    ok = True
+
+    def check(cond: bool, msg: str):
+        nonlocal ok
+        print(f"  {'PASS' if cond else 'FAIL'}: {msg}")
+        ok = ok and cond
+
+    # 1) non-virtual decl extraction + correct enclosing-class attribution
+    hdr = """
+class BandCharDesc { public: static int NameToDrumVenue(const char *); };
+class BandCharacter : public Character, public BandCharDesc {
+public:
+    static int NameToDrumVenue(const char *);   // phantom redeclaration
+    void SetGroupName(const char *);
+};
+class OwnedSongSortNode : public SongSortNode {
+public:
+    int GetTotalStars(bool);   // sibling-class non-virtual decl
+};
+class FunctionSortNode : public LeafSortNode { public: void FinishSort(NodeSort *); };
+"""
+    decls = set((k, m) for k, m, _ in find_nonvirtual_decls(hdr))
+    check(("BandCharacter", "NameToDrumVenue") in decls,
+          "extracts the derived phantom decl")
+    check(("BandCharDesc", "NameToDrumVenue") in decls,
+          "extracts the base decl")
+    check(("FunctionSortNode", "GetTotalStars") not in decls,
+          "no cross-class-boundary contamination (GetTotalStars stays in its class)")
+
+    # 2) inheritance parse — single AND multiple inheritance, first base clean
+    with tempfile.NamedTemporaryFile("w", suffix=".h", delete=False) as f:
+        f.write(hdr)
+        p = Path(f.name)
+    g = _build_inheritance([p])
+    check(g.get("BandCharacter", [None])[0] == "Character",
+          "first base of multi-inheritance parses without leading colon")
+    check("BandCharDesc" in _all_bases("BandCharacter", g),
+          "transitive base resolution finds the definer")
+
+    print("SELFTEST:", "OK" if ok else "FAILED")
+    return 0 if ok else 1
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Pre-flight link-error linter.")
+    ap.add_argument(
+        "--selftest",
+        action="store_true",
+        help="run the offline parser regression test and exit",
+    )
     ap.add_argument(
         "paths",
         nargs="*",
@@ -460,7 +663,7 @@ def main(argv: list[str]) -> int:
     )
     ap.add_argument(
         "--check",
-        choices=["all", "globals", "virtuals"],
+        choices=["all", "globals", "virtuals", "nonvirtuals"],
         default="all",
     )
     ap.add_argument("--json", action="store_true")
@@ -471,6 +674,9 @@ def main(argv: list[str]) -> int:
     )
     args = ap.parse_args(argv)
 
+    if args.selftest:
+        return _selftest()
+
     in_scope = not args.all
     roots = [Path(p) for p in args.paths] if args.paths else [SRC_ROOT]
     cpp_files, hdr_files = collect_sources(roots, in_scope_only=in_scope)
@@ -478,14 +684,20 @@ def main(argv: list[str]) -> int:
     issues: list[Issue] = []
     if args.check in ("all", "globals"):
         issues.extend(check_globals(cpp_files))
-    if args.check in ("all", "virtuals"):
+    if args.check in ("all", "virtuals", "nonvirtuals"):
         idx = mwcc_symbols.load_map()
-        # For virtuals, we always need *all* cpps for the impl-index
-        # so we don't false-positive on impls outside the scan roots.
+        # We always need *all* cpps for the impl-index (and all headers for the
+        # inheritance graph) so we don't false-positive on impls/bases outside
+        # the scan roots.
         all_cpps = cpp_files
+        all_hdrs = hdr_files
         if any(r != SRC_ROOT for r in roots):
-            all_cpps, _ = collect_sources([SRC_ROOT], in_scope_only=in_scope)
-        issues.extend(check_virtuals(hdr_files, all_cpps, idx))
+            all_cpps, all_hdrs = collect_sources([SRC_ROOT], in_scope_only=in_scope)
+        if args.check in ("all", "virtuals"):
+            issues.extend(check_virtuals(hdr_files, all_cpps, idx))
+        if args.check in ("all", "nonvirtuals"):
+            issues.extend(check_nonvirtual_phantoms(
+                hdr_files, all_cpps, idx, graph_headers=all_hdrs))
 
     if args.json:
         json.dump([asdict(i) for i in issues], sys.stdout, indent=2)

@@ -56,11 +56,25 @@ SongData::SongData()
       mLoadingVocalNoteListIndex(0), mTempoMap(0), mMeasureMap(0), mBeatMap(0),
       mTuningOffsetList(0), mLastGemTime(0), mMemStream(0), mSongParser(0),
       mPlayerTrackConfigList(0), mGems(0), mHopoThreshold(0), mDetailedGrid(0) {
+#ifdef HX_NATIVE
+    mHxEmptyGemList = 0;
+#endif
     mVocalNoteLists.reserve(4);
     mVocalNoteLists.push_back(new VocalNoteList(this));
 }
 
+#ifdef HX_NATIVE
+GameGemList *SongData::HxEmptyGemList() {
+    if (!mHxEmptyGemList)
+        mHxEmptyGemList = new GameGemList(mHopoThreshold);
+    return mHxEmptyGemList;
+}
+#endif
+
 SongData::~SongData() {
+#ifdef HX_NATIVE
+    RELEASE(mHxEmptyGemList); // native-only no-chart fallback list
+#endif
     ResetTheTempoMap();
     ResetTheBeatMap();
     for (int i = 0; i < mTrackInfos.size(); i++) {
@@ -145,6 +159,15 @@ void SongData::Load(
         }
     }
     Load(midi, info, numDifficulties, pList, midircvrs, bb);
+#ifndef HX_NATIVE
+    // The .vfv ("vocal feature vector") sidecar holds precomputed talky/rap pitch
+    // data for the TalkyMatcher. It is ABSENT from the 360-ARK extract for every
+    // song the port ships, so this open fails for every playable song. The load is
+    // already optional (the !Fail() guard skips it and the matcher just gets the
+    // empty vectors), but on web each doomed open still costs a failed sync-XHR /
+    // 404 per song load. Skipping it natively leaves mVocalFeatureVector{Times,
+    // Peaks} at their empty default — behavior-identical to opening and failing —
+    // while avoiding the failed fetch. Wii keeps the open below (byte-identical).
     FileStream fs88(FakeSongMgr::GetPath(info, ".vfv"), FileStream::kRead, true);
     if (!fs88.Fail()) {
         int count = 0;
@@ -160,6 +183,7 @@ void SongData::Load(
             mVocalFeatureVectorPeaks.push_back(f98);
         }
     }
+#endif
 }
 
 void SongData::Load(
@@ -1159,10 +1183,20 @@ void SongData::EnableGems(int i1, float f1, float f2) {
 #pragma push
 #pragma force_active on
 inline GameGemList *SongData::GetGemListByDiff(int track, int diff) {
+#ifdef HX_NATIVE
+    // No-chart native guard: empty mGemDBs -> OOB abort. Hand back the shared
+    // empty gem list (see SongData.h). Wii always has a chart -> never empty.
+    if (track < 0 || (size_t)track >= mGemDBs.size())
+        return HxEmptyGemList();
+#endif
     return mGemDBs[track]->GetDiffGemList(diff);
 }
 
 inline GameGemList *SongData::GetGemList(int track) {
+#ifdef HX_NATIVE
+    if (track < 0 || (size_t)track >= mTrackDifficulties.size())
+        return HxEmptyGemList();
+#endif
     return GetGemListByDiff(track, mTrackDifficulties[track]);
 }
 #pragma pop

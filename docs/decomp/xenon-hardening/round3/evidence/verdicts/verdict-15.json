@@ -1,0 +1,17 @@
+{
+  "pair": 15,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "Init__11TrackWidgetFv",
+  "category": "system",
+  "stratum": "BSIM 15-20",
+  "reasoning": "Both bodies are the identical one-line forwarding stub TrackWidget::Init(){ mImp->Init(); }: load an object pointer from a member of 'this', load its vtable, and indirect tail-call a virtual slot. Wii asm: lwz r3,0x84(r3) (mImp) -> lwz r12,0(r3) (vtable) -> lwz r12,0x44(r12) -> mtctr/bctr. Xenon pseudo-C: (**(code**)(**(int**)(param_1+0xac)+0xc))() -- same member-load -> vtable-load -> indirect tail call (the 'Treating indirect jump as call' / 'could not recover jumptable' warning is Ghidra's rendering of bctr). The source is independently verified: TrackWidget.h line 89 puts mImp at offset 0x84, TrackWidget.cpp:150 is literally 'void TrackWidget::Init(){ mImp->Init(); }', and TrackWidgetImp.h:41 confirms 'virtual void Init() {} // 0x44' is exactly the Wii vtable slot. The only two differences -- member offset 0x84 (Wii) vs 0xac (Xenon) and vtable slot 0x44 (Wii) vs 0xc (Xenon) -- are the systematic MWCC-vs-MSVC struct-packing and vtable-ordering artifacts that are explicitly NOT a basis for a DIFFERENT verdict. Sibling-alias check: the other mImp-forwarders in this TU all have distinguishing shape (Poll has an if(mTrackDir) guard + 2 calls; DrawShowing has nested conditionals; Empty/Size return values and use slot 0xC). Init is the unique zero-branch, no-arg, void, single-virtual-tail-call one-liner -- matching both bodies. No strings and no resolved callees (leaf indirect tail call), so no string/callee refutation possible; corroboration is the perfect structural match plus source confirmation. BSim sim 1.0 / conf 15.142.",
+  "key_evidence": [
+    "Wii asm is a pure forwarding tail call: lwz mImp(0x84) -> lwz vtable(0x0) -> lwz slot(0x44) -> mtctr/bctr (no branches, no args, void)",
+    "Xenon pseudo-C (**(code**)(**(int**)(param_1+0xac)+0xc))() is the identical member->vtable->indirect-tail-call shape (bctr rendered as the indirect-jump-as-call warning)",
+    "Source confirms identity: TrackWidget.cpp:150 'void TrackWidget::Init(){ mImp->Init(); }', TrackWidget.h:89 mImp@0x84, TrackWidgetImp.h:41 'virtual void Init() {} // 0x44'",
+    "Offset diffs (member 0x84 vs 0xac, vtable slot 0x44 vs 0xc) are systematic MWCC/MSVC struct-packing + vtable-ordering artifacts, explicitly excluded as DIFFERENT evidence",
+    "Sibling discriminator: Init is the unique no-guard, no-arg, void single-virtual-tail-call one-liner among TrackWidget's mImp forwarders (Poll/DrawShowing/Empty all have distinguishing control flow or return values)",
+    "BSim similarity 1.0, confidence 15.142"
+  ]
+}

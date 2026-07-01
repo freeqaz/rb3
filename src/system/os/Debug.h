@@ -59,6 +59,9 @@ public:
 
 extern Debug TheDebug;
 extern jmp_buf TheDebugJump;
+#ifdef HX_NATIVE
+extern const char *TheDebugFailMsg; // MILO_TRY out-of-band message (see Debug.cpp)
+#endif
 
 class DebugBeta {
 public:
@@ -108,6 +111,19 @@ extern int *gpDbgFrameID;
 //     // Use errMsg here, e.g.:
 //     MILO_WARN("An unexpected thing happened: %s", errMsg);
 // }
+#ifdef HX_NATIVE
+#define MILO_TRY                                                                         \
+    TheDebug.SetTry(true);                                                               \
+    /* LP64: setjmp's int return can't carry a 64-bit msg ptr, so the fail path        \
+     * stashes it in TheDebugFailMsg and longjmps a non-zero sentinel. Read it          \
+     * back here (setjmp used only in a comparison-with-constant, per the standard). */  \
+    /* TODO: Only one MILO_TRY can be used within the same scope currently */            \
+    const char *_msg = (const char *)0;                                                  \
+    if (setjmp(TheDebugJump) != 0)                                                       \
+        _msg = TheDebugFailMsg;                                                          \
+    if (_msg == nullptr) {                                                               \
+        do
+#else
 #define MILO_TRY                                                                         \
     TheDebug.SetTry(true);                                                               \
     /* Undefined behavior alert!                                                         \
@@ -118,6 +134,7 @@ extern int *gpDbgFrameID;
     const char *_msg = (const char *)setjmp(TheDebugJump);                               \
     if (_msg == nullptr) {                                                               \
         do
+#endif
 #define MILO_CATCH(msgName)                                                              \
     while (false)                                                                        \
         ;                                                                                \

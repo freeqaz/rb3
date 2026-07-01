@@ -3,6 +3,9 @@
 #include "synth/FxSendEQ.h"
 #include "os/PlatformMgr.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstdlib> // Q7: getenv for RB3_METAMUSIC_SYNC (guarded out of Wii build)
+#endif
 
 void MetaMusicLoader::DoneLoading() {}
 
@@ -23,6 +26,9 @@ MetaMusic::MetaMusic(const char *cc)
       mLoader(0), unk78(0), unk88(cc), unk8c(1) {
     mFader = Hmx::Object::New<Fader>();
     mFaderMute = Hmx::Object::New<Fader>();
+#ifdef HX_NATIVE
+    mNativeFxWiringPending = false;
+#endif
 }
 
 MetaMusic::~MetaMusic() {
@@ -126,7 +132,18 @@ void MetaMusic::Poll() {
         RELEASE(mLoader);
         RELEASE(mFile);
     }
+#ifdef HX_NATIVE
+    // Q7: finish the deferred FX wiring once all six eq.send dirs have landed.
+    // Must complete BEFORE the stream starts playing, since UpdateMix() (run only
+    // while IsPlaying()) dereferences unk70[i]; the Play() gate below holds the
+    // stream until wiring is done.
+    if (mNativeFxWiringPending)
+        PollFxWiring();
+#endif
     if (mStream && !mStream->IsPlaying() && mStream->IsReady()
+#ifdef HX_NATIVE
+        && !mNativeFxWiringPending
+#endif
         && !ThePlatformMgr.HomeMenuActive()) {
         mFader->SetVal(-96.0f);
         mFader->DoFade(mVolume, mFadeTime * 1000.0f);
@@ -170,9 +187,24 @@ void MetaMusic::Start() {
             }
             if (unk88) {
                 LoadStreamFx();
+#ifdef HX_NATIVE
+                if (NativeMetaMusicSync()) {
+                    for (int i = 0; i < 6; i++) {
+                        mStream->SetFXSend(
+                            i, unk70[i]->Find<FxSendEQ>("eq.send", true)
+                        );
+                    }
+                } else {
+                    // Q7: dirs are loading async; defer PostLoad + SetFXSend wiring
+                    // until all six IsLoaded() (PollFxWiring, driven from Poll()).
+                    // Do NOT deref unk70[i]->... here — mDir is still null.
+                    mNativeFxWiringPending = true;
+                }
+#else
                 for (int i = 0; i < 6; i++) {
                     mStream->SetFXSend(i, unk70[i]->Find<FxSendEQ>("eq.send", true));
                 }
+#endif
             }
             unk78 = true;
         }
@@ -313,7 +345,16 @@ void MetaMusic::LoadStreamFx() {
     FilePath fp(".", unk88);
     for (int i = 0; i < 6; i++) {
         unk70[i].LoadFile(fp, true, false, kLoadFront, false);
+#ifdef HX_NATIVE
+        // Q7: on native/web the eager PostLoad below is a per-dir PollUntilLoaded
+        // that blocks the frame for a 6-file fetch chain. LoadFile already issued
+        // the async loader; defer the PostLoad + FX wiring into Poll() (see
+        // PollFxWiring). RB3_METAMUSIC_SYNC=1 restores the original blocking path.
+        if (NativeMetaMusicSync())
+            unk70[i].PostLoad(nullptr);
+#else
         unk70[i].PostLoad(nullptr);
+#endif
     }
 }
 
@@ -324,7 +365,57 @@ void MetaMusic::UnloadStreamFx() {
         }
     }
     unk70.clear();
+#ifdef HX_NATIVE
+    // Q7: a pending deferred wiring is now moot (dirs cleared / stream gone).
+    mNativeFxWiringPending = false;
+#endif
 }
+
+#ifdef HX_NATIVE
+// Q7: RB3_METAMUSIC_SYNC=1 restores the original eager (blocking) PostLoad+wiring
+// path. Read once via getenv (Loader.cpp:217-226 pattern).
+bool MetaMusic::NativeMetaMusicSync() {
+    static int sSync = -1;
+    if (sSync < 0) {
+        sSync = 0;
+        if (const char *e = ::getenv("RB3_METAMUSIC_SYNC")) {
+            if (e[0] && e[0] != '0')
+                sSync = 1;
+        }
+    }
+    return sSync != 0;
+}
+
+// Q7: complete the deferred stream-FX wiring once all six eq.send dirs have
+// finished loading. Until then this is a cheap per-frame poll (no blocking). On
+// completion: PostLoad each dir (transfers the loaded ObjectDir into the ptr,
+// frees the loader) then SetFXSend the six FxSendEQ sends — exactly the work the
+// Wii did synchronously inside Start(), just spread across frames.
+void MetaMusic::PollFxWiring() {
+    if (!mNativeFxWiringPending)
+        return;
+    // The stream may have been released (e.g. faded out) before the dirs landed;
+    // there is nothing left to wire onto.
+    if (!mStream || unk70.size() < 6) {
+        mNativeFxWiringPending = false;
+        return;
+    }
+    for (int i = 0; i < 6; i++) {
+        if (!unk70[i].IsLoaded())
+            return; // still loading — try again next frame
+    }
+    // All six resident: drain each loader into its ObjectDir, then wire the sends.
+    for (int i = 0; i < 6; i++) {
+        unk70[i].PostLoad(nullptr);
+    }
+    for (int i = 0; i < 6; i++) {
+        mStream->SetFXSend(i, unk70[i]->Find<FxSendEQ>("eq.send", true));
+    }
+    mNativeFxWiringPending = false;
+    if (getenv("RB3_METAMUSIC_DBG"))
+        MILO_LOG("RB3_METAMUSIC_DBG: deferred stream-FX wiring complete (6 eq.send dirs)\n");
+}
+#endif
 
 int MetaMusic::ChooseStartMs() const {
     int startMs = 0;

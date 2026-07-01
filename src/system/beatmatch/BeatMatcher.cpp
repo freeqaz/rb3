@@ -20,6 +20,17 @@
 #include "utl/MakeString.h"
 #include <climits>
 
+// No-chart native guard. In the native port, a song whose .mid is absent from
+// the extract loads with empty track data and never sets up a TrackWatcher (see
+// Game::PostLoad), so mWatcher stays null. The console always ships a chart so
+// mWatcher is never null there — this macro compiles to nothing for the Wii
+// build (HX_NATIVE undefined), keeping the matched asm byte-identical.
+#ifdef HX_NATIVE
+#define HX_NO_WATCHER_GUARD(...) do { if (!mWatcher) return __VA_ARGS__; } while (0)
+#else
+#define HX_NO_WATCHER_GUARD(...) ((void)0)
+#endif
+
 BeatMatcher::BeatMatcher(
     const UserGuid &u,
     int i1,
@@ -96,12 +107,25 @@ void BeatMatcher::Poll(float f) {
     if (mController)
         mController->Poll();
     CheckMercurySwitch(mNow);
+#ifdef HX_NATIVE
+    // No-chart native guard: a chartless song never set up a track (see
+    // Game::PostLoad), so mWatcher is null. The console always has a chart so
+    // mWatcher is never null there; this guard is HX_NATIVE-only / match-neutral.
+    if (!mWatcher)
+        return;
+#endif
     mWatcher->Poll(f);
 }
 
 void BeatMatcher::Jump(float f) {
     if (mNow != f) {
         SetNow(f);
+#ifdef HX_NATIVE
+        if (!mWatcher) {
+            mWaitingForAudio = true;
+            return; // no-chart native guard (see BeatMatcher::Poll)
+        }
+#endif
         mLastSwing = 0;
         mLastVelocityBucket = 0;
         mLastReleaseSwing = 0;
@@ -115,14 +139,16 @@ void BeatMatcher::Jump(float f) {
     }
 }
 
-void BeatMatcher::Restart() { mWatcher->Restart(); }
+void BeatMatcher::Restart() { HX_NO_WATCHER_GUARD(); mWatcher->Restart(); }
 
 void BeatMatcher::ResetGemStates(float f) {
+    HX_NO_WATCHER_GUARD();
     mWatcher->RecalcGemList();
     mWatcher->Jump(f);
 }
 
 void BeatMatcher::FretButtonDown(int i1, int i2) {
+    HX_NO_WATCHER_GUARD(); // no-chart native guard (mCurTrack==-1 would OOB GetGemList)
     if (!mAutoplay) {
         MILO_ASSERT(mSink, 0xCF);
         mSink->FretButtonDown(i1, mNow);
@@ -143,6 +169,7 @@ void BeatMatcher::FretButtonDown(int i1, int i2) {
 }
 
 void BeatMatcher::RGFretButtonDown(int iii) {
+    HX_NO_WATCHER_GUARD(); // no-chart native guard
     if (!mAutoplay) {
         GameGemList *gemList = mSongData->GetGemList(mCurTrack);
         if (!gemList->Empty()) {
@@ -153,6 +180,7 @@ void BeatMatcher::RGFretButtonDown(int iii) {
 }
 
 void BeatMatcher::FretButtonUp(int i1) {
+    HX_NO_WATCHER_GUARD(); // no-chart native guard
     if (!mAutoplay) {
         MILO_ASSERT(mSink, 0xF1);
         mSink->FretButtonUp(i1, mNow);
@@ -172,6 +200,7 @@ void BeatMatcher::FretButtonUp(int i1) {
 }
 
 bool BeatMatcher::Swing(int i1, bool b2, bool b3, bool b4, bool b5, GemHitFlags flags) {
+    HX_NO_WATCHER_GUARD(false); // no-chart native guard
     if (mAutoplay || mSongData->GetGemList(mCurTrack)->Empty())
         return false;
     else {
@@ -228,6 +257,7 @@ void BeatMatcher::ReleaseSwing() { mLastReleaseSwing = mNow; }
 void BeatMatcher::OutOfRangeSwing() { mSink->OutOfRangeSwing(); }
 
 void BeatMatcher::NonStrumSwing(int i1, bool b2, bool b3) {
+    HX_NO_WATCHER_GUARD(); // no-chart native guard
     if (mAutoplay || mSongData->GetGemList(mCurTrack)->Empty())
         return;
     mWatcher->NonStrumSwing(i1, b2, b3);
@@ -361,6 +391,13 @@ float BeatMatcher::GetCapStrip() const {
 }
 
 int BeatMatcher::GetMaxSlots() const {
+#ifdef HX_NATIVE
+    // No-chart native guard: chartless song never set a track (mCurTrack == -1,
+    // mTrackTypes empty). The TrackPanel UI init (GemTrack::PlayerInit) still
+    // queries this; return the common 5-slot default instead of an OOB abort.
+    if (mCurTrack < 0 || (size_t)mCurTrack >= mTrackTypes.size())
+        return 5;
+#endif
     int type = mTrackTypes[mCurTrack];
     if (type == kTrackRealKeys)
         return 25;
@@ -373,14 +410,18 @@ bool BeatMatcher::IsAutoplay() { return mAutoplay; }
 
 void BeatMatcher::SetAutoplay(bool autoplay) {
     mAutoplay = autoplay;
+#ifdef HX_NATIVE
+    if (!mWatcher)
+        return; // no-chart native guard (see BeatMatcher::Poll)
+#endif
     mWatcher->SetCheating(autoplay);
 }
 
-void BeatMatcher::AutoplayCoda(bool b) { mWatcher->SetAutoplayCoda(b); }
-void BeatMatcher::SetAutoplayError(int err) { mWatcher->SetAutoplayError(err); }
+void BeatMatcher::AutoplayCoda(bool b) { HX_NO_WATCHER_GUARD(); mWatcher->SetAutoplayCoda(b); }
+void BeatMatcher::SetAutoplayError(int err) { HX_NO_WATCHER_GUARD(); mWatcher->SetAutoplayError(err); }
 void BeatMatcher::SetAutoOn(bool b) { mAudio->SetAutoOn(mCurTrack, b); }
-float BeatMatcher::CycleAutoplayAccuracy() { return mWatcher->CycleAutoplayAccuracy(); }
-void BeatMatcher::SetAutoplayAccuracy(float f) { mWatcher->SetAutoplayAccuracy(f); }
+float BeatMatcher::CycleAutoplayAccuracy() { HX_NO_WATCHER_GUARD(0.0f); return mWatcher->CycleAutoplayAccuracy(); }
+void BeatMatcher::SetAutoplayAccuracy(float f) { HX_NO_WATCHER_GUARD(); mWatcher->SetAutoplayAccuracy(f); }
 void BeatMatcher::DrivePitchBendExternally(bool b) { mDrivingPitchBendExternally = b; }
 
 void BeatMatcher::SetPitchBend(int i1, float f2, bool b3) {
@@ -440,6 +481,12 @@ void BeatMatcher::SetButtonMashingMode(bool b) {
 }
 
 void BeatMatcher::Enable(bool b) {
+#ifdef HX_NATIVE
+    if (!mWatcher) { // no-chart native guard (see BeatMatcher::Poll)
+        EnableController(b);
+        return;
+    }
+#endif
     mWatcher->Enable(b);
     EnableController(b);
     if (!b)

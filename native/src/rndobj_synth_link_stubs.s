@@ -12,6 +12,10 @@
 __hmx_rndsynth_noop_stub:
     xorl %eax, %eax
     ret
+    # (RB3TexSharpenPoll / RB3TexSharpenReset weak stubs removed: the progressive-
+    # tex-sharpen glue (rb3_texsharpen_native.cpp, research/13 T1) now provides the
+    # strong definitions AND wires the real callers, so the temporary stubs are
+    # obsolete.)
     .weak BinkClose
     .set BinkClose, __hmx_rndsynth_noop_stub
     .weak BinkCloseTrack
@@ -60,8 +64,23 @@ __hmx_rndsynth_noop_stub:
     .set TheUI, __hmx_rndsynth_noop_stub
     .weak TheWiiRnd
     .set TheWiiRnd, __hmx_rndsynth_noop_stub
+    # _Z14CleanupGpuMeshP7RndMesh (CleanupGpuMesh): fallback no-op stub. The RB3
+    # GPU backend now DOES cache per-mesh GPU buffers in `sMeshGpu`
+    # (Rnd_Wgpu_RB3.cpp:419) and ships a STRONG `CleanupGpuMesh` (:440) that
+    # erases the cache slot; that strong def displaces this weak stub whenever the
+    # RB3 backend is linked. RndMesh::~RndMesh (HX_NATIVE, Mesh.cpp:353) calls it
+    # on every mesh destruction. This stub only survives for non-RB3-backend
+    # links (where there is no sMeshGpu to release), so it stays for safety.
     .weak _Z14CleanupGpuMeshP7RndMesh
     .set _Z14CleanupGpuMeshP7RndMesh, __hmx_rndsynth_noop_stub
+    # _Z13CleanupGpuTexP6RndTex (CleanupGpuTex): twin of CleanupGpuMesh above.
+    # The RB3 backend caches per-texture GPU resources in `sTexGpu`
+    # (Rnd_Wgpu_RB3.cpp:340) and ships a STRONG `CleanupGpuTex` (:443) that erases
+    # the cache slot; that strong def displaces this weak stub when the RB3
+    # backend is linked. RndTex::~RndTex (HX_NATIVE, Tex.cpp) calls it on every
+    # texture destruction. This weak no-op survives only for non-RB3-backend links.
+    .weak _Z13CleanupGpuTexP6RndTex
+    .set _Z13CleanupGpuTexP6RndTex, __hmx_rndsynth_noop_stub
     # _Z17CreateNativeSynthv (CreateNativeSynth) now strongly defined in
     # rb3_synth_native.cpp (headless base Synth) — stub removed.
     .weak _Z22DrawParticlesBillboardP14RndParticleSys

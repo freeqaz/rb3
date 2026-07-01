@@ -42,6 +42,21 @@
 #include "utl/TimeConversion.h"
 #include <utility>
 
+// UpdateScrolling forms raw begin/end/index pointers into std::vector<VocalNote>
+// via `&vec[i]` (and the one-past-the-end `&vec[vec.size()]`), matching Wii
+// codegen. The native toolchain links a libstdc++ built with
+// _GLIBCXX_ASSERTIONS, so vector::operator[] does a bounds check and abort()s
+// when i >= size() — which is hit for both empty note lists (i == 0) and the
+// deliberate end-pointer (i == size()). VN_PTR maps `&vec[i]` to the
+// well-defined `vec.data() + i` on native (data() is valid on empty vectors and
+// data()+size() is the canonical end pointer), and expands to the original
+// `&(vec)[i]` on Wii — textually identical, byte-for-byte match-neutral.
+#ifdef HX_NATIVE
+#define VN_PTR(vec, i) ((vec).data() + (i))
+#else
+#define VN_PTR(vec, i) (&(vec)[i])
+#endif
+
 int maxPlatesQueued;
 int maxVertsInPlate;
 int maxFacesInPlate;
@@ -1362,12 +1377,12 @@ void VocalTrack::UpdateScrolling(float ms) {
         RndTransformable *scroller = scrollerPtr->Ptr();
 
         int *itPPtr = lead ? &unkf4 : (part == 1 ? &unkf8 : &unkfc);
-        VocalNote *itT = &notes->mNotes[*itPPtr];
-        VocalNote *notesEnd = &notes->mNotes[notes->mNotes.size()];
+        VocalNote *itT = VN_PTR(notes->mNotes, *itPPtr);
+        VocalNote *notesEnd = VN_PTR(notes->mNotes, notes->mNotes.size());
         VocalNote *altIt =
-            altNotes ? &altNotes->mNotes[unkfc] : notesEnd;
+            altNotes ? VN_PTR(altNotes->mNotes, unkfc) : notesEnd;
         VocalNote *altEnd =
-            altNotes ? &altNotes->mNotes[altNotes->mNotes.size()] : notesEnd;
+            altNotes ? VN_PTR(altNotes->mNotes, altNotes->mNotes.size()) : notesEnd;
         if (itT == notesEnd && altIt == altEnd)
             continue;
 
@@ -1447,7 +1462,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                     while (altIt != altEnd && !(altIt->mMs > phEndMs)) {
                         altIt++;
                     }
-                    unkfc = (int)(altIt - &altNotes->mNotes[0]);
+                    unkfc = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
                 }
                 while (*curDeployPtr < freestyles.size()
                        && freestyles[*curDeployPtr].second < phEndMs) {
@@ -1550,7 +1565,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                         curAlt++;
                     }
                     altIt = curAlt;
-                    unkfc = (int)(altIt - &altNotes->mNotes[0]);
+                    unkfc = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
                 }
 
                 if (itT->mMs > phEndMs)
@@ -1657,7 +1672,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                     curAlt++;
                 }
                 altIt = curAlt;
-                unkfc = (int)(altIt - &altNotes->mNotes[0]);
+                unkfc = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
             }
 
             if (staticLyrics && plates.size() != 0) {
@@ -1667,7 +1682,7 @@ void VocalTrack::UpdateScrolling(float ms) {
             }
             (*curPhPtr)++;
         }
-        *itPPtr = (int)(itT - &notes->mNotes[0]);
+        *itPPtr = (int)(itT - VN_PTR(notes->mNotes, 0));
 
         int colorBase = 0;
         if (staticLyrics)

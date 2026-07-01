@@ -1,0 +1,238 @@
+[
+  {
+    "pair_id": "01",
+    "wii_symbol": "RebuildSharedSongData__12MusicLibraryFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/MusicLibrary.s",
+    "line_span": "10985-11081",
+    "lines": 98,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "02",
+    "wii_symbol": "SaveForEndGame__5StatsCFR9BinStream",
+    "s_file": "build/SZBE69_B8/asm/band3/game/Stats.s",
+    "line_span": "1193-1450",
+    "lines": 259,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "03",
+    "wii_symbol": "UpdateState__13OvershellSlotFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/OvershellSlot.s",
+    "line_span": "6731-7314",
+    "lines": 585,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "04",
+    "wii_symbol": "Poll__7NetSyncFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/NetSync.s",
+    "line_span": "1330-1390",
+    "lines": 62,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "05",
+    "wii_symbol": "Poll__15GemTrainerPanelFv",
+    "s_file": "build/SZBE69_B8/asm/band3/game/GemTrainerPanel.s",
+    "line_span": "952-1264",
+    "lines": 314,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "06",
+    "wii_symbol": "Poll__7TrackerFf",
+    "s_file": "build/SZBE69_B8/asm/band3/game/Tracker.s",
+    "line_span": "840-882",
+    "lines": 44,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "07",
+    "wii_symbol": "ProcessStaticLyrics__10VocalTrackFbP5LyricRfRfRP5LyricRP5LyricRfbP10LyricPlate",
+    "s_file": "build/SZBE69_B8/asm/band3/bandtrack/VocalTrack.s",
+    "line_span": "11317-11413",
+    "lines": 98,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "08",
+    "wii_symbol": "SendSongsToMetaPerformer__17SetlistMergePanelFRCQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>",
+    "s_file": null,
+    "lines": 93,
+    "line_span": "0x80365020 (size 0x168, llvm-objdump by-addr from bank8_target.elf)"
+  },
+  {
+    "pair_id": "09",
+    "wii_symbol": "SetGameOver__4GameFb",
+    "s_file": "build/SZBE69_B8/asm/band3/game/Game.s",
+    "line_span": "6829-6868",
+    "lines": 41,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "10",
+    "wii_symbol": "UpdateVocalStyle__10VocalTrackFv",
+    "s_file": "build/SZBE69_B8/asm/band3/bandtrack/VocalTrack.s",
+    "line_span": "5379-5557",
+    "lines": 180,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "11",
+    "wii_symbol": "ResolveSlotStates__14OvershellPanelFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/OvershellPanel.s",
+    "line_span": "5369-5884",
+    "lines": 517,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "12",
+    "wii_symbol": "UpdateGameCymbalLanes__9GemPlayerFv",
+    "s_file": "build/SZBE69_B8/asm/band3/game/GemPlayer.s",
+    "line_span": "12894-13000",
+    "lines": 108,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "13",
+    "wii_symbol": "clear__Q211stlpmtx_std120_List_base<Q211stlpmtx_std21pair<6Symbol,6Symbol>,Q211stlpmtx_std52StlNodeAlloc<Q211stlpmtx_std21pair<6Symbol,6Symbol>>>Fv",
+    "s_file": null,
+    "lines": 26,
+    "line_span": "0x80246770 (size 0x5c, llvm-objdump by-addr from bank8_target.elf)"
+  },
+  {
+    "pair_id": "14",
+    "wii_symbol": "Hit__4TailFv",
+    "s_file": "build/SZBE69_B8/asm/band3/bandtrack/Tail.s",
+    "line_span": "1386-1417",
+    "lines": 33,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "15",
+    "wii_symbol": "Unload__21CampaignSongInfoPanelFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/CampaignSongInfoPanel.s",
+    "line_span": "777-800",
+    "lines": 25,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "16",
+    "wii_symbol": "__ct<PCc,i>__Q211stlpmtx_std24pair<C6Symbol,8DataNode>FRCQ211stlpmtx_std11pair<PCc,i>_Pv",
+    "s_file": null,
+    "lines": 23,
+    "line_span": "0x803e12b0 (size 0x50, llvm-objdump by-addr from bank8_target.elf)"
+  },
+  {
+    "pair_id": "17",
+    "wii_symbol": "Load__Q226@unnamed@MainHubPanel_cpp@17MainHubAdvanceMsgFR9BinStream",
+    "s_file": null,
+    "lines": 25,
+    "line_span": "0x802e0320 (size 0x58, llvm-objdump by-addr from bank8_target.elf)"
+  },
+  {
+    "pair_id": "18",
+    "wii_symbol": "SetLoadedPrefabChar__8BandUserFi",
+    "s_file": "build/SZBE69_B8/asm/band3/game/BandUser.s",
+    "line_span": "1207-1227",
+    "lines": 22,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "19",
+    "wii_symbol": "SaveGlobalOptions__10ProfileMgrFR23FixedSizeSaveableStream",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/ProfileMgr.s",
+    "line_span": "2373-2580",
+    "lines": 209,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "20",
+    "wii_symbol": "__ct__14PlayerBehaviorFv",
+    "s_file": "build/SZBE69_B8/asm/band3/game/PlayerBehavior.s",
+    "line_span": "10-36",
+    "lines": 28,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "21",
+    "wii_symbol": "CreateController__14ChordbookPanelFv",
+    "s_file": "build/SZBE69_B8/asm/band3/game/ChordbookPanel.s",
+    "line_span": "2136-2237",
+    "lines": 103,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "22",
+    "wii_symbol": "SetPrimaryMetaScore__16LocalBandMachineFi",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/BandMachine.s",
+    "line_span": "1135-1144",
+    "lines": 11,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "23",
+    "wii_symbol": "PitchNote__5LyricCFv",
+    "s_file": "build/SZBE69_B8/asm/band3/bandtrack/Lyric.s",
+    "line_span": "1357-1364",
+    "lines": 9,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "24",
+    "wii_symbol": "GlobalOptionsNeedsSave__10ProfileMgrFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/ProfileMgr.s",
+    "line_span": "2342-2351",
+    "lines": 11,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "25",
+    "wii_symbol": "GetFrameMatchType__6SingerFv",
+    "s_file": "build/SZBE69_B8/asm/band3/game/Singer.s",
+    "line_span": "3823-3836",
+    "lines": 15,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "26",
+    "wii_symbol": "TambourineGems__17TambourineManagerCFv",
+    "s_file": "build/SZBE69_B8/asm/band3/game/TambourineManager.s",
+    "line_span": "643-650",
+    "lines": 9,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "27",
+    "wii_symbol": "DifficultySortPart__12MusicLibraryCFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/MusicLibrary.s",
+    "line_span": "8193-8264",
+    "lines": 73,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "28",
+    "wii_symbol": "TrackTypeToScoreType__F9TrackTypebb",
+    "s_file": "build/SZBE69_B8/asm/band3/game/Defines.s",
+    "line_span": "181-244",
+    "lines": 65,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "29",
+    "wii_symbol": "ActiveScoreType__12MusicLibraryCFv",
+    "s_file": "build/SZBE69_B8/asm/band3/meta_band/MusicLibrary.s",
+    "line_span": "8269-8466",
+    "lines": 199,
+    "multi_files": 1
+  },
+  {
+    "pair_id": "30",
+    "wii_symbol": "GetRankData__11SingerStatsCFi",
+    "s_file": "build/SZBE69_B8/asm/band3/game/Stats.s",
+    "line_span": "4701-4706",
+    "lines": 7,
+    "multi_files": 1
+  }
+]

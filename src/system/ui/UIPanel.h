@@ -49,6 +49,14 @@ public:
     DataNode OnLoad(DataArray *);
 
     State GetState() const { return mState; }
+#ifdef HX_NATIVE
+    // Native song_select-prewarm support (handoff 07): resolve this panel's
+    // backing milo FilePath from its TypeDef the same way Load() does, WITHOUT
+    // loading. Returns an empty FilePath if the panel has no `file` array. Used
+    // by UIScreen's RB3_PREWARM_SCREENS hook to issue a background DirLoader for
+    // the next screen's panel milos. HX_NATIVE-only; absent from the Wii build.
+    FilePath GetPanelFilePath();
+#endif
     bool Paused() const { return mPaused; }
     bool Showing() const { return mShowing; }
     void SetShowing(bool b) { mShowing = b; }

@@ -1,0 +1,325 @@
+BSim VT correlator: top-K truncation of per-query candidate pairs (non-lossy
+alternative to the Tier-1 empty-set candidate cap)
+
+Date: 2026-06-10
+Applies to: upstream/fork ghidra master (tested against the milohax fork at
+            /home/free/code/milohax/ghidra, files unmodified on master)
+Apply with: git apply bsim-topk-cap.patch   (or patch -p1)
+Compile-checked: javac --release 21 against the fork dist jars under
+            build/ghidra-dist/ghidra_12.2_DEV/ (whole vt/api package compiled
+            together; BinningSystem is package-private). Class files verified
+            in /tmp/bsim-topk/classes.
+
+PROBLEM
+  ghidriff --bsim on RB3 Wii Bank8 (40k funcs) vs stripped Xbox360 Xenon
+  (65k funcs) stalls 70+ minutes single-threaded after decompilation: degenerate
+  LSH bins make BinningSystem.lookup() return O(n_source) candidates per
+  destination query, and MatchingCallback.findSimilarNodes adds EVERY pair
+  passing the similarity threshold, producing an O(n_src x n_dest) FunctionPair
+  blowup in the serial aggregation loop of discoverPotentialMatches and in
+  chooseSeeds. See rb3 docs/decomp/ghidra-bsim-perf-investigation-2026-06-10.md.
+
+DESIGN (this patch — supersedes the empty-set prototype on branch
+        bsim-perf-candidatecap)
+  1. TOP-K OUTPUT TRUNCATION (BSimProgramCorrelatorMatching.findSimilarNodes):
+     keep a bounded min-heap (PriorityQueue, size MAX_PAIRS_PER_QUERY = 32) of
+     the best pairs per destination query, ranked by (similarity, confidence,
+     source-node address). The true nearest neighbor(s) are preserved EXACTLY
+     — unlike the empty-set cap, which dropped all candidates (including the
+     best one) whenever a bin union exceeded 500. Downstream serial phases are
+     bounded to O(n_dest x K) pairs.
+     - Determinism: candidates iterate in TreeSet (address) order; PAIR_RANK is
+       a strict total order with no ties within a query (each source node
+       appears at most once), so the retained set is independent of scheduling.
+  2. SECONDARY SAFETY CAP (BinningSystem.lookup, SAFETY_MAX_LOOKUP_CANDIDATES
+     = 10000, was 500-and-return-empty in the prototype): top-K bounds the
+     OUTPUT but not the per-query cosine-compare COST, which stays
+     O(union_size). A union > 10000 (>25% of a 40k corpus co-binned) is
+     pathologically generic — no confident match is possible — and the TreeSet
+     union construction alone churns ~40 B/node of allocation per query. Only
+     such pathological queries return empty; unions of 500..10000 (lossy under
+     the prototype) now retain their exact top-K.
+  3. OBSERVABILITY (the prototype capped silently; the original 70-min stall
+     was undiagnosable from the log): after the aggregation loop, a Msg.info
+     summary reports total discovered pairs, number of queries truncated to
+     top-K, and number of queries rejected by the safety cap.
+
+PARAMETERS
+  MAX_PAIRS_PER_QUERY = 32      typical healthy queries pass 3-10 candidates,
+                                so K=32 is never reached on well-behaved input
+                                (bit-identical behavior to upstream there).
+  SAFETY_MAX_LOOKUP_CANDIDATES = 10000
+                                worst residual per-phase cost ~1e8 compares
+                                (10k degenerate queries x 10k candidates),
+                                parallel via the existing ConcurrentQ: tens of
+                                seconds on 16 threads.
+
+DOWNSTREAM-SEMANTICS ARGUMENT (why dropping rank>K pairs is safe)
+  - chooseSeeds: a pair seeds only if unconflicted; dropped low-rank pairs can
+    only REMOVE conflicts. For non-degenerate nodes (<= K pairs) nothing is
+    dropped: identical behavior. For degenerate nodes, upstream's thousands of
+    mutually-conflicting noise pairs mostly blocked seeding anyway; top-K keeps
+    the strongest few, still subject to conflict checks and confThreshold.
+  - doMatching/analyze: implication edges come from FunctionNode.associates
+    (findEdge); only pairs below 32nd rank for their dest query lose edges —
+    these are low-similarity edges that cannot win calculateBestNeighbor
+    against retained higher-confidence edges of the same neighborhood.
+  - Memory: <= n_dest x K pairs (65k x 32 ~ 2.1M, ~100 MB worst case) vs the
+    unbounded 40k x 65k = 2.6e9 (impossible).
+
+ESTIMATED WALL-CLOCK (degenerate 40k x 65k case, ~10k degenerate dest queries)
+  upstream:            70+ min single-threaded stall (killed)
+  top-K only:          ~4e8 parallel compares @ ~3 us (LSHCosineVector.compare
+                       is an O(entries) sorted merge, ~hundreds of entries)
+                       ~20 min CPU -> ~1.5-4 min wall on 16 threads, dominated
+                       by compares + TreeSet-union allocation churn (~16 GB).
+  top-K + safety cap:  residual <= 1e8 compares -> tens of seconds wall;
+                       aggregation <= ~4M HashMap puts (~1-2 s);
+                       chooseSeeds O(2M x rounds) (~tens of seconds).
+  healthy same-ISA:    no change (neither bound is reached).
+
+VERDICT: REPLACES the empty-set 500-cap prototype: strictly less lossy at
+  comparable speed (seconds-to-tens-of-seconds for the degenerate case), and
+  it logs what it did.
+
+--- a/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/BinningSystem.java
++++ b/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/BinningSystem.java
+@@ -16,6 +16,7 @@
+ package ghidra.feature.vt.api;
+ 
+ import java.util.*;
++import java.util.concurrent.atomic.AtomicInteger;
+ 
+ import generic.lsh.*;
+ import generic.lsh.vector.HashEntry;
+@@ -31,6 +32,29 @@
+ class BinningSystem {
+ 	private final int L;			// Number of distinct binnings
+ 
++	/**
++	 * SAFETY cap on the number of source candidates returned by a single {@link #lookup} call.
++	 * When the query vector lands in pathologically overpopulated bins (degenerate feature
++	 * vectors, e.g. on a large stripped binary), the union of all bin members can approach
++	 * O(n_source); building the per-query TreeSet union and cosine-comparing every member
++	 * then costs O(n_source) time and allocation PER QUERY, which is intractable across
++	 * O(n_dest) queries.
++	 *
++	 * <p>This is intentionally a LARGE threshold (orders of magnitude above the ~3-10
++	 * candidates expected with the LARGE memory model): the top-K truncation in
++	 * {@link BSimProgramCorrelatorMatching} already bounds the pair OUTPUT per query, so
++	 * this cap only needs to stop the truly pathological per-query compare cost, not to
++	 * police match quality.  Queries whose bin union exceeds the cap return an empty set
++	 * (such a vector co-bins with >25% of a 40k-function corpus and is far too generic
++	 * for any nearest-neighbor confidence).  Cap rejections are counted and reported by
++	 * the correlator's post-aggregation summary log.
++	 */
++	static final int SAFETY_MAX_LOOKUP_CANDIDATES = 10000;
++
++	/** Number of lookup() calls rejected by {@link #SAFETY_MAX_LOOKUP_CANDIDATES}.
++	 *  Atomic because lookup() is called concurrently from the matching worker threads. */
++	private final AtomicInteger lookupSafetyCapCount = new AtomicInteger();
++
+ 	private int[][] partitionIdentities;
+ 	private TreeMap<Integer, TreeSet<FunctionNode>>[] binSys;
+ 
+@@ -84,8 +108,12 @@
+ 	/**
+ 	 * Returns the union of all the bins containing the exemplar FunctionNode.
+ 	 * These nodes are likely to similar to the exemplar, but need secondary testing.
++	 *
++	 * <p>Returns an empty set if the candidate union exceeds
++	 * {@link #SAFETY_MAX_LOOKUP_CANDIDATES} (see that constant for rationale).
++	 *
+ 	 * @param node is the exemplar
+-	 * @return a set of FunctionNodes
++	 * @return a set of FunctionNodes, or an empty set if the union is pathologically large
+ 	 */
+ 	public Set<FunctionNode> lookup(FunctionNode node) {
+ 		TreeSet<FunctionNode> result = new TreeSet<FunctionNode>();
+@@ -94,12 +122,26 @@
+ 			TreeSet<FunctionNode> list = binSys[ii].get(features[ii]);
+ 			if (list != null) {
+ 				result.addAll(list);
++				if (result.size() > SAFETY_MAX_LOOKUP_CANDIDATES) {
++					// Pathologically generic vector: comparing against this many
++					// candidates is intractable and cannot yield a confident match.
++					lookupSafetyCapCount.incrementAndGet();
++					return Collections.emptySet();
++				}
+ 			}
+ 		}
+ 		return result;
+ 	}
+ 
+ 	/**
++	 * @return the number of lookup() calls that were rejected because the candidate
++	 * union exceeded {@link #SAFETY_MAX_LOOKUP_CANDIDATES}
++	 */
++	int getLookupSafetyCapCount() {
++		return lookupSafetyCapCount.get();
++	}
++
++	/**
+ 	 * Given a node, calculate the binId for each binning in this system
+ 	 * @param node is the FunctionNode to label
+ 	 * @return an array of ids
+--- a/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/BSimProgramCorrelatorMatching.java
++++ b/Ghidra/Features/VersionTrackingBSim/src/main/java/ghidra/feature/vt/api/BSimProgramCorrelatorMatching.java
+@@ -17,6 +17,7 @@
+ 
+ import java.util.*;
+ import java.util.Map.Entry;
++import java.util.concurrent.atomic.AtomicInteger;
+ 
+ import org.apache.commons.collections4.MultiValuedMap;
+ import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
+@@ -43,6 +44,20 @@
+  */
+ public class BSimProgramCorrelatorMatching {
+ 
++	/**
++	 * Maximum number of FunctionPairs retained per destination query node (top-K
++	 * truncation).  For a discriminating feature vector the number of candidates that
++	 * pass the similarity threshold is typically 3-10, so this limit is never reached
++	 * and behavior is identical to the unbounded algorithm.  For a degenerate vector
++	 * (common on large stripped binaries) thousands of candidates can pass the
++	 * threshold; retaining them all causes an O(n_source * n_dest) FunctionPair blowup
++	 * in the serial aggregation loop of {@link #discoverPotentialMatches} and in
++	 * {@link #chooseSeeds}.  Keeping only the K best pairs (by similarity, then
++	 * confidence) preserves the true nearest neighbor EXACTLY while bounding the
++	 * downstream serial phases to O(n_dest * K) pairs.
++	 */
++	static final int MAX_PAIRS_PER_QUERY = 32;
++
+ 	private SortedSet<PotentialPair> implications;	// Current potential matches sorted by score
+ 	private FunctionNodeContainer sourceNodes;		// Nodes (functions) associated with the source program
+ 	private FunctionNodeContainer destNodes;		// Nodes associated with the destination program
+@@ -66,11 +81,19 @@
+ 		private BinningSystem sourceBinning;
+ 		private double simThreshold;
+ 
++		/** Number of query nodes whose passing pairs were truncated to
++		 *  {@link #MAX_PAIRS_PER_QUERY}.  Atomic: process() runs on worker threads. */
++		private final AtomicInteger truncatedQueryCount = new AtomicInteger();
++
+ 		MatchingCallback(BinningSystem sourceBinning, double simThreshold) {
+ 			this.sourceBinning = sourceBinning;
+ 			this.simThreshold = simThreshold;
+ 		}
+ 
++		int getTruncatedQueryCount() {
++			return truncatedQueryCount.get();
++		}
++
+ 		@Override
+ 		public List<FunctionPair> process(FunctionNode queryNode, TaskMonitor monitor)
+ 				throws Exception {
+@@ -90,7 +113,15 @@
+ 		/**
+ 		 * Lookup potential matches for -queryNode- in the binning system,
+ 		 * and perform secondary testing to see if we have a full (potential) match.
+-		 * Pairs that exceed the threshold are added to the -results- list
++		 * The best {@link #MAX_PAIRS_PER_QUERY} pairs that exceed the threshold are
++		 * added to the -results- list (top-K truncation; see the constant's javadoc).
++		 *
++		 * <p>Determinism: the candidate set iterates in {@link FunctionNode#compareTo}
++		 * (address) order from the binning TreeSet, and {@link #PAIR_RANK} is a total
++		 * order with no ties within a single query (each source node appears at most
++		 * once), so the retained top-K set is uniquely determined by the input,
++		 * independent of thread scheduling.
++		 *
+ 		 * @param results is the list of FunctionPairs passing the similarity test
+ 		 * @param queryNode is the base FunctionNode to compare
+ 		 * @param monitor is the TaskMonitor
+@@ -103,6 +134,12 @@
+ 			Set<FunctionNode> neighbors = sourceBinning.lookup(queryNode);
+ 			VectorCompare veccompare = new VectorCompare();
+ 
++			// Bounded min-heap of the best MAX_PAIRS_PER_QUERY pairs seen so far.
++			// The head is the WORST retained pair (PAIR_RANK orders ascending).
++			PriorityQueue<FunctionPair> topPairs =
++				new PriorityQueue<FunctionPair>(MAX_PAIRS_PER_QUERY + 1, PAIR_RANK);
++			boolean truncated = false;
++
+ 			//Check each neighbor from the system of binnings to see if they pass a round of matching.
+ 			for (FunctionNode neighbor : neighbors) {
+ 				monitor.checkCancelled();
+@@ -118,12 +155,49 @@
+ 				FunctionPair newPair =
+ 					new FunctionPair(neighbor, queryNode, similarity, confidence);
+ 
+-				results.add(newPair);
++				if (topPairs.size() < MAX_PAIRS_PER_QUERY) {
++					topPairs.offer(newPair);
++				}
++				else if (PAIR_RANK.compare(newPair, topPairs.peek()) > 0) {
++					// Better than the worst retained pair: replace it.
++					topPairs.poll();
++					topPairs.offer(newPair);
++					truncated = true;
++				}
++				else {
++					truncated = true;	// Dropped: ranks below the current top-K.
++				}
++			}
++
++			if (truncated) {
++				truncatedQueryCount.incrementAndGet();
+ 			}
++			results.addAll(topPairs);
+ 		}
+ 	}
+ 
+ 	/**
++	 * Total order used for top-K retention: primary key similarity, secondary key
++	 * confidence, final tie-break on the source node's address.  Within one query the
++	 * source nodes are distinct, so this order has no ties and the retained set is
++	 * deterministic regardless of candidate arrival order.
++	 */
++	private static final Comparator<FunctionPair> PAIR_RANK = new Comparator<FunctionPair>() {
++		@Override
++		public int compare(FunctionPair o1, FunctionPair o2) {
++			int res = Double.compare(o1.getSimResult(), o2.getSimResult());
++			if (res != 0) {
++				return res;
++			}
++			res = Double.compare(o1.getConfResult(), o2.getConfResult());
++			if (res != 0) {
++				return res;
++			}
++			return o1.getSourceNode().compareTo(o2.getSourceNode());
++		}
++	};
++
++	/**
+ 	 * @param sourceNodes is the container for source functions
+ 	 * @param destNodes is the container for destination functions
+ 	 * @param vFactory is the factory for building feature vectors during analysis
+@@ -192,8 +266,7 @@
+ 		// Queue setup
+ 		//
+ 		GThreadPool pool = GThreadPool.getPrivateThreadPool("BSimProgramCorrelatorMatching");
+-		QCallback<FunctionNode, List<FunctionPair>> callback =
+-			new MatchingCallback(binning, potentialSimThreshold);
++		MatchingCallback callback = new MatchingCallback(binning, potentialSimThreshold);
+ 
+ 		// @formatter:off
+ 		ConcurrentQ<FunctionNode, List<FunctionPair>> queue = 
+@@ -235,6 +308,17 @@
+ 				}
+ 			}
+ 		}
++
++		// Observability: the matching+aggregation phases above are otherwise silent in
++		// headless mode; report how much truncation occurred so degenerate inputs
++		// (huge bin unions / over-threshold floods) are diagnosable from the log.
++		Msg.info(this,
++			"BSim correlator: discovered " + discoveredMatches.size() + " potential pairs from " +
++				destNodes.size() + " destination functions (" +
++				callback.getTruncatedQueryCount() + " queries truncated to top-" +
++				MAX_PAIRS_PER_QUERY + " pairs, " + binning.getLookupSafetyCapCount() +
++				" queries rejected by the lookup safety cap of " +
++				BinningSystem.SAFETY_MAX_LOOKUP_CANDIDATES + " candidates)");
+ 	}
+ 
+ 	/**

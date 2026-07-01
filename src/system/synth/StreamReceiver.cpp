@@ -28,6 +28,25 @@ StreamReceiver::StreamReceiver(int numBuffers, bool slip)
         const int kMaxChunks = (int)(sizeof(mBuffer) / 0xC000);
         int chunks = numBuffers;
         if (chunks < 2) chunks = 2;
+        // Off-main web audio (RB3_WEB_OFFMAIN_MIX) decouples the stall budget from
+        // output latency by leaning on the decode-ahead depth: the deeper the ring,
+        // the longer a main-thread freeze the worklet survives without starving the
+        // music mix. The mBuffer already reserves the full 16-chunk (~9 s) span, so
+        // use it — a deeper ring is free here (no extra allocation) and strictly
+        // improves stall resilience.
+        //
+        // DEFAULT-ON (deepring): use the full 16-chunk (~9 s) ring on every native/
+        // web build. The base decodes the whole ring ahead of the play cursor
+        // (mRingWrittenSpace == mRingSize in steady play), so a single main-thread
+        // freeze rides a ~7-8 s cushion. The extra depth is free (mBuffer is a fixed
+        // 0xC0000 array either way), so a deeper decode-ahead ring strictly helps the
+        // native path too. Opt OUT with RB3_WEB_OFFMAIN_MIX=0 to keep the prior
+        // 8-chunk footprint. Match-neutral: HX_NATIVE-only block (Wii uses 0x18000).
+        {
+            const char *om = getenv("RB3_WEB_OFFMAIN_MIX");
+            if (!(om && om[0] == '0') && chunks < kMaxChunks)
+                chunks = kMaxChunks;
+        }
         if (chunks > kMaxChunks) chunks = kMaxChunks;
         mNumBuffers = chunks;
         mRingSize = chunks * 0xC000;

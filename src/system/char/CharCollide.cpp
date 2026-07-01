@@ -193,6 +193,21 @@ void CharCollide::Deform() {
         }
 
         const Vector3 *upPtr;
+#ifdef HX_NATIVE
+        // ASan stack-use-after-scope: upX/upY were declared inside the if/else
+        // blocks, their addresses escaped via upPtr, then *upPtr is read below
+        // after the blocks end (dead stack storage). Hoist them to this scope so
+        // they outlive the read. The Wii (#else) path keeps the original verbatim
+        // — it matches the target and the Wii stack slot isn't reused before the
+        // read, so the UB is benign there; this fix is host-only.
+        Vector3 upX(1.0f, 0.0f, 0.0f);
+        Vector3 upY(0.0f, 1.0f, 0.0f);
+        if (std::fabs(xfm.m.x.x) < std::fabs(xfm.m.x.y)) {
+            upPtr = &upX;
+        } else {
+            upPtr = &upY;
+        }
+#else
         if (std::fabs(xfm.m.x.x) < std::fabs(xfm.m.x.y)) {
             Vector3 upX(1.0f, 0.0f, 0.0f);
             upPtr = &upX;
@@ -200,6 +215,7 @@ void CharCollide::Deform() {
             Vector3 upY(0.0f, 1.0f, 0.0f);
             upPtr = &upY;
         }
+#endif
 
         {
             const Vector3 &up = *upPtr;

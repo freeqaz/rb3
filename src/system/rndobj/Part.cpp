@@ -663,6 +663,37 @@ void RndParticleSys::InitParticle(
         particle->vel.z = FastSin(f8);
     }
 
+#ifdef HX_NATIVE
+    // PART_INIT_DBG=<substr>: dump InitParticle's emit branch + raw direction
+    // before the speed scale for matching systems. Diagnoses the runaway
+    // street-fog particles (green-slab class). Native-only debug aid.
+    if (const char *pid = ::getenv("PART_INIT_DBG")) {
+        const char *nm = Name() ? Name() : "?";
+        if (*pid && strstr(nm, pid)) {
+            static int sCount = 0;
+            if (sCount++ < 24) {
+                RndMesh *dbgMesh = mMesh;
+                if (partOverride.mask & 0x100)
+                    dbgMesh = partOverride.mesh;
+                fprintf(stderr,
+                        "[PART_INIT_DBG] sys='%s' meshBranch=%d mesh='%s' faces=%d verts=%d "
+                        "box1(%.1f,%.1f,%.1f) box2(%.1f,%.1f,%.1f) speed=(%.3f,%.3f) "
+                        "rawVel(%.2f,%.2f,%.2f) pos(%.2f,%.2f,%.2f) life=(%.1f,%.1f) death-birth=%.1f\n",
+                        nm, (int)(dbgMesh && !dbgMesh->Faces().empty()),
+                        dbgMesh ? (dbgMesh->Name() ? dbgMesh->Name() : "?") : "none",
+                        dbgMesh ? (int)dbgMesh->Faces().size() : -1,
+                        dbgMesh ? (int)dbgMesh->Verts().size() : -1,
+                        mBoxExtent1.x, mBoxExtent1.y, mBoxExtent1.z,
+                        mBoxExtent2.x, mBoxExtent2.y, mBoxExtent2.z,
+                        mSpeed.x, mSpeed.y,
+                        particle->vel.x, particle->vel.y, particle->vel.z,
+                        particle->pos.x, particle->pos.y, particle->pos.z,
+                        mLife.x, mLife.y,
+                        particle->deathFrame - particle->birthFrame);
+            }
+        }
+    }
+#endif
     particle->Vel3() *=
         partOverride.mask & 2 ? partOverride.speed : RandomFloat(mSpeed.x, mSpeed.y);
     float f11 = particle->deathFrame != particle->birthFrame
@@ -812,10 +843,15 @@ void RndParticleSys::InitParticle(
                 fancyParticle->midcolVel, fancyParticle->col, fancyParticle->midcolVel
             );
             if (fancyParticle->midcolFrame != fancyParticle->birthFrame) {
+                // Target asm scales MIDCOLVEL here (stores to particle+0x70..0x7C),
+                // not colVel: midcolVel = (midcol - startCol)/(midcolFrame - birth).
+                // The previous code re-scaled colVel (making it ~0) and left
+                // midcolVel unscaled (~the full color delta applied per step), so
+                // fancy particles' colors raced to the 0/1 clamps within frames.
                 Multiply(
-                    fancyParticle->colVel,
+                    fancyParticle->midcolVel,
                     1.0f / (fancyParticle->midcolFrame - fancyParticle->birthFrame),
-                    fancyParticle->colVel
+                    fancyParticle->midcolVel
                 );
             }
         }
@@ -830,11 +866,17 @@ void RndParticleSys::InitParticle(
         MakeLocToRel(tfa0);
         tf = &tfa0;
     }
+    // pos is a POINT (full transform); vel and bubbleDir are DIRECTIONS —
+    // rotation only (tf->m). The target asm transforms vel/bubbleDir with
+    // ps_muls1-led row products (no translation load); using the Transform
+    // overload added tf->v (the emitter's world position, e.g. ~(-341) on the
+    // shell venue street) into every particle's velocity, sending fog/smoke
+    // systems flying off at hundreds of units per frame.
     Multiply(particle->Pos3(), *tf, particle->Pos3());
-    Multiply(particle->Vel3(), *tf, particle->Vel3());
+    Multiply(particle->Vel3(), tf->m, particle->Vel3());
     if (mBubble && mType == kFancy) {
         RndFancyParticle *fancyParticle = static_cast<RndFancyParticle *>(particle);
-        Multiply(fancyParticle->Bubble3(), *tf, fancyParticle->Bubble3());
+        Multiply(fancyParticle->Bubble3(), tf->m, fancyParticle->Bubble3());
     }
 }
 
@@ -1288,6 +1330,34 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
         bouncePlane.d = -dot;
     }
 
+#ifdef HX_NATIVE
+    // PART_MOVE_DBG=<substr>: per-call MoveParticles trace for matching systems —
+    // dt/frameSpan, the relative-frame force rows, the relative xfm state, and the
+    // first particle's velocity. Pinpoints WHERE the runaway fog velocity comes
+    // from (init was proven sane). Native-only debug aid.
+    if (const char *pmd = ::getenv("PART_MOVE_DBG")) {
+        const char *nm = Name() ? Name() : "?";
+        if (*pmd && strstr(nm, pmd)) {
+            static int sMvCount = 0;
+            if (sMvCount++ < 200) {
+                const Hmx::Matrix3 &rm = mRelativeXfm.m;
+                float rl0 = std::sqrt(rm.x.x*rm.x.x + rm.x.y*rm.x.y + rm.x.z*rm.x.z);
+                float rl1 = std::sqrt(rm.y.x*rm.y.x + rm.y.y*rm.y.y + rm.y.z*rm.y.z);
+                float rl2 = std::sqrt(rm.z.x*rm.z.x + rm.z.y*rm.z.y + rm.z.z*rm.z.z);
+                RndParticle *fp = mActiveParticles;
+                fprintf(stderr,
+                        "[PART_MOVE_DBG] sys='%s' dt=%.2f span=%.3f relForce(%.4f,%.4f,%.4f) "
+                        "relXfmRowLen(%.2f,%.2f,%.2f) relXfm.v(%.1f,%.1f,%.1f) "
+                        "p0.vel(%.3f,%.3f,%.3f) p0.pos(%.1f,%.1f,%.1f)\n",
+                        nm, dt, frameSpan, relForceRow0, relForceRow1, relForceRow2,
+                        rl0, rl1, rl2,
+                        mRelativeXfm.v.x, mRelativeXfm.v.y, mRelativeXfm.v.z,
+                        fp ? fp->vel.x : 0, fp ? fp->vel.y : 0, fp ? fp->vel.z : 0,
+                        fp ? fp->pos.x : 0, fp ? fp->pos.y : 0, fp ? fp->pos.z : 0);
+            }
+        }
+    }
+#endif
     float sixFrameSpan = 6.0f * frameSpan;
     RndParticle *p = mActiveParticles;
     float halfPi = 1.5707963705062866f;
