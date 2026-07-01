@@ -23,8 +23,8 @@
 // copy + no unroll. To match, route the copy through a trivial POD word-struct
 // assignment in a count-based loop: MWCC word-copies the POD assignment and
 // inlines+unrolls the loop. The sub-object grouping below (Vector3 = 3 words,
-// Color32 = 1 word, then a 3-word + 6-word split of the 9 unk floats) is what
-// reproduces the target's exact load/store pairing schedule.
+// Color32 = 1 word, then a 3-word + 6-word split of cam/base/dir/delta) is
+// what reproduces the target's exact load/store pairing schedule.
 #ifndef HX_NATIVE // STLport-internal __copy_ptrs specialization; absent on host STL
 namespace stlpmtx_std {
 
@@ -33,8 +33,8 @@ struct _RndLineW6 { unsigned int a, b, c, d, e, f; };
 struct _RndLinePointWords {
     _RndLineW3 v;     // Vector3 v        -> words 0,1,2
     unsigned int col; // Hmx::Color32 c   -> word 3
-    _RndLineW3 unkA;  // unk0,unk1,unk2   -> words 4,5,6
-    _RndLineW6 unkB;  // unk3..unk8       -> words 7..12
+    _RndLineW3 unkA;  // Vector3 cam      -> words 4,5,6
+    _RndLineW6 unkB;  // Vector2 base/dir/delta -> words 7..12
 };
 
 // Used by _Vector_impl<Point>::operator= in-place copy path.
@@ -330,110 +330,110 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
         if (mLineHasCaps) {
             vp = (Vector3 *)&vmap.v->pos;
             vmap.v++;
-            vp->x = pt1->unk0;
-            vp->y = pt1->unk1;
-            vp->z = pt1->unk2;
+            vp->x = pt1->cam.x;
+            vp->y = pt1->cam.y;
+            vp->z = pt1->cam.z;
             vp = (Vector3 *)&vmap.v->pos;
             vmap.v++;
-            vp->x = pt1->unk0;
-            vp->y = pt1->unk1;
-            vp->z = pt1->unk2;
+            vp->x = pt1->cam.x;
+            vp->y = pt1->cam.y;
+            vp->z = pt1->cam.z;
         }
         vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
-        vp->x = pt1->unk0;
-        vp->y = pt1->unk1;
-        vp->z = pt1->unk2;
+        vp->x = pt1->cam.x;
+        vp->y = pt1->cam.y;
+        vp->z = pt1->cam.z;
         vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
-        vp->x = pt1->unk0;
-        vp->y = pt1->unk1;
-        vp->z = pt1->unk2;
+        vp->x = pt1->cam.x;
+        vp->y = pt1->cam.y;
+        vp->z = pt1->cam.z;
         vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
-        vp->x = pt2->unk0;
-        vp->y = pt2->unk1;
-        vp->z = pt2->unk2;
+        vp->x = pt2->cam.x;
+        vp->y = pt2->cam.y;
+        vp->z = pt2->cam.z;
         vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
-        vp->x = pt2->unk0;
-        vp->y = pt2->unk1;
-        vp->z = pt2->unk2;
+        vp->x = pt2->cam.x;
+        vp->y = pt2->cam.y;
+        vp->z = pt2->cam.z;
         if (mLineHasCaps) {
             vp = (Vector3 *)&vmap.v->pos;
             vmap.v++;
-            vp->x = pt2->unk0;
-            vp->y = pt2->unk1;
-            vp->z = pt2->unk2;
+            vp->x = pt2->cam.x;
+            vp->y = pt2->cam.y;
+            vp->z = pt2->cam.z;
             vp = (Vector3 *)&vmap.v->pos;
             vmap.v++;
-            vp->x = pt2->unk0;
-            vp->y = pt2->unk1;
-            vp->z = pt2->unk2;
+            vp->x = pt2->cam.x;
+            vp->y = pt2->cam.y;
+            vp->z = pt2->cam.z;
         }
     } else {
         Vector2 perp;
 
         float epsilon = 1e-4f;
-        float invY1 = 1.0f / pt1->unk1;
-        pt1->unk3 = pt1->unk0 * invY1;
-        pt1->unk4 = pt1->unk2 * invY1;
-        float invY2 = 1.0f / pt2->unk1;
-        pt2->unk3 = pt2->unk0 * invY2;
-        pt2->unk4 = pt2->unk2 * invY2;
+        float invY1 = 1.0f / pt1->cam.y;
+        pt1->base.x = pt1->cam.x * invY1;
+        pt1->base.y = pt1->cam.z * invY1;
+        float invY2 = 1.0f / pt2->cam.y;
+        pt2->base.x = pt2->cam.x * invY2;
+        pt2->base.y = pt2->cam.z * invY2;
 
-        float dirX = pt2->unk3 - pt1->unk3;
-        float dirZ = pt2->unk4 - pt1->unk4;
-        pt1->unk5 = dirX;
-        pt1->unk6 = dirZ;
+        float dirX = pt2->base.x - pt1->base.x;
+        float dirZ = pt2->base.y - pt1->base.y;
+        pt1->dir.x = dirX;
+        pt1->dir.y = dirZ;
         if (!(fabsf(dirX) < epsilon) || !(fabsf(dirZ) < epsilon)) {
-            float zz = pt1->unk6;
+            float zz = pt1->dir.y;
             float inv = 1.0f / std::sqrt(dirX * dirX + zz * zz);
-            pt1->unk5 = dirX * inv;
-            pt1->unk6 = zz * inv;
+            pt1->dir.x = dirX * inv;
+            pt1->dir.y = zz * inv;
         }
-        float dx2 = pt1->unk5;
-        float ndy = -pt1->unk6;
-        pt1->unk8 = dx2;
-        pt1->unk7 = ndy;
+        float dx2 = pt1->dir.x;
+        float ndy = -pt1->dir.y;
+        pt1->delta.y = dx2;
+        pt1->delta.x = ndy;
         float width = mWidth;
         float sx = ndy * width;
-        pt1->unk8 = dx2 * width;
-        pt1->unk7 = sx;
-        pt2->unk7 = sx;
-        pt2->unk8 = pt1->unk8;
-        float py = pt1->unk7;
-        float px = pt1->unk8;
+        pt1->delta.y = dx2 * width;
+        pt1->delta.x = sx;
+        pt2->delta.x = sx;
+        pt2->delta.y = pt1->delta.y;
+        float py = pt1->delta.x;
+        float px = pt1->delta.y;
         perp.y = py;
         perp.x = -px;
 
         if (mLineHasCaps) {
-            Subtract(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
+            Subtract(pt1->cam, pt1->delta, *(Vector3 *)&vmap.v->pos);
             Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
             vmap.v++;
-            Add(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
+            Add(pt1->cam, pt1->delta, *(Vector3 *)&vmap.v->pos);
             Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
             vmap.v++;
         }
 
-        Subtract(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
+        Subtract(pt1->cam, pt1->delta, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
-        Add(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
+        Add(pt1->cam, pt1->delta, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
-        Subtract(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
+        Subtract(pt2->cam, pt2->delta, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
-        Add(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
+        Add(pt2->cam, pt2->delta, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
 
         if (mLineHasCaps) {
-            float ny = pt2->unk7;
-            float nx = pt2->unk8;
+            float ny = pt2->delta.x;
+            float nx = pt2->delta.y;
             perp.x = nx;
             perp.y = -ny;
-            Subtract(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
+            Subtract(pt2->cam, pt2->delta, *(Vector3 *)&vmap.v->pos);
             Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
             vmap.v++;
-            Add(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
+            Add(pt2->cam, pt2->delta, *(Vector3 *)&vmap.v->pos);
             Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
         }
     }
@@ -447,8 +447,8 @@ __declspec(noinline) typename _T::reference _outline_back(_T *_obj) {
 void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     // Phase 1: Project all points (divide x,z by y in view space)
     for (Point *pt = start; pt <= end; pt++) {
-        float *viewPos = &pt->unk0;
-        float *proj = &pt->unk3;
+        float *viewPos = &pt->cam.x;
+        float *proj = &pt->base.x;
         float invY = 1.0f / viewPos[1];
         proj[0] = viewPos[0] * invY;
         proj[1] = viewPos[2] * invY;
@@ -457,33 +457,33 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     // Phase 2: Compute direction and side vectors between adjacent points
     Point *pt;
     for (pt = start; pt != end; pt++) {
-        float curX = pt->unk3;
-        float nextX = pt[1].unk3;
-        float nextZ = pt[1].unk4;
+        float curX = pt->base.x;
+        float nextX = pt[1].base.x;
+        float nextZ = pt[1].base.y;
         float dirX = nextX - curX;
-        float curZ = pt->unk4;
-        pt->unk5 = dirX;
-        pt->unk6 = nextZ - curZ;
+        float curZ = pt->base.y;
+        pt->dir.x = dirX;
+        pt->dir.y = nextZ - curZ;
 
-        if (!(std::fabs(dirX) < 0.0001f) || !(std::fabs(pt->unk6) < 0.0001f)) {
-            float dirZ = pt->unk6;
+        if (!(std::fabs(dirX) < 0.0001f) || !(std::fabs(pt->dir.y) < 0.0001f)) {
+            float dirZ = pt->dir.y;
             float invLen = 1.0f / std::sqrt(dirX * dirX + dirZ * dirZ);
-            pt->unk5 = dirX * invLen;
-            pt->unk6 = dirZ * invLen;
+            pt->dir.x = dirX * invLen;
+            pt->dir.y = dirZ * invLen;
         }
 
         // Side vector: perpendicular to direction, scaled by width
-        pt->unk7 = -pt->unk6;
-        pt->unk8 = pt->unk5;
+        pt->delta.x = -pt->dir.y;
+        pt->delta.y = pt->dir.x;
         float width = mWidth;
-        pt->unk7 *= width;
-        pt->unk8 *= width;
+        pt->delta.x *= width;
+        pt->delta.y *= width;
     }
 
     // Copy direction/side from second-to-last point to last point
     {
-        float *lastWords = &pt->unk5;
-        float *prevWords = &(pt - 1)->unk5;
+        float *lastWords = &pt->dir.x;
+        float *prevWords = &(pt - 1)->dir.x;
         lastWords[0] = prevWords[0];
         lastWords[1] = prevWords[1];
         lastWords[2] = prevWords[2];
@@ -494,9 +494,9 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     Point *secondPt = start + 1;
     bool flipped = 0;
 
-    float *startProj = &start->unk3;
-    float *startDir = &start->unk5;
-    float *startSide = &start->unk7;
+    float *startProj = &start->base.x;
+    float *startDir = &start->dir.x;
+    float *startSide = &start->delta.x;
 
     Hmx::Ray prevRay;
     prevRay.base.Set(startProj[0] + startSide[0], startProj[1] + startSide[1]);
@@ -504,11 +504,11 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     for (pt = secondPt; pt != end; pt++) {
         Point *p = pt;
-        float *dir = &p->unk5;
-        float *side = &p->unk7;
-        float *proj = &p->unk3;
+        float *dir = &p->dir.x;
+        float *side = &p->delta.x;
+        float *proj = &p->base.x;
         Point *prevP = p - 1;
-        float *prevDir2 = &prevP->unk5;
+        float *prevDir2 = &prevP->dir.x;
 
         float dot = dir[0] * prevDir2[0] + dir[1] * prevDir2[1];
 
@@ -517,30 +517,30 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
         }
 
         if (flipped) {
-            float s7 = p->unk7;
-            float s8 = p->unk8;
-            p->unk7 = -s7;
-            p->unk8 = -s8;
+            float s7 = p->delta.x;
+            float s8 = p->delta.y;
+            p->delta.x = -s7;
+            p->delta.y = -s8;
         }
 
         Hmx::Ray oldPrevRay = prevRay;
-        prevRay.base.Set(p->unk3 + p->unk7, p->unk4 + p->unk8);
-        prevRay.dir.x = p->unk5;
-        prevRay.dir.y = p->unk6;
+        prevRay.base.Set(p->base.x + p->delta.x, p->base.y + p->delta.y);
+        prevRay.dir.x = p->dir.x;
+        prevRay.dir.y = p->dir.y;
 
         if (dot < 0.9998499751091003f) {
-            Intersect(prevRay, oldPrevRay, *(Vector2 *)&p->unk7);
-            float ix = p->unk7;
-            float px = p->unk3;
-            float iz = p->unk8;
-            float pz = p->unk4;
-            p->unk7 = ix - px;
-            p->unk8 = iz - pz;
+            Intersect(prevRay, oldPrevRay, p->delta);
+            float ix = p->delta.x;
+            float px = p->base.x;
+            float iz = p->delta.y;
+            float pz = p->base.y;
+            p->delta.x = ix - px;
+            p->delta.y = iz - pz;
         }
     }
 
     if (flipped) {
-        float *endSide = &end->unk7;
+        float *endSide = &end->delta.x;
         endSide[0] = -endSide[0];
         endSide[1] = -endSide[1];
     }
@@ -551,19 +551,19 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
         Point *pt = end + 1;
         Point *pointsEnd = &_ref0.back();
         for (; pt <= pointsEnd; pt++) {
-            pt->unk7 = end->unk7;
-            pt->unk8 = end->unk8;
-            pt->unk0 = end->unk0;
-            pt->unk1 = end->unk1;
-            pt->unk2 = end->unk2;
+            pt->delta.x = end->delta.x;
+            pt->delta.y = end->delta.y;
+            pt->cam.x = end->cam.x;
+            pt->cam.y = end->cam.y;
+            pt->cam.z = end->cam.z;
         }
     } else if (&_ref0[0] < start) {
         for (Point *pt = &_ref0[0]; pt < start; pt++) {
-            pt->unk7 = start->unk7;
-            pt->unk8 = start->unk8;
-            pt->unk0 = start->unk0;
-            pt->unk1 = start->unk1;
-            pt->unk2 = start->unk2;
+            pt->delta.x = start->delta.x;
+            pt->delta.y = start->delta.y;
+            pt->cam.x = start->cam.x;
+            pt->cam.y = start->cam.y;
+            pt->cam.z = start->cam.z;
         }
     }
 
@@ -572,40 +572,40 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     Point *pointsBegin = &_ref0[0];
     Point *pointsEnd = &_ref0.back();
     Vector2 capOffset;
-    capOffset.x = -pointsBegin->unk8;
-    capOffset.y = pointsBegin->unk7;
+    capOffset.x = -pointsBegin->delta.y;
+    capOffset.y = pointsBegin->delta.x;
 
     VertsMap vmap;
     MapVerts(0, vmap);
 
     if (mLineHasCaps) {
-        Subtract(*(Vector3 *)&pointsBegin->unk0, *(Vector2 *)&pointsBegin->unk7, vmap.v->pos);
+        Subtract(pointsBegin->cam, pointsBegin->delta, vmap.v->pos);
         Add(vmap.v->pos, capOffset, vmap.v->pos);
         vmap.v++;
-        Add(*(Vector3 *)&pointsBegin->unk0, *(Vector2 *)&pointsBegin->unk7, vmap.v->pos);
+        Add(pointsBegin->cam, pointsBegin->delta, vmap.v->pos);
         Add(vmap.v->pos, capOffset, vmap.v->pos);
         vmap.v++;
     }
 
     for (Point *pt = pointsBegin; pt <= pointsEnd; pt++) {
-        Subtract(*(Vector3 *)&pt->unk0, *(Vector2 *)&pt->unk7, vmap.v->pos);
+        Subtract(pt->cam, pt->delta, vmap.v->pos);
         vmap.v++;
-        Add(*(Vector3 *)&pt->unk0, *(Vector2 *)&pt->unk7, vmap.v->pos);
+        Add(pt->cam, pt->delta, vmap.v->pos);
         vmap.v++;
     }
 
     if (mLineHasCaps) {
         if (flipped) {
-            capOffset.y = pointsEnd->unk7;
-            capOffset.x = -pointsEnd->unk8;
+            capOffset.y = pointsEnd->delta.x;
+            capOffset.x = -pointsEnd->delta.y;
         } else {
-            capOffset.y = -pointsEnd->unk7;
-            capOffset.x = pointsEnd->unk8;
+            capOffset.y = -pointsEnd->delta.x;
+            capOffset.x = pointsEnd->delta.y;
         }
-        Subtract(*(Vector3 *)&pointsEnd->unk0, *(Vector2 *)&pointsEnd->unk7, vmap.v->pos);
+        Subtract(pointsEnd->cam, pointsEnd->delta, vmap.v->pos);
         Add(vmap.v->pos, capOffset, vmap.v->pos);
         vmap.v++;
-        Add(*(Vector3 *)&pointsEnd->unk0, *(Vector2 *)&pointsEnd->unk7, vmap.v->pos);
+        Add(pointsEnd->cam, pointsEnd->delta, vmap.v->pos);
         Add(vmap.v->pos, capOffset, vmap.v->pos);
     }
 }
@@ -627,7 +627,7 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
     numPts = (int)mPoints.size();
     for (i = 0; i < numPts; i++) {
         Point *pt = &mPoints[i];
-        float *viewPos = &pt->unk0;
+        float *viewPos = &pt->cam.x;
         Multiply(pt->v, viewXfm, *(Vector3 *)viewPos);
         if (viewPos[1] < clipDist) {
             lastClipped = i;
@@ -646,8 +646,8 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
             if (firstClipped > (numPts - 1) - lastClipped) {
                 Point *prevPt = &mPoints[firstClipped - 1];
                 Point *pt = &mPoints[firstClipped];
-                float *prevView = &prevPt->unk0;
-                float *curView = &pt->unk0;
+                float *prevView = &prevPt->cam.x;
+                float *curView = &pt->cam.x;
                 Interp(*(Vector3 *)prevView, *(Vector3 *)curView,
                        (clipDist - prevView[1]) / (curView[1] - prevView[1]),
                        *(Vector3 *)curView);
@@ -656,8 +656,8 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
             } else {
                 Point *pt = &mPoints[lastClipped];
                 Point *nextPt = &mPoints[lastClipped + 1];
-                float *curView = &pt->unk0;
-                float *nextView = &nextPt->unk0;
+                float *curView = &pt->cam.x;
+                float *nextView = &nextPt->cam.x;
                 Interp(*(Vector3 *)curView, *(Vector3 *)nextView,
                        (clipDist - curView[1]) / (nextView[1] - curView[1]),
                        *(Vector3 *)curView);
@@ -674,22 +674,22 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
         while (i < numPts - 1) {
             Point *pt1 = &mPoints[i];
             Point *pt2 = &mPoints[i + 1];
-            float dist1 = (&pt1->unk0)[1];
+            float dist1 = (&pt1->cam.x)[1];
             if (dist1 < clipDist) {
-                float dist2 = (&pt2->unk0)[1];
+                float dist2 = (&pt2->cam.x)[1];
                 if (dist2 < clipDist) {
                     pt2 = pt1;
                 } else {
-                    Interp(*(Vector3 *)&pt1->unk0, *(Vector3 *)&pt2->unk0,
+                    Interp(pt1->cam, pt2->cam,
                            (clipDist - dist1) / (dist2 - dist1),
-                           *(Vector3 *)&pt1->unk0);
+                           pt1->cam);
                 }
             } else {
-                float dist2 = (&pt2->unk0)[1];
+                float dist2 = (&pt2->cam.x)[1];
                 if (dist2 < clipDist) {
-                    Interp(*(Vector3 *)&pt2->unk0, *(Vector3 *)&pt1->unk0,
+                    Interp(pt2->cam, pt1->cam,
                            (clipDist - dist2) / (dist1 - dist2),
-                           *(Vector3 *)&pt2->unk0);
+                           pt2->cam);
                 }
             }
             UpdateLinePair(pt1, pt2);
