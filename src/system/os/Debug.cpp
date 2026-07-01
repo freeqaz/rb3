@@ -51,6 +51,30 @@ void RB3TraceLogRateLimited(const char *lvl, const char *msg) {
     sCounts[idx]++;
     RB3RecordLog(lvl, msg, nullptr);
 }
+
+// Console dedup: many engine NOTIFY diagnostics fire hundreds of times per boot
+// on the original RB3 assets (e.g. "skinned mesh needs to be re-exported",
+// "subdir ... included more than once"). Collapse each UNIQUE message to a single
+// console print so the log stays readable; every distinct message still shows once.
+// Returns true the first time a given message text is seen, false thereafter.
+// Set RB3_NOTIFY_ALL=1 to restore every repeat. Telemetry (above) is separate and
+// keeps its own per-message rate-limit. Main-thread only (matches Debug::Notify's
+// print path), so the unsynchronized static state is safe.
+bool RB3NotifyFirstSeen(const char *msg) {
+    static int sNotifyAll = -1; // -1 unresolved, 0 dedup, 1 print every repeat
+    if (sNotifyAll < 0)
+        sNotifyAll = getenv("RB3_NOTIFY_ALL") ? 1 : 0;
+    if (sNotifyAll || !msg)
+        return true;
+    static std::vector<String> sSeen;
+    String m(msg);
+    for (int i = 0; i < (int)sSeen.size(); i++) {
+        if (sSeen[i] == m)
+            return false;
+    }
+    sSeen.push_back(m);
+    return true;
+}
 } // namespace
 #endif
 
@@ -152,8 +176,12 @@ void Debug::Notify(const char *msg) {
     if (!mNoDebug) {
         if (!MainThread())
             MILO_LOG("THREAD-NOTIFY not called in MainThread: %s\n", msg);
-        else
-            MILO_LOG("NOTIFY: %s\n", msg);
+        else {
+#ifdef HX_NATIVE
+            if (RB3NotifyFirstSeen(msg)) // collapse per-boot repeats; RB3_NOTIFY_ALL=1 opts out
+#endif
+                MILO_LOG("NOTIFY: %s\n", msg);
+        }
     }
 #ifdef HX_NATIVE
     // Session-telemetry: a Notify is a WARN-class diagnostic (MILO_WARN / NOTIFY).
