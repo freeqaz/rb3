@@ -10,9 +10,9 @@ inline const char *VocalNoteList::PrintTick(int tick) const {
 }
 
 VocalPhrase::VocalPhrase()
-    : unk0(0), unk4(0), unk8(-1), unkc(-1), unk10(-1), unk14(-1), unk18(0), unk19(0),
-      unk1a(0), unk1c(0), unk20(0), unk24(3.4028235E+38f), unk28(-3.4028235E+38f),
-      unk2c(0), mTambourinePhrase(0), unk30(0), unk34(0) {}
+    : mStartMs(0), mDurationMs(0), mStartTick(-1), mDurationTicks(-1), mNoteStart(-1), mNoteEnd(-1), mHasPitchedNotes(0), mPitchRangeEnd(0),
+      unk1a(0), mRangeShiftTicks(0), mRangeShiftDur(0), mMinPitch(3.4028235E+38f), mMaxPitch(-3.4028235E+38f),
+      mPlayerMask(0), mTambourinePhrase(0), mFreeStyleStartMs(0), mFreeStyleEndMs(0) {}
 
 VocalNoteList::VocalNoteList(SongData *data)
     : mSongData(data), mFreestyleMinDuration(0), mFreestylePad(0) {
@@ -87,15 +87,15 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
     if (mNotes.empty())
         return;
 
-    int ticktouse = mPhrases[0].unk8 < mNotes[0].GetTick() ? mPhrases[0].unk8
+    int ticktouse = mPhrases[0].mStartTick < mNotes[0].GetTick() ? mPhrases[0].mStartTick
                                                            : mNotes[0].GetTick();
     if (b) {
         VocalPhrase phrase;
-        phrase.unk8 = 0;
+        phrase.mStartTick = 0;
         if (0x280 < ticktouse)
-            phrase.unkc = ticktouse - 0x280;
+            phrase.mDurationTicks = ticktouse - 0x280;
         else
-            phrase.unkc = ticktouse;
+            phrase.mDurationTicks = ticktouse;
         mPhrases.insert(mPhrases.begin(), phrase);
     }
 
@@ -108,13 +108,13 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
     int noteEnd;
     for (int phraseIdx = 1; phraseIdx < mPhrases.size(); phraseIdx++) {
         VocalPhrase &phrase = mPhrases[phraseIdx];
-        phrase.unk18 = 0;
-        phrase.unk19 = 0;
-        phrase.unk10 = noteIdx;
-        phrase.unk14 = noteIdx;
+        phrase.mHasPitchedNotes = 0;
+        phrase.mPitchRangeEnd = 0;
+        phrase.mNoteStart = noteIdx;
+        phrase.mNoteEnd = noteIdx;
         for (; noteIdx != mNotes.size(); noteIdx++) {
             VocalNote &note = mNotes[noteIdx];
-            if (note.GetTick() < phrase.unk8) {
+            if (note.GetTick() < phrase.mStartTick) {
                 if (b) {
                     MILO_WARN(
                         "%s (%s): vocal note at tick %s is outside any phrases",
@@ -122,8 +122,8 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
                         mTrackName,
                         PrintTick(note.GetTick())
                     );
-                    phrase.unkc += phrase.unk8 - note.GetTick();
-                    phrase.unk8 = note.GetTick();
+                    phrase.mDurationTicks += phrase.mStartTick - note.GetTick();
+                    phrase.mStartTick = note.GetTick();
                 } else {
                     MILO_WARN(
                         "%s (%s): vocal note [%d-%d] at tick %s is outside any phrases",
@@ -135,12 +135,12 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
                     );
                 }
             }
-            if (note.GetTick() >= phrase.unk8 + phrase.unkc)
+            if (note.GetTick() >= phrase.mStartTick + phrase.mDurationTicks)
                 break;
-            phrase.unk14++;
+            phrase.mNoteEnd++;
             if (note.IsUnpitched())
-                phrase.unk19 = 1;
-            if (b && note.GetTick() + note.GetDurationTicks() > phrase.unk8 + phrase.unkc) {
+                phrase.mPitchRangeEnd = 1;
+            if (b && note.GetTick() + note.GetDurationTicks() > phrase.mStartTick + phrase.mDurationTicks) {
                 MILO_WARN(
                     "%s (%s): vocal note at tick %s extends beyond phrase",
                     mSongData->SongFullPath(),
@@ -150,42 +150,42 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
             }
         }
 
-        if (phrase.unk10 != phrase.unk14) {
-            mNotes[phrase.unk14 - 1].SetPhraseEnd(true);
+        if (phrase.mNoteStart != phrase.mNoteEnd) {
+            mNotes[phrase.mNoteEnd - 1].SetPhraseEnd(true);
         }
         if (b) {
             mLyricPhrases.push_back(phrase);
         }
 
-        noteEnd = phrase.unk14;
-        for (int j = phrase.unk10; j < noteEnd; j++) {
+        noteEnd = phrase.mNoteEnd;
+        for (int j = phrase.mNoteStart; j < noteEnd; j++) {
             if (!mNotes[j].IsUnpitched()) {
-                phrase.unk18 = 1;
-                phrase.unk24 = Min<float>((float)mNotes[j].StartPitch(), phrase.unk24);
-                phrase.unk24 = Min<float>((float)mNotes[j].EndPitch(), phrase.unk24);
-                phrase.unk28 = Max<float>(phrase.unk28, (float)mNotes[j].StartPitch());
-                phrase.unk28 = Max<float>(phrase.unk28, (float)mNotes[j].EndPitch());
+                phrase.mHasPitchedNotes = 1;
+                phrase.mMinPitch = Min<float>((float)mNotes[j].StartPitch(), phrase.mMinPitch);
+                phrase.mMinPitch = Min<float>((float)mNotes[j].EndPitch(), phrase.mMinPitch);
+                phrase.mMaxPitch = Max<float>(phrase.mMaxPitch, (float)mNotes[j].StartPitch());
+                phrase.mMaxPitch = Max<float>(phrase.mMaxPitch, (float)mNotes[j].EndPitch());
             }
             if (b && mNotes[j].LyricShift()) {
                 VocalPhrase &backphrase = mLyricPhrases.back();
                 int endtick = mNotes[j].EndTick();
-                int oldStart = backphrase.unk8;
-                int oldDur = backphrase.unkc;
-                backphrase.unkc = endtick - oldStart;
+                int oldStart = backphrase.mStartTick;
+                int oldDur = backphrase.mDurationTicks;
+                backphrase.mDurationTicks = endtick - oldStart;
                 int oldEnd = oldStart + oldDur;
                 VocalPhrase newphrase;
-                newphrase.unk8 = endtick;
-                newphrase.unkc = oldEnd - endtick;
+                newphrase.mStartTick = endtick;
+                newphrase.mDurationTicks = oldEnd - endtick;
                 mLyricPhrases.push_back(newphrase);
             }
         }
 
-        currentMin = Min<float>(phrase.unk24, currentMin);
-        currentMax = Max<float>(currentMax, phrase.unk28);
+        currentMin = Min<float>(phrase.mMinPitch, currentMin);
+        currentMax = Max<float>(currentMax, phrase.mMaxPitch);
         if (phrase.unk1a || phraseIdx + 1 == mPhrases.size()) {
             for (int k = lastRangeBoundingPhrase + 1; k <= phraseIdx; k++) {
-                mPhrases[k].unk24 = currentMin;
-                mPhrases[k].unk28 = currentMax;
+                mPhrases[k].mMinPitch = currentMin;
+                mPhrases[k].mMaxPitch = currentMax;
             }
             currentMin = 3.4028235E+38f;
             lastRangeBoundingPhrase = phraseIdx;
@@ -198,10 +198,10 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
             MILO_LOG(
                 "[%d] ticks: (%d, %d), min: %.0f max: %.0f bounding: %d\n",
                 i,
-                mPhrases[i].unk8,
-                mPhrases[i].unk8 + mPhrases[i].unkc,
-                mPhrases[i].unk24,
-                mPhrases[i].unk28,
+                mPhrases[i].mStartTick,
+                mPhrases[i].mStartTick + mPhrases[i].mDurationTicks,
+                mPhrases[i].mMinPitch,
+                mPhrases[i].mMaxPitch,
                 mPhrases[i].unk1a
             );
         }
@@ -221,11 +221,11 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
         gem = mTambourineGems[i];
         int phraseIdx = 0;
         while (phraseIdx < mPhrases.size()
-               && gem >= mPhrases[phraseIdx].unk8 + mPhrases[phraseIdx].unkc) {
+               && gem >= mPhrases[phraseIdx].mStartTick + mPhrases[phraseIdx].mDurationTicks) {
             phraseIdx++;
         }
-        if (phraseIdx < mPhrases.size() && gem >= mPhrases[phraseIdx].unk8
-            && mPhrases[phraseIdx].unk10 == mPhrases[phraseIdx].unk14) {
+        if (phraseIdx < mPhrases.size() && gem >= mPhrases[phraseIdx].mStartTick
+            && mPhrases[phraseIdx].mNoteStart == mPhrases[phraseIdx].mNoteEnd) {
             mPhrases[phraseIdx].mTambourinePhrase = true;
         } else {
             MILO_LOG(
@@ -244,9 +244,9 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
 
     for (int i = 0; i != mPhrases.size(); i++) {
         VocalPhrase &phrase = mPhrases[i];
-        for (int j = phrase.unk10; j < phrase.unk14; j++) {
+        for (int j = phrase.mNoteStart; j < phrase.mNoteEnd; j++) {
             mNotes[j].mPhrase = i;
-            mNotes[j].mPlayerMask = phrase.unk2c;
+            mNotes[j].mPlayerMask = phrase.mPlayerMask;
         }
     }
     Finalize();
@@ -264,13 +264,13 @@ void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
 #endif
         int prevEnd = 0;
         if (i != 0) {
-            prevEnd = phrase[-1].unk8 + phrase[-1].unkc;
+            prevEnd = phrase[-1].mStartTick + phrase[-1].mDurationTicks;
         }
         if (i != 0 && phrase->mTambourinePhrase
-            && phrase->unk8 > prevEnd + 0x780) {
+            && phrase->mStartTick > prevEnd + 0x780) {
             VocalPhrase newPhrase;
-            newPhrase.unk8 = prevEnd;
-            newPhrase.unkc = (phrase->unk8 - prevEnd) - 0x280;
+            newPhrase.mStartTick = prevEnd;
+            newPhrase.mDurationTicks = (phrase->mStartTick - prevEnd) - 0x280;
             VocalPhrase *insertPos = &mPhrases[i];
             newPhrase.mTambourinePhrase = insertPos[-1].mTambourinePhrase;
 #ifdef HX_NATIVE
@@ -280,19 +280,19 @@ void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
 #endif
             i--;
         } else {
-            phrase->unkc = phrase->unkc + (phrase->unk8 - prevEnd);
-            phrase->unk8 = prevEnd;
+            phrase->mDurationTicks = phrase->mDurationTicks + (phrase->mStartTick - prevEnd);
+            phrase->mStartTick = prevEnd;
             float startTime = tmap.TickToTime(prevEnd);
-            float endTime = tmap.TickToTime(phrase->unk8 + phrase->unkc);
-            phrase->unk0 = startTime;
-            phrase->unk4 = endTime - startTime;
+            float endTime = tmap.TickToTime(phrase->mStartTick + phrase->mDurationTicks);
+            phrase->mStartMs = startTime;
+            phrase->mDurationMs = endTime - startTime;
         }
     }
 }
 
 void VocalNoteList::StartPlayerPhrase(int tick, int player) {
-    if (!mPhrases.empty() && mPhrases.back().unkc == -1) {
-        if (tick > mPhrases.back().unk8 + 0x1e0) {
+    if (!mPhrases.empty() && mPhrases.back().mDurationTicks == -1) {
+        if (tick > mPhrases.back().mStartTick + 0x1e0) {
             MILO_WARN(
                 "%s (%s): confused by vocal phrase overlap around tick %s",
                 mSongData->SongFullPath(),
@@ -303,15 +303,15 @@ void VocalNoteList::StartPlayerPhrase(int tick, int player) {
     } else {
         VocalPhrase phrase;
         mPhrases.push_back(phrase);
-        mPhrases.back().unk8 = tick;
+        mPhrases.back().mStartTick = tick;
     }
-    mPhrases.back().unk2c |= 1 << player;
+    mPhrases.back().mPlayerMask |= 1 << player;
 }
 
 void VocalNoteList::EndPlayerPhrase(int tick, int) {
     MILO_ASSERT(!mPhrases.empty(), 0x24d);
-    if (mPhrases.back().unkc != -1
-        && tick > mPhrases.back().unk8 + mPhrases.back().unkc + 0x1e0) {
+    if (mPhrases.back().mDurationTicks != -1
+        && tick > mPhrases.back().mStartTick + mPhrases.back().mDurationTicks + 0x1e0) {
         MILO_WARN(
             "%s (%s): confused by vocal phrase overlap around tick %s",
             mSongData->SongFullPath(),
@@ -319,7 +319,7 @@ void VocalNoteList::EndPlayerPhrase(int tick, int) {
             PrintTick(tick)
         );
     }
-    int duration = tick - mPhrases.back().unk8;
+    int duration = tick - mPhrases.back().mStartTick;
     if (duration < 0x1e0) {
         MILO_WARN(
             "%s (%s): confused by vocal phrase overlap around tick %s",
@@ -328,7 +328,7 @@ void VocalNoteList::EndPlayerPhrase(int tick, int) {
             PrintTick(tick)
         );
     }
-    mPhrases.back().unkc = duration;
+    mPhrases.back().mDurationTicks = duration;
 }
 
 void VocalNoteList::Finalize() {
@@ -601,8 +601,8 @@ void VocalNoteList::GetPracticePhrases(
     for (const VocalPhrase *phrase = mPhrases.data();
          phrase != mPhrases.data() + mPhrases.size();
          ++phrase) {
-        if (startTick < phrase->unk8 + phrase->unkc
-            && endTick > phrase->unk8) {
+        if (startTick < phrase->mStartTick + phrase->mDurationTicks
+            && endTick > phrase->mStartTick) {
             out.push_back(*phrase);
         }
     }
@@ -614,8 +614,8 @@ void VocalNoteList::GetPracticePhrases2(
     for (const VocalPhrase *phrase = mPhrases.data();
          phrase != mPhrases.data() + mPhrases.size();
          ++phrase) {
-        if (startTick < phrase->unk8 + phrase->unkc && endTick > phrase->unk8
-            && phrase->unk8 + phrase->unkc <= endTick) {
+        if (startTick < phrase->mStartTick + phrase->mDurationTicks && endTick > phrase->mStartTick
+            && phrase->mStartTick + phrase->mDurationTicks <= endTick) {
             out.push_back(*phrase);
         }
     }
@@ -626,7 +626,7 @@ int VocalNoteList::GetNumPracticePhrases(const std::vector<VocalPhrase> &phrases
     for (const VocalPhrase *phrase = phrases.data();
          phrase != phrases.data() + phrases.size();
          ++phrase) {
-        if (HasNoteInRange(phrase->unk8, phrase->unk8 + phrase->unkc) != -1)
+        if (HasNoteInRange(phrase->mStartTick, phrase->mStartTick + phrase->mDurationTicks) != -1)
             count++;
     }
     return count;

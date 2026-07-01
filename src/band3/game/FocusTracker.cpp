@@ -171,7 +171,7 @@ String FocusTracker::GetPlayerContributionString(Symbol s) const {
     if (pid.NotNull()) {
         Player *pPlayer = mSource->GetPlayer(pid);
         MILO_ASSERT(pPlayer, 0x169);
-        i3 = pPlayer->mStats.unk1c0;
+        i3 = pPlayer->mStats.mTrackerContribution;
     }
     return MakeString(Localize(GetContributionToken(i3), 0), i3);
 }
@@ -187,7 +187,7 @@ void FocusTracker::SavePlayerStats() const {
         MILO_ASSERT(pPlayer, 0x17C);
         std::map<TrackerPlayerID, int>::const_iterator cData = mFocusCountMap.find(id);
         MILO_ASSERT(cData != mFocusCountMap.end(), 0x181);
-        pPlayer->mStats.unk1c0 = cData->second;
+        pPlayer->mStats.mTrackerContribution = cData->second;
     }
 }
 

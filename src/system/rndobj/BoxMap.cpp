@@ -35,7 +35,7 @@ bool BoxMapLighting::QueueLight(RndLight *light, float colorScale) {
         case RndLight::kPoint:
             LightParams_Point *paramsPoint;
             if (ParamsAt(paramsPoint)) {
-                paramsPoint->unk0 = light->WorldXfm().v;
+                paramsPoint->mLightPos = light->WorldXfm().v;
                 paramsPoint->mColor = lightColor;
                 paramsPoint->mRange = light->Range();
                 paramsPoint->mFalloffStart = light->FalloffStart();
@@ -78,10 +78,10 @@ void BoxMapLighting::ApplyQueuedLights(Hmx::Color *color, const Vector3 *v3) con
 END_UNPOOL_DATA
 
 bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
-    float beamLen = spot.unk44;
+    float beamLen = spot.mRange;
     if (beamLen > 0) {
-        float topR = spot.unk48;
-        float botR = spot.unk4c;
+        float topR = spot.mRadiusTop;
+        float botR = spot.mRadiusBottom;
         if (botR >= topR
             && (spot.mColor.red > 0.003921569f || spot.mColor.green > 0.003921569f
                 || spot.mColor.blue > 0.003921569f)) {
@@ -89,20 +89,20 @@ bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
             float f1 = (topR * beamLen) / (botR - topR);
             float ratio = botR / (beamLen + f1);
             ratio *= ratio;
-            spot.unk30 = halfLenRecip;
+            spot.mOneOverRange2x = halfLenRecip;
             float oneMinusRatio = 1.0f - ratio;
-            float vz = spot.unk0.z * f1;
+            float vz = spot.mDirection.z * f1;
             float onePlusRatio = 1.0f + ratio;
-            float vx = spot.unk0.x * f1;
-            float vy = spot.unk0.y * f1;
-            spot.unk1c.x = spot.unk38.x - vx;
+            float vx = spot.mDirection.x * f1;
+            float vy = spot.mDirection.y * f1;
+            spot.mTipPosition.x = spot.mLightPos.x - vx;
             float coneAngleFactor = oneMinusRatio / onePlusRatio;
-            spot.unk28 = coneAngleFactor;
+            spot.mCosTheta = coneAngleFactor;
             float f2c = 1.0f - coneAngleFactor;
-            spot.unk1c.z = spot.unk38.z - vz;
-            spot.unk1c.y = spot.unk38.y - vy;
-            spot.unk2c = 1.0f / f2c;
-            spot.unk34 = f1 * halfLenRecip;
+            spot.mTipPosition.z = spot.mLightPos.z - vz;
+            spot.mTipPosition.y = spot.mLightPos.y - vy;
+            spot.mOneOverOneSubCos = 1.0f / f2c;
+            spot.mTipOverRange2x = f1 * halfLenRecip;
             return true;
         }
     }
@@ -126,9 +126,9 @@ void BoxMapLighting::ApplyLight(
 ) const {
     if (light.mRange > light.mFalloffStart) {
         Vector3 d;
-        d.x = light.unk0.x - viewPos.x;
-        d.y = light.unk0.y - viewPos.y;
-        d.z = light.unk0.z - viewPos.z;
+        d.x = light.mLightPos.x - viewPos.x;
+        d.y = light.mLightPos.y - viewPos.y;
+        d.z = light.mLightPos.z - viewPos.z;
         float distSq = d.x * d.x + d.y * d.y + d.z * d.z;
         if (distSq > 0.0f) {
             float dist = std::sqrt(distSq);
@@ -155,21 +155,22 @@ void BoxMapLighting::ApplyLight(
     for (unsigned int i = 0; i < arr.NumElements(); i++) {
         const LightParams_Spot &light = arr[i];
         if (light.mColor.red + light.mColor.green + light.mColor.blue >= kColorEpsilon) {
-            float dx = viewPos.x - light.unk1c.x;
-            float dy = viewPos.y - light.unk1c.y;
-            float dz = viewPos.z - light.unk1c.z;
+            float dx = viewPos.x - light.mTipPosition.x;
+            float dy = viewPos.y - light.mTipPosition.y;
+            float dz = viewPos.z - light.mTipPosition.z;
             float distSq = dx * dx + dy * dy + dz * dz;
             float invDist = 1.0f / std::sqrt(distSq);
             float nx = dx * invDist;
             float ny = dy * invDist;
             float nz = dz * invDist;
-            float distNorm = distSq * invDist * light.unk30 - light.unk34;
-            float coneDot = nx * light.unk0.x + ny * light.unk0.y + nz * light.unk0.z;
+            float distNorm = distSq * invDist * light.mOneOverRange2x - light.mTipOverRange2x;
+            float coneDot =
+                nx * light.mDirection.x + ny * light.mDirection.y + nz * light.mDirection.z;
             float distClamped = Min(1.0f, distNorm);
-            float coneClamped = Min(1.0f, coneDot) - light.unk28;
+            float coneClamped = Min(1.0f, coneDot) - light.mCosTheta;
             float distAtten = Max(0.0f, 1.0f - distClamped);
             float coneAtten = Max(0.0f, coneClamped);
-            float atten = distAtten * coneAtten * light.unk2c;
+            float atten = distAtten * coneAtten * light.mOneOverOneSubCos;
             LightParams_Directional dl;
             dl.mDirection.x = -nx;
             dl.mDirection.y = -ny;

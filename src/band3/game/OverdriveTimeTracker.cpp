@@ -81,7 +81,7 @@ String OverdriveTimeTracker::GetPlayerContributionString(Symbol s) const {
     if (pid.NotNull()) {
         Player *pPlayer = mSource->GetPlayer(pid);
         MILO_ASSERT(pPlayer, 0x8E);
-        f1 = pPlayer->mStats.unk1c0;
+        f1 = pPlayer->mStats.mTrackerContribution;
     }
     int min, sec;
     TrackerDisplay::MsToMinutesSeconds(f1, min, sec);
@@ -93,7 +93,7 @@ void OverdriveTimeTracker::SavePlayerStats() const {
          id = mSource->GetNextPlayer(id)) {
         Player *pPlayer = mSource->GetPlayer(id);
         MILO_ASSERT(pPlayer, 0xA6);
-        pPlayer->mStats.unk1c0 = pPlayer->mStats.mTotalOverdriveDurationMs;
+        pPlayer->mStats.mTrackerContribution = pPlayer->mStats.mTotalOverdriveDurationMs;
     }
 }
 

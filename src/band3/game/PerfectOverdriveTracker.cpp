@@ -103,7 +103,7 @@ void PerfectOverdriveTracker::SavePlayerStats() const {
         TrackType tt = pPlayer->GetTrackType();
         std::map<TrackType, PlayerStreakData>::const_iterator it = unk70.find(tt);
         if (it != unk70.end()) {
-            pPlayer->mStats.unk1c0 = it->second.unk1c;
+            pPlayer->mStats.mTrackerContribution = it->second.unk1c;
         }
     }
 }
@@ -265,7 +265,7 @@ String PerfectOverdriveTracker::GetPlayerContributionString(Symbol s) const {
     if (pid.NotNull()) {
         Player *pPlayer = mSource->GetPlayer(pid);
         MILO_ASSERT(pPlayer, 0x1EE);
-        i4 = pPlayer->mStats.unk1c0;
+        i4 = pPlayer->mStats.mTrackerContribution;
     }
     if (s == vocals) {
         Symbol sym = i4 == 1 ? perfect_overdrive_tracker_contrib_format_vox_1

@@ -115,10 +115,10 @@ public:
         bool Set(float, float);
         float Emit(float);
 
-        float unk0;
-        float unk4;
-        float unk8;
-        float unkc;
+        float mPeak; // 0x0 - Bank 5 DWARF: peak emission rate
+        float mHalfLength; // 0x4 - half of the burst duration
+        float mNorm; // 0x8 - 1/mHalfLength (triangle-envelope normalizer)
+        float mTimeToLive; // 0xc - remaining burst time
     };
 
     RndParticleSys();

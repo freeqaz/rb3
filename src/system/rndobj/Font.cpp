@@ -64,10 +64,10 @@ void RndFont::GetTexCoords(unsigned short c, Vector2 &tl, Vector2 &br) const {
         MILO_ASSERT(HasChar(c), 290);
         std::map<unsigned short, CharInfo>::const_iterator it = mCharInfoMap.find(c);
         const CharInfo &info = it->second;
-        tl.x = info.unk0;
-        br.x = info.charWidth * mTexCellSize.x + info.unk0;
-        tl.y = info.unk4;
-        br.y = info.unk4 + mTexCellSize.y;
+        tl.x = info.normX;
+        br.x = info.charWidth * mTexCellSize.x + info.normX;
+        tl.y = info.normY;
+        br.y = info.normY + mTexCellSize.y;
     }
 }
 
@@ -84,7 +84,7 @@ float RndFont::CharAdvance(unsigned short c) const {
     if (IsMonospace())
         return 1.0f;
     else {
-        return mTextureOwner->mCharInfoMap[c].unkc;
+        return mTextureOwner->mCharInfoMap[c].charAdvance;
     }
 }
 
@@ -97,9 +97,9 @@ void RndFont::SetCellSize(float x, float y) {
 
 void RndFont::SetCharInfo(RndFont::CharInfo *info, RndBitmap &bmap, const Vector2 &vec2) {
     if (mMonospace) {
-        info->unk0 = vec2.x / (float)bmap.Width();
+        info->normX = vec2.x / (float)bmap.Width();
         info->charWidth = 1.0f;
-        info->unkc = 1.0f;
+        info->charAdvance = 1.0f;
     } else {
         int i5 = vec2.x;
         int i2 = vec2.x + mCellSize.x;
@@ -110,17 +110,17 @@ void RndFont::SetCharInfo(RndFont::CharInfo *info, RndBitmap &bmap, const Vector
         float f4 = (i7 + 1.0f) - i6;
         if (f4 <= 0) {
             int w = bmap.Width();
-            info->unk0 = vec2.x / w;
+            info->normX = vec2.x / w;
             info->charWidth = 0.25f;
-            info->unkc = 0.25f;
+            info->charAdvance = 0.25f;
         } else {
-            info->unk0 = i6 / bmap.Width();
+            info->normX = i6 / bmap.Width();
             f4 = f4 / mCellSize.x;
             info->charWidth = f4;
-            info->unkc = f4;
+            info->charAdvance = f4;
         }
     }
-    info->unk4 = vec2.y / bmap.Height();
+    info->normY = vec2.y / bmap.Height();
     MILO_ASSERT(info->charWidth >= 0, 0x168);
 }
 
@@ -154,7 +154,7 @@ bool RndFont::CharDefined(unsigned short c) const {
     if (HasChar(c)) {
         std::map<unsigned short, CharInfo>::const_iterator it = mCharInfoMap.find(c);
         const CharInfo &info = it->second;
-        return info.unk0 != 0 || info.unk4 != 0 || info.unkc != 0;
+        return info.normX != 0 || info.normY != 0 || info.charAdvance != 0;
     } else
         return false;
 }
@@ -211,7 +211,7 @@ void RndFont::UpdateChars() {
                 } else if (curChar == 9) {
                     MILO_ASSERT(HasChar(L' ' ), 0x205);
                     mCharInfoMap[curChar] = mCharInfoMap[0x20];
-                    mCharInfoMap[curChar].unkc *= 3.0f;
+                    mCharInfoMap[curChar].charAdvance *= 3.0f;
                 }
             }
         }
@@ -227,8 +227,8 @@ void RndFont::BleedTest() {
         for (int i = 0; i < mChars.size(); i++) {
             unsigned short curChar = mChars[i];
             const CharInfo &curInfo = mCharInfoMap[curChar];
-            int i2 = Round(curInfo.unk4 * bmap->Height());
-            int i5 = Round(curInfo.unk0 * bmap->Width());
+            int i2 = Round(curInfo.normY * bmap->Height());
+            int i5 = Round(curInfo.normX * bmap->Width());
             int i6 = Round(curInfo.charWidth * mCellSize.x) + i5;
             int iptr;
             if ((i2 != 0) || !haswrap) {
@@ -256,7 +256,7 @@ void RndFont::BleedTest() {
                     );
                 }
             }
-            i2 = Round(curInfo.unk4 * bmap->Height());
+            i2 = Round(curInfo.normY * bmap->Height());
             int ia0 = i5 - 1;
             if (i5 != 0 || (!haswrap && ia0 <= 0)) {
                 MaxEq(ia0, 0);
@@ -431,18 +431,18 @@ BEGIN_LOADS(RndFont)
         if (gRev < 0x11) {
             for (int i = 0; i < 0x100; i++) {
                 CharInfo &info = mCharInfoMap[i];
-                bs >> info.unk0;
-                bs >> info.unk4;
+                bs >> info.normX;
+                bs >> info.normY;
                 bs >> info.charWidth;
                 if (info.charWidth < 0) {
                     info.charWidth = 0;
                 }
                 if (gRev > 0xE)
-                    bs >> info.unkc;
+                    bs >> info.charAdvance;
                 else
-                    info.unkc = info.charWidth;
-                if (info.unkc < 0) {
-                    info.unkc = 0;
+                    info.charAdvance = info.charWidth;
+                if (info.charAdvance < 0) {
+                    info.charAdvance = 0;
                 }
             }
         } else {
@@ -452,10 +452,10 @@ BEGIN_LOADS(RndFont)
                 unsigned short keyChar;
                 bs >> keyChar;
                 CharInfo &info = mCharInfoMap[keyChar];
-                bs >> info.unk0;
-                bs >> info.unk4;
+                bs >> info.normX;
+                bs >> info.normY;
                 bs >> info.charWidth;
-                bs >> info.unkc;
+                bs >> info.charAdvance;
             }
         }
     } else {

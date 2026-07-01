@@ -83,7 +83,7 @@ Stats::Stats(const Stats &s)
       mCymbalGemCount(s.mCymbalGemCount),
       mCymbalGemsHitOnCymbals(s.mCymbalGemsHitOnCymbals),
       mCymbalGemsHitOnPads(s.mCymbalGemsHitOnPads), mSections(s.mSections),
-      unk1c0(s.unk1c0), unk1c4(s.unk1c4), unk1c8(s.unk1c8) {}
+      mTrackerContribution(s.mTrackerContribution), mTrackerResult(s.mTrackerResult), unk1c8(s.unk1c8) {}
 
 #pragma push
 #pragma dont_inline on

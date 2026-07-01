@@ -45,11 +45,11 @@ namespace {
 }
 
 CalibrationPanel::CalibrationPanel()
-    : mCycleTimeMs(755.0f), mStream(0), mFader(0), unk44(0), mHalfOffAnim(0),
-      mEnableVideo(1), mNumHits(32), unk5c(0), mTestState(tsIdle), unk64(0),
+    : mCycleTimeMs(755.0f), mStream(0), mFader(0), mStartASAP(0), mHalfOffAnim(0),
+      mEnableVideo(1), mNumHits(32), mLastStreamMs(0), mTestState(tsIdle), mPrevFrame(0),
       mHardwareMode(0), mAnimCycleFrames(50.0f), mAnimNumCycles(1), mMaxSlack(100),
-      mRestingFrame(0), unk80(0), mVolDb(-6.0f), unk8c(0.275f), unka0(0), unkcc(0),
-      unkd0(0), unkd4(0), unkd8(0), unkdc(0), unke4(0), mTopOutliers(3),
+      mRestingFrame(0), mPostTestStartTime(0), mVolDb(-6.0f), mAccel(0.275f), mAllowGreenButton(0), mVibrationEnabled(0),
+      mLastTime(0), mSensorSigma(0), mAveragePeak(0), mAveragePeakCount(0), mSensorDeltaPeakFollow(0), mTopOutliers(3),
       mBottomOutliers(3) {}
 
 CalibrationPanel::~CalibrationPanel() {
@@ -60,7 +60,7 @@ CalibrationPanel::~CalibrationPanel() {
 void CalibrationPanel::Poll() {
     if (mTestState == tsPostTest) {
         float ms = GetAudioTimeMs();
-        if (ms - unk80 > mCycleTimeMs * 1.1f) {
+        if (ms - mPostTestStartTime > mCycleTimeMs * 1.1f) {
             SetTestState(tsIdle);
             StopAudio();
         }
@@ -68,7 +68,7 @@ void CalibrationPanel::Poll() {
     UpdateAnimation();
     UpdateLabel();
     UpdateStream();
-    if (GetTestRep() >= unk90 && mTestState == tsTesting) {
+    if (GetTestRep() >= mTimeOutRep && mTestState == tsTesting) {
         SetTestState(tsIdle);
     }
     if (mHardwareMode) {
@@ -94,20 +94,20 @@ void CalibrationPanel::UpdateAnimation() {
                     mFader->DoFade(0, mCycleTimeMs / 2.0f);
                 }
                 SetTestState(tsTesting);
-                unk7c = 1;
-                unk7c = GetTestRep();
+                mStartRep = 1;
+                mStartRep = GetTestRep();
             }
             float f1 = mCycleTimeMs;
             float f10 = GetAudioTimeMs();
             f10 = std::fmod(mCycleTimeMs / 2.0f + f10, f1);
             RndGroup *hwgrp = mDir->Find<RndGroup>("cal_hardware.grp", true);
             if (f10 > mCycleTimeMs / 2.0) {
-                hwgrp->SetShowing(unk88 > 0);
-                if (unk88 < 0)
-                    unk88 = 0;
-                unk88--;
+                hwgrp->SetShowing(mShowNumTimes > 0);
+                if (mShowNumTimes < 0)
+                    mShowNumTimes = 0;
+                mShowNumTimes--;
             } else {
-                unk88 = 9;
+                mShowNumTimes = 9;
                 hwgrp->SetShowing(false);
             }
         } else {
@@ -137,10 +137,10 @@ float CalibrationPanel::HandlePreAndPostTestAnim(float f) {
     if (mTestState == tsPreRoll) {
         bool b6;
         if (mRestingFrame == 0) {
-            b6 = unk64 > f;
+            b6 = mPrevFrame > f;
         } else {
             b6 = false;
-            if (f >= mRestingFrame && unk64 <= mRestingFrame)
+            if (f >= mRestingFrame && mPrevFrame <= mRestingFrame)
                 b6 = true;
         }
         if (b6) {
@@ -148,10 +148,10 @@ float CalibrationPanel::HandlePreAndPostTestAnim(float f) {
                 mFader->DoFade(0, mCycleTimeMs / 2.0f);
             }
             SetTestState(tsTesting);
-            unk7c = 1;
-            unk7c = GetTestRep();
+            mStartRep = 1;
+            mStartRep = GetTestRep();
         } else {
-            unk64 = f;
+            mPrevFrame = f;
             return mRestingFrame;
         }
     } else if (mTestState == tsPostTest) {
@@ -159,19 +159,19 @@ float CalibrationPanel::HandlePreAndPostTestAnim(float f) {
             float testFrame = mAnimCycleFrames * (float)i + mRestingFrame;
             bool b6;
             if (testFrame == 0) {
-                b6 = unk64 > f;
+                b6 = mPrevFrame > f;
             } else {
                 b6 = false;
-                if (f >= testFrame && unk64 <= testFrame)
+                if (f >= testFrame && mPrevFrame <= testFrame)
                     b6 = true;
             }
-            if (b6 || (unk64 == testFrame)) {
+            if (b6 || (mPrevFrame == testFrame)) {
                 ftouse = testFrame;
                 break;
             }
         }
     }
-    unk64 = ftouse;
+    mPrevFrame = ftouse;
     return ftouse;
 }
 
@@ -200,7 +200,7 @@ void CalibrationPanel::UpdateLabel() {
             calvidlabelsgrp->SetShowing(true);
             float f14 = std::fmod(GetAudioTimeMs(), mCycleTimeMs);
             int i48 = GetAudioTimeMs() / mCycleTimeMs;
-            if (i48 - unk7c >= 5) {
+            if (i48 - mStartRep >= 5) {
                 progbargrp->SetShowing(true);
                 repslabel->SetInt(mNumHits - mTestSamples.size(), false);
                 repslabel->SetShowing(false);
@@ -208,7 +208,7 @@ void CalibrationPanel::UpdateLabel() {
                 UpdateProgress(true);
             } else {
                 progbargrp->SetShowing(false);
-                if (unk5c > f14) {
+                if (mLastStreamMs > f14) {
                     if (4 - GetTestRep() == 0) {
                         countdownlabel->SetTextToken(lag_go);
                     } else {
@@ -216,7 +216,7 @@ void CalibrationPanel::UpdateLabel() {
                     }
                     repslabel->SetTextToken(gNullStr);
                 }
-                unk5c = f14;
+                mLastStreamMs = f14;
             }
         }
     } else {
@@ -240,28 +240,28 @@ void CalibrationPanel::UpdateProgress(bool b) {
     float progress = (float)mTestSamples.size();
     float maxProgress;
     if (b) {
-        float a8 = unka4[1];
-        float ac = unka4[2];
-        float b0 = unka4[3];
-        float b4 = unka4[4];
-        float bc = unkb8[1];
-        float c0 = unkb8[2];
-        float c4 = unkb8[3];
-        float c8 = unkb8[4];
+        float a8 = mXV[1];
+        float ac = mXV[2];
+        float b0 = mXV[3];
+        float b4 = mXV[4];
+        float bc = mYV[1];
+        float c0 = mYV[2];
+        float c4 = mYV[3];
+        float c8 = mYV[4];
         float sample = (float)((double)progress / 457453.4129);
-        unka4[0] = a8;
-        unka4[1] = ac;
-        unka4[2] = b0;
-        unka4[3] = b4;
-        unka4[4] = sample;
-        unkb8[0] = bc;
-        unkb8[1] = c0;
-        unkb8[2] = c4;
-        unkb8[3] = c8;
+        mXV[0] = a8;
+        mXV[1] = ac;
+        mXV[2] = b0;
+        mXV[3] = b4;
+        mXV[4] = sample;
+        mYV[0] = bc;
+        mYV[1] = c0;
+        mYV[2] = c4;
+        mYV[3] = c8;
         progress = (float)((6.0f * b0 + (4.0f * (ac + b4) + (a8 + sample)))
             + -0.7805914145 * bc + 3.3180408913 * c0
             + -5.2929307473 * c4 + 3.7554462943 * c8);
-        unkb8[4] = progress;
+        mYV[4] = progress;
     }
     int &_ref0 = mNumHits;
     progress = progress * (float)((_ref0 + 2) / _ref0);
@@ -280,16 +280,16 @@ void CalibrationPanel::UpdateStream() {
         } else if (mStream->IsFinished() && mTestState == tsTesting) {
             mStream->Stop();
             mTestState = tsPostTest;
-        } else if (unk44 && mStream->IsReady()) {
+        } else if (mStartASAP && mStream->IsReady()) {
             mStream->Play();
-            unk44 = false;
+            mStartASAP = false;
         }
     }
 }
 
 DataNode CalibrationPanel::OnInitializeContent(DataArray *arr) {
-    memset(unka4, 0, 0x14);
-    memset(unkb8, 0, 0x14);
+    memset(mXV, 0, 0x14);
+    memset(mYV, 0, 0x14);
     RndTransAnim *tabanim = mDir->Find<RndTransAnim>("prog_bar_tab.tnm", true);
     RndTransAnim *boneanim = mDir->Find<RndTransAnim>("bone_prog_bar.tnm", true);
     tabanim->SetFrame(0, 1);
@@ -340,7 +340,7 @@ DataNode CalibrationPanel::OnInitializeContent(DataArray *arr) {
         mDir->Find<RndGroup>("cal_hardware_audio_illustration.grp", true)
             ->SetShowing(false);
     }
-    unka0 = ty == 1 ? 0 : -1;
+    mAllowGreenButton = ty == 1 ? 0 : -1;
     SetTestState(tsIdle);
     if (mStream)
         RELEASE(mStream);
@@ -369,11 +369,11 @@ void CalibrationPanel::StartAudio() {
     if (mStream->IsReady()) {
         mStream->Play();
     } else
-        unk44 = true;
+        mStartASAP = true;
 }
 
 void CalibrationPanel::StopAudio() {
-    unk44 = false;
+    mStartASAP = false;
     if (mStream) {
         mFader->DoFade(-96.0f, 200.0f);
     }
@@ -389,35 +389,35 @@ DataNode CalibrationPanel::OnStartTest(DataArray *arr) {
         mBottomOutliers = outliers;
         mTopOutliers = outliers;
     }
-    unkd8 = 0;
-    unkdc = 0;
-    unkd4 = 0;
-    unke4 = 0;
+    mAveragePeak = 0;
+    mAveragePeakCount = 0;
+    mSensorSigma = 0;
+    mSensorDeltaPeakFollow = 0;
     mPad = arr->Obj<User>(2)->GetLocalUser()->GetPadNum();
     PrepareHwCalibrationState();
     StartAudio();
-    unkd0 = -1.0f;
+    mLastTime = -1.0f;
     mTestSamples.clear();
     SetTestState(tsPreRoll);
     int u4 = 10;
     if (mHardwareMode)
         u4 = 40;
-    unk90 = u4;
-    unk64 = 0;
-    unk5c = mCycleTimeMs / 2.0f;
+    mTimeOutRep = u4;
+    mPrevFrame = 0;
+    mLastStreamMs = mCycleTimeMs / 2.0f;
     if (mEnableVideo) {
         mDir->Find<RndGroup>("visuals_anim.grp", true)->Animate(0, false, 0);
     }
     if (mEnableAudio) {
         mDir->Find<RndGroup>("audio_anim.grp", true)->Animate(0, false, 0);
-        unke0 = false;
+        mAdams = false;
     }
     return 0;
 }
 
 void CalibrationPanel::PrepareHwCalibrationState() {
     if (mHardwareMode) {
-        unkcc = true;
+        mVibrationEnabled = true;
         if (mEnableVideo) {
             JoypadSetCalbertMode(mPad, 1);
         } else {
@@ -427,9 +427,9 @@ void CalibrationPanel::PrepareHwCalibrationState() {
 }
 
 void CalibrationPanel::TerminateHwCalibrationState() {
-    if (unkcc) {
+    if (mVibrationEnabled) {
         JoypadSetCalbertMode(mPad, 0);
-        unkcc = false;
+        mVibrationEnabled = false;
     }
 }
 
@@ -442,7 +442,7 @@ void CalibrationPanel::InitializeVisuals() {
         mDir->Find<RndGroup>("visuals_anim.grp", true)->SetShowing(false);
         mDir->Find<RndGroup>("audio_anim.grp", true)->SetShowing(false);
         mDir->Find<RndGroup>("cal_hardware.grp", true)->SetShowing(false);
-        unk88 = 0;
+        mShowNumTimes = 0;
     } else {
         mDir->Find<RndGroup>("cal_metronome.grp", true)->SetShowing(true);
         mDir->Find<RndGroup>("cal_hardware.grp", true)->SetShowing(false);
@@ -492,7 +492,7 @@ void CalibrationPanel::EndTest() {
     }
     SetTestState(tsPostTest);
     mFader->DoFade(-96.0f, 1000.0f);
-    unk80 = GetAudioTimeMs();
+    mPostTestStartTime = GetAudioTimeMs();
 }
 
 float CalibrationPanel::GetAudioTimeMs() const {
@@ -529,7 +529,7 @@ DataNode CalibrationPanel::OnMsg(const ButtonDownMsg &msg) {
                     }
                 }
                 if (msg.GetButton() == kPad_Xbox_A)
-                    b3 = unka0;
+                    b3 = mAllowGreenButton;
                 if (b3) {
                     auto _tmp0 = msg.GetPadNum();
                     TriggerCalibration(_tmp0);
@@ -553,33 +553,33 @@ void CalibrationPanel::ScanHardwareModeInputs() {
     static DataNode &trace_sensors = DataVariable("trace_sensors");
     if (mTestState == tsTesting) {
         float f4 = JoypadGetCalbertValue(mPad, mEnableVideo);
-        float f6 = f4 - unkd4;
-        float f5 = unke4;
-        unkd4 = f6 * 0.05 + unkd4;
+        float f6 = f4 - mSensorSigma;
+        float f5 = mSensorDeltaPeakFollow;
+        mSensorSigma = f6 * 0.05 + mSensorSigma;
         if (f6 < f5)
-            unke4 = f6 * 0.1 + f5;
+            mSensorDeltaPeakFollow = f6 * 0.1 + f5;
         else
-            unke4 = f5 * 0.9850000143051147f;
-        if (std::fabs(f4 - unk94) > 0.015625f) {
+            mSensorDeltaPeakFollow = f5 * 0.9850000143051147f;
+        if (std::fabs(f4 - mPrevLX) > 0.015625f) {
             trace_sensors.Int();
         }
         if (mEnableVideo) {
-            if (f6 < unke4 * 0.35 && unk94 >= 0.0) {
+            if (f6 < mSensorDeltaPeakFollow * 0.35 && mPrevLX >= 0.0) {
                 TriggerCalibration(mPad);
                 trace_sensors.Int();
             }
-            unk94 = f6;
+            mPrevLX = f6;
         } else if (mEnableAudio) {
             float f1 = 0.49f;
             if (JoypadGetPadData(mPad)->mType == kJoypadWiiButtonGuitar)
                 f1 = 0.2f;
-            if (0.71f > f4 && f4 > f1 && (unk94 <= f1 || 0.71f <= unk94)) {
-                unkdc++;
-                unkd8 += f4;
+            if (0.71f > f4 && f4 > f1 && (mPrevLX <= f1 || 0.71f <= mPrevLX)) {
+                mAveragePeakCount++;
+                mAveragePeak += f4;
                 TriggerCalibration(mPad);
                 trace_sensors.Int();
             }
-            unk94 = f4;
+            mPrevLX = f4;
         }
     }
 }
@@ -591,10 +591,10 @@ void CalibrationPanel::TriggerCalibration(int pad) {
     float cycleOff = std::fmod(halfCycle + GetAudioTimeMs(), _ref0);
     sample = cycleOff - halfCycle;
     float nowMs = GetAudioTimeMs();
-    float lastMs = unkd0;
+    float lastMs = mLastTime;
     if (nowMs > lastMs && (nowMs - lastMs) < 210.0f && lastMs != -1.0f)
         return;
-    unkd0 = nowMs;
+    mLastTime = nowMs;
     float lag = TheProfileMgr.GetExcessAudioLagNeutral(pad, true);
     if (mEnableVideo)
         lag = TheProfileMgr.GetExcessVideoLagNeutral(pad, true);
@@ -636,7 +636,7 @@ void CalibrationPanel::TriggerCalibration(int pad) {
     sample -= lag;
     if (mHardwareMode)
         repAdvance = 40;
-    unk90 = GetTestRep() + repAdvance;
+    mTimeOutRep = GetTestRep() + repAdvance;
     mTestSamples.push_back(sample);
     if (mTestSamples.size() >= mNumHits)
         EndTest();
@@ -666,7 +666,7 @@ int CalibrationPanel::GetTestRep() const {
     float cyclems = mCycleTimeMs;
     float audioms = GetAudioTimeMs();
     int result = (int)((cyclems / 2.0f + audioms) / cyclems);
-    return result - unk7c;
+    return result - mStartRep;
 }
 
 float CalibrationPanel::GetSampleSpread() const {
@@ -690,7 +690,7 @@ int CalibrationPanel::GetTestQuality() const {
 }
 
 float CalibrationPanel::ReshapeTime(float f) {
-    float u = unk8c;
+    float u = mAccel;
     float cycle = mCycleTimeMs;
     float f1 = f / cycle;
     if (!(f1 <= 1.0f))

@@ -65,7 +65,7 @@ String AccuracyTracker::GetPlayerContributionString(Symbol s) const {
     if (pid.NotNull()) {
         Player *pPlayer = mSource->GetPlayer(pid);
         MILO_ASSERT(pPlayer, 0x89);
-        i4 = pPlayer->mStats.unk1c0;
+        i4 = pPlayer->mStats.mTrackerContribution;
     }
     const char *str = i4 >= 0 ? "+" : "";
     return MakeString(Localize(tour_goal_accuracy_player_contribution_format, 0), str, i4);
@@ -78,6 +78,6 @@ void AccuracyTracker::SavePlayerStats() const {
         MILO_ASSERT(pPlayer, 0x9D);
         float first = mTargets.front() * 100.0f;
         float floored = std::floor(pPlayer->GetNotesHitFraction(0) * 100.0f);
-        pPlayer->mStats.unk1c0 = floored - first;
+        pPlayer->mStats.mTrackerContribution = floored - first;
     }
 }

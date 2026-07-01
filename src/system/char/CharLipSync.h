@@ -14,8 +14,8 @@ public:
     class Generator {
     public:
         struct Weight {
-            unsigned char unk0;
-            unsigned char unk1;
+            unsigned char last; // 0x0
+            unsigned char current; // 0x1
         };
 
         Generator();
@@ -33,11 +33,11 @@ public:
     class PlayBack {
     public:
         struct Weight {
-            Weight() : unk0(0) {}
-            ObjPtr<CharClip> unk0;
-            float unkc;
-            float unk10;
-            float unk14;
+            Weight() : clip(0) {}
+            ObjPtr<CharClip> clip; // 0x0
+            float last; // 0xc
+            float next; // 0x10
+            float current; // 0x14
         };
 
         PlayBack();

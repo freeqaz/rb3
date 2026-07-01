@@ -11,17 +11,18 @@ public:
     class RangeShift {
     public:
         RangeShift(int i1, int i2, float f1, float f2)
-            : unk0(i1), unk4(i2), unk8(-1), unkc(f1), unk10(-1), unk14(f2), unk18(0),
-              unk1c(0), unk20(0) {}
-        int unk0;
-        int unk4;
-        float unk8;
-        float unkc;
-        float unk10;
-        float unk14;
-        bool unk18;
-        int unk1c;
-        int unk20;
+            : mStartTick(i1), mEndTick(i2), mStartOffset(-1), mEndOffset(f1),
+              mStartRange(-1), mEndRange(f2), mMaskDrawn(0), mMaskStartFrame(0),
+              mMaskEndFrame(0) {}
+        int mStartTick; // 0x0
+        int mEndTick; // 0x4
+        float mStartOffset; // 0x8
+        float mEndOffset; // 0xc
+        float mStartRange; // 0x10
+        float mEndRange; // 0x14
+        bool mMaskDrawn; // 0x18
+        int mMaskStartFrame; // 0x1c
+        int mMaskEndFrame; // 0x20
     };
 
     GemTrack(BandUser *);

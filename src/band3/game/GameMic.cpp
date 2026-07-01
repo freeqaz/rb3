@@ -30,8 +30,8 @@ bool gIdxTaken[6];
 DECOMP_FORCEBLOCK(GameMic, (Mic *m), { void (Mic::*mfp)(bool) = &Mic::SetMute; (void)mfp; (void)m; })
 
 GameMic::GameMic(int id)
-    : mMicID(id), unk8(1), unk9(1), mWriteWav(0), unkc(0), mStoredAudio(0), mDetector(0),
-      mNullMic(0), unk24(1), unk8030(0), unk8034(0), unk8038(0) {
+    : mMicID(id), mUSB(1), mPlayback(1), mWriteWav(0), mPlaybackSampleRate(0), mStoredAudio(0), mDetector(0),
+      mNullMic(0), mMicVolumeClamp(1), mNumSamplesRecent(0), mNumSamplesContinuous(0), mSpursActive(0) {
     if (id == -1) {
         mNullMic = new MicNull();
     }
@@ -46,10 +46,10 @@ GameMic::GameMic(int id)
     MILO_ASSERT(mFonixIdx != -1, 0x5D);
     mWriteWav = DataVariable("do_record").Int();
     SetInputFile(nullptr);
-    unk28 = 0;
-    unk1c = 0;
-    unk2c = -1;
-    unk20 = -1;
+    mLastEnergy = 0;
+    mEnergy = 0;
+    mLastPitch = -1;
+    mPitch = -1;
     if (mWriteWav) {
         mStoredAudio = new MemStream();
         mStoredAudio->Reserve(0x1c00000);
@@ -68,7 +68,7 @@ GameMic::~GameMic() {
         );
     }
     RELEASE(mStoredAudio);
-    unkc = 0;
+    mPlaybackSampleRate = 0;
     gIdxTaken[mFonixIdx] = false;
     delete mDetector;
 }
@@ -87,8 +87,8 @@ Mic *GameMic::GetMyMic() {
 }
 
 int GameMic::GetDataSampleRate() {
-    if (unkc) {
-        return unkc;
+    if (mPlaybackSampleRate) {
+        return mPlaybackSampleRate;
     }
     return GetMyMic()->GetSampleRate();
 }
@@ -99,12 +99,12 @@ void GameMic::SetInputFile(const char *filename) {
     if (nullptr == filename) {
         auto _tmp0 = GetMyMic()->GetSampleRate();
         sampleRate = _tmp0;
-        unkc = 0;
+        mPlaybackSampleRate = 0;
     } else {
         mWriteWav = false;
         FileStream fs(filename, FileStream::kRead, true);
         WaveFile wav(fs);
-        unkc = wav.mSamplesPerSec;
+        mPlaybackSampleRate = wav.mSamplesPerSec;
         WaveFileData data(wav);
         if (!_ref0) {
             _ref0 = new MemStream();
@@ -116,7 +116,7 @@ void GameMic::SetInputFile(const char *filename) {
             _ref0->mBuffer.begin(),
             (int)(wav.mNumChannels * wav.mNumSamples * wav.mBitsPerSample) / 8
         );
-        sampleRate = unkc;
+        sampleRate = mPlaybackSampleRate;
     }
     delete mDetector;
     mDetector = nullptr;
@@ -125,7 +125,7 @@ void GameMic::SetInputFile(const char *filename) {
 
 void GameMic::AccessContinuousSamples(const short *&s, int &i) const {
     s = mSamplesContinuous;
-    i = unk8034;
+    i = mNumSamplesContinuous;
 }
 
 void GameMic::ThreadProcessOneFrame() {
@@ -134,15 +134,15 @@ void GameMic::ThreadProcessOneFrame() {
     TheTaskMgr.Seconds(TaskMgr::kRealTime);
     clock();
     int droppedSamples = 0;
-    if (!unkc) {
+    if (!mPlaybackSampleRate) {
         Mic *mic = GetMyMic();
         droppedSamples = mic->GetDroppedSamples();
-        char *recentBuf = mic->GetRecentBuf(unk8030);
-        MinEq(unk8030, 8192);
-        memcpy(mSamplesRecent, recentBuf, unk8030 * 2);
-        char *continuousBuf = mic->GetContinuousBuf(unk8034);
-        MinEq(unk8034, 8192);
-        memcpy(mSamplesContinuous, continuousBuf, unk8034 * 2);
+        char *recentBuf = mic->GetRecentBuf(mNumSamplesRecent);
+        MinEq(mNumSamplesRecent, 8192);
+        memcpy(mSamplesRecent, recentBuf, mNumSamplesRecent * 2);
+        char *continuousBuf = mic->GetContinuousBuf(mNumSamplesContinuous);
+        MinEq(mNumSamplesContinuous, 8192);
+        memcpy(mSamplesContinuous, continuousBuf, mNumSamplesContinuous * 2);
     }
     Mic *myMic = GetMyMic();
     float outc = 0.0f;
@@ -152,17 +152,17 @@ void GameMic::ThreadProcessOneFrame() {
         mDetector,
         micName,
         mSamplesRecent,
-        unk8030,
+        mNumSamplesRecent,
         myMic->GetSensitivity(),
         micGain,
         livePitch,
         energy,
         outc
     );
-    energy = Clamp(0.0f, 1.0f, energy / (unk24 * 500.0f));
-    float rate = (energy > unk1c) ? 0.3f : 0.1f;
-    unk1c = rate * energy + (1.0f - rate) * unk1c;
-    unk20 = livePitch;
+    energy = Clamp(0.0f, 1.0f, energy / (mMicVolumeClamp * 500.0f));
+    float rate = (energy > mEnergy) ? 0.3f : 0.1f;
+    mEnergy = rate * energy + (1.0f - rate) * mEnergy;
+    mPitch = livePitch;
     if (mWriteWav && TheTaskMgr.Seconds(TaskMgr::kRealTime) >= 0.0f) {
         if ((unsigned int)(droppedSamples - 1) <= 0xbb7e) {
             short *zeros = new short[droppedSamples];
@@ -170,18 +170,18 @@ void GameMic::ThreadProcessOneFrame() {
             mStoredAudio->Write(zeros, droppedSamples * 2);
             delete[] zeros;
         }
-        mStoredAudio->Write(mSamplesContinuous, unk8034 * 2);
+        mStoredAudio->Write(mSamplesContinuous, mNumSamplesContinuous * 2);
     }
-    if (!unkc && GetMyMic()->IsConnected() == 0) {
-        unk20 = 0.0f;
-        unk1c = 0.0f;
+    if (!mPlaybackSampleRate && GetMyMic()->IsConnected() == 0) {
+        mPitch = 0.0f;
+        mEnergy = 0.0f;
     }
 }
 
 void GameMic::Update() {
     START_AUTO_TIMER("fonix_update");
     ThreadProcessOneFrame();
-    if (unkc) {
+    if (mPlaybackSampleRate) {
         float sampleRate = GetDataSampleRate();
         int maxSamples;
         int desired = (int)(TheTaskMgr.Seconds(TaskMgr::kRealTime) * sampleRate);
@@ -192,15 +192,15 @@ void GameMic::Update() {
         } else if (desired > maxSamples) {
             desired = maxSamples;
         }
-        unk8034 = desired - ((unsigned int)mStoredAudio->Tell() >> 1);
-        MinEq(unk8034, 8192);
-        mStoredAudio->Read(mSamplesContinuous, unk8034 * 2);
-        for (int i = 0; i < unk8034; i++) {
+        mNumSamplesContinuous = desired - ((unsigned int)mStoredAudio->Tell() >> 1);
+        MinEq(mNumSamplesContinuous, 8192);
+        mStoredAudio->Read(mSamplesContinuous, mNumSamplesContinuous * 2);
+        for (int i = 0; i < mNumSamplesContinuous; i++) {
             mSamplesContinuous[i] =
                 (mSamplesContinuous[i] << 8) | ((mSamplesContinuous[i] >> 8) & 0xFF);
         }
     }
-    unk28 = unk1c;
-    unk2c = unk20;
-    unk8 = GetMyMic()->GetType() != 1;
+    mLastEnergy = mEnergy;
+    mLastPitch = mPitch;
+    mUSB = GetMyMic()->GetType() != 1;
 }

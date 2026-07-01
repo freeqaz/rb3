@@ -30,9 +30,9 @@ public:
     float *mDecimBuf; // 0x20
     float *mCorrBuf; // 0x24
     float *mPeakBuf; // 0x28
-    float unk2C; // 0x2c  - smoothed pitch (semitones)
-    float unk30_period; // 0x30  - refined autocorrelation period (samples)
-    float unk34; // 0x34  - smoothed signal level
+    float mPitch; // 0x2c  - Bank 5 DWARF: smoothed pitch (semitones)
+    float mPeriod; // 0x30  - refined autocorrelation period (samples)
+    float mAveEnergy; // 0x34  - Bank 5 DWARF: smoothed signal level (avg energy)
     float unk38; // 0x38  - 5.0f
     bool mEnablePitchDetection; // 0x3c
     int unk40; // 0x40

@@ -19,7 +19,7 @@ ChordShapeGenerator::ChordShapeGenerator()
     : mFingerSrcMesh(this, 0), mChordSrcMesh(this, 0), mBaseXSection(this, 0),
       mContourXSection(this, 0), mBaseHeight(this, 0), mNumSlots(6), mString0(this, 0),
       mString1(this, 0), mString2(this, 0), mString3(this, 0), mString4(this, 0),
-      mString5(this, 0), mSource(0), unkc8(-1.0f), unkcc(1.0f), unkd0(0.2f) {
+      mString5(this, 0), mSource(0), mBaseXVal(-1.0f), mContourXVal(1.0f), mBaseHeightVal(0.2f) {
     mFretHeights.resize(7);
     for (int i = 0; i < 7; i++)
         mFretHeights[i] = 1.0f;
@@ -221,11 +221,11 @@ RndMesh *ChordShapeGenerator::BuildChordMesh() {
         ));
         return 0;
     }
-    unkc8 = mBaseXSection->WorldXfm().v.x;
-    unkcc = mContourXSection->WorldXfm().v.x;
-    unkd0 = mBaseHeight->WorldXfm().v.z;
-    GetCrossSection(unkc8, sec2);
-    GetCrossSection(unkcc, sec1);
+    mBaseXVal = mBaseXSection->WorldXfm().v.x;
+    mContourXVal = mContourXSection->WorldXfm().v.x;
+    mBaseHeightVal = mBaseHeight->WorldXfm().v.z;
+    GetCrossSection(mBaseXVal, sec2);
+    GetCrossSection(mContourXVal, sec1);
     RndMesh *mesh = NewCopyMesh(_ref0);
     mesh->SetMutable(0x3F);
     mesh->Verts().resize(0, true);
@@ -369,7 +369,7 @@ void ChordShapeGenerator::BuildEndCap(
     RndMesh::VertVector &meshVerts = mesh->Verts();
     for (int i = 0; i < (int)srcVerts.size(); i++) {
         float sx = srcVerts[i].pos.x;
-        if (contour ? (sx < unkcc + 0.1f) : (sx > unkc8 - 0.1f)) {
+        if (contour ? (sx < mContourXVal + 0.1f) : (sx > mBaseXVal - 0.1f)) {
             capMap[i] = vertIt++;
         }
     }
@@ -378,7 +378,7 @@ void ChordShapeGenerator::BuildEndCap(
         MILO_LOG("RG: too few verts for chord shape - increasing to %d", newsize);
         meshVerts.resize(newsize, true);
     }
-    float xOffset = contour ? unkcc : unkc8;
+    float xOffset = contour ? mContourXVal : mBaseXVal;
     float xScale = contour ? -1.0f : 1.0f;
     float fretHeight = mFretHeights[mFret];
     std::map<unsigned short, unsigned short>::const_iterator vit = capMap.begin();
@@ -397,13 +397,13 @@ void ChordShapeGenerator::BuildEndCap(
             float minX = srcVerts[f.v1].pos.x;
             MinEq(minX, srcVerts[f.v2].pos.x);
             MinEq(minX, srcVerts[f.v3].pos.x);
-            if (!(minX < unkcc - 0.1f))
+            if (!(minX < mContourXVal - 0.1f))
                 continue;
         } else {
             float maxX = srcVerts[f.v1].pos.x;
             MaxEq(maxX, srcVerts[f.v2].pos.x);
             MaxEq(maxX, srcVerts[f.v3].pos.x);
-            if (!(maxX > unkc8 + 0.1f))
+            if (!(maxX > mBaseXVal + 0.1f))
                 continue;
         }
         if (faceIt >= meshFaces.size()) {
@@ -438,8 +438,8 @@ void ChordShapeGenerator::TransformVert(
     float pz = vert.pos.z;
     px -= xOffset;
     vert.pos.x = px * xScale;
-    if (pz > unkd0) {
-        vert.pos.z = fretHeight * (pz - unkd0) + unkd0;
+    if (pz > mBaseHeightVal) {
+        vert.pos.z = fretHeight * (pz - mBaseHeightVal) + mBaseHeightVal;
     }
     vert.color = col;
     Multiply(vert.pos, tf, vert.pos);
@@ -462,7 +462,7 @@ void ChordShapeGenerator::BuildContourCap(
     std::map<unsigned short, unsigned short> capMap;
     for (int i = 0; i < srcVerts.size(); i++) {
         float sx = srcVerts[i].pos.x;
-        if (sx > unkc8 + 0.1f && sx < unkcc - 0.1f) {
+        if (sx > mBaseXVal + 0.1f && sx < mContourXVal - 0.1f) {
             capMap[i] = vertIt++;
         }
     }
@@ -482,10 +482,10 @@ void ChordShapeGenerator::BuildContourCap(
     midPt.v = trisectA.v;
     midPt.v += trisectB.v;
     midPt.v /= 2.0f;
-    float capTessA = (unkc8 * 2.0f + unkcc) / 3.0f;
-    float capTessB = (unkcc * 2.0f + unkc8) / 3.0f;
-    float xMid = (unkc8 + unkcc) * 0.5f;
-    float xScale = (tf2.v.x - tf1.v.x) / (unkcc - unkc8);
+    float capTessA = (mBaseXVal * 2.0f + mContourXVal) / 3.0f;
+    float capTessB = (mContourXVal * 2.0f + mBaseXVal) / 3.0f;
+    float xMid = (mBaseXVal + mContourXVal) * 0.5f;
+    float xScale = (tf2.v.x - tf1.v.x) / (mContourXVal - mBaseXVal);
     float fretHeight = mFretHeights[iii];
     std::map<unsigned short, unsigned short>::const_iterator vit = capMap.begin();
     std::map<unsigned short, unsigned short>::const_iterator vend = capMap.end();
@@ -495,19 +495,19 @@ void ChordShapeGenerator::BuildContourCap(
         curvert = srcVerts[vit->first];
         if (invert) {
             if (curvert.pos.x < capTessA) {
-                TransformVert(curvert, unkc8, zScale, fretHeight, tf2, Hmx::Color32(col2));
+                TransformVert(curvert, mBaseXVal, zScale, fretHeight, tf2, Hmx::Color32(col2));
             } else if (curvert.pos.x < capTessB) {
                 TransformVert(curvert, xMid, zScale, fretHeight, midPt, Hmx::Color32(col2));
             } else {
-                TransformVert(curvert, unkcc, zScale, fretHeight, tf1, Hmx::Color32(col2));
+                TransformVert(curvert, mContourXVal, zScale, fretHeight, tf1, Hmx::Color32(col2));
             }
         } else {
             if (curvert.pos.x < capTessA) {
-                TransformVert(curvert, unkc8, xScale, fretHeight, tf1, Hmx::Color32(col1));
+                TransformVert(curvert, mBaseXVal, xScale, fretHeight, tf1, Hmx::Color32(col1));
             } else if (curvert.pos.x < capTessB) {
                 TransformVert(curvert, xMid, xScale, fretHeight, midPt, Hmx::Color32(col1));
             } else {
-                TransformVert(curvert, unkcc, xScale, fretHeight, tf2, Hmx::Color32(col1));
+                TransformVert(curvert, mContourXVal, xScale, fretHeight, tf2, Hmx::Color32(col1));
             }
         }
     }
@@ -530,11 +530,11 @@ void ChordShapeGenerator::BuildContourCap(
         float minX = srcVerts[f.v1].pos.x;
         MinEq(minX, srcVerts[f.v2].pos.x);
         MinEq(minX, srcVerts[f.v3].pos.x);
-        if (minX < unkc8 - 0.1f) continue;
+        if (minX < mBaseXVal - 0.1f) continue;
         float maxX = srcVerts[f.v1].pos.x;
         MaxEq(maxX, srcVerts[f.v2].pos.x);
         MaxEq(maxX, srcVerts[f.v3].pos.x);
-        if (maxX > unkcc + 0.1f) continue;
+        if (maxX > mContourXVal + 0.1f) continue;
         if (faceIt >= meshFaces.size()) {
             unsigned int newsize = meshFaces.size() * 2;
             MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
@@ -711,8 +711,8 @@ void ChordShapeGenerator::AddVertProfile(
         curvert = srcVerts[srcIdx];
         curvert.pos.x -= secSrc.mXOffset;
         float pz = curvert.pos.z;
-        if (pz > unkd0) {
-            curvert.pos.z = fretHeight * (pz - unkd0) + unkd0;
+        if (pz > mBaseHeightVal) {
+            curvert.pos.z = fretHeight * (pz - mBaseHeightVal) + mBaseHeightVal;
         }
         curvert.color = col;
         Multiply(curvert.pos, xfm, curvert.pos);

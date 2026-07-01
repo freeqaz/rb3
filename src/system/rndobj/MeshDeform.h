@@ -36,13 +36,13 @@ public:
     class BoneDesc {
     public:
         BoneDesc(Hmx::Object *owner) : mBone(owner) {
-            unk14.Reset();
-            unk54.Reset();
+            offset.Reset();
+            parent.Reset();
         }
         void ExportWorldXfm(Transform &);
         ObjPtr<RndTransformable, ObjectDir> mBone; // 0x0
-        Transform unk14; // 0x14
-        Transform unk54; // 0x54
+        Transform offset; // 0x14 (Bank 5 DWARF: "offset")
+        Transform parent; // 0x54 (Bank 5 DWARF: "parent")
     };
 
     RndMeshDeform();

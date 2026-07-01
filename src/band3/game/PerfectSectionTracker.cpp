@@ -370,7 +370,7 @@ String PerfectSectionTracker::GetPlayerContributionString(Symbol s) const {
     if (pid.NotNull()) {
         Player *pPlayer = mSource->GetPlayer(pid);
         MILO_ASSERT(pPlayer, 0x2D9);
-        f1 = pPlayer->mStats.unk1c0;
+        f1 = pPlayer->mStats.mTrackerContribution;
     }
     Symbol sym = (int)f1 == 1 ? tour_goal_band_perfect_section_result_format_1
                               : tour_goal_band_perfect_section_result_format;
@@ -385,7 +385,7 @@ void PerfectSectionTracker::SavePlayerStats() const {
         TrackType tt = pPlayer->GetTrackType();
         std::map<TrackType, int>::const_iterator it = unk8c.find(tt);
         if (it != unk8c.end()) {
-            pPlayer->mStats.unk1c0 = it->second;
+            pPlayer->mStats.mTrackerContribution = it->second;
         }
     }
 }

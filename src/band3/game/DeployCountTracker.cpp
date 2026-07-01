@@ -50,7 +50,7 @@ String DeployCountTracker::GetPlayerContributionString(Symbol s) const {
     if (pid.NotNull()) {
         Player *pPlayer = mSource->GetPlayer(pid);
         MILO_ASSERT(pPlayer, 0x62);
-        f1 = pPlayer->mStats.unk1c0;
+        f1 = pPlayer->mStats.mTrackerContribution;
     }
     Symbol sym = (int)f1 == 1 ? deploy_stat_tracker_contribution_1
                               : deploy_stat_tracker_contribution;
@@ -65,7 +65,7 @@ void DeployCountTracker::SavePlayerStats() const {
         std::map<TrackerPlayerID, PlayerDeployData>::const_iterator cData =
             mDeployDataMap.find(id);
         MILO_ASSERT(cData != mDeployDataMap.end(), 0x7C);
-        pPlayer->mStats.unk1c0 = cData->second.unk4;
+        pPlayer->mStats.mTrackerContribution = cData->second.unk4;
     }
 }
 

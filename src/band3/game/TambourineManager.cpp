@@ -144,8 +144,8 @@ void TambourineManager::ComputeTambourinePoints() {
     for (std::vector<VocalPhrase>::iterator it = list->mPhrases.begin();
          it != list->mPhrases.end(); ++it) {
         if (it->mTambourinePhrase) {
-            int phraseStart = it->unk8;
-            int phraseEnd = phraseStart + it->unkc;
+            int phraseStart = it->mStartTick;
+            int phraseEnd = phraseStart + it->mDurationTicks;
             int i = 0;
             while ((unsigned int)i < TambourineGems().size() &&
                    TambourineGems()[i] < phraseStart) {
@@ -220,7 +220,7 @@ void TambourineManager::SetTambourine(bool iIsActive) {
         MILO_ASSERT(mTambourineIdx != TambourineGems().size(), 0x142);
         int remaining =
             mPlayerRef.mVocalParts.front()->CalculateRemainingTambourineTicks();
-        int start = thisPhrase->unk8;
+        int start = thisPhrase->mStartTick;
         int end = start + remaining;
         while (TambourineGems()[mTambourineIdx] < start) {
             mTambourineIdx++;

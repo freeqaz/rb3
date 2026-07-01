@@ -118,11 +118,11 @@ public:
     ObjPtrList<BandCamShot> mNextShots; // 0x13c
     ObjPtrList<BandCamShot>::iterator mShotIter; // 0x14c
     ObjPtr<BandCamShot> mCurShot; // 0x150
-    float unk15c; // 0x15c
-    float unk160; // 0x160
-    float unk164; // 0x164
-    bool unk168; // 0x168
-    bool unk169; // 0x169
-    bool unk16a; // 0x16a
+    float mNextTotalDur; // 0x15c - accumulated duration of played next-shots
+    float mNextDur; // 0x160 - current next-shot's total duration
+    float mCachedTotalDuration; // 0x164 - Bank 5 DWARF: cached GetTotalDuration()
+    bool mRecursing; // 0x168 - guard set during SetFrameEx nesting
+    bool mListingNextShots; // 0x169 - loop guard in ListNextShots
+    bool mSetPreFrameCalled; // 0x16a - SetPreFrame ran this frame
     bool mAnimsDuringNextShots; // 0x16b
 };

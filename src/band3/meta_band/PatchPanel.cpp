@@ -82,9 +82,9 @@ inline int LayerProvider::NumData() const {
 
 PatchPanel::PatchPanel()
     : mPatch(0), mCategoryProvider(0), mStickerProvider(0), mGridProvider(0),
-      mLayerProvider(0), unk50(0), unk51(0), unk58(6), unk5c(6), unk60(0.15f),
-      unk64(0.3f), unk68(5.0f), unk6c(30.0f), unk70(8.0f), unk74(0.1f), unk78(1.0f),
-      unk7c(0.3f), unk80(0), unk84(50.0f), mBaseSizeX(1), mBaseSizeY(1), mUndoColorIdx(0),
+      mLayerProvider(0), unk50(0), unk51(0), kMoveScalar(6), kRotScalar(6), kScaleScalar(0.15f),
+      kScaleMin(0.3f), kScaleMax(5.0f), kDamp(30.0f), kAccel(8.0f), kVelMin(0.1f), kVelMax(1.0f),
+      kDeformScalar(0.3f), kDeformMin(0), kDeformMax(50.0f), mBaseSizeX(1), mBaseSizeY(1), mUndoColorIdx(0),
       mUndoRotation(0), mUndoScaleX(0), mUndoScaleY(0), mUndoDeformFrame(0) {
     mUndoPosition.Zero();
 }
@@ -242,22 +242,22 @@ float PatchPanel::CalcMotion(float vel, int dir) {
     static const float kMaxDt = 1.0f / 30.0f;
     if (kMaxDt < dt)
         dt = kMaxDt;
-    float deadzone = unk74;
+    float deadzone = kVelMin;
     if (vel < deadzone && vel > -deadzone)
         vel = 0.0f;
     if ((vel < 0.0f && dir > 0) || (vel > 0.0f && dir < 0))
         vel = 0.0f;
     if (dir != 0) {
         if (vel) {
-            vel = vel * (unk70 * dt + 1.0f);
+            vel = vel * (kAccel * dt + 1.0f);
         } else {
             int sign = dir > 0 ? 1 : -1;
             vel = deadzone * (float)sign;
         }
     } else {
-        vel = vel * -(unk6c * dt - 1.0f);
+        vel = vel * -(kDamp * dt - 1.0f);
     }
-    float maxVel = unk78;
+    float maxVel = kVelMax;
     float negMaxVel = -maxVel;
     if (vel < negMaxVel)
         vel = negMaxVel;
@@ -432,8 +432,8 @@ void PatchPanel::Poll() {
         _mMoveVelX = CalcMotion(_mMoveVelX, _mMoveX);
         mMoveVelY = CalcMotion(mMoveVelY, mMoveY);
         Vector3 pos = layer.Position();
-        pos.x = _mMoveVelX * unk58 + pos.x;
-        pos.z = mMoveVelY * unk58 + pos.z;
+        pos.x = _mMoveVelX * kMoveScalar + pos.x;
+        pos.z = mMoveVelY * kMoveScalar + pos.z;
         if (pos.x < -250.0f)
             pos.x = -250.0f;
         else if (pos.x > 250.0f)
@@ -444,30 +444,30 @@ void PatchPanel::Poll() {
             pos.z = 200.0f;
         layer.SetPosition(pos);
         mRotVel = CalcMotion(mRotVel, mRot);
-        layer.SetRotation(mRotVel * unk5c + layer.Rotation());
+        layer.SetRotation(mRotVel * kRotScalar + layer.Rotation());
         float scaleX = layer.ScaleX();
         float scaleY = layer.ScaleY();
         mScaleVelX = CalcMotion(mScaleVelX, mScaleX);
         mScaleVelY = CalcMotion(mScaleVelY, mScaleY);
-        float newScaleX = unk60 * mScaleVelX + scaleX;
-        float newScaleY = unk60 * mScaleVelY + scaleY;
+        float newScaleX = kScaleScalar * mScaleVelX + scaleX;
+        float newScaleY = kScaleScalar * mScaleVelY + scaleY;
         if (newScaleX < 0.0f) {
-            float minS = (-1.0f * unk68) / mBaseSizeX;
-            float maxS = (-1.0f * unk64) / mBaseSizeX;
+            float minS = (-1.0f * kScaleMax) / mBaseSizeX;
+            float maxS = (-1.0f * kScaleMin) / mBaseSizeX;
             if (newScaleX < minS)
                 newScaleX = minS;
             else if (newScaleX > maxS)
                 newScaleX = maxS;
         } else {
-            float minS = unk64 / mBaseSizeX;
-            float maxS = unk68 / mBaseSizeX;
+            float minS = kScaleMin / mBaseSizeX;
+            float maxS = kScaleMax / mBaseSizeX;
             if (newScaleX < minS)
                 newScaleX = minS;
             else if (newScaleX > maxS)
                 newScaleX = maxS;
         }
-        float minSY = unk64 / mBaseSizeY;
-        float maxSY = unk68 / mBaseSizeY;
+        float minSY = kScaleMin / mBaseSizeY;
+        float maxSY = kScaleMax / mBaseSizeY;
         if (newScaleY < minSY)
             newScaleY = minSY;
         else if (newScaleY > maxSY)
@@ -475,11 +475,11 @@ void PatchPanel::Poll() {
         layer.SetScaleX(newScaleX);
         layer.SetScaleY(newScaleY);
         mDeformVel = CalcMotion(mDeformVel, mDeform);
-        float newDeform = mDeformVel * unk7c + layer.DeformFrame();
-        if (newDeform < unk80)
-            newDeform = unk80;
-        else if (newDeform > unk84)
-            newDeform = unk84;
+        float newDeform = mDeformVel * kDeformScalar + layer.DeformFrame();
+        if (newDeform < kDeformMin)
+            newDeform = kDeformMin;
+        else if (newDeform > kDeformMax)
+            newDeform = kDeformMax;
         layer.SetDeformFrame(newDeform);
         if (_mMoveVelX != 0.0f || mMoveVelY != 0.0f || mRotVel != 0.0f
             || mScaleVelX != 0.0f || mScaleVelY != 0.0f || mDeformVel != 0.0f) {

@@ -195,9 +195,10 @@ class RangeSection {
 public:
     RangeSection() {}
     RangeSection(int i, float f)
-        : unk0(i), unk4(f), unk8(3.4028235E+38f), unkc(-3.4028235E+38f) {}
-    int unk0; // tick
-    float unk4;
-    float unk8; // start of displayable range
-    float unkc; // end of displayable range
+        : mStartTick(i), mIntroDur(f), mPitchMin(3.4028235E+38f),
+          mPitchMax(-3.4028235E+38f) {}
+    int mStartTick; // 0x0 - Bank 5 DWARF: section start tick
+    float mIntroDur; // 0x4 - intro duration
+    float mPitchMin; // 0x8 - min pitch (semitones); inits to +FLT_MAX
+    float mPitchMax; // 0xc - max pitch (semitones); inits to -FLT_MAX
 };

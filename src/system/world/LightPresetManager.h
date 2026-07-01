@@ -43,12 +43,12 @@ public:
     LightPreset *mPresetOverride; // 0x24
     LightPreset *mPresetNew; // 0x28
     LightPreset *mPresetPrev; // 0x2c
-    float unk30; // 0x30
-    float unk34; // 0x34
-    float unk38; // 0x38
-    bool unk3c; // 0x3c
+    float mPresetNewStartTime; // 0x30 - Bank 5 DWARF: new preset start time
+    float mPresetPrevStartTime; // 0x34 - previous preset start time
+    float unk38; // 0x38 - override preset start time (Bank 8 addition)
+    bool mLastFrameSame; // 0x3c - Bank 5 DWARF: last-frame-same flag
     float mBlend; // 0x40
-    float unk44; // 0x44
-    int unk48; // 0x48
+    float mOverrideFadeInTime; // 0x44 - Bank 5 DWARF: override fade-in duration
+    int unk48; // 0x48 - override state flag (Bank 8 addition)
     bool mIgnoreLightingEvents; // 0x4c
 };

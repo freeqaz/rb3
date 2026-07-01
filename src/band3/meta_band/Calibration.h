@@ -61,39 +61,39 @@ public:
     float mCycleTimeMs; // 0x38
     Stream *mStream; // 0x3c
     Fader *mFader; // 0x40
-    bool unk44;
+    bool mStartASAP; // 0x44
     std::vector<float> mTestSamples; // 0x48
     bool mHalfOffAnim; // 0x50
     bool mEnableVideo; // 0x51
     int mNumHits; // 0x54
     bool mEnableAudio; // 0x58
-    float unk5c;
+    float mLastStreamMs; // 0x5c
     TestState mTestState; // 0x60
-    float unk64;
+    float mPrevFrame; // 0x64
     bool mHardwareMode; // 0x68
     float mAnimCycleFrames; // 0x6c
     int mAnimNumCycles; // 0x70
     int mMaxSlack; // 0x74
     float mRestingFrame; // 0x78
-    int unk7c;
-    float unk80;
+    int mStartRep; // 0x7c
+    float mPostTestStartTime; // 0x80
     float mVolDb; // 0x84
-    int unk88;
-    float unk8c;
-    int unk90;
-    float unk94;
-    int unk98;
+    int mShowNumTimes; // 0x88
+    float mAccel; // 0x8c
+    int mTimeOutRep; // 0x90
+    float mPrevLX; // 0x94
+    int unk98; // 0x98 (DWARF: float mPrevLY; kept int, decomp-inferred type differs)
     int mPad; // 0x9c
-    bool unka0; // maybe char instead?
-    float unka4[5]; // 0xa4
-    float unkb8[5]; // 0xb8
-    bool unkcc;
-    float unkd0;
-    float unkd4;
-    float unkd8;
-    int unkdc;
-    bool unke0;
-    float unke4;
+    bool mAllowGreenButton; // 0xa0
+    float mXV[5]; // 0xa4
+    float mYV[5]; // 0xb8
+    bool mVibrationEnabled; // 0xcc
+    float mLastTime; // 0xd0
+    float mSensorSigma; // 0xd4
+    float mAveragePeak; // 0xd8
+    int mAveragePeakCount; // 0xdc
+    bool mAdams; // 0xe0
+    float mSensorDeltaPeakFollow; // 0xe4
     int mTopOutliers; // 0xe8
     int mBottomOutliers; // 0xec
 };

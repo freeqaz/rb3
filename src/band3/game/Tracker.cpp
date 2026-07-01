@@ -90,7 +90,7 @@ void Tracker::HandleGameOver(float f) {
         if (mSource->IsPlayerLocal(id)) {
             Player *pPlayer = mSource->GetPlayer(id);
             MILO_ASSERT(pPlayer, 0xAD);
-            pPlayer->mStats.unk1c4 = pct;
+            pPlayer->mStats.mTrackerResult = pct;
         }
     }
 }
@@ -133,15 +133,15 @@ void Tracker::ReconcileStats() {
          id = mSource->GetNextPlayer(id)) {
         Player *pPlayer = mSource->GetPlayer(id);
         MILO_ASSERT(pPlayer, 0xFF);
-        if (f1 < pPlayer->mStats.unk1c4) {
-            f1 = pPlayer->mStats.unk1c4;
+        if (f1 < pPlayer->mStats.mTrackerResult) {
+            f1 = pPlayer->mStats.mTrackerResult;
         }
     }
     Band *pBand = TheGame->GetBand();
     MILO_ASSERT(pBand, 0x107);
     Performer *pPerformer = pBand->GetBand();
     MILO_ASSERT(pPerformer, 0x109);
-    pPerformer->mStats.unk1c4 = f1;
+    pPerformer->mStats.mTrackerResult = f1;
 }
 
 float Tracker::CalcProgressPercentage() const {

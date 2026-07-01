@@ -67,11 +67,11 @@ Player::Player(BandUser *user, Band *band, int tracknum, BeatMaster *bmaster)
     : Performer(user, band), mParams(new PlayerParams()), mBehavior(new PlayerBehavior()),
       mUser(user), mCommonPhraseCapturer(band->mCommonPhraseCapturer), mRemote(0), mTrackNum(tracknum), mTrackType(kTrackNone),
       mEnabledState(kPlayerEnabled), mTimesFailed(0), mIsInCoda(0), mBandEnergy(0),
-      mDeployingBandEnergy(0), unk274(1), unk278(0), mPhraseBonus(1),
-      mBeatMaster(bmaster), unk284(5000.0f), unk288(0), unk28c(0), unk290(0), unk294(0),
-      unk298(0), mDisconnectedAtStart(0), unk2a9(0), unk2ac(0),
+      mDeployingBandEnergy(0), mLastMultiplier(1), mNumTimesDeployed(0), mPhraseBonus(1),
+      mBeatMaster(bmaster), mIntroHelpDurationMs(5000.0f), mIntroHelpShowing(0), mBonusID(0), mNetTalking(0), mNumPlayersSaved(0),
+      mSaveInProgress(0), mDisconnectedAtStart(0), mFailedAtStart(0), mPollCounter(0),
       unk2b0(TheGame->mProperties.mEnableOverdrive), mPermanentOverdrive(0),
-      mHasFinishedCoda(0), mHasBlownCoda(0), unk2b4(0), unk2b8(0), unk2bc(0), unk2c0(-1),
+      mHasFinishedCoda(0), mHasBlownCoda(0), mTotalNumPlayersSaved(0), mMultiplierPollSum(0), mMultiplierPollCount(0), mCurrentSectionIndex(-1),
       unk2c4(1) {
     if (user) {
         mRemote = !user->IsLocal();
@@ -81,11 +81,11 @@ Player::Player(BandUser *user, Band *band, int tracknum, BeatMaster *bmaster)
             mParams->SetVocals();
         }
     }
-    unk29c = 0;
-    unk2a0 = 0;
-    unk2a4 = 0;
+    mLastScoreSentMs = 0;
+    mLastScoreSent = 0;
+    mLastEnergySentMs = 0;
     DataArray *cfg = SystemConfig("track_graphics");
-    unk284 = cfg->FindFloat("popup_help_intro_duration_ms");
+    mIntroHelpDurationMs = cfg->FindFloat("popup_help_intro_duration_ms");
 }
 
 void Player::DynamicAddBeatmatch() { DisableOverdrivePhrases(); }
@@ -142,19 +142,19 @@ void Player::Restart(bool b) {
     mIsInCoda = false;
     mBandEnergy = 0;
     mDeployingBandEnergy = false;
-    unk28c = 0;
-    unk294 = 0;
-    unk2b4 = 0;
-    unk298 = 0;
-    unk274 = 1;
-    unk278 = 0;
-    unk29c = 0;
-    unk2a0 = 0;
-    unk2a4 = 0;
-    unk2b8 = 0;
-    unk2bc = 0;
-    unk2c0 = -1;
-    unk260.clear();
+    mBonusID = 0;
+    mNumPlayersSaved = 0;
+    mTotalNumPlayersSaved = 0;
+    mSaveInProgress = 0;
+    mLastMultiplier = 1;
+    mNumTimesDeployed = 0;
+    mLastScoreSentMs = 0;
+    mLastScoreSent = 0;
+    mLastEnergySentMs = 0;
+    mMultiplierPollSum = 0;
+    mMultiplierPollCount = 0;
+    mCurrentSectionIndex = -1;
+    mFailedWindows.clear();
     Performer::Restart(b);
     if (IsLocal()) {
         mStats.SetFinalized(true);
@@ -162,7 +162,7 @@ void Player::Restart(bool b) {
     if (mDisconnectedAtStart) {
         mCrowd->SetDisplayValue(0);
     }
-    unk2ac = 0;
+    mPollCounter = 0;
     mHasFinishedCoda = 0;
     mHasBlownCoda = 0;
     if (mUser) {
@@ -180,21 +180,21 @@ void Player::Poll(float f, const SongPos &pos) {
         PollEnabledState(f);
     }
     if (IsNet()) {
-        PollTalking(unk2ac);
+        PollTalking(mPollCounter);
     }
     UpdateEnergy(pos);
     Performer::Poll(f, pos);
-    unk2ac++;
+    mPollCounter++;
     if (unk1e2 && mDeployingBandEnergy) {
         StopDeployingBandEnergy(false);
     }
-    if (IsLocal() && f >= unk2a4 + 2000.0f && !unk1e2) {
+    if (IsLocal() && f >= mLastEnergySentMs + 2000.0f && !unk1e2) {
         Handle(send_update_energy_msg, true);
-        unk2a4 = f;
+        mLastEnergySentMs = f;
     }
-    if (unk288 && IsLocal() && f >= unk284) {
+    if (mIntroHelpShowing && IsLocal() && f >= mIntroHelpDurationMs) {
         PopupHelp(intro, false);
-        unk288 = false;
+        mIntroHelpShowing = false;
     }
     if (unk2c4) {
         BandTrack *track = GetBandTrack();
@@ -208,16 +208,16 @@ void Player::PollMultiplier() {
     if (TheGame->mProperties.mEnableStreak) {
         int i1 = 0, i2 = 0, i3 = 0;
         GetMultiplier(true, i1, i2, i3);
-        int oldMult = unk274;
+        int oldMult = mLastMultiplier;
         if (i1 != oldMult) {
             if (i1 == 1) {
                 mStats.EndStreakMultiplier(GetSongMs(), oldMult);
             }
-            unk274 = i1;
+            mLastMultiplier = i1;
         }
         if (TheGame->unkdc == -1.0f) {
-            unk2b8 += i1 * i3;
-            unk2bc++;
+            mMultiplierPollSum += i1 * i3;
+            mMultiplierPollCount++;
         }
     }
 }
@@ -238,7 +238,7 @@ void Player::PollEnabledState(float f) {
             if (GetCrowdMeterActive()) {
                 mCrowd->SetDisplayValue(
                     -(mParams->mCrowdLossPerMs * (TheGame->NumActivePlayers() - 1))
-                    * (f - unk25c)
+                    * (f - mDisableMs)
                 );
             }
         }
@@ -255,11 +255,11 @@ void Player::PollEnabledState(float f) {
 }
 
 void Player::PollTalking(int i) {
-    if (i % 5 == 0 && unk290) {
+    if (i % 5 == 0 && mNetTalking) {
         BandTrack *track = GetBandTrack();
         if (track)
             track->SetNetTalking(false);
-        unk290 = false;
+        mNetTalking = false;
     }
 }
 
@@ -276,7 +276,7 @@ void Player::StartIntro() {
         if (!user->HasShownIntroHelp(mTrackType)) {
             PopupHelp(intro, true);
             user->SetShownIntroHelp(mTrackType, true);
-            unk288 = true;
+            mIntroHelpShowing = true;
         }
     }
 }
@@ -286,12 +286,12 @@ float Player::GetSongMs() const { return mBeatMaster->mAudio->GetTime(); }
 void Player::BroadcastScore() {
     if (unk1fd) {
         float poll = PollMs();
-        float sub = poll - unk29c;
-        int isub = (int)mScore - unk2a0;
+        float sub = poll - mLastScoreSentMs;
+        int isub = (int)mScore - mLastScoreSent;
         if ((isub > 0x13U) || (isub != 0) && (sub >= 250.0f)) {
             HandleType(send_update_score_msg);
-            unk29c = poll;
-            unk2a0 = mScore;
+            mLastScoreSentMs = poll;
+            mLastScoreSent = mScore;
         }
     }
 }
@@ -313,7 +313,7 @@ void Player::EnterCoda() {
 
 void Player::AddBonusPoints(int i) {
     BandUser *u = mUser;
-    TheGame->AddBonusPoints(u, i, unk28c++);
+    TheGame->AddBonusPoints(u, i, mBonusID++);
 }
 
 void Player::Rollback(float, float) {
@@ -338,7 +338,7 @@ void Player::SetEnabledState(EnabledState estate, BandUser *user, bool b) {
         msg[2] = user->GetSlot();
         HandleType(msg);
     } else if (estate == 2) {
-        unk298 = 1;
+        mSaveInProgress = 1;
     }
 }
 
@@ -351,8 +351,8 @@ EnabledState Player::GetEnabledStateAt(float f) const {
     if (mEnabledState == kPlayerDisconnected)
         return kPlayerDisconnected;
     int tick = (int)MsToTick(f);
-    for (unsigned int i = 0; i < unk260.size(); i++) {
-        const Extent &e = unk260[i];
+    for (unsigned int i = 0; i < mFailedWindows.size(); i++) {
+        const Extent &e = mFailedWindows[i];
         if (tick >= e.unk0 && (e.unk4 < 0 || tick < e.unk4))
             return kPlayerDisabled;
     }
@@ -366,7 +366,7 @@ DECOMP_FORCEACTIVE(
 #pragma push
 #pragma pool_data off
 void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, bool b) {
-    unk298 = 0;
+    mSaveInProgress = 0;
     if (estate == kPlayerBeingSaved && mEnabledState != kPlayerDisabled) {
         MILO_ASSERT(causer, 0x260);
         if (causer->GetPlayer()->IsNet()) {
@@ -378,8 +378,8 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
     if (mEnabledState == kPlayerDisabled && estate == kPlayerEnabled) {
         mCrowd->SetDisplayValue(mParams->mCrowdSaveLevel);
     }
-    if (unk2a9 && estate != kPlayerDisabled) {
-        unk2a9 = false;
+    if (mFailedAtStart && estate != kPlayerDisabled) {
+        mFailedAtStart = false;
     }
     SetCrowdMeterActive(!b);
     float durms = TheSongDB->GetSongDurationMs();
@@ -391,15 +391,15 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
     switch (estate) {
     case kPlayerEnabled:
         Export(enable_player_msg, true);
-        if (unk260.size() != 0 && unk260.back().unk4 == -1) {
-            unk260.back().unk4 = i;
+        if (mFailedWindows.size() != 0 && mFailedWindows.back().unk4 == -1) {
+            mFailedWindows.back().unk4 = i;
         }
         break;
     case kPlayerDisabled:
     case kPlayerDisconnected:
         SetEnergy(0);
         if (TheGamePanel->GetState() != UIPanel::kUnloaded) {
-            if (unk2a9) {
+            if (mFailedAtStart) {
                 mTimesFailed = 0;
             } else {
                 if (mBand) {
@@ -414,12 +414,12 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
                 }
                 mTimesFailed++;
             }
-            unk25c = PollMs();
+            mDisableMs = PollMs();
             DisablePlayer(mTimesFailed);
             mStats.AddFailurePoint(newpct);
             {
                 Extent ext(i, -1);
-                unk260.push_back(ext);
+                mFailedWindows.push_back(ext);
             }
         }
         break;
@@ -455,7 +455,7 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
 bool Player::Saveable() const {
     bool ret = false;
     bool result = false;
-    if (mEnabledState == kPlayerDisabled && mTimesFailed < 3 && !unk298)
+    if (mEnabledState == kPlayerDisabled && mTimesFailed < 3 && !mSaveInProgress)
         ret = true;
     if (ret) {
         MetaPerformer::Current();
@@ -469,7 +469,7 @@ void Player::Save(BandUser *user, bool b) { SetEnabledState(kPlayerBeingSaved, u
 #pragma push
 #pragma pool_data off
 void Player::DisablePlayer(int i) {
-    if (!unk2a9) {
+    if (!mFailedAtStart) {
         const char *cue = MakeString("%s_died.cue", TrackTypeToSym(mTrackType).Str());
         float f = 0;
         if (TheBandUserMgr->IsMultiplayerGame()) {
@@ -669,11 +669,11 @@ void Player::PerformDeployBandEnergy(int playersSaved, bool local) {
 DECOMP_FORCEACTIVE(Player, "rp_deployed_%s.cue")
 
 void Player::RemoteAlreadySaved(int i) {
-    unk294--;
-    if (unk294 == 0) {
+    mNumPlayersSaved--;
+    if (mNumPlayersSaved == 0) {
         AddEnergy(mParams->mSaveEnergy);
     }
-    unk2b4--;
+    mTotalNumPlayersSaved--;
 }
 
 void Player::PopupHelp(Symbol s, bool b) {
@@ -701,10 +701,10 @@ void Player::SetEnergy(float f) {
         SetEnergyAutomatically(f);
         bool energyIncreased = mBandEnergy > old;
         float poll = PollMs();
-        float pollDelta = poll - unk2a4;
+        float pollDelta = poll - mLastEnergySentMs;
         if (energyIncreased || pollDelta >= 100.0f || mBandEnergy == 0) {
             Handle(send_update_energy_msg, true);
-            unk2a4 = poll;
+            mLastEnergySentMs = poll;
         }
     }
 }
@@ -818,7 +818,7 @@ void Player::Deploy() {
     if (mTrackType == kTrackDrum && !mIsInCoda) {
         EnableDrumFills(false);
     }
-    unk278++;
+    mNumTimesDeployed++;
     int i1 = 0, i2 = 0, i3 = 0;
     GetMultiplier(true, i1, i2, i3);
     mStats.DeployOverdrive(GetSongMs(), i1 * i3);
@@ -857,10 +857,10 @@ bool Player::DeployBandEnergyIfPossible(bool b) {
     }
     if (!mDeployingBandEnergy || mBand->AnyoneSaveable()) {
         if (mBandEnergy >= mParams->mDeployThreshold) {
-            unk294 = LocalDeployBandEnergy();
-            unk2b4 += unk294;
+            mNumPlayersSaved = LocalDeployBandEnergy();
+            mTotalNumPlayersSaved += mNumPlayersSaved;
             static Message msg("send_deploy", DataNode(0));
-            msg[0] = unk294;
+            msg[0] = mNumPlayersSaved;
             HandleType(msg);
             return true;
         }
@@ -876,7 +876,7 @@ void Player::Hit() {
     hit.SetType(slotStr);
     TheGamePanel->HandleType(hit.mData);
     int mult = GetIndividualMultiplier();
-    if (mult > unk274 && unk274 == 1) {
+    if (mult > mLastMultiplier && mLastMultiplier == 1) {
         mStats.BeginStreakMultiplier(GetSongMs(), mult);
     }
 }
@@ -926,8 +926,8 @@ void Player::FinalizeStats() {
     mStats.EndStreakMultiplier(songMs, i1);
     songMs = GetSongMs();
     mStats.StopDeployingOverdrive(songMs, i1 * i3);
-    if (unk2bc > 0) {
-        mStats.mAverageMultiplier = (float)unk2b8 / (float)unk2bc;
+    if (mMultiplierPollCount > 0) {
+        mStats.mAverageMultiplier = (float)mMultiplierPollSum / (float)mMultiplierPollCount;
     }
     mStats.EndHitStreak();
     mStats.EndMissStreak();
@@ -941,7 +941,7 @@ void Player::FinalizeStats() {
 void Player::HandleNewSection(const PracticeSection &section, int sectionIdx, int totalSections) {
     if (TheGame->unkdc != -1.0f || mQuarantined)
         return;
-    unk2c0 = sectionIdx;
+    mCurrentSectionIndex = sectionIdx;
     if (totalSections != (int)mStats.mSections.size()) {
         Stats::SectionInfo info;
         if ((unsigned long)totalSections < mStats.mSections.size()) {
@@ -957,7 +957,7 @@ void Player::HandleNewSection(const PracticeSection &section, int sectionIdx, in
             );
         }
     }
-    mStats.SetSectionInfo(unk2c0, section.unk0, -1.0f, 0.0f);
+    mStats.SetSectionInfo(mCurrentSectionIndex, section.unk0, -1.0f, 0.0f);
 }
 
 void Player::UpdateSectionStats(float hitFraction, float percentComplete) {
@@ -966,11 +966,11 @@ void Player::UpdateSectionStats(float hitFraction, float percentComplete) {
     if (!mQuarantined) {
         if (TheSongDB->mPracticeSections.size() == 0)
             return;
-        if (unk2c0 < 0)
+        if (mCurrentSectionIndex < 0)
             return;
-        if ((unsigned int)unk2c0 >= TheSongDB->mPracticeSections.size())
+        if ((unsigned int)mCurrentSectionIndex >= TheSongDB->mPracticeSections.size())
             return;
-        int sectionIdx = unk2c0;
+        int sectionIdx = mCurrentSectionIndex;
         Symbol sectionSym = TheSongDB->mPracticeSections[sectionIdx].unk0;
         mStats.SetSectionInfo(sectionIdx, sectionSym, hitFraction, percentComplete);
     }

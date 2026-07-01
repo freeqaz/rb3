@@ -36,7 +36,7 @@ PitchDetector::PitchDetector(int sampleRate) {
     mDecimBuf = 0;
     mCorrBuf = 0;
     mPeakBuf = 0;
-    unk34 = 0.0f;
+    mAveEnergy = 0.0f;
     unk38 = 5.0f;
     mEnablePitchDetection = true;
     unk40 = 0;
@@ -139,11 +139,11 @@ void PitchDetector::AnalyzeBlock(
     int newIdx = (numSamples + mIdx);
     mIdx = newIdx - (newIdx / mDecimRate) * mDecimRate;
     float level = sqrt(mCorrBuf[mFrameSize - 1]);
-    unk34 = (float)level / ((float)(mFrameSize) - 0.0f);
+    mAveEnergy = (float)level / ((float)(mFrameSize) - 0.0f);
     if (mEnablePitchDetection) {
         ShiftedDotProduct(mDecimBuf, mFrameSize, mPeakBuf, true);
         int period = FindCCPeak(mPeakBuf, mCorrBuf, mFrameSize, mMaxPeriod);
-        unk30_period = RefinePeriod2(mDecimBuf, mCorrBuf, mPeakBuf, mFrameSize, period);
+        mPeriod = RefinePeriod2(mDecimBuf, mCorrBuf, mPeakBuf, mFrameSize, period);
     }
 
     float floorRatio = 1.1f;
@@ -183,11 +183,11 @@ void PitchDetector::AnalyzeBlock(
     }
 
     if ((unsigned)unk14 > 60) {
-        float level = unk34;
+        float level = mAveEnergy;
         float candidate;
         if ((level > 0.0f) && (candidate = level * floorRatio, candidate < unk38)) {
             unk38 = candidate;
-        } else if (unk30_period == 0.0f || level < unk38 * gateRatio) {
+        } else if (mPeriod == 0.0f || level < unk38 * gateRatio) {
             float floorVal = unk38;
             unk38 = unk48 * (floorTop - floorVal) + floorVal;
         }
@@ -208,31 +208,31 @@ void PitchDetector::AnalyzeBlock(
     }
     unk38 = *floorTopPtr;
 
-    if (unk34 < unk38 * gateRatio) {
-        unk30_period = 0.0f;
-        unk34 = 0.0f;
-    } else if (unk34 > 30.0f) {
-        unk34 = 30.0f;
+    if (mAveEnergy < unk38 * gateRatio) {
+        mPeriod = 0.0f;
+        mAveEnergy = 0.0f;
+    } else if (mAveEnergy > 30.0f) {
+        mAveEnergy = 30.0f;
     }
 
-    if (unk30_period == 0.0f) {
-        unk2C = 0.0f;
+    if (mPeriod == 0.0f) {
+        mPitch = 0.0f;
     } else {
-        float pitchHz = (float)(mSamplesPerSec / mDecimRate) / unk30_period;
+        float pitchHz = (float)(mSamplesPerSec / mDecimRate) / mPeriod;
         if (pitchHz <= 0.0f) {
             confidenceOut = 0.0f;
             pitchOut = 0.0f;
-            unk2C = 0.0f;
-            unk30_period = 0.0f;
+            mPitch = 0.0f;
+            mPeriod = 0.0f;
             return;
         }
-        unk2C = 39.863136f + -36.376316f * (float)log10(pitchHz);
+        mPitch = 39.863136f + -36.376316f * (float)log10(pitchHz);
     }
     unk14++;
     unk18 += numSamples;
-    pitchOut = unk2C;
-    confidenceOut = fixedGain * (pitchHint * unk34) / unk38;
-    gateOut = unk34;
+    pitchOut = mPitch;
+    confidenceOut = fixedGain * (pitchHint * mAveEnergy) / unk38;
+    gateOut = mAveEnergy;
 }
 
 void PitchDetector::SetSampleRate(int sampleRate) {

@@ -155,7 +155,7 @@ String StreakTracker::GetPlayerContributionString(Symbol s) const {
     if (pid.NotNull()) {
         Player *pPlayer = mSource->GetPlayer(pid);
         MILO_ASSERT(pPlayer, 299);
-        i4 = pPlayer->mStats.unk1c0;
+        i4 = pPlayer->mStats.mTrackerContribution;
     }
     Symbol sym = i4 == 1 ? tour_goal_band_streak_player_contribution_format_1
                          : tour_goal_band_streak_player_contribution_format;
@@ -170,7 +170,7 @@ void StreakTracker::SavePlayerStats() const {
         std::map<TrackerPlayerID, PlayerStreakData>::const_iterator cData =
             mStreakDataMap.find(id);
         MILO_ASSERT(cData != mStreakDataMap.end(), 0x146);
-        pPlayer->mStats.unk1c0 = cData->second.unk1c;
+        pPlayer->mStats.mTrackerContribution = cData->second.unk1c;
     }
 }
 

@@ -111,18 +111,18 @@ public:
     bool unk50; // 0x50
     bool unk51; // 0x51
     int mEditLayerIdx; // 0x54
-    float unk58; // 0x58
-    float unk5c; // 0x5c
-    float unk60; // 0x60
-    float unk64; // 0x64
-    float unk68; // 0x68
-    float unk6c; // 0x6c
-    float unk70; // 0x70
-    float unk74; // 0x74
-    float unk78; // 0x78
-    float unk7c; // 0x7c
-    float unk80; // 0x80
-    float unk84; // 0x84
+    float kMoveScalar; // 0x58
+    float kRotScalar; // 0x5c
+    float kScaleScalar; // 0x60
+    float kScaleMin; // 0x64
+    float kScaleMax; // 0x68
+    float kDamp; // 0x6c
+    float kAccel; // 0x70
+    float kVelMin; // 0x74
+    float kVelMax; // 0x78
+    float kDeformScalar; // 0x7c
+    float kDeformMin; // 0x80
+    float kDeformMax; // 0x84
     int mMoveX; // 0x88
     int mMoveY; // 0x8c
     float mMoveVelX; // 0x90

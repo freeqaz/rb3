@@ -617,7 +617,7 @@ bool VocalTrack::WantBeatLines(int i1) {
         VocalNoteList *notes = GetVocalNoteList(0);
         std::vector<VocalPhrase> &phrases = notes->mPhrases;
         FOREACH (it, phrases) {
-            if (i1 >= it->unk8 && (i1 <= it->unk8 + it->unkc)) {
+            if (i1 >= it->mStartTick && (i1 <= it->mStartTick + it->mDurationTicks)) {
                 return it->mTambourinePhrase;
             }
         }
@@ -735,7 +735,7 @@ void VocalTrack::RebuildHUD() {
         }
         if (mPlayer->AtFirstPhrase()) {
             mPhraseEndMs = 0;
-            BuildPhrase(cur->unk0 + cur->unk4, next->unk0 + next->unk4);
+            BuildPhrase(cur->mStartMs + cur->mDurationMs, next->mStartMs + next->mDurationMs);
         } else {
             std::vector<VocalPhrase> &phrases = notes->mPhrases;
             if (cur != &*phrases.end()) {
@@ -747,18 +747,18 @@ void VocalTrack::RebuildHUD() {
                 }
                 if (prev != &*phrases.end()) {
                     if (!IsScrolling()) {
-                        mPhraseEndMs = prev->unk0;
+                        mPhraseEndMs = prev->mStartMs;
                         BuildPhrase(
-                            prev->unk0 + prev->unk4, cur->unk0 + cur->unk4
+                            prev->mStartMs + prev->mDurationMs, cur->mStartMs + cur->mDurationMs
                         );
                     }
-                    mPhraseEndMs = prev->unk0 + prev->unk4;
-                    float curEnd = cur->unk0 + cur->unk4;
+                    mPhraseEndMs = prev->mStartMs + prev->mDurationMs;
+                    float curEnd = cur->mStartMs + cur->mDurationMs;
                     float endMs;
                     if (next == &*phrases.end()) {
                         endMs = TheSongDB->GetSongDurationMs();
                     } else {
-                        endMs = next->unk0 + next->unk4;
+                        endMs = next->mStartMs + next->mDurationMs;
                     }
                     BuildPhrase(curEnd, endMs);
                 }
@@ -792,28 +792,28 @@ void VocalTrack::RebuildHUD() {
         float margin = mDir->mPitchDisplayMargin;
         mRangeShifts.clear();
         std::vector<RangeSection> &sections = TheSongDB->GetRangeSections();
-        float prevMin = sections[0].unk8 - margin;
-        float prevMax = margin + sections[0].unkc;
+        float prevMin = sections[0].mPitchMin - margin;
+        float prevMax = margin + sections[0].mPitchMax;
         float maxRange = mDir->mMinPitchRange;
         if (sDump) {
             MILO_LOG("Range Shift Data\n");
         }
         for (int i = 0; i < sections.size(); i++) {
             RangeSection &section = sections[i];
-            float secMin = section.unk8;
-            float secMax = section.unkc;
+            float secMin = section.mPitchMin;
+            float secMax = section.mPitchMax;
             if (!(secMax < secMin)) {
-                float secIntro = section.unk4;
+                float secIntro = section.mIntroDur;
                 RangeShift rs;
-                rs.unk0 = TickToMs((float)section.unk0);
-                rs.unk4 = prevMin;
-                rs.unk8 = prevMax;
-                rs.unkc = secMin - margin;
-                rs.unk10 = secMax + margin;
-                rs.unk14 = secIntro;
+                rs.mPhraseMs = TickToMs((float)section.mStartTick);
+                rs.mBeginMin = prevMin;
+                rs.mBeginMax = prevMax;
+                rs.mEndMin = secMin - margin;
+                rs.mEndMax = secMax + margin;
+                rs.mAnimMs = secIntro;
                 mRangeShifts.push_back(rs);
-                prevMin = section.unk8 - margin;
-                prevMax = section.unkc + margin;
+                prevMin = section.mPitchMin - margin;
+                prevMax = section.mPitchMax + margin;
                 float range = prevMax - prevMin;
                 float *bigger = (maxRange < range) ? &range : &maxRange;
                 maxRange = *bigger;
@@ -822,12 +822,12 @@ void VocalTrack::RebuildHUD() {
                         "[%d]\tstart ms: %.2f, intro ms: %.2f, min: %.1f -> %.1f, "
                         "max: %.1f -> %.1f\n",
                         i,
-                        mRangeShifts.back().unk0,
-                        mRangeShifts.back().unk14,
-                        mRangeShifts.back().unk4,
-                        mRangeShifts.back().unkc,
-                        mRangeShifts.back().unk8,
-                        mRangeShifts.back().unk10
+                        mRangeShifts.back().mPhraseMs,
+                        mRangeShifts.back().mAnimMs,
+                        mRangeShifts.back().mBeginMin,
+                        mRangeShifts.back().mEndMin,
+                        mRangeShifts.back().mBeginMax,
+                        mRangeShifts.back().mEndMax
                     );
                 }
             }
@@ -837,29 +837,29 @@ void VocalTrack::RebuildHUD() {
             std::deque<RangeShift>::iterator it = mRangeShifts.begin();
             std::deque<RangeShift>::iterator end = mRangeShifts.end();
             for (; it != end; ++it) {
-                float diffFrom = it->unk4 + (maxRange - it->unk8);
+                float diffFrom = it->mBeginMin + (maxRange - it->mBeginMax);
                 if (diffFrom > 0) {
                     diffFrom *= 0.5f;
-                    it->unk4 -= diffFrom;
-                    it->unk8 += diffFrom;
+                    it->mBeginMin -= diffFrom;
+                    it->mBeginMax += diffFrom;
                 }
-                float diffTo = it->unkc + (maxRange - it->unk10);
+                float diffTo = it->mEndMin + (maxRange - it->mEndMax);
                 if (diffTo > 0) {
                     diffTo *= 0.5f;
-                    it->unkc -= diffTo;
-                    it->unk10 += diffTo;
+                    it->mEndMin -= diffTo;
+                    it->mEndMax += diffTo;
                 }
                 if (sDump) {
                     MILO_LOG(
                         "[%d]\tstart ms: %.2f, intro ms: %.2f, min: %.1f -> %.1f, "
                         "max: %.1f -> %.1f\n",
                         idx++,
-                        it->unk0,
-                        it->unk14,
-                        it->unk4,
-                        it->unkc,
-                        it->unk8,
-                        it->unk10
+                        it->mPhraseMs,
+                        it->mAnimMs,
+                        it->mBeginMin,
+                        it->mEndMin,
+                        it->mBeginMax,
+                        it->mEndMax
                     );
                 }
             }
@@ -1213,7 +1213,7 @@ void VocalTrack::UpdateScrolling(float ms) {
     VocalNoteList *leadNotes = GetVocalNoteList(0);
     while (phraseIdx < leadNotes->mPhrases.size()) {
         const VocalPhrase &ph = leadNotes->mPhrases[phraseIdx];
-        float phMs = ph.unk0 + ph.unk4;
+        float phMs = ph.mStartMs + ph.mDurationMs;
         if (phMs < buildAhead
             || (sectionOnly && phMs < (sectionStart - 100.0f))) {
             phraseIdx++;
@@ -1228,19 +1228,19 @@ void VocalTrack::UpdateScrolling(float ms) {
 
     float oldRange = mDir->mLastMax - mDir->mLastMin;
     while (mRangeShifts.size() != 0
-           && mRangeShifts.front().unk0 < ms - mRangeShifts.front().unk4) {
+           && mRangeShifts.front().mPhraseMs < ms - mRangeShifts.front().mBeginMin) {
         RangeShift &rs = mRangeShifts.front();
-        mDir->SetRange(rs.unk8, rs.unkc, unk208, false);
+        mDir->SetRange(rs.mBeginMax, rs.mEndMin, unk208, false);
         mRangeShifts.pop_front();
     }
     if (mRangeShifts.size() != 0) {
         RangeShift &rs = mRangeShifts.front();
-        if (rs.unk0 < ms) {
-            float t = (ms - rs.unk0) / rs.unk4;
+        if (rs.mPhraseMs < ms) {
+            float t = (ms - rs.mPhraseMs) / rs.mBeginMin;
             t = Clamp<float>(0.0f, 1.0f, t);
             mDir->SetRange(
-                t * (rs.unk10 - rs.unk8) + rs.unk8,
-                t * (rs.unk14 - rs.unkc) + rs.unkc,
+                t * (rs.mEndMax - rs.mBeginMax) + rs.mBeginMax,
+                t * (rs.mAnimMs - rs.mEndMin) + rs.mEndMin,
                 unk208,
                 false
             );
@@ -1416,8 +1416,8 @@ void VocalTrack::UpdateScrolling(float ms) {
         int curDeploy = *curDeployPtr;
         while (*curPhPtr < lyricPhrases.size()) {
             VocalPhrase &lyrPh = lyricPhrases[*curPhPtr];
-            float phStartMs = TickToMs((float)lyrPh.unk8);
-            float phEndMs = TickToMs((float)(lyrPh.unk8 + lyrPh.unkc));
+            float phStartMs = TickToMs((float)lyrPh.mStartTick);
+            float phEndMs = TickToMs((float)(lyrPh.mStartTick + lyrPh.mDurationTicks));
             int playerState = mPlayer ? mPlayer->mEnabledState : kPlayerEnabled;
             bool playerOk = !mPlayer || playerState == kPlayerEnabled
                 || playerState == kPlayerBeingSaved
@@ -1482,8 +1482,8 @@ void VocalTrack::UpdateScrolling(float ms) {
                 TheDebug << MakeString(
                     "Adding lyrics for part %d: %d - %d\n",
                     part,
-                    lyrPh.unk8,
-                    lyrPh.unk8 + lyrPh.unkc
+                    lyrPh.mStartTick,
+                    lyrPh.mStartTick + lyrPh.mDurationTicks
                 );
             }
 

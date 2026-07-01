@@ -147,8 +147,8 @@ void GemTrack::RebuildBeats() {
 
 void GemTrack::ApplyShiftImmediately(const RangeShift &shift) {
     float min;
-    float f1 = shift.unk14;
-    min = Min(shift.unkc, 15.0f - f1);
+    float f1 = shift.mEndRange;
+    min = Min(shift.mEndOffset, 15.0f - f1);
     MILO_ASSERT(mTrackDir, 0xB6);
     if (f1 != mRange) {
         mTrackDir->SetDisplayRange(f1);
@@ -163,11 +163,11 @@ void GemTrack::ApplyShiftImmediately(const RangeShift &shift) {
 float GemTrack::TickToOffset(int tick) const {
     float ret = 0;
     for (std::vector<RangeShift>::const_iterator it = mRangeShifts.begin();
-         it != mRangeShifts.end() && it->unk0 <= tick; ++it) {
-        if (tick >= it->unk0 && tick <= it->unk4) {
-            return 0.5f * (it->unkc + it->unk8);
+         it != mRangeShifts.end() && it->mStartTick <= tick; ++it) {
+        if (tick >= it->mStartTick && tick <= it->mEndTick) {
+            return 0.5f * (it->mEndOffset + it->mStartOffset);
         }
-        if (tick > it->unk4) ret = it->unkc;
+        if (tick > it->mEndTick) ret = it->mEndOffset;
     }
     return ret;
 }
@@ -198,7 +198,7 @@ void GemTrack::UpdateShiftsToTick(int tick) {
     std::vector<RangeShift>::iterator it = mRangeShifts.begin();
     mCurrentRangeShift = it;
     for (; it != mRangeShifts.end(); ++it) {
-        if (it->unk0 <= tick) {
+        if (it->mStartTick <= tick) {
             mCurrentRangeShift = it;
         } else
             break;
@@ -219,18 +219,18 @@ void GemTrack::CheckShifts(float ms, int topTick) {
     float newRange = -1.0f;
     float newOffset = -1.0f;
     while (mCurrentRangeShift != mRangeShifts.end()
-           && mCurrentRangeShift->unk4 < nowTick) {
-        newRange = mCurrentRangeShift->unk14;
-        newOffset = mCurrentRangeShift->unkc;
+           && mCurrentRangeShift->mEndTick < nowTick) {
+        newRange = mCurrentRangeShift->mEndRange;
+        newOffset = mCurrentRangeShift->mEndOffset;
         mCurrentRangeShift++;
         if (mCurrentRangeShift != mRangeShifts.end())
-            mCurrentRangeShift->unk18 = false;
+            mCurrentRangeShift->mMaskDrawn = false;
     }
     if (mCurrentRangeShift != mRangeShifts.end()) {
         RangeShift &shift = *mCurrentRangeShift;
-        if (shift.unk0 + tickOffset < topTick && !shift.unk18) {
-            shift.unk18 = true;
-            int delta = (int)(shift.unkc - mOffset);
+        if (shift.mStartTick + tickOffset < topTick && !shift.mMaskDrawn) {
+            shift.mMaskDrawn = true;
+            int delta = (int)(shift.mEndOffset - mOffset);
             int clamped;
             if (delta > 5) {
                 clamped = 5;
@@ -239,17 +239,17 @@ void GemTrack::CheckShifts(float ms, int topTick) {
             } else {
                 clamped = delta;
             }
-            float secs = TickToSeconds((float)(shift.unk0 + tickOffset));
+            float secs = TickToSeconds((float)(shift.mStartTick + tickOffset));
             int key;
             int frame;
             if (clamped >= 0) {
                 key = WhiteKeyToSemitone(2);
                 frame = -(5 - clamped);
-                shift.unk20 = -5;
+                shift.mMaskEndFrame = -5;
             } else {
                 key = WhiteKeyToSemitone((int)mRange - 3);
                 frame = clamped + 5;
-                shift.unk20 = 5;
+                shift.mMaskEndFrame = 5;
             }
             MinEqPtr(key, 24);
             mUpcomingShiftMaskAnim->SetFrame((float)frame, 1.0f);
@@ -259,26 +259,26 @@ void GemTrack::CheckShifts(float ms, int topTick) {
                 mGemManager->GetWidgetByName("keys_upcoming_shift.wid");
             widget->Clear();
             widget->AddInstance(xfm, 0.0f);
-            shift.unk1c = frame;
+            shift.mMaskStartFrame = frame;
         }
-        if (shift.unk0 < nowTick) {
-            if (shift.unk10 < 0.0f) {
+        if (shift.mStartTick < nowTick) {
+            if (shift.mStartRange < 0.0f) {
                 if (newRange > 0.0f) {
-                    shift.unk10 = newRange;
-                    shift.unk8 = newOffset;
+                    shift.mStartRange = newRange;
+                    shift.mStartOffset = newOffset;
                 } else {
-                    shift.unk10 = mTrackDir->GetKeyRange();
-                    shift.unk8 = mTrackDir->GetKeyOffset();
+                    shift.mStartRange = mTrackDir->GetKeyRange();
+                    shift.mStartOffset = mTrackDir->GetKeyOffset();
                 }
             }
-            float baseRange = shift.unk10;
-            float baseOffset = shift.unk8;
-            float frac = (float)(nowTick - shift.unk0)
-                / (float)(shift.unk4 - shift.unk0);
-            newRange = frac * (shift.unk14 - baseRange) + baseRange;
-            newOffset = frac * (shift.unkc - baseOffset) + baseOffset;
+            float baseRange = shift.mStartRange;
+            float baseOffset = shift.mStartOffset;
+            float frac = (float)(nowTick - shift.mStartTick)
+                / (float)(shift.mEndTick - shift.mStartTick);
+            newRange = frac * (shift.mEndRange - baseRange) + baseRange;
+            newOffset = frac * (shift.mEndOffset - baseOffset) + baseOffset;
             mUpcomingShiftMaskAnim->SetFrame(
-                frac * (float)(shift.unk20 - shift.unk1c) + (float)shift.unk1c,
+                frac * (float)(shift.mMaskEndFrame - shift.mMaskStartFrame) + (float)shift.mMaskStartFrame,
                 1.0f
             );
         }
@@ -465,12 +465,12 @@ void GemTrack::UpdateShifts() {
         if (ShiftsEnabled()) {
             for (int i = 0; i < rangeSects.size(); i++) {
                 RangeSection &curSect = rangeSects[i];
-                int i6 = SemitoneToWhiteKey(Round(curSect.unk8));
-                int i1 = SemitoneToWhiteKey(Round(curSect.unkc)) + 1;
+                int i6 = SemitoneToWhiteKey(Round(curSect.mPitchMin));
+                int i1 = SemitoneToWhiteKey(Round(curSect.mPitchMax)) + 1;
                 if (i1 - i6 != 10) {
                     MILO_WARN(
                         "Authored keyboard range section at tick %d is unexpected size: %d (should be %d)",
-                        curSect.unk0,
+                        curSect.mStartTick,
                         i1 - i6,
                         10
                     );
@@ -481,14 +481,14 @@ void GemTrack::UpdateShifts() {
                     i1 -= i1 - 16;
                     MILO_WARN(
                         "Authored range section exceeds displayable keyboard range: %.0f - %.0f @ tick %d",
-                        curSect.unk8,
-                        curSect.unkc,
-                        curSect.unk0
+                        curSect.mPitchMin,
+                        curSect.mPitchMax,
+                        curSect.mStartTick
                     );
                 }
-                int i8 = curSect.unk0;
+                int i8 = curSect.mStartTick;
                 mRangeShifts.push_back(
-                    RangeShift(i8, i8 + MsToTickInt(curSect.unk4), i6, i1 - i6)
+                    RangeShift(i8, i8 + MsToTickInt(curSect.mIntroDur), i6, i1 - i6)
                 );
             }
         } else {
@@ -496,8 +496,8 @@ void GemTrack::UpdateShifts() {
             int i8c = 16;
             for (int i = 0; i < rangeSects.size(); i++) {
                 RangeSection &curSect = rangeSects[i];
-                MinEq(i8c, SemitoneToWhiteKey(Round(curSect.unk8)));
-                MaxEq(i90, SemitoneToWhiteKey(Round(curSect.unkc)) + 1);
+                MinEq(i8c, SemitoneToWhiteKey(Round(curSect.mPitchMin)));
+                MaxEq(i90, SemitoneToWhiteKey(Round(curSect.mPitchMax)) + 1);
             }
             MinEq(i90, 16);
             mRangeShifts.push_back(RangeShift(0, 0, i8c, i90 - i8c));
@@ -522,8 +522,8 @@ void GemTrack::DrawBeatLine(Symbol s1, int i2, int i3, bool b4) {
             i2 = TickToBeat(GetLoopTick(i3));
         }
         RangeShift *curshift = mCurrentRangeShift;
-        if ((int)std::floor(TickToBeat(curshift->unk0)) - i2 <= 3U) {
-            int endKey = curshift->unkc - mOffset;
+        if ((int)std::floor(TickToBeat(curshift->mStartTick)) - i2 <= 3U) {
+            int endKey = curshift->mEndOffset - mOffset;
             if (endKey != 0) {
                 Symbol sfc;
                 int startKey;
@@ -878,8 +878,8 @@ void GemTrack::UpdateSlotXfms() {
 
 void GemTrack::RefreshCurrentShift() {
     if (mCurrentRangeShift != mRangeShifts.end()) {
-        mCurrentRangeShift->unk10 = -1.0f;
-        mCurrentRangeShift->unk8 = -1.0f;
+        mCurrentRangeShift->mStartRange = -1.0f;
+        mCurrentRangeShift->mStartOffset = -1.0f;
     }
 }
 

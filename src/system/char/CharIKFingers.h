@@ -25,27 +25,31 @@ public:
     class FingerDesc {
     public:
         FingerDesc()
-            : unk0(0), unk8(0, 0, 0), unk14(0, 0, 0), mFinger01(0), mFinger02(0),
-              mFinger03(0), mFingertip(0), unk60(0), unk64(0), unk68(1) {}
+            : mIsControlled(0), unk8(0, 0, 0), unk14(0, 0, 0), mBone1(0), mBone2(0),
+              mBone3(0), mBoneTip(0), mFBlendInFrames(0), mFBlendOutFrames(0),
+              mResetFingerRots(1) {}
         ~FingerDesc() {}
-        bool unk0;
-        float unk4;
+        bool mIsControlled; // 0x0
+        float mLength; // 0x4
+        // Bank 5 DWARF documents a single Vector3 mDestPos in this span; Bank 8
+        // has two Vector3 slots here (SetFinger stores v1/v2), so leave both
+        // named generically to avoid mislabeling the era-added member.
         Vector3 unk8; // 0x8
         Vector3 unk14; // 0x14
-        ObjPtr<RndTransformable> mFinger01; // 0x20
-        ObjPtr<RndTransformable> mFinger02; // 0x2c
-        ObjPtr<RndTransformable> mFinger03; // 0x38
-        ObjPtr<RndTransformable> mFingertip; // 0x44
-        float unk50;
-        float unk54;
-        float unk58;
-        float unk5c;
-        int unk60;
-        int unk64;
-        bool unk68;
-        Vector3 unk6c; // 0x6c
-        Vector3 unk78; // 0x78
-        bool unk84;
+        ObjPtr<RndTransformable> mBone1; // 0x20
+        ObjPtr<RndTransformable> mBone2; // 0x2c
+        ObjPtr<RndTransformable> mBone3; // 0x38
+        ObjPtr<RndTransformable> mBoneTip; // 0x44
+        float mBone2DestAngle; // 0x50
+        float mBone3DestAngle; // 0x54
+        float mBone2CurAngle; // 0x58
+        float mBone3CurAngle; // 0x5c
+        int mFBlendInFrames; // 0x60
+        int mFBlendOutFrames; // 0x64
+        bool mResetFingerRots; // 0x68
+        Vector3 mDestForwardVector; // 0x6c
+        Vector3 mCurForwardVector; // 0x78
+        bool mDestChanged; // 0x84
     };
 
     CharIKFingers();

@@ -46,8 +46,8 @@ void CharLipSyncDriver::Highlight() {
             std::vector<CharLipSync::PlayBack::Weight> &weights = mSongPlayer->mWeights;
             for (int i = 0; i < weights.size(); i++) {
                 CharLipSync::PlayBack::Weight &curWeight = weights[i];
-                float f14 = curWeight.unk14;
-                CharClip *clip = curWeight.unk0;
+                float f14 = curWeight.current;
+                CharClip *clip = curWeight.clip;
                 if (f14 != 0 && clip) {
                     TheRnd->DrawString(
                         MakeString("%s %.4f", clip->Name(), f14), v2, white, true
@@ -146,9 +146,9 @@ void CharLipSyncDriver::Poll() {
         mSongPlayer->Poll(songTime);
         unsigned int count = mSongPlayer->mWeights.size();
         for (unsigned int i = 0; i < count; i++) {
-        float curWeight = mSongPlayer->mWeights[i].unk14;
+        float curWeight = mSongPlayer->mWeights[i].current;
         if (curWeight != 0.0f) {
-        CharClip *clip = mSongPlayer->mWeights[i].unk0;
+        CharClip *clip = mSongPlayer->mWeights[i].clip;
         if (clip != mBlinkClip) {
         if (mSongOwner)
         curWeight = 0.0f;
@@ -177,8 +177,8 @@ void CharLipSyncDriver::Poll() {
         CharLipSync::PlayBack *pb = mSongOwner->mSongPlayer;
         unsigned int count = pb->mWeights.size();
         for (unsigned int i = 0; i < count; i++) {
-        float curWeight = weight * pb->mWeights[i].unk14;
-        CharClip *clip = pb->mWeights[i].unk0;
+        float curWeight = weight * pb->mWeights[i].current;
+        CharClip *clip = pb->mWeights[i].clip;
         if (curWeight != 0.0f && clip && clip != mSongOwner->mBlinkClip) {
         CharClip *remapped = mClips->Find<CharClip>(clip->Name(), true);
         ScaleAddViseme(remapped, curWeight);

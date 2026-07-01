@@ -28,10 +28,10 @@ struct MatChar {
 class RndFont : public Hmx::Object {
 public:
     struct CharInfo {
-        float unk0;
-        float unk4;
-        float charWidth;
-        float unkc;
+        float normX; // 0x0 - Bank 5 DWARF: glyph UV origin x (normalized)
+        float normY; // 0x4 - glyph UV origin y (normalized)
+        float charWidth; // 0x8
+        float charAdvance; // 0xc - horizontal advance
     };
 
     struct KernInfo {

@@ -304,12 +304,12 @@ const VocalScoreCache &Singer::AccessScoreCache(int idx) const {
 void Singer::AllScoresAreIn(const std::vector<int> &assignedParts) {
     MILO_ASSERT(mResultsData.size() == mScoreCaches.size(), 0x4B6);
     for (int i = 0; (unsigned)i < mResultsData.size(); i++) {
-        float cacheUnk4 = mScoreCaches[i].unk4;
+        float cacheUnk4 = mScoreCaches[i].mFramePoints;
         float sum = mResultsData[i].targetPitchAccuracy + cacheUnk4;
-        float cacheUnk8 = mScoreCaches[i].unk8;
+        float cacheUnk8 = mScoreCaches[i].mPhrasePointsCap;
         mResultsData[i].targetPitchAccuracy = std::min(cacheUnk8, sum);
-        mResultsData[i].centsVariance += mScoreCaches[i].unkc;
-        mResultsData[i].centsDeviation += mScoreCaches[i].unk0;
+        mResultsData[i].centsVariance += mScoreCaches[i].mUncappedFramePoints;
+        mResultsData[i].centsDeviation += mScoreCaches[i].mHitPercentage;
     }
 #ifdef HX_NATIVE
     // &mAmbiguousData[0] calls operator[](0); on the native toolchain libstdc++
@@ -586,7 +586,7 @@ void Singer::Poll(float ms, const SongPos &pos, float f3, float f4) {
     GameMic *mic = TheGameMicManager->GetMic(mMicClientID);
     if (mic && mic->GetMyMic()->IsRunning()) {
         mic->Update();
-        Poll_(ms, pos, mic->unk2c, mic->unk28, f3, f4);
+        Poll_(ms, pos, mic->mLastPitch, mic->mLastEnergy, f3, f4);
     } else {
         Poll_(ms, pos, 0.0f, 0.0f, f3, f4);
     }
@@ -595,17 +595,17 @@ void Singer::Poll(float ms, const SongPos &pos, float f3, float f4) {
     mBestTargetPitch = 0.0f;
     for (std::vector<VocalScoreCache>::iterator it = mScoreCaches.begin();
          it != mScoreCaches.end(); ++it) {
-        it->unk0 = 0.0f;
-        it->unk4 = 0.0f;
-        it->unk8 = 0.0f;
-        it->unkc = 0.0f;
-        it->unk10 = 0.0f;
-        it->unk14 = 0.0f;
-        it->unk1c = 0;
-        it->unk20 = false;
-        it->unk21 = false;
+        it->mHitPercentage = 0.0f;
+        it->mFramePoints = 0.0f;
+        it->mPhrasePointsCap = 0.0f;
+        it->mUncappedFramePoints = 0.0f;
+        it->mVibratoPoints = 0.0f;
+        it->mTargetPitch = 0.0f;
+        it->mOctaveOffset = 0;
+        it->mVoiced = false;
+        it->mSpamming = false;
         it->unk22 = false;
-        it->unk24 = 0.0f;
+        it->mVocalEnergy = 0.0f;
     }
 }
 
@@ -665,16 +665,16 @@ void Singer::GetPitchDeviation(float &mean, float &dev) const {
 void Singer::SetAssignedPart(int part, float f2) {
     mFrameAssignedPart = part;
     if (mVibratoFrameBonus != 0.0f) {
-        mScoreCaches[part].unk4 += mVibratoFrameBonus;
+        mScoreCaches[part].mFramePoints += mVibratoFrameBonus;
         mVibratoFrameBonus = 0.0f;
     }
     mScoreHistories[part].BiasLastScore(f2);
-    float assignedPoints = mScoreCaches[part].unk4;
+    float assignedPoints = mScoreCaches[part].mFramePoints;
     float unk0 = mResultsData[part].targetPitchHitScore;
-    float cap = mScoreCaches[part].unk8;
+    float cap = mScoreCaches[part].mPhrasePointsCap;
     float total = unk0 + assignedPoints;
     mResultsData[part].targetPitchHitScore = std::min(total, cap);
-    float vibPts = mScoreCaches[part].unk10;
+    float vibPts = mScoreCaches[part].mVibratoPoints;
     mPossibleVibratoPoints.Set(vibPts);
 #ifdef HX_NATIVE
     // See AllScoresAreIn: &mAmbiguousData[0] on an empty vector aborts under

@@ -157,7 +157,7 @@ Stats::Stats()
       mSustainGemsHitCompletely(0), mSustainGemsHitPartially(0), mSustainGemCount(0),
       mAverageMultiplier(0), mRollCount(0), mRollsHitCompletely(0), mTrillCount(0),
       mTrillsHitCompletely(0), mTrillsHitPartially(0), mCymbalGemCount(0),
-      mCymbalGemsHitOnCymbals(0), mCymbalGemsHitOnPads(0), unk1c0(0), unk1c4(0),
+      mCymbalGemsHitOnCymbals(0), mCymbalGemsHitOnPads(0), mTrackerContribution(0), mTrackerResult(0),
       unk1c8(0) {}
 
 void Stats::BuildHitStreak(int i, float f) {
@@ -240,11 +240,11 @@ void Stats::SetSingerPartPercentage(int i, int j, float f) {
 }
 
 float Stats::GetSingerRankedPercentage(int i, int j) const {
-    return mSingerStats[i].unk0[j].second;
+    return mSingerStats[i].mPartPercentages[j].second;
 }
 
 int Stats::GetSingerRankedPart(int i, int j) const {
-    return mSingerStats[i].unk0[j].first;
+    return mSingerStats[i].mPartPercentages[j].first;
 }
 
 void Stats::SetSingerPitchDeviationInfo(int i, float f1, float f2) {
@@ -292,8 +292,8 @@ void Stats::SaveForEndGame(BinStream &bs) const {
     bs << mFullCombo;
     bs << mNoScorePercent;
     bs << mSections;
-    bs << unk1c0;
-    bs << unk1c4;
+    bs << mTrackerContribution;
+    bs << mTrackerResult;
     bs << unk1c8;
     SaveSingerStats(bs);
 }
@@ -337,8 +337,8 @@ void Stats::LoadForEndGame(BinStream &bs) {
     bs >> mFullCombo;
     bs >> mNoScorePercent;
     bs >> mSections;
-    bs >> unk1c0;
-    bs >> unk1c4;
+    bs >> mTrackerContribution;
+    bs >> mTrackerResult;
     bs >> unk1c8;
     LoadSingerStats(bs);
 }
@@ -347,7 +347,7 @@ void Stats::SaveSingerStats(BinStream &bs) const {
     for (int i = 0; i < mSingerCount; i++) {
         const SingerStats &stats = mSingerStats[i];
         for (int j = 0; j < mVocalPartCount; j++) {
-            const std::pair<int, float> &p = stats.unk0[j];
+            const std::pair<int, float> &p = stats.mPartPercentages[j];
             bs << p.first;
             bs << p.second;
         }
@@ -522,9 +522,9 @@ void Stats::SetCymbalGemInfo(int i1, int i2, int i3) {
 void Stats::SetSectionInfo(int index, Symbol s, float f1, float f2) {
     MILO_ASSERT(index < mSections.size(), 0x36F);
     SectionInfo &info = mSections[index];
-    info.unk0 = s;
-    info.unk4 = f1;
-    info.unk8 = f2;
+    info.mName = s;
+    info.mNotesHitFraction = f1;
+    info.mPoints = f2;
 }
 
 const Stats::SectionInfo &Stats::GetSectionInfo(int index) const {
@@ -541,19 +541,19 @@ float Stats::GetAverageMsError() const {
 
 SingerStats::SingerStats(int count) {
     for (int i = 0; i < count; i++) {
-        unk0.push_back(std::pair<int, float>(i, 0.0f));
+        mPartPercentages.push_back(std::pair<int, float>(i, 0.0f));
     }
 }
 
 void SingerStats::Finalize() {
-    std::sort(unk0.begin(), unk0.end(), PartPercentageSorter());
+    std::sort(mPartPercentages.begin(), mPartPercentages.end(), PartPercentageSorter());
 }
 
 void SingerStats::SetPartPercentage(int part, float percentage) {
     // Inlined STL std::find_if Duff's device: unrolled 4-at-a-time loop + switch tail; the 7
     // gotos to `done:` are the literal MWCC codegen — any restructuring breaks the match.
-    std::pair<int, float> *first = &unk0[0];
-    std::pair<int, float> *last = first + unk0.size();
+    std::pair<int, float> *first = &mPartPercentages[0];
+    std::pair<int, float> *last = first + mPartPercentages.size();
     int count = (int)(last - first) >> 2;
     std::pair<int, float> *foundPart;
 
@@ -585,7 +585,7 @@ void SingerStats::SetPartPercentage(int part, float percentage) {
 
 done:
     if (foundPart == last) {
-        unk0.push_back(std::pair<int, float>(part, percentage));
+        mPartPercentages.push_back(std::pair<int, float>(part, percentage));
     } else {
         MILO_ASSERT(foundPart->first == part, 0x3B1);
         foundPart->second = percentage;
@@ -593,7 +593,7 @@ done:
 }
 
 const std::pair<int, float> &SingerStats::GetRankData(int part) const {
-    return unk0[part];
+    return mPartPercentages[part];
 }
 
 void SingerStats::SetPitchDeviationInfo(float param_1, float param_2) {
@@ -631,18 +631,18 @@ bool operator>(const Stats::MultiplierInfo &info1, const Stats::MultiplierInfo &
         return info1.mPoints > info2.mPoints;
 }
 
-Stats::SectionInfo::SectionInfo() : unk4(-1.0f), unk8(0) {}
+Stats::SectionInfo::SectionInfo() : mNotesHitFraction(-1.0f), mPoints(0) {}
 
 BinStream &operator<<(BinStream &bs, const Stats::SectionInfo &info) {
-    bs << info.unk0;
-    bs << info.unk4;
-    bs << info.unk8;
+    bs << info.mName;
+    bs << info.mNotesHitFraction;
+    bs << info.mPoints;
     return bs;
 }
 
 BinStream &operator>>(BinStream &bs, Stats::SectionInfo &info) {
-    bs >> info.unk0;
-    bs >> info.unk4;
-    bs >> info.unk8;
+    bs >> info.mName;
+    bs >> info.mNotesHitFraction;
+    bs >> info.mPoints;
     return bs;
 }

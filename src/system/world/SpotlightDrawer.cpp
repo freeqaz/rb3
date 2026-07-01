@@ -381,15 +381,15 @@ void SpotlightDrawer::ApplyLightingApprox(BoxMapLighting &boxMap, float f2) cons
         BoxMapLighting::LightParams_Spot *params;
         if (!boxMap.ParamsAt(params))
             break;
-        params->unk38 = xfm.v;
-        params->unk0 = xfm.m.y;
+        params->mLightPos = xfm.v;
+        params->mDirection = xfm.m.y;
         params->mColor.red = final_r;
         params->mColor.green = final_g;
         params->mColor.blue = final_b;
         params->mColor.alpha = final_a;
-        params->unk48 = curSpotlight->mBeam.mTopRadius;
-        params->unk4c = curSpotlight->mBeam.mBottomRadius * 2.0f;
-        params->unk44 = curSpotlight->mBeam.mLength * 2.0f;
+        params->mRadiusTop = curSpotlight->mBeam.mTopRadius;
+        params->mRadiusBottom = curSpotlight->mBeam.mBottomRadius * 2.0f;
+        params->mRange = curSpotlight->mBeam.mLength * 2.0f;
         boxMap.CacheData(*params);
     }
 }

@@ -26,16 +26,16 @@ public:
     class VocalFramePartData {
     public:
         VocalFramePartData()
-            : unk0(0), unk4(0), unk8(0), unkc(0), unk10(0), unk14(0), unk18(0), unk1c(0) {
-        }
-        float unk0;
-        float unk4;
-        float unk8;
-        float unkc;
-        float unk10;
-        float unk14;
-        int unk18;
-        int unk1c;
+            : mPartPitch(0), mUncappedFramePoints(0), mPointsCap(0), mHitPercentage(0),
+              mWeight(0), mNoteMultiplier(0), mPhrasePoints(0), mPhraseMaxPoints(0) {}
+        float mPartPitch; // 0x0
+        float mUncappedFramePoints; // 0x4
+        float mPointsCap; // 0x8
+        float mHitPercentage; // 0xc
+        float mWeight; // 0x10
+        float mNoteMultiplier; // 0x14
+        int mPhrasePoints; // 0x18
+        int mPhraseMaxPoints; // 0x1c
     };
 
     VocalFrameSpewData(int singers, int parts) : mMs(0), mCompMs(0) {
@@ -87,14 +87,14 @@ public:
         }
         for (int i = 0; i < (int)mPartData.size(); i++) {
             const VocalFramePartData &data = mPartData[i];
-            ts << data.unk0 << "\t";
-            ts << data.unk4 << "\t";
-            ts << data.unk8 << "\t";
-            ts << data.unkc << "\t";
-            ts << data.unk10 << "\t";
-            ts << data.unk14 << "\t";
-            ts << data.unk18 << "\t";
-            ts << data.unk1c << "\t";
+            ts << data.mPartPitch << "\t";
+            ts << data.mUncappedFramePoints << "\t";
+            ts << data.mPointsCap << "\t";
+            ts << data.mHitPercentage << "\t";
+            ts << data.mWeight << "\t";
+            ts << data.mNoteMultiplier << "\t";
+            ts << data.mPhrasePoints << "\t";
+            ts << data.mPhraseMaxPoints << "\t";
         }
         ts << "\n";
     }
@@ -246,16 +246,16 @@ public:
     VocalTrack *mTrack; // 0x2d4
     bool mAutoPlay; // 0x2d8
     float mVocalPartBias; // 0x2dc
-    int unk2e0;
-    int unk2e4;
-    int unk2e8;
-    float unk2ec;
+    int mTotalTambourinePoints; // 0x2e0
+    int mBonusTambourinePoints; // 0x2e4
+    int mSinging; // 0x2e8
+    float mDetune; // 0x2ec
     float mNextPacketSendTime; // 0x2f0
     float mMaxDetune; // 0x2f4
     float mPacketPeriodMs; // 0x2f8
-    float unk2fc;
-    float unk300;
-    float unk304;
+    float mRemotePhraseMeterFrac; // 0x2fc
+    float mMinPitch; // 0x300
+    float mMaxPitch; // 0x304
     float mTrackWrappingMargin; // 0x308
     float mPitchMaximumDistance; // 0x30c
     float mSynapseProximitySolo; // 0x310

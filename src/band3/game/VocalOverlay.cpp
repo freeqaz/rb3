@@ -56,7 +56,7 @@ void VocalOverlay::AppendAssignedPart(
     if (i4 != -1) {
         mSingerStrings[i5] += MakeString(" $%d ", i4 + 1);
         const VocalScoreCache &cache = iSinger->AccessScoreCache(parts[i4]->PartIndex());
-        mSingerStrings[i5] += MakeString(" %3.1f%% ", cache.unk0);
+        mSingerStrings[i5] += MakeString(" %3.1f%% ", cache.mHitPercentage);
     } else {
         mSingerStrings[i5] += MakeString("    ");
         mSingerStrings[i5] += MakeString("      ");

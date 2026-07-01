@@ -116,7 +116,7 @@ int TrackerSectionManager::CountGemsInSection(const Player *iPlayer, int iSectio
         int count = 0;
         for (std::vector<VocalPhrase>::iterator it = phrases.begin();
              it != phrases.end(); ++it) {
-            if (it->unk8 + it->unkc < endTick && it->unk14 > it->unk10) {
+            if (it->mStartTick + it->mDurationTicks < endTick && it->mNoteEnd > it->mNoteStart) {
                 count++;
             }
         }
@@ -227,7 +227,7 @@ int TrackerUtils::CountVocalPhrasesInSong(int iPlayer) {
     int count = 0;
     for (std::vector<VocalPhrase>::iterator it = pPlayer->mPhrases.begin();
          it != pPlayer->mPhrases.end(); ++it) {
-        if (it->unk14 > it->unk10 && !it->mTambourinePhrase) {
+        if (it->mNoteEnd > it->mNoteStart && !it->mTambourinePhrase) {
             count++;
         }
     }

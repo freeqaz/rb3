@@ -21,8 +21,8 @@ void CharLipSync::Generator::Init(CharLipSync *sync) {
     mLipSync->mData.resize(0);
     mWeights.resize(mLipSync->mVisemes.size());
     for (int i = 0; i < mWeights.size(); i++) {
-        mWeights[i].unk0 = 0;
-        mWeights[i].unk1 = 0;
+        mWeights[i].last = 0;
+        mWeights[i].current = 0;
     }
     mLastCount = mLipSync->mData.size();
     mLipSync->mData.push_back(0);
@@ -33,12 +33,12 @@ void CharLipSync::Generator::AddWeight(int visemeIdx, float weight) {
     float scaled = weight * 255.0f;
     float clamped = Clamp(0.0f, 255.0f, scaled + 0.5f);
     unsigned char val = clamped;
-    if (mWeights[visemeIdx].unk0 != val || mWeights[visemeIdx].unk1 != val) {
+    if (mWeights[visemeIdx].last != val || mWeights[visemeIdx].current != val) {
         unsigned char idx = (unsigned char)visemeIdx;
         mLipSync->mData.push_back(idx);
         mLipSync->mData.push_back(val);
-        mWeights[visemeIdx].unk0 = mWeights[visemeIdx].unk1;
-        mWeights[visemeIdx].unk1 = val;
+        mWeights[visemeIdx].last = mWeights[visemeIdx].current;
+        mWeights[visemeIdx].current = val;
     }
 }
 
@@ -115,7 +115,7 @@ void CharLipSync::PlayBack::Set(CharLipSync *lipsync, ObjectDir *dir) {
         for (std::vector<PropKeys *>::iterator it = keys.begin(); it != keys.end();
              ++it) {
             String str((*it)->mProp->Str(0));
-            ObjPtr<CharClip> &clip = mWeights[idx].unk0;
+            ObjPtr<CharClip> &clip = mWeights[idx].clip;
             clip = mClips->Find<CharClip>(str.c_str(), false);
             if (!clip)
                 MILO_WARN("could not find %s", str.c_str());
@@ -125,7 +125,7 @@ void CharLipSync::PlayBack::Set(CharLipSync *lipsync, ObjectDir *dir) {
         mLipSync = lipsync;
         mWeights.resize(mLipSync->mVisemes.size());
         for (int i = 0; i < mWeights.size(); i++) {
-            ObjPtr<CharClip> &clip = mWeights[i].unk0;
+            ObjPtr<CharClip> &clip = mWeights[i].clip;
             clip = mClips->Find<CharClip>(mLipSync->mVisemes[i].c_str(), false);
             if (!clip) {
                 MILO_WARN("could not find %s", mLipSync->mVisemes[i].c_str());
@@ -139,9 +139,9 @@ void CharLipSync::PlayBack::Reset() {
     mFrame = -1;
     for (int i = 0; i < mWeights.size(); i++) {
         Weight &weight = mWeights[i];
-        weight.unk10 = 0;
-        weight.unk14 = 0;
-        weight.unkc = 0;
+        weight.next = 0;
+        weight.current = 0;
+        weight.last = 0;
     }
 }
 
@@ -156,7 +156,7 @@ void CharLipSync::PlayBack::Poll(float time) {
         int i = 0;
         for (std::vector<PropKeys *>::iterator it = pa->mPropKeys.begin();
              it != pa->mPropKeys.end(); ++it) {
-            (*it)->FloatAt(frame, mWeights[i].unk14);
+            (*it)->FloatAt(frame, mWeights[i].current);
             i++;
         }
         return;
@@ -184,9 +184,9 @@ void CharLipSync::PlayBack::Poll(float time) {
                 for (int i = count; i != 0; i--) {
                     int idx = lipSync->mData[mIndex++];
                     Weight &w = mWeights[idx];
-                    w.unkc = w.unk10;
-                    w.unk10 = (float)lipSync->mData[mIndex++] * (1.0f / 255.0f);
-                    w.unk14 = Interp(w.unkc, w.unk10, frac);
+                    w.last = w.next;
+                    w.next = (float)lipSync->mData[mIndex++] * (1.0f / 255.0f);
+                    w.current = Interp(w.last, w.next, frac);
                 }
                 mFrame++;
             }
@@ -197,8 +197,8 @@ void CharLipSync::PlayBack::Poll(float time) {
                 int wIdx = lipSync->mData[idx];
                 idx += 2;
                 Weight &w = mWeights[wIdx];
-                float unkc = w.unkc;
-                w.unk14 = Interp(unkc, w.unk10, frac);
+                float last = w.last;
+                w.current = Interp(last, w.next, frac);
             }
         }
     }

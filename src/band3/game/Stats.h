@@ -19,9 +19,9 @@ public:
     void SetPitchDeviationInfo(float, float);
     void GetPitchDeviationInfo(float &, float &) const;
 
-    std::vector<std::pair<int, float> > unk0; // 0x0
-    float mPitchDeviation1; // 0x08
-    float mPitchDeviation2; // 0x0c
+    std::vector<std::pair<int, float> > mPartPercentages; // 0x0
+    float mPitchDeviation1; // 0x08 (Bank 5 DWARF: mAverageDeviation)
+    float mPitchDeviation2; // 0x0c (Bank 5 DWARF: mStandardDeviationOfDeviation)
 };
 
 class Stats {
@@ -51,9 +51,9 @@ public:
     public:
         SectionInfo();
 
-        Symbol unk0; // 0x0
-        float unk4; // 0x4
-        float unk8; // 0x8
+        Symbol mName; // 0x0
+        float mNotesHitFraction; // 0x4
+        float mPoints; // 0x8
     };
 
     Stats();
@@ -461,8 +461,8 @@ public:
     int mCymbalGemsHitOnCymbals; // 0x1b0
     int mCymbalGemsHitOnPads; // 0x1b4
     std::vector<SectionInfo> mSections; // 0x1b8
-    float unk1c0;
-    float unk1c4;
+    float mTrackerContribution;
+    float mTrackerResult;
     float unk1c8;
 
     // bool mMultiplierActive; // 0x205

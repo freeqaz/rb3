@@ -577,13 +577,13 @@ int NextSongPanel::CountOrCreateExpandedDetails(int slot, DataArrayPtr &ptr, boo
         int numsections = stats.NumSections();
         for (int i = 0; i < numsections; i++) {
             const Stats::SectionInfo &curinfo = stats.GetSectionInfo(i);
-            if (curinfo.unk0 != gNullStr) {
-                if (curinfo.unk4 < 0) {
+            if (curinfo.mName != gNullStr) {
+                if (curinfo.mNotesHitFraction < 0) {
                     if (b)
                         count++;
                     else
                         ptr.Node(count++) =
-                            DataArrayPtr(left_label, generic_string, curinfo.unk0);
+                            DataArrayPtr(left_label, generic_string, curinfo.mName);
 
                     if (b)
                         count++;
@@ -594,7 +594,7 @@ int NextSongPanel::CountOrCreateExpandedDetails(int slot, DataArrayPtr &ptr, boo
                         count++;
                     else
                         ptr.Node(count++) =
-                            DataArrayPtr(left_label, generic_string, curinfo.unk0);
+                            DataArrayPtr(left_label, generic_string, curinfo.mName);
 
                     if (b)
                         count++;
@@ -602,7 +602,7 @@ int NextSongPanel::CountOrCreateExpandedDetails(int slot, DataArrayPtr &ptr, boo
                         ptr.Node(count++) = DataArrayPtr(
                             right_label,
                             score_detail_section,
-                            Round(curinfo.unk4 * 100.0f)
+                            Round(curinfo.mNotesHitFraction * 100.0f)
                         );
                 }
             }

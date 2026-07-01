@@ -285,7 +285,7 @@ void Track::RefreshPlayerHUD() {
 
 bool Track::FailedAtStart() {
     if (mTrackConfig.GetBandUser()->GetPlayer()) {
-        return mTrackConfig.GetBandUser()->GetPlayer()->unk2a9;
+        return mTrackConfig.GetBandUser()->GetPlayer()->mFailedAtStart;
     } else
         return false;
 }

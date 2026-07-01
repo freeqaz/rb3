@@ -446,30 +446,30 @@ public:
     int mNumFillSwings; // 0x2f8
     int mNumCrashFillReadyHits; // 0x2fc
     bool mUseFills; // 0x300
-    bool unk301;
+    bool mTrillActive;
     std::pair<int, int> mTrillSlots; // 0x304
-    int unk30c;
-    int unk310;
-    bool unk314;
-    bool unk315;
-    bool unk316;
+    int mRollActiveSlots;
+    int mActiveSoloStart;
+    bool mWasFailedDuringSolo;
+    bool mInSolo;
+    bool mEncounteredAllSoloGems;
     int mCodaPoints; // 0x318
     float mLastCodaSwing[6]; // 0x31c
     float mCodaPointRate; // 0x334
     float mCodaMashPeriod; // 0x338
     bool mMercurySwitchEnabled; // 0x33c
-    bool unk33d;
+    bool mMercurySwitchState;
     bool mWhammyOverdriveEnabled; // 0x33e
     RndOverlay *mOverlay; // 0x340
     RndOverlay *mGuitarOverlay; // 0x344
-    bool unk348;
+    bool mWhammying;
     float mWhammySpeedThreshold; // 0x34c
     float mWhammySpeedTimeout; // 0x350
-    float unk354;
-    float unk358;
-    float unk35c;
+    float mLastNoteStart;
+    float mLastWhammySample;
+    float mLastWhammySampleTime;
     float mLastTimeWhammyVelWasHigh; // 0x360
-    float unk364;
+    float mLastWhammyValueSent;
     GemTrack *mTrack; // 0x368
     BeatMatchController *mController; // 0x36c
     Symbol mControllerType; // 0x370
@@ -478,11 +478,11 @@ public:
     GuitarFx *mGuitarFx; // 0x37c
     KeysFx *mKeysFx; // 0x380
     int mFxPos; // 0x384
-    bool unk388;
+    bool mIgnoreMercurySwitch;
     FxSendPitchShift *mPitchShift; // 0x38c
-    float unk390;
-    float unk394;
-    int unk398;
+    float mTimingErrorAvgMidTerm;
+    float mTimingErrorSum;
+    int mTimingErrorCount;
     int unk39c;
     int unk3a0;
     bool unk3a4;

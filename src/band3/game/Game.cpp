@@ -1092,7 +1092,7 @@ void Game::ClearState() {
     for (int i = 0; i < mAllActivePlayers.size(); i++) {
         Player *p = mAllActivePlayers[i];
         if (p) {
-            p->unk2a9 = false;
+            p->mFailedAtStart = false;
         }
     }
 }
@@ -1583,15 +1583,15 @@ void Game::AdjustForVocalPhrases(float &startMs, float &endMs) const {
     int byteOff = 0;
     for (; (unsigned)i < phrases->mPhrases.size(); i++, byteOff += sizeof(VocalPhrase)) {
         const VocalPhrase &phrase = phrases->mPhrases[i];
-        phraseEnd = phrase.unk0 + phrase.unk4;
+        phraseEnd = phrase.mStartMs + phrase.mDurationMs;
         if (phraseEnd > endMs)
             break;
-        if (phraseEnd > startMs && phrase.unk10 != phrase.unk14) {
+        if (phraseEnd > startMs && phrase.mNoteStart != phrase.mNoteEnd) {
             for (int part = 0; part < 3; part++) {
                 VocalNoteList *noteList = TheSongDB->GetVocalNoteList(part);
                 if (noteList != nullptr) {
                     int noteTick = noteList->HasNoteInRange(
-                        (int)MsToTick(phrase.unk0), (int)MsToTick(phraseEnd)
+                        (int)MsToTick(phrase.mStartMs), (int)MsToTick(phraseEnd)
                     );
                     if (noteTick != -1) {
                         float noteMs = TickToMs(noteTick);

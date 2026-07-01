@@ -62,32 +62,35 @@ class VocalPhrase {
 public:
     VocalPhrase();
     VocalPhrase(const VocalPhrase &phrase)
-        : unk0(phrase.unk0), unk4(phrase.unk4), unk8(phrase.unk8), unkc(phrase.unkc),
-          unk10(phrase.unk10), unk14(phrase.unk14), unk18(phrase.unk18),
-          unk19(phrase.unk19), unk1a(phrase.unk1a), unk1c(phrase.unk1c),
-          unk20(phrase.unk20), unk24(phrase.unk24), unk28(phrase.unk28),
-          unk2c(phrase.unk2c), mTambourinePhrase(phrase.mTambourinePhrase),
-          unk30(phrase.unk30), unk34(phrase.unk34) {}
+        : mStartMs(phrase.mStartMs), mDurationMs(phrase.mDurationMs),
+          mStartTick(phrase.mStartTick), mDurationTicks(phrase.mDurationTicks),
+          mNoteStart(phrase.mNoteStart), mNoteEnd(phrase.mNoteEnd),
+          mHasPitchedNotes(phrase.mHasPitchedNotes), mPitchRangeEnd(phrase.mPitchRangeEnd),
+          unk1a(phrase.unk1a), mRangeShiftTicks(phrase.mRangeShiftTicks),
+          mRangeShiftDur(phrase.mRangeShiftDur), mMinPitch(phrase.mMinPitch),
+          mMaxPitch(phrase.mMaxPitch), mPlayerMask(phrase.mPlayerMask),
+          mTambourinePhrase(phrase.mTambourinePhrase), mFreeStyleStartMs(phrase.mFreeStyleStartMs),
+          mFreeStyleEndMs(phrase.mFreeStyleEndMs) {}
 
-    bool Diff() const { return (unk14 - unk10) == 0; }
+    bool Diff() const { return (mNoteEnd - mNoteStart) == 0; }
 
-    float unk0;
-    float unk4;
-    int unk8;
-    int unkc;
-    int unk10;
-    int unk14;
-    bool unk18;
-    bool unk19;
-    bool unk1a;
-    int unk1c;
-    float unk20;
-    float unk24;
-    float unk28;
-    unsigned char unk2c;
+    float mStartMs; // 0x0
+    float mDurationMs; // 0x4
+    int mStartTick; // 0x8
+    int mDurationTicks; // 0xc
+    int mNoteStart; // 0x10
+    int mNoteEnd; // 0x14
+    bool mHasPitchedNotes; // 0x18
+    bool mPitchRangeEnd; // 0x19
+    bool unk1a; // 0x1a
+    int mRangeShiftTicks; // 0x1c
+    float mRangeShiftDur; // 0x20
+    float mMinPitch; // 0x24
+    float mMaxPitch; // 0x28
+    unsigned char mPlayerMask; // 0x2c
     bool mTambourinePhrase; // 0x2d
-    float unk30;
-    float unk34;
+    float mFreeStyleStartMs; // 0x30
+    float mFreeStyleEndMs; // 0x34
 };
 
 class SongData;

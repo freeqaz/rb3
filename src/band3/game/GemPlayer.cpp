@@ -135,15 +135,15 @@ GemPlayer::GemPlayer(
       mDrumSlotWeights(0), mDrumCymbalPointBonus(0), mGameCymbalLanes(0), mFill(0),
       mForceFill(0), mLastFillHitTick(-1), unk2f4(-1), mNumFillSwings(-1),
       mNumCrashFillReadyHits(1),
-      mUseFills(SystemConfig("scoring", "overdrive")->FindInt("fills")), unk301(0),
-      mTrillSlots(-1, -1), unk30c(0), unk310(-1), unk314(0), unk315(0), unk316(0),
+      mUseFills(SystemConfig("scoring", "overdrive")->FindInt("fills")), mTrillActive(0),
+      mTrillSlots(-1, -1), mRollActiveSlots(0), mActiveSoloStart(-1), mWasFailedDuringSolo(0), mInSolo(0), mEncounteredAllSoloGems(0),
       mCodaPoints(0), mCodaPointRate(200.0f), mCodaMashPeriod(500.0f),
-      mMercurySwitchEnabled(1), unk33d(0), mWhammyOverdriveEnabled(1),
+      mMercurySwitchEnabled(1), mMercurySwitchState(0), mWhammyOverdriveEnabled(1),
       mOverlay(RndOverlay::Find("score", true)),
-      mGuitarOverlay(RndOverlay::Find("guitar", true)), unk348(0), unk354(0), unk358(0),
-      unk35c(0), mLastTimeWhammyVelWasHigh(-10000.0f), unk364(0), mTrack(0),
-      mController(0), mSyncOffset(0), mGuitarFx(0), mKeysFx(0), mFxPos(4), unk388(0),
-      mPitchShift(0), unk390(0), unk394(0), unk398(0), unk39c(-1), unk3a0(-1), unk3a4(0),
+      mGuitarOverlay(RndOverlay::Find("guitar", true)), mWhammying(0), mLastNoteStart(0), mLastWhammySample(0),
+      mLastWhammySampleTime(0), mLastTimeWhammyVelWasHigh(-10000.0f), mLastWhammyValueSent(0), mTrack(0),
+      mController(0), mSyncOffset(0), mGuitarFx(0), mKeysFx(0), mFxPos(4), mIgnoreMercurySwitch(0),
+      mPitchShift(0), mTimingErrorAvgMidTerm(0), mTimingErrorSum(0), mTimingErrorCount(0), unk39c(-1), unk3a0(-1), unk3a4(0),
       unk3a8(0), unk3ac(0), mAutoMissSoundTimeoutMs(kHugeFloat), mFirstGemMs(0),
       mAnnoyingMode(0), unk3b9(0), unk3bc(0), unk3c0(0),
       mAutoMissSoundTimeoutGems(100000), mAutoMissSoundTimeoutGemsRemote(100000),
@@ -484,7 +484,7 @@ void GemPlayer::Hit(
             }
         } else {
             int numGemSlots = GameGem::CountBitsInSlotType(gem_hit_slots);
-            unk354 = ms;
+            mLastNoteStart = ms;
             CheckHeldNotes(gem.mMs);
             if (!ignoreAt) {
                 BuildHitStreak(gem_id, delta);
@@ -813,8 +813,8 @@ void GemPlayer::PlayMissSound(int i1) {
 }
 
 void GemPlayer::MercurySwitch(bool b, float f) {
-    unk33d = b;
-    if (unk388)
+    mMercurySwitchState = b;
+    if (mIgnoreMercurySwitch)
         return;
     if (!mMercurySwitchEnabled)
         return;
@@ -846,29 +846,29 @@ void GemPlayer::FilteredWhammyBar(float val) {
             if (phraseID != -1
                 && !mCommonPhraseCapturer->DidTrackFail(phraseID, mTrackNum)) {
                 float ms = PollMs();
-                float denominator = ms - unk35c;
+                float denominator = ms - mLastWhammySampleTime;
                 bool movingFast = false;
-                if (std::fabs((val - unk358) / denominator) > mWhammySpeedThreshold) {
+                if (std::fabs((val - mLastWhammySample) / denominator) > mWhammySpeedThreshold) {
                     movingFast = true;
                     mLastTimeWhammyVelWasHigh = PollMs();
                 }
                 bool active = movingFast
                     || ((PollMs() - mLastTimeWhammyVelWasHigh) < mWhammySpeedTimeout);
                 active &= TheGame->mProperties.mEnableWhammy;
-                if (active && !unk348) {
+                if (active && !mWhammying) {
                     Handle(whammy_start_msg, false);
-                } else if (!active && unk348) {
+                } else if (!active && mWhammying) {
                     Handle(whammy_end_msg, false);
                 }
-                unk348 = active;
+                mWhammying = active;
             }
-        } else if (unk348) {
-            unk348 = false;
+        } else if (mWhammying) {
+            mWhammying = false;
             Handle(whammy_end_msg, false);
         }
         SendWhammyBar(val);
-        unk358 = val;
-        unk35c = PollMs();
+        mLastWhammySample = val;
+        mLastWhammySampleTime = PollMs();
     }
 }
 
@@ -891,7 +891,7 @@ void GemPlayer::Hopo(int i1, float ms, int gem_id) {
 }
 
 void GemPlayer::ReleaseGem(int i1, float ms, int gem_id, float f4) {
-    unk354 = ms;
+    mLastNoteStart = ms;
     HeldNote *note = FindHeldNoteFromGemID(gem_id);
     if (note && note->HasGem()) {
         CheckHeldNotes(ms);
@@ -1104,10 +1104,10 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
             padNum = GetUser()->GetLocalBandUser()->GetPadNum();
         }
         SetSyncOffset(TheProfileMgr.GetSyncOffset(padNum));
-        unk388 = false;
+        mIgnoreMercurySwitch = false;
         mMatcher->Poll(ms);
 
-        if (unk348 && TheGame->mProperties.mEnableOverdrive) {
+        if (mWhammying && TheGame->mProperties.mEnableOverdrive) {
             float tickDiff = pos.mTotalTick - mSongPos.mTotalTick;
             AddEnergy(tickDiff * TheScoring->mOverdriveConfig.whammyRate / 480.0f);
         }
@@ -1137,7 +1137,7 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
 
             bool deploying = IsDeployingBandEnergy();
             bool soloFx = false;
-            if (unk315 && !unk314) {
+            if (mInSolo && !mWasFailedDuringSolo) {
                 soloFx = true;
             }
 
@@ -1160,7 +1160,7 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
                 hasHeld = HasAnyActiveHeldNotes();
                 float whammyBar = mController->GetWhammyBar();
                 mGuitarFx->Poll(
-                    fxBank, deploying, soloFx, tempo, beatPhase, whammyBar, hasHeld, unk33d
+                    fxBank, deploying, soloFx, tempo, beatPhase, whammyBar, hasHeld, mMercurySwitchState
                 );
             }
 
@@ -1194,7 +1194,7 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
 
             bool deploying = IsDeployingBandEnergy();
             bool soloFx = false;
-            if (unk315 && !unk314) {
+            if (mInSolo && !mWasFailedDuringSolo) {
                 soloFx = true;
             }
 
@@ -1218,7 +1218,7 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
 
 void GemPlayer::Restart(bool b1) {
     if (!b1) {
-        if (unk315 && TheGame->mProperties.mHasSongSections) {
+        if (mInSolo && TheGame->mProperties.mHasSongSections) {
             BandTrack *trk = GetBandTrack();
             if (trk)
                 trk->SoloHide();
@@ -1229,9 +1229,9 @@ void GemPlayer::Restart(bool b1) {
         JumpReset(0);
     }
     UpdateGameCymbalLanes();
-    unk390 = 0;
-    unk394 = 0;
-    unk398 = 0;
+    mTimingErrorAvgMidTerm = 0;
+    mTimingErrorSum = 0;
+    mTimingErrorCount = 0;
     if (mDrumSlotWeights) {
         mDrumSlotWeightMapping = mDrumSlotWeights->FindSym("default_weights");
     }
@@ -1290,16 +1290,16 @@ void GemPlayer::Restart(bool b1) {
 void GemPlayer::JumpReset(float f1) {
     SetFilling(false, MsToTickInt(f1));
     mBeatMaster->GetAudio()->RestoreDrums(mTrackNum);
-    unk310 = -1;
+    mActiveSoloStart = -1;
     mCodaPoints = 0;
     for (int i = 0; i < 6; i++) {
         mLastCodaSwing[i] = 0;
     }
     FinishAllHeldNotes(f1);
     mIsInCoda = false;
-    unk315 = false;
-    unk316 = false;
-    unk314 = false;
+    mInSolo = false;
+    mEncounteredAllSoloGems = false;
+    mWasFailedDuringSolo = false;
     mNumFillSwings = -1;
     mLastFillHitTick = -1;
     unk2f4 = -1;
@@ -1387,7 +1387,7 @@ void GemPlayer::SetPaused(bool b1) {
         BeatMatchController *ctrl = mController;
         ctrl->unk25 = true;
         ctrl->Disable(true);
-        unk388 = true;
+        mIgnoreMercurySwitch = true;
     } else
         ResetController(true);
 
@@ -1525,11 +1525,11 @@ void GemPlayer::LocalSetEnabledState(EnabledState state, int i2, BandUser *user,
         mMatcher->Enable(false);
         mCommonPhraseCapturer->Enabled(this, mTrackNum, i2, false);
         bool b1 = false;
-        if (unk315 && !unk314) {
+        if (mInSolo && !mWasFailedDuringSolo) {
             b1 = true;
         }
         if (b1)
-            unk314 = true;
+            mWasFailedDuringSolo = true;
         if (state == kPlayerDroppingIn) {
             SetAutoOn(true);
         }
@@ -1888,7 +1888,7 @@ void GemPlayer::OnRemoteCodaHit(int i1, int i2) {
 }
 
 void GemPlayer::OnRemoteWhammy(float f1) {
-    unk358 = f1;
+    mLastWhammySample = f1;
     mMatcher->SetPitchBend(mTrackNum, f1, true);
 }
 
@@ -1968,7 +1968,7 @@ void GemPlayer::ResetController(bool b1) {
 
 void GemPlayer::GetPlayerState(PlayerState &state) const {
     int streak = mStats.GetCurrentStreak();
-    float whammy = unk358;
+    float whammy = mLastWhammySample;
     state.warning = IsInCrowdWarning();
     state.overdriveReady = false;
     state.whammy = whammy;
@@ -2016,7 +2016,7 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
         }
         if (noteScore > mCrowd->mRawValue) {
             float reward = GetCrowdBoost();
-            bool isSoloMod = unk315 && !unk314;
+            bool isSoloMod = mInSolo && !mWasFailedDuringSolo;
             if (isSoloMod) {
                 Symbol trackSym = mUser->GetTrackSym();
                 reward *= TheScoring->GetSoloGemReward(trackSym);
@@ -2025,7 +2025,7 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
             }
             multiplier = reward;
         } else {
-            bool isSoloMod = unk315 && !unk314;
+            bool isSoloMod = mInSolo && !mWasFailedDuringSolo;
             if (isSoloMod) {
                 Symbol trackSym = mUser->GetTrackSym();
                 multiplier *= TheScoring->GetSoloGemPenalty(trackSym);
@@ -2174,10 +2174,10 @@ void GemPlayer::FinishHeldNote(float f1, HeldNote &note) {
         Message msg("held_note_released_callback", frac);
         Export(msg, false);
         UpdateCrowdMeter(frac, note.unk_0x4);
-        if (unk348) {
+        if (mWhammying) {
             Handle(whammy_end_msg, false);
         }
-        unk348 = false;
+        mWhammying = false;
         PrintFinishHeldNote();
         mStats.IncrementSustainGemsHit(note.HeldCompletely());
         note = HeldNote();
@@ -2262,10 +2262,10 @@ void GemPlayer::AddHeadPoints(float f1, int i2, int i3, GemHitFlags flags) {
     AddPoints(ivar2, true, true);
     mStats.AddAccuracy(ivar2);
     int rounded = Round(gem.GetMs() - (f1 + mSyncOffset));
-    unk390 -= rounded;
-    unk394 += rounded;
-    unk398++;
-    PrintAddHead(rounded, i3, ivar2, unk394 / unk398, unk390 + 0.5);
+    mTimingErrorAvgMidTerm -= rounded;
+    mTimingErrorSum += rounded;
+    mTimingErrorCount++;
+    PrintAddHead(rounded, i3, ivar2, mTimingErrorSum / mTimingErrorCount, mTimingErrorAvgMidTerm + 0.5);
 }
 
 void GemPlayer::SetFilling(bool b1, int i2) {
@@ -2309,11 +2309,11 @@ void GemPlayer::HandleSoloGem(int i1, bool b2, float f3, bool b4) {
         float f50 = 0;
         int i54 = 0;
         GetSoloData(TheSongDB->GetGems(mTrackNum)[i1].GetTick(), f4c, f50, i54);
-        if (!unk314) {
-            if (!unk315) {
+        if (!mWasFailedDuringSolo) {
+            if (!mInSolo) {
                 if (f4c == 0)
                     return;
-                if (unk316)
+                if (mEncounteredAllSoloGems)
                     return;
                 unk404 = -1;
                 LocalSoloStart();
@@ -2345,10 +2345,10 @@ int GemPlayer::GetRGFret(int x) const { return mController->GetRGFret(x); }
 void GemPlayer::LocalSoloStart() {
     if (GetEnabledState() != kPlayerDisconnected) {
         if (!mBand->MainPerformer()->IsGameOver() && !InRollback()) {
-            unk315 = true;
+            mInSolo = true;
             mStats.SetHasSolos(true);
             unk3d8 = 1;
-            unk316 = false;
+            mEncounteredAllSoloGems = false;
             BandTrack *track = GetBandTrack();
             if (track) {
                 track->SoloStart();
@@ -2381,8 +2381,8 @@ void GemPlayer::LocalSoloEnd(int pct, int numGems) {
             mStats.mPerfectSoloWithSoloButtons = true;
         }
     }
-    unk315 = false;
-    unk316 = false;
+    mInSolo = false;
+    mEncounteredAllSoloGems = false;
     unk3d8 = false;
 }
 
@@ -2393,7 +2393,7 @@ int GemPlayer::GetSoloData(int tick, float &pct, float &solo_pct, int &numGems) 
     int endTick;
     if (!GetPhraseExtents(kSoloPhrase, mTrackNum, tick, startTick, endTick))
         return 0;
-    unk316 = true;
+    mEncounteredAllSoloGems = true;
     int hit;
     int solo;
     const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
@@ -2404,9 +2404,9 @@ int GemPlayer::GetSoloData(int tick, float &pct, float &solo_pct, int &numGems) 
         const std::vector<GameGem> &gems = TheSongDB->GetGems(mTrackNum);
         for (; (unsigned int)idx < gems.size(); idx++) {
             if (gems[idx].GetTick() >= endTick) break;
-            if (unk316) {
+            if (mEncounteredAllSoloGems) {
                 if (!mGemStatus->GetEncountered(idx)) {
-                    unk316 = false;
+                    mEncounteredAllSoloGems = false;
                 }
             }
             numGems++;
@@ -2502,27 +2502,27 @@ void GemPlayer::CheckSolo(float ms) {
          inSolo = GetPhraseExtents(kSoloPhrase, mTrackNum, inSolo, startTick, endTick),
          inSolo = TheGame->mProperties.mCanSolo & inSolo,
          inSoloBool = (unsigned)(-inSolo | inSolo) >> 31U,
-         (inSoloBool != (((unsigned)unk310 >> 31U) ^ 1U)))) {
+         (inSoloBool != (((unsigned)mActiveSoloStart >> 31U) ^ 1U)))) {
         if (inSoloBool) {
             if (mEnabledState != kPlayerEnabled) {
-                unk314 = true;
-            } else if (IsLocal() && !unk315) {
+                mWasFailedDuringSolo = true;
+            } else if (IsLocal() && !mInSolo) {
                 unk404 = -1;
                 LocalSoloStart();
                 HandleType(send_solo_start_msg);
             }
-            unk315 = true;
+            mInSolo = true;
             mStats.SetHasSolos(true);
-            unk310 = startTick;
+            mActiveSoloStart = startTick;
             return;
         }
-        if (unk316) {
-            if (!unk314) {
+        if (mEncounteredAllSoloGems) {
+            if (!mWasFailedDuringSolo) {
                 SoloEnd();
             }
-            unk314 = false;
-            unk315 = false;
-            unk310 = -1U;
+            mWasFailedDuringSolo = false;
+            mInSolo = false;
+            mActiveSoloStart = -1U;
         }
     }
 }
@@ -2568,7 +2568,7 @@ void GemPlayer::SoloEnd() {
             float f4c = 0;
             float f50 = 0;
             int i54 = 0;
-            GetSoloData(unk310, f4c, f50, i54);
+            GetSoloData(mActiveSoloStart, f4c, f50, i54);
             LocalSoloEnd(f4c, i54);
             static Message send_solo_end("send_solo_end", 0, 0);
             send_solo_end[0] = (int)f4c;
@@ -2602,13 +2602,13 @@ void GemPlayer::LocalSetGuitarFx(int i1) {
 }
 
 void GemPlayer::SendWhammyBar(float f1) {
-    if ((f1 == 0 && unk364 != 0) || (f1 != 0 && unk364 == 0)
-        || (std::fabs(f1 - unk364) >= 0.07999999821186066f)) {
+    if ((f1 == 0 && mLastWhammyValueSent != 0) || (f1 != 0 && mLastWhammyValueSent == 0)
+        || (std::fabs(f1 - mLastWhammyValueSent) >= 0.07999999821186066f)) {
         static int x;
         static Message msg("send_whammy", 0.0f);
         msg[0] = f1;
         HandleType(msg);
-        unk364 = f1;
+        mLastWhammyValueSent = f1;
     }
 }
 

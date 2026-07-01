@@ -1225,27 +1225,27 @@ void RndParticleSys::FreeAllParticles() {
 
 bool RndParticleSys::Burst::Set(float f1, float f2) {
     if (f2 > 0) {
-        unk0 = f1;
-        unk4 = f2 * 0.5f;
-        unkc = f2;
-        unk8 = 1.0f / unk4;
+        mPeak = f1;
+        mHalfLength = f2 * 0.5f;
+        mTimeToLive = f2;
+        mNorm = 1.0f / mHalfLength;
         return true;
     } else
         return false;
 }
 
 float RndParticleSys::Burst::Emit(float f1) {
-    unkc -= f1;
-    if (unkc < 0)
+    mTimeToLive -= f1;
+    if (mTimeToLive < 0)
         return -1;
-    float ret = unkc;
-    if (ret > unk4) {
-        ret = unk4 * 2.0f - ret;
+    float ret = mTimeToLive;
+    if (ret > mHalfLength) {
+        ret = mHalfLength * 2.0f - ret;
     }
-    ret *= unk8;
+    ret *= mNorm;
     float ret2 = ret * ret;
     float ret3 = ret2 * ret;
-    return (ret2 * 3.0f - ret3 * 2.0f) * (unk0 * f1);
+    return (ret2 * 3.0f - ret3 * 2.0f) * (mPeak * f1);
 }
 
 float RndParticleSys::CheckBursts(float f1) {

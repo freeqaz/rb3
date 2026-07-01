@@ -492,8 +492,8 @@ void SongData::ComputeVocalRangeData() {
     for (std::map<int, float>::iterator it = mRangeShifts.begin();
          it != mRangeShifts.end();
          ++it) {
-        s.unk0 = it->first;
-        s.unk4 = it->second;
+        s.mStartTick = it->first;
+        s.mIntroDur = it->second;
         mRangeSections.push_back(s);
     }
     int u10start = 0;
@@ -507,27 +507,27 @@ void SongData::ComputeVocalRangeData() {
         RangeSection &curSect = mRangeSections[i];
         int i2 = -1;
         if (i + 1 < mRangeSections.size()) {
-            i2 = mRangeSections[i + 1].unk0;
+            i2 = mRangeSections[i + 1].mStartTick;
         }
         for (int u10 = u10start; u10 <= i9; u10++) {
             mVocalNoteLists[u10]->UpdatePitchRangeTickDelimited(
-                curSect.unk0, i2, curSect.unk8, curSect.unkc
+                curSect.mStartTick, i2, curSect.mPitchMin, curSect.mPitchMax
             );
         }
-        if (curSect.unk8 > 200.0f) {
-            curSect.unk8 = i > 0 ? mRangeSections[i - 1].unk8 : 60.0f;
+        if (curSect.mPitchMin > 200.0f) {
+            curSect.mPitchMin = i > 0 ? mRangeSections[i - 1].mPitchMin : 60.0f;
         }
-        if (curSect.unkc < 0) {
-            curSect.unkc = i > 0 ? mRangeSections[i - 1].unkc : 72.0f;
+        if (curSect.mPitchMax < 0) {
+            curSect.mPitchMax = i > 0 ? mRangeSections[i - 1].mPitchMax : 72.0f;
         }
         static bool dumpRangeSections;
         if (dumpRangeSections) {
             MILO_LOG(
                 "New Range Section: tick %d, (%.1f, %.1f) size: %.0f\n",
-                curSect.unk0,
-                curSect.unk8,
-                curSect.unkc,
-                curSect.unkc - curSect.unk8
+                curSect.mStartTick,
+                curSect.mPitchMin,
+                curSect.mPitchMax,
+                curSect.mPitchMax - curSect.mPitchMin
             );
         }
     }
@@ -706,7 +706,7 @@ void SongData::ValidateVocalSPPhrases() {
                 ));
             } else if (next
                        && (phrase = &curVoxList->GetPhrases()[next->mPhrase],
-                           &curVoxList->mNotes[phrase->unk10] != next)) {
+                           &curVoxList->mNotes[phrase->mNoteStart] != next)) {
                 TheDebug.Notify(MakeString(
                     "NOTIFY %s %s : vocal overdrive phrase at %i ms starts mid-phrase.\n",
                     SongFullPath(),
@@ -721,7 +721,7 @@ void SongData::ValidateVocalSPPhrases() {
                         VocalPhrase *p =
                             &_ref0[j]->GetPhrases()[n2->mPhrase];
                         if (p
-                            && _ref0[j]->mNotes[p->unk14 - 1].GetMs()
+                            && _ref0[j]->mNotes[p->mNoteEnd - 1].GetMs()
                                 <= endMs) {
                             found2 = true;
                             break;
@@ -736,7 +736,7 @@ void SongData::ValidateVocalSPPhrases() {
                         (int)ms
                     ));
                 } else if (phrase) {
-                    int idx = phrase->unk14;
+                    int idx = phrase->mNoteEnd;
                     if (idx < curVoxList->mNotes.size()
                         && curVoxList->mNotes[idx].GetMs() < endMs) {
                         TheDebug.Notify(MakeString(
@@ -1022,13 +1022,13 @@ void SongData::AddRangeShift(int i, float f) { mRangeShifts[i] = f; }
 
 void SongData::AddKeyboardRangeShift(int i1, int i2, float f3, int i4, int i5) {
     RangeSection sect(i1, f3);
-    sect.unk8 = i4;
-    sect.unkc = i5;
+    sect.mPitchMin = i4;
+    sect.mPitchMax = i5;
     std::vector<RangeSection> &curRanges = mKeyboardRangeSections[i1];
-    if (sect.unkc == -1.0f) {
+    if (sect.mPitchMax == -1.0f) {
         float fSpan = 16.0f;
         if (curRanges.size() != 0) {
-            fSpan = curRanges.back().unkc - curRanges.back().unk8;
+            fSpan = curRanges.back().mPitchMax - curRanges.back().mPitchMin;
 #ifdef HX_NATIVE
             // PART REAL_KEYS_X charts in the retail RB3 360 extract sometimes
             // emit range sections with non-positive span (likely an authoring
@@ -1044,7 +1044,7 @@ void SongData::AddKeyboardRangeShift(int i1, int i2, float f3, int i4, int i5) {
             MILO_ASSERT(fSpan > 0.0f, 0x589);
 #endif
         }
-        sect.unkc += fSpan;
+        sect.mPitchMax += fSpan;
     }
     curRanges.push_back(sect);
 }

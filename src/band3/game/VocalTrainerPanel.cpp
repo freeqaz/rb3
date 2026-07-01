@@ -121,13 +121,13 @@ void VocalTrainerPanel::StartSectionImpl() {
         }
         const std::vector<VocalPhrase> &phrases = unkb4[i]->GetPhrases();
         for (int j = 0; j < phrases.size(); j++) {
-            if (phrases[j].unk8 > id8)
+            if (phrases[j].mStartTick > id8)
                 break;
-            int i12 = phrases[j].unk8 + phrases[j].unkc;
+            int i12 = phrases[j].mStartTick + phrases[j].mDurationTicks;
             if (i12 > id4) {
                 VocalPhrase curPhrase(phrases[j]);
-                curPhrase.unk10 -= idc;
-                curPhrase.unk14 -= idc;
+                curPhrase.mNoteStart -= idc;
+                curPhrase.mNoteEnd -= idc;
                 if (i12 > sect.GetEndTick()) {
                     MILO_FAIL(
                         "Vocal trainer section %s: last phrase doesn't finish within the section\n",
@@ -142,12 +142,12 @@ void VocalTrainerPanel::StartSectionImpl() {
             mPatternLyricPhrases[i].clear();
             const std::vector<VocalPhrase> &lyricPhrases = unkb4[i]->GetLyricPhrases();
             for (int j = 0; j < lyricPhrases.size(); j++) {
-                if (lyricPhrases[j].unk8 > id8)
+                if (lyricPhrases[j].mStartTick > id8)
                     break;
-                if (lyricPhrases[j].unk8 + lyricPhrases[j].unkc > id4) {
+                if (lyricPhrases[j].mStartTick + lyricPhrases[j].mDurationTicks > id4) {
                     VocalPhrase curPhrase(lyricPhrases[j]);
-                    curPhrase.unk10 -= idc;
-                    curPhrase.unk14 -= idc;
+                    curPhrase.mNoteStart -= idc;
+                    curPhrase.mNoteEnd -= idc;
                     mPatternLyricPhrases[i].push_back(curPhrase);
                 }
             }
@@ -187,15 +187,15 @@ void VocalTrainerPanel::CopyPhrasesImp(
 ) {
     for (int i = 0; i < v1.size(); i++) {
         VocalPhrase curPhrase = v1[i];
-        curPhrase.unk10 += i3;
-        curPhrase.unk14 += i3;
-        int ivar3 = curPhrase.unk8 + i4;
-        curPhrase.unk8 = i5;
-        curPhrase.unkc += (ivar3 - curPhrase.unk8);
-        int tickSum = curPhrase.unk8 + curPhrase.unkc;
-        curPhrase.unk0 = TickToMs(curPhrase.unk8);
-        curPhrase.unk4 = TickToMs(tickSum) - curPhrase.unk0;
-        i5 = curPhrase.unk8 + curPhrase.unkc;
+        curPhrase.mNoteStart += i3;
+        curPhrase.mNoteEnd += i3;
+        int ivar3 = curPhrase.mStartTick + i4;
+        curPhrase.mStartTick = i5;
+        curPhrase.mDurationTicks += (ivar3 - curPhrase.mStartTick);
+        int tickSum = curPhrase.mStartTick + curPhrase.mDurationTicks;
+        curPhrase.mStartMs = TickToMs(curPhrase.mStartTick);
+        curPhrase.mDurationMs = TickToMs(tickSum) - curPhrase.mStartMs;
+        i5 = curPhrase.mStartTick + curPhrase.mDurationTicks;
         v2.push_back(curPhrase);
     }
 }
@@ -213,8 +213,8 @@ void VocalTrainerPanel::CopyTubes(int i1) {
             int ic8 = 0;
             MILO_ASSERT(mPatternPhrases[part].size(), 0x137);
             VocalPhrase phrase;
-            phrase.unkc = ic4 = mPatternPhrases[part][0].unk8;
-            phrase.unk4 = mPatternPhrases[part][0].unk0;
+            phrase.mDurationTicks = ic4 = mPatternPhrases[part][0].mStartTick;
+            phrase.mDurationMs = mPatternPhrases[part][0].mStartMs;
             cur->mPhrases.push_back(phrase);
             for (int j = -1; j < 2; j++) {
                 int ivar1 = unk9c - sect.GetStartTick();
@@ -248,42 +248,42 @@ void VocalTrainerPanel::CopyTubes(int i1) {
             for (int j = 0; j < mPatternPhrases[i].size(); j++) {
                 MILO_LOG(
                     "\t%d - %d\t(%f - %f)\n",
-                    mPatternPhrases[i][j].unk8,
-                    mPatternPhrases[i][j].unk8 + mPatternPhrases[i][j].unkc,
-                    mPatternPhrases[i][j].unk0,
-                    mPatternPhrases[i][j].unk0 + mPatternPhrases[i][j].unk4
+                    mPatternPhrases[i][j].mStartTick,
+                    mPatternPhrases[i][j].mStartTick + mPatternPhrases[i][j].mDurationTicks,
+                    mPatternPhrases[i][j].mStartMs,
+                    mPatternPhrases[i][j].mStartMs + mPatternPhrases[i][j].mDurationMs
                 );
             }
             MILO_LOG("add phrases [%d]\n", curNoteList->mPhrases.size());
             for (int j = 0; j < curNoteList->mPhrases.size(); j++) {
                 MILO_LOG(
                     "\t%d - %d\t(%f - %f)\n",
-                    curNoteList->mPhrases[j].unk8,
-                    curNoteList->mPhrases[j].unk8 + curNoteList->mPhrases[j].unkc,
-                    curNoteList->mPhrases[j].unk0,
-                    curNoteList->mPhrases[j].unk0 + curNoteList->mPhrases[j].unk4
+                    curNoteList->mPhrases[j].mStartTick,
+                    curNoteList->mPhrases[j].mStartTick + curNoteList->mPhrases[j].mDurationTicks,
+                    curNoteList->mPhrases[j].mStartMs,
+                    curNoteList->mPhrases[j].mStartMs + curNoteList->mPhrases[j].mDurationMs
                 );
             }
             MILO_LOG("orig lyric phrases [%d]\n", mPatternLyricPhrases[i].size());
             for (int j = 0; j < mPatternLyricPhrases[i].size(); j++) {
                 MILO_LOG(
                     "\t%d - %d\t(%f - %f)\n",
-                    mPatternLyricPhrases[i][j].unk8,
-                    mPatternLyricPhrases[i][j].unk8 + mPatternLyricPhrases[i][j].unkc,
-                    mPatternLyricPhrases[i][j].unk0,
-                    mPatternLyricPhrases[i][j].unk0 + mPatternLyricPhrases[i][j].unk4
+                    mPatternLyricPhrases[i][j].mStartTick,
+                    mPatternLyricPhrases[i][j].mStartTick + mPatternLyricPhrases[i][j].mDurationTicks,
+                    mPatternLyricPhrases[i][j].mStartMs,
+                    mPatternLyricPhrases[i][j].mStartMs + mPatternLyricPhrases[i][j].mDurationMs
                 );
             }
             MILO_LOG("add lyric phrases [%d]\n", curNoteList->mLyricPhrases.size());
             for (int j = 0; j < curNoteList->mLyricPhrases.size(); j++) {
                 MILO_LOG(
                     "\t%d - %d\t(%f - %f)\n",
-                    curNoteList->mLyricPhrases[j].unk8,
-                    curNoteList->mLyricPhrases[j].unk8
-                        + curNoteList->mLyricPhrases[j].unkc,
-                    curNoteList->mLyricPhrases[j].unk0,
-                    curNoteList->mLyricPhrases[j].unk0
-                        + curNoteList->mLyricPhrases[j].unk4
+                    curNoteList->mLyricPhrases[j].mStartTick,
+                    curNoteList->mLyricPhrases[j].mStartTick
+                        + curNoteList->mLyricPhrases[j].mDurationTicks,
+                    curNoteList->mLyricPhrases[j].mStartMs,
+                    curNoteList->mLyricPhrases[j].mStartMs
+                        + curNoteList->mLyricPhrases[j].mDurationMs
                 );
             }
         }

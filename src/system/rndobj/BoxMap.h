@@ -28,25 +28,28 @@ public:
 
     // size 0x24
     struct LightParams_Point {
-        Vector3 unk0; // 0x0
+        Vector3 mLightPos; // 0x0
         Hmx::Color mColor; // 0xc
         float mRange; // 0x1c
         float mFalloffStart; // 0x20
     };
 
     // size 0x50
+    // Member names recovered from Bank 5 DWARF (LightParams_Spot + its inlined
+    // CachedData sub-struct); Bank 8 flattened the cache fields directly into
+    // the struct and reordered mColor ahead of the second Vector3.
     struct LightParams_Spot {
-        Vector3 unk0; // 0x0
+        Vector3 mDirection; // 0x0
         Hmx::Color mColor; // 0xc
-        Vector3 unk1c; // 0x1c
-        float unk28;
-        float unk2c;
-        float unk30;
-        float unk34;
-        Vector3 unk38; // 0x38
-        float unk44; // 0x44 - beam length?
-        float unk48; // 0x48 - top beam radius
-        float unk4c; // 0x4c - bottom beam radius
+        Vector3 mTipPosition; // 0x1c - cone apex (mLightPos - mDirection*tipOffset)
+        float mCosTheta; // 0x28 - cone cosine threshold
+        float mOneOverOneSubCos; // 0x2c - 1/(1-mCosTheta)
+        float mOneOverRange2x; // 0x30 - 1/(2*mRange)
+        float mTipOverRange2x; // 0x34 - tipOffset/(2*mRange)
+        Vector3 mLightPos; // 0x38 - authored light position (xfm.v)
+        float mRange; // 0x44 - beam length
+        float mRadiusTop; // 0x48 - top beam radius
+        float mRadiusBottom; // 0x4c - bottom beam radius
     };
 
     BoxMapLighting();

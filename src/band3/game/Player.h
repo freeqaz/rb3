@@ -215,34 +215,34 @@ public:
     EnabledState mEnabledState; // 0x250
     int mTimesFailed; // 0x254
     float mEnableMs; // 0x258
-    float unk25c;
-    std::vector<Extent VECTOR_SIZE_SMALL> unk260;
+    float mDisableMs;
+    std::vector<Extent VECTOR_SIZE_SMALL> mFailedWindows;
     bool mIsInCoda;
     float mBandEnergy; // 0x26c
     bool mDeployingBandEnergy; // 0x270
-    int unk274;
-    int unk278;
+    int mLastMultiplier;
+    int mNumTimesDeployed;
     bool mPhraseBonus; // 0x27c
     BeatMaster *mBeatMaster; // 0x280
-    float unk284;
-    bool unk288;
-    int unk28c;
-    bool unk290;
-    int unk294;
-    int unk298;
-    float unk29c;
-    int unk2a0;
-    float unk2a4;
+    float mIntroHelpDurationMs;
+    bool mIntroHelpShowing;
+    int mBonusID;
+    bool mNetTalking;
+    int mNumPlayersSaved;
+    int mSaveInProgress;
+    float mLastScoreSentMs;
+    int mLastScoreSent;
+    float mLastEnergySentMs;
     bool mDisconnectedAtStart; // 0x2a8
-    bool unk2a9;
-    int unk2ac;
+    bool mFailedAtStart;
+    int mPollCounter;
     bool unk2b0;
     bool mPermanentOverdrive; // 0x2b1
     bool mHasFinishedCoda; // 0x2b2
     bool mHasBlownCoda; // 0x2b3
-    int unk2b4;
-    int unk2b8;
-    int unk2bc;
-    int unk2c0;
+    int mTotalNumPlayersSaved;
+    int mMultiplierPollSum;
+    int mMultiplierPollCount;
+    int mCurrentSectionIndex;
     bool unk2c4;
 };

@@ -131,9 +131,9 @@ public:
     std::vector<float> mFretHeights; // 0xb4
     std::vector<float> mGradeDistances; // 0xbc
     RndMesh *mSource; // 0xc4
-    float unkc8; // 0xc8
-    float unkcc; // 0xcc
-    float unkd0; // 0xd0
+    float mBaseXVal; // 0xc8 - Bank 5 DWARF: base cross-section world x
+    float mContourXVal; // 0xcc - contour cross-section world x
+    float mBaseHeightVal; // 0xd0 - base height world z (Bank 5 DWARF "mBaseHeight")
     CrossSec sec1; // 0xd4
     CrossSec sec2; // 0xf8
 };

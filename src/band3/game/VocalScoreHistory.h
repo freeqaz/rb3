@@ -4,24 +4,25 @@
 class VocalScoreCache {
 public:
     VocalScoreCache()
-        : unk0(0), unk4(0), unk8(0), unkc(0), unk10(0), unk14(0), unk1c(0), unk20(0),
-          unk21(0), unk22(0), unk24(0) {}
+        : mHitPercentage(0), mFramePoints(0), mPhrasePointsCap(0), mUncappedFramePoints(0),
+          mVibratoPoints(0), mTargetPitch(0), mOctaveOffset(0), mVoiced(0),
+          mSpamming(0), unk22(0), mVocalEnergy(0) {}
     ~VocalScoreCache() {}
 
-    float GetHitPercentage() const { return unk0; }
+    float GetHitPercentage() const { return mHitPercentage; }
 
-    float unk0;
-    float unk4;
-    float unk8;
-    float unkc;
-    float unk10;
-    float unk14;
-    float unk18;
-    int unk1c;
-    bool unk20;
-    bool unk21;
-    bool unk22;
-    float unk24;
+    float mHitPercentage; // 0x0
+    float mFramePoints; // 0x4
+    float mPhrasePointsCap; // 0x8
+    float mUncappedFramePoints; // 0xc
+    float mVibratoPoints; // 0x10
+    float mTargetPitch; // 0x14
+    float mTargetPitchMs; // 0x18
+    int mOctaveOffset; // 0x1c
+    bool mVoiced; // 0x20
+    bool mSpamming; // 0x21
+    bool unk22; // 0x22
+    float mVocalEnergy; // 0x24
 };
 
 class VocalScoreHistory {

@@ -56,8 +56,8 @@ VocalPlayer::VocalPlayer(
     BandUser *user, BeatMaster *bmaster, Band *band, int tracknum, Performer *perf, int i7
 )
     : Player(user, band, tracknum, bmaster), mBandPerformer(perf), mSpoofed(0), mTrack(0),
-      mAutoPlay(0), mVocalPartBias(1.25f), unk2e8(0), unk2ec(0), mNextPacketSendTime(0),
-      unk300(0), unk304(0), mTrackWrappingMargin(0), mLastDeploymentSinger(-1),
+      mAutoPlay(0), mVocalPartBias(1.25f), mSinging(0), mDetune(0), mNextPacketSendTime(0),
+      mMinPitch(0), mMaxPitch(0), mTrackWrappingMargin(0), mLastDeploymentSinger(-1),
       mPhraseValue(0), mPartScoreMultipliers(0), mRatingThresholds(0),
       mNonpitchStickiness(0.6f), mCouldChat(0), mCodaEndMs(0), unk344(0),
       mTuningOffset(0), unk34c(-1.0f), mInitialMicCount(0), unk36c(0), unk370(0),
@@ -301,10 +301,10 @@ void VocalPlayer::LocalSetEnabledState(EnabledState state, int i1, BandUser *use
     } else if ((unsigned)(state - kPlayerBeingSaved) <= 1U) {
         std::vector<VocalPhrase> &phrases = mVocalParts[0]->mVocalNoteList->mPhrases;
         for (std::vector<VocalPhrase>::iterator it = phrases.begin(); it != phrases.end(); ++it) {
-            if (mEnableMs <= it->unk0) {
-            mEnableMs = it->unk0;
+            if (mEnableMs <= it->mStartMs) {
+            mEnableMs = it->mStartMs;
             FOREACH (vp, mVocalParts) {
-                (*vp)->SetFirstPhraseMsToScore(it->unk0);
+                (*vp)->SetFirstPhraseMsToScore(it->mStartMs);
             }
             break;
             }
@@ -530,8 +530,8 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                     var_f22 = fDev;
                 }
 
-                float fScore = cache.unk0;
-                if (cache.unk20) {
+                float fScore = cache.mHitPercentage;
+                if (cache.mVoiced) {
                     fScore *= mNonpitchStickiness;
                 }
                 pSinger->AppendToScoreHistory(fCompMS, pPart->mPartIndex, fScore, iRating);
@@ -546,19 +546,19 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             VocalPart *pPartA = mVocalParts[i];
             if (pPartA->PhraseHasUnpitchedNotes()) continue;
             VocalScoreCache &cacheA = pSinger->AccessScoreCache(i);
-            float fScoreA = cacheA.unk0;
+            float fScoreA = cacheA.mHitPercentage;
 
             for (int j = i + 1; j < mVocalParts.size(); j++) {
                 MILO_ASSERT(j != i, 0x3FA);
                 VocalPart *pPartB = mVocalParts[j];
                 if (pPartB->PhraseHasUnpitchedNotes()) continue;
                 VocalScoreCache &cacheB = pSinger->AccessScoreCache(j);
-                float fScoreB = cacheB.unk0;
+                float fScoreB = cacheB.mHitPercentage;
 
                 if (0.0f == fScoreA && 0.0f == fScoreB) continue;
 
                 if (fabsf(fScoreA - fScoreB) < 0.00001f) {
-                    if (0.0f != cacheA.unkc || 0.0f != cacheB.unkc) {
+                    if (0.0f != cacheA.mUncappedFramePoints || 0.0f != cacheB.mUncappedFramePoints) {
                         pSinger->AddAmbiguousPart(i, j);
                     }
                 } else {
@@ -748,7 +748,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             VocalPart *pPart = mVocalParts[pSinger->mFrameAssignedPart];
             VocalScoreCache &cache = pSinger->AccessScoreCache(pPart->mPartIndex);
             pPart->AddScore(cache);
-            pSinger->mFrameBestHitScore = cache.unk0;
+            pSinger->mFrameBestHitScore = cache.mHitPercentage;
 
             if (mFrameSpewData) {
                 mFrameSpewData->mSingerData[pSinger->mSingerIndex].unk8 =
@@ -855,8 +855,9 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         pPart->AfterPoll(fCompMS);
         VocalFrameSpewData *frameSpewData = mFrameSpewData;
         if (frameSpewData) {
-            frameSpewData->mPartData[pPart->mPartIndex].unk18 = (int)pPart->mPhraseScore;
-            frameSpewData->mPartData[pPart->mPartIndex].unk1c =
+            frameSpewData->mPartData[pPart->mPartIndex].mPhrasePoints =
+                (int)pPart->mPhraseScore;
+            frameSpewData->mPartData[pPart->mPartIndex].mPhraseMaxPoints =
                 (int)pPart->mPhraseScoreMax;
         }
     }
@@ -907,7 +908,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     bool bSolo = ((int)mVocalParts.size() - 1) == 0;
     if (TheGameMicManager->GetMicCount() == 1 && bSolo) {
         Singer *pFirstSinger = mSingers[0];
-        float fHitPct = pFirstSinger->AccessScoreCache(0).unk14;
+        float fHitPct = pFirstSinger->AccessScoreCache(0).mTargetPitch;
         float fAdjusted = fHitPct + (mTuningOffset / 100.0f);
         if (0.0f == fHitPct) {
             fAdjusted = 0.0f;
@@ -1263,7 +1264,7 @@ void VocalPlayer::HookupTrack() {
     mTrack = dynamic_cast<VocalTrack *>(GetUser()->GetTrack());
     MILO_ASSERT(mTrack, 0x88A);
     std::vector<VocalPhrase> &phrases = mVocalParts[0]->mVocalNoteList->mPhrases;
-    mTrack->Restart(this, phrases[0].unk0 + phrases[0].unk4, phrases[1].unk0 + phrases[1].unk4);
+    mTrack->Restart(this, phrases[0].mStartMs + phrases[0].mDurationMs, phrases[1].mStartMs + phrases[1].mDurationMs);
     mCouldChat = !TheNetSession->IsLocal() && PressingToTalk();
     SendCanChat(mCouldChat);
     UpdateMicDisplay();
@@ -1743,22 +1744,22 @@ float VocalPlayer::GetNumPhrases(int startTick, int endTick, int isolatedPart) {
     int byteOffset = 0;
     while (phraseIdx < phraseVec.size()) {
         VocalPhrase *phrase = (VocalPhrase *)((char *)&phraseVec[0] + byteOffset);
-        int clampedStart = phrase->unk8;
+        int clampedStart = phrase->mStartTick;
         if (clampedStart < startTick) clampedStart = startTick;
-        int clampedEnd = phrase->unk8 + phrase->unkc;
+        int clampedEnd = phrase->mStartTick + phrase->mDurationTicks;
         if (endTick < clampedEnd) clampedEnd = endTick;
         int part = startPart;
         int found = 0;
         while (part <= endPart && !found) {
             if (phrase && part == 0) {
-                if (phrase->unk10 != phrase->unk14) {
+                if (phrase->mNoteStart != phrase->mNoteEnd) {
                     found = 1;
                     count++;
                 }
             } else {
                 VocalNoteList *vnl = TheSongDB->GetVocalNoteList(part);
                 if (vnl != NULL && vnl->HasNoteInRange(clampedStart, clampedEnd) != -1) {
-                    if (part != 0 || phrase->unk10 != phrase->unk14) {
+                    if (part != 0 || phrase->mNoteStart != phrase->mNoteEnd) {
                         found = 1;
                         count++;
                     }
@@ -1984,7 +1985,7 @@ BEGIN_HANDLERS(VocalPlayer)
     HANDLE_ACTION(
         remote_vocal_state, RemoteVocalState(_msg->Int(2), _msg->Int(3), _msg->Int(4))
     )
-    HANDLE_ACTION(remote_phrase_over, unk2fc = 0)
+    HANDLE_ACTION(remote_phrase_over, mRemotePhraseMeterFrac = 0)
     HANDLE_ACTION(remote_hit, SetAutoplay(true))
     HANDLE_ACTION(remote_penalize, SetAutoplay(false))
     HANDLE_ACTION(

@@ -54,7 +54,7 @@ void BandCamShot::DeleteTargetCache(std::list<TargetCache>::iterator it) {
 
 BandCamShot::BandCamShot()
     : mTargets(this), mMinTime(0), mMaxTime(0), mZeroTime(0), mNextShots(this),
-      mCurShot(this), unk15c(0), unk160(0), unk164(0), unk168(0), unk169(0), unk16a(0),
+      mCurShot(this), mNextTotalDur(0), mNextDur(0), mCachedTotalDuration(0), mRecursing(0), mListingNextShots(0), mSetPreFrameCalled(0),
       mAnimsDuringNextShots(0) {
     SetNear(10.0f);
     SetFar(10000.0f);
@@ -362,7 +362,7 @@ void BandCamShot::StartAnim() {
             }
         }
     }
-    unk164 = GetTotalDuration();
+    mCachedTotalDuration = GetTotalDuration();
     DoHide();
     if (!sHideAllCharactersHack) {
         int showing = 0;
@@ -400,12 +400,12 @@ bool BandCamShot::IterateNextShot() {
 void BandCamShot::ResetNextShot() {
     mShotIter = mNextShots.end();
     mCurShot = this;
-    unk15c = 0;
-    unk160 = 0;
+    mNextTotalDur = 0;
+    mNextDur = 0;
 }
 
 void BandCamShot::SetPreFrame(float f1, float f2) {
-    unk16a = true;
+    mSetPreFrameCalled = true;
     float dur = Duration();
     if (ShouldSetNextShot(f1)) {
         if (mCurShot != this)
@@ -413,24 +413,24 @@ void BandCamShot::SetPreFrame(float f1, float f2) {
     } else {
         float sub = f1 - dur;
         float u15c;
-        while (sub < (u15c = unk15c) && mShotIter != mNextShots.begin()) {
+        while (sub < (u15c = mNextTotalDur) && mShotIter != mNextShots.begin()) {
             mShotIter.mNode = mShotIter.mNode->prev;
-            unk160 = (*mShotIter)->GetTotalDuration();
-            unk15c -= unk160;
+            mNextDur = (*mShotIter)->GetTotalDuration();
+            mNextTotalDur -= mNextDur;
             mCurShot = *mShotIter;
         }
         f1 = sub - u15c;
-        while (f1 >= unk160) {
+        while (f1 >= mNextDur) {
             if (IterateNextShot()) {
-                f1 -= unk160;
-                unk15c += unk160;
+                f1 -= mNextDur;
+                mNextTotalDur += mNextDur;
                 if (mCurShot)
                     mCurShot->EndAnim();
                 mCurShot = *mShotIter;
                 mCurShot->StartAnim();
-                unk160 = (*mShotIter)->GetTotalDuration();
+                mNextDur = (*mShotIter)->GetTotalDuration();
             } else
-                unk160 = FLT_MAX;
+                mNextDur = FLT_MAX;
         }
     }
     if (mCurShot != this) {
@@ -439,14 +439,14 @@ void BandCamShot::SetPreFrame(float f1, float f2) {
 }
 
 void BandCamShot::SetFrame(float frame, float blend) {
-    if (!unk16a) {
+    if (!mSetPreFrameCalled) {
         SetPreFrame(frame, blend);
     }
     float origFrame = frame;
     float dur = Duration();
     bool skip = ShouldSetNextShot(frame);
     if (!skip) {
-        frame = frame - (unk15c + dur);
+        frame = frame - (mNextTotalDur + dur);
     }
     if (CheckShotOver(origFrame)) {
         SetShotOver();
@@ -462,13 +462,13 @@ void BandCamShot::SetFrame(float frame, float blend) {
         mCurShot->SetFrameEx(frame, blend);
         RndAnimatable::SetFrame(origFrame, blend);
     }
-    unk16a = false;
+    mSetPreFrameCalled = false;
 }
 
 void BandCamShot::SetFrameEx(float frame, float blend) {
-    unk168 = true;
+    mRecursing = true;
     SetFrame(frame, blend);
-    unk168 = false;
+    mRecursing = false;
 }
 
 void BandCamShot::AnimateShot(float frame, float blend) {
@@ -636,11 +636,11 @@ BandCamShot *BandCamShot::InitialShot() {
 }
 
 bool BandCamShot::ListNextShots(std::list<BandCamShot *> &shots) {
-    if (unk169) {
+    if (mListingNextShots) {
         MILO_WARN("%s infinite camera shot loop detected!", PathName(this));
         return false;
     } else {
-        unk169 = true;
+        mListingNextShots = true;
         for (ObjPtrList<BandCamShot>::iterator it = mNextShots.begin();
              it != mNextShots.end();) {
             shots.push_back(*it);
@@ -652,17 +652,17 @@ bool BandCamShot::ListNextShots(std::list<BandCamShot *> &shots) {
                 ++it;
             }
         }
-        unk169 = false;
+        mListingNextShots = false;
         return true;
     }
 }
 
 float BandCamShot::EndFrame() { return GetTotalDuration(); }
 
-bool BandCamShot::CheckShotStarted() { return !unk168 && CamShot::CheckShotStarted(); }
+bool BandCamShot::CheckShotStarted() { return !mRecursing && CamShot::CheckShotStarted(); }
 
 bool BandCamShot::CheckShotOver(float f) {
-    return !unk168 && f >= unk164 && CamShot::CheckShotOver(f);
+    return !mRecursing && f >= mCachedTotalDuration && CamShot::CheckShotOver(f);
 }
 
 void BandCamShot::Target::Store(BandCamShot *shot) {

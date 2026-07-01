@@ -185,7 +185,7 @@ void RndMeshDeform::BoneDesc::ExportWorldXfm(Transform &xfm) {
         Multiply(xfm, t->LocalXfm(), xfm);
         t = t->TransParent();
     }
-    Multiply(xfm, unk54, xfm);
+    Multiply(xfm, parent, xfm);
 }
 
 void RndMeshDeform::SetMesh(RndMesh *mesh) {
@@ -197,7 +197,7 @@ void RndMeshDeform::SetNumBones(int n) { mBones.resize(n); }
 
 void operator>>(BinStream &bs, RndMeshDeform::BoneDesc &desc) {
     bs >> desc.mBone;
-    bs >> desc.unk14 >> desc.unk54;
+    bs >> desc.offset >> desc.parent;
 }
 
 SAVE_OBJ(RndMeshDeform, 532)
@@ -225,8 +225,8 @@ void RndMeshDeform::Print() {
         BoneDesc &cur = mBones[i];
         TheDebug << "bone" << (int)i << ":\n";
         TheDebug << "   " << cur.mBone.Ptr() << "\n";
-        TheDebug << "   " << cur.unk14 << "\n";
-        TheDebug << "   " << cur.unk54 << "\n";
+        TheDebug << "   " << cur.offset << "\n";
+        TheDebug << "   " << cur.parent << "\n";
     }
     u8 *cData = (u8 *)mVerts.mData;
     int idx = 0;
@@ -309,7 +309,7 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         if (mBones[i].mBone) {
             Transform tmp;
             mBones[i].ExportWorldXfm(tmp);
-            Multiply(mBones[i].unk14, tmp, xfms[i]);
+            Multiply(mBones[i].offset, tmp, xfms[i]);
         } else {
             xfms[i].Reset();
             TheDebug << MakeString("%s null bone %d\n", PathName(this), (int)i);
