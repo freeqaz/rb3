@@ -20,7 +20,13 @@ class ClipDistMap {
 public:
     class Array2d {
     public:
-        Array2d() {}
+        Array2d() : mWidth(0), mHeight(0), mData(0) {}
+        Array2d(int w, int h) : mWidth(0), mHeight(0), mData(0) {
+            delete[] mData;
+            mWidth = w;
+            mHeight = h;
+            mData = (float *)new uint[w * h];
+        }
         ~Array2d() { delete[] mData; }
         void Resize(int, int);
         int CalcWidth();

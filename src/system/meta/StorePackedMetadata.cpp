@@ -81,7 +81,7 @@ public:
     virtual bool ReadDone(int &);
     virtual int GetFileHandle(DVDFileInfo *&);
 
-    static void Init(unsigned long long, unsigned short);
+    static bool Init(unsigned long long, unsigned short);
 
     CNTFileInfo mFileInfo; // 0x4
     int mSize; // 0x48
@@ -95,7 +95,7 @@ bool StoreIndexFileReader::mMetaDataCntHandleInited;
 
 int StoreIndexFileReader::Read(void *buf, int len) { return CNTRead(&mFileInfo, buf, len); }
 
-inline void StoreIndexFileReader::Init(unsigned long long titleId, unsigned short idx) {
+inline bool StoreIndexFileReader::Init(unsigned long long titleId, unsigned short idx) {
     int rc = (int)contentInitHandleTitleNAND(
         titleId, idx,
         (void *)&StoreIndexFileReader::mMetaDataCntHandle, &gCNTAllocator
@@ -117,6 +117,7 @@ inline void StoreIndexFileReader::Init(unsigned long long titleId, unsigned shor
         }
         ((unsigned char *)state)[(idx << 3) & 0x7FFF8] &= ~1;
         TheStoreMetadata.SetLoadingState(9);
+        return false;
     } else {
         StoreIndexFileReader::mMetaDataCntHandleInited = true;
         CNTDir dirBuf;
@@ -125,15 +126,15 @@ inline void StoreIndexFileReader::Init(unsigned long long titleId, unsigned shor
         );
         CNTDirEntry nameBuf;
         while (CNTReadDir(&dirBuf, &nameBuf) != 0) {
-            char *namep = (char *)&nameBuf;
-            char *vp = strstr(namep, "version");
+            char *vp = strstr((char *)nameBuf.arc.name, "version");
             if (vp != NULL) {
                 *vp = 0;
-                TheStoreMetadata.mBasePath = namep;
+                TheStoreMetadata.mBasePath = (char *)nameBuf.arc.name;
                 *vp = 'v';
             }
         }
         CNTCloseDir(&dirBuf);
+        return true;
     }
 }
 bool StoreIndexFileReader::ReadAsync(void *, int) { return false; }
@@ -959,12 +960,11 @@ void StorePackedRanks::EndianFix() {
 
 void StorePackedPage::EndianFix() {
     unsigned char *b = (unsigned char *)this;
-    unsigned char b6 = b[6];
     unsigned char b7 = b[7];
-    mHasOffers = b6 >> 4;
-    unk6p0 = b7 >> 4;
+    unsigned char b6 = b[6];
+    mHasOffers = (b6 >> 4) & 1;
     mDefaultSort = b6;
-    unk6p1 = b7;
+    unk6p0 = b7;
 }
 
 unsigned long long StorePackedSong::DataTitle() const {
@@ -1672,21 +1672,15 @@ void StoreMetadataManager::PollLoading() {
     }
     case 10: {
         if (mVersion == NULL) {
-            int ok;
             if (!(mFlags & 1)) {
-                StoreIndexFileReader::Init(
-                    *(unsigned long long *)&unk88, unk90
-                );
-                ok = StoreIndexFileReader::mMetaDataCntHandleInited;
-            } else {
-                ok = 1;
+                if (!StoreIndexFileReader::Init(
+                        *(unsigned long long *)&unk88, unk90
+                    ))
+                    return;
             }
-            if (ok != 0) {
-                mVersion = new StoreVersionHeader();
-                loaded = mVersion->LoadFile(MakeString("%sversion", String(mBasePath)));
-                goto load_check;
-            }
-            return;
+            mVersion = new StoreVersionHeader();
+            loaded = mVersion->LoadFile(MakeString("%sversion", String(mBasePath)));
+            goto load_check;
         }
         if (mStringTable == NULL) {
             mStringTable = new StoreStringTable();
@@ -1868,19 +1862,18 @@ void StoreMetadataManager::DebugDownload() {
         StorePackedOffer *offer = mOfferTable->mOffers[i];
         StorePackedSong *firstSong;
         if (offer->mIsRBN) {
-            firstSong = &mSongTable->mSongs
+            firstSong = &TheStoreMetadata.mSongTable->mSongs
                 [((StorePackedRBNOffer *)offer)->mSongs[0]];
         } else {
-            firstSong = &mSongTable->mSongs[offer->mSongs[0]];
+            firstSong = &TheStoreMetadata.mSongTable->mSongs[offer->mSongs[0]];
         }
         unsigned long long titleId = WiiCommerceMgr::MakeDataTitleId(&firstSong->unk6);
 
+        const char *offerName = TheStoreMetadata.GetString(offer->mNameIndex);
+        TheDebug << MakeString("DebugDownload: found offer %s\n", offerName);
         if (downloadedTitles.find(titleId) == downloadedTitles.end()) {
-            const char *offerName = TheStoreMetadata.GetString(offer->mNameIndex);
-            TheDebug << MakeString("DebugDownload: found offer %s\n", offerName);
             TheDebug << MakeString("DebugDownload: EC_DownloadTitle %llx\n", titleId);
-            EC_DownloadTitle(titleId, 0);
-            DebugWaitAsyncOp(0);
+            DebugWaitAsyncOp(EC_DownloadTitle(titleId, 0));
             downloadedTitles.insert(titleId);
         }
 
@@ -2064,19 +2057,14 @@ bool StoreSingleStringTable::LoadFile(const char *filename) {
 }
 
 void StorePackedSong::EndianFix() {
-    typedef unsigned char u8;
-    typedef unsigned short u16;
-    u8 *p = (u8 *)this;
-    u8 b10 = p[0x10];
-    u8 b10b = p[0x10];
-    u16 s10 = (u16)((*(u16 *)(p + 0x10) & ~0x40u) | ((b10 << 5) & 0x40u));
-    *(u16 *)(p + 0x10) = s10;
-    u8 bA = p[0xa];
-    *(u16 *)(p + 0xa) = (u16)((*(u16 *)(p + 0xa) & ~0xFF80u) | (((((u16)bA & 1u) << 8u) | p[0xb]) << 7u & 0xFF80u));
-    *(u16 *)(p + 0x10) = (u16)((s10 & ~0xFF80u) | (((((u16)b10b & 1u) << 8u) | p[0x11]) << 7u & 0xFF80u));
-    mOfferIndex -= 1;
+    unsigned char *p = (unsigned char *)this;
+    unka = ((p[0xa] & 1) << 8) + p[0xb];
+    unk10Flag = (p[0x10] >> 1) & 1;
+    unsigned int oidx = mOfferIndex - 1;
     unk18 -= 1;
+    mOfferIndex = oidx;
     unk1a -= 1;
+    unk10 = ((p[0x10] & 1) << 8) + p[0x11];
 }
 __declspec(noinline) void _outline_EndianFix(StorePackedRanks* _obj) {
     return _obj->EndianFix();

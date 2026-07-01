@@ -82,25 +82,17 @@ ClipDistMap::ClipDistMap(
 )
     : mClipA(clip1), mClipB(clip2), mWeightData(a), mSamplesPerBeat(8),
       mLastMinErr(kHugeFloat), mBeatAlign(f1), mBeatAlignOffset(0), mBlendWidth(f2),
-      mNumSamples(i) {
-    int height = CalcHeight();
-    int width = CalcWidth();
-    mDists.mWidth = 0;
-    mDists.mHeight = 0;
-    mDists.mData = 0;
-    delete[] mDists.mData;
-    mDists.mWidth = width;
-    mDists.mHeight = height;
-    mDists.mData = (float *)new uint[width * height];
-
+      mNumSamples(i), mDists(CalcWidth(), CalcHeight()) {
     mBeatAlignPeriod = (int)((double)((float)mSamplesPerBeat * mBeatAlign) + 0.5);
 
     if (mBeatAlignPeriod != 0) {
         float zero = 0.0f;
         float negB = zero - mBStart;
         float negA = zero - mAStart;
-        int diff = (int)(negB * mSamplesPerBeat) - (int)(negA * mSamplesPerBeat);
-        if (diff != 0) {
+        int diff = (int)(negA * mSamplesPerBeat) - (int)(negB * mSamplesPerBeat);
+        if (mBeatAlignPeriod == 0) {
+            diff = 0;
+        } else {
             diff = diff % mBeatAlignPeriod;
             if (diff < 0)
                 diff += mBeatAlignPeriod;
@@ -110,10 +102,10 @@ ClipDistMap::ClipDistMap(
 }
 
 void ClipDistMap::Array2d::Resize(int w, int h) {
-    delete mData;
+    delete[] mData;
     mWidth = w;
     mHeight = h;
-    mData = (float *)new uint[h * w];
+    mData = (float *)new uint[w * h];
 }
 
 void ClipDistMap::GenerateDistEntry(
@@ -581,7 +573,7 @@ void ClipDistMap::Draw(float x, float y, CharDriver *driver) {
                 cellColor.alpha = 1.0f;
                 cellRect.y = (float)((mDists.mHeight - 1 - row) * 2) + y;
                 if (err > mLastMinErr) {
-                    cellColor.red = (c + 1.0f) * 0.5f;
+                    cellColor.red = 0.5f * c + 0.5f;
                     cellColor.green = 0.0f;
                     cellColor.blue = 0.0f;
                 }

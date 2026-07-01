@@ -190,18 +190,17 @@ void RndMesh::UpdateSphere() {
 }
 
 float RndMesh::GetDistanceToPlane(const Plane &p, Vector3 &v) {
-    bool isEmpty = Verts().empty();
-    if (isEmpty)
+    if (Verts().empty())
         return 0;
     Transform &world = WorldXfm();
     Vector3 v58;
     Multiply(Verts()[0].pos, world, v58);
+    float dot = p.Dot(v58);
     v = v58;
-    float dot = p.Dot(v);
     FOREACH (it, Verts()) {
         Multiply(it->pos, world, v58);
         float dotted = p.Dot(v58);
-        if (fabs(dotted) < std::fabs(dot)) {
+        if (std::fabs(dotted) < fabs(dot)) {
             dot = dotted;
             v = v58;
         }

@@ -137,7 +137,6 @@ bool TourPerformerLocal::InqSongsInFilterData(
     std::map<Symbol, int> &o_rSongsWithArtist
 ) {
     MILO_ASSERT(o_rSongsInFilter.empty(), 0xdf);
-    int iHighArtistCount = 0;
     GigFilter *pSecondaryFilter = nullptr;
     if (i_symFilter != gNullStr) {
         pSecondaryFilter = TheQuestMgr.GetQuestFilter(i_symFilter);
@@ -146,6 +145,7 @@ bool TourPerformerLocal::InqSongsInFilterData(
     std::vector<int> cSongs;
     std::vector<int> cEmptySongs;
     TheSongMgr.GetValidSongs(cSongs, *TheBandUserMgr, cEmptySongs, -1.0f, -1.0f, true, true);
+    int iHighArtistCount = 0;
     for (std::vector<int>::iterator it = cEmptySongs.begin(); it != cEmptySongs.end(); ++it) {
         int songID = *it;
         if (pSecondaryFilter) {
@@ -167,13 +167,21 @@ bool TourPerformerLocal::InqSongsInFilterData(
             MILO_ASSERT(pFilter, 0x10c);
             if (pFilter->IsInternal()) continue;
             if (!TheSongSortMgr->DoesSongMatchFilter(songID, &pFilter->GetFilter(), pFilter->GetFilteredPartSym())) continue;
-            int filterCount = o_rSongsInFilter[filterSym];
+            int filterCount = 0;
+            if (o_rSongsInFilter.find(filterSym) != o_rSongsInFilter.end()) {
+                filterCount = o_rSongsInFilter[filterSym];
+            }
             o_rSongsInFilter[filterSym] = filterCount + 1;
         }
         BandSongMetadata *pSongData = static_cast<BandSongMetadata *>(TheSongMgr.Data(songID));
         MILO_ASSERT(pSongData, 0x124);
         Symbol artist(pSongData->Artist());
-        int artistCount = o_rSongsWithArtist[artist];
+        int artistCount;
+        if (o_rSongsWithArtist.find(artist) != o_rSongsWithArtist.end()) {
+            artistCount = o_rSongsWithArtist[artist];
+        } else {
+            artistCount = 0;
+        }
         int newArtistCount = (o_rSongsWithArtist[artist] = artistCount + 1);
         if (newArtistCount > iHighArtistCount) {
             iHighArtistCount = newArtistCount;

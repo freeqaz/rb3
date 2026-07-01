@@ -134,8 +134,7 @@ public:
     int unk0;
     unsigned char unk4;
     unsigned char unk5;
-    unsigned short unk6p0 : 4;
-    unsigned short unk6p1 : 4;
+    unsigned short unk6p0 : 8;
     unsigned short mDefaultSort : 4;
     unsigned short mHasOffers : 1;
     unsigned short unk6p3 : 3;

@@ -289,9 +289,10 @@ void HiResScreen::Merge(
     const RndBitmap &bm, int srcX, int srcY, int srcW, int srcH, int dstX, int dstY, int padX, int padY
 ) {
     int yIter;
+    int bmY = srcH;
     int blendThreshX = dstX - padX;
     int blendThreshY = dstY - padY;
-    for (int i = 0.0f, bmY = srcH; bmY < dstY; i++, bmY++) {
+    for (int i = 0; bmY < dstY; i++, bmY++) {
         yIter = srcY + i;
         mCache->LoadCache(yIter);
         for (int j = 0, bmX = srcW; bmX < dstX; j++, bmX++) {
@@ -310,9 +311,8 @@ void HiResScreen::Merge(
                 blendY = (float)(bmY - blendThreshY) / (float)padY;
             }
             if (blendX > 0.0f || blendY > 0.0f) {
-                blend = sqrtf(blendX * blendX + blendY * blendY);
-                blend = (blend - 0.5f) * 2.0f;
-                blend = Max(blend, 0.0f);
+                blend = 2.0f * (sqrtf(blendX * blendX + blendY * blendY) - 0.5f);
+                if (blend < 0.0f) blend = 0.0f;
                 blend = Min(blend, 1.0f);
             }
             a = (unsigned char)((1.0f - blend) * 255.0f);
@@ -321,9 +321,7 @@ void HiResScreen::Merge(
                 r += (unsigned char)((int)(cr - r) * t + 0.5f);
                 g += (unsigned char)((int)(cg - g) * t + 0.5f);
                 b += (unsigned char)((int)(cb - b) * t + 0.5f);
-                if (a < ca) {
-                    a = ca;
-                }
+                a = Max(a, ca);
             }
             mCache->SetPixelColor(xOff, yIter, r, g, b, a);
         }

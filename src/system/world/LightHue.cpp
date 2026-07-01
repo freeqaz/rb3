@@ -94,25 +94,47 @@ void LightHue::TranslateColor(const Hmx::Color &col, Hmx::Color &res) {
         float cb = col.blue;
         float cg = col.green;
         float cr = col.red;
-        col30.alpha = inv * ca;
-        col30.blue = cb * inv;
-        col30.green = inv * cg;
-        col30.red = cr * inv;
+        float pa = ca * inv;
+        float pb = cb * inv;
+        float pg = cg * inv;
+        float pr = inv * cr;
+        col30.alpha = pa;
+        col30.green = pg;
+        col30.red = pr;
+        col30.blue = pb;
         float h, s, l;
-        float vecx, vecy, vecz;
-        Vector3 vec;
         MakeHSL(col30, h, s, l);
-        mKeys.AtFrame(h, vec);
-        vecx = vec.x;
-        vecy = vec.y;
-        vecz = vec.z;
+        const Key<Vector3> *prev, *next;
+        float ref;
+        mKeys.AtFrame(h, prev, next, ref);
+        float vecx, vecy, vecz;
+        if (prev) {
+            // redundant prev check reproduces the compiler's inlined AtFrame
+            // null test; removing it regresses the match (97.1% -> 96.2%)
+            if (prev && ref == 0.0f) {
+                vecx = prev->value.x;
+                vecy = prev->value.y;
+                vecz = prev->value.z;
+            } else if (ref == 1.0f) {
+                vecx = next->value.x;
+                vecy = next->value.y;
+                vecz = next->value.z;
+            } else {
+                float pz = prev->value.z, nz = next->value.z;
+                vecz = pz + ref * (nz - pz);
+                float py = prev->value.y, ny = next->value.y;
+                vecy = ref * (ny - py) + py;
+                float px = prev->value.x, nx = next->value.x;
+                vecx = ref * (nx - px) + px;
+            }
+        }
         float svy = s * vecy;
         float clamped = Clamp(0.0f, 1.0f, l * vecz * 2.0f);
         MakeColor(vecx, svy, clamped, res);
         res.alpha = res.alpha * maxcol;
-        res.blue = res.blue * maxcol;
         res.green = res.green * maxcol;
         res.red = res.red * maxcol;
+        res.blue = res.blue * maxcol;
     } else
         res = col;
 }

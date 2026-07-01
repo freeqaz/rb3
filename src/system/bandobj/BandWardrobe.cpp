@@ -1222,11 +1222,11 @@ DataNode BandWardrobe::OnEnterVignette(DataArray *da) {
                 mVignetteNames.names[i] = Symbol(player_names[i]);
             }
         } else {
-            static Message msg("get_slot_info", DataNode(0));
             SlotInfo info[4];
             for (int i = 0; i < 4; i++)
                 info[i].inst = Symbol();
             bool hasBass = false;
+            static Message msg("get_slot_info", DataNode(0));
             for (int i = 0; i < 4; i++) {
                 info[i].hint = -1;
                 msg[0] = DataNode(i);

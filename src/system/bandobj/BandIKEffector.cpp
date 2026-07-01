@@ -720,10 +720,7 @@ void BandIKEffector::Poll() {
                             float heightDelta = effQ.v.z - groundHeight;
                             float blend = (heightDelta - lowerBound)
                                 / ((kneeLen * 0.8f + ankleLen) - lowerBound);
-                            if (blend < 0.0f)
-                                blend = 0.0f;
-                            else if (blend > 1.0f)
-                                blend = 1.0f;
+                            ClampEq(blend, 0.0f, 1.0f);
                             float ratio =
                                 worldHeight / (kneeLen + ankleLen);
                             effQ.v.z = heightDelta
@@ -733,10 +730,7 @@ void BandIKEffector::Poll() {
                     } else if (type == 2) {
                         float blend =
                             ((neutralQ.v.z - groundHeight) - 5.0f) / 11.0f;
-                        if (blend < 0.0f)
-                            blend = 0.0f;
-                        else if (blend > 1.0f)
-                            blend = 1.0f;
+                        ClampEq(blend, 0.0f, 1.0f);
                         if (blend == 0.0f) {
                             effQ.v = neutralQ.v;
                         } else if (blend == 1.0f) {
@@ -752,9 +746,7 @@ void BandIKEffector::Poll() {
                     }
                 }
                 float remaining = 1.0f - totalWeight;
-                q.v.x += effQ.v.x * remaining;
-                q.v.y += effQ.v.y * remaining;
-                q.v.z += effQ.v.z * remaining;
+                ScaleAddEq(q.v, effQ.v, remaining);
                 ScaleAddEq(q.q, effQ.q, remaining);
                 totalWeight += remaining;
             }

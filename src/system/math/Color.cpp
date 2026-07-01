@@ -24,7 +24,7 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
     if (val < 0.5f) {
         q = val * (sat + 1.0f);
     } else {
-        q = -(sat * val - (val + sat));
+        q = -(val * sat - (val + sat));
     }
     float t0 = (1.0f / 3.0f) + hue;
     float p = val * 2.0f - q;

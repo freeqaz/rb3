@@ -1,6 +1,7 @@
 #include "Geo.h"
 #include "math/Bsp.h"
 #include "math/Rot.h"
+#include "math/Utl.h"
 #include "obj/DataFunc.h"
 #include "os/Debug.h"
 #include "utl/MakeString.h"
@@ -184,9 +185,9 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
         return false;
     }
 
-    float vec3AY = seg.start.y - tri.origin.y;
-    float vec3AZ = seg.start.z - tri.origin.z;
-    float vec3AX = seg.start.x - tri.origin.x;
+    float vec3AY = startY - tri.origin.y;
+    float vec3AZ = startZ - tri.origin.z;
+    float vec3AX = startX - tri.origin.x;
 
     float tempDot_y = tri.frame.z.y * vec3AY;
     float tempDot_x = tri.frame.z.x * vec3AX + tempDot_y;
@@ -202,14 +203,20 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
     float hitZ = startZ + segDirZ * t;
     float hitX = startX + segDirX * t;
 
+    float fxx = tri.frame.x.x;
+    float fxy = tri.frame.x.y;
+    float fxz = tri.frame.x.z;
+    float fyx = tri.frame.y.x;
+    float fyy = tri.frame.y.y;
+    float fyz = tri.frame.y.z;
     float vec3BY = hitY - tri.origin.y;
-    float dotYY = tri.frame.y.x * tri.frame.y.x + tri.frame.y.y * tri.frame.y.y + tri.frame.y.z * tri.frame.y.z;
-    float dotXX = tri.frame.x.x * tri.frame.x.x + tri.frame.x.y * tri.frame.x.y + tri.frame.x.z * tri.frame.x.z;
-    float dotXY = tri.frame.x.x * tri.frame.y.x + tri.frame.x.y * tri.frame.y.y + tri.frame.x.z * tri.frame.y.z;
+    float dotYY = fyx * fyx + fyy * fyy + fyz * fyz;
+    float dotXX = fxx * fxx + fxy * fxy + fxz * fxz;
+    float dotXY = fxx * fyx + fxy * fyy + fxz * fyz;
     float vec3BX = hitX - tri.origin.x;
     float vec3BZ = hitZ - tri.origin.z;
-    float dotX3B = tri.frame.x.y * vec3BY + tri.frame.x.x * vec3BX + tri.frame.x.z * vec3BZ;
-    float dotY3B = tri.frame.y.y * vec3BY + tri.frame.y.x * vec3BX + tri.frame.y.z * vec3BZ;
+    float dotX3B = fxy * vec3BY + fxx * vec3BX + fxz * vec3BZ;
+    float dotY3B = fyy * vec3BY + fyx * vec3BX + fyz * vec3BZ;
 
     float denom = dotXY * dotXY - dotYY * dotXX;
     float k = (dotY3B * dotXY - dotX3B * dotYY) / denom;
@@ -388,10 +395,7 @@ bool Intersect(const Segment &seg, const Sphere &sphere) {
     if (a == 0.0f)
         return false;
     float t = (cdiff_x * dir_x + cdiff_y * dir_y + cdiff_z * dir_z) / a;
-    if (t > 1.0f)
-        t = 1.0f;
-    else if (t < 0.0f)
-        t = 0.0f;
+    t = Clamp(0.0f, 1.0f, t);
     float cx, cy, cz;
     if (t == 0.0f) {
         cx = seg.start.x;
@@ -403,8 +407,8 @@ bool Intersect(const Segment &seg, const Sphere &sphere) {
         cz = seg.end.z;
     } else {
         cx = start_x + t * (end_x - start_x);
-        cy = start_y + t * (end_y - start_y);
         cz = start_z + t * (end_z - start_z);
+        cy = start_y + t * (end_y - start_y);
     }
     float dy = cy - sphere.center.y;
     float dx = cx - sphere.center.x;

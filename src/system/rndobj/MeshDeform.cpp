@@ -363,9 +363,9 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         if (!mSkipInverse) {
             Multiply(weighted, mMeshInverse, weighted);
         }
-        // transform pos: new = pos * M + v (uses paired-singles)
-        Multiply(mMesh->Verts(vertIdx).pos, weighted, mMesh->Verts(vertIdx).pos);
         RndMesh::Vert &v = mMesh->Verts(vertIdx);
+        // transform pos: new = pos * M + v (uses paired-singles)
+        Multiply(v.pos, weighted, v.pos);
         // pick perpendicular axis to v.norm based on smallest abs
         Vector3 axis;
         float anx = std::fabs(v.norm.x);
@@ -386,16 +386,12 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         }
         // cross = v.norm x axis
         Vector3 cross;
-        cross.x = v.norm.y * axis.z - v.norm.z * axis.y;
-        cross.y = v.norm.z * axis.x - v.norm.x * axis.z;
-        cross.z = v.norm.x * axis.y - v.norm.y * axis.x;
+        Cross(v.norm, axis, cross);
         // transform axis and cross (rotation part only)
         Multiply(axis, weighted.m, axis);
         Multiply(cross, weighted.m, cross);
         // norm = axis x cross
-        v.norm.x = axis.y * cross.z - axis.z * cross.y;
-        v.norm.y = axis.z * cross.x - axis.x * cross.z;
-        v.norm.z = axis.x * cross.y - axis.y * cross.x;
+        Cross(axis, cross, v.norm);
         Normalize(v.norm, v.norm);
         vertIdx++;
         vertData += (*vertData * 2) + 1;

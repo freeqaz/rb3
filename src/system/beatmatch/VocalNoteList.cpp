@@ -422,60 +422,106 @@ struct IsIllegalFreestylePred_HX {
 } // namespace
 #endif
 
-void VocalNoteList::RemoveInvalidFreestyleSections() {
-#ifdef HX_NATIVE
-    IsIllegalFreestylePred_HX pred(mFreestyleMinDuration);
-#else
-    std::binder1st<
-        std::pointer_to_binary_function<
-            DataArray *, const std::pair<float, float> &, bool> >
-        pred(std::ptr_fun(IsIllegalFreestyleSection), mFreestyleMinDuration);
-#endif
-    std::vector<std::pair<float, float> >::iterator first =
-        mFreestyleSections.begin();
-    std::vector<std::pair<float, float> >::iterator last =
-        mFreestyleSections.end();
-    int tripCount = (last - first) >> 2;
-    for (; tripCount > 0; --tripCount) {
+namespace {
+// STLport's remove_if = find_if + remove_copy_if, but its *public* find_if
+// wrapper (stl/_algobase.h) is not tagged inline, so under -inline noauto a
+// direct std::remove_if() call leaves find_if out-of-line. Reconstruct the
+// inlinable pieces here so the whole remove-erase inlines exactly as the
+// target does: the 4-wide Duff's-device search returns by value (the trailing
+// ++first go dead → offset addressing rather than induction), and each stage
+// takes the predicate by value (the target's three stacked pred copies).
+//
+// The two-tier find (FindIf wrapper -> Find impl) mirrors STLport's real
+// find_if -> __find_if call chain; that extra by-value hop is what drives the
+// compiler to lay the find/remove_copy predicate copies into the target's
+// stack slots (0x10/0x14 and 0x8/0xc) rather than swapping them.
+template <class _Pred>
+inline std::vector<std::pair<float, float> >::iterator FindInvalidFreestyle(
+    std::vector<std::pair<float, float> >::iterator first,
+    std::vector<std::pair<float, float> >::iterator last,
+    _Pred pred
+) {
+    for (int trip = (last - first) >> 2; trip > 0; --trip) {
         if (pred(*first))
-            goto found;
+            return first;
         ++first;
         if (pred(*first))
-            goto found;
+            return first;
         ++first;
         if (pred(*first))
-            goto found;
+            return first;
         ++first;
         if (pred(*first))
-            goto found;
+            return first;
         ++first;
     }
     switch (last - first) {
     case 3:
         if (pred(*first))
-            goto found;
+            return first;
         ++first;
     case 2:
         if (pred(*first))
-            goto found;
+            return first;
         ++first;
     case 1:
         if (pred(*first))
-            goto found;
+            return first;
     default:
-        first = last;
+        return last;
     }
-found:
-    if (first != last) {
-        std::vector<std::pair<float, float> >::iterator it = first;
-        for (++it; it != last; ++it) {
-            if (!pred(*it)) {
-                *first = *it;
-                ++first;
-            }
+}
+
+template <class _Pred>
+inline std::vector<std::pair<float, float> >::iterator FindIfInvalidFreestyle(
+    std::vector<std::pair<float, float> >::iterator first,
+    std::vector<std::pair<float, float> >::iterator last,
+    _Pred pred
+) {
+    return FindInvalidFreestyle(first, last, pred);
+}
+
+template <class _Pred>
+inline std::vector<std::pair<float, float> >::iterator RemoveCopyInvalidFreestyle(
+    std::vector<std::pair<float, float> >::iterator first,
+    std::vector<std::pair<float, float> >::iterator last,
+    std::vector<std::pair<float, float> >::iterator result,
+    _Pred pred
+) {
+    for (; first != last; ++first) {
+        if (!pred(*first)) {
+            *result = *first;
+            ++result;
         }
-        mFreestyleSections.erase(first, last);
     }
+    return result;
+}
+
+template <class _Pred>
+inline std::vector<std::pair<float, float> >::iterator RemoveInvalidFreestyle(
+    std::vector<std::pair<float, float> >::iterator first,
+    std::vector<std::pair<float, float> >::iterator last,
+    _Pred pred
+) {
+    first = FindIfInvalidFreestyle(first, last, pred);
+    if (first == last)
+        return first;
+    else {
+        std::vector<std::pair<float, float> >::iterator next = first;
+        return RemoveCopyInvalidFreestyle(++next, last, first, pred);
+    }
+}
+} // namespace
+
+void VocalNoteList::RemoveInvalidFreestyleSections() {
+    std::vector<std::pair<float, float> >::iterator first = RemoveInvalidFreestyle(
+        mFreestyleSections.begin(), mFreestyleSections.end(),
+#ifdef HX_NATIVE
+        IsIllegalFreestylePred_HX(mFreestyleMinDuration));
+#else
+        std::bind1st(std::ptr_fun(IsIllegalFreestyleSection), mFreestyleMinDuration));
+#endif
+    mFreestyleSections.erase(first, mFreestyleSections.end());
 }
 
 void VocalNoteList::CapLastFreestyleSection(float ms) {

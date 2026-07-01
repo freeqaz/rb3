@@ -31,6 +31,7 @@ public:
     char unke;
     char unkf;
     unsigned short unk10 : 9; // 0x10
+    unsigned short unk10Flag : 1;
     unsigned short mNameIndex; // 0x12
     unsigned short mArtistIndex; // 0x14
     unsigned short mOfferIndex; // 0x16

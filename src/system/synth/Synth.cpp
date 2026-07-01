@@ -354,11 +354,12 @@ void Synth::DrawMeter(float &y, float level, float peakHold, const char *name) {
 }
 
 void Synth::DrawMeterScale(float &y) {
-    float db = -40.0f;
-    float height = (float)TheRnd->Width();
+    int screenWidth = TheRnd->Width();
+    float db = 40.0f;
+    db = -db;
     Hmx::Color color(1.0f, 1.0f, 1.0f, 1.0f);
-    float left = height * 0.2f;
-    float width = height * 0.7f;
+    float left = (float)screenWidth * 0.2f;
+    float width = (float)screenWidth * 0.7f;
     Vector2 pos(left, y);
     TheRnd->DrawString(MakeString("%i", (int)db), pos, color, true);
     db *= 0.5f;

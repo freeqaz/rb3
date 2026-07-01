@@ -248,30 +248,6 @@ bool BandHeadShaper::Start(
     }
 }
 
-void TestMesh(RndTransformable *start, RndTransformable *top) {
-    Transform ident;
-    ident.Reset();
-    for (RndTransformable *cur = start; cur != top; cur = cur->TransParent()) {
-        if (!cur->TransParent()) {
-            MILO_WARN(
-                "%s needs to have eventual parent of %s, does not, stops at %s",
-                PathName(start),
-                PathName(top),
-                PathName(cur)
-            );
-            return;
-        }
-        if (!(cur->LocalXfm() == ident)) {
-            MILO_WARN(
-                "%s needs to be all zero'd xfms all the way up, but %s is not",
-                PathName(start),
-                PathName(cur)
-            );
-            return;
-        }
-    }
-}
-
 void BandHeadShaper::AddChildBones(RndTransformable *t) {
     if (!t)
         MILO_WARN("Trying to add a NULL child bone.\n");
@@ -290,6 +266,40 @@ void BandHeadShaper::AddChildBones(RndTransformable *t) {
     }
 }
 
+void TestMesh(RndTransformable *start, RndTransformable *top) {
+    Transform ident;
+    ident.Reset();
+    for (RndTransformable *cur = start; cur != top;) {
+        RndTransformable *parent = cur->TransParent();
+        if (!parent) {
+            MILO_WARN(
+                "%s needs to have eventual parent of %s, does not, stops at %s",
+                PathName(start),
+                PathName(top),
+                cur->Name()
+            );
+            return;
+        }
+        const Transform &xfm = cur->LocalXfm();
+        bool bad = xfm.v.x != 0.0f || xfm.v.y != 0.0f || xfm.v.z != 0.0f;
+        if (!bad)
+            bad = xfm.m.x != ident.m.x;
+        if (!bad)
+            bad = xfm.m.y != ident.m.y;
+        if (!bad)
+            bad = xfm.m.z != ident.m.z;
+        if (bad) {
+            MILO_WARN(
+                "%s needs to be all zero'd xfms all the way up, but %s is not",
+                PathName(start),
+                PathName(cur)
+            );
+            return;
+        }
+        cur = parent;
+    }
+}
+
 void BandHeadShaper::AddFrame(const char *cc, int frame, float weight) {
     BandFaceDeform *df =
         mAnim->Dir()->Find<BandFaceDeform>(MakeString("%s.fdm", cc), false);
@@ -297,19 +307,21 @@ void BandHeadShaper::AddFrame(const char *cc, int frame, float weight) {
         int fi = frame + 1;
         if ((unsigned int)fi < (unsigned short)df->mFrames.size()) {
             BandFaceDeform::DeltaArray &da = df->mFrames[fi];
+            signed char *bytes;
             for (Delta *d = (Delta *)da.begin(); d < da.end();
                  d = (Delta *)d->next()) {
-                signed char *bytes = (signed char *)d;
+                bytes = (signed char *)d;
                 for (int j = 0; j < d->num; j++) {
-                    float dx = 0.015748031f * (float)bytes[4];
-                    float dy = 0.015748031f * (float)bytes[5];
-                    float dz = 0.015748031f * (float)bytes[6];
-                    bytes += 3;
+                    Vector3 delta;
+                    delta.x = 0.015748031f * (float)bytes[4];
+                    delta.y = 0.015748031f * (float)bytes[5];
+                    delta.z = 0.015748031f * (float)bytes[6];
                     int vi = (*mMapping)[j + *(unsigned short *)d];
                     RndMesh::Vert &v = mDst->Verts()[vi];
-                    v.pos.x = dx * weight + v.pos.x;
-                    v.pos.y = dy * weight + v.pos.y;
-                    v.pos.z = dz * weight + v.pos.z;
+                    v.pos.x = delta.x * weight + v.pos.x;
+                    v.pos.y = delta.y * weight + v.pos.y;
+                    v.pos.z = delta.z * weight + v.pos.z;
+                    bytes += 3;
                 }
             }
         }

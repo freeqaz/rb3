@@ -1,8 +1,3 @@
-#ifndef HX_NATIVE
-// Suppresses Mtx.h's global Matrix3 Multiply for the MWCC paired-singles local
-// version; on native there's no asm local, so use the global Multiply (Rot.cpp).
-#define CHARHAIR_LOCAL_MULTIPLY
-#endif
 #include "InlineHelp.h"
 #include "math/Mtx.h"
 #include "math/Rot.h"
@@ -15,131 +10,140 @@
 #include "utl/Locale.h"
 #include "utl/Symbols.h"
 
+
 #ifdef __MWERKS__
-inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
-    float row2[3], row1[3], row0[3];
-    asm { cmplw r4, r5 }
-    asm volatile {
-        beq alias_path
-
-        psq_l f4, 0x4(r3), 0, 0
-        psq_l f3, 0x18(r4), 0, 0
-        psq_l f2, 0x20(r4), 1, 0
-        ps_muls1 f1, f3, f4
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f4
-        psq_l f2, 0x14(r4), 1, 0
-        psq_l f5, 0x0(r3), 0, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_madds0 f0, f2, f4, f0
-        psq_l f3, 0x0(r4), 0, 0
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f5, f1
-        psq_l f4, 0x10(r3), 0, 0
-        ps_madds0 f0, f2, f5, f0
-        psq_st f1, 0x0(r5), 0, 0
-        psq_l f5, 0xc(r3), 0, 0
-        psq_st f0, 0x8(r5), 1, 0
-
-        psq_l f6, 0x1c(r3), 0, 0
-        psq_l f3, 0x18(r4), 0, 0
-        psq_l f2, 0x20(r4), 1, 0
-        ps_muls1 f1, f3, f4
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f4
-        psq_l f2, 0x14(r4), 1, 0
-        psq_l f7, 0x18(r3), 0, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_madds0 f0, f2, f4, f0
-        psq_l f3, 0x0(r4), 0, 0
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f5, f1
-        ps_madds0 f0, f2, f5, f0
-        psq_st f1, 0xc(r5), 0, 0
-        psq_st f0, 0x14(r5), 1, 0
-
-        psq_l f3, 0x18(r4), 0, 0
-        psq_l f2, 0x20(r4), 1, 0
-        ps_muls1 f1, f3, f6
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f6
-        psq_l f2, 0x14(r4), 1, 0
-        ps_madds0 f1, f3, f6, f1
-        psq_l f3, 0x0(r4), 0, 0
-        ps_madds0 f0, f2, f6, f0
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f7, f1
-        ps_madds0 f0, f2, f7, f0
-        psq_st f1, 0x18(r5), 0, 0
-        psq_st f0, 0x20(r5), 1, 0
-        b mult_end
-
-    alias_path:
-        psq_l f4, 0x4(r3), 0, 0
-        la r6, row2
-        psq_l f3, 0x18(r4), 0, 0
-        la r7, row1
-        psq_l f2, 0x20(r4), 1, 0
-        la r8, row0
-        ps_muls1 f1, f3, f4
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f4
-        psq_l f2, 0x14(r4), 1, 0
-        psq_l f9, 0x10(r3), 0, 0
-        psq_l f8, 0x18(r4), 0, 0
-        psq_l f7, 0x20(r4), 1, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_muls1 f6, f8, f9
-        psq_l f12, 0x1c(r3), 0, 0
-        ps_mr f8, f3
-        psq_l f3, 0x18(r4), 0, 0
-        ps_muls1 f5, f7, f9
-        ps_muls1 f11, f3, f12
-        ps_mr f7, f2
-        psq_l f3, 0x0(r4), 0, 0
-        ps_madds0 f0, f2, f4, f0
-        psq_l f2, 0x20(r4), 1, 0
-        psq_l f4, 0x0(r3), 0, 0
-        ps_muls1 f10, f2, f12
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_madds0 f6, f8, f9, f6
-        ps_madds0 f0, f2, f4, f0
-        psq_l f4, 0x18(r3), 0, 0
-        ps_madds0 f5, f7, f9, f5
-        psq_l f9, 0xc(r3), 0, 0
-        ps_madds0 f11, f8, f12, f11
-        ps_madds0 f10, f7, f12, f10
-        psq_st f1, 0x0(r6), 0, 0
-        ps_madds0 f6, f3, f9, f6
-        ps_madds0 f5, f2, f9, f5
-        ps_madds0 f11, f3, f4, f11
-        lfs f8, row2[0]
-        ps_madds0 f10, f2, f4, f10
-        psq_st f6, 0x0(r7), 0, 0
-        lfs f7, row2[1]
-        psq_st f11, 0x0(r8), 0, 0
-        lfs f4, row1[1]
-        psq_st f5, 0x8(r7), 1, 0
-        lfs f5, row1[0]
-        psq_st f0, 0x8(r6), 1, 0
-        lfs f3, row1[2]
-        psq_st f10, 0x8(r8), 1, 0
-        lfs f6, row2[2]
-        lfs f2, row0[0]
-        lfs f1, row0[1]
-        lfs f0, row0[2]
-        stfs f8, 0x0(r5)
-        stfs f7, 0x4(r5)
-        stfs f6, 0x8(r5)
-        stfs f5, 0xc(r5)
-        stfs f4, 0x10(r5)
-        stfs f3, 0x14(r5)
-        stfs f2, 0x18(r5)
-        stfs f1, 0x1c(r5)
-        stfs f0, 0x20(r5)
-    mult_end:
+// Fused Multiply(Transform, Matrix3, Transform): computes out.v = t.v * m and
+// out.m = t.m * m in a single paired-single region so the compiler can share the
+// m.x row loads (f0/f1) between the vector and matrix products.
+inline void Multiply(const Transform &t, const Hmx::Matrix3 &m, Transform &out) {
+    register const Hmx::Matrix3 *_m = &m;
+    register Hmx::Matrix3 *_om = &out.m;
+    register Vector3 *_ov = &out.v;
+    register const Vector3 *_tv = &t.v;
+    register const Hmx::Matrix3 *_tm = &t.m;
+    register __vec2x32float__ g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g30, g31, g0, g1;
+    // out.v = t.v * m  (leaves g0 = m.x.x, g1 = m.x.z for the matrix product)
+    asm {
+        psq_l  g3, 0x4(_tv), 0, 0
+        psq_l  g0, 0x18(_m), 0, 0
+        psq_l  g1, 0x20(_m), 1, 0
+        ps_muls1 g4, g0, g3
+        psq_l  g0, 0xc(_m), 0, 0
+        ps_muls1 g5, g1, g3
+        psq_l  g1, 0x14(_m), 1, 0
+        psq_l  g2, 0x0(_tv), 0, 0
+        ps_madds0 g4, g0, g3, g4
+        psq_l  g0, 0x0(_m), 0, 0
+        ps_madds0 g5, g1, g3, g5
+        psq_l  g1, 0x8(_m), 1, 0
+        ps_madds0 g4, g0, g2, g4
+        ps_madds0 g5, g1, g2, g5
+        psq_st g4, 0x0(_ov), 0, 0
+        psq_st g5, 0x8(_ov), 1, 0
     }
+    if (_m != _om) {
+        // out.m = t.m * m  (non-alias; reuses g0=m.x.x, g1=m.x.z)
+        asm {
+            psq_l  g6, 0x4(_tm), 0, 0
+            psq_l  g5, 0x18(_m), 0, 0
+            psq_l  g4, 0x20(_m), 1, 0
+            ps_muls1 g3, g5, g6
+            psq_l  g5, 0xc(_m), 0, 0
+            ps_muls1 g2, g4, g6
+            psq_l  g4, 0x14(_m), 1, 0
+            psq_l  g10, 0x10(_tm), 0, 0
+            psq_l  g7, 0x18(_m), 0, 0
+            psq_l  g8, 0x20(_m), 1, 0
+            ps_madds0 g3, g5, g6, g3
+            ps_muls1 g9, g7, g10
+            psq_l  g7, 0x0(_tm), 0, 0
+            ps_muls1 g8, g8, g10
+            psq_l  g31, 0x1c(_tm), 0, 0
+            psq_l  g11, 0x18(_m), 0, 0
+            psq_l  g12, 0x20(_m), 1, 0
+            ps_muls1 g13, g11, g31
+            psq_l  g11, 0xc(_tm), 0, 0
+            ps_muls1 g12, g12, g31
+            psq_l  g30, 0x18(_tm), 0, 0
+            ps_madds0 g2, g4, g6, g2
+            ps_madds0 g9, g5, g10, g9
+            ps_madds0 g8, g4, g10, g8
+            ps_madds0 g13, g5, g31, g13
+            ps_madds0 g12, g4, g31, g12
+            ps_madds0 g3, g0, g7, g3
+            ps_madds0 g2, g1, g7, g2
+            ps_madds0 g9, g0, g11, g9
+            psq_st g3, 0x0(_om), 0, 0
+            ps_madds0 g8, g1, g11, g8
+            ps_madds0 g13, g0, g30, g13
+            psq_st g2, 0x8(_om), 1, 0
+            ps_madds0 g12, g1, g30, g12
+            psq_st g9, 0xc(_om), 0, 0
+            psq_st g8, 0x14(_om), 1, 0
+            psq_st g13, 0x18(_om), 0, 0
+            psq_st g12, 0x20(_om), 1, 0
+        }
+    } else {
+        // out.m = t.m * m  (aliased; compute rows into temps, then copy)
+        float row0[3], row1[3], row2[3];
+        register float *_r0 = row0;
+        register float *_r1 = row1;
+        register float *_r2 = row2;
+        asm {
+            psq_l  g6, 0x4(_tm), 0, 0
+            psq_l  g5, 0x18(_m), 0, 0
+            psq_l  g4, 0x20(_m), 1, 0
+            ps_muls1 g3, g5, g6
+            psq_l  g5, 0xc(_m), 0, 0
+            ps_muls1 g2, g4, g6
+            psq_l  g4, 0x14(_m), 1, 0
+            psq_l  g10, 0x10(_tm), 0, 0
+            psq_l  g7, 0x18(_m), 0, 0
+            psq_l  g9, 0x20(_m), 1, 0
+            ps_madds0 g3, g5, g6, g3
+            ps_muls1 g8, g7, g10
+            psq_l  g7, 0x0(_tm), 0, 0
+            ps_muls1 g9, g9, g10
+            psq_l  g30, 0x1c(_tm), 0, 0
+            psq_l  g11, 0x18(_m), 0, 0
+            psq_l  g12, 0x20(_m), 1, 0
+            ps_muls1 g13, g11, g30
+            psq_l  g11, 0xc(_tm), 0, 0
+            ps_muls1 g12, g12, g30
+            psq_l  g31, 0x18(_tm), 0, 0
+            ps_madds0 g2, g4, g6, g2
+            ps_madds0 g8, g5, g10, g8
+            ps_madds0 g9, g4, g10, g9
+            ps_madds0 g13, g5, g30, g13
+            ps_madds0 g12, g4, g30, g12
+            ps_madds0 g3, g0, g7, g3
+            ps_madds0 g2, g1, g7, g2
+            ps_madds0 g8, g0, g11, g8
+            psq_st g3, 0x0(_r2), 0, 0
+            ps_madds0 g9, g1, g11, g9
+            psq_st g8, 0x0(_r1), 0, 0
+            ps_madds0 g13, g0, g31, g13
+            ps_madds0 g12, g1, g31, g12
+            psq_st g13, 0x0(_r0), 0, 0
+            psq_st g2, 0x8(_r2), 1, 0
+            psq_st g9, 0x8(_r1), 1, 0
+            psq_st g12, 0x8(_r0), 1, 0
+        }
+        out.m.x.x = row0[0];
+        out.m.x.y = row0[1];
+        out.m.x.z = row0[2];
+        out.m.y.x = row1[0];
+        out.m.y.y = row1[1];
+        out.m.y.z = row1[2];
+        out.m.z.x = row2[0];
+        out.m.z.y = row2[1];
+        out.m.z.z = row2[2];
+    }
+}
+#else
+inline void Multiply(const Transform &t, const Hmx::Matrix3 &m, Transform &out) {
+    Multiply(t.v, m, out.v);
+    Multiply(t.m, m, out.m);
 }
 #endif
 
@@ -316,7 +320,7 @@ void InlineHelp::DrawShowing() {
         Vector3 angles(DegreesToRadians(sLabelRot), 0.0f, 0.0f);
         Hmx::Matrix3 rotMtx;
         MakeRotMatrix(angles, rotMtx, true);
-        Multiply(offsetXfm.m, rotMtx, rotXfm.m);
+        Multiply(offsetXfm, rotMtx, rotXfm);
     } else {
         rotXfm.m.Identity();
         rotXfm.v.Zero();

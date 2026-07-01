@@ -615,23 +615,17 @@ bool Movie::Impl::Begin(
     MILO_ASSERT(!mPreloadBuf, 0x21F);
     if (preload) {
         const char *fn = mFilename.c_str();
-        void *_mem = ::operator new(sizeof(FileLoader));
-        FilePath fp(fn);
-        bool streamCached = false;
-        if (stream) streamCached = stream->Cached();
-        BinStream *bs = streamCached ? stream : NULL;
-        mLoader = (MovieLoader *)::new(_mem) FileLoader(fp, fn, kLoadFront, 0, false, true, bs);
+        mLoader = (MovieLoader *)new FileLoader(
+            FilePath(fn), fn, kLoadFront, 0, false, true,
+            (stream != NULL && stream->Cached()) ? stream : NULL
+        );
     } else {
-        void *_mem = ::operator new(sizeof(MovieLoader));
-        const char *fn = mFilename.c_str();
-        FilePath fp(fn);
-        mLoader2 = ::new(_mem) MovieLoader(fp, this);
+        mLoader2 = new MovieLoader(FilePath(mFilename.c_str()), this);
     }
     sActiveMovies.push_back(this);
     sActivePending++;
     if (sActivePending > 1 && !preload) {
-        String localFn = mFilename;
-        MILO_WARN("%s, multiple movies must be preloaded", localFn.c_str());
+        MILO_WARN("%s, multiple movies must be preloaded", mFilename);
     }
     mLoading = true;
     return true;

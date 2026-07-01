@@ -207,25 +207,19 @@ void ReadFunc(BINKIO *bink, bool startNewRead) {
         bink->DoingARead = 0;
         if (bf->mEncryptionHeader.mVersion == 2) {
             START_AUTO_TIMER("XTEA");
-            for (XTEABlock *blk = (XTEABlock *)bf->pBufBack;
-                 (unsigned char *)blk < bf->pBufBack + lengthRead;
-                 blk++) {
+            XTEABlock *blk = (XTEABlock *)bf->pBufBack;
+            while (blk < (XTEABlock *)(bf->pBufBack + lengthRead)) {
                 XTEABlock outBlock;
-                unsigned int *p = (unsigned int *)blk;
-                unsigned int p0 = p[0];
-                unsigned int p1 = p[1];
-                p[1] = BSWAP(p0);
-                p[0] = BSWAP(p1);
-                unsigned int p2 = p[2];
-                unsigned int p3 = p[3];
-                p[3] = BSWAP(p2);
-                p[2] = BSWAP(p3);
+                blk->mData[0] = EndianSwap(blk->mData[0]);
+                blk->mData[1] = EndianSwap(blk->mData[1]);
                 bf->pXTEADecrypter->Encrypt(blk, &outBlock);
+                unsigned int *p = (unsigned int *)blk;
                 unsigned int *outU = (unsigned int *)&outBlock;
                 p[0] = outU[1];
                 p[1] = outU[0];
                 p[2] = outU[3];
                 p[3] = outU[2];
+                blk++;
             }
         } else {
             intelendian(bf->pBufBack, lengthRead);

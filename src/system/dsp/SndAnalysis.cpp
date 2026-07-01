@@ -6,6 +6,29 @@
 #include <math.h>
 
 
+#ifdef __MWERKS__
+// Single-instruction paired-single helpers. Written as inline asm functions
+// returning a value (rather than one opaque asm{} block) so the compiler's
+// scheduler is free to interleave these compute ops with the surrounding
+// psq_lx loads and rename the destination FPRs -- matching the target's
+// software-pipelined codegen.
+static inline __vec2x32float__ __ps_madds0(register __vec2x32float__ a, register __vec2x32float__ c, register __vec2x32float__ b) {
+    register __vec2x32float__ d;
+    asm { ps_madds0 d, a, c, b }
+    return d;
+}
+static inline __vec2x32float__ __ps_madds1(register __vec2x32float__ a, register __vec2x32float__ c, register __vec2x32float__ b) {
+    register __vec2x32float__ d;
+    asm { ps_madds1 d, a, c, b }
+    return d;
+}
+static inline __vec2x32float__ __ps_merge10(register __vec2x32float__ a, register __vec2x32float__ b) {
+    register __vec2x32float__ d;
+    asm { ps_merge10 d, a, b }
+    return d;
+}
+#endif
+
 // Computes shifted dot products of buf with itself, output to ss.
 // ss[i] = sum_{j} buf[j] * buf[j + i] for i in [0, vlen) where vlen = len/2.
 // On the fast path (vlen % 16 == 0), produces two outputs per iteration via
@@ -14,78 +37,60 @@ void ShiftedDotProduct(const float *buf, int len, float *ss, bool /*unused*/) {
     START_AUTO_TIMER("SHIFT_DOT_PROD");
 
     int vlen = len / 2;
-    MILO_ASSERT((vlen && 15) == 0, 0x135);
+    MILO_ASSERT((vlen & 15) == 0, 0x135);
 
     if ((vlen & 15) == 0) {
-        // Fast path: paired computation of ss[i] and ss[i+1] via Gekko paired
-        // singles. Each inner iteration consumes 16 input samples and updates
-        // the accumulator pair (acc0 in low lane, acc1 in high lane).
 #ifdef __MWERKS__
         typedef __vec2x32float__ psq;
         register float *out = ss;
-        for (int i = 0.0f; vlen - 2 >= i; i += 2) {
+        for (int i = 0; i <= vlen - 2; i += 2) {
             register psq acc;
-            register const float *p = buf;
-            register const float *q = buf + i;
-            register int n = vlen >> 4;
             asm { ps_sub acc, acc, acc }
-            do {
-                // Live register window kept small to mirror target's f0-f13
-                // scheduling. The y9 load is needed for the trailing
-                // ps_merge10 of pair 7.
-                register psq x0, x1, x2, x3, x4, x5, x6, x7;
-                register psq y0, y1, y2, y3, y4, y5, y6, y7, y8;
-                register psq m;
-                asm volatile {
-                    psq_l   y0,  0x00(q), 0, 0
-                    psq_l   y1,  0x08(q), 0, 0
-                    psq_l   x0,  0x00(p), 0, 0
-                    psq_l   y2,  0x10(q), 0, 0
-                    psq_l   x1,  0x08(p), 0, 0
-                    ps_madds0 acc, y0, x0, acc
-                    ps_merge10 m, y0, y1
-                    psq_l   y3,  0x18(q), 0, 0
-                    ps_madds1 acc, m, x0, acc
-                    ps_merge10 m, y1, y2
-                    psq_l   x2,  0x10(p), 0, 0
-                    ps_madds0 acc, y1, x1, acc
-                    psq_l   y4,  0x20(q), 0, 0
-                    ps_madds1 acc, m, x1, acc
-                    ps_merge10 m, y2, y3
-                    psq_l   x3,  0x18(p), 0, 0
-                    ps_madds0 acc, y2, x2, acc
-                    psq_l   y5,  0x28(q), 0, 0
-                    ps_madds1 acc, m, x2, acc
-                    ps_merge10 m, y3, y4
-                    psq_l   x4,  0x20(p), 0, 0
-                    ps_madds0 acc, y3, x3, acc
-                    psq_l   y6,  0x30(q), 0, 0
-                    ps_madds1 acc, m, x3, acc
-                    ps_merge10 m, y4, y5
-                    psq_l   x5,  0x28(p), 0, 0
-                    ps_madds0 acc, y4, x4, acc
-                    psq_l   y7,  0x38(q), 0, 0
-                    ps_madds1 acc, m, x4, acc
-                    ps_merge10 m, y5, y6
-                    psq_l   x6,  0x30(p), 0, 0
-                    ps_madds0 acc, y5, x5, acc
-                    psq_l   y8,  0x40(q), 0, 0
-                    ps_madds1 acc, m, x5, acc
-                    ps_merge10 m, y6, y7
-                    psq_l   x7,  0x38(p), 0, 0
-                    ps_madds0 acc, y6, x6, acc
-                    ps_madds1 acc, m, x6, acc
-                    ps_merge10 m, y7, y8
-                    ps_madds0 acc, y7, x7, acc
-                    ps_madds1 acc, m, x7, acc
-                }
+            register const float *p = buf;
+            for (int j = 0; j < vlen; j += 16) {
+                register psq x0 = *(const psq *)(p + 0);
+                register psq x1 = *(const psq *)(p + 2);
+                register psq x2 = *(const psq *)(p + 4);
+                register psq x3 = *(const psq *)(p + 6);
+                register psq x4 = *(const psq *)(p + 8);
+                register psq x5 = *(const psq *)(p + 10);
+                register psq x6 = *(const psq *)(p + 12);
+                register psq x7 = *(const psq *)(p + 14);
+                register int base = i + j;
+                register psq y0 = *(const psq *)(buf + base + 0);
+                register psq y1 = *(const psq *)(buf + base + 2);
+                register psq y2 = *(const psq *)(buf + base + 4);
+                register psq y3 = *(const psq *)(buf + base + 6);
+                register psq y4 = *(const psq *)(buf + base + 8);
+                register psq y5 = *(const psq *)(buf + base + 10);
+                register psq y6 = *(const psq *)(buf + base + 12);
+                register psq y7 = *(const psq *)(buf + base + 14);
+                register psq y8 = *(const psq *)(buf + base + 15);
+                acc = __ps_madds0(y0, x0, acc);
+                acc = __ps_madds1(__ps_merge10(y0, y1), x0, acc);
+                acc = __ps_madds0(y1, x1, acc);
+                acc = __ps_madds1(__ps_merge10(y1, y2), x1, acc);
+                acc = __ps_madds0(y2, x2, acc);
+                acc = __ps_madds1(__ps_merge10(y2, y3), x2, acc);
+                acc = __ps_madds0(y3, x3, acc);
+                acc = __ps_madds1(__ps_merge10(y3, y4), x3, acc);
+                acc = __ps_madds0(y4, x4, acc);
+                acc = __ps_madds1(__ps_merge10(y4, y5), x4, acc);
+                acc = __ps_madds0(y5, x5, acc);
+                acc = __ps_madds1(__ps_merge10(y5, y6), x5, acc);
+                acc = __ps_madds0(y6, x6, acc);
+                acc = __ps_madds1(__ps_merge10(y6, y7), x6, acc);
+                acc = __ps_madds0(y7, x7, acc);
+                acc = __ps_madds1(__ps_merge10(y7, y8), x7, acc);
                 p += 16;
-                q += 16;
-            } while (--n);
-            asm { psq_st acc, 0(out), 0, 0 }
+            }
+            *(psq *)out = acc;
             out += 2;
         }
 #else
+        // Fast path: paired computation of ss[i] and ss[i+1]. The compiler's
+        // paired-single auto-vectorizer (-O4,p) turns this scalar loop into
+        // Gekko psq instructions; no hand-written asm needed.
         for (int i = 0; i <= vlen - 2; i += 2) {
             float acc0 = 0.0f;
             float acc1 = 0.0f;

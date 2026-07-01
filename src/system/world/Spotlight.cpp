@@ -888,11 +888,10 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
     if (def.mIsCone) {
         pMtx = &identMtx;
     } else {
-        rotMtx.Set(
-            Vector3(1.0f, 0.0f, 0.0f),
-            Vector3(0.0f, 0.0f, -1.0f),
-            Vector3(0.0f, 1.0f, 0.0f)
-        );
+        Vector3 v3(0.0f, 1.0f, 0.0f);
+        Vector3 v2(0.0f, 0.0f, -1.0f);
+        Vector3 v1(1.0f, 0.0f, 0.0f);
+        rotMtx.Set(v1, v2, v3);
         pMtx = &rotMtx;
     }
     orientMtx.x = pMtx->x;
@@ -900,9 +899,9 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
     orientMtx.z = pMtx->z;
 
     def.mBeam = Hmx::Object::New<RndMesh>();
-    int numVerts = numSegments * 3;
     RndMesh::VertVector &verts = def.mBeam->Verts();
     std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
+    int numVerts = numSegments * 3;
 
     verts.resize(numVerts + 2, true);
     faces.resize(numSegments * 6);
@@ -918,7 +917,8 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
 
     int flip = 0;
     int iVert = 0;
-    float csAngle = 0.0f;
+    float czero = 0.0f;
+    float csAngle = czero;
     float xsAngle = 0.7853982f;
     short baseIdx = 2;
     int iFace = 0;
@@ -926,6 +926,7 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
         float halfStep = 2.0f;
         float cosH = (float)std::cos((double)halfAngle);
         float sinH = (float)std::sin((double)halfAngle);
+        csAngle = czero;
         float segU = (float)seg / numSegsF;
 
         for (unsigned int v = 0; v < 3; v++) {
@@ -981,15 +982,15 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
         iFace += 2;
     }
 
-    verts[numVerts].pos.Set(0.0f, 0.0f, 0.0f);
+    verts[numVerts].pos.Set(czero, czero, czero);
     verts[numVerts].color.color = -1;
-    verts[numVerts].uv.Set(0.0f, 0.0f);
+    verts[numVerts].uv.Set(czero, czero);
 
     int baseVertIdx = numVerts + 1;
-    verts[baseVertIdx].pos.Set(0.0f, length, 0.0f);
+    verts[baseVertIdx].pos.Set(czero, length, czero);
     Multiply(verts[baseVertIdx].pos, orientMtx, verts[baseVertIdx].pos);
     verts[baseVertIdx].color.color = -1;
-    verts[baseVertIdx].uv.Set(0.0f, 1.0f);
+    verts[baseVertIdx].uv.Set(czero, 1.0f);
 
     def.mBeam->Sync(0x13F);
     def.mBeam->SetMat(def.mMat);

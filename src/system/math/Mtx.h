@@ -384,12 +384,12 @@ inline void ScaleAddEq(Hmx::Quat &q1, const Hmx::Quat &q2, float f) {
 }
 void Normalize(const Hmx::Quat &, Hmx::Quat &);
 inline void Multiply(const Hmx::Quat &q1, const Hmx::Quat &q2, Hmx::Quat &qres) {
-    qres.Set(
-        -(q1.z * q2.y - (q1.y * q2.z + (q1.w * q2.x + q1.x * q2.w))),
-        -(q1.x * q2.z - (q1.z * q2.x + (q1.w * q2.y + q1.y * q2.w))),
-        -(q1.y * q2.x - (q1.x * q2.y + (q1.w * q2.z + q1.z * q2.w))),
-        -(q1.z * q2.z - -(q1.y * q2.y - (q1.w * q2.w - q1.x * q2.x)))
-    );
+    float x = -(q1.z * q2.y - (q1.y * q2.z + (q1.w * q2.x + q1.x * q2.w)));
+    float y = -(q1.x * q2.z - (q1.z * q2.x + (q1.w * q2.y + q1.y * q2.w)));
+    float z = -(q1.y * q2.x - (q1.x * q2.y + (q1.w * q2.z + q1.z * q2.w)));
+    float wwxx = q1.w * q2.w - q1.x * q2.x;
+    float w = -(q1.z * q2.z - -(q1.y * q2.y - wwxx));
+    qres.Set(x, y, z, w);
 }
 void FastInterp(const Hmx::Quat &, const Hmx::Quat &, float, Hmx::Quat &);
 void Invert(const Hmx::Matrix3 &, Hmx::Matrix3 &);

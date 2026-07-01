@@ -93,6 +93,27 @@ void __insertion_sort<PairIF *, PairIF, SingerStats::PartPercentageSorter>(
     }
 }
 
+// __introsort_loop's depth-limit fallback (partial_sort) drives pop_heap; give
+// it the same treatment as the other STLport internals above so the single
+// __val temp isn't materialized twice (once for the local, once for the
+// by-value call arg).
+template <>
+void pop_heap<PairIF *, SingerStats::PartPercentageSorter>(
+    PairIF *__first,
+    PairIF *__last,
+    SingerStats::PartPercentageSorter __comp
+) {
+    // Read the fields (not the whole struct) so no named PairIF local gets its
+    // own stack slot; construct the __adjust_heap argument as an unnamed temp
+    // directly at the call so it materializes once, into the argument slot.
+    int __val_first = (__last - 1)->first;
+    float __val_second = (__last - 1)->second;
+    *(__last - 1) = *__first;
+    __adjust_heap(
+        __first, 0L, (long)(__last - 1 - __first), PairIF(__val_first, __val_second), __comp
+    );
+}
+
 } // namespace stlpmtx_std
 #endif // !HX_NATIVE
 

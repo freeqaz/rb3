@@ -29,7 +29,23 @@ struct FreeBlock {
 };
 
 struct AllocBlock {
+#ifdef HX_NATIVE
+    // The bitfield view below is big-endian-specific (Wii target). On a
+    // little-endian host the field order flips, so the native heap keeps the
+    // plain word and does explicit shift/mask arithmetic (see Truncate).
     unsigned int mHeader; // 0x0
+#else
+    union {
+        unsigned int mHeader; // 0x0
+        // Big-endian layout: size occupies the high 24 bits (mHeader >> 8),
+        // pad-word count the low 8 bits (mHeader & 0xFF). Writing mSizeWords
+        // reproduces the target's in-place `rlwimi` header update.
+        struct {
+            unsigned int mSizeWords : 24;
+            unsigned int mPadWords : 8;
+        };
+    };
+#endif
 };
 
 class Heap {
@@ -370,25 +386,25 @@ int *Heap::SplitFromBack(int n) {
     return mStart + mSizeWords;
 }
 
-int *Heap::Truncate(int *mem, int truncWords, int &outSize) {
+int *Heap::Truncate(int *mem, int sizeWords, int &outSize) {
     if (mem < mStart || mem >= mStart + mSizeWords) {
         return nullptr;
     }
     AllocBlock *allocBlock = (AllocBlock *)(mem - 1);
     unsigned int header = ((unsigned int *)mem)[-1];
+    int truncWords = ((header >> 8) - 1 - (header & 0xFF)) - sizeWords;
     MILO_ASSERT(truncWords >= 0, 0x49E);
-    int newFreeWords = ((header >> 8) - 1 - (header & 0xFF)) - truncWords;
-    if (newFreeWords > 8) {
+    if (truncWords > 8) {
         FreeBlock *prev = nullptr;
         FreeBlock *next = nullptr;
         FindFreeNeighbors(allocBlock, prev, next);
         unsigned int timeStamp = gTimeStamp;
-        FreeBlock *block = (FreeBlock *)(mem + truncWords);
+        FreeBlock *block = (FreeBlock *)(mem + sizeWords);
         gTimeStamp = timeStamp + 1;
-        InsertFreeBlock(block, newFreeWords, prev, next, timeStamp);
+        InsertFreeBlock(block, truncWords, prev, next, timeStamp);
         if (mDebugLevel >= 1) {
-            int *fillEnd = (int *)block + block->mSizeWords;
             int *fillStart = (int *)block + 3;
+            int *fillEnd = (int *)block + block->mSizeWords;
             for (int *p = fillStart; p < fillEnd; p++) {
                 *p = 0xDEADDEAD;
             }
@@ -396,9 +412,15 @@ int *Heap::Truncate(int *mem, int truncWords, int &outSize) {
         if (next != nullptr) {
             block->AttemptMerge(next, mDebugLevel);
         }
+#ifdef HX_NATIVE
         unsigned int oldHeader = allocBlock->mHeader;
         allocBlock->mHeader =
-            (oldHeader & 0xFF) | (((oldHeader >> 8) - newFreeWords) << 8);
+            (oldHeader & 0xFF) | (((oldHeader >> 8) - truncWords) << 8);
+#else
+        // Shrink the block's size field in place; the target emits a single
+        // `rlwimi` for this big-endian bitfield store.
+        allocBlock->mSizeWords = (allocBlock->mHeader >> 8) - truncWords;
+#endif
     }
     outSize = allocBlock->mHeader >> 8;
     return mem;

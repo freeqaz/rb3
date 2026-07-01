@@ -102,11 +102,7 @@ UIListSubListElement::Draw(const Transform &tf, float f, UIColor *col, Box *box)
 }
 
 void UIListSubListElement::Fill(const UIListProvider &prov, int i, int j) {
-    UIListProvider *theProvider;
-    if (LOADMGR_EDITMODE)
-        theProvider = mList;
-    else
-        theProvider = prov.Provider(i, j, mSlot);
+    UIListProvider *theProvider = LOADMGR_EDITMODE ? mList : prov.Provider(i, j, mSlot);
     if (theProvider) {
         mList->SetProvider(theProvider);
         if (0 <= UIListSubList::sNextFillSelection) {

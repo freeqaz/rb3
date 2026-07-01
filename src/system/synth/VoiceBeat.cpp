@@ -80,18 +80,18 @@ void VoiceBeat::Analyze(
         mYVVoice[4] = newYV;
 
         double absYV = fabs(newYV);
-        double envInput = absYV / k_a0;
         mCount += mRate;
         float absSample = fabs(*samples);
+        double newVoiceEnergy = 0.02 * (absYV - oldVE) + oldVE;
+        double newFullBandEnergy
+            = 0.02 * ((double)absSample - oldFBE) + oldFBE;
+        double envInput = absYV / k_a0;
         mXVEnvAntiAlias[0] = oldAA_X1;
         mXVEnvAntiAlias[1] = oldAA_X2;
         mXVEnvAntiAlias[2] = envInput;
         mYVEnvAntiAlias[0] = oldAA_Y1;
         mYVEnvAntiAlias[1] = oldAA_Y2;
-        double newVoiceEnergy = 0.02 * (absYV - oldVE) + oldVE;
         double aaAcc = 2.0 * oldAA_X2 + (oldAA_X1 + envInput);
-        double newFullBandEnergy
-            = 0.02 * ((double)absSample - oldFBE) + oldFBE;
         double newAA_Y2 = k_a2 * oldAA_Y2 + (k_a1 * oldAA_Y1 + aaAcc);
         mVoiceEnergy = newVoiceEnergy;
         mFullBandEnergy = newFullBandEnergy;

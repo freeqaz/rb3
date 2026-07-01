@@ -19,8 +19,8 @@ void CharUpperTwist::Poll() {
     if (!mTwist2 || !mTwist1 || !mUpperArm)
         return;
     Transform &twist2parentworld = mTwist2->TransParent()->WorldXfm();
-    Transform &twist2world = mTwist2->WorldXfm();
     Hmx::Quat q;
+    Transform &twist2world = mTwist2->WorldXfm();
     MakeRotQuat(twist2parentworld.m.x, twist2world.m.x, q);
     Vector3 v68;
     Multiply(twist2parentworld.m.y, q, v68);
@@ -28,11 +28,39 @@ void CharUpperTwist::Poll() {
     tf48.m.x = twist2world.m.x;
     tf48.v = mUpperArm->WorldXfm().v;
     Interp(v68, twist2world.m.y, 0.333f, tf48.m.y);
-    LookAt(tf48.m);
+    {
+        Hmx::Matrix3 &m = tf48.m;
+        float xy = m.x.x * m.y.y;
+        float yx = m.y.x * m.x.y;
+        float yz = m.x.y * m.y.z;
+        float zy = m.y.y * m.x.z;
+        float zx = m.x.z * m.y.x;
+        float xz = m.x.x * m.y.z;
+        m.z.Set(yz - zy, zx - xz, xy - yx);
+        Normalize(m.z, m.z);
+        float xy2 = m.z.x * m.x.y;
+        float yx2 = m.z.y * m.x.x;
+        float yz2 = m.z.y * m.x.z;
+        float zy2 = m.z.z * m.x.y;
+        float zx2 = m.z.z * m.x.x;
+        float xz2 = m.z.x * m.x.z;
+        m.y.Set(yz2 - zy2, zx2 - xz2, xy2 - yx2);
+    }
     mUpperArm->SetWorldXfm(tf48);
     tf48.v = mTwist1->WorldXfm().v;
     Interp(v68, twist2world.m.y, 0.666f, tf48.m.y);
-    LookAt(tf48.m);
+    {
+        Hmx::Matrix3 &m = tf48.m;
+        float xy = m.x.x * m.y.y;
+        float yx = m.x.y * m.y.x;
+        float yz = m.x.y * m.y.z;
+        float zy = m.x.z * m.y.y;
+        float zx = m.x.z * m.y.x;
+        float xz = m.x.x * m.y.z;
+        m.z.Set(yz - zy, zx - xz, xy - yx);
+        Normalize(m.z, m.z);
+        Cross(m.z, m.x, m.y);
+    }
     mTwist1->SetWorldXfm(tf48);
 }
 
