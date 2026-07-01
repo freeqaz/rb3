@@ -14,6 +14,10 @@
 #endif
 #include "utl/Loader.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstdlib> // getenv (RB3_SKIN_FIX_OFF opt-out)
+#include <cstring> // strstr
+#endif
 #ifndef HX_NATIVE
 #include <revolution/gx/GXMisc.h>
 #endif
@@ -479,6 +483,66 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
         if (headmesh)
             headmesh->SetMat(dir1->Find<RndMat>("head_naked.mat", false));
     }
+#ifdef HX_NATIVE
+    // C8 dark-face fix (2026-07-01): the RUNTIME caller (BandCharacter, sym==skin)
+    // invokes this 3-arg SetSkinTextures directly. It wires skin.cfg's MatSwap
+    // diffuse sources (mTwoColorDiffuse/mTwoColorInterp) and binds head/torso/legs
+    // _naked material diffuse to the empty `*_skin_diffuse_output.tex` RTs — but,
+    // unlike the no-arg SetSkinTextures() (which follows with cfg->Recompose()),
+    // it never re-dirties skin.cfg. skin.cfg's DrawPreClear then sees unk38==0 and
+    // SKIPS MatSwap::Compose, so the flesh-skin RTs are never painted (empty RT ->
+    // shader's "skin texture absent" grey fallback -> blank/dark faces + bare arms;
+    // clothing/eyes composite fine because their MatSwaps are dirty from load).
+    // Re-dirty here so the next pre-clear pass composites the just-wired sources.
+    // #ifndef path (Wii) is byte-identical to the matched build.
+    //
+    // ...but re-dirtying alone is not enough: the flesh-skin composite ALSO fails
+    // on a native material-identity split. The loop above binds the output RT onto
+    // dir1's `*_naked` material (the instance the skin MESH samples), but skin.cfg's
+    // MatSwaps hold a DISTINCT copy of the same-named material (the native milo
+    // merge does not unify them the way the matched Wii build does); those copies
+    // keep their placeholder `dummy_*` (torso/legs) or null (head) diffuse.
+    // MatSwap::Compose renders into `mMat->GetDiffuseTex()`, which is therefore NOT
+    // a kRenderedNoZ RT -> Compose takes the no-op branch -> nothing painted. Bind
+    // each skin MatSwap's OWN material diffuse to the matching output RT so Compose
+    // targets the same RT the mesh samples, THEN Recompose.
+    static int sSkinFixOff = -1;
+    if (sSkinFixOff < 0)
+        sSkinFixOff = getenv("RB3_SKIN_FIX_OFF") ? 1 : 0;
+    if (cfg && !sSkinFixOff) {
+        // Idempotent: only (re)bind + Recompose when a material's diffuse is not
+        // already the RT. SetSkinTextures can be called every frame in the closet
+        // preview; re-dirtying + re-compositing each time churns the skin meshes'
+        // materials (SwapResource) and races the char-preview reload against the
+        // native rebind caches (RebindHeadHandsAtRest / RebindOutfitBonesToOwn-
+        // Skeleton), which then iterate freed mesh pointers -> SIGSEGV. Binding once
+        // and skipping thereafter keeps it stable.
+        bool changed = false;
+        for (int m = 0; m < cfg->mMats.size(); m++) {
+            MatSwap &ms = cfg->mMats[m];
+            if (!ms.mMat || !ms.mMat->Name())
+                continue;
+            const char *mn = ms.mMat->Name();
+            const char *part = 0;
+            if (strstr(mn, "torso"))
+                part = "torso";
+            else if (strstr(mn, "head"))
+                part = "head";
+            else if (strstr(mn, "legs") || strstr(mn, "feet"))
+                part = "legs";
+            if (!part)
+                continue;
+            RndTex *rt = dir2->Find<RndTex>(
+                MakeString("%s_skin_diffuse_output.tex", part), false);
+            if (rt && ms.mMat->GetDiffuseTex() != rt) {
+                ms.mMat->SetDiffuseTex(rt);
+                changed = true;
+            }
+        }
+        if (changed)
+            cfg->Recompose();
+    }
+#endif
 }
 
 DECOMP_FORCEACTIVE(OutfitConfig, "norm_%s.texblendctl", "%s_head_norm%02d.tex")
