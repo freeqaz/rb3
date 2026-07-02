@@ -132,3 +132,54 @@ unchanged — the flag rides the same `window.__rb3ExtraEnv` mechanism:
 
 Repro: `RB3_WEB_DOWNSCALE=1 python3 native/web/server.py --port 8797` +
 `node scripts/web/_sharpen_chunk_smoke.mjs --port 8797` (debug build deployed).
+
+## §Fixes — review finding B1 (Range-ignoring server ⇒ unbounded append ⇒ OOM)
+
+**Fixed 2026-07-02 (rb3-only; NO engine change, NO pin bump).** Review
+(14-laneB-review.md) B1: the landed-chunk branch never checked
+`taken > chunkReqLen`. A server that ignores Range (RFC 9110 §14.2 allows it;
+`python -m http.server`; Range-stripping proxies) replies **200 + whole 5.4 MB
+body**; neither the short-read terminator nor the error arm ever fires
+(a stripping proxy SUCCEEDS, so the claimed chunk-0-fails-×5 fallback was
+unreachable for exactly that case), and every retry appended another whole
+file → unbounded wasm heap growth → abort, while saturating the wire against
+the mogg. Not triggerable on shipped server.py (honors Range) — but hardening
+other topologies is this lane's stated purpose.
+
+**Fix** (`native/src/rb3_texsharpen_native.cpp`, landed-chunk branch):
+
+- `taken > gDrv.chunkReqLen` ⇒ server ignored Range (a 206 can never exceed
+  the request):
+  - at assembly offset 0 the 200 body IS the entire file → **accept +
+    `FinalizeSidecarAssembly()`** (same bytes the legacy fetch would land);
+  - mid-assembly the body sits at the wrong offset → **discard assembly +
+    permanent `chunkFallback`** to the legacy single whole-file fetch (which
+    such a server serves fine).
+- Belt-and-braces: assembly capped at `kAssemblyCap` = **64 MB**
+  (ReadWholeFile's ceiling) before every append — over-cap drops the request,
+  discards, and falls back; no topology can grow the heap unboundedly.
+- Comment on the chunk-0-error arm corrected (404/dead server; the stripping
+  proxy is handled by the whole-body arm, not by errors).
+
+**Verified** (debug web build rebuilt with the fix):
+
+1. `rb3-tests` **53/53 green**; `rb3-native` builds clean.
+2. Standard smoke (honoring server, port 8797): **PASS rc=0** — 21 chunks,
+   5,374,546 B exact, `chunk assembly COMPLETE`, sharpen **COMPLETE 15/15** —
+   byte-identical to the pre-fix RESULTS-smoke above (no regression).
+3. **B1 repro, arm 1** — NEW `scripts/web/_range_strip_proxy.py` (reverse
+   proxy that drops the Range header on `.sharpen` requests only, mogg lane
+   untouched), strip from chunk 0: proxy log shows exactly ONE sidecar request
+   (`STRIPPED Range: bytes=0-262143`), driver logs `chunk 0 got whole body
+   (5374546 B > 262144 requested — server ignored Range), accepting` →
+   assembly COMPLETE → **15/15 COMPLETE**. Pre-fix this was the OOM loop.
+4. **B1 repro, arm 2** — `--after 3` (honor 3 chunks, then strip): 3 chunks
+   land, request #3 gets the whole body → `server ignored Range mid-assembly
+   (5374546 B > 262144 requested @ 786432) — discarding, falling back to
+   single fetch` → legacy fetch lands it → **15/15 COMPLETE**. No loop, no
+   growth, one extra whole-file transfer total.
+
+(The smoke's own rc is 1 on the proxy runs — its `chunkLandedLines >= 2` pass
+criterion assumes chunked delivery, which a Range-ignoring topology legitimately
+bypasses; judge those runs by the driver log lines above. Advisories 1-7 from
+the review remain open — B1 was the only blocking finding.)

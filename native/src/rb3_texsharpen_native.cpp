@@ -215,6 +215,14 @@ void KickSidecarFetch(const std::string& rel) {
 // SHRP parser is the integrity gate — a truncated blob fails its structural
 // bounds checks → RB3SharpenLoadSidecar matches 0 → clean cosmetic no-op
 // (never a corrupt upload).
+//
+// RANGE-IGNORING SERVERS (review B1): RFC 9110 §14.2 lets a server ignore
+// Range and 200 the whole body (python -m http.server; Range-stripping
+// proxies). Detected per-landing via taken > chunkReqLen (a 206 can never
+// exceed the request): at offset 0 the body IS the file → accept + finalize;
+// mid-assembly it's at the wrong offset → discard + legacy single fetch.
+// Either way the assembly is additionally capped at kAssemblyCap (64 MB,
+// ReadWholeFile's ceiling) so no topology can grow the heap unboundedly.
 // ---------------------------------------------------------------------------
 
 // Consecutive-error budget at one offset before deciding (EOF-after-progress /
@@ -222,6 +230,11 @@ void KickSidecarFetch(const std::string& rel) {
 // genuine 416 (exact-multiple EOF) fails all of them in ~5 RTTs; a transient
 // connection blip usually recovers within one or two.
 static const int kChunkErrMax = 5;
+
+// Assembly ceiling — the same 64 MB sanity cap ReadWholeFile enforces. A server
+// that ignores Range (or any runaway body) can never grow the assembly past it
+// (review B1 belt-and-braces).
+static const long kAssemblyCap = 64L * 1024 * 1024;
 
 // mkdir -p + write the assembled bytes to MEMFS at /data/<rel> — the exact
 // residency key WebAssetsIsResident stats — so the existing ReadWholeFile →
@@ -295,12 +308,59 @@ void PumpSidecarFetchWeb() {
             return;   // still on the wire — nothing else to do this frame
         if (ok && gotBytes > 0) {
             size_t base = gDrv.assembly.size();
+            // Belt-and-braces (review B1): never assemble past ReadWholeFile's
+            // 64 MB ceiling — no body, however misbehaved the server, can grow
+            // the wasm heap unboundedly through this path.
+            if ((long)base + (long)gotBytes > kAssemblyCap) {
+                WebAssetsRangeDrop(gDrv.chunkReqId);   // done → freed immediately
+                gDrv.chunkReqId = 0;
+                std::vector<uint8_t>().swap(gDrv.assembly);
+                gDrv.chunkFallback = true;
+                if (RB3SharpenDriverDbg())
+                    MILO_LOG("RB3_SHARPEN: chunk assembly would exceed %ld B cap — "
+                             "falling back to single fetch\n", kAssemblyCap);
+                return;
+            }
             gDrv.assembly.resize(base + (size_t)gotBytes);
             int taken = WebAssetsRangeTake(gDrv.chunkReqId,
                                            gDrv.assembly.data() + base, gotBytes);
             gDrv.chunkReqId = 0;   // RangeTake freed the request
             if (taken != gotBytes)
                 gDrv.assembly.resize(base + (size_t)(taken > 0 ? taken : 0));
+            // Review B1: a body LARGER than requested means the server IGNORED
+            // Range (RFC 9110 §14.2 allows it — python -m http.server, Range-
+            // stripping proxies — replying 200 with the WHOLE file). A 206 can
+            // never exceed the request, so taken > chunkReqLen is a reliable
+            // tell. Without this check the short-read terminator never fires
+            // (taken >= reqLen, sidecarSize -1) and every retry appends another
+            // whole file at the wrong offset -> unbounded heap growth.
+            if (taken > gDrv.chunkReqLen) {
+                gDrv.chunkErrs = 0;
+                if (base == 0) {
+                    // The 200 body started at offset 0, so it IS the entire
+                    // file — accept it and finalize (same bytes the legacy
+                    // single fetch would have landed).
+                    gDrv.chunkOffset = taken;
+                    if (RB3SharpenDriverDbg())
+                        MILO_LOG("RB3_SHARPEN: chunk 0 got whole body (%d B > %d "
+                                 "requested — server ignored Range), accepting\n",
+                                 taken, gDrv.chunkReqLen);
+                    FinalizeSidecarAssembly();
+                } else {
+                    // Whole body appended mid-assembly at the wrong offset —
+                    // the assembly is garbage. Discard it and fall back
+                    // permanently to the legacy single whole-file fetch (which
+                    // such a server serves fine).
+                    std::vector<uint8_t>().swap(gDrv.assembly);
+                    gDrv.chunkFallback = true;
+                    if (RB3SharpenDriverDbg())
+                        MILO_LOG("RB3_SHARPEN: server ignored Range mid-assembly "
+                                 "(%d B > %d requested @ %ld) — discarding, "
+                                 "falling back to single fetch\n",
+                                 taken, gDrv.chunkReqLen, (long)base);
+                }
+                return;
+            }
             gDrv.chunkOffset += (taken > 0 ? taken : 0);
             gDrv.chunkErrs = 0;
             if (RB3SharpenDriverDbg())
@@ -329,8 +389,10 @@ void PumpSidecarFetchWeb() {
                          gDrv.chunkOffset);
             FinalizeSidecarAssembly();
         } else {
-            // Can't fetch even the first chunk (404 / Range-stripping proxy):
-            // permanent fallback to the legacy single fetch.
+            // Can't fetch even the first chunk (404 / dead server): permanent
+            // fallback to the legacy single fetch. (A Range-STRIPPING proxy
+            // never lands here — it 200s with the whole body, which the
+            // taken > chunkReqLen whole-body arm above accepts directly.)
             gDrv.chunkFallback = true;
             if (RB3SharpenDriverDbg())
                 MILO_LOG("RB3_SHARPEN: chunk 0 failed x%d — falling back to single fetch\n",
