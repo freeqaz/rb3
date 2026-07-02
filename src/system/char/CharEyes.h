@@ -47,7 +47,7 @@ public:
         float RefractoryTimeRemaining();
 
         ObjOwnerPtr<CharInterest> mInterest; // 0x0
-        float unkc; // 0xc
+        float mLastTimeStamp; // 0xc
     };
 
     CharEyes();
@@ -95,7 +95,7 @@ public:
 
     void SetInterestFilterFlags(int i) {
         mInterestFilterFlags = i;
-        unk15c = true;
+        mInterestFiltersChanged = true;
     }
 
     void ClearInterestFilterFlags() { mInterestFilterFlags = mDefaultFilterFlags; }
@@ -129,7 +129,7 @@ public:
     ObjPtr<CharFaceServo> mFaceServo; // 0x40
     /** "The weight setter for eyes tracking the camera" */
     ObjPtr<CharWeightSetter> mCamWeight; // 0x4c
-    Vector3 unk58;
+    Vector3 mTarget; // 0x58
     int mDefaultFilterFlags; // 0x64 - mask
     /** "optional bone that serves as the reference for which direction the character is
      * looking.  If not set, one of the eyes will be used" */
@@ -156,30 +156,43 @@ public:
     float mLowerLidTrackDown; // 0x94
     /** "if checked, lower lid tracking is done by rotation instead of translation" */
     bool mLowerLidTrackRotate; // 0x98
-    RndOverlay *unk9c;
+    /** the "eye_status" debug overlay */
+    RndOverlay *mOverlay; // 0x9c
     int mInterestFilterFlags; // 0xa0 - also a mask
-    Vector3 unka4; // 0xa4
-    float unkb0, unkb4, unkb8, unkbc, unkc0;
-    bool unkc4, unkc5;
-    ObjPtr<CharInterest> unkc8; // 0xc8
-    ObjPtr<CharInterest> unkd4; // 0xd4
-    int unke0;
-    bool unke4;
+    Vector3 mLastFacing; // 0xa4
+    /** cos of the angle between the facing dir and the target dir last poll */
+    float mLastCang; // 0xb0
+    /** seconds spent looking at the current interest */
+    float mLastLook; // 0xb4
+    /** default max view cone cos when no interest overrides it: cos(30 deg) */
+    float mMaxEyeCang; // 0xb8
+    float mAvDelta; // 0xbc
+    float mLastBlinkWeight; // 0xc0
+    bool mBlinkDetect; // 0xc4
+    bool mTargetTooClose; // 0xc5
+    ObjPtr<CharInterest> mCurInterest; // 0xc8
+    ObjPtr<CharInterest> mFocusInterest; // 0xd4
+    int mCurFocusPriorityClass; // 0xe0
+    bool mNewFocusInterest; // 0xe4
 #ifdef MILO_DEBUG
-    Vector3 unke8; // 0xe8 - debug: reference view direction (default: Y-axis)
+    Vector3 mLastExtrapolatedDir; // 0xe8 - reference view direction (default: Y-axis)
 #endif
-    float unkf4;
-    CharEyeDartRuleset::EyeDartRulesetData mEyeDartRulesetData;
-    bool unk124;
-    float unk128;
-    int unk12c;
-    Vector3 unk130;
-    bool unk13c;
-    float unk140;
-    int unk144;
-    float unk148, unk14c;
-    Vector3 unk150;
-    bool unk15c, unk15d;
+    float mLastHeadIKWeight; // 0xf4
+    CharEyeDartRuleset::EyeDartRulesetData mEyeDartRulesetData; // 0xf8
+    bool mDarting; // 0x124
+    float mDartNextEventTime; // 0x128
+    int mDartsRemaining; // 0x12c
+    Vector3 mCurDartOffset; // 0x130
+    /** a procedural blink is currently in progress */
+    bool mProceduralBlink; // 0x13c
+    float mBlinkTimestamp; // 0x140
+    int mBlinkWindowCount; // 0x144
+    float mBlinkWindowSecsRemaining; // 0x148
+    float mLastBlinkDetectTime; // 0x14c
+    Vector3 mDelayedTarget; // 0x150
+    bool mInterestFiltersChanged; // 0x15c
+    /** semantic (non-DWARF) name - Bank-8-added member, set by SetEnableBlinks */
+    bool mBlinksEnabled; // 0x15d
 };
 
 // class CharEyes : public RndHighlightable, public CharWeightable, public CharPollable {

@@ -67,9 +67,9 @@ public:
     RndOverlay *mLatency; // 0x5c
     RndOverlay *mDeltaTime; // 0x60
     bool unk64;
-    float unk68;
-    float unk6c;
-    float unk70;
+    float mLastDejitteredMs; // 0x68
+    float mLastDeltaMs; // 0x6c
+    float mDeltaMs; // 0x70
     ObjDirPtr<ObjectDir> mVocalPercussionBank; // 0x74
     ObjDirPtr<ObjectDir> mDrumKitBank; // 0x80
     bool mStartPaused; // 0x8c
@@ -84,8 +84,8 @@ public:
     bool mReplay; // 0x131
     DeJitter mDeJitter; // 0x134
     bool unk150;
-    bool unk151;
-    float unk154;
+    bool mPlayingTrackIntro; // 0x151
+    float mPlayingTrackIntroUntilMs; // 0x154
     LoadingState mLoadingState; // 0x158
     HitTracker *mHitTracker; // 0x15c
     DirectInstrument *mDirectInstrument; // 0x160

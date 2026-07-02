@@ -68,10 +68,10 @@ LatencyCallback gGamePanelCallback;
 GamePanel::GamePanel()
     : mGame(0), mTime(RndOverlay::Find("time", true)),
       mLatency(RndOverlay::Find("latency", true)),
-      mDeltaTime(RndOverlay::Find("delta_time", true)), unk64(1), unk68(0), unk6c(0),
-      unk70(0), mStartPaused(0), mGameState(kGameNeedIntro), mMultiEvent(0), mScoring(0),
+      mDeltaTime(RndOverlay::Find("delta_time", true)), unk64(1), mLastDejitteredMs(0), mLastDeltaMs(0),
+      mDeltaMs(0), mStartPaused(0), mGameState(kGameNeedIntro), mMultiEvent(0), mScoring(0),
       mLoadProf("game_panel_load", 1), mExcitement(kNumExcitements),
-      mLastExcitement(kNumExcitements), mReplay(0), unk150(1), unk151(0), unk154(0),
+      mLastExcitement(kNumExcitements), mReplay(0), unk150(1), mPlayingTrackIntro(0), mPlayingTrackIntroUntilMs(0),
       mLoadingState(kLoadingState_NotReady), mHitTracker(new HitTracker()),
       mDirectInstrument(new DirectInstrument()) {
     MILO_ASSERT(!TheGamePanel, 0x6B);
@@ -94,7 +94,7 @@ void GamePanel::Reset() {
     mLastExcitement = kNumExcitements;
     Export(reset_msg, true);
     mGame->Restart(true);
-    unk151 = false;
+    mPlayingTrackIntro = false;
 }
 
 void GamePanel::Load() {
@@ -376,8 +376,8 @@ void GamePanel::Poll() {
             || TheGame->mProperties.mIsPractice)) {
         StartGame();
     }
-    if (unk151 && 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime) > unk154) {
-        unk151 = false;
+    if (mPlayingTrackIntro && 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime) > mPlayingTrackIntroUntilMs) {
+        mPlayingTrackIntro = false;
     }
     if (mTime->Showing()) {
         UpdateNowBar();
@@ -396,11 +396,11 @@ void GamePanel::SetPaused(bool b1) {
 }
 
 void GamePanel::SetPlayingTrackIntroUntil(float f1) {
-    if (!unk151) {
-        unk151 = true;
-        unk154 = f1;
-    } else if (unk154 < f1) {
-        unk154 = f1;
+    if (!mPlayingTrackIntro) {
+        mPlayingTrackIntro = true;
+        mPlayingTrackIntroUntilMs = f1;
+    } else if (mPlayingTrackIntroUntilMs < f1) {
+        mPlayingTrackIntroUntilMs = f1;
     }
 }
 
@@ -504,14 +504,14 @@ void GamePanel::UpdateLatency() {
 #pragma pop
 
 void GamePanel::SetDejitteredTime(float f1) {
-    unk6c = unk70;
-    unk70 = f1 - unk68;
-    unk68 = f1;
+    mLastDeltaMs = mDeltaMs;
+    mDeltaMs = f1 - mLastDejitteredMs;
+    mLastDejitteredMs = f1;
 }
 
 void GamePanel::UpdateDeltaTimeOverlay() {
-    float t = unk70;
-    *mDeltaTime << MakeString("dt: %5.1f, ddt: %5.1f\n", t, t - unk6c);
+    float t = mDeltaMs;
+    *mDeltaTime << MakeString("dt: %5.1f, ddt: %5.1f\n", t, t - mLastDeltaMs);
 }
 
 void GamePanel::FinishLoad() {

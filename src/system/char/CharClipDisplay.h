@@ -6,12 +6,15 @@
 
 class MsgSource;
 
+/** Debug timeline row for one playing CharClip (drawn by CharDriver's
+    debug_draw). No Bank 5 DWARF exists for this class - all member names are
+    semantic, derived from Bank 8 usage. */
 class CharClipDisplay { // size 0x68
 public:
     CharClipDisplay()
-        : unk0(0), unk4(0), unk8(0), unkc(0), unk10(0), unk14(0), unk18(0), unk1c(0),
-          unk20(0), unk64(0) {
-        unk24[0] = 0;
+        : mClip(0), mStartBeat(0), mEndBeat(0), mViewStartBeat(0), mViewEndBeat(0),
+          mTextWidth(0), mY(0), mBeat(0), mBlendFrac(0), mX(0) {
+        mText[0] = 0;
     }
 
     static MsgSource *FindSource(Hmx::Object *);
@@ -33,15 +36,21 @@ public:
     static float sEm;
     static ObjectDir *sDir;
 
-    CharClip *unk0;
-    float unk4;
-    float unk8;
-    float unkc;
-    float unk10;
-    float unk14;
-    float unk18;
-    float unk1c;
-    float unk20;
-    char unk24[64];
-    float unk64;
+    /** the clip this row displays (SetClip) */
+    CharClip *mClip; // 0x0
+    float mStartBeat; // 0x4 - clip's StartBeat
+    float mEndBeat; // 0x8 - clip's EndBeat
+    /** first beat of the zoomed view window (SetStartEnd) */
+    float mViewStartBeat; // 0xc
+    /** last beat of the zoomed view window */
+    float mViewEndBeat; // 0x10
+    /** pixel width of the name label (+1 em), set by SetText */
+    float mTextWidth; // 0x14
+    float mY; // 0x18 - screen Y of this row (set by CharDriver)
+    /** current playback beat, drawn as the cursor (CharClipDriver::mBeat) */
+    float mBeat; // 0x1c
+    /** blend fraction shown next to the cursor (CharClipDriver::mBlendFrac) */
+    float mBlendFrac; // 0x20
+    char mText[64]; // 0x24 - name label
+    float mX; // 0x64 - left origin X of the row
 };

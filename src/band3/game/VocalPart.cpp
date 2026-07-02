@@ -11,13 +11,13 @@
 #include <cmath>
 
 VocalPart::VocalPart(VocalPlayer *vp, int idx)
-    : mPlayer(vp), mPartIndex(idx), mVocalNoteList(0), unk18(0), unk1c(0), unk20(0),
+    : mPlayer(vp), mPartIndex(idx), mVocalNoteList(0), mPhraseRatingTotal(0), mTotalPhrases(0), mLastPhraseScore(0),
       mRemotePhraseMeterFrac(0), mPhraseScorePartMultiplier(1.0f), mPhraseScoreMax(0),
-      unk3c(0), mPhraseScore(0), unk44(0), unk48(0), unk4c(0), unk50(0), unk54(0),
-      unk58(0), unk84(0), unk88(-1), mSpotlightPhraseID(-1), unk98(0), unk9c(FLT_MAX),
-      unka0(-FLT_MAX), unka4(0), unka8(0), mInFreestyleSection(0), unkad(0), unkb0(0),
-      unkb4(0), mFirstPhraseMsToScore(0), unkbc(-1.0f), mBestSinger(0),
-      mBestSingerPitchDistance(FLT_MAX), unkc8(6), mScoringEnabled(1), mPhraseRank(0) {
+      mPhraseScoreCapNote(0), mPhraseScore(0), mPhraseBandScore(0), mPhraseOverdriveScore(0), mPhrasesPercentagesSum(0), mPhrasesPercentagesCount(0), mLastMs(0),
+      mLastBeginNote(0), mCurBestHit(0), mCurNoteMatched(-1), mSpotlightPhraseID(-1), mFrameMatchType(0), mMinSongPitch(FLT_MAX),
+      mMaxSongPitch(-FLT_MAX), mMinPitch(0), mMaxPitch(0), mInFreestyleSection(0), mInDeployedFreeStyleSection(0), mCodaEndMs(0),
+      mCodaResolved(0), mFirstPhraseMsToScore(0), mTempoVal(-1.0f), mBestSinger(0),
+      mBestSingerPitchDistance(FLT_MAX), mColor(6), mScoringEnabled(1), mPhraseRank(0) {
     SetDifficultyVariables(mPlayer->GetUser()->GetDifficulty());
 }
 
@@ -52,14 +52,14 @@ void VocalPart::Start() {}
 void VocalPart::StartIntro() {}
 
 void VocalPart::UpdateSongMinMaxPitch() {
-    unk9c = FLT_MAX;
-    unka0 = -FLT_MAX;
+    mMinSongPitch = FLT_MAX;
+    mMaxSongPitch = -FLT_MAX;
     if (mVocalNoteList) {
         std::vector<VocalPhrase> &phrases = mVocalNoteList->mPhrases;
         FOREACH (it, phrases) {
             if (it->mNoteStart != it->mNoteEnd) {
-                unk9c = Min(unk9c, it->mMinPitch);
-                unka0 = Max(unka0, it->mMaxPitch);
+                mMinSongPitch = Min(mMinSongPitch, it->mMinPitch);
+                mMaxSongPitch = Max(mMaxSongPitch, it->mMaxPitch);
             }
         }
     }
@@ -68,20 +68,20 @@ void VocalPart::UpdateSongMinMaxPitch() {
 void VocalPart::Restart(bool b1) {
     mSpotlightPhraseID = -1;
     if (!b1) {
-        unkbc = -1.0f;
-        unk58 = 0;
-        unk3c = 0;
-        unk54 = 0;
+        mTempoVal = -1.0f;
+        mLastBeginNote = 0;
+        mPhraseScoreCapNote = 0;
+        mLastMs = 0;
         mPhraseScore = 0;
-        unk44 = 0;
-        unk48 = 0;
-        unk18 = 0;
-        unk20 = 0;
-        unk4c = 0;
-        unk50 = 0;
+        mPhraseBandScore = 0;
+        mPhraseOverdriveScore = 0;
+        mPhraseRatingTotal = 0;
+        mLastPhraseScore = 0;
+        mPhrasesPercentagesSum = 0;
+        mPhrasesPercentagesCount = 0;
         mInFreestyleSection = 0;
-        unkad = 0;
-        unkb4 = 0;
+        mInDeployedFreeStyleSection = 0;
+        mCodaResolved = 0;
         mRemotePhraseMeterFrac = 0;
         mFirstPhraseMsToScore = 0;
         CalcNoteWeights();
@@ -98,19 +98,19 @@ void VocalPart::Restart(bool b1) {
 void VocalPart::SetPaused(bool) {}
 
 void VocalPart::Jump(float f1, bool) {
-    unk58 = 0;
-    unk3c = 0;
-    unk54 = f1;
+    mLastBeginNote = 0;
+    mPhraseScoreCapNote = 0;
+    mLastMs = f1;
     mPhraseScore = 0;
-    unk44 = 0;
-    unk48 = 0;
-    unk18 = 0;
-    unk20 = 0;
-    unk4c = 0;
-    unk50 = 0;
+    mPhraseBandScore = 0;
+    mPhraseOverdriveScore = 0;
+    mPhraseRatingTotal = 0;
+    mLastPhraseScore = 0;
+    mPhrasesPercentagesSum = 0;
+    mPhrasesPercentagesCount = 0;
     mInFreestyleSection = 0;
-    unkad = 0;
-    unkb4 = 0;
+    mInDeployedFreeStyleSection = 0;
+    mCodaResolved = 0;
     mRemotePhraseMeterFrac = 0;
     mFirstPhraseMsToScore = 0;
     if (mVocalNoteList) {
@@ -130,9 +130,9 @@ void VocalPart::Jump(float f1, bool) {
 }
 
 void VocalPart::Rollback(float, float ms) {
-    unk58 = 0;
+    mLastBeginNote = 0;
     VocalNoteList * &_ref0 = mVocalNoteList;
-    unk54 = ms;
+    mLastMs = ms;
     if (_ref0 != nullptr) {
         mThisPhrase = _ref0->mPhrases.begin();
         while (mThisPhrase != _ref0->mPhrases.end()
@@ -151,7 +151,7 @@ void VocalPart::Rollback(float, float ms) {
 
 void VocalPart::LocalDeployBandEnergy() {
     if (mInFreestyleSection)
-        unkad = true;
+        mInDeployedFreeStyleSection = true;
 }
 
 void VocalPart::CalcNoteWeights() {
@@ -166,13 +166,13 @@ void VocalPart::CalcNoteWeights() {
         }
         mThisPhrase = mVocalNoteList->mPhrases.begin();
         mPhraseScoreMax = 0;
-        unk1c = 0;
+        mTotalPhrases = 0;
         for (std::vector<VocalPhrase>::const_iterator it =
                  mVocalNoteList->mPhrases.begin();
              it != mVocalNoteList->mPhrases.end();
              ++it) {
             if (it->mNoteStart != it->mNoteEnd) {
-                unk1c++;
+                mTotalPhrases++;
             }
         }
     }
@@ -302,14 +302,14 @@ void VocalPart::AddPhrasePoints(float pts) {
     float oldScore = mPhraseScore;
     float newScore = oldScore + pts;
     float cap = mPhraseScoreMax;
-    cap = Min(unk38, cap);
+    cap = Min(mPhraseScoreCap, cap);
         cap = Min(cap, newScore);
     mPhraseScore = cap;
     float delta = mPhraseScore - oldScore;
     int i1, i2, i3;
     mPlayer->GetMultiplier(true, i1, i2, i3);
-    unk44 += delta * (float)(i2 - 1);
-    unk48 += delta * (float)(i3 - 1);
+    mPhraseBandScore += delta * (float)(i2 - 1);
+    mPhraseOverdriveScore += delta * (float)(i3 - 1);
 }
 
 void VocalPart::SetPhraseScoreMultiplier(float f1) { mPhraseScorePartMultiplier = f1; }
@@ -397,13 +397,13 @@ void VocalPart::UpdateMinMaxPitch(const VocalPhrase *const &phraseRef) {
     const VocalPhrase *cur = phraseRef;
     const VocalPhrase *end = list->mPhrases.data() + list->mPhrases.size();
     if (cur == end) {
-        unka8 = 0.0f;
-        unka4 = 0.0f;
+        mMaxPitch = 0.0f;
+        mMinPitch = 0.0f;
         return;
     }
     bool foundPitchedNote = false;
-    unka4 = FLT_MAX;
-    unka8 = -FLT_MAX;
+    mMinPitch = FLT_MAX;
+    mMaxPitch = -FLT_MAX;
     while (cur != end) {
         int lastNote = cur->mNoteEnd;
         int noteIdx = cur->mNoteStart;
@@ -412,8 +412,8 @@ void VocalPart::UpdateMinMaxPitch(const VocalPhrase *const &phraseRef) {
             for (int i = 0; i < noteCount; ++i) {
                 if (!list->mNotes[noteIdx].mUnpitchedNote) {
                     foundPitchedNote = true;
-                    unka4 = (cur->mMinPitch < unka4) ? cur->mMinPitch : unka4;
-                    unka8 = (unka8 < cur->mMaxPitch) ? cur->mMaxPitch : unka8;
+                    mMinPitch = (cur->mMinPitch < mMinPitch) ? cur->mMinPitch : mMinPitch;
+                    mMaxPitch = (mMaxPitch < cur->mMaxPitch) ? cur->mMaxPitch : mMaxPitch;
                     break;
                 }
                 ++noteIdx;
@@ -424,13 +424,13 @@ void VocalPart::UpdateMinMaxPitch(const VocalPhrase *const &phraseRef) {
         cur++;
     }
     if (!foundPitchedNote) {
-        unka4 = 50.0f;
-        unka8 = 67.0f;
+        mMinPitch = 50.0f;
+        mMaxPitch = 67.0f;
         return;
     }
-    if (unka4 == unka8) {
-        unka4 -= 5.0f;
-        unka8 += 5.0f;
+    if (mMinPitch == mMaxPitch) {
+        mMinPitch -= 5.0f;
+        mMaxPitch += 5.0f;
     }
 }
 
@@ -482,16 +482,16 @@ int VocalPart::NumPracticePhrases(const std::vector<VocalPhrase> &phrases) const
 }
 
 float VocalPart::GetOverallPartHitPercentage() const {
-    if (unk50 == 0) return 0.0f;
-    float fPercentage = unk4c / (float)unk50;
+    if (mPhrasesPercentagesCount == 0) return 0.0f;
+    float fPercentage = mPhrasesPercentagesSum / (float)mPhrasesPercentagesCount;
     MILO_ASSERT_RANGE_EQ(fPercentage, 0.0f, 1.0f, 0x6d6);
     return fPercentage;
 }
 
 float VocalPart::GetPartHitPercentage(const std::vector<VocalPhrase> &phrases, int, int) const {
-    if (unk50 == 0) return 0.0f;
+    if (mPhrasesPercentagesCount == 0) return 0.0f;
     int numPhrases = NumPracticePhrases(phrases);
-    float fPercentage = unk4c / (float)numPhrases;
+    float fPercentage = mPhrasesPercentagesSum / (float)numPhrases;
     MILO_ASSERT_RANGE_EQ(fPercentage, 0.0f, 1.0f, 0x6e4);
     return fPercentage;
 }
@@ -514,8 +514,8 @@ void VocalPart::AfterPoll(float ms) {
     int beginNote;
     int endNote;
     GetNoteRange(ms, beginNote, endNote);
-    unk58 = beginNote & ~(beginNote >> 31);
-    unk54 = ms;
+    mLastBeginNote = beginNote & ~(beginNote >> 31);
+    mLastMs = ms;
 }
 
 bool PitchBetween(float pitch, float a, float b, float &out) {
@@ -645,25 +645,25 @@ void VocalPart::Poll(float ms, const SongPos &) {
         mInFreestyleSection = true;
     } else {
         mInFreestyleSection = false;
-        unkad = false;
+        mInDeployedFreeStyleSection = false;
     }
     mPlayer->IsNet();
-    if (mPlayer->mIsInCoda && ms > unkb0) {
-        unkb4 = true;
+    if (mPlayer->mIsInCoda && ms > mCodaEndMs) {
+        mCodaResolved = true;
     }
     if (mInFreestyleSection) {
-        unk98 = 3;
+        mFrameMatchType = 3;
     } else if (mPlayer->InTambourinePhrase()) {
-        unk98 = 2;
+        mFrameMatchType = 2;
     } else {
-        unk98 = 0;
+        mFrameMatchType = 0;
     }
     int beginNote = -1;
     int endNote = -1;
     GetNoteRange(ms, beginNote, endNote);
-    while (endNote > unk3c && unk3c < mThisPhrase->mNoteEnd) {
-        unk38 += mPhraseScoreCapGrowth * mNoteWeights[unk3c];
-        unk3c++;
+    while (endNote > mPhraseScoreCapNote && mPhraseScoreCapNote < mThisPhrase->mNoteEnd) {
+        mPhraseScoreCap += mPhraseScoreCapGrowth * mNoteWeights[mPhraseScoreCapNote];
+        mPhraseScoreCapNote++;
     }
     int noteCount = mVocalNoteList->mNotes.size();
     int *pEnd = (noteCount < endNote) ? &noteCount : &endNote;
@@ -677,7 +677,7 @@ void VocalPart::Poll(float ms, const SongPos &) {
         }
     }
     if (allUnpitched && beginNote != lastNote) {
-        unk98 = 1;
+        mFrameMatchType = 1;
     }
     VocalFrameSpewData *spew = mPlayer->mFrameSpewData;
     if (spew) {
@@ -711,7 +711,7 @@ void VocalPart::HandlePhraseEnd(
             endMs = startMs;
         }
         o_rRating = -1;
-        unk20 = 0.0f;
+        mLastPhraseScore = 0.0f;
         if (mPlayer->ScoringEnabled()
             && mThisPhrase
                 != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()
@@ -721,18 +721,18 @@ void VocalPart::HandlePhraseEnd(
             if (scoreMax != 0.0f) {
                 int rating = mPlayer->CalculatePhraseRating(mPhraseScore / scoreMax);
                 o_rRating = rating;
-                unk18 += rating;
+                mPhraseRatingTotal += rating;
                 float denom = mPhraseScoreMax;
                 float mult = mPhraseScorePartMultiplier * (float)mPhraseValue;
                 int accPts = (int)(0.5 + (double)((mPhraseScore * mult) / denom));
-                int bandPts = (int)(0.5 + (double)((unk44 * mult) / denom));
-                int odPts = (int)(0.5 + (double)((unk48 * mult) / denom));
+                int bandPts = (int)(0.5 + (double)((mPhraseBandScore * mult) / denom));
+                int odPts = (int)(0.5 + (double)((mPhraseOverdriveScore * mult) / denom));
                 int total = odPts + (bandPts + accPts);
                 if (total > 0) {
                     int m1, m2, m3;
                     mPlayer->GetMultiplier(true, m1, m2, m3);
                     int indMult = mPlayer->GetIndividualMultiplier();
-                    unk20 = (float)(indMult * total);
+                    mLastPhraseScore = (float)(indMult * total);
                     if (mPhraseRank == 0) {
                         mPlayer->AddAccuracyStat(accPts);
                     } else {
@@ -741,7 +741,7 @@ void VocalPart::HandlePhraseEnd(
                     mPlayer->AddScoreStreakStat((float)(accPts * (indMult - 1)));
                     mPlayer->AddOverdriveStat((float)(odPts * indMult));
                     mPlayer->AddBandContributionStat((float)(bandPts * indMult));
-                    mPlayer->AddPoints(unk20, false, false);
+                    mPlayer->AddPoints(mLastPhraseScore, false, false);
                 }
             }
         }
@@ -761,21 +761,21 @@ void VocalPart::HandlePhraseEnd(
             UpdateMinMaxPitch(phrase);
         }
         if (mPlayer->ScoringEnabled() && mPhraseScoreMax > 0.0f) {
-            unk4c += FramePhraseMeterFrac();
-            unk50 += 1;
+            mPhrasesPercentagesSum += FramePhraseMeterFrac();
+            mPhrasesPercentagesCount += 1;
         }
         int prevScore = (int)mPhraseScore;
         if (mPlayer->ScoringEnabled()) {
             mPhraseScore = 0.0f;
-            unk44 = 0.0f;
-            unk48 = 0.0f;
-            unk38 = 0.0f;
+            mPhraseBandScore = 0.0f;
+            mPhraseOverdriveScore = 0.0f;
+            mPhraseScoreCap = 0.0f;
         }
         if (phrase != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()) {
             if (phrase->mNoteStart > 0) {
                 const VocalNote &prev = mVocalNoteList->mNotes[phrase->mNoteStart - 1];
                 if (prev.mMs + prev.mDurationMs > phrase->mStartMs) {
-                    unk3c -= 1;
+                    mPhraseScoreCapNote -= 1;
                 }
             }
             mPhraseScoreMax = CalcPhraseScoreMax(phrase);
@@ -811,7 +811,7 @@ void VocalPart::ScoreSinger(
     float &o_rPitchDiff
 ) {
     MILO_ASSERT(o_rCache.GetHitPercentage() == 0.0f, 0x2C3);
-    o_rCache.mPhrasePointsCap = Min(unk38, mPhraseScoreMax);
+    o_rCache.mPhrasePointsCap = Min(mPhraseScoreCap, mPhraseScoreMax);
     o_rPitchDiff = kInvalidPitch__11VocalPlayer;
     if (arg1 == 0.0f && NoteAt__13VocalNoteListCFf(mVocalNoteList, ms) == 0) {
         o_rCache.mHitPercentage = 1.0f;
@@ -841,9 +841,9 @@ void VocalPart::ScoreSinger(
             o_rPitchDiff = diff + 12.0f;
         }
         if (mVocalNoteList->mNotes[noteMatched].mUnpitchedNote) {
-            unk98 = 1;
+            mFrameMatchType = 1;
         } else {
-            unk98 = 0;
+            mFrameMatchType = 0;
         }
     }
     o_rCache.mHitPercentage = score;
@@ -939,7 +939,7 @@ float VocalPart::ScoreNote(
         if (score < 0.01f)
             score = 0.0f;
     }
-    if (GetNoteSliceWeight(unk54, ms, noteIdx) == 0.0f)
+    if (GetNoteSliceWeight(mLastMs, ms, noteIdx) == 0.0f)
         score = 0.0f;
     return score;
 }
@@ -949,7 +949,7 @@ void VocalPart::CalculateScore(
 ) const {
     if (noteIdx == -1)
         return;
-    float sliceWeight = GetNoteSliceWeight(unk54, ms, noteIdx);
+    float sliceWeight = GetNoteSliceWeight(mLastMs, ms, noteIdx);
     VocalNote &note = mVocalNoteList->mNotes[noteIdx];
     float noteMult;
     if (!note.mUnpitchedNote) {
@@ -965,17 +965,17 @@ void VocalPart::CalculateScore(
     VocalFrameSpewData *spew = mPlayer->mFrameSpewData;
     if (spew) {
         spew->mPartData[mPartIndex].mUncappedFramePoints = framePoints;
-        spew->mPartData[mPartIndex].mPointsCap = unk38;
+        spew->mPartData[mPartIndex].mPointsCap = mPhraseScoreCap;
         spew->mPartData[mPartIndex].mHitPercentage = mult;
         spew->mPartData[mPartIndex].mWeight = sliceWeight;
         spew->mPartData[mPartIndex].mNoteMultiplier = noteMult;
     }
     cache.mUncappedFramePoints = framePoints;
-    if (unk38 < mPhraseScore + framePoints)
-        framePoints = unk38 - mPhraseScore;
+    if (mPhraseScoreCap < mPhraseScore + framePoints)
+        framePoints = mPhraseScoreCap - mPhraseScore;
     cache.mFramePoints = framePoints;
     float capped =
-        Min(Min(unk38, mPhraseScoreMax), sliceWeight * noteMult + mPhraseScore);
+        Min(Min(mPhraseScoreCap, mPhraseScoreMax), sliceWeight * noteMult + mPhraseScore);
     float delta = capped - mPhraseScore;
     if (delta < 0.0f)
         delta = 0.0f;

@@ -8,8 +8,8 @@ class OverdriveTracker : public Tracker {
 public:
     class DeployData {
     public:
-        bool unk0;
-        bool unk1;
+        bool mCanDeploy; // 0x0
+        bool mIsDeploying; // 0x1
     };
 
     OverdriveTracker(TrackerSource *, TrackerBandDisplay &, TrackerBroadcastDisplay &);
@@ -29,23 +29,23 @@ public:
     virtual TrackerChallengeType GetChallengeType() const {
         return (TrackerChallengeType)2;
     }
-    virtual float GetCurrentValue() const { return unka0; }
+    virtual float GetCurrentValue() const { return mPastDurationBeats; }
     virtual void SavePlayerStats() const;
 
     void UpdateTimeRemainingDisplay();
     void LocalEndDeployStreak(float);
     void RemoteEndDeployStreak(Player *, int);
 
-    std::map<TrackerPlayerID, DeployData> unk58; // 0x58
-    TrackerMultiplierMap unk70; // 0x70
-    float unk8c;
-    float unk90;
-    float unk94;
-    float unk98;
-    float unk9c;
-    float unka0;
-    float unka4;
-    int unka8;
-    float unkac;
-    bool unkb0; // 0xb0
+    std::map<TrackerPlayerID, DeployData> mDeployData; // 0x58
+    TrackerMultiplierMap mChainMultipliers; // 0x70
+    float mDeployBeats; // 0x8c
+    float mDeployStartBeat; // 0x90
+    float mDeployStartMs; // 0x94
+    float mCurrentDurationBeats; // 0x98
+    float mCurrentDurationMs; // 0x9c
+    float mPastDurationBeats; // 0xa0
+    float mCurrentMultiplier; // 0xa4
+    int mCurrentMultiplierIndex; // 0xa8
+    float mLastUpdateMs; // 0xac
+    bool mWasDeploying; // 0xb0
 };

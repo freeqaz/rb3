@@ -39,8 +39,8 @@ GemTrainerPanel *TheGemTrainerPanel;
 GemTrainerPanel::GemTrainerPanel()
     : mGemPlayer(0), mTrack(0), mGemManager(0), mDifficulty(kDifficultyEasy),
       mLocalUser(0), mWriteTick(0), mScoreTick(0), mAddBeatMask(0),
-      mAddBeatMaskImmediately(0), mNumLoops(0), unkb0(0), mMetronome(0), unkbc(-1.0f),
-      unkc0(-1.0f), mDrawTab(0), unkc9(0), unkcc(-1), unkd0(0) {
+      mAddBeatMaskImmediately(0), mNumLoops(0), mNumGemCopies(0), mMetronome(0), mSectionStartOffset(-1.0f),
+      mSectionEndOffset(-1.0f), mDrawTab(0), unkc9(0), unkcc(-1), mHandledDifficultyChange(0) {
     mTab = new TrainerGemTab();
     mMetronome = new Metronome();
 }
@@ -57,7 +57,7 @@ void GemTrainerPanel::Enter() {
     mLocalUser = 0;
     mGemPlayer = 0;
     mTrack = 0;
-    unkd0 = 0;
+    mHandledDifficultyChange = 0;
     std::vector<LocalBandUser *> users;
     TheBandUserMgr->GetLocalParticipants(users);
     for (int i = 0; i < users.size() && !mGemPlayer; i++) {
@@ -141,14 +141,14 @@ void GemTrainerPanel::Poll() {
     UIPanel::Poll();
     if (mGemManager && mGemPlayer && GetCurrSection() >= 0) {
         if (TheGame->IsWaiting()) {
-            if (mDifficulty != mLocalUser->GetDifficulty() && !unkd0) {
+            if (mDifficulty != mLocalUser->GetDifficulty() && !mHandledDifficultyChange) {
                 for (int i = 0; i < (int)mGemPlayer->mGemStatus->mGems.size(); i++) {
                     mGemPlayer->mGemStatus->Set0x40(i);
                 }
-                unkd0 = true;
+                mHandledDifficultyChange = true;
             }
         } else {
-            unkd0 = false;
+            mHandledDifficultyChange = false;
             if (mAddBeatMaskImmediately) {
                 TrainerSection &sect = GetSection(GetCurrSection());
                 int ticks = GetSectionTicks(GetCurrSection());
@@ -263,12 +263,12 @@ void GemTrainerPanel::StartSectionImpl() {
     mTrack->GetBandTrack()->PracticeReset();
     TrainerSection &sect = GetSection(GetCurrSection());
     if (mGemPlayer->GetTrackType() == kTrackRealKeys) {
-        unkbc = mTrack->TickToOffset(sect.GetStartTick());
-        unkc0 = mTrack->TickToOffset(sect.GetEndTick());
+        mSectionStartOffset = mTrack->TickToOffset(sect.GetStartTick());
+        mSectionEndOffset = mTrack->TickToOffset(sect.GetEndTick());
         float range = mTrack->GetRange();
         MILO_ASSERT(range == 10.0f, 0x191);
-        mTrack->OverrideRangeShift(range, unkbc);
-        unkc4 = -1.0f;
+        mTrack->OverrideRangeShift(range, mSectionStartOffset);
+        mCurrentRangeOffset = -1.0f;
     }
     SetLoopPoints();
     int i30 = -1;
@@ -293,7 +293,7 @@ void GemTrainerPanel::StartSectionImpl() {
     mAddBeatMask = false;
     mAddBeatMaskImmediately = true;
     mNumLoops = 0;
-    unkb0 = 0;
+    mNumGemCopies = 0;
     unkc9 = false;
     unkcc = -1;
     static Message msgUpdate("update_thermometer", 0);
@@ -332,7 +332,7 @@ void GemTrainerPanel::CopyGems(int tick) {
         mGemManager->ClearMissedPhrases();
         mTrack->GetTrackDir()->ClearAllGemWidgets();
         TheSongDB->RecalculateGemTimes(mGemPlayer->GetTrackNum());
-        if (unkb0 == 0) {
+        if (mNumGemCopies == 0) {
             i5 = 0;
             i1 = mPattern.size();
         } else {
@@ -361,7 +361,7 @@ void GemTrainerPanel::CopyGems(int tick) {
         }
         mGemManager->SetupGems(0);
         mWriteTick += GetLoopTicks(GetCurrSection());
-        unkb0++;
+        mNumGemCopies++;
         PostCopyGems();
     }
 }
@@ -369,7 +369,7 @@ void GemTrainerPanel::CopyGems(int tick) {
 const GameGem &GemTrainerPanel::GetLastGameGemInSection(int &gemID) const {
     MILO_ASSERT(!mPattern.empty(), 0x221);
     gemID = mPattern.size() * 2 - 1;
-    if (unkb0 == 0)
+    if (mNumGemCopies == 0)
         gemID = mPattern.size() - 1;
     return mGameGemLists[mLocalUser->GetDifficulty()]->GetGem(gemID);
 }
@@ -383,22 +383,22 @@ void GemTrainerPanel::HandleTrackShifting() {
     float range = mTrack->GetRange();
     MILO_ASSERT(range == 10.0f, 0x233);
     int tick = GetTick();
-    if (unkc4 < 0 || tick < sect.GetStartTick()) {
-        mTrack->OverrideRangeShift(range, unkbc);
-        unkc4 = mTrack->GetOffset();
+    if (mCurrentRangeOffset < 0 || tick < sect.GetStartTick()) {
+        mTrack->OverrideRangeShift(range, mSectionStartOffset);
+        mCurrentRangeOffset = mTrack->GetOffset();
     } else {
         tick = GetLoopTick(tick);
         if (tick > sect.GetEndTick()) {
-            if (unkc4 < unkbc) {
-                unkc4 += TheTaskMgr.DeltaSeconds() * 10.0f;
-                unkc4 = Min(unkc4, unkbc);
-            } else if (unkc4 > unkbc) {
-                unkc4 -= TheTaskMgr.DeltaSeconds() * 10.0f;
-                unkc4 = Max(unkc4, unkbc);
+            if (mCurrentRangeOffset < mSectionStartOffset) {
+                mCurrentRangeOffset += TheTaskMgr.DeltaSeconds() * 10.0f;
+                mCurrentRangeOffset = Min(mCurrentRangeOffset, mSectionStartOffset);
+            } else if (mCurrentRangeOffset > mSectionStartOffset) {
+                mCurrentRangeOffset -= TheTaskMgr.DeltaSeconds() * 10.0f;
+                mCurrentRangeOffset = Max(mCurrentRangeOffset, mSectionStartOffset);
             }
-            mTrack->OverrideRangeShift(range, unkc4);
+            mTrack->OverrideRangeShift(range, mCurrentRangeOffset);
         } else {
-            unkc4 = mTrack->GetOffset();
+            mCurrentRangeOffset = mTrack->GetOffset();
         }
     }
 }
@@ -476,7 +476,7 @@ float GemTrainerPanel::GetLessonCompleteSpeed(int i1) const {
 bool GemTrainerPanel::ShouldDrawTab() const { return mDrawTab; }
 
 bool GemTrainerPanel::ShouldStartEarly() const {
-    return TrainerPanel::ShouldStartEarly() || (unkbc != unkc0);
+    return TrainerPanel::ShouldStartEarly() || (mSectionStartOffset != mSectionEndOffset);
 }
 
 void GemTrainerPanel::NewDifficulty(int i1, int i2) {

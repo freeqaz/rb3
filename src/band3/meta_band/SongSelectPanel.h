@@ -34,9 +34,9 @@ public:
 #endif
 
     Leaderboard *mLeaderboard; // 0x44
-    AppMiniLeaderboardDisplay *unk48; // 0x48
-    float unk4c;
-    float unk50;
-    bool unk54;
-    float unk58;
+    AppMiniLeaderboardDisplay *mMiniLeaderboard; // 0x48
+    float mRotationOffSecs; // 0x4c
+    float mRotationOnSecs; // 0x50
+    bool mLeaderboardShowing; // 0x54
+    float mLastRotateSecs; // 0x58
 };

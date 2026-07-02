@@ -88,23 +88,23 @@ public:
     VocalNoteList *mVocalNoteList; // 0x8
     std::pair<float, float> *mFreestyleSection; // 0xc
     std::vector<float> mNoteWeights; // 0x10
-    int unk18;
-    int unk1c;
-    float unk20;
-    int unk24;
-    int unk28;
+    int mPhraseRatingTotal; // 0x18
+    int mTotalPhrases; // 0x1c
+    float mLastPhraseScore; // 0x20
+    int mTotalTambourinePoints; // 0x24
+    int mBonusTambourinePoints; // 0x28
     float mRemotePhraseMeterFrac; // 0x2c
     float mPhraseScorePartMultiplier; // 0x30
     float mPhraseScoreMax; // 0x34
-    float unk38;
-    int unk3c;
+    float mPhraseScoreCap; // 0x38
+    int mPhraseScoreCapNote; // 0x3c
     float mPhraseScore; // 0x40
-    float unk44;
-    float unk48;
-    float unk4c;
-    int unk50;
-    float unk54;
-    int unk58;
+    float mPhraseBandScore; // 0x44
+    float mPhraseOverdriveScore; // 0x48
+    float mPhrasesPercentagesSum; // 0x4c
+    int mPhrasesPercentagesCount; // 0x50
+    float mLastMs; // 0x54
+    int mLastBeginNote; // 0x58
     const VocalPhrase *mThisPhrase; // 0x5c
     int mPhraseValue; // 0x60
     float mSlop; // 0x64
@@ -115,25 +115,25 @@ public:
     float mShortNoteThresh; // 0x78
     float mShortNoteMult; // 0x7c
     float mNoteLengthFactor; // 0x80
-    float unk84;
-    int unk88;
+    float mCurBestHit; // 0x84
+    int mCurNoteMatched; // 0x88
     int mSpotlightPhraseID; // 0x8c
     float mNonPitchEasyMultiplier; // 0x90
     float mPhraseScoreCapGrowth; // 0x94
-    int unk98;
-    float unk9c;
-    float unka0;
-    float unka4;
-    float unka8;
+    int mFrameMatchType; // 0x98
+    float mMinSongPitch; // 0x9c
+    float mMaxSongPitch; // 0xa0
+    float mMinPitch; // 0xa4
+    float mMaxPitch; // 0xa8
     bool mInFreestyleSection; // 0xac
-    bool unkad;
-    float unkb0;
-    bool unkb4;
+    bool mInDeployedFreeStyleSection; // 0xad
+    float mCodaEndMs; // 0xb0
+    bool mCodaResolved; // 0xb4
     float mFirstPhraseMsToScore; // 0xb8
-    float unkbc;
+    float mTempoVal; // 0xbc
     Singer *mBestSinger; // 0xc0
     float mBestSingerPitchDistance; // 0xc4
-    int unkc8;
+    int mColor; // 0xc8 - VocalHUDColor
     bool mScoringEnabled; // 0xcc
     int mPhraseRank; // 0xd0
     float mTalkyEnergyThreshold; // 0xd4

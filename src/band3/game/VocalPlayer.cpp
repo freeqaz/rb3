@@ -443,7 +443,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         pPart->Poll(fCompMS, pos);
         pPart->ClearSingerCandidates();
 
-        int dimState = pPart->unk98;
+        int dimState = pPart->mFrameMatchType;
         bSomePitched = bSomePitched | (dimState == 0);
         bSomeUnpitched = bSomeUnpitched | ((dimState - 1) == 0);
 

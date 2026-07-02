@@ -91,7 +91,7 @@ void VocalOverlay::AppendPartData(const std::vector<VocalPart *> &parts) {
     FOREACH (it, parts) {
         const VocalPart *cur = *it;
         char c = '?';
-        switch (cur->unk98) {
+        switch (cur->mFrameMatchType) {
         case 0:
             c = 'p';
             break;
@@ -108,8 +108,8 @@ void VocalOverlay::AppendPartData(const std::vector<VocalPart *> &parts) {
         if (it != parts.begin())
             mFooterString += "  ||  ";
         mFooterString +=
-            MakeString("p%i: %c %4i pts", cur->PartIndex() + 1, c, (int)cur->unk20);
-        i6 += (int)cur->unk20;
+            MakeString("p%i: %c %4i pts", cur->PartIndex() + 1, c, (int)cur->mLastPhraseScore);
+        i6 += (int)cur->mLastPhraseScore;
     }
     mFooterString += MakeString("    total pts: %4i", i6);
 }

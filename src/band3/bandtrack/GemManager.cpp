@@ -43,11 +43,11 @@ DataNode SetKeyGlow(DataArray *arr) {
 GemManager::GemManager(const TrackConfig &cfg, TrackDir *dir)
     : mTrackDir(dir), mTrackConfig(cfg), mTemplate(cfg),
       mConfig(SystemConfig("track_graphics")), mGemData(0), mGemsEnabledStart(0),
-      mBegin(0), mEnd(0), unkb8(TheGame->mDrumFillsMod), mNowBar(0), mBonusGems(0), mInCoda(0), unkc4(0),
-      unkc8(dir->SecondsToY(dir->TopSeconds())),
-      unkcc(dir->SecondsToY(dir->BottomSeconds())), mTailsGrp(0), unkfc(0), unk100(0),
-      unk104(0), mEnabledSlots(0), unk10c(0), mNextArpeggioPhrase(0), unk12c(0),
-      unk130(-1), unk134(960) {
+      mBegin(0), mEnd(0), mUseFills(TheGame->mDrumFillsMod), mNowBar(0), mBonusGems(0), mInCoda(0), mWhammyActive(0),
+      kHorizonY(dir->SecondsToY(dir->TopSeconds())),
+      kRemoveY(dir->SecondsToY(dir->BottomSeconds())), mTailsGrp(0), mGuitarSmasherPlate(0), mDrumSmasherPlate(0),
+      mKeySmasherPlate(0), mEnabledSlots(0), mUnisonUntilTick(0), mNextArpeggioPhrase(0), mArpeggioTargetOffsetY(0),
+      mLastRGChordId(-1), mRGRunSpaceTicks(960) {
     mNowBar = new NowBar(mTrackDir, mTrackConfig);
     mTemplate.Init(mTrackDir->Find<ObjectDir>("gem_tail", true));
     static bool firstPass = true;
@@ -56,12 +56,12 @@ GemManager::GemManager(const TrackConfig &cfg, TrackDir *dir)
             SystemConfig("track_graphics")->FindInt("key_glow_threshold_ticks");
         firstPass = false;
     }
-    unk134 = SystemConfig("track_graphics")->FindInt("rg_run_space_ticks");
+    mRGRunSpaceTicks = SystemConfig("track_graphics")->FindInt("rg_run_space_ticks");
     SetupGems(0);
     UpdateLeftyFlip(false);
     DataRegisterFunc("set_key_glow", SetKeyGlow);
-    unk12c = mTrackDir->Find<RndDir>("chord_shape_outline", true)->mLocalXfm.v.y + 0.01f;
-    unkd8.reserve(10);
+    mArpeggioTargetOffsetY = mTrackDir->Find<RndDir>("chord_shape_outline", true)->mLocalXfm.v.y + 0.01f;
+    mUsedWidgets.reserve(10);
 }
 
 GemManager::~GemManager() {
@@ -96,7 +96,7 @@ void GemManager::InitRGTuning(BandUser *bandUser) {
 
 void GemManager::DrawTrackMasks(int i1, int i2) {
     for (int i = i2 != -1 ? i2 : i1; i <= i1; i += 0xf0) {
-        if (i > unk10c) {
+        if (i > mUnisonUntilTick) {
             int i174 = 0;
             int i3 = i;
             if (TheGame->InTrainer()) {
@@ -116,7 +116,7 @@ void GemManager::DrawTrackMasks(int i1, int i2) {
                     w->AddInstance(
                         tf98, TickToSeconds(ext170.unk4) - TickToSeconds(ext170.unk0)
                     );
-                    unk10c = ext170.unk4 + i174;
+                    mUnisonUntilTick = ext170.unk4 + i174;
                 }
             }
         }
@@ -207,7 +207,7 @@ void GemManager::ResetArpeggios(float f1) {
 }
 
 void GemManager::UpdateArpeggios(float f1, bool b2) {
-    float ms = mTrackDir->YToSeconds(unk12c) * 1000.0f + f1;
+    float ms = mTrackDir->YToSeconds(mArpeggioTargetOffsetY) * 1000.0f + f1;
     int i1 = MsToTickInt(ms);
     while (!mActiveArpeggios.empty()) {
         ArpeggioPhrase *currentArpeggio = mActiveArpeggios.front();
@@ -249,7 +249,7 @@ void GemManager::ClearTrackMasks() {
             Symbol name = unisonArr->Sym(1);
             GetWidgetByName(name)->Clear();
         }
-        unk10c = 0;
+        mUnisonUntilTick = 0;
     }
 }
 void GemManager::SetupRealGuitarFretPos() {
@@ -285,7 +285,7 @@ void GemManager::SetupRealGuitarFretPos() {
             } else {
                 if (!gameGems.empty()) {
                     GameGem &last = gameGems.back();
-                    if (curGameGem.GetTick() - last.GetTick() > unk134) {
+                    if (curGameGem.GetTick() - last.GetTick() > mRGRunSpaceTicks) {
                         ProcessRealGuitarRun(gameGems, i38);
                         i2 = curGameGem.GetLowestString();
                         gameGems.push_back(curGameGem);
@@ -513,7 +513,7 @@ void GemManager::SetupGems(int startTick) {
     int nextFretForTrill = -1;
     int trillString = -1;
     int arrhythmicEndTick = -1;
-    unk130 = -1;
+    mLastRGChordId = -1;
     mNextArpeggioPhrase = 0;
     ClearArpeggios();
     ClearTrackMasks();
@@ -544,7 +544,7 @@ void GemManager::SetupGems(int startTick) {
         int gemTick = gem.mTick;
         bool isHopo = false;
         bool isInFill = false;
-        if (((unkb8 && bandUser->GetTrackType() != 0) ||
+        if (((mUseFills && bandUser->GetTrackType() != 0) ||
              TheSongDB->IsInCoda(gemTick)) &&
             TheGame->mProperties.mEnableCoda) {
             isInFill = true;
@@ -757,7 +757,7 @@ void GemManager::SetupGems(int startTick) {
                 (1000.0f * mTrackDir->ViewTimeSeconds()) + (prevGem.mMs + (float)prevGem.mDurationMs);
         }
         int rgChordID = gem.GetRGChordID();
-        if (rgChordID == unk130 && gem.IsRealGuitarChord() && isImmediate) {
+        if (rgChordID == mLastRGChordId && gem.IsRealGuitarChord() && isImmediate) {
             newGem.mIsRepeatChord = true;
             if (!gem.IsMuted() && gem.mTick >= lastArpeggioEndTick) {
                 int endTick = gem.mTick;
@@ -774,9 +774,9 @@ void GemManager::SetupGems(int startTick) {
         } else {
             EndRepeatedChordPhrase(repeatedChordStartTick, repeatedChordEndTick, repeatedChordGemId);
             if (gem.IsRealGuitarChord() && !gem.IsMuted()) {
-                unk130 = rgChordID;
+                mLastRGChordId = rgChordID;
             } else {
-                unk130 = -1;
+                mLastRGChordId = -1;
             }
             if (gem.IsRealGuitarChord() && !gem.IsMuted() && gem.mTick >= lastArpeggioEndTick) {
                 repeatedChordGemId = i;
@@ -1042,7 +1042,7 @@ void GemManager::PollVisibleGems(float f1, float f2) {
     float top = mTrackDir->TopSeconds() + div;
     float bot = mTrackDir->BottomSeconds() + div;
     for (int i = mBegin; i < mEnd; i++) {
-        mGems[i].Poll(f1, f2, unkc4, top, bot);
+        mGems[i].Poll(f1, f2, mWhammyActive, top, bot);
     }
 }
 
@@ -1058,9 +1058,9 @@ Symbol GemManager::GetTypeForGem(int gemId) {
             int gsz = player && player->mGemStatus ? player->mGemStatus->GetSize() : -1;
             int ign = (player && player->mGemStatus && gsz > gemId) ? (int)player->mGemStatus->GetIgnored(gemId) : -1;
             int g40 = (player && player->mGemStatus && gsz > gemId) ? (int)player->mGemStatus->Get0x40(gemId) : -1;
-            MILO_LOG("GEM_DBG: GetTypeForGem id=%d gemMs=%.1f enabledStart=%.1f unkb8=%d inFill=%d gsz=%d ign=%d g40=%d\n",
-                     gemId, gem.GetMs(), mGemsEnabledStart, (int)unkb8,
-                     (int)(unkb8 && IsInFill(gemTick)), gsz, ign, g40);
+            MILO_LOG("GEM_DBG: GetTypeForGem id=%d gemMs=%.1f enabledStart=%.1f mUseFills=%d inFill=%d gsz=%d ign=%d g40=%d\n",
+                     gemId, gem.GetMs(), mGemsEnabledStart, (int)mUseFills,
+                     (int)(mUseFills && IsInFill(gemTick)), gsz, ign, g40);
         }
     }
 #endif
@@ -1072,7 +1072,7 @@ Symbol GemManager::GetTypeForGem(int gemId) {
             }
         }
     }
-    if (unkb8 && IsInFill(gemTick)) {
+    if (mUseFills && IsInFill(gemTick)) {
         return invisible;
     }
     if ((unsigned int)(fillLogic - 1) <= 1U && IsEndOfFill(gemTick)) {
@@ -1197,11 +1197,11 @@ void GemManager::AddChordBracket(Symbol gemType, unsigned int slots, float ms) {
 }
 
 void GemManager::RememberChordWidget(TrackWidget *w) {
-    for (int i = 0; i < unkd8.size(); i++) {
-        if (unkd8[i] == w)
+    for (int i = 0; i < mUsedWidgets.size(); i++) {
+        if (mUsedWidgets[i] == w)
             return;
     }
-    unkd8.push_back(w);
+    mUsedWidgets.push_back(w);
 }
 
 void GemManager::AddWidgetInstanceImpl(TrackWidget *w, int ui, float f) {
@@ -1387,8 +1387,8 @@ void GemManager::CheckRemoveChordBracket(int gemId) {
     }
     if (allHit) {
         float ms = gem.GetMs() / 1000.0f;
-        for (int i = 0; i < unkd8.size(); i++) {
-            unkd8[i]->RemoveAt(ms);
+        for (int i = 0; i < mUsedWidgets.size(); i++) {
+            mUsedWidgets[i]->RemoveAt(ms);
         }
     }
 }
@@ -1503,11 +1503,11 @@ void GemManager::PollHelper(float ms, const PlayerState &state) {
     }
 #endif
     if (state.whammyActive) {
-        float up = unkc4 + 0.1f;
-        unkc4 = std::min(1.0f, up);
+        float up = mWhammyActive + 0.1f;
+        mWhammyActive = std::min(1.0f, up);
     } else {
-        float down = unkc4 - 0.1f;
-        unkc4 = std::max(0.0f, down);
+        float down = mWhammyActive - 0.1f;
+        mWhammyActive = std::max(0.0f, down);
     }
     DrawTrackMasks(MsToTickInt(top * 1000.0f), -1);
     UpdateArpeggios(ms, false);

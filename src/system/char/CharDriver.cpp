@@ -70,15 +70,15 @@ float CharDriver::Display(float f) {
     std::vector<CharClipDisplay> displays;
     for (CharClipDriver *it = mFirst; it != nullptr; it = it->Next()) {
         displays.push_back(CharClipDisplay());
-        displays.back().unk1c = it->mBeat;
+        displays.back().mBeat = it->mBeat;
         displays.back().SetClip(it->mClip, false);
-        displays.back().unk20 = it->mBlendFrac;
+        displays.back().mBlendFrac = it->mBlendFrac;
     }
 
     float lineSpacing = CharClipDisplay::LineSpacing();
     float y = f * (float)TheRnd->Height() + (float)displays.size() * lineSpacing;
     for (int i = 0.0f; i < displays.size(); i++) {
-        displays[i].unk18 = -((float)i * lineSpacing - y);
+        displays[i].mY = -((float)i * lineSpacing - y);
     }
 
     MsgSource *source = CharClipDisplay::FindSource(this);
@@ -117,7 +117,7 @@ float CharDriver::Display(float f) {
                     }
                 }
                 Hmx::Color redColor(1, 0, 0);
-                curPos.y = (nextDisplay->unk18 + (1.0f + (float)curOfs));
+                curPos.y = (nextDisplay->mY + (1.0f + (float)curOfs));
                 TheRnd->DrawString(MakeString("%d", i), curPos, redColor, true);
 
                 Vector2 nextPos;
@@ -128,7 +128,7 @@ float CharDriver::Display(float f) {
                     }
                 }
                 Hmx::Color greenColor(0, 1, 0);
-                nextPos.y = prevDisplay->unk18 - 14.0f - (float)nextOfs;
+                nextPos.y = prevDisplay->mY - 14.0f - (float)nextOfs;
                 TheRnd->DrawString(MakeString("%d", i), nextPos, greenColor, true);
             }
         }
@@ -146,7 +146,7 @@ float CharDriver::Display(float f) {
 
     if (source) {
         static Message msg("debug_draw", DataNode(2.0f), DataNode(2.0f));
-        msg[0] = displays[0].unk18 + lineSpacing;
+        msg[0] = displays[0].mY + lineSpacing;
         msg[1] = TheTaskMgr.Beat();
         source->Handle(msg, false);
     }

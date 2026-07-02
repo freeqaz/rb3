@@ -48,7 +48,7 @@ CharEyes::EyeDesc &CharEyes::EyeDesc::operator=(const CharEyes::EyeDesc &desc) {
     return *this;
 }
 
-void CharEyes::CharInterestState::ResetState() { unkc = -1.0f; }
+void CharEyes::CharInterestState::ResetState() { mLastTimeStamp = -1.0f; }
 
 CharEyes::CharInterestState::CharInterestState(Hmx::Object *o) : mInterest(o) {
     ResetState();
@@ -66,14 +66,14 @@ CharEyes::CharInterestState::operator=(const CharEyes::CharInterestState &state)
 }
 
 void CharEyes::CharInterestState::BeginRefractoryPeriod() {
-    unkc = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    mLastTimeStamp = TheTaskMgr.Seconds(TaskMgr::kRealTime);
 }
 
 bool CharEyes::CharInterestState::IsInRefractoryPeriod() {
-    if (!mInterest || unkc < 0.0)
+    if (!mInterest || mLastTimeStamp < 0.0)
         return false;
     else {
-        float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime) - unkc;
+        float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime) - mLastTimeStamp;
         if (secs < mInterest->mRefractoryPeriod)
             return true;
         else
@@ -82,10 +82,10 @@ bool CharEyes::CharInterestState::IsInRefractoryPeriod() {
 }
 
 float CharEyes::CharInterestState::RefractoryTimeRemaining() {
-    if (!mInterest || unkc < 0.0)
+    if (!mInterest || mLastTimeStamp < 0.0)
         return 0.0f;
     else {
-        float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime) - unkc;
+        float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime) - mLastTimeStamp;
         if (secs < mInterest->mRefractoryPeriod)
             return mInterest->mRefractoryPeriod - secs;
         else
@@ -94,47 +94,47 @@ float CharEyes::CharInterestState::RefractoryTimeRemaining() {
 }
 
 CharEyes::CharEyes()
-    : mEyes(this), mInterests(this), mFaceServo(this), mCamWeight(this), unk58(0, 0, 0),
+    : mEyes(this), mInterests(this), mFaceServo(this), mCamWeight(this), mTarget(0, 0, 0),
       mDefaultFilterFlags(0), mViewDirection(this), mHeadLookAt(this),
       mMaxExtrapolation(19.5f), mMinTargetDist(35.0f), mUpperLidTrackUp(1.0f),
       mUpperLidTrackDown(1.0f), mLowerLidTrackUp(0.75f), mLowerLidTrackDown(0.75f),
-      mLowerLidTrackRotate(0), mInterestFilterFlags(0), unka4(0, 0, 0), unkb4(0),
-      unkc0(0), unkc4(0), unkc5(0), unkc8(this), unkd4(this), unke0(-1), unke4(0),
+      mLowerLidTrackRotate(0), mInterestFilterFlags(0), mLastFacing(0, 0, 0), mLastLook(0),
+      mLastBlinkWeight(0), mBlinkDetect(0), mTargetTooClose(0), mCurInterest(this), mFocusInterest(this), mCurFocusPriorityClass(-1), mNewFocusInterest(0),
 #ifdef MILO_DEBUG
-      unke8(0, 1.0f, 0),
+      mLastExtrapolatedDir(0, 1.0f, 0),
 #endif
-      unkf4(0), unk124(0), unk128(-1.0f), unk12c(-1), unk13c(0), unk140(-1.0f), unk144(0),
-      unk148(-1.0f), unk14c(-1.0f), unk15c(0), unk15d(1) {
-    unkb8 = std::cos(0.52359879f);
-    unk9c = RndOverlay::Find("eye_status", false);
+      mLastHeadIKWeight(0), mDarting(0), mDartNextEventTime(-1.0f), mDartsRemaining(-1), mProceduralBlink(0), mBlinkTimestamp(-1.0f), mBlinkWindowCount(0),
+      mBlinkWindowSecsRemaining(-1.0f), mLastBlinkDetectTime(-1.0f), mInterestFiltersChanged(0), mBlinksEnabled(1) {
+    mMaxEyeCang = std::cos(0.52359879f);
+    mOverlay = RndOverlay::Find("eye_status", false);
 }
 
 CharEyes::~CharEyes() {}
 
 void CharEyes::Enter() {
-    unka4.Zero();
-    unkb4 = 0;
-    unkbc = 0;
-    unkb0 = 1.0f;
-    unkc0 = -1.0f;
-    unkc4 = 0;
-    unk124 = 0;
-    unk128 = -1.0f;
-    unk12c = -1;
-    unk13c = 0;
-    unk140 = -1.0f;
-    unk144 = 0;
-    unk148 = -1.0f;
-    unk14c = -1.0f;
-    unkc5 = 0;
+    mLastFacing.Zero();
+    mLastLook = 0;
+    mAvDelta = 0;
+    mLastCang = 1.0f;
+    mLastBlinkWeight = -1.0f;
+    mBlinkDetect = 0;
+    mDarting = 0;
+    mDartNextEventTime = -1.0f;
+    mDartsRemaining = -1;
+    mProceduralBlink = 0;
+    mBlinkTimestamp = -1.0f;
+    mBlinkWindowCount = 0;
+    mBlinkWindowSecsRemaining = -1.0f;
+    mLastBlinkDetectTime = -1.0f;
+    mTargetTooClose = 0;
     mInterestFilterFlags = mDefaultFilterFlags;
-    unk15c = 0;
-    unke4 = 0;
-    unkf4 = 0;
+    mInterestFiltersChanged = 0;
+    mNewFocusInterest = 0;
+    mLastHeadIKWeight = 0;
     RndTransformable *head = GetHead();
     if (head) {
-        unka4 = head->WorldXfm().m.y;
-        Normalize(unka4, unka4);
+        mLastFacing = head->WorldXfm().m.y;
+        Normalize(mLastFacing, mLastFacing);
     }
     for (ObjVector<EyeDesc>::iterator it = mEyes.begin(); it != mEyes.end(); ++it) {
         it->mEye->Enter();
@@ -148,8 +148,8 @@ void CharEyes::Enter() {
 }
 
 void CharEyes::Exit() {
-    unkd4 = 0;
-    unke0 = -1;
+    mFocusInterest = 0;
+    mCurFocusPriorityClass = -1;
     mInterests.clear();
     for (ObjVector<EyeDesc>::iterator it = mEyes.begin(); it != mEyes.end(); ++it) {
         it->mEye->Exit();
@@ -181,13 +181,13 @@ void CharEyes::Highlight() {
         }
         Vector3 v10c(GetHead()->WorldXfm().v);
         if (trans) {
-            bool fcmp = unkb0 >= (unkc8 ? unkc8->mMaxViewAngleCos : unkb8);
-            if (unk124) {
+            bool fcmp = mLastCang >= (mCurInterest ? mCurInterest->mMaxViewAngleCos : mMaxEyeCang);
+            if (mDarting) {
                 oneframe->AddSphere(
-                    unk58, mEyeDartRulesetData.mMaxRadius, Hmx::Color(0.9f, 0.9f, 0.9f)
+                    mTarget, mEyeDartRulesetData.mMaxRadius, Hmx::Color(0.9f, 0.9f, 0.9f)
                 );
                 Vector3 v118;
-                Add(unk58, unk130, v118);
+                Add(mTarget, mCurDartOffset, v118);
                 EnforceMinimumTargetDistance(v10c, v118, v118);
                 oneframe->AddSphere(v118, 0.5f, Hmx::Color(0.0f, 0.0f, 1.0f));
                 oneframe->AddLine(
@@ -199,35 +199,35 @@ void CharEyes::Highlight() {
             } else {
                 oneframe->AddLine(
                     trans->WorldXfm().v,
-                    unk58,
+                    mTarget,
                     fcmp ? Hmx::Color(1, 1, 1) : Hmx::Color(1, 0, 0),
                     true
                 );
             }
-            if (unk13c) {
+            if (mProceduralBlink) {
                 oneframe->AddString3D(
                     "p blink!", trans->WorldXfm().v, Hmx::Color(1, 1, 1)
                 );
             }
         }
 
-        if (unkd4) {
-            if (unkc8 != unkd4) {
-                const char *nametouse = unkc8 ? unkc8->Name() : "GENERATED";
+        if (mFocusInterest) {
+            if (mCurInterest != mFocusInterest) {
+                const char *nametouse = mCurInterest ? mCurInterest->Name() : "GENERATED";
                 oneframe->AddString3D(
-                    MakeString("focus = '%s' (looking at %s)", unkd4->Name(), nametouse),
+                    MakeString("focus = '%s' (looking at %s)", mFocusInterest->Name(), nametouse),
                     v10c,
                     Hmx::Color(1, 0, 0)
                 );
             } else {
                 oneframe->AddString3D(
-                    MakeString("focus = '%s'", unkd4->Name()), v10c, Hmx::Color(0, 1, 0)
+                    MakeString("focus = '%s'", mFocusInterest->Name()), v10c, Hmx::Color(0, 1, 0)
                 );
             }
         } else {
-            if (unkc8) {
+            if (mCurInterest) {
                 oneframe->AddString3D(
-                    MakeString("interest = '%s'", unkc8->Name()),
+                    MakeString("interest = '%s'", mCurInterest->Name()),
                     v10c,
                     Hmx::Color(0, 1, 0)
                 );
@@ -245,7 +245,7 @@ void CharEyes::Highlight() {
                 bool b7 = it->mInterest->IsMatchingFilterFlags(mInterestFilterFlags)
                     || ((mInterestFilterFlags == mDefaultFilterFlags)
                         && !it->mInterest->CategoryFlags());
-                if (unkc8 == it->mInterest) {
+                if (mCurInterest == it->mInterest) {
                     oneframe->AddSphere(
                         it->mInterest->WorldXfm().v, 2, Hmx::Color(0, 1, 0)
                     );
@@ -263,7 +263,7 @@ void CharEyes::Highlight() {
                         );
                     }
                 } else {
-                    if (it->mInterest->IsWithinViewCone(va0, unke8)
+                    if (it->mInterest->IsWithinViewCone(va0, mLastExtrapolatedDir)
                         && it->mInterest->IsWithinViewCone(va0, headMY)) {
                         oneframe->AddSphere(
                             it->mInterest->WorldXfm().v,
@@ -295,44 +295,44 @@ void CharEyes::Highlight() {
 DECOMP_FORCEACTIVE(CharEyes, "%s", "r=%f")
 
 void CharEyes::UpdateOverlay() {
-    if (unk9c && unk9c->Showing()) {
-        *unk9c << Dir()->Name() << ": ";
-        if (unkc8) {
-            if (unkd4) {
-                if (streq(unkd4->Name(), unkc8->Name())) {
-                    *unk9c << "Look(FOC) ";
+    if (mOverlay && mOverlay->Showing()) {
+        *mOverlay << Dir()->Name() << ": ";
+        if (mCurInterest) {
+            if (mFocusInterest) {
+                if (streq(mFocusInterest->Name(), mCurInterest->Name())) {
+                    *mOverlay << "Look(FOC) ";
                     goto lol;
                 }
             }
-            *unk9c << "Look(" << unkc8->Name() << ") ";
+            *mOverlay << "Look(" << mCurInterest->Name() << ") ";
         } else
-            *unk9c << "Look(GEN) ";
+            *mOverlay << "Look(GEN) ";
     lol:
-        if (unkd4) {
+        if (mFocusInterest) {
             Transform &headxfm = GetHead()->WorldXfm();
             Vector3 v34(headxfm.m.y);
             Normalize(v34, v34);
-            const char *str = unkd4->IsWithinViewCone(headxfm.v, v34) ? "t" : "f";
-            *unk9c << "Foc(" << unkd4->Name() << " p(" << unke0 << ") v(" << str << ")) ";
+            const char *str = mFocusInterest->IsWithinViewCone(headxfm.v, v34) ? "t" : "f";
+            *mOverlay << "Foc(" << mFocusInterest->Name() << " p(" << mCurFocusPriorityClass << ") v(" << str << ")) ";
         } else
-            *unk9c << "Foc(NA) ";
-        *unk9c << "t(" << unkb4 << ") ";
+            *mOverlay << "Foc(NA) ";
+        *mOverlay << "t(" << mLastLook << ") ";
         Vector3 v40(GetHead()->WorldXfm().v);
         Vector3 v4c;
-        Vector3 v58(unk58);
+        Vector3 v58(mTarget);
         RndTransformable *target = GetTarget();
         if (target)
             v58 = target->WorldXfm().v;
         Subtract(v58, v40, v4c);
         float len = Length(v4c);
-        *unk9c << "Dist(" << len << ") ";
-        if (unk13c)
-            *unk9c << "P Blink! ";
-        if (unk124)
-            *unk9c << "Dart! ";
-        if (unkc5)
-            *unk9c << "Close! ";
-        *unk9c << "\n";
+        *mOverlay << "Dist(" << len << ") ";
+        if (mProceduralBlink)
+            *mOverlay << "P Blink! ";
+        if (mDarting)
+            *mOverlay << "Dart! ";
+        if (mTargetTooClose)
+            *mOverlay << "Close! ";
+        *mOverlay << "\n";
     }
 }
 
@@ -369,15 +369,15 @@ void CharEyes::AddInterestObject(CharInterest *interest) {
 }
 
 bool CharEyes::SetFocusInterest(CharInterest *interest, int i) {
-    if (unkd4.mPtr && unke0 > i)
+    if (mFocusInterest.mPtr && mCurFocusPriorityClass > i)
         return false;
-    bool temp = interest != unkd4.mPtr;
-    unkd4 = interest;
-    unke0 = i;
+    bool temp = interest != mFocusInterest.mPtr;
+    mFocusInterest = interest;
+    mCurFocusPriorityClass = i;
     if (temp)
-        unke4 = true;
-    if (!unkd4)
-        unke0 = -1;
+        mNewFocusInterest = true;
+    if (!mFocusInterest)
+        mCurFocusPriorityClass = -1;
     return true;
 }
 
@@ -386,8 +386,8 @@ bool CharEyes::EyesOnTarget(float f) {
         RndTransformable *src = it->mEye->GetSource();
         if (src) {
             const Transform &xfm = src->WorldXfm();
-            float diffy = unk58.y - xfm.v.y;
-            float diffx = unk58.x - xfm.v.x;
+            float diffy = mTarget.y - xfm.v.y;
+            float diffx = mTarget.x - xfm.v.x;
             Vector3 v8c(src->WorldXfm().m.y);
             v8c.z = 0;
             float dot = v8c.x * diffx + v8c.y * diffy;
@@ -409,12 +409,12 @@ void CharEyes::EnforceMinimumTargetDistance(
     Subtract(v2, v1, v2c);
     float vlen = Length(v2c);
     bool b1 = false;
-    unkc5 = false;
-    if (unkc8 && unkc8->ShouldOverrideMinTargetDistance())
+    mTargetTooClose = false;
+    if (mCurInterest && mCurInterest->ShouldOverrideMinTargetDistance())
         b1 = true;
     float f4;
     if (b1)
-        f4 = unkc8->MinTargetDistanceOverride();
+        f4 = mCurInterest->MinTargetDistanceOverride();
     else
         f4 = mMinTargetDist;
     if (vlen < f4) {
@@ -424,14 +424,14 @@ void CharEyes::EnforceMinimumTargetDistance(
         else
             v38.Set(0, 0, 0);
         Add(v1, v38, vout);
-        unkc5 = true;
+        mTargetTooClose = true;
     }
 }
 
 bool CharEyes::IsHeadIKWeightIncreasing() {
     if (mHeadLookAt) {
         float weight = mHeadLookAt->Weight();
-        return (weight > 0 && weight - unkf4 > 0);
+        return (weight > 0 && weight - mLastHeadIKWeight > 0);
     } else
         return false;
 }
@@ -451,7 +451,7 @@ Vector3 CharEyes::GenerateDartOffset() {
     if (mEyeDartRulesetData.mScaleWithDistance
         && mEyeDartRulesetData.mReferenceDistance > 0.1f) {
         Vector3 v48;
-        Subtract(unk58, GetHead()->WorldXfm().v, v48);
+        Subtract(mTarget, GetHead()->WorldXfm().v, v48);
         float len = Length(v48);
         start *= len / mEyeDartRulesetData.mReferenceDistance;
         end *= len / mEyeDartRulesetData.mReferenceDistance;
@@ -469,36 +469,36 @@ void CharEyes::DartUpdate() {
     static DataNode &dartCheat = DataVariable("cheat.disable_eye_darts");
     if (sDisableEyeDart || dartCheat.Int(nullptr) != 0)
         return;
-    unk128 -= TheTaskMgr.DeltaSeconds();
-    if (unk124) {
-        if (unk128 < 0) {
-            unk12c--;
-            if (unk12c < 0) {
-                unk124 = false;
-                unk128 = RandomFloat(
+    mDartNextEventTime -= TheTaskMgr.DeltaSeconds();
+    if (mDarting) {
+        if (mDartNextEventTime < 0) {
+            mDartsRemaining--;
+            if (mDartsRemaining < 0) {
+                mDarting = false;
+                mDartNextEventTime = RandomFloat(
                     mEyeDartRulesetData.mMinSecsBetweenSequences,
                     mEyeDartRulesetData.mMaxSecsBetweenSequences
                 );
             } else {
-                unk128 = RandomFloat(
+                mDartNextEventTime = RandomFloat(
                     mEyeDartRulesetData.mMinSecsBetweenDarts,
                     mEyeDartRulesetData.mMaxSecsBetweenDarts
                 );
-                unk130 = GenerateDartOffset();
+                mCurDartOffset = GenerateDartOffset();
             }
         }
-    } else if (unk128 < 0 && EyesOnTarget(mEyeDartRulesetData.mOnTargetAngleThresh)
-               && !unk13c) {
-        unk124 = true;
-        unk12c = RandomInt(
+    } else if (mDartNextEventTime < 0 && EyesOnTarget(mEyeDartRulesetData.mOnTargetAngleThresh)
+               && !mProceduralBlink) {
+        mDarting = true;
+        mDartsRemaining = RandomInt(
             mEyeDartRulesetData.mMinDartsPerSequence,
             mEyeDartRulesetData.mMaxDartsPerSequence
         );
-        unk128 = RandomFloat(
+        mDartNextEventTime = RandomFloat(
             mEyeDartRulesetData.mMinSecsBetweenDarts,
             mEyeDartRulesetData.mMaxSecsBetweenDarts
         );
-        unk130 = GenerateDartOffset();
+        mCurDartOffset = GenerateDartOffset();
     }
 }
 
@@ -508,7 +508,7 @@ inline float EaseInExp(float t) {
 }
 
 void CharEyes::NextLook() {
-    Vector3 oldTarget = unk58;
+    Vector3 oldTarget = mTarget;
 
     RndTransformable *head = GetHead();
     const Transform &headXfm = head->WorldXfm();
@@ -516,17 +516,17 @@ void CharEyes::NextLook() {
     Vector3 facingDir(headXfm.m.y);
     Normalize(facingDir, facingDir);
 
-    if (unkd4 && (unkd4->IsWithinViewCone(headXfm.v, facingDir) || IsHeadIKWeightIncreasing())) {
-        unk58 = unkd4->WorldXfm().v;
-        unkc8 = unkd4;
-        const CharEyeDartRuleset *dartOverride = unkc8->GetDartRulesetOverride();
+    if (mFocusInterest && (mFocusInterest->IsWithinViewCone(headXfm.v, facingDir) || IsHeadIKWeightIncreasing())) {
+        mTarget = mFocusInterest->WorldXfm().v;
+        mCurInterest = mFocusInterest;
+        const CharEyeDartRuleset *dartOverride = mCurInterest->GetDartRulesetOverride();
         if (dartOverride) {
             mEyeDartRulesetData = dartOverride->mData;
         } else {
             mEyeDartRulesetData.ClearToDefaults();
         }
     } else {
-        const Vector3 &lastFacing = unka4;
+        const Vector3 &lastFacing = mLastFacing;
         Vector3 extrap(
             (facingDir.x - lastFacing.x) * 45.0f,
             (facingDir.y - lastFacing.y) * 45.0f,
@@ -548,20 +548,20 @@ void CharEyes::NextLook() {
         float dist = RandomFloat(100.0f, 20.0f);
         dist *= 12.0f;
         Vector3 proj(dist * newFacing.x, newFacing.y * dist, newFacing.z * dist);
-        unk58.x = headXfm.v.x + proj.x;
-        unk58.y = proj.y + headXfm.v.y;
-        unk58.z = headXfm.v.z + proj.z;
+        mTarget.x = headXfm.v.x + proj.x;
+        mTarget.y = proj.y + headXfm.v.y;
+        mTarget.z = headXfm.v.z + proj.z;
         RndTransformable *dirTrans = dynamic_cast<RndTransformable *>(Dir());
         if (dirTrans) {
             const Vector3 &dirPos = dirTrans->WorldXfm().v;
-            if (dirPos.z > unk58.z) {
-                float scale = (dirPos.z - headXfm.v.z) / (unk58.z - headXfm.v.z);
+            if (dirPos.z > mTarget.z) {
+                float scale = (dirPos.z - headXfm.v.z) / (mTarget.z - headXfm.v.z);
                 float sx = proj.x * scale;
                 float sy = proj.y * scale;
                 float sz = proj.z * scale;
-                unk58.x = headXfm.v.x + sx;
-                unk58.y = sy + headXfm.v.y;
-                unk58.z = headXfm.v.z + sz;
+                mTarget.x = headXfm.v.x + sx;
+                mTarget.y = sy + headXfm.v.y;
+                mTarget.z = headXfm.v.z + sz;
             }
         }
 
@@ -586,7 +586,7 @@ void CharEyes::NextLook() {
                 if (maxDistSq > 0.0f) {
                     CharInterestState *bestState = 0;
                     Vector3 targetDir;
-                    Subtract(unk58, headXfm.v, targetDir);
+                    Subtract(mTarget, headXfm.v, targetDir);
                     Normalize(targetDir, targetDir);
 
                     float inverseDist = 1.0f / maxDistSq;
@@ -594,7 +594,7 @@ void CharEyes::NextLook() {
                     for (ObjVector<CharInterestState>::iterator it = mInterests.begin();
                          it != mInterests.end();
                          ++it) {
-                        if (it->mInterest != unkc8) {
+                        if (it->mInterest != mCurInterest) {
                             bool _cond = !it->IsInRefractoryPeriod();
                             if (_cond) {
                                 float score = it->mInterest->ComputeScore(
@@ -614,10 +614,10 @@ void CharEyes::NextLook() {
                     }
 
                     if (bestState) {
-                        unk58 = bestState->mInterest->WorldXfm().v;
-                        unkc8 = bestState->mInterest;
+                        mTarget = bestState->mInterest->WorldXfm().v;
+                        mCurInterest = bestState->mInterest;
                         const CharEyeDartRuleset *dartOverride =
-                            unkc8->GetDartRulesetOverride();
+                            mCurInterest->GetDartRulesetOverride();
                         if (dartOverride) {
                             mEyeDartRulesetData = dartOverride->mData;
                         } else {
@@ -625,36 +625,36 @@ void CharEyes::NextLook() {
                         }
                         bestState->BeginRefractoryPeriod();
                     } else {
-                        unkc8 = 0;
+                        mCurInterest = 0;
                         mEyeDartRulesetData.ClearToDefaults();
                     }
 
-                    unk130 = targetDir;
+                    mCurDartOffset = targetDir;
                     goto stateReset;
                 }
             }
         }
 
-        unkc8 = 0;
+        mCurInterest = 0;
         mEyeDartRulesetData.ClearToDefaults();
     }
 
 stateReset:
-    unkb4 = 0.0f;
-    unkbc = 0.0f;
-    unk15c = false;
-    unke4 = false;
-    unkb0 = 1e30f;
-    unk124 = false;
-    unk128 = 0.2f;
-    unk12c = -1;
+    mLastLook = 0.0f;
+    mAvDelta = 0.0f;
+    mInterestFiltersChanged = false;
+    mNewFocusInterest = false;
+    mLastCang = 1e30f;
+    mDarting = false;
+    mDartNextEventTime = 0.2f;
+    mDartsRemaining = -1;
 
     static const DataNode &blinkCheat = DataVariable("cheat.disable_procedural_blinks");
 
-    if (!sDisableProceduralBlink && !blinkCheat.NotNull() && !unk13c && mFaceServo
-        && unk144 < 9
-        && TheTaskMgr.Seconds(TaskMgr::kRealTime) - unk14c > 0.6f
-        && unkc0 < 0.5f) {
+    if (!sDisableProceduralBlink && !blinkCheat.NotNull() && !mProceduralBlink && mFaceServo
+        && mBlinkWindowCount < 9
+        && TheTaskMgr.Seconds(TaskMgr::kRealTime) - mLastBlinkDetectTime > 0.6f
+        && mLastBlinkWeight < 0.5f) {
         Vector3 oldDir(
             oldTarget.x - headXfm.v.x,
             oldTarget.y - headXfm.v.y,
@@ -663,17 +663,17 @@ stateReset:
         Normalize(oldDir, oldDir);
 
         Vector3 newDir(
-            unk58.x - headXfm.v.x,
-            unk58.y - headXfm.v.y,
-            unk58.z - headXfm.v.z
+            mTarget.x - headXfm.v.x,
+            mTarget.y - headXfm.v.y,
+            mTarget.z - headXfm.v.z
         );
         Normalize(newDir, newDir);
 
         float dotProd = Dot(newDir, oldDir);
         if (dotProd < 0.984808f) {
             ForceBlink();
-            unk150 = unk58;
-            unk58 = oldTarget;
+            mDelayedTarget = mTarget;
+            mTarget = oldTarget;
         }
     }
 }
@@ -697,7 +697,7 @@ void CharEyes::Poll() {
         camWeight = mCamWeight->Weight();
     }
 
-    unkb4 += TheTaskMgr.DeltaSeconds();
+    mLastLook += TheTaskMgr.DeltaSeconds();
 
     float blinkWeight;
     if (mFaceServo) {
@@ -708,21 +708,21 @@ void CharEyes::Poll() {
 
     bool blinkDetected = false;
     if (blinkWeight < 0.3f) {
-        unkc4 = true;
+        mBlinkDetect = true;
     } else {
-        if (unkc4 && unkc0 > 0.8f && blinkWeight < unkc0) {
-            unkc4 = false;
-            unk144++;
+        if (mBlinkDetect && mLastBlinkWeight > 0.8f && blinkWeight < mLastBlinkWeight) {
+            mBlinkDetect = false;
+            mBlinkWindowCount++;
             blinkDetected = true;
-            unk14c = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+            mLastBlinkDetectTime = TheTaskMgr.Seconds(TaskMgr::kRealTime);
         }
     }
-    unkc0 = blinkWeight;
+    mLastBlinkWeight = blinkWeight;
 
     Transform &headXfm = head->WorldXfm();
 
     Vector3 targetDir;
-    Subtract(unk58, headXfm.v, targetDir);
+    Subtract(mTarget, headXfm.v, targetDir);
     Normalize(targetDir, targetDir);
 
     Vector3 facingDir(headXfm.m.y);
@@ -731,31 +731,31 @@ void CharEyes::Poll() {
     float cang = Dot(targetDir, facingDir);
     cang = Clamp<float>(-1.0f, 1.0f, cang);
 
-    if (unkb0 != 1e30f) {
+    if (mLastCang != 1e30f) {
         TheTaskMgr.Seconds(TaskMgr::kRealTime);
-        CharInterest *interest = unkc8;
-        unkbc = (cang - unkb0 - unkbc) * 0.1f + unkbc;
+        CharInterest *interest = mCurInterest;
+        mAvDelta = (cang - mLastCang - mAvDelta) * 0.1f + mAvDelta;
 
         float minLookTime = interest ? interest->mMinLookTime : 1.0f;
         float maxLookTime = interest ? interest->mMaxLookTime : 3.0f;
-        float viewAngleCos = interest ? interest->mMaxViewAngleCos : unkb8;
+        float viewAngleCos = interest ? interest->mMaxViewAngleCos : mMaxEyeCang;
 
         bool canSeeTarget = cang >= viewAngleCos;
 
-        if (maxLookTime >= unkb4 && !unke4
-            && (!unkd4 || interest == (CharInterest *)unkd4
-                || ((unkb4 <= 0.4f
-                     || !unkd4->IsWithinViewCone(headXfm.v, facingDir))
+        if (maxLookTime >= mLastLook && !mNewFocusInterest
+            && (!mFocusInterest || interest == (CharInterest *)mFocusInterest
+                || ((mLastLook <= 0.4f
+                     || !mFocusInterest->IsWithinViewCone(headXfm.v, facingDir))
                     && !IsHeadIKWeightIncreasing()))
-            && (!unk15c || unkb4 <= 0.25f)) {
-            if (unkb4 <= minLookTime)
+            && (!mInterestFiltersChanged || mLastLook <= 0.25f)) {
+            if (mLastLook <= minLookTime)
                 goto storeState;
             if (!blinkDetected) {
                 if (canSeeTarget) {
                     if (!EitherEyeClamped())
                         goto storeState;
                 }
-                if (unkbc >= 0.0f)
+                if (mAvDelta >= 0.0f)
                     goto storeState;
             }
         }
@@ -766,22 +766,22 @@ void CharEyes::Poll() {
     }
 
 storeState:
-    unkb0 = cang;
-    unka4 = facingDir;
+    mLastCang = cang;
+    mLastFacing = facingDir;
 
     if (mHeadLookAt) {
-        unkf4 = mHeadLookAt->Weight();
+        mLastHeadIKWeight = mHeadLookAt->Weight();
     } else {
-        unkf4 = 0.0f;
+        mLastHeadIKWeight = 0.0f;
     }
 
     DartUpdate();
 
-    if (unkc8) {
-        if (!unk13c) {
-            unk58 = unkc8->WorldXfm().v;
+    if (mCurInterest) {
+        if (!mProceduralBlink) {
+            mTarget = mCurInterest->WorldXfm().v;
         }
-        EnforceMinimumTargetDistance(headXfm.v, unk58, unk58);
+        EnforceMinimumTargetDistance(headXfm.v, mTarget, mTarget);
     }
 
     RndTransformable *eyeTarget = GetTarget();
@@ -803,11 +803,11 @@ storeState:
                 eyeTarget->SetWorldXfm(camXfm);
             }
         } else {
-            Vector3 localTarget = unk58;
-            if (unk124) {
-                localTarget.x += unk130.x;
-                localTarget.y += unk130.y;
-                localTarget.z += unk130.z;
+            Vector3 localTarget = mTarget;
+            if (mDarting) {
+                localTarget.x += mCurDartOffset.x;
+                localTarget.y += mCurDartOffset.y;
+                localTarget.z += mCurDartOffset.z;
                 EnforceMinimumTargetDistance(headXfm.v, localTarget, localTarget);
             }
             xfm = eyeTarget->WorldXfm();
@@ -1022,21 +1022,21 @@ void CharEyes::ProceduralBlinkUpdate() {
         return;
     if (disable.Int(0))
         return;
-    if (!unk15d && !unk13c)
+    if (!mBlinksEnabled && !mProceduralBlink)
         return;
 
-    unk148 -= TheTaskMgr.DeltaSeconds();
-    if (unk148 < 0.0f) {
-        unk144 = 0;
-        unk148 = 15.0f;
+    mBlinkWindowSecsRemaining -= TheTaskMgr.DeltaSeconds();
+    if (mBlinkWindowSecsRemaining < 0.0f) {
+        mBlinkWindowCount = 0;
+        mBlinkWindowSecsRemaining = 15.0f;
     }
 
     if (!mFaceServo)
         return;
-    if (!unk13c)
+    if (!mProceduralBlink)
         return;
 
-    float elapsed = TheTaskMgr.Seconds(TaskMgr::kRealTime) - unk140;
+    float elapsed = TheTaskMgr.Seconds(TaskMgr::kRealTime) - mBlinkTimestamp;
     if (elapsed < 0.115f) {
         float t = Clamp(0.0f, 1.0f, elapsed / 0.115f);
         float blinkWeight = EaseInExp(t);
@@ -1045,20 +1045,20 @@ void CharEyes::ProceduralBlinkUpdate() {
         float t = Clamp(0.0f, 1.0f, 1.0f - (elapsed - 0.115f) / 0.185f);
         float blinkWeight = Sigmoid(t);
         mFaceServo->SetProceduralBlinkWeight(blinkWeight);
-        unk58 = unk150;
+        mTarget = mDelayedTarget;
     } else {
         mFaceServo->SetProceduralBlinkWeight(0.0f);
-        unk13c = false;
-        unk58 = unk150;
+        mProceduralBlink = false;
+        mTarget = mDelayedTarget;
     }
 }
 
 void CharEyes::SetEnableBlinks(bool b1, bool b2) {
-    unk15d = b1;
-    if (b2 && !unk15d && unk13c && mFaceServo) {
+    mBlinksEnabled = b1;
+    if (b2 && !mBlinksEnabled && mProceduralBlink && mFaceServo) {
         mFaceServo->SetProceduralBlinkWeight(0);
-        unk13c = false;
-        unk58 = unk150;
+        mProceduralBlink = false;
+        mTarget = mDelayedTarget;
     }
 }
 
@@ -1075,10 +1075,10 @@ RndTransformable *CharEyes::GetHead() {
 }
 
 CharInterest *CharEyes::GetCurrentInterest() {
-    if (unkd4)
-        return unkd4;
-    if (unkc8)
-        return unkc8;
+    if (mFocusInterest)
+        return mFocusInterest;
+    if (mCurInterest)
+        return mCurInterest;
     return 0;
 }
 
@@ -1109,9 +1109,9 @@ void CharEyes::Replace(Hmx::Object *from, Hmx::Object *to) {
 }
 
 void CharEyes::ForceBlink() {
-    unk13c = true;
-    unk140 = TheTaskMgr.Seconds(TaskMgr::kRealTime);
-    unk144++;
+    mProceduralBlink = true;
+    mBlinkTimestamp = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    mBlinkWindowCount++;
 }
 
 void CharEyes::ListPollChildren(std::list<RndPollable *> &plist) const {
@@ -1239,8 +1239,8 @@ BEGIN_COPYS(CharEyes)
         COPY_MEMBER(mEyes)
         COPY_MEMBER(mInterests)
         COPY_MEMBER(mFaceServo)
-        COPY_MEMBER(unka4)
-        COPY_MEMBER(unkb4)
+        COPY_MEMBER(mLastFacing)
+        COPY_MEMBER(mLastLook)
         COPY_MEMBER(mCamWeight)
         COPY_MEMBER(mDefaultFilterFlags)
         COPY_MEMBER(mViewDirection)
@@ -1256,10 +1256,10 @@ BEGIN_COPYS(CharEyes)
 END_COPYS
 
 DataNode CharEyes::OnToggleForceFocus(DataArray *da) {
-    if (unkd4)
+    if (mFocusInterest)
         SetFocusInterest(0, 0);
     else
-        SetFocusInterest(unkc8, 0);
+        SetFocusInterest(mCurInterest, 0);
     return 0;
 }
 
@@ -1269,8 +1269,8 @@ DataNode CharEyes::OnToggleInterestOverlay(DataArray *da) {
 }
 
 void CharEyes::ToggleInterestsDebugOverlay() {
-    if (unk9c)
-        unk9c->SetShowing(!unk9c->Showing());
+    if (mOverlay)
+        mOverlay->SetShowing(!mOverlay->Showing());
 }
 
 BEGIN_HANDLERS(CharEyes)

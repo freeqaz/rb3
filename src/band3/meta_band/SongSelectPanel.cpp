@@ -23,7 +23,7 @@
 #endif
 
 SongSelectPanel::SongSelectPanel()
-    : mLeaderboard(0), unk48(0), unk4c(0), unk50(0), unk54(0), unk58(-1) {}
+    : mLeaderboard(0), mMiniLeaderboard(0), mRotationOffSecs(0), mRotationOnSecs(0), mLeaderboardShowing(0), mLastRotateSecs(-1) {}
 
 void SongSelectPanel::Load() {
     UIPanel::Load();
@@ -40,16 +40,16 @@ void SongSelectPanel::FinishLoad() {
 #ifdef HX_NATIVE
     // The mini-leaderboard display (online scores) is absent from the 360-ARK
     // extract's ui/song_select/song_select.milo, and online leaderboards don't
-    // exist offline anyway. Find it non-failing; unk48 stays null and the
-    // leaderboard-rotation Poll path is gated on unk58 >= 0 (only armed once a
+    // exist offline anyway. Find it non-failing; mMiniLeaderboard stays null and the
+    // leaderboard-rotation Poll path is gated on mLastRotateSecs >= 0 (only armed once a
     // real online leaderboard enumerates, which never happens offline), so a null
-    // unk48 is safe. (Same tolerant-asset pattern as MetaPanel metamusic.)
-    unk48 = mDir->Find<AppMiniLeaderboardDisplay>("leaderboard.mld", false);
+    // mMiniLeaderboard is safe. (Same tolerant-asset pattern as MetaPanel metamusic.)
+    mMiniLeaderboard = mDir->Find<AppMiniLeaderboardDisplay>("leaderboard.mld", false);
 #else
-    unk48 = mDir->Find<AppMiniLeaderboardDisplay>("leaderboard.mld", true);
+    mMiniLeaderboard = mDir->Find<AppMiniLeaderboardDisplay>("leaderboard.mld", true);
 #endif
-    unk4c = TypeDef()->FindFloat("mini_leaderboard_rotation_off");
-    unk50 = TypeDef()->FindFloat("mini_leaderboard_rotation_on");
+    mRotationOffSecs = TypeDef()->FindFloat("mini_leaderboard_rotation_off");
+    mRotationOnSecs = TypeDef()->FindFloat("mini_leaderboard_rotation_on");
 #ifdef HX_NATIVE
     // The mini-leaderboard panel group (live_lb.grp, "FRIEND RANKINGS" title +
     // online score rows) is authored showing-by-default in the milo. On the Wii
@@ -80,7 +80,7 @@ bool SongSelectPanel::Exiting() const {
 
 void SongSelectPanel::Unload() {
     RELEASE(mLeaderboard);
-    unk48 = nullptr;
+    mMiniLeaderboard = nullptr;
     TheMusicLibrary->OnUnload();
     UIPanel::Unload();
 }
@@ -135,12 +135,12 @@ void SongSelectPanel::Poll() {
     HeldButtonPanel::Poll();
     if (mLeaderboard)
         mLeaderboard->Poll();
-    if (unk58 >= 0.0f && GetState() == kUp) {
-        float diff = TheTaskMgr.UISeconds() - unk58;
-        if (!unk54 && diff > unk4c && unk48 && unk48->IsReady() && unk48->HasRows()) {
-            unk58 = TheTaskMgr.UISeconds();
+    if (mLastRotateSecs >= 0.0f && GetState() == kUp) {
+        float diff = TheTaskMgr.UISeconds() - mLastRotateSecs;
+        if (!mLeaderboardShowing && diff > mRotationOffSecs && mMiniLeaderboard && mMiniLeaderboard->IsReady() && mMiniLeaderboard->HasRows()) {
+            mLastRotateSecs = TheTaskMgr.UISeconds();
             static Message msg(set_mini_leaderboard_showing, 0);
-            unk54 = true;
+            mLeaderboardShowing = true;
             msg[0] = 1;
             HandleType(msg);
 #ifdef HX_NATIVE
@@ -148,16 +148,16 @@ void SongSelectPanel::Poll() {
             // doesn't reveal it natively). Only reached when scores enumerate.
             SetMiniLeaderboardGroupShowing(true);
 #endif
-        } else if (unk54 && diff > unk50) {
+        } else if (mLeaderboardShowing && diff > mRotationOnSecs) {
             RestartLeaderboardTimer();
         }
     }
 }
 
 void SongSelectPanel::RestartLeaderboardTimer() {
-    unk58 = TheTaskMgr.UISeconds();
+    mLastRotateSecs = TheTaskMgr.UISeconds();
     static Message msg(set_mini_leaderboard_showing, 0);
-    unk54 = false;
+    mLeaderboardShowing = false;
     msg[0] = 0;
     HandleType(msg);
 #ifdef HX_NATIVE
@@ -166,9 +166,9 @@ void SongSelectPanel::RestartLeaderboardTimer() {
 }
 
 void SongSelectPanel::CancelLeaderboardTimer() {
-    unk58 = -1.0f;
+    mLastRotateSecs = -1.0f;
     static Message msg(set_mini_leaderboard_showing, 0);
-    unk54 = false;
+    mLeaderboardShowing = false;
     msg[0] = 0;
     HandleType(msg);
 #ifdef HX_NATIVE

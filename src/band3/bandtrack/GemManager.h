@@ -147,29 +147,29 @@ public:
     int mEnd; // 0x2c
     GemRepTemplate mTemplate; // 0x30
     DataArray *mConfig; // 0xb4
-    bool unkb8; // 0xb8
+    bool mUseFills; // 0xb8
     NowBar *mNowBar; // 0xbc
     bool mBonusGems; // 0xc0
     bool mInCoda; // 0xc1
-    float unkc4;
-    float unkc8;
-    float unkcc;
+    float mWhammyActive; // 0xc4
+    float kHorizonY; // 0xc8
+    float kRemoveY; // 0xcc
     std::list<int> mDisabledSlotsList; // 0xd0
-    std::vector<TrackWidget *> unkd8;
+    std::vector<TrackWidget *> mUsedWidgets; // 0xd8
     std::map<Symbol, TrackWidget *> mWidgets; // 0xe0
     RndGroup *mTailsGrp; // 0xf8
-    int unkfc;
-    int unk100;
-    int unk104;
+    int mGuitarSmasherPlate; // 0xfc
+    int mDrumSmasherPlate; // 0x100
+    int mKeySmasherPlate; // 0x104
     unsigned int mEnabledSlots; // 0x108
-    int unk10c;
+    int mUnisonUntilTick; // 0x10c
     std::vector<ArpeggioPhrase> mArpeggioPhrases; // 0x110
     int mNextArpeggioPhrase;
     std::vector<ArpeggioPhrase *> mActiveArpeggios; // 0x11c
     std::vector<ArpeggioPhrase *> mExpiredArpeggios; // 0x124
-    float unk12c;
-    int unk130;
-    int unk134;
+    float mArpeggioTargetOffsetY; // 0x12c
+    int mLastRGChordId; // 0x130
+    int mRGRunSpaceTicks; // 0x134
 };
 
 int GetBeardThreshold();

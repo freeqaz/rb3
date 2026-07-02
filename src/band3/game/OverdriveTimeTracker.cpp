@@ -11,18 +11,18 @@
 OverdriveTimeTracker::OverdriveTimeTracker(
     TrackerSource *src, TrackerBandDisplay &banddisp, TrackerBroadcastDisplay &bcdisp
 )
-    : Tracker(src, banddisp, bcdisp), unk58(0), unk5c(0), unk60(0), unk64(-1.0f),
-      unk68(1), unk6c(0) {}
+    : Tracker(src, banddisp, bcdisp), mPastDurationMs(0), mCurrentDurationMs(0), mLongestDurationMs(0), mDeployStartMs(-1.0f),
+      mLastUpdateSeconds(1), mWasDeploying(0) {}
 
 OverdriveTimeTracker::~OverdriveTimeTracker() {}
 
 void OverdriveTimeTracker::FirstFrame_(float) {
-    unk58 = 0;
-    unk5c = 0;
-    unk60 = 0;
-    unk64 = -1.0f;
-    unk68 = 1;
-    unk6c = false;
+    mPastDurationMs = 0;
+    mCurrentDurationMs = 0;
+    mLongestDurationMs = 0;
+    mDeployStartMs = -1.0f;
+    mLastUpdateSeconds = 1;
+    mWasDeploying = false;
     mBandDisplay.Initialize(mDesc.mName);
     UpdateTimeRemainingDisplay();
 }
@@ -43,23 +43,23 @@ void OverdriveTimeTracker::Poll_(float f) {
             }
         }
         if (o2) {
-            float cur_unk64 = unk64;
-            if (-1.0f == cur_unk64) {
-                unk64 = f;
+            float startMs = mDeployStartMs;
+            if (-1.0f == startMs) {
+                mDeployStartMs = f;
             } else {
-                unk5c = f - cur_unk64;
-                if (unk60 < unk5c) {
-                    unk60 = unk5c;
+                mCurrentDurationMs = f - startMs;
+                if (mLongestDurationMs < mCurrentDurationMs) {
+                    mLongestDurationMs = mCurrentDurationMs;
                 }
             }
             UpdateTimeRemainingDisplay();
-        } else if (unk64 != -1.0f) {
-            unk58 = unk58 + unk5c;
-            MaxEq(unk60, unk5c);
-            unk5c = 0;
-            unk64 = -1.0f;
+        } else if (mDeployStartMs != -1.0f) {
+            mPastDurationMs = mPastDurationMs + mCurrentDurationMs;
+            MaxEq(mLongestDurationMs, mCurrentDurationMs);
+            mCurrentDurationMs = 0;
+            mDeployStartMs = -1.0f;
         }
-        unk6c = o2;
+        mWasDeploying = o2;
     }
 }
 
@@ -71,7 +71,7 @@ void OverdriveTimeTracker::UpdateGoalValueLabel(UILabel &label) const {
 
 void OverdriveTimeTracker::UpdateCurrentValueLabel(UILabel &label) const {
     int min, sec;
-    TrackerDisplay::MsToMinutesSeconds(unk60, min, sec);
+    TrackerDisplay::MsToMinutesSeconds(mLongestDurationMs, min, sec);
     label.SetTokenFmt(tour_goal_od_timer_result_format, min, sec);
 }
 
@@ -98,10 +98,10 @@ void OverdriveTimeTracker::SavePlayerStats() const {
 }
 
 void OverdriveTimeTracker::UpdateTimeRemainingDisplay() {
-    float f60 = unk60;
+    float f60 = mLongestDurationMs;
     int floored = std::floor(f60 / 1000.0f);
-    if (floored != unk68) {
-        unk68 = floored;
+    if (floored != mLastUpdateSeconds) {
+        mLastUpdateSeconds = floored;
         mBandDisplay.SetTimeProgress(f60);
     }
 }

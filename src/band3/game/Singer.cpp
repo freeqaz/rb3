@@ -440,7 +440,7 @@ float Singer::GetPartPercentage(int part) const {
 
 int Singer::GetFrameMatchType() {
     if (mFrameAssignedPart != -1) {
-        return mPlayer->mVocalParts[mFrameAssignedPart]->unk98;
+        return mPlayer->mVocalParts[mFrameAssignedPart]->mFrameMatchType;
     }
     return 4;
 }

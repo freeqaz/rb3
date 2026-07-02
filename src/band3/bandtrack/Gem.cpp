@@ -103,15 +103,15 @@ void Gem::AddRep(
                 mTails.back()->SetDuration(0, 0, f10);
                 Tail::SlideInfo info;
                 if (mGameGem.LeftHandSlide()) {
-                    info.unk0 = true;
+                    info.mSliding = true;
                     if (mSlideUp) {
-                        info.unk8 = startOffset;
-                        info.unk4 = -startOffset;
+                        info.mEndOffset = startOffset;
+                        info.mStartOffset = -startOffset;
                     } else {
-                        info.unk4 = startOffset;
-                        info.unk8 = -startOffset;
+                        info.mStartOffset = startOffset;
+                        info.mEndOffset = -startOffset;
                     }
-                    info.unkc = f10;
+                    info.mLength = f10;
                 }
                 Transform tf90 = mGemManager->mTrackDir->mSlots[i];
                 tf90.v.y = f9;

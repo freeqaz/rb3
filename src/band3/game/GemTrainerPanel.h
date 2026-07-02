@@ -71,16 +71,16 @@ public:
     bool mAddBeatMask; // 0x80
     bool mAddBeatMaskImmediately; // 0xa9
     int mNumLoops; // 0xac
-    int unkb0;
+    int mNumGemCopies; // 0xb0
     TrainerGemTab *mTab; // 0xb4
     Metronome *mMetronome; // 0xb8
-    float unkbc;
-    float unkc0;
-    float unkc4;
+    float mSectionStartOffset; // 0xbc
+    float mSectionEndOffset; // 0xc0
+    float mCurrentRangeOffset; // 0xc4
     bool mDrawTab; // 0xc8
     bool unkc9;
     int unkcc;
-    bool unkd0;
+    bool mHandledDifficultyChange; // 0xd0
 };
 
 extern GemTrainerPanel *TheGemTrainerPanel;

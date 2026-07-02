@@ -155,12 +155,12 @@ public:
     DataNode OnGetDisplayMode(const DataArray *);
     DataNode OnSetDisplayMode(const DataArray *);
 
-    bool unk68; // 0x68
-    VocalStyle mVocalStyleOverride; // 0x6c
-    int unk70; // 0x70
-    float unk74; // 0x74
-    float unk78; // 0x78
-    int unk7c; // 0x7c
+    bool mScoreDebug; // 0x68
+    VocalStyle mVocalStyle; // 0x6c
+    int mVocalStyleOverride; // 0x70 - VocalStyle; 2 = no override
+    float mMsInWindow; // 0x74
+    float mWindowSize; // 0x78
+    int mLoader; // 0x7c - Loader* in Bank 5, unused here
     ObjPtr<VocalTrackDir> mDir; // 0x80
     ObjPtr<VocalPlayer> mPlayer; // 0x8c
     std::deque<LyricPlate *> mLyricsLead; // 0x98
@@ -168,45 +168,45 @@ public:
     float mPhraseStartMs; // 0xe8
     float mPhraseEndMs; // 0xec
     float mNextPhraseEndMs; // 0xf0
-    int unkf4;
-    int unkf8;
-    int unkfc;
-    int unk100;
-    int unk104;
-    int unk108;
+    int mLastUpdateLyricLead; // 0xf4
+    int mLastUpdateLyricHarmony1; // 0xf8
+    int mLastUpdateLyricHarmony2; // 0xfc
+    int mLastUpdateGem; // 0x100
+    int mLastUpdatePhrase; // 0x104
+    int mLastBeat; // 0x108
     int mNextScrollNote[3]; // 0x10c
     int mNextDeployZone[2]; // 0x118
     int mCurLyricPhrase[2]; // 0x120
-    bool unk128; // 0x128
+    bool mPressToTalk; // 0x128
     std::vector<std::deque<TubePlate *> > mFrontTubePlates; // 0x12c
     std::vector<std::deque<TubePlate *> > mBackTubePlates; // 0x134
     std::vector<std::deque<TubePlate *> > mPhonemeTubePlates; // 0x13c
     std::deque<TubePlate *> mLeadDeployPlates; // 0x144
     std::deque<TubePlate *> mHarmonyDeployPlates; // 0x16c
     std::vector<RndMesh *> mMeshPool; // 0x194
-    int unk19c; // 0x19c
-    std::deque<std::pair<RndMesh *, float> > unk1a0; // 0x1a0
-    ObjPtr<RndGroup> unk1c8; // 0x1c8
+    int mNumMarkers; // 0x19c
+    std::deque<std::pair<RndMesh *, float> > mMarkers; // 0x1a0
+    ObjPtr<RndGroup> mMarkersGrp; // 0x1c8
     TambourineGemPool *mTambourineGemPool; // 0x1d4
     std::deque<TambourineGem *> mTambourineGems; // 0x1d8
     VocalParam mCharOptParam; // 0x200 - vocal param
     int mCharOptMicID; // 0x204
-    int unk208; // 0x208
-    int unk20c; // 0x20c
-    int unk210; // 0x210
+    int mDisplayTonic; // 0x208
+    int mScaleAnim; // 0x20c - anim ptr in Bank 5, unused here
+    int mOffsetAnim; // 0x210 - anim ptr in Bank 5, unused here
     std::deque<RangeShift> mRangeShifts; // 0x214
-    float unk23c; // 0x23c
-    float unk240; // 0x240
+    float mLastLeadLyricX; // 0x23c
+    float mLastHarmonyLyricX; // 0x240
     std::deque<LyricShift> mLeadLyricShifts; // 0x244
     std::deque<LyricShift> mHarmonyLyricShifts; // 0x26c
-    float unk294;
-    float unk298;
-    float unk29c;
-    float unk2a0;
-    float unk2a4;
-    float unk2a8;
-    float unk2ac;
-    float unk2b0;
+    float mTargetLeadLyricX; // 0x294
+    float mTargetHarmonyLyricX; // 0x298
+    float mCurrentBottomDisplayPitch; // 0x29c
+    float mCurrentTopDisplayPitch; // 0x2a0
+    float mLastPollMs; // 0x2a4
+    float mScrollerXPos; // 0x2a8
+    float mLeadShiftedX; // 0x2ac
+    float mHarmonyShiftedX; // 0x2b0
     VocalNoteList *mAlternateNoteList[3]; // 0x2b4
     float mStaticDeployZoneXSize; // 0x2c0
     float mStaticDeployBufferX; // 0x2c4
@@ -217,8 +217,8 @@ public:
     float mMinLyricHighlightMs; // 0x2d8
     float mMinPhraseHighlightMs; // 0x2dc
     float mLyricOverlapWindowMs; // 0x2e0
-    bool unk2e4;
-    bool unk2e5;
+    bool mForceStaticVocals; // 0x2e4
+    bool mRemoteBandVocals; // 0x2e5
     NoteTube *mNoteTube; // 0x2e8
-    bool unk2ec;
+    bool mCodaShowing; // 0x2ec
 };

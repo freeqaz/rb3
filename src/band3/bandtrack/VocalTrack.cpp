@@ -84,22 +84,22 @@ inline TambourineGemPool::~TambourineGemPool() {
 }
 
 void VocalTrack::UpdateMarkerVisibility(float f1, float f2) {
-    for (int i = 0; i < unk1a0.size(); i++) {
-        std::pair<RndMesh *, float> &curMarker = unk1a0[i];
+    for (int i = 0; i < mMarkers.size(); i++) {
+        std::pair<RndMesh *, float> &curMarker = mMarkers[i];
         curMarker.first->SetShowing(curMarker.second >= f1 && curMarker.second <= f2);
     }
 }
 
 void VocalTrack::InvalidateMarkers(float f1) {
-    while (!unk1a0.empty()) {
-        if (f1 < unk1a0.front().second)
+    while (!mMarkers.empty()) {
+        if (f1 < mMarkers.front().second)
             break;
         ReturnFirstMarker();
     }
 }
 
 void VocalTrack::ClearMarkers() {
-    while (!unk1a0.empty()) {
+    while (!mMarkers.empty()) {
         ReturnFirstMarker();
     }
 }
@@ -129,7 +129,7 @@ void VocalTrack::UpdateTubePlates(
     if (mIntroPlaying || deque.empty())
         return;
     while (!deque.empty() && !deque.front()->NoVerts()
-           && (deque.front()->CurrentEndX(f3) < mDir->mTrackLeftX - unk78
+           && (deque.front()->CurrentEndX(f3) < mDir->mTrackLeftX - mWindowSize
                || deque.front()->InvalidateMs() < f2)) {
         if (!deque.front()->Baked()) {
             MILO_WARN("popping unbaked plate");
@@ -147,7 +147,7 @@ void VocalTrack::UpdateTubePlates(
         cur->Reset();
         deque.push_back(cur);
     }
-    float fvar1 = TheGame->InRollback() ? unk2a4 : f2;
+    float fvar1 = TheGame->InRollback() ? mLastPollMs : f2;
     FOREACH (it, deque) {
         TubePlate *cur = *it;
         if (cur->CurrentEndX(f3) < mDir->mTrackLeftX) {
@@ -167,7 +167,7 @@ void VocalTrack::UpdateTubePlates(
             DumpPlates(deque, cur->GetMatName().c_str());
         }
         cur->Bake();
-        if (mVocalStyleOverride == kVocalStyleScrolling && cur->Deploy()) {
+        if (mVocalStyle == kVocalStyleScrolling && cur->Deploy()) {
             cur->PollDeploy(fvar1);
         }
     }
@@ -206,14 +206,14 @@ void VocalTrack::UpdateTubePlates(
 void VocalTrack::UpdateAllTubePlates(float f1) {
     if (!mPlayer->IsNet()) {
         for (int i = 0; i < 3; i++) {
-            UpdateTubePlates(mFrontTubePlates[i], f1, unk2a8, false);
-            UpdateTubePlates(mBackTubePlates[i], f1, unk2a8, false);
-            UpdateTubePlates(mPhonemeTubePlates[i], f1, unk2a8, false);
+            UpdateTubePlates(mFrontTubePlates[i], f1, mScrollerXPos, false);
+            UpdateTubePlates(mBackTubePlates[i], f1, mScrollerXPos, false);
+            UpdateTubePlates(mPhonemeTubePlates[i], f1, mScrollerXPos, false);
         }
     }
     bool staticVox = !IsScrolling();
-    UpdateTubePlates(mLeadDeployPlates, f1, staticVox ? unk2ac : unk2a8, staticVox);
-    UpdateTubePlates(mHarmonyDeployPlates, f1, staticVox ? unk2b0 : unk2a8, staticVox);
+    UpdateTubePlates(mLeadDeployPlates, f1, staticVox ? mLeadShiftedX : mScrollerXPos, staticVox);
+    UpdateTubePlates(mHarmonyDeployPlates, f1, staticVox ? mHarmonyShiftedX : mScrollerXPos, staticVox);
 }
 
 void VocalTrack::ClearTubePlates(std::deque<TubePlate *> &plates) {
@@ -341,17 +341,17 @@ DataNode ToggleDebugSpew(DataArray *) {
 }
 
 VocalTrack::VocalTrack(BandUser *u)
-    : Track(u), unk68(0), mVocalStyleOverride(kVocalStyleScrolling), unk70(2),
-      unk78(24.0f), unk7c(0), mDir(this), mPlayer(this), mPhraseStartMs(0),
-      mPhraseEndMs(0), mNextPhraseEndMs(0), unkf4(0), unkf8(0), unkfc(0), unk100(0),
-      unk104(1), unk108(0), unk128(0), unk19c(0), unk1c8(this), mTambourineGemPool(0),
-      mCharOptMicID(-1), unk208(60), unk20c(0), unk210(0), unk23c(0.1f), unk240(0.1f),
-      unk294(0), unk298(0), unk2a4(-1.0f), unk2a8(0), unk2ac(0), unk2b0(0),
+    : Track(u), mScoreDebug(0), mVocalStyle(kVocalStyleScrolling), mVocalStyleOverride(2),
+      mWindowSize(24.0f), mLoader(0), mDir(this), mPlayer(this), mPhraseStartMs(0),
+      mPhraseEndMs(0), mNextPhraseEndMs(0), mLastUpdateLyricLead(0), mLastUpdateLyricHarmony1(0), mLastUpdateLyricHarmony2(0), mLastUpdateGem(0),
+      mLastUpdatePhrase(1), mLastBeat(0), mPressToTalk(0), mNumMarkers(0), mMarkersGrp(this), mTambourineGemPool(0),
+      mCharOptMicID(-1), mDisplayTonic(60), mScaleAnim(0), mOffsetAnim(0), mLastLeadLyricX(0.1f), mLastHarmonyLyricX(0.1f),
+      mTargetLeadLyricX(0), mTargetHarmonyLyricX(0), mLastPollMs(-1.0f), mScrollerXPos(0), mLeadShiftedX(0), mHarmonyShiftedX(0),
       mStaticDeployZoneXSize(2.0f), mStaticDeployBufferX(0.5f),
       mStaticDeployMarginX(0.1f), mLyricShiftMs(100.0f), mLyricShiftQuickMs(20.0f),
       mLyricShiftAnticipationMs(250.0f), mMinLyricHighlightMs(100.0f),
-      mMinPhraseHighlightMs(500.0f), mLyricOverlapWindowMs(100.0f), unk2e4(0),
-      mNoteTube(new NoteTube()), unk2ec(1) {
+      mMinPhraseHighlightMs(500.0f), mLyricOverlapWindowMs(100.0f), mForceStaticVocals(0),
+      mNoteTube(new NoteTube()), mCodaShowing(1) {
     DataRegisterFunc("vocal_jitter_debug", ToggleDebugSpew);
     for (int i = 0; i < 3; i++) {
         mFrontTubePlates.push_back(std::deque<TubePlate *>());
@@ -392,7 +392,7 @@ void VocalTrack::Init() {
     const BandUser *pUser = mTrackConfig.GetBandUser();
     MILO_ASSERT(pUser, 0x275);
     mTrackConfig.SetTrackNum(TheGameConfig->GetTrackNum(pUser->mUserGuid));
-    unk74 = 3000.0f;
+    mMsInWindow = 3000.0f;
     RELEASE(mTambourineGemPool);
     mTambourineGemPool = new TambourineGemPool();
     if (mPlayer)
@@ -411,8 +411,8 @@ void VocalTrack::Init() {
     }
 next:
     ReadTimingData(SystemConfig()->FindArray("track_graphics"));
-    unk1c8 = mDir->Find<RndGroup>("markers.grp", true);
-    unk19c = 0;
+    mMarkersGrp = mDir->Find<RndGroup>("markers.grp", true);
+    mNumMarkers = 0;
     for (int i = 0; i < 0x20; i++) {
         CreateMarker("beat_marker.mesh", 0, false);
     }
@@ -571,12 +571,12 @@ RndMesh *VocalTrack::CreateMarker(Symbol s1, float f2, bool warn) {
     RndMesh *mesh = nullptr;
     if (mMeshPool.empty()) {
         mesh = Hmx::Object::New<RndMesh>();
-        unk19c++;
+        mNumMarkers++;
         if (warn) {
             MILO_WARN(
                 "VocalTrack::CreateMarker() added new %s mesh at run-time (total %d); please alert HUD/Track owner",
                 s1.mStr,
-                unk19c
+                mNumMarkers
             );
         }
     } else {
@@ -590,19 +590,19 @@ RndMesh *VocalTrack::CreateMarker(Symbol s1, float f2, bool warn) {
     mesh->SetTransParent(found->TransParent(), false);
     mesh->SetLocalXfm(found->mLocalXfm);
     mesh->SetTransParent(mDir->mScroller, true);
-    mesh->SetLocalPos(unk78 * (f2 / unk74), mesh->mLocalXfm.v.y, mesh->mLocalXfm.v.z);
-    unk1c8->AddObject(mesh);
-    unk1a0.push_back(std::make_pair(mesh, f2));
+    mesh->SetLocalPos(mWindowSize * (f2 / mMsInWindow), mesh->mLocalXfm.v.y, mesh->mLocalXfm.v.z);
+    mMarkersGrp->AddObject(mesh);
+    mMarkers.push_back(std::make_pair(mesh, f2));
     return mesh;
 }
 
 void VocalTrack::ReturnFirstMarker() {
-    RndMesh *mesh = unk1a0.front().first;
+    RndMesh *mesh = mMarkers.front().first;
     MILO_ASSERT(mesh, 0x393);
     MILO_ASSERT(mesh->GeomOwner() != mesh, 0x394);
     mMeshPool.push_back(mesh);
-    unk1c8->RemoveObject(mesh);
-    unk1a0.pop_front();
+    mMarkersGrp->RemoveObject(mesh);
+    mMarkers.pop_front();
 }
 
 void VocalTrack::SetDir(RndDir *dir) {
@@ -641,11 +641,11 @@ bool VocalTrack::UseVocalHarmony() {
 
 void VocalTrack::SetVocalStyle(VocalStyle style) {
     if (HasNetPlayer())
-        unk2e5 = true;
+        mRemoteBandVocals = true;
     else
-        unk2e5 = false;
-    if (mVocalStyleOverride != style) {
-        mVocalStyleOverride = style;
+        mRemoteBandVocals = false;
+    if (mVocalStyle != style) {
+        mVocalStyle = style;
         UpdateVocalStyle();
         TrackPanel *panel = GetTrackPanel();
         panel->unk5f = false;
@@ -653,10 +653,10 @@ void VocalTrack::SetVocalStyle(VocalStyle style) {
 }
 
 bool VocalTrack::IsScrolling() const {
-    if (unk70 == 2)
-        return mVocalStyleOverride == kVocalStyleScrolling;
+    if (mVocalStyleOverride == 2)
+        return mVocalStyle == kVocalStyleScrolling;
     else
-        return unk70 == 1;
+        return mVocalStyleOverride == 1;
 }
 
 void VocalTrack::UpdateVocalStyle() {
@@ -669,7 +669,7 @@ void VocalTrack::UpdateVocalStyle() {
                     VocalTrack *track =
                         dynamic_cast<VocalTrack *>(cur->GetUser()->GetTrack());
                     if (track)
-                        track->SetVocalStyle(mVocalStyleOverride);
+                        track->SetVocalStyle(mVocalStyle);
                 }
             }
         }
@@ -681,12 +681,12 @@ void VocalTrack::UpdateVocalStyle() {
                 return;
         }
         mDir->UpdateConfiguration();
-        unk78 = mDir->mTrackRightX - mDir->mTrackLeftX;
+        mWindowSize = mDir->mTrackRightX - mDir->mTrackLeftX;
         BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(
             TheSongMgr.GetSongIDFromShortName(MetaPerformer::Current()->Song(), true)
         );
         // target compiled with ScrollSpeed returning double; cast forces frsp
-        unk74 = (float)(double)data->ScrollSpeed() * (unk78 / 16.8f);
+        mMsInWindow = (float)(double)data->ScrollSpeed() * (mWindowSize / 16.8f);
         mDir->Find<RndAnimatable>("tambourine_preview.anim", true)->SetFrame(0, 1);
         RebuildHUD();
     }
@@ -704,22 +704,22 @@ void VocalTrack::RebuildHUD() {
         mCurLyricPhrase[i] = 0;
     }
 
-    unk108 = 0;
-    unk104 = 1;
-    unk100 = 0;
-    unkf4 = 0;
-    unkf8 = 0;
-    unkfc = 0;
-    unk23c = mStaticDeployMarginX;
-    unk240 = mStaticDeployMarginX;
+    mLastBeat = 0;
+    mLastUpdatePhrase = 1;
+    mLastUpdateGem = 0;
+    mLastUpdateLyricLead = 0;
+    mLastUpdateLyricHarmony1 = 0;
+    mLastUpdateLyricHarmony2 = 0;
+    mLastLeadLyricX = mStaticDeployMarginX;
+    mLastHarmonyLyricX = mStaticDeployMarginX;
     mLeadLyricShifts.clear();
     mHarmonyLyricShifts.clear();
-    mDir->mLeadLyricScroller->DirtyLocalXfm().v.x = unk23c;
-    mDir->mHarmonyLyricScroller->DirtyLocalXfm().v.x = unk240;
-    unk2ac = unk23c;
-    unk2b0 = unk240;
-    unk294 = 0;
-    unk298 = 0;
+    mDir->mLeadLyricScroller->DirtyLocalXfm().v.x = mLastLeadLyricX;
+    mDir->mHarmonyLyricScroller->DirtyLocalXfm().v.x = mLastHarmonyLyricX;
+    mLeadShiftedX = mLastLeadLyricX;
+    mHarmonyShiftedX = mLastHarmonyLyricX;
+    mTargetLeadLyricX = 0;
+    mTargetHarmonyLyricX = 0;
     ClearLyrics();
     ClearMarkers();
     ResetAllTubePlates();
@@ -729,9 +729,9 @@ void VocalTrack::RebuildHUD() {
         const VocalPhrase *const &cur = mPlayer->CurrentPhrase();
         const VocalPhrase *next = mPlayer->GetNextPhraseMarker(cur);
         if (HasNetPlayer()) {
-            unk70 = 0;
+            mVocalStyleOverride = 0;
         } else {
-            unk70 = 2;
+            mVocalStyleOverride = 2;
         }
         if (mPlayer->AtFirstPhrase()) {
             mPhraseEndMs = 0;
@@ -767,7 +767,7 @@ void VocalTrack::RebuildHUD() {
         if (mPlayer->InTambourinePhrase()) {
             mDir->SetTambourine(true);
         }
-        unk208 = -1;
+        mDisplayTonic = -1;
         if (mDir->Property(pitch_guides, true)->Sym() == harmonic) {
             int tonic =
                 ((BandSongMetadata *)TheSongMgr.Data(TheSongMgr.GetSongIDFromShortName(
@@ -775,7 +775,7 @@ void VocalTrack::RebuildHUD() {
                  )))
                     ->VocalTonicNote();
             if (tonic != -1)
-                unk208 = tonic + 60;
+                mDisplayTonic = tonic + 60;
         }
         VocalHUDColor colors[3] = { kVocalColorInvalid,
                                     kVocalColorInvalid,
@@ -785,7 +785,7 @@ void VocalTrack::RebuildHUD() {
         colors[1] = GetVocalHUDColor(tubestyle->Property("harmony_1_color", true)->Sym());
         colors[2] = GetVocalHUDColor(tubestyle->Property("harmony_2_color", true)->Sym());
         for (int i = 0; i < mPlayer->NumVocalParts(); i++) {
-            mPlayer->mVocalParts[i]->unkc8 = colors[i];
+            mPlayer->mVocalParts[i]->mColor = colors[i];
         }
         mDir->SetVocalLineColors(colors);
         mDir->mStreakMeter->SetNumParts(mPlayer->NumVocalParts());
@@ -887,7 +887,7 @@ void VocalTrack::RebuildHUD() {
             }
         }
         mDir->RefreshCrowdRating(mLastRating, mLastRatingState);
-        unk2ec = true;
+        mCodaShowing = true;
     }
 }
 
@@ -918,7 +918,7 @@ void VocalTrack::SetAlternateNoteList(int part, VocalNoteList *notes) {
 }
 
 void VocalTrack::HideCoda() {
-    unk2ec = false;
+    mCodaShowing = false;
     mDir->mBREGrp->SetShowing(false);
     mDir->mLeadBREGrp->SetShowing(false);
     mDir->mHarmonyBREGrp->SetShowing(false);
@@ -984,7 +984,7 @@ void VocalTrack::UpdateTambourineGems() {
         TambourineGem *gem = gems[i];
         int hit = gem->unk8;
         if (hit == 0) {
-            t.v.x = unk78 * (gems[i]->unk0 / unk74);
+            t.v.x = mWindowSize * (gems[i]->unk0 / mMsInWindow);
             Transform worldXfm;
             Multiply(t, mDir->mScroller->WorldXfm(), worldXfm);
             if (hit == 0) {
@@ -1002,15 +1002,15 @@ void VocalTrack::PollLyricAnimations(
     bool scrolling = IsScrolling();
     float plateMs;
     if (scrolling) {
-        plateMs = unk2a8;
+        plateMs = mScrollerXPos;
     } else if (lead) {
-        plateMs = unk2ac;
+        plateMs = mLeadShiftedX;
     } else {
-        plateMs = unk2b0;
+        plateMs = mHarmonyShiftedX;
     }
     while (!plates.empty() && !plates.front()->Empty()
            && ((scrolling
-                && plates.front()->CurrentEndX(plateMs) < mDir->mTrackLeftX - unk78)
+                && plates.front()->CurrentEndX(plateMs) < mDir->mTrackLeftX - mWindowSize)
                || plates.front()->mInvalidateMs < ms)) {
         LyricPlate *cur = plates.front();
         if (sDumpLyricPlates) {
@@ -1026,7 +1026,7 @@ void VocalTrack::PollLyricAnimations(
         plates.push_back(cur);
     }
     if (TheGame->InRollback())
-        ms = unk2a4;
+        ms = mLastPollMs;
     FOREACH (it, plates) {
         LyricPlate *cur = *it;
         if (cur->Empty())
@@ -1130,8 +1130,8 @@ void VocalTrack::UpdateScrolling(float ms) {
         return;
     if (ms < 0.0f)
         return;
-    float trackScale = unk74;
-    float trackWidth = unk78;
+    float trackScale = mMsInWindow;
+    float trackWidth = mWindowSize;
     float lookAhead = 64.0 * trackScale + ms;
     float buildAhead =
         trackScale * ((mDir->mTrackLeftX - trackWidth) / trackWidth) + ms;
@@ -1183,12 +1183,12 @@ void VocalTrack::UpdateScrolling(float ms) {
                    && notes->mNotes[prepEnd].mMs <= lookAhead) {
                 prepEnd++;
             }
-            PrepareNoteTubes(unk74, mNextScrollNote[part], prepEnd, part);
+            PrepareNoteTubes(mMsInWindow, mNextScrollNote[part], prepEnd, part);
             mNextScrollNote[part] = prepEnd;
         }
     }
 
-    int beat = unk108;
+    int beat = mLastBeat;
     while (true) {
         int tick = (int)BeatToTick((float)beat);
         float beatMs = TickToMs((float)tick);
@@ -1207,9 +1207,9 @@ void VocalTrack::UpdateScrolling(float ms) {
         }
         beat++;
     }
-    unk108 = beat;
+    mLastBeat = beat;
 
-    int phraseIdx = unk104;
+    int phraseIdx = mLastUpdatePhrase;
     VocalNoteList *leadNotes = GetVocalNoteList(0);
     while (phraseIdx < leadNotes->mPhrases.size()) {
         const VocalPhrase &ph = leadNotes->mPhrases[phraseIdx];
@@ -1224,13 +1224,13 @@ void VocalTrack::UpdateScrolling(float ms) {
         CreateMarker("phrase_marker.mesh", phMs, warnOnMarkerCreation);
         phraseIdx++;
     }
-    unk104 = phraseIdx;
+    mLastUpdatePhrase = phraseIdx;
 
     float oldRange = mDir->mLastMax - mDir->mLastMin;
     while (mRangeShifts.size() != 0
            && mRangeShifts.front().mPhraseMs < ms - mRangeShifts.front().mBeginMin) {
         RangeShift &rs = mRangeShifts.front();
-        mDir->SetRange(rs.mBeginMax, rs.mEndMin, unk208, false);
+        mDir->SetRange(rs.mBeginMax, rs.mEndMin, mDisplayTonic, false);
         mRangeShifts.pop_front();
     }
     if (mRangeShifts.size() != 0) {
@@ -1241,7 +1241,7 @@ void VocalTrack::UpdateScrolling(float ms) {
             mDir->SetRange(
                 t * (rs.mEndMax - rs.mBeginMax) + rs.mBeginMax,
                 t * (rs.mAnimMs - rs.mEndMin) + rs.mEndMin,
-                unk208,
+                mDisplayTonic,
                 false
             );
         }
@@ -1263,15 +1263,15 @@ void VocalTrack::UpdateScrolling(float ms) {
     }
 
     if (!InTambourinePhrase()) {
-        float lyricMs = TheGame->InRollback() ? unk2a4 : ms;
+        float lyricMs = TheGame->InRollback() ? mLastPollMs : ms;
         for (int side = 0; side < 2; side++) {
             std::deque<LyricShift> &shifts =
                 (side == 0) ? mLeadLyricShifts : mHarmonyLyricShifts;
             RndTransformable *scroller = (side == 0)
                 ? mDir->mLeadLyricScroller.Ptr()
                 : mDir->mHarmonyLyricScroller.Ptr();
-            float &xPos = (side == 0) ? unk294 : unk298;
-            float &shiftedX = (side == 0) ? unk2ac : unk2b0;
+            float &xPos = (side == 0) ? mTargetLeadLyricX : mTargetHarmonyLyricX;
+            float &shiftedX = (side == 0) ? mLeadShiftedX : mHarmonyShiftedX;
             while (shifts.size() != 0) {
                 LyricShift &shift = shifts.front();
                 float window = shift.unk8 ? mLyricShiftQuickMs : mLyricShiftMs;
@@ -1325,13 +1325,13 @@ void VocalTrack::UpdateScrolling(float ms) {
         const std::vector<int> &tambGems =
             mPlayer->mTambourineManager.TambourineGems();
         int targetTick = (int)MsToTick(lookAhead);
-        int gemIdx = unk100;
+        int gemIdx = mLastUpdateGem;
         while (gemIdx < tambGems.size() && tambGems[gemIdx] < targetTick) {
             float gemMs = TickToMs((float)tambGems[gemIdx]);
             mTambourineGemPool->NewGem(gemMs, gemIdx);
             gemIdx++;
         }
-        unk100 = gemIdx;
+        mLastUpdateGem = gemIdx;
     }
 
     UpdateLyricZ();
@@ -1376,11 +1376,11 @@ void VocalTrack::UpdateScrolling(float ms) {
                     : &mDir->mHarmonyLyricScroller);
         RndTransformable *scroller = scrollerPtr->Ptr();
 
-        int *itPPtr = lead ? &unkf4 : (part == 1 ? &unkf8 : &unkfc);
+        int *itPPtr = lead ? &mLastUpdateLyricLead : (part == 1 ? &mLastUpdateLyricHarmony1 : &mLastUpdateLyricHarmony2);
         VocalNote *itT = VN_PTR(notes->mNotes, *itPPtr);
         VocalNote *notesEnd = VN_PTR(notes->mNotes, notes->mNotes.size());
         VocalNote *altIt =
-            altNotes ? VN_PTR(altNotes->mNotes, unkfc) : notesEnd;
+            altNotes ? VN_PTR(altNotes->mNotes, mLastUpdateLyricHarmony2) : notesEnd;
         VocalNote *altEnd =
             altNotes ? VN_PTR(altNotes->mNotes, altNotes->mNotes.size()) : notesEnd;
         if (itT == notesEnd && altIt == altEnd)
@@ -1389,9 +1389,9 @@ void VocalTrack::UpdateScrolling(float ms) {
         std::deque<LyricPlate *> &plates = lead ? mLyricsLead : mLyricsHarmony;
 
         float scrollerWidth =
-            mDir->mTrackRightX - (lead ? unk2ac : unk2b0);
+            mDir->mTrackRightX - (lead ? mLeadShiftedX : mHarmonyShiftedX);
         float scrollingLastX = -1000.0f;
-        float &lastLyricX = staticLyrics ? (lead ? unk23c : unk240) : scrollingLastX;
+        float &lastLyricX = staticLyrics ? (lead ? mLastLeadLyricX : mLastHarmonyLyricX) : scrollingLastX;
         Lyric *latest = GetLastLyric(plates);
         if (latest) {
             lastLyricX = latest->EndPos();
@@ -1462,7 +1462,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                     while (altIt != altEnd && !(altIt->mMs > phEndMs)) {
                         altIt++;
                     }
-                    unkfc = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
+                    mLastUpdateLyricHarmony2 = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
                 }
                 while (*curDeployPtr < freestyles.size()
                        && freestyles[*curDeployPtr].second < phEndMs) {
@@ -1565,7 +1565,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                         curAlt++;
                     }
                     altIt = curAlt;
-                    unkfc = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
+                    mLastUpdateLyricHarmony2 = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
                 }
 
                 if (itT->mMs > phEndMs)
@@ -1672,7 +1672,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                     curAlt++;
                 }
                 altIt = curAlt;
-                unkfc = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
+                mLastUpdateLyricHarmony2 = (int)(altIt - VN_PTR(altNotes->mNotes, 0));
             }
 
             if (staticLyrics && plates.size() != 0) {
@@ -1767,8 +1767,8 @@ void VocalTrack::UpdateScrolling(float ms) {
                     }
                 } else {
                     float startMs = TickToMs((float)lyric->StartTick());
-                    MsToTick(startMs - unk74);
-                    lyricX = unk78 * (startMs / unk74);
+                    MsToTick(startMs - mMsInWindow);
+                    lyricX = mWindowSize * (startMs / mMsInWindow);
                 }
                 lyric->mBeginPos.y = 0.0f;
                 float lyricZ;
@@ -1977,12 +1977,12 @@ void VocalTrack::UpdateScrolling(float ms) {
 
 void VocalTrack::Poll(float f1) {
     bool gamebool = TheGame->InRollback();
-    if (f1 < unk2a4 && !gamebool) {
+    if (f1 < mLastPollMs && !gamebool) {
         RebuildHUD();
     }
-    float f6 = unk78 * -(f1 / unk74);
+    float f6 = mWindowSize * -(f1 / mMsInWindow);
     mDir->mScroller->SetLocalPos(f6, 0, 0);
-    unk2a8 = f6 + mDir->mNowBarX;
+    mScrollerXPos = f6 + mDir->mNowBarX;
     Track::Poll(f1);
     mDir->UpdatePartIsolation();
     mDir->SortArrowFx();
@@ -1993,13 +1993,13 @@ void VocalTrack::Poll(float f1) {
         PollLyricAnimations(mLyricsHarmony, f1, false);
     }
     PollKaraoke(f1);
-    if (unk68) {
+    if (mScoreDebug) {
         const char *txt = MakeString("current: %i\n", mPlayer->PhraseScore());
         mDir->Find<RndText>("debug_score_current.txt", true)->SetText(txt);
     }
     if (!gamebool)
-        unk2a4 = f1;
-    if (mPlayer && unk2ec) {
+        mLastPollMs = f1;
+    if (mPlayer && mCodaShowing) {
         if (!mPlayer->CanDeployCoda()) {
             HideCoda();
         }
@@ -2009,7 +2009,7 @@ void VocalTrack::Poll(float f1) {
 void VocalTrack::PollKaraoke(float f1) {
     if (mPlayer) {
         int numSingers = mPlayer->NumSingers();
-        if (!unk2e5) {
+        if (!mRemoteBandVocals) {
             StartUpdateArrows();
             for (int i = 0; i < numSingers; i++) {
                 UpdatePitchArrow(f1, i);
@@ -2079,7 +2079,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
             }
             VocalHUDColor color = (VocalHUDColor)-1;
             if (part) {
-                color = (VocalHUDColor)part->unkc8;
+                color = (VocalHUDColor)part->mColor;
             }
             arrow->SetFrameScore(singer->mLastFrameMicEnergy, color, 0.0f);
             if (gDebugSpew) {
@@ -2098,7 +2098,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
             }
             VocalHUDColor color = (VocalHUDColor)-1;
             if (part) {
-                color = (VocalHUDColor)part->unkc8;
+                color = (VocalHUDColor)part->mColor;
             }
             pitchFrame = singer->mFrameTargetPitch - singer->mFrameMicPitch;
             float harmonyScore = GetHarmonyScore(singerIdx);
@@ -2362,7 +2362,7 @@ void VocalTrack::BuildScrollingDeployZone(
         if ((*(it + 1))->GetBeginMs() > endMs)
             break;
     }
-    float xPos = unk78 * (startMs / unk74);
+    float xPos = mWindowSize * (startMs / mMsInWindow);
     float minX = lastLyricX + mStaticDeployBufferX;
     if (xPos < minX)
         xPos = minX;
@@ -2377,7 +2377,7 @@ void VocalTrack::BuildScrollingDeployZone(
     }
     bool inCoda = TheSongDB->IsInCoda(MsToTickInt(startMs));
     mNoteTube->SetPointPos(0, Vector3(0, 0, z));
-    mNoteTube->SetPointPos(1, Vector3(unk78 * (endMs / unk74) - xPos, 0, z));
+    mNoteTube->SetPointPos(1, Vector3(mWindowSize * (endMs / mMsInWindow) - xPos, 0, z));
     mNoteTube->unk_0x30 = height;
     mNoteTube->SetBackParent(inCoda ? mDir->mBREGrp : mDir->mPitchScrollGroup);
     mNoteTube->SetXPos(xPos);
@@ -2502,7 +2502,7 @@ void VocalTrack::PrepareNoteTubes(
                                 "tube pitch to z: %d -> %1.2f\n", beginPitch, z
                             );
                         }
-                        float x = unk78 * (runX / windowDurationMs);
+                        float x = mWindowSize * (runX / windowDurationMs);
                         if (note.mUnpitchedNote == 0 && pointIdx == 0) {
                             x += 0.75f * zPerPitch;
                         }
@@ -2521,7 +2521,7 @@ void VocalTrack::PrepareNoteTubes(
                 if (!lastNote.mUnpitchedNote) {
                     lastZ = zPerPitch * (float)(lastNote.mEndPitch - 60);
                 }
-                float lastX = unk78 * (runX / windowDurationMs);
+                float lastX = mWindowSize * (runX / windowDurationMs);
                 if (!lastNote.mUnpitchedNote) {
                     float minX = (0.75f * zPerPitch - lastX);
                     minX = -minX;
@@ -2531,7 +2531,7 @@ void VocalTrack::PrepareNoteTubes(
                     lastX = minX;
                 }
                 mNoteTube->SetPointPos(pointIdx, Vector3(lastX, 0, lastZ));
-                mNoteTube->mXPos = unk78 * (firstNote.mMs / windowDurationMs);
+                mNoteTube->mXPos = mWindowSize * (firstNote.mMs / windowDurationMs);
                 mNoteTube->CreateMeshes();
             }
         }
@@ -2580,7 +2580,7 @@ void VocalTrack::ProcessStaticLyrics(
 }
 
 void VocalTrack::Restart(VocalPlayer *player, float f1, float f2) {
-    unk2a4 = -1.0f;
+    mLastPollMs = -1.0f;
     mPlayer = player;
     mPhraseStartMs = 0;
     mPhraseEndMs = 0;
@@ -2591,26 +2591,26 @@ void VocalTrack::Restart(VocalPlayer *player, float f1, float f2) {
         mNextDeployZone[i] = 0;
     for (int i = 0; i < 2; i++)
         mCurLyricPhrase[i] = 0;
-    unk108 = 0;
-    unk104 = 1;
-    unk100 = 0;
-    unkf4 = 0;
-    unkf8 = 0;
-    unkfc = 0;
+    mLastBeat = 0;
+    mLastUpdatePhrase = 1;
+    mLastUpdateGem = 0;
+    mLastUpdateLyricLead = 0;
+    mLastUpdateLyricHarmony1 = 0;
+    mLastUpdateLyricHarmony2 = 0;
     mLeadLyricShifts.clear();
     mHarmonyLyricShifts.clear();
-    unk23c = mStaticDeployMarginX;
-    unk240 = unk23c;
-    mDir->mLeadLyricScroller->DirtyLocalXfm().v.x = unk23c;
-    mDir->mHarmonyLyricScroller->DirtyLocalXfm().v.x = unk240;
-    unk2ac = unk23c;
-    unk2b0 = unk240;
+    mLastLeadLyricX = mStaticDeployMarginX;
+    mLastHarmonyLyricX = mLastLeadLyricX;
+    mDir->mLeadLyricScroller->DirtyLocalXfm().v.x = mLastLeadLyricX;
+    mDir->mHarmonyLyricScroller->DirtyLocalXfm().v.x = mLastHarmonyLyricX;
+    mLeadShiftedX = mLastLeadLyricX;
+    mHarmonyShiftedX = mLastHarmonyLyricX;
     mTambourineGemPool->FreeUsedGems();
     mTambourineGemPool->SetTambourineManager(&mPlayer->mTambourineManager);
     mDir->mBREGrp->SetShowing(true);
     mDir->mLeadBREGrp->SetShowing(true);
     mDir->mHarmonyBREGrp->SetShowing(true);
-    unk2ec = true;
+    mCodaShowing = true;
     UpdateVocalStyle();
 }
 
@@ -2633,7 +2633,7 @@ void VocalTrack::MissTambourineGem(int, bool b) {
 
 void VocalTrack::OnPhraseComplete(float f1, float f2, int i3) {
     BuildPhrase(f1, f2);
-    if (unk68) {
+    if (mScoreDebug) {
         const char *txt = MakeString("last: %i\n", i3);
         mDir->Find<RndText>("debug_score_current.txt", true)->SetText(txt);
     }
@@ -2709,10 +2709,10 @@ DataNode VocalTrack::OnGetDisplayMode(const DataArray *a) {
 
 DataNode VocalTrack::OnSetDisplayMode(const DataArray *a) {
     if (a->Sym(2) == "static") {
-        mVocalStyleOverride = kVocalStyleStatic;
+        mVocalStyle = kVocalStyleStatic;
         return a->Node(2);
     } else if (a->Sym(2) == "scrolling") {
-        mVocalStyleOverride = kVocalStyleScrolling;
+        mVocalStyle = kVocalStyleScrolling;
         return a->Node(2);
     } else
         return "unrecognized";

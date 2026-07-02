@@ -24,8 +24,8 @@
 #include "utl/Symbols4.h"
 
 FreestylePanel::FreestylePanel()
-    : mController(0), mUser(0), unk44(0.5f), unk48(0), unk4c(0), mMetronome(0), unk54(1),
-      unk58(-1), unk5c(0), mFreestylePaused(0) {
+    : mController(0), mUser(0), mSecsPerBeat(0.5f), mBeatTimer(0), mBeatCount(0), mMetronome(0), mSoloEnabled(1),
+      mSoloStartSecs(-1), mLastSwingSecs(0), mFreestylePaused(0) {
     mMetronome = new Metronome();
 }
 
@@ -56,12 +56,12 @@ void FreestylePanel::Poll() {
         return;
     mController->SetSecondPedalHiHat(TheProfileMgr.GetSecondPedalHiHat());
     if (mMetronome->Enabled()) {
-        unk48 -= TheTaskMgr.DeltaUISeconds();
-        if (unk48 < 0) {
-            mMetronome->PlayBeat(unk4c);
-            unk4c = (unk4c + 1) % 4;
-            while (unk48 < 0) {
-                unk48 += unk44;
+        mBeatTimer -= TheTaskMgr.DeltaUISeconds();
+        if (mBeatTimer < 0) {
+            mMetronome->PlayBeat(mBeatCount);
+            mBeatCount = (mBeatCount + 1) % 4;
+            while (mBeatTimer < 0) {
+                mBeatTimer += mSecsPerBeat;
             }
         }
     }
@@ -69,10 +69,10 @@ void FreestylePanel::Poll() {
 }
 
 void FreestylePanel::HandleSolo() {
-    if (unk54 && unk58 >= 0) {
+    if (mSoloEnabled && mSoloStartSecs >= 0) {
         float uisecs = TheTaskMgr.UISeconds();
-        if (uisecs - unk5c > 0.7f) {
-            float f1 = uisecs - unk58;
+        if (uisecs - mLastSwingSecs > 0.7f) {
+            float f1 = uisecs - mSoloStartSecs;
             if (f1 > 60.0f) {
                 Sequence *seq = mDir->Find<Sequence>("applause_sexy.cue", false);
                 if (seq)
@@ -86,8 +86,8 @@ void FreestylePanel::HandleSolo() {
                 if (seq)
                     seq->Play(0, 0, 0);
             }
-            unk5c = -1.0f;
-            unk58 = -1.0f;
+            mLastSwingSecs = -1.0f;
+            mSoloStartSecs = -1.0f;
         }
     }
     if (!mUser || !mController)
@@ -109,16 +109,16 @@ bool FreestylePanel::Swing(int i1, bool, bool, bool, bool, GemHitFlags) {
     float db = VelocityBucketToDb(mController->GetVelocityBucket(i1));
     Message pad_hit_msg("pad_hit", slot, db);
     Handle(pad_hit_msg, true);
-    if (unk54) {
+    if (mSoloEnabled) {
         float secs = TheTaskMgr.UISeconds();
-        if (unk58 < 0)
-            unk58 = secs;
-        unk5c = secs;
+        if (mSoloStartSecs < 0)
+            mSoloStartSecs = secs;
+        mLastSwingSecs = secs;
     }
     return false;
 }
 
-void FreestylePanel::SetBpm(int i) { unk44 = 60.0f / i; }
+void FreestylePanel::SetBpm(int i) { mSecsPerBeat = 60.0f / i; }
 
 void FreestylePanel::CreateController() {
     RELEASE(mController);

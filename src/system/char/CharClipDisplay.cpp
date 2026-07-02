@@ -31,31 +31,31 @@ MsgSource *CharClipDisplay::FindSource(Hmx::Object *o) {
 }
 
 void CharClipDisplay::SetClip(CharClip *clip, bool b) {
-    unk0 = clip;
+    mClip = clip;
     SetText(clip->Name());
     SetStartEnd(clip->StartBeat(), clip->EndBeat(), b);
 }
 
 void CharClipDisplay::SetText(const char *text) {
-    strcpy(unk24, text);
+    strcpy(mText, text);
     float drawWidth = TheRnd->DrawString(text, Vector2(0, 0), Hmx::Color(1.0f, 0.0f, 0.0f), false).x;
-    unk14 = drawWidth + sEm;
+    mTextWidth = drawWidth + sEm;
 }
 
 float CharClipDisplay::LineSpacing() { return sEm * 2.0f; }
 
 float CharClipDisplay::GetX(float beat) const {
-    float startBeat = unkc;
-    float endBeat = unk10;
+    float startBeat = mViewStartBeat;
+    float endBeat = mViewEndBeat;
     float beatRange = (endBeat > startBeat) ? (endBeat - startBeat) : 1.0f;
     float leftMargin = sEm * 3.0f;
-    float paddingPlusText = unk64 + unk14;
+    float paddingPlusText = mX + mTextWidth;
     float textWidth = paddingPlusText + leftMargin;
     return (beat - startBeat) * ((TheRnd->Width() - leftMargin) - textWidth) / beatRange + textWidth;
 }
 
 void CharClipDisplay::GetXY(Vector2 &out, float beat) const {
-    float drawY = unk18;
+    float drawY = mY;
     out.x = GetX(beat);
     out.y = drawY;
 }
@@ -72,55 +72,55 @@ void CharClipDisplay::DrawBeatString(const char *c, float f1, const Hmx::Color &
 #pragma fp_contract off
 __declspec(noinline) void
 CharClipDisplay::SetStartEnd(float start, float end, bool resetZoom) {
-    unk4 = start;
-    unk8 = end;
-    unkc = start;
-    unk10 = end;
+    mStartBeat = start;
+    mEndBeat = end;
+    mViewStartBeat = start;
+    mViewEndBeat = end;
     float zoomRange = 16.0f / sZoom;
     if (resetZoom) {
         float margin = sEm * 3.0f;
         int width = TheRnd->Width();
-        float textOffset = unk64 + unk14 + margin;
-        unkc = unk1c - (((float)width * 0.5f - textOffset) * zoomRange) / (float)width;
-        unk10 = ((((float)width - margin) - textOffset) * zoomRange)
-                / (float)TheRnd->Width() + unkc;
-        GetX(unk1c);
+        float textOffset = mX + mTextWidth + margin;
+        mViewStartBeat = mBeat - (((float)width * 0.5f - textOffset) * zoomRange) / (float)width;
+        mViewEndBeat = ((((float)width - margin) - textOffset) * zoomRange)
+                / (float)TheRnd->Width() + mViewStartBeat;
+        GetX(mBeat);
     } else {
         // (float)(double)x casts force CW to emit `frsp` (single-precision round)
         // here, matching the original binary's else-branch instruction sequence.
         float fstart = (float)(double)start;
         float fend = (float)(double)end;
         if (fend - fstart > zoomRange) {
-            float cursor = unk1c;
+            float cursor = mBeat;
             float halfZoom = zoomRange * 0.5f;
             if (cursor < halfZoom + start) {
-                unk10 = zoomRange + start;
+                mViewEndBeat = zoomRange + start;
             } else {
                 if (cursor > end - halfZoom) {
-                    unkc = end - zoomRange;
+                    mViewStartBeat = end - zoomRange;
                     return;
                 }
-                unkc = cursor - halfZoom;
-                unk10 = halfZoom + cursor;
+                mViewStartBeat = cursor - halfZoom;
+                mViewEndBeat = halfZoom + cursor;
             }
         } else {
             if (end != start) {
                 return;
             }
-            unkc = start - zoomRange * 0.5f;
-            unk10 = zoomRange * 0.5f + end;
+            mViewStartBeat = start - zoomRange * 0.5f;
+            mViewEndBeat = zoomRange * 0.5f + end;
         }
     }
 }
 #pragma pop
 
 void CharClipDisplay::DrawBlend(float beat, float weight) {
-    Hmx::Rect rect(0, unk18 + 1.0f, 0.0f, 2.0f);
+    Hmx::Rect rect(0, mY + 1.0f, 0.0f, 2.0f);
     rect.x = GetX(beat);
     rect.w = GetX(beat + weight) - rect.x;
     Hmx::Color blendColor(0.0f, 0.0f, 1.0f, 0.4f);
     TheRnd->DrawRect(rect, blendColor, NULL, NULL, NULL);
-    rect.y = unk18 - 1.0f;
+    rect.y = mY - 1.0f;
     rect.h = 4.0f;
     rect.w = 3.0f;
     rect.x = GetX(weight * 0.5f + beat) - 1.0f;
@@ -134,12 +134,12 @@ void CharClipDisplay::DrawTrack() {
     Hmx::Color black(0.0f, 0.0f, 0.0f, 1.0f);
     Hmx::Color ikColor(1.0f, 0.0f, 0.0f, 1.0f);
 
-    float drawY = unk18;
-    float startBeat = unk4;
+    float drawY = mY;
+    float startBeat = mStartBeat;
     float nameY = -(sEm * 0.5f - drawY);
-    if (unkc >= unk4) startBeat = unkc;
-    float endBeat = unk8;
-    if (unk10 < unk8) endBeat = unk10;
+    if (mViewStartBeat >= mStartBeat) startBeat = mViewStartBeat;
+    float endBeat = mEndBeat;
+    if (mViewEndBeat < mEndBeat) endBeat = mViewEndBeat;
 
     Hmx::Rect trackRect;
     trackRect.x = GetX(startBeat);
@@ -164,7 +164,7 @@ void CharClipDisplay::DrawTrack() {
         beat += beatStep;
     }
 
-    if (unk0 != NULL) {
+    if (mClip != NULL) {
         {
         float halfEmConst = 0.5f;
         bool firstEvent = true;
@@ -173,8 +173,8 @@ void CharClipDisplay::DrawTrack() {
         float eventAlpha = 0.2f;
         int byteOffset = 0;
         float eventLabelOffset = 10.0f;
-        while ((unsigned int)idx < (unsigned int)unk0->NumBeatEvents()) {
-        const CharClip::BeatEvent &ev = unk0->mBeatEvents[idx];
+        while ((unsigned int)idx < (unsigned int)mClip->NumBeatEvents()) {
+        const CharClip::BeatEvent &ev = mClip->mBeatEvents[idx];
         float eventX = GetX(ev.beat);
         Vector2 labelPos(eventX, drawY);
         float halfEmVal = sEm * halfEmConst;
@@ -183,9 +183,9 @@ void CharClipDisplay::DrawTrack() {
         TheRnd->DrawRect(eventRect, eventColor, NULL, NULL, NULL);
 
         if (firstEvent
-        && (ev.beat > unk1c
+        && (ev.beat > mBeat
         || (idx == 0
-        && unk1c > unk0->mBeatEvents.back().beat))) {
+        && mBeat > mClip->mBeatEvents.back().beat))) {
         Hmx::Color eventLabelColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
         firstEvent = false;
         labelPos.y -= (halfEmVal + eventLabelOffset);
@@ -219,18 +219,18 @@ void CharClipDisplay::DrawTrack() {
         if (data != NULL) {
         Symbol channelName
         = CharBones::ChannelName(data->Name(), CharBones::TYPE_POS);
-        void *channel = unk0->GetChannel(channelName);
+        void *channel = mClip->GetChannel(channelName);
         Vector3 channelData;
         Hmx::Rect ikRect;
         ikRect.y = drawY;
         ikRect.w = 1.0f;
         ikRect.h = 1.0f;
-        float firstFrameF = (float)std::ceil(unk0->BeatToFrame(startBeat));
-        int lastFrame = (int)(float)std::floor(unk0->BeatToFrame(endBeat));
+        float firstFrameF = (float)std::ceil(mClip->BeatToFrame(startBeat));
+        int lastFrame = (int)(float)std::floor(mClip->BeatToFrame(endBeat));
         int firstFrame = (int)firstFrameF;
         for (int frame = firstFrame; frame <= lastFrame; frame++) {
-        float frameBeat = unk0->FrameToBeat((float)frame);
-        unk0->EvaluateChannel(&channelData, channel, frameBeat);
+        float frameBeat = mClip->FrameToBeat((float)frame);
+        mClip->EvaluateChannel(&channelData, channel, frameBeat);
         if (leftIk != NULL
         && channelData[leftIk->mDataIndex] > 0.0f) {
         ikRect.x = GetX(frameBeat);
@@ -251,10 +251,10 @@ void CharClipDisplay::DrawTrack() {
         {
         Hmx::Rect sampleRect(0.0f, drawY + 1.0f, 1.0f, 1.0f);
         float frac;
-        int startSample = unk0->BeatToSample(startBeat, &frac);
-        int endSample = unk0->BeatToSample(endBeat, &frac);
+        int startSample = mClip->BeatToSample(startBeat, &frac);
+        int endSample = mClip->BeatToSample(endBeat, &frac);
         for (; startSample <= endSample; startSample++) {
-        float sampleBeat = unk0->SampleToBeat(startSample);
+        float sampleBeat = mClip->SampleToBeat(startSample);
         sampleRect.x = GetX(sampleBeat);
         TheRnd->DrawRect(sampleRect, black, NULL, NULL, NULL);
         }
@@ -265,9 +265,9 @@ void CharClipDisplay::DrawTrack() {
         DrawBeatString(lastBeat, green);
 
         {
-        float labelX = -((sEm * 2.0f) - (sEm * 3.0f + unk64 + unk14));
+        float labelX = -((sEm * 2.0f) - (sEm * 3.0f + mX + mTextWidth));
         Vector2 startPos(labelX, nameY);
-        TheRnd->DrawString(MakeString("%.1f", unk4), startPos, white, true);
+        TheRnd->DrawString(MakeString("%.1f", mStartBeat), startPos, white, true);
         }
 
         {
@@ -275,14 +275,14 @@ void CharClipDisplay::DrawTrack() {
         float s2em = sEm * 2.0f;
         float labelX = screenWidth - s2em;
         Vector2 endPos(labelX, nameY);
-        TheRnd->DrawString(MakeString("%.1f", unk8), endPos, white, true);
+        TheRnd->DrawString(MakeString("%.1f", mEndBeat), endPos, white, true);
         }
         }
     }
     {
         Hmx::Color nameColor(1.0f, 1.0f, 1.0f, 1.0f);
-        Vector2 namePos(unk64 + sEm, nameY);
-        TheRnd->DrawString(unk24, namePos, nameColor, true);
+        Vector2 namePos(mX + sEm, nameY);
+        TheRnd->DrawString(mText, namePos, nameColor, true);
     }
 }
 
@@ -299,14 +299,14 @@ void CharClipDisplay::DrawBeatString(float beat, const Hmx::Color &color) {
 void CharClipDisplay::DrawCursor() {
     Hmx::Color yellow(1.0f, 1.0f, 0.0f, 1.0f);
     Vector2 v;
-    GetXY(v, unk1c);
+    GetXY(v, mBeat);
     Hmx::Rect rect(v.x, v.y - 3.0f, 1.0f, 9.0f);
     TheRnd->DrawRect(rect, yellow, NULL, NULL, NULL);
     const char *text;
-    if (unk20 < 1.0f) {
-        text = MakeString("%.1f", unk1c);
+    if (mBlendFrac < 1.0f) {
+        text = MakeString("%.1f", mBeat);
     } else {
-        text = MakeString("%.1f (%.2f)", unk1c, unk20);
+        text = MakeString("%.1f (%.2f)", mBeat, mBlendFrac);
     }
-    DrawBeatString(text, unk1c, yellow);
+    DrawBeatString(text, mBeat, yellow);
 }

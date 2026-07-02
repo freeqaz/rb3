@@ -11,9 +11,9 @@
 
 Tail::Tail(GemRepTemplate &tmp)
     : mGroup(Hmx::Object::New<RndGroup>()), mTail1(Hmx::Object::New<RndMesh>()),
-      mTail2(Hmx::Object::New<RndMesh>()), unk10(0), unk14("normal"), mSlot(-1),
-      mTemplate(tmp), mTailGeomOwner(0), unk28(0), unk4e4(0), unk4e8(0), unk4ec(0),
-      unk4f0(0), unk4f4(0) {
+      mTail2(Hmx::Object::New<RndMesh>()), mTailBegin(0), mType("normal"), mSlot(-1),
+      mTemplate(tmp), mTailGeomOwner(0), mUpdateGeometry(0), mLastWhammyVal(0), mLastWhammyAlpha(0), mTailLength(0),
+      mLastTailLength(0), mLastActive(0) {
     mGroup->AddObject(mTail1);
     mTail1->SetTransParent(mGroup, false);
     mGroup->AddObject(mTail2);
@@ -40,10 +40,10 @@ void Tail::Init(
     mState = 0;
     mSlot = i1;
     mSlideInfo = info;
-    if (mSlideInfo.unk0) {
+    if (mSlideInfo.mSliding) {
         static float severity = 3.5f;
         mInterpolator.Reset(
-            mSlideInfo.unk4, mSlideInfo.unk8, 0, mSlideInfo.unkc, severity
+            mSlideInfo.mStartOffset, mSlideInfo.mEndOffset, 0, mSlideInfo.mLength, severity
         );
     }
     ConfigureMeshes(tail);
@@ -51,12 +51,12 @@ void Tail::Init(
     mGroup->SetLocalXfm(tf);
     grp->AddObject(mGroup);
     mWhammy.Clear();
-    unk4e4 = 0;
-    unk4e8 = 0;
-    unk4e0 = 0;
-    unk4ec = 0;
-    unk4f0 = 0;
-    unk4f4 = false;
+    mLastWhammyVal = 0;
+    mLastWhammyAlpha = 0;
+    mWaveTime = 0;
+    mTailLength = 0;
+    mLastTailLength = 0;
+    mLastActive = false;
     UpdateVerts(mTemplate.kTailMinAlpha, false);
 }
 
@@ -69,11 +69,11 @@ void Tail::MoveSlot(const Transform &tf) {
 }
 
 void Tail::SetType(Symbol s, bool b) {
-    unk14 = s;
-    if (unk14 == "unison") {
-        unk14 = "star";
+    mType = s;
+    if (mType == "unison") {
+        mType = "star";
     }
-    bool isStar = unk14 == "star";
+    bool isStar = mType == "star";
     RndMat *tailMat;
     if (mState == 1) {
         tailMat = mTemplate.GetTailMiss();
@@ -87,7 +87,7 @@ void Tail::SetType(Symbol s, bool b) {
     MILO_ASSERT(tailMat, 0x8A);
     mTail1->SetMat(tailMat);
     mTail2->SetMat(tailMat);
-    mTail1->SetShowing(unk14 != "invisible");
+    mTail1->SetShowing(mType != "invisible");
     mTail2->SetShowing(false);
     if (mState == 2)
         Hit();
@@ -96,10 +96,10 @@ void Tail::SetType(Symbol s, bool b) {
 void Tail::ConfigureMeshes(Tail *tail) {
     if (tail) {
         mTailGeomOwner = tail->mTailGeomOwner;
-        unk28 = false;
+        mUpdateGeometry = false;
     } else {
         mTailGeomOwner = mTemplate.GetTail();
-        unk28 = true;
+        mUpdateGeometry = true;
     }
     MILO_ASSERT(mTailGeomOwner, 0xAC);
     mTail1->SetGeomOwner(mTailGeomOwner);
@@ -111,7 +111,7 @@ void Tail::ConfigureMeshes(Tail *tail) {
 }
 
 void Tail::ReleaseMeshes() {
-    if (unk28)
+    if (mUpdateGeometry)
         mTemplate.ReturnTail(mTailGeomOwner);
     mTailGeomOwner = nullptr;
     mTail1->SetGeomOwner(mTail1);
@@ -123,21 +123,21 @@ void Tail::ReleaseMeshes() {
 void Tail::SetDuration(float f1, float f2, float f3) {
     if (mState != 4) {
         if (mState == 2) {
-            unk10 = Max(f1, unk10);
+            mTailBegin = Max(f1, mTailBegin);
         } else {
-            unk10 = Max(f2, unk10);
+            mTailBegin = Max(f2, mTailBegin);
         }
-        unk10 = Min(unk10, f3);
-        unk4ec = f3 - unk10;
+        mTailBegin = Min(mTailBegin, f3);
+        mTailLength = f3 - mTailBegin;
     }
 }
 
 void Tail::Hit() {
     mState = 2;
-    if (!mSlideInfo.unk0) {
+    if (!mSlideInfo.mSliding) {
         mTail2->SetShowing(true);
     }
-    if (unk28)
+    if (mUpdateGeometry)
         mWhammy.Clear();
 }
 
@@ -151,8 +151,8 @@ void Tail::Release() {
 void Tail::Done() {
     if (mState == 2) {
         mState = 4;
-        unk10 = 0;
-        unk4ec = 0;
+        mTailBegin = 0;
+        mTailLength = 0;
         mTail1->SetShowing(false);
         mTail2->SetShowing(false);
     }
@@ -162,11 +162,11 @@ void Tail::HandleMistake() { mTail2->SetShowing(false); }
 
 void Tail::Poll(float, float whammy, float) {
     if (mTailGeomOwner) {
-        bool t3 = mState == 2 && !mSlideInfo.unk0;
+        bool t3 = mState == 2 && !mSlideInfo.mSliding;
         float fvar1 = t3 ? mTemplate.kTailOffsetX * mTemplate.GetTailScaleX() : 0;
-        mTail1->SetLocalPos(-fvar1, unk10, 0);
-        mTail2->SetLocalPos(fvar1, unk10, 0);
-        if (unk28) {
+        mTail1->SetLocalPos(-fvar1, mTailBegin, 0);
+        mTail2->SetLocalPos(fvar1, mTailBegin, 0);
+        if (mUpdateGeometry) {
             float alpha;
             if (t3) {
                 float delta = TheTaskMgr.DeltaSeconds();
@@ -175,8 +175,8 @@ void Tail::Poll(float, float whammy, float) {
                      time < TheTaskMgr.Seconds(TaskMgr::kRealTime);
                      time += pulseRate) {
                     GemRepTemplate *tmp = &mTemplate;
-                    unk4e4 = Interp(unk4e4, whammy, tmp->kTailPulseSmoothing);
-                    float negWhammy = -unk4e4;
+                    mLastWhammyVal = Interp(mLastWhammyVal, whammy, tmp->kTailPulseSmoothing);
+                    float negWhammy = -mLastWhammyVal;
                     float ampMin = tmp->kTailAmplitudeRange.x;
                     float f4 = Interp(
                         tmp->kTailFrequencyRange.x,
@@ -185,37 +185,37 @@ void Tail::Poll(float, float whammy, float) {
                     );
                     mWhammy.Set(
                         Interp(ampMin, tmp->kTailAmplitudeRange.y, negWhammy)
-                        * std::sin(unk4e0)
+                        * std::sin(mWaveTime)
                     );
-                    unk4e0 += pulseRate * f4;
+                    mWaveTime += pulseRate * f4;
                 }
-                unk4e8 = Interp(unk4e8, whammy, mTemplate.kTailAlphaSmoothing);
-                alpha = Interp(mTemplate.kTailMinAlpha, mTemplate.kTailMaxAlpha, -unk4e8);
+                mLastWhammyAlpha = Interp(mLastWhammyAlpha, whammy, mTemplate.kTailAlphaSmoothing);
+                alpha = Interp(mTemplate.kTailMinAlpha, mTemplate.kTailMaxAlpha, -mLastWhammyAlpha);
             } else {
-                unk4e0 = 0;
+                mWaveTime = 0;
                 alpha = mTemplate.kTailMinAlpha;
-                unk4e8 = 0;
+                mLastWhammyAlpha = 0;
             }
 
-            if (unk4ec != unk4f0 || t3 || mSlideInfo.unk0 || t3 != unk4f4) {
+            if (mTailLength != mLastTailLength || t3 || mSlideInfo.mSliding || t3 != mLastActive) {
                 UpdateVerts(alpha, t3);
-                unk4f0 = unk4ec;
-                unk4f4 = t3;
+                mLastTailLength = mTailLength;
+                mLastActive = t3;
             }
         }
     }
 }
 
 void Tail::UpdateVerts(float alpha, bool active) {
-    if (!unk28) return;
+    if (!mUpdateGeometry) return;
 
     int tailFlag = 0;
-    if (active || mSlideInfo.unk0) tailFlag = 1;
+    if (active || mSlideInfo.mSliding) tailFlag = 1;
     GemRepTemplate::TailType tailType = (GemRepTemplate::TailType) !tailFlag;
     float scaleX = mTemplate.mTailScaleX;
     int total_sections = mTemplate.GetNumTailSections(tailType);
     float sectionLen = mTemplate.GetTailSectionLength(tailType);
-    float clamped = Clamp<float>(0, mTemplate.kTailMaxLength, unk4ec);
+    float clamped = Clamp<float>(0, mTemplate.kTailMaxLength, mTailLength);
     float capLen = Clamp<float>(0, mTemplate.mTailSectionLength[0], clamped);
     int capInc = capLen > 0;
     float midLen = clamped - capLen;
@@ -240,14 +240,14 @@ void Tail::UpdateVerts(float alpha, bool active) {
     RndMesh::Vert *tailBegin = &templ.mTailVerts[0];
     RndMesh::Vert *out = verts.begin();
     RndMesh::Vert *tailEnd = &templ.mTailVerts[templ.mTailVerts.size()];
-    float yWorld = unk10;
+    float yWorld = mTailBegin;
     float curY = 0;
 
     float baseOfs = 0;
     if (active) {
         baseOfs = baseOfs + mWhammy[0];
     }
-    if (mSlideInfo.unk0) {
+    if (mSlideInfo.mSliding) {
         baseOfs += mInterpolator.Eval(yWorld);
     }
 
@@ -269,7 +269,7 @@ void Tail::UpdateVerts(float alpha, bool active) {
             int idx = (int) (0.5f * curY);
             ofs += mWhammy[idx];
         }
-        if (mSlideInfo.unk0) {
+        if (mSlideInfo.mSliding) {
             ofs += mInterpolator.Eval(yWorld);
         }
         for (RndMesh::Vert *src = tailBegin; src != tailEnd; ++src, ++out) {
@@ -293,7 +293,7 @@ void Tail::UpdateVerts(float alpha, bool active) {
             int idx = (int) (0.5f * curY);
             ofs += mWhammy[idx];
         }
-        if (mSlideInfo.unk0) {
+        if (mSlideInfo.mSliding) {
             ofs += mInterpolator.Eval(yWorld);
         }
         RndMesh::Vert *csrc = &templ.mCapVerts[0];
