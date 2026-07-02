@@ -106,7 +106,10 @@
 # uses the relative path "../objdiff/target/release/objdiff-cli"). From a
 # worktree under .claude/worktrees/, that relative path won't resolve, so we
 # pass --objdiff with an ABSOLUTE path to configure.py, baking it into the
-# worktree's build.ninja.
+# worktree's build.ninja. All OTHER tool paths stay RELATIVE (main's own
+# defaults) and main's .ninja_log is seeded into the worktree, so compile
+# command hashes match main's log entries and even a full `ninja` in a fresh
+# worktree compiles nothing (verified 2026-07-02: 0 MWCC, <1s).
 #
 # After setup:
 #   cd <worktree> && tools/ninja-locked build/SZBE69_B8/src/<File>.o
@@ -305,6 +308,17 @@ fi
 # ---- build/<VERSION>/ : reflink copy (build WRITES here; warm cache) --------
 WT_BUILD="$WORKTREE_PATH/build/$VERSION"
 if [ "$WARM_CACHE" -eq 1 ]; then
+    # Bring main's object cache up to date BEFORE snapshotting it. Landings
+    # advance main's HEAD but do NOT rebuild, so the shared cache goes stale
+    # and every worktree would otherwise recompile the newly-landed TUs.
+    # `ninja-locked all_source` builds objects only (skips the report/db-sync
+    # tail), serializes across concurrent creations, and is a NO-OP once main
+    # is current. Non-fatal: main may be mid-repair (a common reason to spin
+    # up a worktree).
+    echo "==> Refreshing main's object cache (amortized; no-op if already current)"
+    ( cd "$MAIN_REPO" && ./tools/ninja-locked all_source ) >/dev/null 2>&1 \
+        || echo "  WARN: main cache refresh failed (non-fatal; worktree will rebuild what's stale)" >&2
+
     echo "==> build/$VERSION/  (reflink copy — private build dir + WARM object cache)"
     reflink_dir "$MAIN_REPO/build/$VERSION" "$WT_BUILD"
 else
@@ -321,16 +335,90 @@ fi
 rm -f "$WORKTREE_PATH/.ninja_log" "$WORKTREE_PATH/.ninja_deps" \
       "$WORKTREE_PATH/.ninja_lock" "$WORKTREE_PATH/.ninja-build.lock" 2>/dev/null || true
 
-# ---- configure.py : bake absolute tool paths into this worktree's build.ninja
-echo "==> configure.py --version $VERSION --map (absolute tool paths)"
+# ---- .ninja_log : seed from main (ninja >=1.13 needs log entries) ------------
+# Mtime-stamping alone is NOT enough for a warm cache: ninja 1.13+ marks any
+# edge dirty whose output has no .ninja_log entry ("command line not found in
+# log"), even when output mtime > input mtimes. Seeding main's log gives every
+# reflinked output its entry. The entries validate because the configure step
+# below reproduces main's compile commands BYTE-IDENTICALLY (same interpreter,
+# same relative tool paths), so the recorded command hashes match. Edges whose
+# commands do legitimately diverge (the objdiff report edge) just rebuild.
+if [ "$WARM_CACHE" -eq 1 ] && [ -f "$MAIN_REPO/.ninja_log" ]; then
+    echo "==> Seeding .ninja_log from main (command hashes match — full builds stay warm)"
+    cp "$MAIN_REPO/.ninja_log" "$WORKTREE_PATH/.ninja_log"
+fi
+
+# ---- decomp.db : reflink copy (private writable DB) --------------------------
+# The default `ninja` build ends with a `SYNC decomp.db` edge (batch_check.py)
+# and the permuter's --symbol resolution reads this DB. It's gitignored so a
+# fresh worktree has none, and sqlite silently CREATES an empty stub on first
+# connect — which then fails with "no such table: functions" and makes bare
+# `ninja` exit nonzero. Reflink-copy (never symlink): the SYNC step WRITES to
+# it, and a symlink would corrupt the main repo's DB the concurrent fleet
+# relies on.
+if [ -f "$MAIN_REPO/decomp.db" ]; then
+    echo "==> Seeding decomp.db (reflink copy — private writable DB)"
+    rm -f "$WORKTREE_PATH/decomp.db"
+    cp --reflink=auto "$MAIN_REPO/decomp.db" "$WORKTREE_PATH/decomp.db"
+else
+    echo "WARN: $MAIN_REPO/decomp.db not found — the SYNC decomp.db build edge will fail" >&2
+fi
+
+# ---- warm-cache validation : make the reflinked object cache VALID under ninja
+# `git worktree add` stamps every checked-out source with a fresh (now) mtime,
+# so ninja sees every reflinked object as stale vs its sources. A fresh
+# worktree is byte-identical to its base — that's exactly what produced the
+# reflinked objects — so old-stamp every tracked source and bump every build
+# output; a later source EDIT gets a fresh mtime and rebuilds normally. If the
+# worktree DIFFERS from its base (branch reuse, or main has local mods to
+# build inputs) we skip this and let ninja rebuild — correctness over speed.
+if [ "$WARM_CACHE" -eq 1 ]; then
+    # `grep -c` exits 1 on count 0 — `|| true` keeps `set -e` from aborting.
+    _changed="$( { git -C "$MAIN_REPO" diff --name-only 2>/dev/null;
+                   git -C "$MAIN_REPO" diff --name-only --cached 2>/dev/null;
+                   git -C "$WORKTREE_PATH" diff --name-only "$BASE_REF" 2>/dev/null; } \
+                 | grep -cE '^(src/|config/)' || true )"
+    # ALSO require main's cache to actually BE current (the refresh above is
+    # best-effort and can race a concurrent landing). Old-stamping sources
+    # over a byte-stale cache would present stale objects as current — for
+    # header changes the main-absolute paths in the reflinked .d depfiles
+    # self-correct, but a cpp-only landing would be silently false-cleaned.
+    _stale_main="$( cd "$MAIN_REPO" && ninja -n all_source 2>/dev/null | grep -c MWCC || true )"
+    if [ "$_changed" -eq 0 ] && [ "${_stale_main:-1}" -eq 0 ]; then
+        echo "==> Validating warm object cache (worktree == $BASE_REF; marking outputs current)"
+        # NB: run FROM the worktree — `git ls-files` prints worktree-relative
+        # paths, so touch must resolve them against the worktree.
+        ( cd "$WORKTREE_PATH" && git ls-files -z 2>/dev/null \
+            | xargs -0 -r touch -h -d '2020-01-01' 2>/dev/null ) || true
+        find "$WT_BUILD" -type f -exec touch {} + 2>/dev/null || true
+        echo "  reflinked cache marked current — builds start warm"
+    else
+        echo "==> Warm cache NOT validated ($_changed changed path(s), $_stale_main stale main obj(s)); first build will rebuild what's needed"
+    fi
+fi
+
+# ---- configure.py : reproduce main's build.ninja commands byte-identically --
+# The seeded .ninja_log validates by COMMAND HASH, so the worktree's compile
+# commands must match main's exactly:
+#   - same interpreter: $python is baked from sys.executable, so run
+#     configure.py with the python recorded in main's build.ninja
+#   - same configure args (--version/--map) as main
+#   - NO --dtk / --wrapper / --compilers overrides: main uses relative
+#     build/tools/* + build/compilers, which resolve in the worktree through
+#     the build/ symlinks — absolute paths here would change every mwcc
+#     command hash and re-trigger the full-rebuild tax
+#   - --objdiff absolute is the one exception: the ../objdiff default doesn't
+#     resolve from an arbitrary worktree path, and it only appears in the
+#     report edge (which regenerates anyway)
+MAIN_PYTHON="$(sed -n 's/^python = "\(.*\)"$/\1/p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
+[ -x "$MAIN_PYTHON" ] || MAIN_PYTHON="python3"
+MAIN_CFG_ARGS="$(sed -n 's/^configure_args = //p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
+[ -n "$MAIN_CFG_ARGS" ] || MAIN_CFG_ARGS="--version $VERSION --map"
+echo "==> configure.py $MAIN_CFG_ARGS (main's interpreter, relative tool paths)"
 (
     cd "$WORKTREE_PATH"
-    python3 configure.py \
-        --version "$VERSION" \
-        --map \
-        --dtk "$DTK" \
-        --wrapper "$WIBO" \
-        --compilers "$COMPILERS" \
+    # shellcheck disable=SC2086  # MAIN_CFG_ARGS is intentionally word-split
+    "$MAIN_PYTHON" configure.py $MAIN_CFG_ARGS \
         --objdiff "$OBJDIFF"
 )
 

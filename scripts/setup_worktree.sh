@@ -271,7 +271,13 @@ if [ "$WARM_CACHE" -eq 1 ]; then
                    git -C "$MAIN_REPO" diff --name-only --cached 2>/dev/null;
                    git -C "$WORKTREE_PATH" diff --name-only "$BASE_REF" 2>/dev/null; } \
                  | grep -cE '^(src/|config/)' || true )"
-    if [ "$_changed" -eq 0 ]; then
+    # ALSO require main's cache to actually BE current (the refresh above is
+    # best-effort and can race a concurrent landing). Old-stamping sources
+    # over a byte-stale cache would present stale objects as current — for
+    # header changes the main-absolute paths in the reflinked .d depfiles
+    # self-correct, but a cpp-only landing would be silently false-cleaned.
+    _stale_main="$( cd "$MAIN_REPO" && ninja -n all_source 2>/dev/null | grep -c MWCC || true )"
+    if [ "$_changed" -eq 0 ] && [ "${_stale_main:-1}" -eq 0 ]; then
         echo "==> Validating warm object cache (worktree == $BASE_REF; marking outputs current)"
         # Old-stamp every tracked source (a fixed old timestamp, not main's,
         # which may itself be recent) so no tracked input — including
@@ -286,7 +292,7 @@ if [ "$WARM_CACHE" -eq 1 ]; then
         find "$WT_BUILD" -type f -exec touch {} + 2>/dev/null || true
         echo "  reflinked cache marked current — builds start warm"
     else
-        echo "==> Warm cache NOT validated: worktree differs from $BASE_REF ($_changed path(s)); first build will rebuild"
+        echo "==> Warm cache NOT validated ($_changed changed path(s), $_stale_main stale main obj(s)); first build will rebuild what's needed"
     fi
 fi
 
