@@ -665,26 +665,26 @@ void CharHair::SimulateInternal(float f) {
                             break;
                         }
                     }
-
-                    Scale(m128.y, rsa, t100.m.y);
-                    Cross(t100.m.y, m128.z, t100.m.x);
-                    t100.m.x *= RecipSqrtAccurate(LengthSquared(t100.m.x));
-                    Normalize(t100.m.x, t100.m.x);
-                    Cross(t100.m.x, t100.m.y, t100.m.z);
-                    thisPoint.lastZ = t100.m.z;
-                    if (thisPoint.bone)
-                        thisPoint.bone->SetWorldXfm(t100);
-                    Subtract(v158, thisPoint.pos, thisPoint.force);
-                    Vector3 v170;
-                    Subtract(thisPoint.lastFriction, thisPoint.force, v170);
-                    thisPoint.lastFriction = thisPoint.force;
-                    thisPoint.force *= stiffFriction;
-                    ScaleAddEq(thisPoint.force, v170, -mFriction);
-                    Vector3 v17c;
-                    Subtract(thisPoint.pos, v140, v17c);
-                    ScaleAddEq(thisPoint.force, v17c, mInertia);
-                    t100.v = thisPoint.pos;
                 }
+
+                Scale(m128.y, rsa, t100.m.y);
+                Cross(t100.m.y, m128.z, t100.m.x);
+                t100.m.x *= RecipSqrtAccurate(LengthSquared(t100.m.x));
+                Normalize(t100.m.x, t100.m.x);
+                Cross(t100.m.x, t100.m.y, t100.m.z);
+                thisPoint.lastZ = t100.m.z;
+                if (thisPoint.bone)
+                    thisPoint.bone->SetWorldXfm(t100);
+                Subtract(v158, thisPoint.pos, thisPoint.force);
+                Vector3 v170;
+                Subtract(thisPoint.lastFriction, thisPoint.force, v170);
+                thisPoint.lastFriction = thisPoint.force;
+                thisPoint.force *= stiffFriction;
+                ScaleAddEq(thisPoint.force, v170, -mFriction);
+                Vector3 v17c;
+                Subtract(thisPoint.pos, v140, v17c);
+                ScaleAddEq(thisPoint.force, v17c, mInertia);
+                t100.v = thisPoint.pos;
             }
         }
     }
