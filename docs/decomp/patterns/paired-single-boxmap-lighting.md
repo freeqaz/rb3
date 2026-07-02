@@ -2,141 +2,162 @@
 
 ## Target
 
-Function:
+The three `BoxMapLighting::ApplyLight` overloads, e.g.:
 
 ```text
 ApplyLight__14BoxMapLightingCFPQ23Hmx5ColorRC54BoxLightArray<Q214BoxMapLighting16LightParams_Spot,50>RC7Vector3
 BoxMapLighting::ApplyLight(Hmx::Color *, const BoxLightArray<LightParams_Spot, 50> &, const Vector3 &) const
 ```
 
-Unit: `main/system/rndobj/BoxMap`
+Unit: `main/system/rndobj/BoxMap`. Target size for the spot-array overload:
+`0x2f8` bytes.
 
-Target size: `0x2f8` bytes.
+`run_objdiff` reports 0% / 32.4% / 45.4% for the three overloads because the
+targets are **hand-written Gekko paired-single lighting kernels**, while our
+source compiles as ordinary scalar C++. This is not a scheduling gap the permuter
+can close — see the proof below.
 
-Current scalar source is a semantic approximation, not a binary-shaped
-decompilation. `run_objdiff` reports 0% for this overload because the target is
-a hand-shaped Gekko paired-single lighting kernel, while the source compiles as
-ordinary scalar code with a `sqrt` call and a call to the directional overload.
+## PROVEN: the Bank-8 ApplyLight bodies are hand-written paired-single asm
 
-## What The Target Does
+This is no longer a hypothesis. The Bank-5 DWARF carries the smoking gun (each
+item independently verified in the `f1-boxmap-applylight` sweep pass, landed as
+`79c0845d`):
 
-The target implementation:
+1. **The dual-body globals.** The `BoxMap.cpp` CU has two globals
+   `g_testApplyLightWiiAsm` (decl_line 14) and `g_testLightRefactor` (line 15)
+   — the classic Harmonix asm/C toggle pair (`/tmp/b5_dwarf.txt` @
+   `<4ba0b0>`/`<4ba0d6>`).
+2. **The kernel has two sibling bodies.** The Bank-5 kernel
+   `ApplyLight(Hmx::Color*, const Vector3&, const Hmx::Color&) const`
+   (`0x809b0660`, decl_line 168) contains **two sibling lexical blocks**:
+   - an **asm-path** block whose only locals are `float* pColor` / `pDirection` /
+     `pResult` (lines 181–183) — the exact operand-setup idiom of the landed
+     inline asm in `src/system/math/Vec.h` `Distance`;
+   - a **pure-scalar C** block with `fWeight_{XP,XN,YP,YN,ZP,ZN}_Sqr`,
+     `fSrc_R/G/B`, `fRes_{XP..ZN}_{R,G,B}` locals (lines 289–327) — fully
+     unrolled, RGB only, no alpha.
 
-- Saves `f14` through `f31` and uses a `0x130` stack frame.
-- Loads the six input `Hmx::Color` entries into paired-single accumulators.
-- Iterates `arr.mArray` at stride `0x50`, with `mNumElements` at offset
-  `0xfa0`.
-- Skips a spot when `red + green + blue < 0.28f`.
-- Computes direction and attenuation using paired-single math and `frsqrte`.
-  There is no `sqrt` library call and no Newton refinement sequence in this
-  function.
-- Expands the directional box-map contribution inline instead of calling
-  `ApplyLight(color, dl)`.
-- Writes all six accumulated colors back with `psq_st`.
+   i.e. the original source is `if (g_testApplyLightWiiAsm) { asm } else { C }`.
+   **Bank 8 kept only the asm path** (Bank-5 kernel = 1220B two-path; Bank 8 =
+   312B asm-only). `bank_divergence.py` classifies it **MISLEADING** (m_ratio
+   0.41) — the Bank-5 body is the wrong era to read as the target.
 
-Representative target-only instructions:
+## Compile-probe results (mwcceppc 4.3.172)
 
-```asm
-psq_l      f4, 0x0(r6), 0, qr0
-psq_l      f5, 0x8(r6), 0, qr1
-ps_merge00 f8, f0, f2
-ps_sum1    f27, f29, f28, f29
-frsqrte    f6, f1
-ps_sel     f25, f25, f25, f24
-ps_madds0  f9, f3, f25, f9
-ps_madds1  f13, f3, f1, f13
-```
+Same flags as the BoxMap build rule, scratch TUs, disassembled with `dtk`. The
+binary's strings tables show **no `__PS_*` intrinsic functions** — only the
+inline-assembler mnemonic tables and the `__vec2x32float__` type.
 
-The current C++ does not have the same cutoff either: it uses
-`0.003921569f`, while this target compares the RGB sum against `0.28f`.
+**Expressible from C++** (`typedef __vec2x32float__ psq;`):
 
-## DC3 Is Not A Drop-In Reference
+| Form | C++ spelling |
+|---|---|
+| `psq_l` / `psq_st` | deref/copy of a `psq`, incl. a cast `float*` and immediate offsets |
+| `psq_lx` / `psq_stx` | indexed `psq` load/store |
+| `ps_add` / `ps_sub` / `ps_mul` / `ps_div` | the arithmetic operators on `psq` |
+| `ps_madd` | `*a * s + *c` — **only** under `#pragma fp_contract on` |
+| `ps_merge00 x,x` | float→pair broadcast (same source twice) |
 
-DC3 has a related `BoxMapLighting` implementation, but it is structurally
-different. DC3 queues light directions and colors into temporary global buffers,
-then `ApplyQueuedLights` folds those buffers into the output colors. RB3 Bank 8
-has this spot overload as a direct paired-single output-color kernel.
+**NOT expressible from any C++ spelling** (must be inline asm):
 
-Use DC3 for naming and broad intent, not for this exact code shape.
+- two-source `ps_merge00` / `ps_merge10` / `ps_merge11` (swizzle from two pairs)
+- `ps_sel` (lane select)
+- `ps_madds0` / `ps_madds1`, `ps_muls0` / `ps_muls1` (scalar-lane multiply-add)
+- `ps_sum0` / `ps_sum1` (cross-lane reduction)
+- `ps_neg` — **unary minus on the paired type ICEs the compiler**
+  (`PCodeUtilities.c:974`)
+- non-`qr0` quantized loads (`qr1` etc.)
+- `__vec2x32float__` has no aggregate initializer (`{a,b}` → error 10174) and no
+  element indexing (`pair[0]` → error 10377).
 
-## Compiler Findings
+## The targets require exactly the inexpressible forms
 
-The RB3 build already uses the relevant Gekko compiler settings:
+Per-overload, the required-but-inexpressible operations:
 
-```text
--proc gekko -fp hardware -fp_contract on -O4,p -inline noauto -ipa file
-```
+- **Directional**: 10× two-source `ps_merge`, 3× `ps_sel`, 4× `ps_madds0/1`,
+  plus the hand idiom `ps_sub f0,f0,f0` (zero-from-garbage; the compiler would
+  instead load `0.0f` from the pool).
+- **Spot-array loop** (all of the above, plus): `qr1` quantized loads,
+  `frsqrte` + a manual Newton refinement, scalar `fsel` clamps, `ps_sum0/1`
+  distance reductions, all 12 face-color accumulator pairs kept register-resident
+  across the loop (saves `f14`–`f31`), and a `psq_l 0x18` read that **straddles a
+  struct boundary** (`{mColor.alpha, mTipPosition.x}`) — pure hand-coding.
 
-`mwcceppc -help` shows:
+Register allocation also **differs between the standalone Directional copy and
+its inlined copies** in Point/array, which is the fingerprint of the original
+using **symbolic-register asm** (`register __vec2x32float__` + `asm {}` inside a
+macro or inline function, compiler-allocated per site) — the established Harmonix
+idiom already visible in `src/system/bandobj/InlineHelp.cpp`,
+`src/system/math/Vec.h`, `src/system/math/Rot.cpp`, and `src/system/rndobj/Env.cpp`.
 
-- `-vector` is Altivec vector support, not a Gekko paired-single auto-vectorizer.
-- `-fp_contract` controls fused multiply-add generation and is already on here.
-- `-use_fsel` can request scalar `fsel`, but it does not expose `ps_sel`.
-- No compiler option was found that turns scalar `Vector3` or `Hmx::Color` math
-  into this paired-single kernel.
+## Verdict: source-immune `at_limit` by construction
 
-The paired-single C++ type does work:
+Matching these three bodies from portable C++ is **impossible by construction**:
+no reordering of scalar C++ changes the opcode *class* of ~70% of the
+instructions. This is source-immune `at_limit` (NOT permuter-class), recorded in
+`decomp.db`. Mark the three ApplyLight symbols so future sweeps skip them (they
+otherwise keep surfacing as "0% / 32% / 45% big fish").
 
-```cpp
-typedef __vec2x32float__ psq;
+### Refuted attempts (do not repeat)
 
-void probe_square_sum(float *dst, const float *a, const float *b) {
-    psq va = *(const psq *)a;
-    psq vb = *(const psq *)b;
-    psq sq = va * va;
-    *(psq *)dst = sq + vb * vb;
-}
-```
+- **Shared-inline restructure** (one `static inline ApplyLightToFaces` called by
+  all three, faithful to the target's inlined-kernel structure and Bank 5's
+  kernel signature): compiles, is *more* faithful, but **scores worse** — Point
+  45.4 → 28.4 (the compact `bl` aligns better against the PS tail than ~45 scalar
+  instrs; the fuzzy metric punishes the insert/delete storm). Reverted.
+- **`CacheData` hand-permutes**: two principled reorders toward the target op
+  order scored 91.66 and 89.65 vs a 92.02 baseline — **nonmonotonic**, classic
+  permuter-class. Restore the baseline text; if anyone grinds it, use the source
+  permuter, not hands.
+- **Honest C-level `__vec2x32float__` kernel** (only the expressible ops):
+  abandoned pre-implementation — without merges/sel/madds the dataflow must be
+  restructured so radically that any alignment gain is speculative (~50%
+  ceiling), while requiring `#ifdef __MWERKS__` gating plus a native scalar
+  duplicate. Bad trade for the port.
 
-This compiles to paired-single operations:
+## The 0.28f-vs-1/255 finding
 
-```asm
-psq_lx f0, r0, r4, 0, qr0
-psq_lx f1, r0, r5, 0, qr0
-ps_mul f2, f0, f0
-ps_mul f0, f1, f1
-ps_add f0, f2, f0
-psq_stx f0, r0, r3, 0, qr0
-```
+The previously-rejected `0.28f` epsilon was **half right**. Two distinct skip
+constants coexist in the target pool:
 
-However, this is not enough for the BoxMap kernel. The compiler surface found
-so far has these limits:
+| Constant | Big-endian word | Value | Display name | Where |
+|---|---|---|---|---|
+| Spot-array loop skip test (`r+g+b <`) | `0x3e8f5c29` | **`0.28f`** | `@F_295c8f3e` | skip spots dimmer than sum 0.28 |
+| `CacheData` per-channel test | `0x3b808081` | **`1/255`** | `@F_8180803b` | per-channel epsilon |
 
-- `__vec2x32float__` has no aggregate initializer in this MWCC mode.
-  `psq pair = { a, b };` gives error `10174 illegal initialization`.
-- `__vec2x32float__` has no element indexing.
-  `pair[0]` and `pair[1]` give error `10377 illegal operands`.
-- Common-looking builtins are not available:
-  `__builtin_ps_merge00`, `__builtin_ps_sum0`, and `__builtin_ps_sel` are
-  undefined.
-- Cast loads such as `*(const psq *)&v.z` emit ordinary `psq_l ..., qr0`, not
-  the target's quantized single-lane load shapes.
-- No pure C++ expression tested emitted `ps_merge00`, `ps_merge10`,
-  `ps_merge11`, `ps_sum0`, `ps_sum1`, or `ps_sel` on demand.
+The prior agent's `0.28f` was correct **for the array function**; the sin would
+have been touching `CacheData`'s `1/255` (which is intact). `79c0845d` landed
+`static const float kColorEpsilon = 0.28f;` (fn-local, with a pool-provenance
+comment) as a **behavioral fidelity fix for the native port** — retail skips
+spots whose channel sum is below 0.28, and our old code processed them.
 
-Existing RB3 source uses inline asm for this exact missing surface area in
-files such as `src/system/math/Rot.cpp`, `src/system/math/Vec.h`,
-`src/system/rndobj/Part.cpp`, and several `src/system/rndwii/*` files.
+> **This replaces the stale claim** in prior revisions of this doc that "the
+> current C++ uses `0.003921569f`." The array loop's cutoff is `0.28f`
+> (`0x3e8f5c29`); `1/255` (`0.003921569f`, `0x3b808081`) is `CacheData`'s
+> separate per-channel constant, not the array skip test.
 
-## Practical Conclusion
+## DC3 is not a drop-in reference
 
-A fully matching version of this overload without inline asm is unlikely with
-the current MWCC toolchain. `__vec2x32float__` C++ can express paired arithmetic
-and basic paired loads/stores, but this function needs explicit swizzles,
-reductions, lane selects, reciprocal-square-root scheduling, and quantized load
-forms that are not exposed as ordinary C++.
+DC3 has a related `BoxMapLighting` but it is structurally different: DC3 queues
+light directions/colors into temporary global buffers, then `ApplyQueuedLights`
+folds those buffers into the output colors. RB3 Bank 8 has the spot overload as a
+direct paired-single output-color kernel. Use DC3 for naming and broad intent,
+not for this code shape.
 
-Reasonable future paths:
+## Standing-rule note
 
-- Keep the scalar C++ as a readable nonmatching implementation.
-- Rewrite with `__vec2x32float__` C++ only if the goal is partial code-shape
-  improvement, not a final match.
-- Use a small inline-asm or assembly kernel if exact matching becomes more
-  important than avoiding asm.
-- If adding a portability abstraction, wrap the paired-single asm behind a
-  helper layer with portable scalar fallbacks, but treat that as inline asm for
-  matching purposes.
+Documenting the asm provenance is required and fine. **Transcribing the disasm
+into an `ASM_BLOCK` remains a REJECTED fake match** (see
+[at-limit-mwcc.md](at-limit-mwcc.md); the standing no-fake-asm rule). If the
+project ever *relaxes* the no-asm rule specifically for provably-asm-original
+functions — the `Vec.h` / `Rot.cpp` / `Env.cpp` inline-asm precedent already
+exists in-tree — **this family is the top candidate**: +1712 target bytes across
+three functions, and the Bank-5 DWARF hands you the exact operand setup
+(`pColor`/`pDirection`/`pResult`).
 
-Do not spend time trying `-vector on` or alternate optimization spelling as the
-main fix. The missing part is not enabled by a known flag; it is the lack of a
-C++ intrinsic surface for the target paired-single instructions.
+## See also
+
+- [at-limit-mwcc.md](at-limit-mwcc.md) — source-immune vs permuter-class triage.
+- [fixable-fsel-fma.md](fixable-fsel-fma.md) — the *expressible* float
+  scheduling controls (`fp_contract`, manual Cross expansion) that this kernel is
+  beyond.

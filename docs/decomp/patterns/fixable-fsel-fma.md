@@ -63,6 +63,34 @@ All 6 `fmul` results are held in registers before any `fsubs` runs, matching the
 
 **Example:** `MakeRotMatrix(Vec3, Vec3, Matrix3)` 87.6% → 94.0% (combined with `0.0f` scheduling barrier).
 
+## `frsp` after `fneg`: the source reused a float MEMBER
+
+A `frsp` (round-to-single) immediately following an `fneg` in the target means the
+source **assigned the negation to a float member and then reused that member** — as
+opposed to negating into a local temp. MWCC forwards the just-stored register value
+but must round it, because the `fneg` output is not provably single-precision when
+it flows through a `float` member store/reload alias:
+
+```cpp
+// Emits fneg + frsp (matches target): negate INTO the member, reuse the member.
+p->delta.x = -p->dir.y;
+// ... later ...
+p->delta.x *= width;
+
+// Skips the frsp (mismatch): a local temp is already single, no rounding needed.
+float ndy = -p->dir.y;
+p->delta.x = ndy * width;
+```
+
+The tell in objdiff is a lone `frsp` in the target with no counterpart in our
+output, right after a negate, on a value that lands in a `float` member.
+
+**Example:** `RndLine::UpdateLinePair` 96.0% → 99.3% (`79c0845d`) — the side-vector
+block was rewritten to the member-`*=` idiom so it emits the missing `frsp`. The
+same idiom already matched in `UpdateLine` phase 2; `UpdateLinePair` was made to
+mirror it.
+
 ## See Also
 
 - [fixable-casting.md](fixable-casting.md) — float conversion (avoid `(long long)` cast), enum return type, truthiness fcmpu operand order
+- [fixable-operators.md](fixable-operators.md) — the transposed-`.Set()` transcription-bug smell (a `.Set(a[1], a[0])` where the target does a straight copy) surfaced alongside this idiom in the same `UpdateLine` pass.

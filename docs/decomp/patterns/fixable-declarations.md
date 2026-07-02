@@ -236,3 +236,42 @@ while (d.size() != 0) { ... d.pop_front(); }
 **Example:** `VocalTrack::UpdateScrolling` 73.1% → 79.1% via 5 swap sites on `deque<RangeShift>`, `deque<LyricShift>`, `deque<LyricPlate*>`. Try one site at a time. Never apply inside `MILO_ASSERT(...)` — regressed in testing. `deque<TambourineGem*>` also regressed (some pointer-deques don't benefit even when the signature matches).
 
 The permuter `empty_size_swap` pattern (`decomp_synth/patterns/empty_size_swap.py`) auto-detects all three signatures: `divw/divwu/mulli` in `diff_ops` and the clustered `subf+srawi` / `mulhw+srawi` in TGT-only-delete or BASE-only-insert groups.
+
+## Renaming struct members: edit the HEADER first, let mwcc enumerate the usage sites
+
+`unkNN` field-name tokens **collide across unrelated structs in the same TU**, so a
+`grep`/`sed`-driven rename corrupts bystanders. The safe, complete method is to
+**rename the member in the header first, then compile**: every usage site of the
+old name becomes an `undefined identifier` error, and the compiler is a *complete*
+gate — it finds all of them, and it never touches a same-named member of a
+different struct (that one still resolves to its own declaration).
+
+Why grep/sed is unsafe (real collisions seen in the DWARF rename sweep):
+
+- In `VocalTrack.cpp` the iterator `it->` means **`VocalPhrase`** in one loop
+  (~line 620) and **`RangeShift`** in another (~840–862) — an accessor-scoped
+  regex on `it->unkN` would rewrite both (g5).
+- `unk1c0` is a member of both `Stats` and `PatchDir`; `unk274`/`unk28c` belong to
+  both `Player` and `Spotlight`; `unk18` to both `RangeShift` and `GameGem`
+  (g6/g7). Blanket renames hit the wrong class.
+
+Workflow:
+
+1. Rename the member(s) in the header (and the ctor init list).
+2. `tools/ninja-locked` the TU. Each `undefined identifier: unkNN` error points at
+   exactly one usage site.
+3. Fix that site to the new name (only when the expression is actually the
+   retyped struct — a colliding same-name member of another struct compiles clean
+   and is left alone).
+4. Repeat until the build is green. The green build is the proof every real usage
+   was migrated and no bystander was touched.
+
+This is codegen-invariant (field names are not in the ABI), so the whole rename is
+match-neutral — the value is code quality. It caught the 2 mis-scoped misses in the
+g5 sweep (Game.cpp `AdjustForVocalPhrases`, `VocalPart.cpp:776`) that a regex would
+have silently mangled. Used for the ~24-struct sweep in `c15c3453` and the
+asm-anchored bank-divergent renames in `07b4825f`.
+
+> For the *type* side of this workflow — when the flat `unkN` floats are really a
+> `Vector2`/`Vector3`/`Color` aggregate and retyping them changes codegen — see
+> [dwarf-flat-member-retype.md](dwarf-flat-member-retype.md).

@@ -27,7 +27,8 @@ This index mirrors the structure of [DC3's pattern catalog](../../../../dc3-deco
 | [fixable-struct-layout.md](fixable-struct-layout.md) | `virtual` vs non-`virtual` vtable layout; redundant virtual override declaration (link-time undefined symbol); redundant **non-virtual** member redeclaration (name-hiding "phantom stub" — silent no-op on native/web, e.g. `BandCharacter::NameToDrumVenue` drum-gear 404) |
 | [fixable-copy-ctor.md](fixable-copy-ctor.md) | Explicit copy constructor blocks small-struct return ABI; TU-local inline `Hmx::Object` copy ctor; member function pointer to force out-of-line emission |
 | [fixable-inline-boundary.md](fixable-inline-boundary.md) | Inlining decisions — `__declspec(noinline)`, `DECOMP_FORCEBLOCK`, qualified call to bypass vtable + force inline, TU-local conditional inline macros |
-| [paired-single-boxmap-lighting.md](paired-single-boxmap-lighting.md) | `BoxMapLighting::ApplyLight` spot kernel, `__vec2x32float__` limits, Gekko paired-single instructions that are not expressible through pure C++ |
+| [dwarf-flat-member-retype.md](dwarf-flat-member-retype.md) | Flat `float unkN` members that are really `Vector2`/`Vector3`/`Color`/`Transform` aggregates — the `lfs`/`stfs`-vs-`lwz`/`stw` struct-copy signature (block-copy vs member-copy), the Bank-5 DWARF retype workflow, and `scripts/analysis/flat_member_retype_scan.py`. Base rate: 1 true retype in ~35 structs — run the tool before hand-auditing. |
+| [paired-single-boxmap-lighting.md](paired-single-boxmap-lighting.md) | `BoxMapLighting::ApplyLight` spot kernel — **PROVEN hand-written paired-single asm in the original** (Bank-5 dual-body `g_testApplyLightWiiAsm` globals); the expressible/inexpressible Gekko op lists (incl. `ps_neg` ICE); source-immune `at_limit` by construction; the `0.28f` vs `1/255` epsilon finding |
 | [verifiable-icf.md](verifiable-icf.md) | Linker ICF — verifying when calls have been folded by the linker (vs a real source-level mismatch). |
 | [quazal-ddl-pattern.md](quazal-ddl-pattern.md) | `_DDL_X::Extract`/`::Add` are static members — porting MISSING Quazal DDL units to Matching |
 | [wave-session-2026-05-18.md](wave-session-2026-05-18.md) | Session notes — param-slot reuse, `bool`→`int` returns, double-precision lowering, .cpp ordering controls inlining, MemcardMgr bitfield+dead-null pattern, header-edit blockers |
@@ -76,6 +77,7 @@ Match% 99%+ but not 100%
 | objdiff says "rarely_hand_fixable" — am I stuck? | No. Check the pattern type: source-immune = accept, anything else = run the permuter. See [at-limit-mwcc.md](at-limit-mwcc.md). |
 | When to run the source permuter? | See [permuter-roi.md](permuter-roi.md). Short answer: high-match (≥85%) functions with regswaps, FPR/scheduling cascades, bool/clrlwi noise, or OFFSET_SWAP. |
 | When to truly mark AT_LIMIT? | See [at-limit-mwcc.md#when-to-mark-at-limit](at-limit-mwcc.md#when-to-mark-at-limit). |
+| objdiff shows a run of `lfs`/`stfs` vs `lwz`/`stw` replaces in a struct copy? | Run `scripts/analysis/flat_member_retype_scan.py` and see [dwarf-flat-member-retype.md](dwarf-flat-member-retype.md) — a flat `float unkN` block is probably a hidden `Vector2`/`Vector3`/`Color` aggregate; **retype from the Bank-5 DWARF, don't permute**. (`lwz`/`stw` on BOTH sides = already member-faithful → permuter-class.) |
 
 ## Cross-Project Reference
 

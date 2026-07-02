@@ -126,6 +126,64 @@ A missing `\n` or a typo in any MILO_WARN/MILO_LOG/MILO_ASSERT format string shi
 
 **Example:** `CameraShot::LensSym_to_FOV` 84.0% → 84.1% fixed by adding a missing `\n` to a MILO_WARN format string in *sister* function `CamShotFrame::Interp`.
 
+## Post-Increment Fused Into a Call Argument
+
+Passing `(v++)->member` directly as a call argument makes MWCC compute the
+increment **before the call** while handing the *old* pointer value to the callee
+in one shape:
+
+```asm
+lwz  r5, slot          ; load current v
+addi r0, r5, STRIDE    ; STRIDE = sizeof(*v)
+stw  r0, slot          ; store v+1 back
+bl   Foo               ; call with the OLD value (r5) as the arg
+```
+
+Split the `++` into a separate statement and MWCC folds the increment into the
+**next** statement's load instead (`addi r5, r5, STRIDE; stw r5` = new value) and
+leaves a trailing standalone increment — producing an insert/delete storm against
+the target's fused shape:
+
+```cpp
+// Matches — fuse the post-increment into the call arg:
+Foo(a, b, (vmap.v++)->pos);
+
+// Mismatches — the ++ folds into the next load, plus a standalone increment:
+Foo(a, b, vmap.v->pos);
+vmap.v++;
+```
+
+**Example:** the four middle vertex writes in `RndLine::UpdateLinePair`
+(`79c0845d`) — switching to `(vmap.v++)->pos` killed the 3-insert / 4-delete
+clusters, contributing to 96.0% → 99.3%.
+
+## Transcription-Bug Smell: Transposed `.Set(a[1], a[0])` vs a Straight Copy
+
+When the target does **adjacent sequential copies** of two components
+(`lfs 0x24 → stfs 0x30; lfs 0x28 → stfs 0x34`, same base register) but our source
+swaps the components in a `.Set(a[1], a[0])`, suspect a **real transcription bug
+in our source**, not a codegen quirk. The straight load/store pair in the target
+asm is telling you the original assigned the components in order; a transposed
+`.Set()` feeds swapped data downstream.
+
+```cpp
+// Our source (WRONG — x/y transposed), and it mismatches the target copy shape:
+prevRay.dir.Set(startDir[1], startDir[0]);
+
+// Target asm is a straight copy (prevRay.dir = start->dir):
+prevRay.dir.x = startDir[0];
+prevRay.dir.y = startDir[1];
+```
+
+**Example:** `RndLine::UpdateLine(Point*, Point*)` had `prevRay.dir.Set(startDir[1],
+startDir[0])` — the swap fed a transposed direction into `Intersect()` for the
+first fold-corner. Bank-8 asm (`0x41c-0x428`: `lfs 0x24 → stfs 0x30`,
+`lfs 0x28 → stfs 0x34`, `r29 = start`) is a straight copy. Fixed to sequential
+scalar copies in `79c0845d`; the match exposed the bug. **This matters for the
+native port** (the transposed direction was a live logic error), and DC3's
+`Line.cpp` was checked — its `UpdateLine` is a different era and is correct, so it
+does not share the bug.
+
 ## Splitting BinStream `>>` Chains at Register-Reuse Points
 
 `bs >> a >> b >> c` chains the result of each `operator>>` through a register. When the target reloads `bs` from its cached r30 mid-chain (instead of threading the prior result through r28), split the chain at that boundary:
