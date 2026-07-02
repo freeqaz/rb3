@@ -9,6 +9,9 @@
 #endif
 #include "char/CharHair.h"
 #include <cstdlib>
+#ifdef HX_NATIVE
+#include <cstdio>
+#endif
 #include "char/CharCollide.h"
 #include "decomp.h"
 #include "math/Mtx.h"
@@ -817,6 +820,49 @@ void CharHair::Hookup(ObjPtrList<CharCollide> &collides) {
             }
         }
     }
+#ifdef HX_NATIVE
+    // H2 collide-hookup coverage probe (env-gated, silent by default). Reports
+    // per-strand how many strand points hooked at least one CharCollide, the
+    // strand's hookup flags, and how many CharCollides were reachable at hookup
+    // time (both the passed-in `collides` list and an independent Dir() scan).
+    // Free-hanging long-hair strands that hook zero collides pass through the
+    // skull/shoulders under motion (H2 gap); this quantifies that.
+    {
+        static int dbg = -1;
+        if (dbg < 0)
+            dbg = getenv("RB3_HAIR_DBG") ? 1 : 0;
+        if (dbg) {
+            int dirCollides = 0;
+            for (ObjDirItr<CharCollide> it(Dir(), true); it; ++it)
+                dirCollides++;
+            int totalPts = 0, totalHooked = 0, strandsWithNone = 0;
+            for (int i = 0; i < mStrands.size(); i++) {
+                Strand &s = mStrands[i];
+                if (!s.Root())
+                    continue;
+                ObjVector<Point> &pts = s.mPoints;
+                int hooked = 0;
+                for (int j = 0; j < pts.size(); j++)
+                    if (pts[j].collides.size() != 0)
+                        hooked++;
+                totalPts += pts.size();
+                totalHooked += hooked;
+                if (hooked == 0)
+                    strandsWithNone++;
+                fprintf(stderr,
+                    "[HAIR_DBG] hair='%s' strand=%d pts-with-collides=%d/%d "
+                    "hookupFlags=0x%x\n",
+                    Name(), i, hooked, pts.size(), s.mHookupFlags);
+            }
+            fprintf(stderr,
+                "[HAIR_DBG] SUMMARY hair='%s' strands=%d strands-hooking-none=%d "
+                "pts-hooked=%d/%d dir-collides=%d passed-collides=%d "
+                "mCollide=%d\n",
+                Name(), mStrands.size(), strandsWithNone, totalHooked, totalPts,
+                dirCollides, collides.size(), mCollide.size());
+        }
+    }
+#endif
 }
 
 BinStream &operator>>(BinStream &bs, CharHair::Point &pt) {
