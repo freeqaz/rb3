@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "04c8e1c7adbd3006e034e678aef991a0f0dc63ff"
+set(MILO_ENGINE_PIN "5587ce0637a06531f52aa70290645b33b67baf87"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -1121,6 +1121,10 @@ if(RB3_WEB_RELEASE)
     target_link_options(rb3-web PRIVATE
         -${RB3_WEB_OPT_LEVEL}
         -g0
+        # Keep the wasm name section (function names only, no DWARF): release
+        # wedges/crashes captured via CDP Debugger.pause show real frames
+        # instead of $funcNNNNN. ~1MB raw, compresses well; no codegen impact.
+        --profiling-funcs
         # NOTE: deliberately leave -sASSERTIONS=1 and -sSTACK_OVERFLOW_CHECK=2
         # from the engine helper in place — the matched-fork's missing-stubs
         # surface relies on the runtime abort-patch hooks they install.
