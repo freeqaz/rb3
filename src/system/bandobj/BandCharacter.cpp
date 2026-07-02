@@ -50,6 +50,15 @@ static bool NativeReloadProbe() {
         sOn = getenv("RELOAD_PROBE") ? 1 : 0;
     return sOn != 0;
 }
+// walk-on snap (docs/native/walkon-2026-07-02/SCOUT.md fix #1). Default-ON;
+// set RB3_WALKON_SNAP_OFF=1 to leave the on-stage band on whatever the intro
+// shot delivers (and frozen on the stale vignette pose if it is late/misses).
+static bool WalkonSnapEnabled() {
+    static int sOn = -1;
+    if (sOn < 0)
+        sOn = getenv("RB3_WALKON_SNAP_OFF") ? 0 : 1;
+    return sOn != 0;
+}
 #endif
 
 ObjectDir *sBoneMergeDir;
@@ -125,6 +134,7 @@ BandCharacter::BandCharacter()
     mNativeInstReboundOnce = 0;
     mNativeInstReboundQuiet = 0;
     mNativeSkinnedCacheValid = false; // frame-stall 2026-06-20 (TRACK A)
+    mNativeWalkonSnapPending = false; // walk-on snap (SCOUT.md fix #1)
 #endif
 }
 
@@ -370,6 +380,37 @@ void BandCharacter::Poll() {
         SetState(name, mPlayFlags, 2, false, true);
         unk5a3 = false;
     }
+#ifdef HX_NATIVE
+    // WALK-ON SNAP retry (docs/native/walkon-2026-07-02/SCOUT.md fix #1).
+    // Armed by SetContext("venue"). By venue entry the loading-screen vignette
+    // clip has already been cleared, so until a NEW clip plays the driver is
+    // empty and Character::Poll stops re-driving the bones — the skeleton
+    // freezes on the last (seated/lying) vignette pose. Normally the intro
+    // shot's play_group delivers a gameplay idle within a frame or two, but if
+    // that delivery is late (body_clips still streaming) or misses this member
+    // (per-member intro-shot target miss, SCOUT.md H3), the stale vignette pose
+    // is held on the lit stage until the NEXT shot ~7 s later. This retries the
+    // member's default stage idle each Poll until a clip really plays — the
+    // earliest the clips allow — guaranteeing no on-stage member is left frozen
+    // on a vignette pose. Self-clears the instant any clip is live (mine, or the
+    // intro shot's own group). HX_NATIVE-only, so the Wii build is byte-identical.
+    if (mNativeWalkonSnapPending && WalkonSnapEnabled()) {
+        if (!mDriver || mDriver->FirstPlayingClip()) {
+            // a clip is live (mine or the intro shot's) -> window closed.
+            mNativeWalkonSnapPending = false;
+        } else if (mDriver->ClipDir()) {
+            mDriver->Clear();
+            if (mAddDriver)
+                mAddDriver->Clear();
+            CharClipDriver *played = SetState(
+                mInstrumentType == drum ? "sit" : "stand", mPlayFlags, 2, false, true
+            );
+            SetTeleported(true);
+            if (played)
+                mNativeWalkonSnapPending = false;
+        }
+    }
+#endif
 
     // Eye interest polling - update head/neck lookat targets
     if (mEyes) {
@@ -2550,6 +2591,22 @@ void BandCharacter::SetContext(Symbol s) {
             break;
         }
         HandleType(on_set_instrument_clip_types_msg);
+#ifdef HX_NATIVE
+        // WALK-ON SNAP (docs/native/walkon-2026-07-02/SCOUT.md, fix #1).
+        // Native async load leaves the on-stage gameplay band frozen on the last
+        // frame of a loading-screen vignette clip (seated/lying cab pose): the
+        // vignette CharClip is cleared BEFORE venue entry, so with an empty
+        // driver Character::Poll stops re-driving the bones and the skeleton
+        // HOLDS the stale vignette pose until a NEW clip plays. Wii cannot reach
+        // this: everything is preloaded and already in a stage idle at venue
+        // entry. Arm the Poll() retry here (body_clips groups may not resolve
+        // yet); Poll plays the default stage idle the moment a clip is available,
+        // so no member is ever left frozen on a vignette pose if the intro shot's
+        // group is late or misses this member (SCOUT.md H3). HX_NATIVE-only ->
+        // Wii build byte-identical. Opt out with RB3_WALKON_SNAP_OFF=1.
+        if (WalkonSnapEnabled())
+            mNativeWalkonSnapPending = true;
+#endif
     } else {
         MILO_WARN("%s illegal context %s", PathName(this), s);
     }

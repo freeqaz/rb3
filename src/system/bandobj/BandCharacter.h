@@ -343,5 +343,13 @@ public:
     // layout so the Wii image stays byte-identical. Default empty/false.
     std::vector<RndMesh *> mNativeSkinnedMeshCache;
     bool mNativeSkinnedCacheValid;
+    // walk-on snap (docs/native/walkon-2026-07-02/SCOUT.md fix #1). Armed by
+    // SetContext("venue"); while true, Poll() retries playing the default stage
+    // idle each frame until a clip actually plays, so the on-stage band never
+    // holds the stale loading-screen vignette pose during the count-in (the
+    // body_clips group can finish loading a few frames after the band is already
+    // visible). Self-clears once any clip is live. Appended after the matched
+    // layout so the Wii image stays byte-identical. Default false.
+    bool mNativeWalkonSnapPending;
 #endif
 };
