@@ -63,6 +63,31 @@ opt-outs RB3_CHAR_REAL_LIGHT_OFF / RB3_COMPOSE_MULT_OFF exist for A/B.
 ## 4. Status / next
 
 - [x] Revert landed `f0a95910`; native re-verified clean.
-- [ ] Compose math fix (engine lane) → pin bump → re-judge char brightness.
-- [ ] Walk-on scout → fix plan.
-- [ ] Web rebuild + deploy after compose lands; verify shards/textures on web.
+- [x] Compose math FIXED: engine `153beaf` (out = diff·lerp(col1,col2,interp.a),
+      weight in the DXT5 alpha of `_interp_gw`/`_mask_gw`; mask = coverage
+      dest-multiply), pin `e4b661ad`. 1-iteration gate pass, reviewer-judged
+      (/tmp/compose-fix/attempt1-*). Char "darkness" resolved by this — the
+      `5587ce0` real-light shading stays as shipped.
+- [x] Walk-on: scout docs/native/walkon-2026-07-02/SCOUT.md; fix `67e87ae1`
+      (HX_NATIVE snap out of held vignette pose at venue entry, Wii .o
+      byte-identical, RB3_WALKON_SNAP_OFF opt-out). Measured correction to the
+      scout: it was a cleanly-held stale pose (empty driver), not a frozen
+      blend; the fix guarantees no member stays frozen if the intro group
+      misses them. Count-in thin-geo shard slivers (strings/cymbals/hair) are
+      the KNOWN pose-independent skinning residual — separate limitation.
+- [x] Web rebuilt + deployed (release+debug) with all of the above; verified:
+      walk-on knot gone at t=3s (members separated at their spots), patch
+      shards gone, clothing print visible on some members.
+
+## 5. Web-specific residuals (pre-existing — present in the PRE-fix run too)
+
+- **Grey/flat char composites on web** while native (same code) is textured:
+  the outfit composite bakes once at load, before web's async/mip-stripped/
+  progressively-sharpened source textures are fully resident → RT bakes grey
+  forever. Fix lane running (recompose-after-resident / strip-list exclusion).
+- **One member floats horizontally through gameplay** (same white-boots member
+  pre- and post-fix, ~9-20s+): never receives a live clip on web — likely
+  clip streaming/bundle gap, NOT the walk-on snap (A/B: pre-fix run shows the
+  identical floater). Deferred — next web lane after composites.
+- Thin-geo shard clusters read worse on web (bigger/whiter) — same known
+  skinning residual class as native.
