@@ -78,7 +78,7 @@ while the clock resets to 0. → audio ≈ +9 s vs the notes.
 - `milo-native-engine/src/audio/AudioDevice_Web.cpp` — off-main seed
   (`OffMainSnapshot.startFrame = mAudioReadPos`; `PublishOffMainStem`).
 
-## Fix attempts (2026-07-01) — NOT landed
+## Earlier fix attempts (2026-07-01) — superseded
 1. **Back-pressure (never free a chunk pre-Play) + promote `kInit→kReady` on
    ring-fill/one-chunk (HX_NATIVE).** Correctly caps the decode (verified
    `mCurrentSamp` 17.3 s → 8.9 s), but **destabilizes the count-in** (crash / OOM-class
@@ -87,26 +87,45 @@ while the clock resets to 0. → audio ≈ +9 s vs the notes.
 2. **Intro-hold (skip `mRdr->Poll` while StandardStream `mState==kReady`).** Wrong
    phase — the race is during `kBuffering`, before `kReady`. Reverted.
 
-All three source files are reverted to pristine HEAD; the deployed release build is
-untouched. Only the debug web build was used for iteration.
+## THE FIX — LANDED + VERIFIED (2026-07-02, commit `5c5eb8a8`)
+"Pause the decoder until the song starts", implemented as **cap + resurrect** — no
+re-seek, no re-decode, no extra allocation (so no OOM like attempt 1):
 
-## Recommended fix direction (for the next pass)
-The clean fix must make playback begin at **song sample 0** without breaking the
-priming state machine or the off-main seed. Options, roughly in order of safety:
+- **`StreamReceiver` (cpp/h): pre-Play total-decode cap.** Track a monotonic
+  `mTotalWrittenEver`; while `mState <= kReady` (pre-Play), `BytesWriteable()` caps
+  the *total* accepted decode at **one ring lap**. The kInit fast-accept prime is
+  unchanged (still frees `mNumBuffers` sends so `IsReady()` flips), but the decoder
+  can never write a second lap — so `song[0..ringSecs]` stays **physically resident**
+  in `mBuffer`. Past the cap the decoder just idles on 0-writable (the normal
+  steady-play ring-full state). Opt-out: `RB3_STREAM_PREPLAY_CAP_OFF=1`.
+- **`RB3StreamReceiverNative::PlayImpl`: first-Play ring resurrect.** The capped
+  pre-Play end state is deterministic (`totalWritten == ringSize`,
+  `writtenSpace == 0`, both cursors wrapped to 0). Resurrect the freed-but-resident
+  lap (`readPos=0`, `writtenSpace=ringSize`, `freeSpace=0`) so playback + the
+  off-main seed begin at **stream byte 0** instead of the ring's oldest survivor.
+- HX_NATIVE-only; the Wii-visible functions (ctor / `WriteData` / `BytesWriteable`)
+  stay byte-identical (match-neutral).
 
-1. **Re-seek the decoder to the song start at first Play**, then re-prime a SHALLOW
-   buffer synchronously (don't refill the deep ring during the intro). Needs a clean
-   channel-ring reset (add an HX_NATIVE `NativeRewind()` that zeros the ring cursors
-   + `mAudioReadPos`/`mPlayedTotal`) and a decoder `Seek(mStartMs)`. The deep ring
-   refills normally after Play.
-2. **Back-pressure, but SHALLOW pre-Play prime:** hold chunks (no fast-accept) AND
-   promote `kInit→kReady` on the first chunk, AND actually stop `WriteData` once a
-   small pre-Play depth is reached (so the rings don't fill to 9 s). This avoids the
-   OOM/full-ring crash of attempt 1 above. The off-main seed/publish must be
-   re-checked for the held-chunk / shallow-ring cursor state.
-3. Whatever the fix, **verify with the correlation pipeline above** — the lag must go
-   from +9 s to ~0. Amplitude/clock checks are NOT sufficient (they were "green" for
-   this bug the whole time).
+**Verification (A/B via the correlation pipeline, the check every prior pass lacked):**
+The gameplay stem-mix does not chroma-lock against the full-mogg reference (both
+fixed and buggy captures return WRONG-SIGNAL from `audio_verify.py` — a *tooling*
+limitation, not a result). Two mix-robust measures settle it, run with the fix ON
+(default) vs OFF (`RB3_STREAM_PREPLAY_CAP_OFF=1`), antibodies:
+
+- **RMS loudness-contour vs reference (absolute):** fixed capture locks at
+  **lag 0.00 s, r 0.66** (clean monotonic falloff) → starts at `song[~0]`. The buggy
+  capture is loud-flat from t0 (mid-song), no contour lock (r 0.30).
+- **Chroma capture-vs-capture (same mix, relative):** buggy content **leads the fixed
+  content by 8.82 s** (sharp cluster 8.6–9.1 s) → the fix pulls the start ~9 s earlier.
+- Raw RMS/s confirms it: fixed = quiet-intro ramp matching the reference; buggy =
+  already loud at t0. Chroma machinery validated (reference self-lock cos 0.995).
+- Reaches `game_screen` cleanly: **no page crash, 0 rAF stalls >250 ms**,
+  `songMs ≈ audioTime`, `streamPlaying=1` at `Go()`.
+
+Net: the +9.1 s content skip is **eliminated** (→ ~0, within count-in tolerance).
+Repro/measure tool: `scripts/web/_audio_early_probe.mjs` (taps worklet output to
+WAV + records the `Go()`/clock-0 offset); correlate with `scripts/native/audio_verify.py`
+or a capture-vs-capture chroma scan (mix-robust; the reference path is not).
 
 ## Gotchas for the next pass
 - Two different `State` enums: `StreamReceiver` = {kInit0, kReady1, kPlaying2};
