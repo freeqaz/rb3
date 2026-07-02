@@ -78,6 +78,29 @@ static bool MenuVoidDrawHook(RndDrawable *d) {
     // --- The fix: skip the worldcenter black backdrop occluder (default ON). ---
     if (!sFixOff && MenuVoidIsWorldcenterOccluder(m, nm))
         return true;
+    // --- Refraction-panel fix (default ON; RB3_REFRACTION_FIX_OFF=1 restores
+    // baseline). The song_select details panel's frosted-glass
+    // `bottom_square_refraction` mesh (the details body below the album art) is
+    // authored with a refraction material that samples + distorts the framebuffer
+    // — a subtle glassy panel over the menu venue that reads as transparent. The
+    // native renderer has no refraction pass, so this premult-alpha mesh falls
+    // back to its flat material color, and useEnviron lighting brightens the dark
+    // base (0.18) up to an opaque ~0.75 grey rectangle below the album art where
+    // retail shows the venue through it. Skip drawing it so the venue shows
+    // through, matching retail's no-song state; the difficulty grid, album art
+    // and song-header strip (separate textured meshes) are untouched, and the
+    // selected-song grid stays fully readable over the venue.
+    //
+    // Scoped to the exact `bottom_square_refraction` name, which lives ONLY in
+    // ui/song_select/song_select.milo, so this cannot touch any other screen or
+    // gameplay/HUD. (The related `header_song_bg_refraction*` panels render the
+    // same way but are shared across ~30 screens and are not part of this
+    // report's grey body, so they are intentionally left alone.) ==> UI bug 1c.
+    static int sRefractOff = -1;
+    if (sRefractOff < 0)
+        sRefractOff = getenv("RB3_REFRACTION_FIX_OFF") ? 1 : 0;
+    if (!sRefractOff && strstr(nm, "bottom_square_refraction"))
+        return true;
     if (!sEnabled && !sSkip)
         return false;
     if (sSkip) {
