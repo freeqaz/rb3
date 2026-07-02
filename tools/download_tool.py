@@ -116,8 +116,18 @@ def main() -> None:
     parser.add_argument("--tag", help="GitHub tag", required=True)
     args = parser.parse_args()
 
-    url = TOOLS[args.tool](args.tag)
     output = Path(args.output)
+    # Skip the network download when the tool is already present (e.g.
+    # build/compilers symlinked from the main tree into a worktree). Without
+    # this, a fresh worktree's first build re-fires this edge (no .ninja_log
+    # entry yet) and the re-download WRITES THROUGH the symlink into the main
+    # tree, mtime-dirtying every MWCC edge in both trees. Same guard as
+    # dc3-decomp's download_tool.py.
+    if output.exists() and (not output.is_dir() or any(output.iterdir())):
+        print(f"{output} already present; skipping download")
+        return
+
+    url = TOOLS[args.tool](args.tag)
 
     print(f"Downloading {url} to {output}")
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})

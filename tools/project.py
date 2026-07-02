@@ -442,6 +442,10 @@ def generate_build_ninja(
         name="download_tool",
         command=f"$python {download_tool} $tool $out --tag $tag",
         description="TOOL $out",
+        # restat: download_tool.py no-ops when the output already exists (the
+        # worktree symlink case), so let ninja notice the unchanged mtime and
+        # skip dirtying every downstream compile edge.
+        restat=True,
     )
 
     decompctx = config.tools_dir / "decompctx.py"
