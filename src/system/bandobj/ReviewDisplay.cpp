@@ -1,6 +1,10 @@
 #include "bandobj/ReviewDisplay.h"
 #include "ui/UI.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include "rndobj/Mesh.h"
+#include <cstdlib> // getenv (RB3_REVIEW_LIGHTER_FIX_OFF)
+#endif
 
 INIT_REVS(ReviewDisplay);
 
@@ -64,6 +68,34 @@ void ReviewDisplay::DrawShowing() {
     mReviewAnim->SetFrame(mScore * 10.0f, 1.0f);
     RndAnimatable *focus = mFocusAnim;
     focus->SetFrame(GetState() == kFocused ? 1.0f : 0.0f, 1.0f);
+#ifdef HX_NATIVE
+    // Native: review_display.milo's review_anim carries the frame-0 pose that
+    // collapses/hides the five unlit "lighter" score icons (lighter1..5.mesh) for
+    // the NO-REVIEW state (mScore == 0). That pose is not applied by the native
+    // anim path, so the five icons render at their authored spread positions and
+    // overlap the "NO REVIEW" label — retail shows no lighters when unreviewed.
+    // Drive the lighters' showing directly off mScore so the score-0 state matches
+    // retail; a real review (score 1..5) shows the five slots as before (the frame
+    // still selects which are lit). Wii build untouched (HX_NATIVE-only). Default
+    // ON; opt out with RB3_REVIEW_LIGHTER_FIX_OFF=1.
+    {
+        static int sFixOff = -1;
+        if (sFixOff < 0)
+            sFixOff = getenv("RB3_REVIEW_LIGHTER_FIX_OFF") ? 1 : 0;
+        if (!sFixOff) {
+            bool show = mScore != 0;
+            static const char *const kLighters[5] = {
+                "lighter1.mesh", "lighter2.mesh", "lighter3.mesh",
+                "lighter4.mesh", "lighter5.mesh"
+            };
+            for (int i = 0; i < 5; i++) {
+                RndMesh *m = dir->Find<RndMesh>(kLighters[i], false);
+                if (m)
+                    m->SetShowing(show);
+            }
+        }
+    }
+#endif
     dir->SetWorldXfm(WorldXfm());
     dir->DrawShowing();
 }
