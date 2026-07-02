@@ -63,7 +63,7 @@
 #
 # Prerequisite: the main repo must have been built once (build/tools/ +
 # build/compilers/ populated by configure.py's download step) and the sibling
-# tool repos (../objdiff, ../wibo) must have been built.
+# ../objdiff fork must have been built.
 
 set -euo pipefail
 
@@ -92,21 +92,22 @@ BASE_COMMIT="$(git -C "$MAIN_REPO" rev-parse --short "$BASE_REF" 2>/dev/null)" |
 BASE_BRANCH="$(git -C "$MAIN_REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "detached")"
 
 # ---- tool sanity -------------------------------------------------------------
-# dtk comes from main's build/tools (download_tool output); objdiff-cli + wibo
-# are the prebuilt sibling-repo binaries. Passing prebuilt binaries to
-# configure.py keeps the worktree's build.ninja free of cargo/download edges
-# for them.
+# dtk + wibo come from main's build/tools (download_tool outputs, reached
+# through the build/tools symlink with main's own RELATIVE paths — see the
+# configure step for why relative matters). objdiff-cli is the prebuilt
+# sibling-repo fork, passed ABSOLUTE because its ../objdiff default doesn't
+# resolve from an arbitrary worktree path (only the report edge diverges).
 TOOL_DIR="$(cd "$MAIN_REPO/.." && pwd)"
 DTK="$MAIN_REPO/build/tools/dtk"
+WIBO="$MAIN_REPO/build/tools/wibo"
 # Prefer the objdiff-cli that bin/objdiff-cli already points at (its symlink
 # target is the canonical built fork); fall back to the sibling path.
 OBJDIFF="$(readlink -f "$MAIN_REPO/bin/objdiff-cli" 2>/dev/null || echo "$TOOL_DIR/objdiff/target/release/objdiff-cli")"
-WIBO="$TOOL_DIR/wibo/build/release/wibo"
 COMPILERS="$MAIN_REPO/build/compilers"
 for t in "$DTK" "$OBJDIFF" "$WIBO"; do
     [ -e "$t" ] || {
         echo "ERROR: required tool missing: $t" >&2
-        echo "  (run a full build in the main repo once, and build ../objdiff + ../wibo)" >&2
+        echo "  (run a full build in the main repo once, and build ../objdiff)" >&2
         exit 1
     }
 done
@@ -227,6 +228,19 @@ fi
 rm -f "$WORKTREE_PATH/.ninja_log" "$WORKTREE_PATH/.ninja_deps" \
       "$WORKTREE_PATH/.ninja_lock" "$WORKTREE_PATH/.ninja-build.lock" 2>/dev/null || true
 
+# ---- .ninja_log : seed from main (ninja >=1.13 needs log entries) ------------
+# Mtime-stamping alone is NOT enough for a warm cache: ninja 1.13+ marks any
+# edge dirty whose output has no .ninja_log entry ("command line not found in
+# log"), even when output mtime > input mtimes. Seeding main's log gives every
+# reflinked output its entry. The entries validate because the configure step
+# below reproduces main's compile commands BYTE-IDENTICALLY (same interpreter,
+# same relative tool paths), so the recorded command hashes match. Edges whose
+# commands do legitimately diverge (the objdiff report edge) just rebuild.
+if [ "$WARM_CACHE" -eq 1 ] && [ -f "$MAIN_REPO/.ninja_log" ]; then
+    echo "==> Seeding .ninja_log from main (command hashes match — full builds stay warm)"
+    cp "$MAIN_REPO/.ninja_log" "$WORKTREE_PATH/.ninja_log"
+fi
+
 # ---- warm-cache validation : make the reflinked object cache VALID under ninja
 # `git worktree add` stamps every checked-out source with a fresh (now) mtime,
 # and the toolchain symlinks resolve to main's dirs (recent mtimes, shared
@@ -306,14 +320,29 @@ if [ -d "$MAIN_REPO/venv" ]; then
     ln -sfn "$MAIN_REPO/venv" "$WORKTREE_PATH/venv"
 fi
 
-# ---- configure.py : bake absolute tool paths into this worktree's build.ninja
-echo "==> Running configure.py with absolute tool paths"
+# ---- configure.py : reproduce main's build.ninja commands byte-identically --
+# The seeded .ninja_log validates by COMMAND HASH, so the worktree's compile
+# commands must match main's exactly:
+#   - same interpreter: $python is baked from sys.executable, so run
+#     configure.py with the python recorded in main's build.ninja
+#   - same configure args (--version/--map) as main
+#   - NO --dtk / --wrapper overrides: main uses relative build/tools/dtk +
+#     build/tools/wibo, which resolve in the worktree through the build/tools
+#     symlink — passing absolute paths here would change every mwcc command
+#     hash and re-trigger the full-rebuild tax
+#   - --objdiff absolute is the one exception: the ../objdiff default doesn't
+#     resolve from an arbitrary worktree path, and it only appears in the
+#     report edge (which regenerates anyway)
+MAIN_PYTHON="$(sed -n 's/^python = "\(.*\)"$/\1/p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
+[ -x "$MAIN_PYTHON" ] || MAIN_PYTHON="python3"
+MAIN_CFG_ARGS="$(sed -n 's/^configure_args = //p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
+[ -n "$MAIN_CFG_ARGS" ] || MAIN_CFG_ARGS="--version $VERSION --map"
+echo "==> Running configure.py (main's interpreter + args, relative tool paths)"
 (
     cd "$WORKTREE_PATH"
-    python3 configure.py \
-        --dtk "$DTK" \
-        --objdiff "$OBJDIFF" \
-        --wrapper "$WIBO"
+    # shellcheck disable=SC2086  # MAIN_CFG_ARGS is intentionally word-split
+    "$MAIN_PYTHON" configure.py $MAIN_CFG_ARGS \
+        --objdiff "$OBJDIFF"
 )
 
 # ---- safety assertion : worktree build/ must be its own real dir ------------
