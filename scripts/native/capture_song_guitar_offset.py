@@ -55,7 +55,10 @@ def health(port):
 def build_nav(downs):
     # Frame-timed input verbs. Same chain as song-end-test.py but with a
     # parametric number of DOWN presses (spaced out) to land on the target song,
-    # then select + track guitar + expert + nofail + autohit.
+    # then select + part:guitar + diff:expert (real pad-press verbs, readiness-
+    # gated on the part_difficulty overshell view; diff:'s Confirm drives the
+    # overshell to ready_to_play so no end_override_flow is needed) + nofail +
+    # autohit.
     parts = ["@10:start", "@30:confirm",
              "@140:select:pn_quickplay.btn", "@220:select:qp_quickplay.btn"]
     f = 320
@@ -63,9 +66,8 @@ def build_nav(downs):
         parts.append(f"@{f}:down")
         f += 12
     parts.append(f"@{f+20}:msg:music_library:select_highlighted_node")
-    parts.append(f"@{f+60}:track:guitar")
-    parts.append(f"@{f+70}:difficulty:expert")
-    parts.append(f"@{f+130}:msg:overshell:end_override_flow:1:0")
+    parts.append(f"@{f+60}:part:guitar")
+    parts.append(f"@{f+80}:diff:expert")
     parts.append(f"@{f+180}:nofail")
     parts.append(f"@{f+200}:autohit")
     return ",".join(parts)
@@ -81,7 +83,7 @@ def main():
     ap.add_argument("--bin", default=DEFAULT_BIN)
     ap.add_argument("--data", default=DEFAULT_DATA)
     ap.add_argument("--gain", default=None)
-    ap.add_argument("--boot-timeout", type=int, default=240)
+    ap.add_argument("--boot-timeout", type=int, default=270)  # +30s: real part/diff pad-press verbs take longer than the old instant commit
     args = ap.parse_args()
 
     out = os.path.abspath(args.out)

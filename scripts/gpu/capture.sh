@@ -12,7 +12,8 @@
 #   -f <frames>     Frame range to capture (e.g. "3200-3300"). Requires display.
 #   -s <submits>    Queue submit range (e.g. "100-200"). Works headless.
 #   -q              Quit after captured frames (requires -f)
-#   -t <seconds>    Kill rb3-native after N seconds (default: 35, covers 6000 frames)
+#   -t <seconds>    Kill rb3-native after N seconds (default: 65, covers 6000 frames +
+#                   headroom for the real part/difficulty button-press verbs below)
 #   -x              Use virtual display for frame counting (auto with -f when no $DISPLAY)
 #   -c <type>       Compression: LZ4, ZSTD (default), ZLIB, NONE
 #   -l <level>      Log level: debug, info, warning (default), error
@@ -21,6 +22,11 @@
 #   -h              Show this help
 #
 # Examples:
+#   # NOTE: the frame/submit windows below were calibrated against the OLD
+#   # instant-commit part/difficulty nav (game_screen @ frame 456). The default
+#   # nav now drives real pad presses (part:/diff:), which lands game_screen
+#   # later — recalibrate these windows (-s/-f) if precise alignment matters.
+#   #
 #   # Full V12 gameplay capture (submits 100-300 ≈ frames 3200-3300 window)
 #   scripts/gpu/capture.sh -s 100-300
 #
@@ -54,14 +60,20 @@ OUTPUT="$CAPTURE_DIR/rb3_capture.gfxr"
 FRAMES=""
 SUBMITS=""
 QUIT_AFTER=""
-TIMEOUT="35"  # enough for 6000 frames at ~216 fps
+TIMEOUT="65"  # ~35s (enough for 6000 frames at ~216 fps) + 30s headroom: part:/diff:
+              # below are real, readiness-gated pad presses (multi-frame), not an
+              # instant commit, so game_screen now lands noticeably later than frame 456.
 USE_XVFB=""
 COMPRESSION="ZSTD"
 LOG_LEVEL="warning"
 MAX_FRAMES="6000"
 
-# V12 standard guitar reproducer (reaches game_screen at frame 456, gameplay at ~500)
-DEFAULT_GAME_INPUT="@10:start,@30:confirm,@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,@320:down,@350:msg:music_library:select_highlighted_node,@380:track:guitar,@450:msg:overshell:end_override_flow:1:0"
+# V12 standard guitar reproducer. Was track:guitar+msg:overshell:end_override_flow
+# (instant commit, game_screen at frame 456); now part:/diff: drive real pad
+# presses through part_difficulty_screen, so game_screen lands later than 456 —
+# any frame/submit window below calibrated against the old instant commit
+# (e.g. "submits 100-300 ≈ frames 3200-3300") will need recalibrating.
+DEFAULT_GAME_INPUT="@10:start,@30:confirm,@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,@320:down,@350:msg:music_library:select_highlighted_node,@380:part:guitar,@400:diff:expert"
 GAME_INPUT="${RB3_GAME_INPUT:-$DEFAULT_GAME_INPUT}"
 
 usage() {

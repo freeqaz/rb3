@@ -21,12 +21,15 @@ DEFAULT_BIN = os.path.join(REPO, "native", "build-native", "rb3-native")
 DEFAULT_DATA = os.path.join(REPO, "orig-assets", "extracted")
 
 # Same canonical boot-to-gameplay nav as song-end-test.py (reaches game_screen,
-# nofail + autohit so the song plays itself).
+# nofail + autohit so the song plays itself). part:/diff: are real pad-press
+# verbs (readiness-gated on the part_difficulty overshell view) — no
+# end_override_flow needed; diff:'s Confirm drives the overshell to
+# ready_to_play, which auto-launches the song.
 NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
     "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:track:guitar,@390:difficulty:expert,@450:msg:overshell:end_override_flow:1:0,"
+    "@380:part:guitar,@400:diff:expert,"
     "@500:nofail,@520:autohit"
 )
 GAMEPLAY_SONGMS = 2000.0  # song clock past intro = gameplay underway
@@ -61,7 +64,7 @@ def main():
     ap.add_argument("--bin", default=DEFAULT_BIN)
     ap.add_argument("--data", default=DEFAULT_DATA)
     ap.add_argument("--gain", default=None, help="DC3_AUDIO_GAIN override")
-    ap.add_argument("--boot-timeout", type=int, default=220)
+    ap.add_argument("--boot-timeout", type=int, default=250)  # +30s: real part/diff pad-press verbs take longer than the old instant commit
     args = ap.parse_args()
 
     out = os.path.abspath(args.out)

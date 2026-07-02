@@ -118,18 +118,17 @@ def main():
         vs2 = venue_state(port)
         print(f"[{ts()}] part_difficulty+1s  venue={vs2}")
 
-        http_post(port, "/api/input", "track:guitar"); time.sleep(0.4)
-        http_post(port, "/api/input", "difficulty:expert"); time.sleep(0.4)
-        http_post(port, "/api/input", "msg:overshell:end_override_flow:1:0"); time.sleep(0.3)
+        http_post(port, "/api/input", "part:guitar"); time.sleep(0.4)
+        http_post(port, "/api/input", "diff:expert"); time.sleep(0.4)
         vs = venue_state(port)
         t_confirm = time.time()-t0
-        print(f"[{ts()}] song confirmed (end_override)  venue={vs}")
+        print(f"[{ts()}] song confirmed (part+diff verbs)  venue={vs}")
         http_post(port, "/api/input", "nofail"); time.sleep(0.2)
         http_post(port, "/api/input", "autohit"); time.sleep(0.2)
 
         # poll venue + screen every 150ms until game_screen / songMs flowing,
         # so we catch any re-roll between confirm and reveal.
-        dl = time.time() + 120; t_reveal = None; last_screen = None
+        dl = time.time() + 150; t_reveal = None; last_screen = None
         last_venue = None
         while time.time() < dl:
             if proc.poll() is not None:

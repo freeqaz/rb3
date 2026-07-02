@@ -57,7 +57,7 @@ NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
     "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:track:guitar,@390:difficulty:expert,@450:msg:overshell:end_override_flow:1:0,"
+    "@380:part:guitar,@400:diff:expert,"
     "@500:nofail,@520:autohit"
 )
 
@@ -67,7 +67,8 @@ JUMP_MS = 600000
 
 # Timeouts (seconds).
 SERVER_READY_TIMEOUT = 40
-GAMEPLAY_TIMEOUT = 200   # boot + nav + cinematic intro pre-roll
+GAMEPLAY_TIMEOUT = 230   # boot + nav + cinematic intro pre-roll (+30s headroom for
+                         # the real part_difficulty screen nav vs the old direct commit)
 GAMEOVER_TIMEOUT = 60    # jump -> endgame screen transition
 GAMEPLAY_SONGMS = 2000.0 # song clock past the intro = gameplay underway
 

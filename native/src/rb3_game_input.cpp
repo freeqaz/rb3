@@ -16,6 +16,19 @@
 // Driven by RB3_GAME_INPUT="@30:start,@90:confirm,@120:down,@150:confirm"
 // (frame:action pairs; actions: start/confirm/cancel/up/down/left/right/option).
 //
+// part/difficulty selection is done with REAL pad presses, NOT by mutating
+// engine state (the former track:/difficulty: skip hack is gone):
+//   part:guitar   → on the part_difficulty_screen choose_part overshell view,
+//                   press Confirm to commit the (default-focus) guitar part.
+//                   Only `guitar` is supported; other syms log + skip.
+//   diff:<easy|medium|hard|expert|0-3>
+//                 → on the choose_diff view, press DDown to the top-down list
+//                   index (Easy0/Medium1/Hard2/Expert3) then Confirm.
+// Both are multi-frame state machines (StepPadVerb): readiness-gated on the real
+// overshell view, self-paced on the pad queue, and they dismiss a confirm_action
+// dialog (part denial / diff confirm) with a bounded extra Confirm. This is the
+// exact path keyboard-to-gameplay.py drives with raw pad: presses.
+//
 // W3b: real browser keyboard input added under #ifdef __EMSCRIPTEN__. JS
 // keydown/keyup listeners maintain window._rb3Keys bitmask; RB3GameInputPoll
 // drains it per-frame (edge-detect) and calls ExecButton() — the same path the
@@ -59,12 +72,11 @@
 #include "os/Joypad.h"
 #include "os/JoypadMsgs.h"
 #include "os/User.h"
-#include "game/BandUser.h"           // BandUser::SetTrackType
+#include "game/BandUser.h"           // BandUser (GetBandUser readiness gate)
 #include "game/BandUserMgr.h"
 #include "game/Game.h"               // TheGame, Game::GetActivePlayers (autohit)
 #include "game/Player.h"             // Player::SetAutoplay/IsAutoplay (autohit)
 #include "game/Defines.h"
-#include "beatmatch/TrackType.h"     // SymToTrackType
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/MetaPerformer.h"   // SetBandNoFail (nofail directive)
 #include "meta_band/BandUI.h"          // TheBandUI.GetOvershell() (difficulty/part select)
@@ -248,17 +260,6 @@ struct ScriptedOvershell {
     std::vector<std::string> args;
 };
 
-// K8: a "track:<sym>" directive sets the synth user's track type at the given
-// frame. Mirrors what OvershellSlot::SelectPart does on the real flow — without
-// it, Band::Band sees mTrackType=kTrackNone (sym=`none`) on every participating
-// user, so MetaPerformer::PartPlaysInSong(none)=false → every user is SKIPPED
-// → mActivePlayers stays empty → no gems, no scoring, no highway notes.
-// Sym is one of: guitar/bass/drum/vocals/keys/real_guitar/real_bass/real_keys.
-struct ScriptedTrack {
-    int frame;
-    std::string trackSym;
-};
-
 // A "nofail" directive enables band No-Fail at the given frame. Without it, a
 // headless demo run (no synthetic note input) drains the crowd meter and the
 // player gets booed off (~song 13s) — Player::CheckCrowdFailure ->
@@ -274,7 +275,6 @@ struct ScriptedNoFail {
 std::vector<ScriptedInput> gScript;
 std::vector<ScriptedSelect> gSelectScript;
 std::vector<ScriptedMsg> gMsgScript;
-std::vector<ScriptedTrack> gTrackScript;
 std::vector<ScriptedNoFail> gNoFailScript;
 bool gScriptParsed = false;
 Symbol gLastScreen;
@@ -282,16 +282,16 @@ LocalUser *gSynthUser = nullptr;
 
 // Raw pad-press queue feeder (rb3_joypad_native.cpp) — `pad:<bit>` HTTP verb.
 extern "C" bool RB3JoypadEnqueuePad(int bit);
+// True while a queued pad press is still draining (hold/gap in flight or presses
+// pending) — the part:/diff: state machines self-pace on this.
+extern "C" bool RB3JoypadPadQueueBusy();
 
-// === Difficulty selection ==================================================
-// The native boot path used to hard-code kDifficultyExpert when a part was
-// chosen. The player can now CHOOSE a difficulty (Easy/Medium/Hard/Expert) via
-// the `difficulty:<easy|medium|hard|expert|0-3>` verb (script or HTTP /api/input)
-// — this file-static holds the current choice and the chosen value is what
-// flows through BandUser::SetDifficulty (which flips the unk_0xC IsFullyInGame
-// bit TrackPanel::CreateTracks filters note gems on). Default stays Expert so
-// existing capture/regression harnesses are byte-for-behavior unchanged.
-Difficulty gSelectedDifficulty = kDifficultyExpert;
+// === Difficulty parsing ====================================================
+// The `diff:<easy|medium|hard|expert|0-3>` verb drives the REAL choose_diff
+// overshell view with actual pad presses (DDown x index + Confirm) — no
+// programmatic BandUser::SetDifficulty. ParseDifficulty/DifficultyName below
+// turn the token into the top-down list INDEX the pad presses navigate to
+// (Easy=0 / Medium=1 / Hard=2 / Expert=3, default focus Easy).
 
 // Parse a difficulty token: easy/medium/hard/expert OR the numeric 0-3. We do
 // NOT call the game's SymToDifficulty for the numeric form — it asserts on a
@@ -338,7 +338,7 @@ const char *DifficultyName(Difficulty d) {
 // a mis-timed/bad script degrades gracefully (LOG + SKIP) rather than hanging
 // or crashing. The documented RB3_GAME_INPUT scripts still drive
 // boot->song-select->load->gameplay->nofail, just robustly to timing.
-enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail, kVerbAutohit, kVerbDifficulty, kVerbOvershell };
+enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbPart, kVerbNoFail, kVerbAutohit, kVerbDiff, kVerbOvershell };
 
 struct Verb {
     int        kind;
@@ -349,8 +349,7 @@ struct Verb {
     JoypadButton button = kPad_NumButtons;
     ScriptedSelect sel{0, ""};
     ScriptedMsg    msg;
-    ScriptedTrack  trk{0, ""};
-    Difficulty     diff = kDifficultyExpert;  // payload for kVerbDifficulty
+    Difficulty     diff = kDifficultyExpert;  // payload for kVerbDiff (list index)
     ScriptedOvershell overshell;              // payload for kVerbOvershell
 };
 
@@ -426,33 +425,38 @@ void ParseScript() {
             MILO_LOG("RB3 input: scheduled @%d (min) -> select '%s'\n", frame, ss.button.c_str());
             continue;
         }
-        // "track:<sym>" directive — set the synth user's track type at the given
-        // frame so the gameplay-side Band::Band picks the user up as an active
-        // player. K8.
-        if (action.rfind("track:", 0) == 0) {
-            ScriptedTrack st = { frame, action.substr(6) };
-            gTrackScript.push_back(st);
-            Verb v; v.kind = kVerbTrack; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
-            v.trk = st;
-            gVerbs.push_back(v);
-            MILO_LOG("RB3 input: scheduled @%d (min) -> track '%s'\n", frame, st.trackSym.c_str());
-            continue;
-        }
-        // "difficulty:<easy|medium|hard|expert|0-3>" directive — choose the
-        // difficulty the synth user's part is played at. Sets gSelectedDifficulty
-        // (consumed by the part-commit path) and, if the BandUser is already live,
-        // re-applies immediately. Fire it AFTER track: so it lands on the user.
-        if (action.rfind("difficulty:", 0) == 0) {
-            Difficulty d;
-            if (!ParseDifficulty(action.substr(11), d)) {
-                MILO_LOG("RB3 input: bad difficulty '%s' in RB3_GAME_INPUT\n",
-                         action.substr(11).c_str());
+        // "part:<sym>" directive — confirm a part on the REAL part_difficulty
+        // choose_part overshell view with an actual Confirm pad press (guitar is
+        // the default focus). Multi-frame: driven by StepPadVerb once the
+        // choose_part view is up. Only `guitar` is supported today; any other sym
+        // is logged + skipped (all shipping scripts use guitar).
+        if (action.rfind("part:", 0) == 0) {
+            std::string sym = action.substr(5);
+            if (sym != "guitar") {
+                MILO_LOG("RB3 input: unsupported part '%s' (only 'guitar') — skipping\n",
+                         sym.c_str());
                 continue;
             }
-            Verb v; v.kind = kVerbDifficulty; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+            Verb v; v.kind = kVerbPart; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+            gVerbs.push_back(v);
+            MILO_LOG("RB3 input: scheduled @%d (min) -> part '%s'\n", frame, sym.c_str());
+            continue;
+        }
+        // "diff:<easy|medium|hard|expert|0-3>" directive — pick a difficulty on
+        // the REAL choose_diff overshell view with actual pad presses (DDown x
+        // list-index + Confirm). Multi-frame: driven by StepPadVerb once the
+        // choose_diff view is up.
+        if (action.rfind("diff:", 0) == 0) {
+            Difficulty d;
+            if (!ParseDifficulty(action.substr(5), d)) {
+                MILO_LOG("RB3 input: bad diff '%s' in RB3_GAME_INPUT\n",
+                         action.substr(5).c_str());
+                continue;
+            }
+            Verb v; v.kind = kVerbDiff; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
             v.diff = d;
             gVerbs.push_back(v);
-            MILO_LOG("RB3 input: scheduled @%d (min) -> difficulty '%s'\n", frame, DifficultyName(d));
+            MILO_LOG("RB3 input: scheduled @%d (min) -> diff '%s'\n", frame, DifficultyName(d));
             continue;
         }
         // "nofail" directive — enable band No-Fail at frame F so an
@@ -694,93 +698,61 @@ void ExecSelect(const std::string &button, UIScreen *cur) {
     }
 }
 
-// Phase 1 — drive the REAL overshell slot part-select for the synth user, the
-// exact methods the SELECT_MSG DTA fires (OvershellSlot.cpp:1912-1914). Each
-// internally validates PartPlaysInSong/PartPlaysInSet (routing to a denial slot
-// state rather than crashing if the part isn't in the song). Then applies the
-// chosen difficulty via BandUser::SetDifficulty (flips unk_0xC IsFullyInGame).
-// Returns true if the slot was resolved and driven; false if not ready yet.
-//
-// NOTE: we deliberately do NOT call slot->SelectDifficulty() — in quickplay
-// `skip_choose_diff_prompt` is FALSE (modes.dta default), so SelectDifficulty
-// routes to kState_ChooseDiffConfirm / CancelSongSettings rather than committing
-// the load. The load is committed explicitly by the existing
-// `msg:overshell:end_override_flow:1:0` crossing (OvershellPanel::EndOverrideFlow
-// (kOverrideFlow_SongSettings, cancel=false)), which fires seldiff.dta
-// override_ended -> goto_screen preloading.
-bool ExecOvershellSelect(TrackType ty, Difficulty d, BandUser *bu) {
+// === Real part/difficulty selection via pad presses ========================
+// part:/diff: drive the VISIBLE part_difficulty overshell sub-flow with actual
+// button presses (RB3JoypadEnqueuePad -> SendButtonMessages), exactly the path
+// keyboard-to-gameplay.py takes and the faithful equivalent of a physical
+// guitar button. No programmatic slot->SelectPart()/SetDifficulty() — the engine
+// state machine transitions on its own from the real Confirm/DDown edges.
+
+// The synth (pad-0) user's overshell slot current view Symbol, or a null Symbol
+// if the slot isn't resolvable yet. Mirrors rb3_http_handlers.cpp's {rb3_overshell}
+// probe — the exact lookup keyboard-to-gameplay.py reads to watch the sub-flow
+// (choose_part_* -> choose_diff -> confirm_action -> ready_to_play).
+Symbol OvershellView() {
     OvershellPanel *ov = TheBandUI.GetOvershell();
-    if (!ov) {
-        MILO_LOG("RB3 input: overshell-select FAILED: no overshell panel\n");
-        return false;
+    if (!ov)
+        return Symbol();
+    for (int i = 0; i < 4; i++) {
+        OvershellSlot *s = ov->GetSlot(i);
+        if (s && s->GetUser() && s->GetUser()->IsLocal())
+            return s->GetCurrentView();
     }
-    OvershellSlot *slot = ov->GetSlot(bu);
-    if (!slot) {
-        MILO_LOG("RB3 input: overshell-select WAIT: no slot for BandUser %p "
-                 "(part flow not entered yet)\n", (void *)bu);
-        return false;
-    }
-    // Route through the real handlers so the visible part_difficulty UI/state
-    // machine transitions exactly as a console part-pick would.
-    switch (ty) {
-    case kTrackVocals:
-        slot->SelectVocalPart(false);  // harmony=false
-        break;
-    case kTrackDrum:
-        slot->SelectDrumPart(false);   // proDrums=false
-        break;
-    default:
-        slot->SelectPart(ty);          // guitar/bass/keys/real_*
-        break;
-    }
-    bu->SetDifficulty(d);
-    MILO_LOG("RB3 input: overshell-select: user=%p TrackType=%d diff='%s' "
-             "(GetTrackSym='%s' IsFullyInGame=%d)\n",
-             (void *)bu, (int)ty, DifficultyName(d), bu->GetTrackSym().Str(),
-             (int)bu->IsFullyInGame());
-    return true;
+    return Symbol();
 }
 
-void ExecTrack(const std::string &trackSym) {
-    LocalUser *user = SynthUser();
-    BandUser *bu = TheBandUserMgr ? TheBandUserMgr->GetBandUser(user) : nullptr;
-    if (!bu) {
-        MILO_LOG("RB3 input: track set FAILED: no BandUser for synth user\n");
-        return;
-    }
-    Symbol sym(trackSym.c_str());
-    TrackType ty = SymToTrackType(sym);
-    // Phase 1: drive the real overshell slot (visible part_difficulty UI). If the
-    // overshell slot isn't resolvable yet (part flow not entered), fall back to a
-    // direct SetTrackType so the user is still picked up by Band::Band as an
-    // active player — the same effect the slot's SelectPartImpl has, minus the
-    // UI state transition.
-    if (!ExecOvershellSelect(ty, gSelectedDifficulty, bu)) {
-        bu->SetTrackType(ty);
-        bu->SetDifficulty(gSelectedDifficulty);
-        MILO_LOG("RB3 input: track set (direct fallback): user=%p sym='%s' "
-                 "-> TrackType=%d diff='%s' (GetTrackSym='%s' IsFullyInGame=%d)\n",
-                 (void *)bu, sym.Str(), (int)ty, DifficultyName(gSelectedDifficulty),
-                 bu->GetTrackSym().Str(), (int)bu->IsFullyInGame());
-    }
-}
+// Pad bits pressed by the part/diff state machines (same bits the keyboard
+// harness presses): Confirm = kPad_X, list-scroll = kPad_DDown.
+const int kPadBitConfirm = kPad_X;      // 6
+const int kPadBitDDown   = kPad_DDown;  // 14
 
-// Choose the difficulty for subsequent part commits. If the synth user's
-// BandUser already exists (track already chosen), re-apply immediately so a
-// `difficulty:` verb sent after `track:` updates the live user.
-void ExecDifficulty(Difficulty d) {
-    gSelectedDifficulty = d;
-    LocalUser *user = SynthUser();
-    BandUser *bu = TheBandUserMgr ? TheBandUserMgr->GetBandUser(user) : nullptr;
-    if (bu) {
-        bu->SetDifficulty(d);
-        MILO_LOG("RB3 input: difficulty set: user=%p diff='%s' "
-                 "(GetDifficulty=%d IsFullyInGame=%d)\n",
-                 (void *)bu, DifficultyName(d), (int)bu->GetDifficulty(),
-                 (int)bu->IsFullyInGame());
-    } else {
-        MILO_LOG("RB3 input: difficulty pending '%s' (no live BandUser yet)\n",
-                 DifficultyName(d));
+// A part:/diff: verb spans several frames: enqueue press(es) -> wait for the pad
+// queue to drain -> if a confirm_action dialog (part denial / diff confirm) came
+// up, press Confirm again (bounded retries). One step per frame, only advancing
+// when the pad queue is idle (RB3JoypadPadQueueBusy()==false).
+enum PadVerbPhase {
+    kPadPhaseIdle = 0,   // not begun (state inactive)
+    kPadPhaseAct,        // enqueue the verb's primary presses (scroll + Confirm)
+    kPadPhaseDrain,      // wait for the pad queue to drain, then check for a dialog
+};
+struct PadVerbState {
+    int cursor  = -1;    // gVerbCursor this state belongs to (-1 == inactive)
+    int phase   = kPadPhaseIdle;
+    int retries = 0;     // confirm_action dismissals used (bounded to 4)
+};
+PadVerbState gPadVerb;
+
+// Enqueue a pad verb's primary presses (called once, entering kPadPhaseAct).
+// diff:<d> scrolls DDown to the top-down list index (Easy0/Medium1/Hard2/Expert3,
+// default focus Easy) then Confirms; part:guitar Confirms the default focus.
+void PadVerbEnqueuePrimary(const Verb &v) {
+    if (v.kind == kVerbDiff) {
+        int idx = (int)v.diff;
+        for (int i = 0; i < idx; i++)
+            RB3JoypadEnqueuePad(kPadBitDDown);
+        RB3JoypadEnqueuePad(kPadBitConfirm);
+    } else {  // kVerbPart — guitar default focus: a single Confirm commits it
+        RB3JoypadEnqueuePad(kPadBitConfirm);
     }
 }
 
@@ -846,9 +818,9 @@ bool ExecAutohit() {
 }
 
 // C6: route an overshell:<action>[:arg...] verb through the synth user's
-// OvershellSlot. Resolves the slot via the same path as ExecOvershellSelect
-// (TheBandUI.GetOvershell()->GetSlot(bu)). Builds a DataArray for the message
-// and sends it via slot->Handle(), mirroring ExecMsg for named-object targets.
+// OvershellSlot. Resolves the slot via TheBandUI.GetOvershell()->GetSlot(bu),
+// then builds a DataArray for the message and sends it via slot->Handle(),
+// mirroring ExecMsg for named-object targets.
 void ExecOvershellVerb(const ScriptedOvershell &ov) {
     LocalUser *user = SynthUser();
     BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
@@ -904,115 +876,6 @@ void ExecButton(JoypadAction action, JoypadButton button, UIScreen *cur) {
     TheUI.Handle(msg, false);
 }
 
-#ifdef __EMSCRIPTEN__
-// === W3c Part B — web part-select advance ==================================
-// On part_difficulty_screen the overshell part-select sub-flow does NOT consume
-// the screen-level Confirm (the synth user's slot focus is "(none)"), so a raw
-// ExecButton(Confirm) never crosses part_difficulty -> game_screen. Native v1
-// crosses it with the same synthetic verbs the RB3_GAME_INPUT script uses:
-//   track:guitar                       (set the synth user's track type so the
-//                                        part is committed and the user is
-//                                        IsFullyInGame)
-//   msg:overshell:end_override_flow:1:0 ({overshell end_override_flow
-//                                        kOverrideFlow_SongSettings FALSE} —
-//                                        commits the part-select override flow,
-//                                        which fires Game::LoadSong and brings up
-//                                        game_screen)
-// then, once gameplay is live, two headless-playback verbs so the song actually
-// plays through (no physical instrument to hit gems):
-//   nofail   (MetaPerformer::SetBandNoFail — keeps gems flowing past the crowd
-//             meter so a no-input run doesn't get booed off ~13s in)
-//   autohit  (Player::SetAutoplay on every active player — auto-hits each gem at
-//             its strike window, ticking the score HUD and firing hit-FX)
-//
-// Driven by a small per-frame state machine: when the user presses Confirm on
-// part_difficulty_screen we ARM the sequence; each subsequent frame fires AT MOST
-// ONE verb, readiness-gated via VerbReady (same gate the script queue uses), so a
-// verb never lands on a half-loaded screen/object. Mirrors the native readiness
-// loop, scoped to the part-select crossing only. Zero native impact (web-only).
-//
-// Forward decls: the readiness gate + dispatch helpers are defined further down.
-struct Verb;
-bool VerbReady(const Verb &v, UIScreen *cur, const char **reason);
-const char *VerbName(const Verb &v);
-void DispatchVerb(const Verb &v, UIScreen *cur);
-
-enum WebPartStage {
-    kWebPartIdle = 0,   // not on part_difficulty / not armed
-    kWebPartTrack,      // fire track:guitar
-    kWebPartEndFlow,    // fire msg:overshell:end_override_flow:1:0
-    kWebPartNoFail,     // fire nofail (once gameplay live)
-    kWebPartAutohit,    // fire autohit (once players active)
-    kWebPartDone,
-};
-static int sWebPartStage = kWebPartIdle;
-
-// Build a Verb for the readiness gate, then fire it via the same path as the
-// script queue. Returns true if it fired (or is unconditionally safe), false if
-// the readiness predicate says "wait" (retry next frame).
-static bool WebFireGatedVerb(const Verb &v, UIScreen *cur) {
-    const char *why = nullptr;
-    if (!VerbReady(v, cur, &why)) {
-        MILO_LOG("RB3 web part-select: WAIT %s: %s\n", VerbName(v), why ? why : "not ready");
-        return false;
-    }
-    MILO_LOG("RB3 web part-select: FIRE %s on '%s'\n", VerbName(v),
-             cur ? cur->Name() : "(none)");
-    DispatchVerb(v, cur);
-    return true;
-}
-
-// Drive the part-select crossing one step per frame. Called from the web input
-// poll once the sequence is armed.
-static void WebDrivePartSelect(int frame, UIScreen *cur) {
-    if (sWebPartStage == kWebPartIdle || sWebPartStage == kWebPartDone)
-        return;
-
-    switch (sWebPartStage) {
-    case kWebPartTrack: {
-        Verb v;
-        v.kind = kVerbTrack;
-        v.trk.trackSym = "guitar";
-        if (WebFireGatedVerb(v, cur))
-            sWebPartStage = kWebPartEndFlow;
-        break;
-    }
-    case kWebPartEndFlow: {
-        Verb v;
-        v.kind = kVerbMsg;
-        v.msg.object = "overshell";
-        v.msg.action = "end_override_flow";
-        v.msg.args.clear();
-        v.msg.args.push_back("1");   // kOverrideFlow_SongSettings
-        v.msg.args.push_back("0");   // FALSE
-        if (WebFireGatedVerb(v, cur))
-            sWebPartStage = kWebPartNoFail;
-        break;
-    }
-    case kWebPartNoFail: {
-        // Wait for the song to actually finish loading (game_screen up + a live
-        // MetaPerformer) before enabling no-fail; gate via the nofail predicate.
-        Verb v;
-        v.kind = kVerbNoFail;
-        if (WebFireGatedVerb(v, cur))
-            sWebPartStage = kWebPartAutohit;
-        break;
-    }
-    case kWebPartAutohit: {
-        Verb v;
-        v.kind = kVerbAutohit;
-        if (WebFireGatedVerb(v, cur)) {
-            sWebPartStage = kWebPartDone;
-            MILO_LOG("RB3 web part-select: sequence complete (frame %d)\n", frame);
-        }
-        break;
-    }
-    default:
-        break;
-    }
-}
-#endif // __EMSCRIPTEN__
-
 // === Readiness predicate ===================================================
 // Decide whether a queued verb may safely fire THIS frame. The dominant crash
 // mode was a verb firing while the UI was mid-transition or before its target
@@ -1058,22 +921,29 @@ bool VerbReady(const Verb &v, UIScreen *cur, const char **reason) {
         return true;
     }
 
-    case kVerbTrack: {
-        // track:<sym> needs the synth user's BandUser (built once the part flow
-        // is entered) before SetTrackType.
-        LocalUser *user = SynthUser();
-        BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
-        if (!bu) { if (reason) *reason = "BandUser for synth user not ready"; return false; }
+    case kVerbPart: {
+        // part:<sym> presses Confirm on the choose_part overshell view. Gate on
+        // the real part_difficulty_screen being up AND the slot showing a
+        // choose_part view — the exact state keyboard-to-gameplay.py waits for.
+        if (!uiStable) { if (reason) *reason = "UI in transition / no screen"; return false; }
+        if (strcmp(cur->Name(), "part_difficulty_screen") != 0) {
+            if (reason) *reason = "not on part_difficulty_screen"; return false;
+        }
+        Symbol view = OvershellView();
+        const char *vs = view.Str();
+        if (!vs || strncmp(vs, "choose_part", 11) != 0) {
+            if (reason) *reason = "overshell not in choose_part view yet"; return false;
+        }
         return true;
     }
 
-    case kVerbDifficulty: {
-        // difficulty:<n> needs the synth user's BandUser to apply the chosen
-        // difficulty (same readiness gate as track:). gSelectedDifficulty is set
-        // regardless inside ExecDifficulty so a later part-commit still honors it.
-        LocalUser *user = SynthUser();
-        BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
-        if (!bu) { if (reason) *reason = "BandUser for synth user not ready"; return false; }
+    case kVerbDiff: {
+        // diff:<d> scrolls to + Confirms a difficulty on the choose_diff view.
+        if (!uiStable) { if (reason) *reason = "UI in transition / no screen"; return false; }
+        Symbol view = OvershellView();
+        if (view != Symbol("choose_diff")) {
+            if (reason) *reason = "overshell not in choose_diff view yet"; return false;
+        }
         return true;
     }
 
@@ -1109,7 +979,7 @@ bool VerbReady(const Verb &v, UIScreen *cur, const char **reason) {
     case kVerbOvershell: {
         // overshell:<action> needs the synth user's OvershellSlot to exist.
         // The slot is allocated when the user joins the overshell (part flow
-        // entered) — the same readiness gate as ExecOvershellSelect uses.
+        // entered) — GetSlot(bu) resolves it once that has happened.
         LocalUser *user = SynthUser();
         BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
         if (!bu) { if (reason) *reason = "BandUser for synth user not ready"; return false; }
@@ -1127,10 +997,10 @@ const char *VerbName(const Verb &v) {
     case kVerbButton: return "button";
     case kVerbSelect: return "select";
     case kVerbMsg:    return "msg";
-    case kVerbTrack:  return "track";
+    case kVerbPart:   return "part";
     case kVerbNoFail: return "nofail";
     case kVerbAutohit: return "autohit";
-    case kVerbDifficulty: return "difficulty";
+    case kVerbDiff:   return "diff";
     case kVerbOvershell: return "overshell";
     }
     return "?";
@@ -1143,11 +1013,54 @@ void DispatchVerb(const Verb &v, UIScreen *cur) {
     case kVerbButton: ExecButton(v.action, v.button, cur); break;
     case kVerbSelect: ExecSelect(v.sel.button, cur);       break;
     case kVerbMsg:    ExecMsg(v.msg, cur);                  break;
-    case kVerbTrack:  ExecTrack(v.trk.trackSym);           break;
     case kVerbNoFail: ExecNoFail();                        break;
     case kVerbAutohit: ExecAutohit();                      break;
-    case kVerbDifficulty: ExecDifficulty(v.diff);          break;
     case kVerbOvershell: ExecOvershellVerb(v.overshell);   break;
+    // part:/diff: are multi-frame pad verbs driven by StepPadVerb from the poll
+    // loop, never dispatched here (listed so the switch is exhaustive).
+    case kVerbPart:
+    case kVerbDiff:   break;
+    }
+}
+
+// Drive one step of a multi-frame pad verb (part:/diff:). Returns true when the
+// verb is fully complete (the queue cursor may advance). Called every frame the
+// cursor points at a started pad verb; advances at most one step per frame, and
+// only when the pad queue is idle (a press has fully drained to a clean release).
+// gPadVerb.phase must be kPadPhaseAct on the first call (set by the poll loop).
+bool StepPadVerb(const Verb &v, int frame) {
+    // Never step while a press is still in flight — StepPadVerb self-paces on the
+    // pad queue exactly as keyboard-to-gameplay.py's drain_pad does.
+    if (RB3JoypadPadQueueBusy())
+        return false;
+
+    switch (gPadVerb.phase) {
+    case kPadPhaseAct:
+        PadVerbEnqueuePrimary(v);
+        MILO_LOG("RB3 input: %s -> enqueued primary pad presses (frame %d)\n",
+                 VerbName(v), frame);
+        gPadVerb.phase = kPadPhaseDrain;
+        return false;
+
+    case kPadPhaseDrain: {
+        // Queue idle (guarded above). If a part-denial / diff-confirm dialog is
+        // up, dismiss it with another Confirm — bounded to 4 retries so a stuck
+        // dialog can never hang the queue.
+        Symbol view = OvershellView();
+        if (view == Symbol("confirm_action") && gPadVerb.retries < 4) {
+            RB3JoypadEnqueuePad(kPadBitConfirm);
+            gPadVerb.retries++;
+            MILO_LOG("RB3 input: %s -> confirm_action dialog, Confirm (retry %d)\n",
+                     VerbName(v), gPadVerb.retries);
+            return false;  // stay in Drain; re-check after this Confirm drains
+        }
+        MILO_LOG("RB3 input: %s complete (view='%s' retries=%d frame %d)\n",
+                 VerbName(v), view.Str() ? view.Str() : "(none)",
+                 gPadVerb.retries, frame);
+        return true;
+    }
+    default:
+        return true;
     }
 }
 
@@ -1159,17 +1072,32 @@ bool ExecVerb(const std::string &verb, UIScreen *cur, std::string *err) {
         ExecSelect(verb.substr(7), cur);
         return true;
     }
-    if (verb.rfind("track:", 0) == 0) {
-        ExecTrack(verb.substr(6));
-        return true;
-    }
-    if (verb.rfind("difficulty:", 0) == 0) {
-        Difficulty d;
-        if (!ParseDifficulty(verb.substr(11), d)) {
-            if (err) *err = "bad difficulty '" + verb.substr(11) + "' (easy/medium/hard/expert/0-3)";
+    // part:<sym> — confirm a part on the choose_part overshell view via a REAL
+    // Confirm pad press. Multi-frame, so it is SCHEDULED onto the verb queue
+    // (minFrame 0 = fire as soon as the choose_part view is up) and driven by the
+    // per-frame StepPadVerb state machine, not executed synchronously here. Only
+    // `guitar` is supported today.
+    if (verb.rfind("part:", 0) == 0) {
+        std::string sym = verb.substr(5);
+        if (sym != "guitar") {
+            if (err) *err = "unsupported part '" + sym + "' (only 'guitar')";
             return false;
         }
-        ExecDifficulty(d);
+        Verb pv; pv.kind = kVerbPart; pv.minFrame = 0; pv.origIndex = (int)gVerbs.size();
+        gVerbs.push_back(pv);
+        return true;
+    }
+    // diff:<d> — pick a difficulty on the choose_diff overshell view via REAL
+    // DDown + Confirm pad presses. Scheduled onto the verb queue like part:.
+    if (verb.rfind("diff:", 0) == 0) {
+        Difficulty d;
+        if (!ParseDifficulty(verb.substr(5), d)) {
+            if (err) *err = "bad diff '" + verb.substr(5) + "' (easy/medium/hard/expert/0-3)";
+            return false;
+        }
+        Verb pv; pv.kind = kVerbDiff; pv.minFrame = 0; pv.origIndex = (int)gVerbs.size();
+        pv.diff = d;
+        gVerbs.push_back(pv);
         return true;
     }
     // pad:<bit> — enqueue a RAW joypad button press (kPad_* index) into the
@@ -1443,12 +1371,14 @@ void RB3GameInputPoll(int frame) {
             // confirm, choose_part, choose_diff and ready all work as real button
             // presses now that the engine gates are fixed (offline-guest overshell
             // join, single-user part-resolve loop, RG chord_name overflow, song-DB
-            // path). The legacy synthetic-verb aids (select_highlighted_node msg +
-            // the track:/end_override_flow WebDrivePartSelect sequence) are kept
-            // ONLY for the deterministic capture harness, opt-in via
+            // path). The one remaining opt-in aid is the song_select
+            // select_highlighted_node confirm (+ rb3WebTargetSong highlight pin),
+            // kept ONLY for the deterministic capture harness via
             // window.rb3WebUseAids=1; off by default so menu nav is pure keyboard.
+            // (The old part_difficulty skip sequence — track:/end_override_flow —
+            // is GONE; part/difficulty is now crossed by real pad presses on web
+            // too, either the player's keyboard or the part:/diff: pad verbs.)
             bool useAids = (bool)EM_ASM_INT({ return (window.rb3WebUseAids ? 1 : 0); });
-            bool onPartDiff = useAids && webCur && strcmp(webScr, "part_difficulty_screen") == 0;
             bool onSongSelect = useAids && webCur && strcmp(webScr, "song_select_screen") == 0;
             for (int i = 0; i < kWebKeyMapSize; ++i) {
                 if (newPressed & (1u << kWebKeyMap[i].bit)) {
@@ -1456,17 +1386,7 @@ void RB3GameInputPoll(int frame) {
                              " screen='%s'\n",
                              frame, kWebKeyMap[i].bit, (int)kWebKeyMap[i].btn,
                              (int)kWebKeyMap[i].action, webScr);
-                    // W3c Part B: a Confirm on part_difficulty_screen arms the
-                    // part-select crossing verb sequence (track:guitar ->
-                    // end_override_flow -> nofail -> autohit) instead of (only) a
-                    // raw ButtonDownMsg the overshell part-select won't consume.
-                    if (onPartDiff && kWebKeyMap[i].action == kAction_Confirm) {
-                        if (sWebPartStage == kWebPartIdle) {
-                            sWebPartStage = kWebPartTrack;
-                            MILO_LOG("RB3 web part-select: armed on part_difficulty "
-                                     "(frame %d)\n", frame);
-                        }
-                    } else if (onSongSelect && kWebKeyMap[i].action == kAction_Confirm) {
+                    if (onSongSelect && kWebKeyMap[i].action == kAction_Confirm) {
                         // A Confirm on song_select_screen confirms a song via the
                         // same DTA handler the native RB3_GAME_INPUT script uses
                         // ({music_library select_highlighted_node $user}), which
@@ -1517,10 +1437,6 @@ void RB3GameInputPoll(int frame) {
                 }
             }
         }
-
-        // W3c Part B: drive the armed part-select sequence one verb/frame.
-        UIScreen *webCur2 = TheUI.CurrentScreen();
-        WebDrivePartSelect(frame, webCur2);
     }
 #endif // __EMSCRIPTEN__
 
@@ -1772,6 +1688,25 @@ void RB3GameInputPoll(int frame) {
     // (LOG) so a bad/over-eager script degrades gracefully instead of stalling.
     if (gVerbCursor < gVerbs.size()) {
         const Verb &v = gVerbs[gVerbCursor];
+
+        // A multi-frame pad verb (part:/diff:) that has already begun is driven
+        // every frame until StepPadVerb reports complete — bypassing the
+        // readiness/settle gate below, because its target overshell view CHANGES
+        // as it progresses (choose_part -> choose_diff -> confirm_action ...), so
+        // re-checking VerbReady mid-sequence would spuriously fail. StepPadVerb
+        // self-paces on the pad queue and is internally bounded, so it always
+        // completes (no timeout needed once started).
+        if ((v.kind == kVerbPart || v.kind == kVerbDiff)
+            && gPadVerb.cursor == (int)gVerbCursor) {
+            if (StepPadVerb(v, frame)) {
+                gLastFiredFrame = frame;
+                gVerbCursor++;
+                gVerbWaitSince = -1;
+                gPadVerb = PadVerbState();   // reset for the next pad verb
+            }
+            goto verb_dispatch_done;         // one verb-action per frame
+        }
+
         // Button presses (joypad navigation, down/up/confirm etc.) update UI
         // focus synchronously but the engine only re-evaluates the focused-node
         // state on the NEXT Poll(). Gate the next verb: if the PREVIOUS verb was
@@ -1794,10 +1729,24 @@ void RB3GameInputPoll(int frame) {
                 MILO_LOG("RB3 input: frame %d  FIRE [%zu/%zu] %s (min @%d) on '%s'\n",
                          frame, gVerbCursor + 1, gVerbs.size(), VerbName(v), v.minFrame,
                          cur ? cur->Name() : "(none)");
-                DispatchVerb(v, cur);
-                gLastFiredFrame = frame;
-                gVerbCursor++;
-                gVerbWaitSince = -1;
+                if (v.kind == kVerbPart || v.kind == kVerbDiff) {
+                    // Begin the multi-frame pad verb; StepPadVerb drives it from
+                    // here (this frame fires its first step: enqueue the presses).
+                    gPadVerb = PadVerbState();
+                    gPadVerb.cursor = (int)gVerbCursor;
+                    gPadVerb.phase  = kPadPhaseAct;
+                    if (StepPadVerb(v, frame)) {   // (won't complete on frame 1)
+                        gVerbCursor++;
+                        gVerbWaitSince = -1;
+                        gPadVerb = PadVerbState();
+                    }
+                    gLastFiredFrame = frame;
+                } else {
+                    DispatchVerb(v, cur);
+                    gLastFiredFrame = frame;
+                    gVerbCursor++;
+                    gVerbWaitSince = -1;
+                }
             } else {
                 // Not ready yet — wait. Log the first wait + give up after the
                 // deadline so we never hang on a target that never loads.
@@ -1816,6 +1765,7 @@ void RB3GameInputPoll(int frame) {
             }
         }
     }
+verb_dispatch_done: ;
 
     // M4 GAP 2: re-apply recorded run aids (autohit/nofail) on replay. The aids
     // were toggled out-of-band at record time (HTTP verb / script), so they are

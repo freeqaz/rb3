@@ -15,11 +15,14 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEFAULT_BIN = os.path.join(REPO, "native", "build-native", "rb3-native")
 DEFAULT_DATA = os.path.join(REPO, "orig-assets", "extracted")
 
+# part:/diff: are real pad-press verbs (readiness-gated on the part_difficulty
+# overshell view) — no end_override_flow needed; diff:'s Confirm drives the
+# overshell to ready_to_play, which auto-launches the song.
 NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
     "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:track:guitar,@390:difficulty:expert,@450:msg:overshell:end_override_flow:1:0,"
+    "@380:part:guitar,@400:diff:expert,"
     "@500:nofail,@520:autohit"
 )
 
@@ -91,7 +94,7 @@ def main():
     try:
         if wait_for(port, lambda f, m, s: True, 40, "server-ready", proc) is None:
             log("FAIL: HTTP never came up"); return 1
-        h = wait_for(port, lambda f, m, s: m > 2000.0, 220, "gameplay-start", proc)
+        h = wait_for(port, lambda f, m, s: m > 2000.0, 250, "gameplay-start", proc)  # +30s: real part/diff pad-press verbs take longer than the old instant commit
         if h is None:
             log("FAIL: never reached gameplay"); return 1
         log(f"gameplay underway: frame={h[0]} songMs={h[1]:.0f} screen='{h[2]}'")

@@ -36,7 +36,7 @@ NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
     "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:track:guitar,@390:difficulty:expert,@450:msg:overshell:end_override_flow:1:0,"
+    "@380:part:guitar,@400:diff:expert,"
     "@500:nofail,@520:autohit"
 )
 SERVER_READY_TIMEOUT = 50
@@ -73,7 +73,10 @@ def main():
     ap.add_argument("--label", default="run")
     ap.add_argument("--bin", default=DEFAULT_BIN)
     ap.add_argument("--data", default=DEFAULT_DATA)
-    ap.add_argument("--run-secs", type=float, default=60.0)
+    # +30s headroom vs the old direct-commit nav: the real part_difficulty
+    # screen (part:/diff: pad-press verbs) takes longer to reach gameplay than
+    # the old instant track:/difficulty: skip.
+    ap.add_argument("--run-secs", type=float, default=90.0)
     args = ap.parse_args()
 
     if not os.path.exists(args.bin):

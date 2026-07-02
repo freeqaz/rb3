@@ -5,10 +5,13 @@
  * song stream + score logic run. Captures audio-decode evidence + in-game
  * screenshots.
  *
- * The web input path (rb3_game_input.cpp) replicates the native v1 verb
- * sequence: a Confirm on song_select fires {music_library
- * select_highlighted_node}, and a Confirm on part_difficulty arms the
- * track:guitar -> overshell end_override_flow -> nofail -> autohit crossing.
+ * The web input path (rb3_game_input.cpp) replicates the native crossing: a
+ * Confirm on song_select fires {music_library select_highlighted_node} (the
+ * kept song-select aid, via rb3WebUseAids), and the part_difficulty screen is
+ * crossed with REAL Enter/ArrowDown key presses against the actual
+ * choose_part -> choose_diff overshell sub-views (window.rb3OvershellView),
+ * mirroring keyboard-to-gameplay.mjs. The old synthetic
+ * track:guitar -> overshell:end_override_flow verb sequence no longer exists.
  *
  * Usage:
  *   node scripts/web/w3c-gameplay-test.mjs [--port 8431] [--verbose]
@@ -29,13 +32,17 @@ const opts = {
     port:        parseInt(argv[argv.indexOf('--port') + 1] || '8431', 10) || 8431,
     verbose:     argv.includes('--verbose'),
     playSeconds: parseInt(argv[argv.indexOf('--play-seconds') + 1] || '30', 10) || 30,
+    debug:       argv.includes('--debug'),  // hit /?debug=true (native/web/server.py no-store debug build)
 };
 
 const BOOT_TIMEOUT_MS   = 300000;
 const SPLASH_TIMEOUT_MS = 180000;
 // The MOGG for 20th Century Boy is ~37MB; the on-demand sync XHR fetch +
 // decrypt + decode can take a while. Be generous waiting for game_screen.
-const LOADSONG_TIMEOUT_MS = 240000;
+// +30s headroom vs the old direct-commit hack: the real choose_part ->
+// choose_diff overshell crossing now takes longer than the removed synthetic
+// track:guitar -> end_override_flow shortcut did.
+const LOADSONG_TIMEOUT_MS = 270000;
 
 const OUT_DIR = resolve(__dirname, 'results/web-w3c');
 mkdirSync(resolve(OUT_DIR, 'gameplay'), { recursive: true });
@@ -82,6 +89,10 @@ const flow = [];
 const getScreen = (page) => page.evaluate(() => window.rb3CurrentScreen || '');
 const getSongCount = (page) => page.evaluate(() => window.rb3SongCount || 0);
 const getFrame = (page) => page.evaluate(() => window.rb3FrameCount || 0);
+// The pad-0 overshell slot's current view symbol (choose_part_guitar,
+// choose_diff, ready_to_play, ...) — published by main_web.cpp's
+// PublishCurrentScreen, same probe keyboard-to-gameplay.mjs uses.
+const getView = (page) => page.evaluate(() => window.rb3OvershellView || '?');
 
 async function snap(page, label) {
     const path = resolve(OUT_DIR, 'gameplay', `${label}.png`);
@@ -103,6 +114,34 @@ async function waitScreen(page, { targets = null, from = null, timeoutMs = 20000
         await new Promise(r => setTimeout(r, 250));
     }
     return s;
+}
+
+// One clean keypress: down -> hold (several frames) -> up -> gap (bit clears).
+// A bare page.keyboard.press() (0ms between down/up) races the emscripten
+// main loop's requestAnimationFrame poll of window._rb3Keys: if the down+up
+// pair completes within the same JS tick, the engine's next frame can sample
+// the bitmask AFTER it already cleared and see no edge at all — a real press
+// that never happened as far as the game is concerned. Mirrors the `press()`
+// helper in keyboard-to-gameplay.mjs (which does NOT use bare .press()).
+async function press(page, key, holdMs = 220, gapMs = 400) {
+    await page.keyboard.down(key);
+    await new Promise(r => setTimeout(r, holdMs));
+    await page.keyboard.up(key);
+    await new Promise(r => setTimeout(r, gapMs));
+}
+
+// Same as waitScreen but polls the overshell sub-view (choose_part_guitar,
+// choose_diff, ...) instead of the top-level screen name.
+async function waitView(page, { targets = null, prefix = null, timeoutMs = 20000 }) {
+    const deadline = Date.now() + timeoutMs;
+    let v = await getView(page);
+    while (Date.now() < deadline) {
+        v = await getView(page);
+        if (targets && targets.includes(v)) return v;
+        if (prefix && v && v.startsWith(prefix)) return v;
+        await new Promise(r => setTimeout(r, 250));
+    }
+    return v;
 }
 
 try {
@@ -131,7 +170,7 @@ try {
     page.on('pageerror', (err) => { errors.push(err.message || String(err)); console.log(`  [PAGE_ERROR] ${err.message || err}`); });
     page.on('crash', () => { errors.push('Page crashed'); console.log('  [CRASH]'); });
 
-    const url = `http://127.0.0.1:${opts.port}/`;
+    const url = `http://127.0.0.1:${opts.port}/${opts.debug ? '?debug=true' : ''}`;
     console.log(`Loading ${url} (W3c gameplay)`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.evaluate(() => {
@@ -165,10 +204,10 @@ try {
 
     // === Splash → main_hub ===
     console.log(`\n[splash→main_hub] Start then Confirm...`);
-    await page.keyboard.press('Space');
+    await press(page, 'Space');
     s = await waitScreen(page, { from: 'splash_screen', timeoutMs: 8000 });
     for (let i = 0; i < 6 && s === 'splash_screen'; i++) {
-        await page.keyboard.press('Enter');
+        await press(page, 'Enter');
         s = await waitScreen(page, { from: 'splash_screen', timeoutMs: 6000 });
     }
     if (s !== 'main_hub_screen') s = await waitScreen(page, { targets: ['main_hub_screen'], timeoutMs: 30000 });
@@ -180,7 +219,7 @@ try {
     if (s === 'main_hub_screen') {
         console.log(`\n[main_hub→song_select] Confirm chain...`);
         for (let i = 0; i < 5; i++) {
-            await page.keyboard.press('Enter');
+            await press(page, 'Enter');
             await waitScreen(page, { from: 'main_hub_screen', timeoutMs: 6000 });
             const cur = await getScreen(page);
             console.log(`  Confirm #${i+1}: screen='${cur}' (${elapsed()}s)`);
@@ -214,9 +253,7 @@ try {
         await snap(page, '02b_song_top');
         console.log(`[song_select→part_difficulty] confirm pins '${TARGET}' + selects...`);
         for (let i = 0; i < 4; i++) {
-            await page.keyboard.down('Enter');
-            await new Promise(r => setTimeout(r, 120));
-            await page.keyboard.up('Enter');
+            await press(page, 'Enter', 220, 400);
             const ns = await waitScreen(page, { targets: ['part_difficulty_screen'], from: 'song_select_screen', timeoutMs: 12000 });
             const cur = await getScreen(page);
             console.log(`  song confirm #${i+1}: screen='${cur}' (${elapsed()}s)`);
@@ -231,19 +268,30 @@ try {
     console.log(`part_difficulty reached: '${s}'`);
 
     // === part_difficulty → game_screen (the finale) ===
+    // Real key nav across the part + difficulty overshell sub-views
+    // (choose_part_guitar -> choose_diff), mirroring keyboard-to-gameplay.mjs.
+    // The old synthetic track:guitar -> overshell:end_override_flow autopilot
+    // (armed by any Confirm on part_difficulty_screen) no longer exists; the
+    // screen must actually be crossed via choose_part then choose_diff.
     if (s === 'part_difficulty_screen') {
-        console.log(`\n[part_difficulty→game_screen] Confirm arms part-select crossing...`);
-        // Press Confirm a few times (hold each ~120ms so a slow frame still sees
-        // the rising edge) until the part-select sequence is armed + the screen
-        // starts crossing. The arm is idempotent (only arms once).
-        for (let i = 0; i < 5; i++) {
-            await page.keyboard.down('Enter');
-            await new Promise(r => setTimeout(r, 150));
-            await page.keyboard.up('Enter');
-            await new Promise(r => setTimeout(r, 1200));
-            const cur = await getScreen(page);
-            console.log(`  part confirm #${i+1}: screen='${cur}' (${elapsed()}s)`);
-            if (cur === 'game_screen') { s = cur; break; }
+        console.log(`\n[part_difficulty→game_screen] real key nav: choose_part -> choose_diff...`);
+        const cp = await waitView(page, { prefix: 'choose_part', timeoutMs: 40000 });
+        console.log(`  overshell view='${cp}' (${elapsed()}s)`);
+        if (cp && cp.startsWith('choose_part')) {
+            await press(page, 'Enter', 220, 600);
+        }
+        const cd = await waitView(page, { targets: ['choose_diff'], timeoutMs: 40000 });
+        console.log(`  overshell view='${cd}' (${elapsed()}s)`);
+        if (cd === 'choose_diff') {
+            // Easy(0)/Medium(1)/Hard(2)/Expert(3) top-down, default focus Easy
+            // — scroll down to Expert (same difficulty the old hard-coded
+            // track:guitar shortcut always ended up on).
+            for (let i = 0; i < 3; i++) {
+                await press(page, 'ArrowDown', 180, 300);
+            }
+            await press(page, 'Enter', 220, 600);
+        } else {
+            console.log(`  WARN: overshell never reached choose_diff (view='${cd}')`);
         }
         console.log(`  waiting for game_screen (MOGG load may take a while)...`);
         const g = await waitScreen(page, { targets: ['game_screen'], timeoutMs: LOADSONG_TIMEOUT_MS });

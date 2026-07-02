@@ -45,7 +45,7 @@ NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
     "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:track:guitar,@390:difficulty:expert,@450:msg:overshell:end_override_flow:1:0,"
+    "@380:part:guitar,@400:diff:expert,"
     "@500:nofail,@520:autohit"
 )
 
@@ -133,8 +133,9 @@ def main():
         else:
             log("FAIL: server never came up"); return 1
 
-        # reach game_screen
-        dl = time.time() + 320; scr = None
+        # reach game_screen (+30s headroom for the real part_difficulty screen
+        # nav vs the old direct-commit track:/difficulty: skip)
+        dl = time.time() + 350; scr = None
         while time.time() < dl:
             if proc.poll() is not None: log("FAIL: died -> game_screen"); return 1
             h = health(port); scr = h.get("currentScreen") if h else None

@@ -142,9 +142,10 @@ def main():
 
         # Select it + drive into gameplay, mirroring capture_gameplay_audio.py's
         # proven frame-sequenced ordering (select -> settle on part_difficulty ->
-        # track/diff -> end_override -> nofail/autohit). Firing track: before the
-        # part screen exists trips a SongData::TrackInfo OOB abort, so we WAIT for
-        # part_difficulty_screen first and space the verbs out.
+        # part/diff (real pad-press verbs, readiness-gated on the overshell view)
+        # -> nofail/autohit). Firing part: before the part screen exists trips a
+        # SongData::TrackInfo OOB abort, so we WAIT for part_difficulty_screen
+        # first and space the verbs out.
         http_post(port, "/api/input", "msg:music_library:select_highlighted_node")
         # wait for the part-difficulty screen (overshell SongSettings flow).
         dl = time.time() + 60
@@ -157,14 +158,17 @@ def main():
             time.sleep(0.4)
         log("part_difficulty reached; committing guitar/expert")
         time.sleep(1.0)
-        http_post(port, "/api/input", "track:guitar"); time.sleep(0.4)
-        http_post(port, "/api/input", "difficulty:expert"); time.sleep(0.4)
-        http_post(port, "/api/input", "msg:overshell:end_override_flow:1:0"); time.sleep(0.6)
+        # part:/diff: are real pad presses driven by a multi-frame state machine
+        # (StepPadVerb) that waits for the target overshell view before firing and
+        # bounded-retries the confirm_action dialog, so they take longer than the
+        # old synchronous track:/difficulty:/msg:overshell:end_override_flow hack.
+        http_post(port, "/api/input", "part:guitar"); time.sleep(1.0)
+        http_post(port, "/api/input", "diff:expert"); time.sleep(1.0)
         http_post(port, "/api/input", "nofail"); time.sleep(0.3)
         http_post(port, "/api/input", "autohit"); time.sleep(0.3)
 
-        # Wait for gameplay.
-        dl = time.time() + 120
+        # Wait for gameplay (+30s headroom vs the old direct-commit path).
+        dl = time.time() + 150
         started = None
         while time.time() < dl:
             if proc.poll() is not None:

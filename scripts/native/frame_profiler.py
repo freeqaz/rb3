@@ -269,10 +269,17 @@ def main():
             log("confirming highlighted song -> guitar/expert -> gameplay")
             http_post(port, "/api/input", "msg:music_library:select_highlighted_node")
             time.sleep(1.0)
-            http_post(port, "/api/input", "track:guitar"); time.sleep(0.3)
-            http_post(port, "/api/input", "difficulty:expert"); time.sleep(0.3)
-            http_post(port, "/api/input", "msg:overshell:end_override_flow:1:0")
-            time.sleep(0.3)
+            # part:/diff: are readiness-gated, multi-frame pad-press verbs (they
+            # queue onto the same per-frame verb-step loop the RB3_GAME_INPUT nav
+            # uses) — unlike the old synchronous track:/difficulty: verbs, they
+            # don't take effect immediately, so wait for game_screen before firing
+            # nofail/autohit (which apply once, with no retry, over HTTP).
+            http_post(port, "/api/input", "part:guitar")
+            http_post(port, "/api/input", "diff:expert")
+            h = wait_for(port, lambda f, m, s: s == "game_screen", 60,
+                         "game_screen (post part:/diff:)", args.verbose, proc)
+            if h is None:
+                log("WARN: never saw game_screen after part:/diff: (nofail/autohit may no-op)")
             http_post(port, "/api/input", "nofail"); time.sleep(0.2)
             http_post(port, "/api/input", "autohit")
             # let gameplay run so the song mogg stream + in-song loads register

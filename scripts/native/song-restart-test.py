@@ -36,7 +36,7 @@ NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
     "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:track:guitar,@390:difficulty:expert,@450:msg:overshell:end_override_flow:1:0,"
+    "@380:part:guitar,@400:diff:expert,"
     "@500:nofail,@520:autohit"
 )
 
@@ -124,7 +124,10 @@ def main():
         if k != "ok":
             log("FAIL: server never came up"); return 1
         log("HTTP up; waiting for gameplay")
-        k, h = wait(port, proc, lambda f, m, s: m > 2000.0, 220, "gameplay-start")
+        # +30s headroom vs the old direct-commit nav: part_difficulty is now a
+        # real readiness-gated screen (part:/diff: pad-press verbs), not a
+        # single-frame track:/difficulty: skip.
+        k, h = wait(port, proc, lambda f, m, s: m > 2000.0, 250, "gameplay-start")
         if k != "ok":
             log(f"FAIL: no gameplay ({k})"); return 1
         log(f"gameplay underway: songMs={h[1]:.0f}")
