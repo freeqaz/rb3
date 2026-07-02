@@ -459,6 +459,13 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
             );
             if (curtex) {
                 if (cfg) {
+#ifdef HX_NATIVE
+                    // Skin tone for the composite-bypass path (below): the palette
+                    // color the two-color recolor would tint the neutral `_diff`
+                    // detail map with. Captured from this part's skin.cfg MatSwap.
+                    bool haveSkinTone = false;
+                    Hmx::Color skinTone(1.0f, 1.0f, 1.0f, 1.0f);
+#endif
                     if (i < 2 || i == 4) {
                         int idx = 2;
                         if (i != 4)
@@ -470,12 +477,46 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
                         );
                         if (interptex)
                             curswap.mTwoColorInterp = interptex;
+#ifdef HX_NATIVE
+                        if (curswap.mColor1Palette) {
+                            skinTone = curswap.mColor1Palette->GetColor(
+                                cfg->mColors[curswap.mColor1Option]
+                            );
+                            haveSkinTone = true;
+                        }
+#endif
                     }
                     RndTex *difftex = dir2->Find<RndTex>(
                         MakeString("%s_skin_diffuse_output.tex", partname), false
                     );
+#ifdef HX_NATIVE
+                    // WEB skin-composite bypass (default-ON; opt-out RB3_SKIN_RTT=1).
+                    // The two-color RTT recolor (MatSwap::Compose -> BandRnd::DrawRect)
+                    // bakes FLAT GREY skin on the WebGPU backend even though every
+                    // compose input resolves correctly (base = warm skin tone, diff +
+                    // interp both hasTex=1) — the RT bakes grey and the char samples it
+                    // -> untextured grey faces/arms, web-only. Native looks correct
+                    // because it never runs this composite. Match that: bind the skin
+                    // MESH material to the SOURCE `_diff` detail texture (male_head_diff
+                    // .tex etc.) directly and tint it with the palette skin tone the
+                    // recolor would have applied, so the mesh shader yields
+                    // diff * skinTone = warm, detailed flesh (not flat grey plaster).
+                    // The tattoo/decal patch layers still draw via the mesh's own
+                    // material. Wii (#else) is byte-identical to the matched build.
+                    static int sSkinRtt = -1;
+                    if (sSkinRtt < 0)
+                        sSkinRtt = getenv("RB3_SKIN_RTT") ? 1 : 0;
+                    if (!sSkinRtt) {
+                        curmat->SetDiffuseTex(curtex);
+                        if (haveSkinTone)
+                            curmat->SetColor(skinTone.red, skinTone.green, skinTone.blue);
+                    } else if (difftex) {
+                        curmat->SetDiffuseTex(difftex);
+                    }
+#else
                     if (difftex)
                         curmat->SetDiffuseTex(difftex);
+#endif
                 } else {
                     curmat->SetDiffuseTex(curtex);
                 }
@@ -523,7 +564,13 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
     static int sSkinFixOff = -1;
     if (sSkinFixOff < 0)
         sSkinFixOff = getenv("RB3_SKIN_FIX_OFF") ? 1 : 0;
-    if (cfg && !sSkinFixOff) {
+    // Default skin path binds the source detail texture directly (see the
+    // RB3_SKIN_RTT block above), which supersedes this RT-recolor rebind. Only run
+    // the RT-compose rebind when RB3_SKIN_RTT explicitly re-enables the composite.
+    static int sSkinFixRtt = -1;
+    if (sSkinFixRtt < 0)
+        sSkinFixRtt = getenv("RB3_SKIN_RTT") ? 1 : 0;
+    if (cfg && !sSkinFixOff && sSkinFixRtt) {
         // Idempotent: only (re)bind + Recompose when a material's diffuse is not
         // already the RT. SetSkinTextures can be called every frame in the closet
         // preview; re-dirtying + re-compositing each time churns the skin meshes'
