@@ -403,6 +403,15 @@ def resolve_asset_path(rel):
                 if os.path.isfile(fb_alt):
                     full_path = fb_alt
                     break
+    # web-xma: offline XMA->PCM/ogg sidecars live in the gitignored derived tree
+    # (SIDECAR_DIR), flat content-hash names — same fallback _serve_asset_file
+    # applies, needed here so the bundle routes (screen-shell_sfx) and pre-warm
+    # can resolve sfx/gen/xma_pcm/* entries. `rel` is normpath'd by callers that
+    # accept client input; manifests are trusted repo files.
+    if not os.path.isfile(full_path) and SIDECAR_DIR and "xma_pcm/" in rel:
+        sc_path = os.path.join(SIDECAR_DIR, os.path.basename(rel))
+        if os.path.isfile(sc_path):
+            full_path = sc_path
     return full_path if os.path.isfile(full_path) else None
 
 

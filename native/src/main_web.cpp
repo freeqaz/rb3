@@ -513,13 +513,24 @@ static void WebSplashAdvanceHook() {
 // harmless no-op. We fire each screen's bundle at most once per session (a
 // file-static seen-set), keyed by the predicted-next screen name.
 //
+// The intro movie is the best prefetch window in the whole boot: the user
+// watches a video for many seconds while the wasm thread is idle, so
+// intro_movie_screen fires BOTH the shell SFX bundle (shell_sfx: the ~324 tiny
+// xma_pcm .ogg sidecars + SFX bank milos that otherwise trickle in as
+// individual RTT-bound XHRs right after the splash ENTER — the felt
+// "10+ seconds downloading sound effects") AND the main_hub bundle.
+// splash_screen repeats both as a fallback for intro-skipped runs; the
+// per-session seen-set makes the repeat free.
+//
 // Default ON for web; opt out with RB3_SCREEN_BUNDLES_OFF (any value disables).
-// Tunable mapping via RB3_SCREEN_BUNDLE_NEXT="from:to,from2:to2" (same syntax as
-// RB3_PREWARM_NEXT). This is the prefetch counterpart to the UIScreen kLoadBack
+// Tunable mapping via RB3_SCREEN_BUNDLE_NEXT="from:to,from2:to2" (same syntax
+// as RB3_PREWARM_NEXT); a value may name several '+'-separated bundles
+// ("from:a+b"). This is the prefetch counterpart to the UIScreen kLoadBack
 // prewarm (Q10): bundles warm MEMFS at the byte layer; prewarm warms the parsed
 // PanelDir at the loader layer. They compose.
 static const char *kDefaultScreenBundleMap =
-    "splash_screen:main_hub,main_hub_screen:song_select";
+    "intro_movie_screen:shell_sfx+main_hub,"
+    "splash_screen:shell_sfx+main_hub,main_hub_screen:song_select";
 
 static bool ScreenBundlesEnabled() {
     // Default ON; opt out with a TRUTHY RB3_SCREEN_BUNDLES_OFF. A literal "0"
@@ -583,18 +594,29 @@ static void WebScreenBundleHook() {
         return;  // no transition this frame
     sLastScreen = name;
 
-    std::string bundle = NextScreenBundleName(name);
-    if (bundle.empty())
+    std::string bundles = NextScreenBundleName(name);
+    if (bundles.empty())
         return;
 
+    // A mapping value may be a '+'-separated list ("shell_sfx+main_hub"); fire
+    // each bundle at most once per session.
     static std::set<std::string> sFired;
-    if (sFired.count(bundle))
-        return;  // one fetch per bundle per session
-    sFired.insert(bundle);
-
-    std::string url = "/api/bundle/screen/" + bundle;
-    printf("RB3 Web: screen '%s' entered -> prefetch bundle %s\n", name, url.c_str());
-    WebAssetsFetchBundle(url.c_str());
+    size_t pos = 0;
+    while (pos <= bundles.size()) {
+        size_t plus = bundles.find('+', pos);
+        std::string bundle = bundles.substr(
+            pos, plus == std::string::npos ? std::string::npos : plus - pos);
+        if (!bundle.empty() && !sFired.count(bundle)) {
+            sFired.insert(bundle);
+            std::string url = "/api/bundle/screen/" + bundle;
+            printf("RB3 Web: screen '%s' entered -> prefetch bundle %s\n", name,
+                   url.c_str());
+            WebAssetsFetchBundle(url.c_str());
+        }
+        if (plus == std::string::npos)
+            break;
+        pos = plus + 1;
+    }
 }
 
 static void DoEngineInit() {
