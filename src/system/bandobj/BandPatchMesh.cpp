@@ -215,6 +215,9 @@ void __unguarded_linear_insert<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVe
     *__last = __val;
 }
 
+// Wave-3 partial gain (4a49b1a4), re-landed after the shared-code hunks of that
+// commit were reverted for breaking native patch projection: this specialization
+// is inside the #ifndef HX_NATIVE block, so it is provably native-inert.
 template <>
 void __adjust_heap<BandPatchMesh::MeshVert **, long, BandPatchMesh::MeshVert *, SortByWorkVertZ>(
     BandPatchMesh::MeshVert **__first,
@@ -439,7 +442,6 @@ void BandPatchMesh::WorkVerts::AddFace(int i, MeshVert *mv) {
 void BandPatchMesh::WorkVerts::AddEdge(
     BandPatchMesh::MeshVert *mv0, BandPatchMesh::MeshVert *mv1
 ) {
-    int mv1Idx = mv1->unk28;
     for (int idx = mv0->unk28; idx != -1; idx = mMeshVerts[idx]->unk2c) {
         MeshVert *mv = mMeshVerts[idx];
         unsigned short *faceidxptr = (unsigned short *)((char *)mv + kMVFaceList);
@@ -448,12 +450,15 @@ void BandPatchMesh::WorkVerts::AddEdge(
             if (unk28[faceidx].mFlags == -1) {
                 RndMesh *mesh = mMesh;
                 RndMesh::Face &face = mesh->Faces()[faceidx];
-                for (int b = 0; b < 3; b++) {
-                    if (idx == face[b]
-                        && mv1Idx == mMeshVerts[face[(b + 1) % 3]]->unk28) {
-                        TryAddFace(faceidx, b);
-                        break;
-                    }
+                if (mv1 && idx == face[0]) {
+                    if (mMeshVerts[face[1]]->unk28 == (mv1->unk28))
+                        TryAddFace(faceidx, 0);
+                } else if (idx == face[1]) {
+                    if (mMeshVerts[face[2]]->unk28 == (mv1->unk28))
+                        TryAddFace(faceidx, 1);
+                } else if (idx == face[2]) {
+                    if (mMeshVerts[face[0]]->unk28 == (mv1->unk28))
+                        TryAddFace(faceidx, 2);
                 }
             }
         }
@@ -482,18 +487,18 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
 #undef vf
     int prevVertCount = unk10.size();
     RndMesh::Face &face = mMesh->Faces()[faceidx];
-    MeshVert *verts[3];
     int allOut = 0xf;
+    MeshVert *verts[3];
     for (int i = 0.0f; i < 3; i++) {
-        int fi = face[i];
-        verts[i] = mMeshVerts[fi];
-        if (mMeshVerts[fi]->mVert == 0) {
+        MeshVert *mv = mMeshVerts[face[i]];
+        verts[i] = mv;
+        if (mv->mVert == 0) {
 #define vf b
 #define MeshFace MeshFace_local
             MILO_ASSERT(vf != MeshFace::kDontTestMonotonicity, 0x2B1);
 #undef MeshFace
 #undef vf
-            AddMeshVertAndTwins(fi, mMeshVerts[face[b]]);
+            AddMeshVertAndTwins(face[i], mMeshVerts[face[b]]);
         }
         allOut &= verts[i]->unk26;
     }
@@ -511,26 +516,27 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
     if (reject == 0 && b != 3) {
         int prev = (b == 0) ? 2 : b - 1;
         int next = (b == 2) ? 0 : b + 1;
+        MeshVert *vb = verts[b];
         MeshVert *vn = verts[next];
         MeshVert *vp = verts[prev];
-        float ey = vn->unk1c.y - verts[b]->unk1c.y;
-        float py = vp->unk1c.y - verts[b]->unk1c.y;
-        float ex = vn->unk1c.x - verts[b]->unk1c.x;
-        float px = vp->unk1c.x - verts[b]->unk1c.x;
-        float t = (ex * px + ey * py) / (ey * ey + ex * ex);
-        if (t > 1.0f)
+        float ey = vn->unk1c.y - vb->unk1c.y;
+        float py = vp->unk1c.y - vb->unk1c.y;
+        float ex = vn->unk1c.x - vb->unk1c.x;
+        float px = vp->unk1c.x - vb->unk1c.x;
+        float t = (ex * px + ey * py) / (ex * ex + ey * ey);
+        if (t > 1.0)
             t = 1.0f;
         else if (t < 0)
             t = 0;
-        float projy = verts[b]->unk1c.y + t * ey;
-        float projx = verts[b]->unk1c.x + t * ex;
-        float dot = (vp->unk1c.y - projy) * (vp->unk1c.y - 0.5f)
-            + (vp->unk1c.x - projx) * (vp->unk1c.x - 0.5f);
+        float projx = vb->unk1c.x + t * (vn->unk1c.x - vb->unk1c.x);
+        float projy = vb->unk1c.y + t * (vn->unk1c.y - vb->unk1c.y);
+        float dot = (vp->unk1c.x - projx) * (vp->unk1c.x - 0.5f)
+            + (vp->unk1c.y - projy) * (vp->unk1c.y - 0.5f);
         reject = (dot < 0) ? 1 : 0;
     }
     if (reject != 0) {
         int added = unk10.size() - prevVertCount;
-        for (; added != 0; added--) {
+        for (int i = 0; i < added; i++) {
             unk10[unk10.size() - 1]->mVert = 0;
             unk10.pop_back();
         }
@@ -742,9 +748,10 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     float accumX = 0.0f;
     float accumY = 0.0f;
     const MeshVert *anchor = mv;
+    const MeshVert *iter = mv;
     const MeshVert *prevTwin = mv;
     const MeshVert *prevOther = mv;
-    unsigned short *facePtr = (unsigned short *)((char *)mv + kMVFaceList);
+    unsigned short *facePtr = (unsigned short *)((char *)iter + kMVFaceList);
     for (int i = 0; i < mv->unk30; i++) {
         unsigned short faceIdx = facePtr[i];
         if (unk28[faceIdx].mFlags == 4) {
@@ -790,8 +797,9 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     }
     if (prevTwin == prevOther)
         return;
-    float dyOther = prevTwin->mVert->uv.y - prevOther->mVert->uv.y;
-    float cross = accumX * dyOther - accumY * (prevTwin->mVert->uv.x - prevOther->mVert->uv.x);
+    float dxOther = prevOther->mVert->uv.x - prevTwin->mVert->uv.x;
+    float dyOther = prevOther->mVert->uv.y - prevTwin->mVert->uv.y;
+    float cross = accumX * dyOther - accumY * dxOther;
     float sign;
     if (cross >= 0.0f)
         sign = 1.0f;
@@ -799,42 +807,34 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
         sign = -1.0f;
     float ox = outDir.x;
     float oy = outDir.y;
-    float invLen = sign * (1.0f / std::sqrt(ox * ox + oy * oy));
-    float newY = ox * invLen * unk4c.y;
+    float invLen = sign / std::sqrt(ox * ox + oy * oy);
     float newX = -oy * invLen * unk4c.x;
-    outDir.y = newY;
+    float newY = ox * invLen * unk4c.y;
     outDir.x = newX;
+    outDir.y = newY;
     float ax = mv->mVert->uv.y - prevOther->mVert->uv.y;
-    float bx = mv->mVert->uv.y - anchor->mVert->uv.y;
     float ay = mv->mVert->uv.x - prevOther->mVert->uv.x;
+    float bx = mv->mVert->uv.y - anchor->mVert->uv.y;
     float by = mv->mVert->uv.x - anchor->mVert->uv.x;
     float det = ay * bx - ax * by;
-    float m00;
-    float m01;
-    float m10;
-    float m11;
-    int ok;
-    float absDet = fabs(det);
-    if (absDet < 1e-15f) {
-        ok = 0;
-    } else {
-        float invDet = 1.0f / det;
-        m00 = ay * invDet;
-        m10 = -by * invDet;
-        m11 = -ax * invDet;
-        m01 = bx * invDet;
-        ok = 1;
+    if (fabs(det) < 1e-15f) {
+        outUv.x = 0.0f;
+        outUv.y = 0.0f;
+        return;
     }
-    if (ok) {
-        float p = outDir.x * m11 + outDir.y * m00;
-        float q = outDir.x * m01 + outDir.y * m10;
-        float av = mv->unk1c.y - anchor->unk1c.y;
-        float tv = mv->unk1c.y - prevOther->unk1c.y;
-        float au = mv->unk1c.x - anchor->unk1c.x;
-        float tu = mv->unk1c.x - prevOther->unk1c.x;
-        outUv.y = p * av + q * tv;
-        outUv.x = p * au + q * tu;
-    }
+    float invDet = 1.0f / det;
+    float m00 = ay * invDet;
+    float m11 = -ax * invDet;
+    float m01 = bx * invDet;
+    float m10 = -by * invDet;
+    float tu = mv->unk1c.x - prevOther->unk1c.x;
+    float tv = mv->unk1c.y - prevOther->unk1c.y;
+    float au = mv->unk1c.x - anchor->unk1c.x;
+    float av = mv->unk1c.y - anchor->unk1c.y;
+    float resX = outDir.x * m01 + outDir.y * m00;
+    float resY = outDir.x * m10 + outDir.y * m11;
+    outUv.x = resY * av + resX * tv;
+    outUv.y = resY * au + resX * tu;
 }
 
 bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
@@ -1086,23 +1086,24 @@ void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm)
 }
 
 bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
+    MILO_ASSERT(mesh->GeomOwner(), 0x6C5);
     if (mesh->Verts().size() == 0 || mesh->Faces().size() == 0) {
         TheDebug.Notify(
             FormatString("Patches can't project onto %s, has no verts or faces!").Str()
         );
         return false;
     }
-    unsigned short *foundFace = (unsigned short *)&mesh->Faces()[0] + mesh->Faces().size() * 3;
-    unsigned short *faceIter = (unsigned short *)&mesh->Faces()[0];
+    unsigned short *faceBase = (unsigned short *)&mesh->Faces()[0];
+    unsigned short *endFace = faceBase + mesh->Faces().size() * 3;
     {
         float zero = 0.0f;
-        while (faceIter != (unsigned short *)&mesh->Faces()[0] + mesh->Faces().size() * 3) {
-            unsigned short lastIdx = faceIter[2];
+        while (faceBase != endFace) {
+            unsigned short lastIdx = faceBase[2];
             RndMesh::Vert *v0 = &mesh->Verts(lastIdx);
             int matched = 0;
             float firstSign = 0.0f;
-            unsigned short *iter = faceIter;
-            do {
+            unsigned short *iter = faceBase;
+            for (int j = 0; j < 3; j++) {
                 unsigned short curIdx = iter[0];
                 RndMesh::Vert *v1 = &mesh->Verts(curIdx);
                 float dx = uv.x - v0->uv.x;
@@ -1118,23 +1119,22 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
                 matched++;
                 v0 = v1;
                 iter++;
-            } while (matched < 3);
+            }
             if (matched == 3) {
-                foundFace = faceIter;
+                endFace = faceBase;
                 break;
             }
-            faceIter += 3;
+            faceBase += 3;
         }
     }
-    if (foundFace == (unsigned short *)&mesh->Faces()[0] + mesh->Faces().size() * 3) {
+    if (endFace == endFace) {
         float minDistSq = 1e30f;
-        unsigned short *facePtr = (unsigned short *)&mesh->Faces()[0];
-        while (facePtr != (unsigned short *)&mesh->Faces()[0] + mesh->Faces().size() * 3) {
+        unsigned short *facePtr = faceBase;
+        while (facePtr != endFace) {
             unsigned short lastIdx = facePtr[2];
             RndMesh::Vert *v0 = &mesh->Verts(lastIdx);
             unsigned short *iter = facePtr;
-            int j = 0;
-            do {
+            for (int j = 0; j < 3; j++) {
                 unsigned short curIdx = iter[0];
                 RndMesh::Vert *v1 = &mesh->Verts(curIdx);
                 float ex = v1->uv.x - v0->uv.x;
@@ -1151,26 +1151,19 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
                 float ddx = closestX - uv.x;
                 float ddy = closestY - uv.y;
                 float distSq = ddx * ddx + ddy * ddy;
-                int better;
                 if (distSq < minDistSq) {
                     minDistSq = distSq;
-                    better = 1;
-                } else {
-                    better = 0;
-                }
-                if (better) {
-                    foundFace = facePtr;
+                    endFace = facePtr;
                 }
                 v0 = v1;
                 iter++;
-                j++;
-            } while (j < 3);
+            }
             facePtr += 3;
         }
     }
     RndMesh::Vert *triVerts[3];
     for (int i = 0; i < 3; i++) {
-        triVerts[i] = &mesh->Verts(foundFace[i]);
+        triVerts[i] = &mesh->Verts(endFace[i]);
     }
     Hmx::Matrix3 uvMat;
     uvMat.x.y = triVerts[0]->uv.y;
