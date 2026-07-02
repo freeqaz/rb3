@@ -862,3 +862,61 @@ reaches game-over; native reads the canonical tree, unaffected by the downscale.
 **Ship decision: default-ON for web.** Visual gate passed (pass-with-exclusions),
 code review clean, the crash fix + cube fix + exclusions landed, and 1.5 Mbps now
 reaches gameplay for the first time. Opt out with `RB3_WEB_DOWNSCALE=0`.
+
+---
+
+## C (progressive sharpen) results — SHIPPED default-ON, 2026-07-02
+
+The follow-on to A4. A4 ships web venues with the top texture mip stripped (half-res,
+fast to gameplay — the thing that lets 1.5 Mbps reach gameplay). **C makes it
+PROGRESSIVE:** load stripped (fast), then background-fetch the full-res top-mips and
+sharpen each venue texture **live in the same session** so quality is restored without
+paying the load-time cost up front. Full plan + detailed results:
+`research/13-progressive-texture-sharpen-plan.md` (§RESULTS).
+
+**Mechanism (recreate-at-new-size, not mip-residency — the wgpu backend is single-mip):**
+a `<venue>.milo_xbox.sharpen` sidecar carries the exact top-mip BC bytes A4 discarded;
+once gameplay is running (`songMs>0`, off the critical path) an HX_NATIVE manager async-
+fetches it, fingerprint-matches each stripped RndTex, swaps the bitmap back to full-res +
+bumps its churn fingerprint, and the existing `UploadRndTexIfNeeded` path recreates the
+GPU texture at full W×H + a fresh view; cached material bind-groups rebuild on the
+view-change compare. An N-textures/frame scheduler (default 4) spreads the recreate bursts.
+
+**Commits:** engine `cede2db` (T0 recreate diagnostic), `022a5d2` (T1 manager), `bd3bcb7`
+(DXT-only guard); rb3 `2c771f2d` (T0 sidecar+test), `9de518ec` (sidecar READ mode),
+`165444c6` (non-DXT exclude). Pin already at engine HEAD `77eb428b` (all four sharpen
+commits are ancestors of the concurrently-bumped pin — no separate integration bump).
+Flags: `RB3_PROGRESSIVE_SHARPEN` (default ON, `=0` opt-out → A4 stripped-stays-stripped),
+`RB3_SHARPEN_PER_FRAME` (4), `RB3_SHARPEN_DBG`.
+
+**Gates (fresh integrated build):**
+- **Wii byte-identical:** report.json 31969/41254 matched (62.918% code) — no drop from
+  the A4 baseline (31951+). The only matched-Wii-TU touch is `Game.cpp`, fully inside
+  `#ifdef HX_NATIVE`; the sharpen logic lives in native-only engine + `native/src` TUs.
+- **Native:** rb3-tests 51/51 (incl. 5 sharpen tests: churn-recreate, fresh view, budget,
+  garbage-reject); song-end smoke PASS; `audio_verify --selftest` 6/6; gameplay `--rank`
+  chroma **0.958 CONFIDENT MATCH**.
+- **Recreate/quality:** native `_sharpen_gate.py` → 15/15 textures recreated to exact full
+  dims, `session COMPLETE: 15 textures, 5,177,344 bytes`. Sidecar is **byte-identical** to
+  the top-mip `mip_strip.py` removes → sharpened texture == full-res build bytes (SSIM=1.0
+  given matched camera; cross-run pixel SSIM uncapturable due to director-shot micro-motion
+  — byte-identity is the stronger proof).
+- **Web flow gate (CDP throttle, cold cache, `RB3_WEB_DOWNSCALE=1`, q11-prewarmed tree):**
+  4 Mbps ON reached game_screen 214.0 s ≈ OFF 214.1 s (**A4 time-to-gameplay INTACT** — the
+  fetch is post-gameplay); web sharpen **COMPLETE 15/15, 5,177,344 B** (== native);
+  **FPS 59.6–60.4 (no hitch)**; **0 underrun delta ON == OFF** (no audio starvation).
+  1.5 Mbps ON still reaches game_screen (**A4's 1.5 Mbps→gameplay flip preserved**);
+  T2 measured 1.5 Mbps underruns ON=635 < OFF=861 (sharpen yields to audio).
+
+**Ship decision: default-ON for web.** All four flow-gate axes pass (reaches gameplay
+fast, soft→sharp to byte-exact full-res, no frame hitch, no added audio starvation).
+Opt out with `RB3_PROGRESSIVE_SHARPEN=0` (falls back to A4 stripped-stays-stripped).
+
+**Honest misses:** (1) `WebAssetsFetch` has no true priority/throttle — the "low priority"
+wording is aspirational; empirically the single ~5.37 MB sidecar adds 0 underruns at 4 Mbps
+and fewer at 1.5 Mbps, but a real defer-behind-mogg-residency is a follow-up hardening item.
+(2) Fresh web audio *identity* leans on native (0.958) + the T2 web ON≈OFF result — the
+integration web harness WAV was a silent capture-tap artifact (underruns proved audio
+flowed); the *starvation* signal is freshly measured (0). (3) The generated downscaled tree
++ sidecars + q11 cache are gitignored build output, regenerated at deploy via
+`gen_web_downscaled.py` + `prewarm_encode_cache.py --downscale`.
