@@ -52,6 +52,10 @@ public:
         int unk28;
         int unk2c;
         unsigned short unk30;
+        // Trailing per-vert face-incidence list (variable length in the arena;
+        // declared as [1] so `faceList[i]` compiles to base+0x32+2i like the
+        // target's member-array addressing).
+        unsigned short faceList[1];
     };
 
     class WorkVerts {
