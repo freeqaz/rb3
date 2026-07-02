@@ -157,23 +157,15 @@ static int CountAndBound(ObjectDir* dir, Bounds& b, int& meshCount, int& camCoun
     return total;
 }
 
-// Build a camera looking at the scene bounds from an offset, framing the model.
-static RndCam* SynthesizeCamera(const Bounds& b) {
+// Factored core: build a cam looking at `center` from (unnormalized) view
+// direction `dir`, standing off at `dist`, with a frustum sized for `radius`.
+// Both SynthesizeCamera (RENDER_MESH) and ViewerMakeCamera (viewer) call this so
+// the Milo-axis math + frustum sizing lives in exactly one place.
+static RndCam* BuildFramingCam(const Vector3& center, float radius, Vector3 dir, float dist) {
     RndCam* cam = Hmx::Object::New<RndCam>();
     if (!cam) return nullptr;
 
-    Vector3 center = b.Center();
-    float radius = b.Radius(center);
-
     float yfov = 0.9f; // ~51.5 deg
-    float dist = radius / tanf(yfov * 0.5f) * 1.3f;
-
-    // Milo camera-local: X=right, Y=forward(depth), Z=up. Place the camera on a
-    // 3/4 diagonal (down -Y, off to +X, elevated +Z) so elongated geometry isn't
-    // viewed edge-on. RB3_CAM_DIR=x,y,z overrides the (normalized) view dir.
-    Vector3 dir; dir.x = 0.55f; dir.y = -1.0f; dir.z = 0.45f;
-    const char* dirEnv = getenv("RB3_CAM_DIR");
-    if (dirEnv) sscanf(dirEnv, "%f,%f,%f", &dir.x, &dir.y, &dir.z);
     float dl = sqrtf(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
     if (dl > 0) { dir.x /= dl; dir.y /= dl; dir.z /= dl; }
     Vector3 eye;
@@ -210,6 +202,55 @@ static RndCam* SynthesizeCamera(const Bounds& b) {
     printf("rb3-native: synth camera eye=(%.2f,%.2f,%.2f) center=(%.2f,%.2f,%.2f) r=%.2f dist=%.2f\n",
            eye.x, eye.y, eye.z, center.x, center.y, center.z, radius, dist);
     return cam;
+}
+
+// Build a camera looking at the scene bounds from an offset, framing the model.
+static RndCam* SynthesizeCamera(const Bounds& b) {
+    Vector3 center = b.Center();
+    float radius = b.Radius(center);
+    float yfov = 0.9f; // ~51.5 deg
+    float dist = radius / tanf(yfov * 0.5f) * 1.3f;
+
+    // Milo camera-local: X=right, Y=forward(depth), Z=up. Place the camera on a
+    // 3/4 diagonal (down -Y, off to +X, elevated +Z) so elongated geometry isn't
+    // viewed edge-on. RB3_CAM_DIR=x,y,z overrides the (normalized) view dir.
+    Vector3 dir; dir.x = 0.55f; dir.y = -1.0f; dir.z = 0.45f;
+    const char* dirEnv = getenv("RB3_CAM_DIR");
+    if (dirEnv) sscanf(dirEnv, "%f,%f,%f", &dir.x, &dir.y, &dir.z);
+    return BuildFramingCam(center, radius, dir, dist);
+}
+
+// --- Exported viewer helpers (rb3_viewer.cpp) ------------------------------
+SceneBounds ViewerComputeBounds(ObjectDir* dir) {
+    SceneBounds sb;
+    if (!dir) return sb;
+    Bounds b;
+    int meshCount = 0, camCount = 0;
+    RndCam* firstCam = nullptr;
+    int total = CountAndBound(dir, b, meshCount, camCount, firstCam);
+    sb.totalObjects = total;
+    sb.meshCount = meshCount;
+    sb.camCount = camCount;
+    sb.firstCam = firstCam;
+    if (b.valid) {
+        Vector3 c = b.Center();
+        sb.cx = c.x; sb.cy = c.y; sb.cz = c.z;
+        sb.radius = b.Radius(c);
+        sb.valid = true;
+    }
+    return sb;
+}
+
+RndCam* ViewerMakeCamera(const SceneBounds& b, const float* dir3, float distanceOverride) {
+    Vector3 center; center.x = b.cx; center.y = b.cy; center.z = b.cz;
+    float radius = b.radius > 0.01f ? b.radius : 1.0f;
+    float yfov = 0.9f;
+    float dist = distanceOverride > 0.0f ? distanceOverride
+                                         : radius / tanf(yfov * 0.5f) * 1.3f;
+    Vector3 dir;
+    if (dir3) { dir.x = dir3[0]; dir.y = dir3[1]; dir.z = dir3[2]; }
+    else { dir.x = 0.55f; dir.y = -1.0f; dir.z = 0.45f; }
+    return BuildFramingCam(center, radius, dir, dist);
 }
 
 // ---------------------------------------------------------------------------

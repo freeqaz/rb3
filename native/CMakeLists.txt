@@ -441,6 +441,9 @@ add_executable(rb3-native
     #   rb3_render_mesh.cpp — boot + load milo + drive BandRnd -> PNG
     ${CMAKE_SOURCE_DIR}/src/rb3_render_tri.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_render_mesh.cpp
+    #   rb3_viewer.cpp      — standalone .milo asset renderer (--viewer / RB3_VIEWER=1):
+    #                         RENDER_MESH spine + char/hair factories + CharHair sim + CLI
+    ${CMAKE_SOURCE_DIR}/src/rb3_viewer.cpp
     # X6: native NativeSynth (boots miniaudio AudioDevice + binds the
     # RB3-shaped StreamReceiver factory below)
     ${CMAKE_SOURCE_DIR}/src/rb3_synth_native.cpp

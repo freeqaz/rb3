@@ -34,3 +34,29 @@ void RenderFrame(const WalkResult& walk);
 // MUST NOT be reached from the web path (the browser loops forever; _exit would
 // terminate the page). Returns only on a pre-render error.
 int RenderToPng(const WalkResult& walk);
+
+// ---------------------------------------------------------------------------
+// Reusable scene-bounds + framing-camera helpers (used by rb3_viewer.cpp so it
+// can drive the camera from az/el/distance CLI params without duplicating the
+// robust median/percentile bounds walk). RB3_RENDER_MESH keeps its own
+// SynthesizeCamera path unchanged; these are additive exports.
+// ---------------------------------------------------------------------------
+struct SceneBounds {
+    float cx = 0, cy = 0, cz = 0;   // robust (median) center
+    float radius = 1.0f;            // 90th-percentile radius
+    bool valid = false;
+    int totalObjects = 0;
+    int meshCount = 0;              // meshes with drawable geometry
+    int camCount = 0;
+    RndCam* firstCam = nullptr;     // first scene camera found (may be null)
+};
+
+// Walk `dir` (recursive; includes AppendSubDir'd subdirs) and compute robust
+// scene bounds + object/mesh/cam counts.
+SceneBounds ViewerComputeBounds(ObjectDir* dir);
+
+// Build a framing RndCam looking at the given bounds. `dir3` (nullable) is a
+// view direction in Milo axes (X=right, Y=forward/depth, Z=up); when null a
+// default 3/4 diagonal is used. `distanceOverride` <= 0 means auto-frame from
+// the bounds radius. The returned cam is Select()'d by the caller.
+RndCam* ViewerMakeCamera(const SceneBounds& b, const float* dir3, float distanceOverride);

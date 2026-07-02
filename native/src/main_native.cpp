@@ -569,6 +569,7 @@ static int RunBoot(int argc, char **argv, const char *miloPath) {
 // Render modes implemented in dedicated backend TUs (Strategy B).
 extern int RunRenderTri();              // rb3_render_tri.cpp — milestone (ii)
 extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_render_mesh.cpp — (iii)
+extern int RunViewer(int argc, char **argv);  // rb3_viewer.cpp — standalone .milo asset renderer
 
 // ---------------------------------------------------------------------------
 // RB3_GAME=1 — the REAL game boot. Mirrors dc3 native main: stand up the
@@ -806,6 +807,16 @@ int main(int argc, char **argv) {
     //      milo, stand up BandRnd, draw its RndMeshes -> PNG. ----
     if (getenv("RB3_RENDER_MESH")) {
         return RunRenderMesh(argc, argv, argc >= 2 ? argv[1] : nullptr);
+    }
+
+    // ---- Standalone asset viewer (--viewer <milo> or RB3_VIEWER=1): like
+    //      RENDER_MESH but with a real CLI + char/hair factories + optional
+    //      CharHair sim, for debugging individual .milo assets. ----
+    {
+        bool wantViewer = getenv("RB3_VIEWER") != nullptr;
+        for (int i = 1; i < argc && !wantViewer; i++)
+            if (!strcmp(argv[i], "--viewer")) wantViewer = true;
+        if (wantViewer) return RunViewer(argc, argv);
     }
 
     // ---- Headless DTA boot mode (RB3_BOOT=1): real SystemPreInit/SystemInit
