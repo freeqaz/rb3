@@ -417,6 +417,21 @@ add_executable(rb3-dta
     ${DTA_FORK_SOURCES}
     ${DTA_LEXER}
     ${NATIVE_SHIMS}
+    # Session-telemetry recorder CORE + Tier-1 replay loader. The telemetry
+    # wave's HX_NATIVE hooks in shared fork TUs rb3-dta compiles (obj/Task.cpp
+    # gRB3TraceFrame/RB3ReplayDtForFrame/RB3ReplayFixedClock/RB3ReplayActive,
+    # os/Debug.cpp gRB3TraceActive/RB3RecordLog, os/System.cpp RB3ReplaySeed/
+    # RB3TraceSetSeed) reference these definitions, so rb3-dta must link them.
+    # Both TUs are std-only (no HTTP/GLFW/render pulls; the gFrameTrace*
+    # counters they extern are defined in utl/Loader.cpp, already in
+    # DTA_FORK_SOURCES). Tracing/replay stay inert unless RB3_SESSION_TRACE /
+    # RB3_REPLAY are set.
+    ${CMAKE_SOURCE_DIR}/src/rb3_session_trace.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_replay.cpp
+    # ...except rb3_replay.cpp's ONE extern into rb3_trace_taps.cpp
+    # (RB3TraceCurrentSongMs), whose real TU drags band3 Game/UI types. This
+    # weak stub returns the tap's exact "engine not booted" value (-1.0f).
+    ${CMAKE_SOURCE_DIR}/src/rb3_trace_taps_stub.cpp
 )
 rb3_configure_target(rb3-dta)
 
