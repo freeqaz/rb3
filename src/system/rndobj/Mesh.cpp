@@ -1248,6 +1248,23 @@ void RndMesh::Mats(std::list<RndMat *> &mats, bool) {
 }
 
 void RndMesh::SetKeepMeshData(bool keep) {
+#ifdef HX_NATIVE
+    // C8 "floating eyes/teeth" (2026-07-02): the char pipeline frees a deform
+    // target's CPU geometry once the bake is done (BandCharacter::SetDeformation
+    // via MeshCacher::~MeshCacher, and SyncObjects' RndMeshDeform sweep) —
+    // head.mesh in particular. On Wii the mesh already lives in GX display
+    // lists, so dropping the CPU copy is free memory; the native WGPU backend
+    // re-reads CPU verts every draw (nf==0 -> mesh never drawn -> band heads
+    // vanish, leaving rigid eyes/teeth floating). Keep the CPU copy on native;
+    // leave the flag true so KeepMeshData-gated readers (OutfitConfig::MeshAO,
+    // BandPatchMesh) stay consistent with the data being present.
+    // Opt-out RB3_MESH_FREE=1 restores the freeing behavior for A/B.
+    static int sNoFree = -1;
+    if (sNoFree < 0)
+        sNoFree = getenv("RB3_MESH_FREE") ? 0 : 1;
+    if (!keep && sNoFree)
+        return;
+#endif
     if (keep != mKeepMeshData) {
         mKeepMeshData = keep;
         if (!mKeepMeshData) {

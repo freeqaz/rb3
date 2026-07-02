@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "f130b5562d94b5239c4904980f7642feb6382768"
+set(MILO_ENGINE_PIN "77eb428b1c8a05c8abcead3a1062dfbcbca49973"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -809,6 +809,15 @@ set(RB3_WEB_NATIVE_GLUE
     # off the reveal frame into the idle dwell, killing the ~0.7-1.0 s web
     # game-content freeze. Flag RB3_GAMEWARM_OFF. See the TU header.
     ${CMAKE_SOURCE_DIR}/src/rb3_gamewarm_native.cpp
+    # research/13 T1 (progressive in-session texture sharpen): the I/O + gameplay-
+    # gating DRIVER around the engine sharpen manager. Game::Poll (HX_NATIVE, web
+    # defines it) calls RB3TexSharpenPoll once gameplay is running; on web this TU's
+    # __EMSCRIPTEN__ arm kicks the LOW-priority WebAssetsEnsureResidentAsync fetch of
+    # the venue `.sharpen` sidecar and polls residency. WITHOUT this entry the web
+    # build resolves RB3TexSharpenPoll to a no-op JS link-stub (ERROR_ON_UNDEFINED_
+    # SYMBOLS=0) so the sharpen never runs in the browser — the native-list parity
+    # miss. Depends on rb3_gamewarm_native.cpp (RB3ComputeVenueMiloPathForSharpen).
+    ${CMAKE_SOURCE_DIR}/src/rb3_texsharpen_native.cpp
     # REAL live input on web: keyboard -> JoypadData -> SendButtonMessages (same
     # TU as native; its #ifdef __EMSCRIPTEN__ branch reads window._rb3Keys +
     # navigator.getGamepads()). Strong JoypadPoll etc. drive frets/strum through

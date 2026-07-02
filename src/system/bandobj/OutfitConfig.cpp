@@ -534,6 +534,19 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
                 continue;
             RndTex *rt = dir2->Find<RndTex>(
                 MakeString("%s_skin_diffuse_output.tex", part), false);
+            // RB3_SKINFIX_DBG: show every MatSwap this loop touches and what it
+            // rebinds (added while triaging the C8 head-invisible regression).
+            if (getenv("RB3_SKINFIX_DBG")) {
+                RndTex *cur = ms.mMat->GetDiffuseTex();
+                fprintf(stderr,
+                        "[SKINFIX] cfg='%s' m=%d mat='%s' part=%s resMat='%s' "
+                        "curDiff='%s' rt='%s' rebind=%d\n",
+                        PathName(cfg), m, mn, part,
+                        ms.mResourceMat ? ms.mResourceMat->Name() : "<null>",
+                        cur ? cur->Name() : "<null>",
+                        rt ? rt->Name() : "<none>",
+                        (int)(rt && cur != rt));
+            }
             if (rt && ms.mMat->GetDiffuseTex() != rt) {
                 ms.mMat->SetDiffuseTex(rt);
                 changed = true;
