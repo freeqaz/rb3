@@ -51,6 +51,10 @@ MATCHES_DIR = ARCHIVE_DIR / "json"
 RB3_XENON_ROOT = RB3_ROOT.parent / "rb3-xenon"
 OUTPUT_PATH = RB3_XENON_ROOT / "ghidriff_identities.json"
 
+# Default BSIM floor (holdout-calibrated 0.933 @ simconf>=15). Overridable
+# via --bsim-floor for the loose-band (ws2) regen (10.0 -> ~0.887 calibrated).
+DEFAULT_BSIM_FLOOR = 15.0
+
 # ---------------------------------------------------------------------------
 # Round-2 judged-WRONG xenon addresses (always excluded)
 # ---------------------------------------------------------------------------
@@ -156,27 +160,46 @@ def bsim_passes_gate(entry: dict, gate: str, xenon_idx: dict) -> bool:
 # Main ingest logic
 # ---------------------------------------------------------------------------
 
-def run_ingest(gate: str, dry_run: bool, out_path: Path, verbose: bool) -> int:
-    """Run the ingest; return exit code."""
+def run_ingest(gate: str, dry_run: bool, out_path: Path, verbose: bool,
+               vetted_path: Path | None = None,
+               matches_path: Path | None = None,
+               bsim_floor: float = DEFAULT_BSIM_FLOOR,
+               source_tag: str = SOURCE_TAG,
+               only_band: tuple[float, float] | None = None) -> int:
+    """Run the ingest; return exit code.
+
+    vetted_path / matches_path override the hardcoded run-3 archive inputs.
+    bsim_floor replaces the hard 15.0 Gate-7 floor (ws2 loose band uses 10.0).
+    only_band=(LO,HI) keeps only BSIM rows with LO <= simconf < HI (and drops
+    all non-BSIM ACCEPT types), so the output is the pure incremental tranche
+    that the 0.900-tier ghidriff_identities.json does not already carry.
+    """
+
+    vetted_path = vetted_path or VETTED_IDENTITIES
 
     print(f"Ingest mode: gate={gate!r}  dry_run={dry_run}")
-    print(f"Vetted identities: {VETTED_IDENTITIES}")
+    print(f"Vetted identities: {vetted_path}")
+    print(f"BSim floor: {bsim_floor}   source_tag: {source_tag!r}   "
+          f"only_band: {only_band}")
     print(f"Output path: {out_path}")
     print()
 
-    if not VETTED_IDENTITIES.exists():
-        print(f"ERROR: vetted_identities.json not found at {VETTED_IDENTITIES}",
+    if not vetted_path.exists():
+        print(f"ERROR: vetted_identities.json not found at {vetted_path}",
               file=sys.stderr)
         return 1
 
-    matches_path = find_matches_json(MATCHES_DIR)
-    if not matches_path:
-        print(f"ERROR: No *.matches.json found under {MATCHES_DIR}", file=sys.stderr)
+    if matches_path is None:
+        matches_path = find_matches_json(MATCHES_DIR)
+    if not matches_path or not Path(matches_path).exists():
+        print(f"ERROR: No *.matches.json found (looked under {MATCHES_DIR} / "
+              f"{matches_path})", file=sys.stderr)
         return 1
+    matches_path = Path(matches_path)
     print(f"Matches file: {matches_path}")
 
     # Load inputs
-    with open(VETTED_IDENTITIES) as f:
+    with open(vetted_path) as f:
         raw = json.load(f)
     entries = raw["entries"]
     print(f"Total vetted entries: {len(entries)}")
@@ -246,13 +269,26 @@ def run_ingest(gate: str, dry_run: bool, out_path: Path, verbose: bool) -> int:
                     continue
             # ExactInstr/Switch/Implied/SymbolsHash pass conservative gate unconditionally
 
-        # --- Gate 7: BSIM entries must have simconf >= 15 (should already be true
-        #     from vet tool, but assert as a hard check) ---
-        if is_bsim and bsim_simconf is not None and bsim_simconf < 15.0:
-            stats["skip_bsim_below_15"] += 1
+        # --- Gate 7: BSIM entries must have simconf >= bsim_floor (should
+        #     already be true from vet tool, but assert as a hard check) ---
+        if is_bsim and bsim_simconf is not None and bsim_simconf < bsim_floor:
+            stats["skip_bsim_below_floor"] += 1
             if verbose:
-                print(f"  WARNING: BSIM simconf={bsim_simconf:.2f} < 15 for {xenon_addr}")
+                print(f"  WARNING: BSIM simconf={bsim_simconf:.2f} < {bsim_floor} "
+                      f"for {xenon_addr}")
             continue
+
+        # --- Gate 8 (--only-band): keep ONLY the incremental BSIM tranche
+        #     LO <= simconf < HI; drop non-BSIM (already emitted at strict
+        #     tier) and out-of-band BSIM. Makes the loose file purely additive. ---
+        if only_band is not None:
+            lo, hi = only_band
+            if not is_bsim:
+                stats["skip_only_band_nonbsim"] += 1
+                continue
+            if bsim_simconf is None or not (lo <= bsim_simconf < hi):
+                stats["skip_only_band_out"] += 1
+                continue
 
         # --- Collect p1_name (demangled) from matches.json ---
         wii_addr_bare = strip_0x(wii_addr)
@@ -278,7 +314,8 @@ def run_ingest(gate: str, dry_run: bool, out_path: Path, verbose: bool) -> int:
             "tu": tu,
             "category": category,
             "bsim_simconf": round(bsim_simconf, 4) if bsim_simconf is not None else None,
-            "source": SOURCE_TAG,
+            "rb3wii_check": entry.get("rb3wii_check"),       # absent/confirmed/contradicted
+            "source": source_tag,
         }
 
         output.append(record)
@@ -298,7 +335,10 @@ def run_ingest(gate: str, dry_run: bool, out_path: Path, verbose: bool) -> int:
     print(f"  Skipped (judged-WRONG):       {stats['skip_judged_wrong']}")
     if gate == "conservative":
         print(f"  Skipped (BSIM simconf<20):   {stats['skip_conservative_bsim_low']}")
-    print(f"  Skipped (BSIM simconf<15):    {stats['skip_bsim_below_15']}")
+    print(f"  Skipped (BSIM simconf<floor): {stats['skip_bsim_below_floor']}")
+    if only_band is not None:
+        print(f"  Skipped (only-band non-BSIM): {stats['skip_only_band_nonbsim']}")
+        print(f"  Skipped (only-band out):      {stats['skip_only_band_out']}")
     print()
     print(f"  Ingested: {len(output)}")
     for key in sorted(stats):
@@ -324,18 +364,31 @@ def run_ingest(gate: str, dry_run: bool, out_path: Path, verbose: bool) -> int:
     wrong_count = sum(1 for r in output if r.get("rb3_addr") in JUDGED_WRONG_XENON)
     assert wrong_count == 0, f"BUG: {wrong_count} judged-WRONG entries in output"
 
-    bsim_below_15 = sum(
+    bsim_below_floor = sum(
         1 for r in output
         if "BSIM" in r.get("match_types", [])
         and r.get("bsim_simconf") is not None
-        and r["bsim_simconf"] < 15.0
+        and r["bsim_simconf"] < bsim_floor
     )
-    assert bsim_below_15 == 0, f"BUG: {bsim_below_15} BSIM entries with simconf<15"
+    assert bsim_below_floor == 0, (
+        f"BUG: {bsim_below_floor} BSIM entries with simconf<{bsim_floor}")
+
+    if only_band is not None:
+        lo, hi = only_band
+        out_of_band = sum(
+            1 for r in output
+            if "BSIM" not in r.get("match_types", [])
+            or r.get("bsim_simconf") is None
+            or not (lo <= r["bsim_simconf"] < hi)
+        )
+        assert out_of_band == 0, (
+            f"BUG: {out_of_band} rows outside --only-band {lo},{hi}")
 
     null_sym_count = sum(1 for r in output if not r.get("wii_symbol"))
     assert null_sym_count == 0, f"BUG: {null_sym_count} null wii_symbol in output"
 
-    print("  Assertions: all passed (sdk=0, seed=0, wrong=0, bsim<15=0, null_sym=0)")
+    print(f"  Assertions: all passed (sdk=0, seed=0, wrong=0, bsim<{bsim_floor}=0, "
+          "null_sym=0)")
 
     if dry_run:
         print(f"\n[dry-run] Would write {len(output)} entries to {out_path}")
@@ -375,6 +428,28 @@ def main():
         help=f"Output path (default: {OUTPUT_PATH})",
     )
     parser.add_argument(
+        "--vetted", default=None,
+        help="Override vetted_identities.json path (default: run-3 archive).",
+    )
+    parser.add_argument(
+        "--matches", default=None,
+        help="Override *.matches.json path (default: run-3 archive json/).",
+    )
+    parser.add_argument(
+        "--bsim-floor", type=float, default=DEFAULT_BSIM_FLOOR,
+        help=f"Hard BSIM simconf floor (default {DEFAULT_BSIM_FLOOR}). "
+             "ws2 loose band uses 10.",
+    )
+    parser.add_argument(
+        "--source-tag", default=SOURCE_TAG,
+        help=f"Provenance tag stamped on each row (default {SOURCE_TAG!r}).",
+    )
+    parser.add_argument(
+        "--only-band", default=None,
+        help="LO,HI — keep only BSIM rows with LO<=simconf<HI (drops non-BSIM "
+             "and out-of-band). Makes output the pure incremental tranche.",
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Print per-entry exclusion messages.",
     )
@@ -385,12 +460,24 @@ def main():
         print("BSim-stratum precision was below 0.70.")
         return
 
+    only_band = None
+    if args.only_band:
+        parts = args.only_band.split(",")
+        if len(parts) != 2:
+            parser.error("--only-band must be LO,HI")
+        only_band = (float(parts[0]), float(parts[1]))
+
     out_path = Path(args.out) if args.out else OUTPUT_PATH
     rc = run_ingest(
         gate=args.gate,
         dry_run=args.dry_run,
         out_path=out_path,
         verbose=args.verbose,
+        vetted_path=Path(args.vetted) if args.vetted else None,
+        matches_path=Path(args.matches) if args.matches else None,
+        bsim_floor=args.bsim_floor,
+        source_tag=args.source_tag,
+        only_band=only_band,
     )
     sys.exit(rc)
 
