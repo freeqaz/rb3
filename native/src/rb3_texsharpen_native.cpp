@@ -74,16 +74,20 @@ static bool RB3SharpenDriverDbg() {
     return s != 0;
 }
 
-// (web) sidecar fetch chunk size in KB (research/14 Lane B). Default 256 KB —
-// small enough that a mogg Range fetch starting mid-chunk waits at most ~1.4s
-// at 1.5 Mbps, large enough that the whole ~5.4 MB sidecar is ~21 requests.
-// 0 = legacy single whole-file fetch (the pre-hardening behavior, kept as the
-// escape hatch / A-B arm).
+// (web) sidecar fetch chunk size in KB (research/14 Lane B). Default 0 =
+// legacy single whole-file fetch: the integration A/B (research/14 §RESULTS,
+// 2026-07-02, same build/harness back-to-back at 1.5 Mbps) measured the
+// 256 KB chunked pump at 1375 underrun events in the T2 20 s window vs 669
+// legacy (and ~1.6x more TOTAL padded quanta over its 2.2x-longer transfer:
+// 20,657/206.7 s vs 13,023/92.9 s) — the strict yield lowers PEAK starvation
+// (28.8% vs 40.0%) but stretches the mogg-contention window enough to lose
+// overall. Chunked stays as the opt-in (RB3_SHARPEN_CHUNK_KB=256) for
+// Range-fragile topologies / future tuning (idle-gating by ring depth).
 static int RB3SharpenChunkKB() {
     static int kb = -1;
     if (kb < 0) {
         const char* e = getenv("RB3_SHARPEN_CHUNK_KB");
-        kb = e ? atoi(e) : 256;
+        kb = e ? atoi(e) : 0;
         if (kb < 0) kb = 0;
         if (kb > 0 && kb < 16) kb = 16;     // floor: don't spam tiny requests
         if (kb > 8192) kb = 8192;
@@ -194,7 +198,9 @@ void KickSidecarFetch(const std::string& rel) {
 //
 // The single whole-file fetch above shares the network with mogg Range
 // streaming for the sidecar's entire ~29s (at 1.5 Mbps) transfer. The chunk
-// pump replaces it: one RB3_SHARPEN_CHUNK_KB (default 256 KB) Range request at
+// pump (OPT-IN via RB3_SHARPEN_CHUNK_KB>0; default is the legacy single fetch
+// — see RB3SharpenChunkKB's measured rationale) replaces it: one chunk-sized
+// Range request at
 // a time, kicked ONLY on frames where WebAssetsRangeInFlightCount() == 0 — our
 // own chunk is never in flight at check time, so any live Range fetch is the
 // mogg's, and we strictly yield. Worst-case interference: the mogg starts
@@ -484,9 +490,10 @@ extern "C" void RB3TexSharpenPoll(bool gameplayRunning) {
 
     // Transfer + wait for residency.
 #ifdef __EMSCRIPTEN__
-    // Web: chunked, mogg-yielding pump (research/14 Lane B; RB3_SHARPEN_CHUNK_KB,
-    // 0 = legacy single fetch). Runs one small step per frame until the sidecar
-    // is assembled + written to MEMFS (or the legacy fallback lands it).
+    // Web: sidecar transfer pump (research/14 Lane B; RB3_SHARPEN_CHUNK_KB —
+    // default 0 = legacy single fetch, >0 = opt-in chunked mogg-yielding pump).
+    // Runs one small step per frame until the sidecar is assembled + written
+    // to MEMFS (or the legacy fetch lands it).
     if (!SidecarResident(gDrv.sidecarRel)) {
         PumpSidecarFetchWeb();
         if (gDrv.finished || !SidecarResident(gDrv.sidecarRel))

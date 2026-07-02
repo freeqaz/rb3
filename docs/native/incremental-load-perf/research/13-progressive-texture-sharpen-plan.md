@@ -220,3 +220,12 @@ sidecars served + q11-prewarmed):**
 - Unrelated pre-existing breakage noticed during integration: the `rb3-dta` *tool* target
   fails to link (undefined `gRB3Trace*/RB3Replay*` — the session-telemetry wave's TU is not
   in `rb3-dta`'s source list). Not sharpen-related; `rb3-native`/`rb3-tests` build clean.
+
+> **Follow-ups resolved by research/14 (integrated 2026-07-02):** a chunked,
+> mogg-yielding sidecar fetch was built and hardened (strict yield on
+> `WebAssetsRangeInFlightCount`, Range-ignore detection, 64 MB cap) but MEASURED WORSE
+> than the single fetch at 1.5 Mbps (1375 vs 669 window underruns; ~1.6x total padded
+> quanta — lower peak, 2.2x longer contention), so it ships OPT-IN
+> (`RB3_SHARPEN_CHUNK_KB=256`; default 0 = this wave's legacy fetch). What DID ship
+> default-on: `RB3SharpenStep` retry-on-not-ready, the legacy lane's dead-fetch no-op,
+> and the `rb3-dta` link fix. Measurements: research/14 §RESULTS.

@@ -920,3 +920,10 @@ integration web harness WAV was a silent capture-tap artifact (underruns proved 
 flowed); the *starvation* signal is freshly measured (0). (3) The generated downscaled tree
 + sidecars + q11 cache are gitignored build output, regenerated at deploy via
 `gen_web_downscaled.py` + `prewarm_encode_cache.py --downscale`.
+
+> **C hardening follow-ups (research/14) LANDED 2026-07-02:** `RB3SharpenStep` retries
+> instead of dropping entries when the GPU isn't ready; `rb3-dta` links again; a chunked
+> mogg-yielding sidecar fetch exists but measured WORSE than the single fetch at
+> 1.5 Mbps (1375 vs 669 window underruns — lower peak starvation, 2.2x longer
+> contention) so it ships OPT-IN (`RB3_SHARPEN_CHUNK_KB=256`; default 0 = legacy single
+> fetch, unchanged behavior). Engine pin -> `3e02cea`. Numbers: research/14 §RESULTS.
