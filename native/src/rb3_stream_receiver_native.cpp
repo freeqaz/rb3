@@ -204,12 +204,46 @@ public:
     void PlayImpl() override {
         mPaused = false;
         if (!mPlayStarted) {
-            // kInit->kPlaying handoff. During kInit the base fast-accepted sends,
-            // so mRingReadPos points at the first byte it has not yet handed off
-            // — i.e. the song start still resident in mBuffer, just behind
-            // mRingWritePos. Start the play cursor there so we play the buffered
-            // song from its beginning. (Subsequent Play() after a pause keeps the
-            // existing cursor — only the very first Play arms it.)
+            // kInit->kPlaying handoff. The kInit prime fast-accepted exactly
+            // mNumBuffers sends, so every chunk of the first ring lap was
+            // "freed" — but with the pre-Play decode cap (BytesWriteable) the
+            // decoder never wrote a second lap, so the ENTIRE first lap
+            // (stream start .. +ringSecs) is still physically resident in
+            // mBuffer, and the pre-Play end state is deterministic:
+            // totalWritten == ringSize, writtenSpace == 0, both cursors
+            // wrapped to 0. Resurrect the freed-but-resident ring so playback
+            // begins at the stream's first decoded byte; the post-resurrect
+            // bookkeeping (full valid ring, readPos == writePos == cursor) is
+            // exactly the same shape steady-state play reaches anyway.
+            // Without this, playback used to start at the ring's oldest
+            // surviving byte ≈ +9.1 s into the song ("audio early" bug —
+            // docs/native/songstart-2sec-2026-06-21/CONTENT_SKIP_DIAGNOSIS.md).
+            // Skipped for short/ended streams (mEndData: ClearAtEndData
+            // zero-filled the freed span) and when the cap is opted out —
+            // the guard below then fails and we keep the legacy start.
+            if (!mEndData && mTotalWrittenEver == (long long)mRingSize
+                && mRingWrittenSpace == 0 && !mSending) {
+                mRingReadPos = 0;
+                mRingWritePos = 0;
+                mRingWrittenSpace = mRingSize;
+                mRingFreeSpace = 0;
+                if (mDebug) {
+                    std::fprintf(stderr, "RB3STREAM ch=%d PlayImpl resurrected full "
+                                "pre-Play ring (%d bytes) at stream start\n",
+                                mChannel, mRingSize);
+                    // Content fingerprint (RB3_STREAM_AUDIO_DBG): first int16
+                    // samples of the ring at the play cursor. Compare against an
+                    // independent decode of the decrypted mogg (decode_reference
+                    // --keep-ogg) to byte-prove playback starts at song sample 0
+                    // (matches within +/-1 LSB of libvorbis rounding).
+                    const int16_t *s = reinterpret_cast<const int16_t *>(mBuffer);
+                    std::fprintf(stderr, "RB3STREAM ch=%d RINGHEAD %d %d %d %d %d %d %d %d "
+                                "@4410: %d %d %d %d\n", mChannel,
+                                s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
+                                s[4410], s[4411], s[4412], s[4413]);
+                    std::fflush(stderr);
+                }
+            }
             mAudioReadPos.store(mRingReadPos, std::memory_order_release);
             mPlayedTotal.store(0, std::memory_order_release);
             mSendStartPlayed = 0;

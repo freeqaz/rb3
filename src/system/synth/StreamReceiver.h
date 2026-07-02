@@ -82,4 +82,14 @@ public:
     bool mEndData; // 0x18031
     int mDoneBufferCounter; // 0x18034
     int mLastPlayCursor; // 0x18038
+#ifdef HX_NATIVE
+    // Monotonic total bytes ever accepted by WriteData(). Used by the pre-Play
+    // decode cap (BytesWriteable) and the first-Play ring resurrect in the
+    // native bridge: pre-Play the base fast-accepts sends to prime kInit->kReady,
+    // which refunds mRingFreeSpace and would let the decoder race a second lap
+    // over the ring, overwriting the song start (the "+9s audio content at
+    // clock 0" bug). Capping TOTAL writes at one ring lap until playback starts
+    // keeps song[0..ringSecs] physically resident in mBuffer.
+    long long mTotalWrittenEver; // native-only, no Wii offset
+#endif
 };

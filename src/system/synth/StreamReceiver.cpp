@@ -51,6 +51,7 @@ StreamReceiver::StreamReceiver(int numBuffers, bool slip)
         mNumBuffers = chunks;
         mRingSize = chunks * 0xC000;
         mRingFreeSpace = mRingSize;
+        mTotalWrittenEver = 0;
     }
 #endif
 }
@@ -61,7 +62,32 @@ DECOMP_FORCEFUNC(StreamReceiver, StreamReceiver, BytesWriteable())
 
 #pragma push
 #pragma force_active on
-inline int StreamReceiver::BytesWriteable() { return mRingFreeSpace; }
+inline int StreamReceiver::BytesWriteable() {
+#ifdef HX_NATIVE
+    // Pre-Play decode cap (see mTotalWrittenEver in the header). Until the
+    // first Play() (mState is only ever kInit/kReady before it, and never
+    // returns to kReady after), never accept more than ONE ring lap of decoded
+    // data in total. The kInit prime frees exactly mNumBuffers chunks
+    // (refunding mRingFreeSpace), so without this cap the decoder races a
+    // second lap through the count-in and overwrites the song start; playback
+    // then begins ~ringSecs (~9.1 s) into the song while the clock reads 0.
+    // The decoder handles 0-writable fine — it's the normal ring-full state of
+    // steady gameplay. Opt out: RB3_STREAM_PREPLAY_CAP_OFF=1.
+    if (mState <= kReady) {
+        static int sCapOff = -1;
+        if (sCapOff < 0) {
+            const char *e = getenv("RB3_STREAM_PREPLAY_CAP_OFF");
+            sCapOff = (e && e[0] && e[0] != '0') ? 1 : 0;
+        }
+        if (!sCapOff) {
+            long long remaining = (long long)mRingSize - mTotalWrittenEver;
+            if (remaining < 0) remaining = 0;
+            if (remaining < (long long)mRingFreeSpace) return (int)remaining;
+        }
+    }
+#endif
+    return mRingFreeSpace;
+}
 #pragma pop
 
 void StreamReceiver::WriteData(const void *data, int bytes) {
@@ -81,6 +107,9 @@ void StreamReceiver::WriteData(const void *data, int bytes) {
     }
     mRingFreeSpace -= bytes;
     mRingWrittenSpace += bytes;
+#ifdef HX_NATIVE
+    mTotalWrittenEver += bytes;
+#endif
 }
 
 void StreamReceiver::ClearAtEndData() {
