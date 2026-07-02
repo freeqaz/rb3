@@ -10,10 +10,16 @@ Examples:
   scripts/native/render-asset.py <milo> --out /tmp/hair.png --sim 30
   scripts/native/render-asset.py <milo> --list
   scripts/native/render-asset.py <milo> --azimuth 40 --elevation 20 --distance 30
+  # v2: see the skinned mesh deform when a bone rotates (the clean proof)
+  scripts/native/render-asset.py <hair.milo_xbox> --test-bone bone_hair_top-front01.mesh 25 z
+  # v2: dump the (post-sim) pose as JSON, tips only
+  scripts/native/render-asset.py <hair.milo_xbox> --sim 30 --pose-dump /tmp/p.json --pose-dump-bones bone_hair
 
 All flags after the milo path are passed straight through to rb3-native --viewer
 (--out, --frames, --sim, --subdir, --hide, --only-showing, --azimuth,
---elevation, --distance, --cam-dir, --width, --height, --list, --verbose).
+--elevation, --distance, --cam-dir, --width, --height, --list, --verbose, and
+the v2 flags --test-bone, --draw-dir, --pose-dump, --pose-dump-bones,
+--no-hair-parent).
 """
 import os
 import subprocess
@@ -74,6 +80,8 @@ def main():
         if line.startswith("rb3-viewer: wrote "):
             png = line.split("rb3-viewer: wrote ", 1)[1].strip()
         if line.startswith("rb3-viewer: non-clear"):
+            print("[render-asset] " + line.split("rb3-viewer: ", 1)[1])
+        if line.startswith("rb3-viewer: pose-dump wrote "):
             print("[render-asset] " + line.split("rb3-viewer: ", 1)[1])
 
     if census:
