@@ -25,17 +25,22 @@ public:
     class FingerDesc {
     public:
         FingerDesc()
-            : mIsControlled(0), unk8(0, 0, 0), unk14(0, 0, 0), mBone1(0), mBone2(0),
-              mBone3(0), mBoneTip(0), mFBlendInFrames(0), mFBlendOutFrames(0),
-              mResetFingerRots(1) {}
+            : mIsControlled(0), mDestPos(0, 0, 0), mAltDestPos(0, 0, 0), mBone1(0),
+              mBone2(0), mBone3(0), mBoneTip(0), mFBlendInFrames(0),
+              mFBlendOutFrames(0), mResetFingerRots(1) {}
         ~FingerDesc() {}
         bool mIsControlled; // 0x0
         float mLength; // 0x4
         // Bank 5 DWARF documents a single Vector3 mDestPos in this span; Bank 8
-        // has two Vector3 slots here (SetFinger stores v1/v2), so leave both
-        // named generically to avoid mislabeling the era-added member.
-        Vector3 unk8; // 0x8
-        Vector3 unk14; // 0x14
+        // added a second slot. Caller evidence (CharKeyHandMidi) shows SetFinger's
+        // v1 = the key press position and v2 = the same point offset ~1 unit
+        // deeper along the key (-forward). mDestPos (v1) is the primary IK
+        // destination: it drives the hand-move distance check in SetFinger and the
+        // hand-placement centroid in MoveHand; MoveFinger then bends to whichever
+        // of the two is nearer the current fingertip (mAltDestPos = the
+        // Bank-8-added alternate press point).
+        Vector3 mDestPos; // 0x8
+        Vector3 mAltDestPos; // 0x14
         ObjPtr<RndTransformable> mBone1; // 0x20
         ObjPtr<RndTransformable> mBone2; // 0x2c
         ObjPtr<RndTransformable> mBone3; // 0x38

@@ -547,6 +547,7 @@ inline float operator*(const Vector3 &v1, const Vector3 &v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 
+inline void Negate(const Vector2 &v, Vector2 &vres) { vres.Set(-v.x, -v.y); }
 inline void Negate(const Vector3 &v, Vector3 &vres) { vres.Set(-v.x, -v.y, -v.z); }
 
 inline void ScaleToMagnitude(const Vector3 &vec, float fl, Vector3 &res) {

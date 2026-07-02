@@ -374,7 +374,6 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
     } else {
         Vector2 perp;
 
-        float epsilon = 1e-4f;
         float invY1 = 1.0f / pt1->cam.y;
         pt1->base.x = pt1->cam.x * invY1;
         pt1->base.y = pt1->cam.z * invY1;
@@ -382,6 +381,7 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
         pt2->base.x = pt2->cam.x * invY2;
         pt2->base.y = pt2->cam.z * invY2;
 
+        float epsilon = 1e-4f;
         float dirX = pt2->base.x - pt1->base.x;
         float dirZ = pt2->base.y - pt1->base.y;
         pt1->dir.x = dirX;
@@ -392,15 +392,12 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
             pt1->dir.x = dirX * inv;
             pt1->dir.y = zz * inv;
         }
-        float dx2 = pt1->dir.x;
-        float ndy = -pt1->dir.y;
-        pt1->delta.y = dx2;
-        pt1->delta.x = ndy;
+        pt1->delta.x = -pt1->dir.y;
+        pt1->delta.y = pt1->dir.x;
         float width = mWidth;
-        float sx = ndy * width;
-        pt1->delta.y = dx2 * width;
-        pt1->delta.x = sx;
-        pt2->delta.x = sx;
+        pt1->delta.x *= width;
+        pt1->delta.y *= width;
+        pt2->delta.x = pt1->delta.x;
         pt2->delta.y = pt1->delta.y;
         float py = pt1->delta.x;
         float px = pt1->delta.y;
@@ -416,14 +413,10 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
             vmap.v++;
         }
 
-        Subtract(pt1->cam, pt1->delta, *(Vector3 *)&vmap.v->pos);
-        vmap.v++;
-        Add(pt1->cam, pt1->delta, *(Vector3 *)&vmap.v->pos);
-        vmap.v++;
-        Subtract(pt2->cam, pt2->delta, *(Vector3 *)&vmap.v->pos);
-        vmap.v++;
-        Add(pt2->cam, pt2->delta, *(Vector3 *)&vmap.v->pos);
-        vmap.v++;
+        Subtract(pt1->cam, pt1->delta, *(Vector3 *)&(vmap.v++)->pos);
+        Add(pt1->cam, pt1->delta, *(Vector3 *)&(vmap.v++)->pos);
+        Subtract(pt2->cam, pt2->delta, *(Vector3 *)&(vmap.v++)->pos);
+        Add(pt2->cam, pt2->delta, *(Vector3 *)&(vmap.v++)->pos);
 
         if (mLineHasCaps) {
             float ny = pt2->delta.x;
@@ -500,7 +493,8 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     Hmx::Ray prevRay;
     prevRay.base.Set(startProj[0] + startSide[0], startProj[1] + startSide[1]);
-    prevRay.dir.Set(startDir[1], startDir[0]);
+    prevRay.dir.x = startDir[0];
+    prevRay.dir.y = startDir[1];
 
     for (pt = secondPt; pt != end; pt++) {
         Point *p = pt;
@@ -517,16 +511,13 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
         }
 
         if (flipped) {
-            float s7 = p->delta.x;
-            float s8 = p->delta.y;
-            p->delta.x = -s7;
-            p->delta.y = -s8;
+            Negate(p->delta, p->delta);
         }
 
         Hmx::Ray oldPrevRay = prevRay;
         prevRay.base.Set(p->base.x + p->delta.x, p->base.y + p->delta.y);
-        prevRay.dir.x = p->dir.x;
-        prevRay.dir.y = p->dir.y;
+        prevRay.dir.x = dir[0];
+        prevRay.dir.y = dir[1];
 
         if (dot < 0.9998499751091003f) {
             Intersect(prevRay, oldPrevRay, p->delta);
@@ -540,9 +531,7 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     }
 
     if (flipped) {
-        float *endSide = &end->delta.x;
-        endSide[0] = -endSide[0];
-        endSide[1] = -endSide[1];
+        Negate(pt->delta, pt->delta);
     }
 
     // Phase 4: Copy side vectors for points outside the visible range
@@ -557,7 +546,7 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
             pt->cam.y = end->cam.y;
             pt->cam.z = end->cam.z;
         }
-    } else if (&_ref0[0] < start) {
+    } else {
         for (Point *pt = &_ref0[0]; pt < start; pt++) {
             pt->delta.x = start->delta.x;
             pt->delta.y = start->delta.y;
@@ -572,8 +561,12 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     Point *pointsBegin = &_ref0[0];
     Point *pointsEnd = &_ref0.back();
     Vector2 capOffset;
-    capOffset.x = -pointsBegin->delta.y;
-    capOffset.y = pointsBegin->delta.x;
+    {
+        float py = pointsBegin->delta.x;
+        float px = pointsBegin->delta.y;
+        capOffset.y = py;
+        capOffset.x = -px;
+    }
 
     VertsMap vmap;
     MapVerts(0, vmap);
@@ -588,19 +581,21 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     }
 
     for (Point *pt = pointsBegin; pt <= pointsEnd; pt++) {
-        Subtract(pt->cam, pt->delta, vmap.v->pos);
-        vmap.v++;
-        Add(pt->cam, pt->delta, vmap.v->pos);
-        vmap.v++;
+        Subtract(pt->cam, pt->delta, (vmap.v++)->pos);
+        Add(pt->cam, pt->delta, (vmap.v++)->pos);
     }
 
     if (mLineHasCaps) {
         if (flipped) {
-            capOffset.y = pointsEnd->delta.x;
-            capOffset.x = -pointsEnd->delta.y;
+            float py = pointsEnd->delta.x;
+            float px = pointsEnd->delta.y;
+            capOffset.y = py;
+            capOffset.x = -px;
         } else {
-            capOffset.y = -pointsEnd->delta.x;
-            capOffset.x = pointsEnd->delta.y;
+            float ny = pointsEnd->delta.x;
+            float nx = pointsEnd->delta.y;
+            capOffset.x = nx;
+            capOffset.y = -ny;
         }
         Subtract(pointsEnd->cam, pointsEnd->delta, vmap.v->pos);
         Add(vmap.v->pos, capOffset, vmap.v->pos);
@@ -622,7 +617,8 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
     int firstClipped = -1;
     int lastClipped = -1;
     int i = 0;
-    float clipDist = nearPlane + 0.01f;
+    float clipDist = nearPlane;
+    clipDist += 0.01f;
 
     numPts = (int)mPoints.size();
     for (i = 0; i < numPts; i++) {

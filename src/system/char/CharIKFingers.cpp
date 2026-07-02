@@ -28,8 +28,8 @@ CharIKFingers::~CharIKFingers() {}
 void CharIKFingers::SetFinger(Vector3 v1, Vector3 v2, CharIKFingers::FingerNum fingerNum) {
     MILO_ASSERT(fingerNum >= 0 && fingerNum < kFingerNone, 0x37);
     FingerDesc &finger = mFingers[fingerNum];
-    finger.unk8 = v1;
-    finger.unk14 = v2;
+    finger.mDestPos = v1;
+    finger.mAltDestPos = v2;
     finger.mIsControlled = true;
     finger.mDestChanged = true;
     Transform tf48;
@@ -280,7 +280,7 @@ void CharIKFingers::CalculateHandDest(int i1, int i2) {
             for (int i = 0; (unsigned int)i < 5; i++) {
                 const FingerDesc &curDesc = mFingers[i];
                 if (curDesc.mIsControlled) {
-                    ::Add(curDesc.unk8, v194, v194);
+                    ::Add(curDesc.mDestPos, v194, v194);
                     Vector3 v1ac;
                     Scale(v1a0, i - 2.0f, v1ac);
                     ::Add(v1ac, v194, v194);
@@ -398,9 +398,9 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
                 Multiply(finger.mBone2->mLocalXfm, tfa8, tfd8);
                 Multiply(finger.mBone3->mLocalXfm, tfd8, tf108);
                 Multiply(finger.mBoneTip->mLocalXfm, tf108, tf138);
-                Vector3 v1e4 = (Distance(tf138.v, finger.unk8) < Distance(tf138.v, finger.unk14))
-                        ? finger.unk8
-                        : finger.unk14;
+                Vector3 v1e4 = (Distance(tf138.v, finger.mDestPos) < Distance(tf138.v, finger.mAltDestPos))
+                        ? finger.mDestPos
+                        : finger.mAltDestPos;
 
                 Vector3 v220;
                 Subtract(v1e4, tfa8.v, v220);
@@ -531,8 +531,8 @@ void CharIKFingers::Highlight() {
     for (int i = 0; i < 5; i++) {
         FingerDesc desc(mFingers[i]);
         if (desc.mIsControlled) {
-            UtilDrawSphere(desc.unk8, 0.2f, Hmx::Color(1, 0, 0));
-            UtilDrawSphere(desc.unk14, 0.2f, Hmx::Color(0, 1, 0));
+            UtilDrawSphere(desc.mDestPos, 0.2f, Hmx::Color(1, 0, 0));
+            UtilDrawSphere(desc.mAltDestPos, 0.2f, Hmx::Color(0, 1, 0));
             UtilDrawAxes(desc.mBone1->WorldXfm(), 1.0f, Hmx::Color(1, 1, 1));
             TheRnd->DrawLine(
                 desc.mBone1->WorldXfm().v,
