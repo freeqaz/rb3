@@ -110,6 +110,20 @@ void OutfitConfig::MatSwap::Compose(
     if (!MatchesPatchCategory(category, patches))
         return;
     RndTex *diffTex = mMat->GetDiffuseTex();
+#ifdef HX_NATIVE
+    // Native two-color composite fix (c8-eyes, 2026-07-02): scope a flag while
+    // this outfit composite paints its *_diffuse_output render target so the
+    // native BandRnd::DrawRect can combine the modulate layers with a
+    // DEST-MULTIPLY blend (product) instead of REPLACE. Without this the RT
+    // collapses to the last (mask) layer -> untextured near-white eyeballs that
+    // glow under warm venue light. Mirrors the Wii's WiiTex::
+    // bComposingOutfitTexture scoping below. Wii match build is untouched.
+    extern bool gRB3OutfitComposeActive;
+    struct ComposeScope {
+        ComposeScope() { gRB3OutfitComposeActive = true; }
+        ~ComposeScope() { gRB3OutfitComposeActive = false; }
+    } composeScope;
+#endif
     if (!diffTex || (diffTex->GetType() & RndTex::kRenderedNoZ) != RndTex::kRenderedNoZ) {
         if (mTwoColor)
             return;
