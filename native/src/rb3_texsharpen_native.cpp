@@ -55,6 +55,8 @@
 
 #ifdef __EMSCRIPTEN__
 #include "platform/WebAssets.h"
+#include <sys/stat.h>   // mkdir (MEMFS) for the assembled-sidecar write
+#include <cstdio>       // fopen/fwrite (MEMFS)
 #endif
 
 // ComputeVenueMiloPath() lives in rb3_gamewarm_native.cpp (resolves the SAME venue
@@ -72,15 +74,42 @@ static bool RB3SharpenDriverDbg() {
     return s != 0;
 }
 
+// (web) sidecar fetch chunk size in KB (research/14 Lane B). Default 256 KB —
+// small enough that a mogg Range fetch starting mid-chunk waits at most ~1.4s
+// at 1.5 Mbps, large enough that the whole ~5.4 MB sidecar is ~21 requests.
+// 0 = legacy single whole-file fetch (the pre-hardening behavior, kept as the
+// escape hatch / A-B arm).
+static int RB3SharpenChunkKB() {
+    static int kb = -1;
+    if (kb < 0) {
+        const char* e = getenv("RB3_SHARPEN_CHUNK_KB");
+        kb = e ? atoi(e) : 256;
+        if (kb < 0) kb = 0;
+        if (kb > 0 && kb < 16) kb = 16;     // floor: don't spam tiny requests
+        if (kb > 8192) kb = 8192;
+    }
+    return kb;
+}
+
 namespace {
 
 // Per-song driver state. One sharpen session per venue load.
 struct SharpenDriver {
     bool        started = false;     // a session is loaded into the engine manager
     bool        finished = false;    // RB3SharpenComplete() seen (stop polling)
-    bool        fetchKicked = false; // (web) async fetch issued
+    bool        fetchKicked = false; // (web) legacy async fetch issued
     std::string venueMiloPath;       // world/venue/.../<venue>.milo (logical)
     std::string sidecarRel;          // server-relative gen/<v>.milo_xbox.sharpen
+#ifdef __EMSCRIPTEN__
+    // Chunk-pump state (research/14 Lane B — chunked, mogg-yielding fetch).
+    int  chunkReqId = 0;             // in-flight Range request id (0 = none)
+    int  chunkReqLen = 0;            // bytes requested for the in-flight chunk
+    long chunkOffset = 0;            // next byte offset == bytes assembled so far
+    long sidecarSize = -2;           // -2 unqueried; -1 manifest doesn't know; >=0 known
+    int  chunkErrs = 0;              // consecutive errors at the current offset
+    bool chunkFallback = false;      // permanent fallback to the legacy single fetch
+    std::vector<uint8_t> assembly;   // chunks assembled in order
+#endif
 };
 SharpenDriver gDrv;
 
@@ -159,6 +188,180 @@ void KickSidecarFetch(const std::string& rel) {
 #endif
 }
 
+#ifdef __EMSCRIPTEN__
+// ---------------------------------------------------------------------------
+// Research/14 Lane B — chunked, mogg-yielding sidecar fetch.
+//
+// The single whole-file fetch above shares the network with mogg Range
+// streaming for the sidecar's entire ~29s (at 1.5 Mbps) transfer. The chunk
+// pump replaces it: one RB3_SHARPEN_CHUNK_KB (default 256 KB) Range request at
+// a time, kicked ONLY on frames where WebAssetsRangeInFlightCount() == 0 — our
+// own chunk is never in flight at check time, so any live Range fetch is the
+// mogg's, and we strictly yield. Worst-case interference: the mogg starts
+// mid-chunk and waits out ONE chunk (~1.4s at 1.5 Mbps).
+//
+// SIZE DISCOVERY (verified against the live downscale server 2026-07-02):
+// /api/manifest walks only ASSETS_DIR — the downscale tree (where .sharpen
+// sidecars live) is a per-request shadow — so WebAssetsManifestSize() returns
+// -1 for sidecars and SHORT-READ EOF DETECTION is the working terminator:
+// the server clamps a Range at EOF (206 with fewer bytes than asked = final
+// chunk) and 416s a request starting past EOF (the exact-chunk-multiple case;
+// surfaces as fetch error after progress → treat as EOF). The manifest query
+// is still made and honored when >= 0 so a future manifest union gets the
+// authoritative size for free.
+//
+// INTEGRITY: a persistent mid-file error also lands in the "EOF after
+// progress" arm after kChunkErrMax retries; the assembled blob is then finalized and the
+// SHRP parser is the integrity gate — a truncated blob fails its structural
+// bounds checks → RB3SharpenLoadSidecar matches 0 → clean cosmetic no-op
+// (never a corrupt upload).
+// ---------------------------------------------------------------------------
+
+// Consecutive-error budget at one offset before deciding (EOF-after-progress /
+// fallback-at-zero). Each retry is a FRESH Range request one frame apart — a
+// genuine 416 (exact-multiple EOF) fails all of them in ~5 RTTs; a transient
+// connection blip usually recovers within one or two.
+static const int kChunkErrMax = 5;
+
+// mkdir -p + write the assembled bytes to MEMFS at /data/<rel> — the exact
+// residency key WebAssetsIsResident stats — so the existing ReadWholeFile →
+// RB3SharpenLoadSidecar path runs UNCHANGED. (WebAssets' own dir-ensure helper
+// is a TU-static, not exposed; MEMFS mkdir via stdio is the documented
+// fallback.) Returns false on any failure.
+bool WriteAssembledSidecarToMemfs(const std::string& rel,
+                                  const std::vector<uint8_t>& bytes) {
+    std::string path = std::string("/data/") + rel;
+    // mkdir -p every parent component under /data/ (EEXIST is fine).
+    for (size_t i = 6 /* skip "/data/" */; i < path.size(); i++) {
+        if (path[i] == '/')
+            mkdir(path.substr(0, i).c_str(), 0777);
+    }
+    FILE* f = fopen(path.c_str(), "wb");
+    if (!f) return false;
+    size_t n = bytes.empty() ? 0 : fwrite(bytes.data(), 1, bytes.size(), f);
+    fclose(f);
+    return n == bytes.size();
+}
+
+// Finalize the assembly: write to MEMFS (flips WebAssetsIsResident true) and
+// free the buffer. On a write failure, fall back to the legacy single fetch.
+void FinalizeSidecarAssembly() {
+    bool ok = !gDrv.assembly.empty() &&
+              WriteAssembledSidecarToMemfs(gDrv.sidecarRel, gDrv.assembly);
+    if (RB3SharpenDriverDbg())
+        MILO_LOG("RB3_SHARPEN: chunk assembly %s — %ld bytes -> /data/%s\n",
+                 ok ? "COMPLETE" : "WRITE FAILED",
+                 (long)gDrv.assembly.size(), gDrv.sidecarRel.c_str());
+    std::vector<uint8_t>().swap(gDrv.assembly);
+    if (!ok)
+        gDrv.chunkFallback = true;   // legacy single fetch takes over next frame
+}
+
+// Per-frame chunk pump. Runs until the sidecar is resident in MEMFS (the caller
+// checks residency). At most ONE chunk in flight; a chunk is kicked only when
+// no other Range fetch (i.e. the mogg's) is live.
+void PumpSidecarFetchWeb() {
+    const int chunkKB = RB3SharpenChunkKB();
+    if (chunkKB == 0 || gDrv.chunkFallback) {
+        // Legacy single whole-file fetch (pre-hardening behavior / escape hatch).
+        if (!gDrv.fetchKicked) {
+            KickSidecarFetch(gDrv.sidecarRel);
+            gDrv.fetchKicked = true;
+        } else if (WebAssetsEnsureStatus(gDrv.sidecarRel.c_str()) == 2) {
+            // Fetch finished without residency (e.g. no sidecar for this venue
+            // — a venue with no strippable textures emits none): clean no-op
+            // instead of polling forever.
+            gDrv.finished = true;
+            if (RB3SharpenDriverDbg())
+                MILO_LOG("RB3_SHARPEN: sidecar fetch failed/absent %s — no-op\n",
+                         gDrv.sidecarRel.c_str());
+        }
+        return;
+    }
+
+    // One-time size query (manifest oracle; -1 today for sidecars, see above).
+    if (gDrv.sidecarSize == -2) {
+        gDrv.sidecarSize = WebAssetsManifestSize(gDrv.sidecarRel.c_str());
+        if (RB3SharpenDriverDbg())
+            MILO_LOG("RB3_SHARPEN: chunk pump start %s (manifest size %ld, chunk %d KB)\n",
+                     gDrv.sidecarRel.c_str(), gDrv.sidecarSize, chunkKB);
+    }
+
+    // Poll the in-flight chunk (at most one exists).
+    if (gDrv.chunkReqId != 0) {
+        int gotBytes = 0;
+        bool ok = false;
+        if (!WebAssetsRangeDone(gDrv.chunkReqId, &gotBytes, &ok))
+            return;   // still on the wire — nothing else to do this frame
+        if (ok && gotBytes > 0) {
+            size_t base = gDrv.assembly.size();
+            gDrv.assembly.resize(base + (size_t)gotBytes);
+            int taken = WebAssetsRangeTake(gDrv.chunkReqId,
+                                           gDrv.assembly.data() + base, gotBytes);
+            gDrv.chunkReqId = 0;   // RangeTake freed the request
+            if (taken != gotBytes)
+                gDrv.assembly.resize(base + (size_t)(taken > 0 ? taken : 0));
+            gDrv.chunkOffset += (taken > 0 ? taken : 0);
+            gDrv.chunkErrs = 0;
+            if (RB3SharpenDriverDbg())
+                MILO_LOG("RB3_SHARPEN: chunk landed %d B @ %ld (total %ld)\n",
+                         taken, gDrv.chunkOffset - taken, gDrv.chunkOffset);
+            // Terminators: short read == server clamped at EOF; manifest size
+            // (when known) reached.
+            if (taken < gDrv.chunkReqLen ||
+                (gDrv.sidecarSize >= 0 && gDrv.chunkOffset >= gDrv.sidecarSize))
+                FinalizeSidecarAssembly();
+            // Next chunk kicks next frame (paced 1/frame; yield check applies).
+            return;
+        }
+        // Error (or empty success — treat alike). Drop and decide.
+        WebAssetsRangeDrop(gDrv.chunkReqId);
+        gDrv.chunkReqId = 0;
+        gDrv.chunkErrs++;
+        if (gDrv.chunkErrs < kChunkErrMax)
+            return;   // transient? retry the same offset next frame
+        if (gDrv.chunkOffset > 0) {
+            // Persistent error AFTER progress: the exact-chunk-multiple EOF
+            // (416 past EOF, verified) or a genuinely dead connection. Finalize
+            // either way — the SHRP parser rejects a truncated blob (no-op).
+            if (RB3SharpenDriverDbg())
+                MILO_LOG("RB3_SHARPEN: chunk error after %ld B — treating as EOF\n",
+                         gDrv.chunkOffset);
+            FinalizeSidecarAssembly();
+        } else {
+            // Can't fetch even the first chunk (404 / Range-stripping proxy):
+            // permanent fallback to the legacy single fetch.
+            gDrv.chunkFallback = true;
+            if (RB3SharpenDriverDbg())
+                MILO_LOG("RB3_SHARPEN: chunk 0 failed x%d — falling back to single fetch\n",
+                         gDrv.chunkErrs);
+        }
+        return;
+    }
+
+    // No chunk in flight. STRICT YIELD: any live Range fetch is the mogg's
+    // (ours is provably not in flight here) — don't compete, skip this frame.
+    if (WebAssetsRangeInFlightCount() > 0)
+        return;
+
+    long want = (long)chunkKB * 1024;
+    if (gDrv.sidecarSize >= 0) {
+        long remain = gDrv.sidecarSize - gDrv.chunkOffset;
+        if (remain <= 0) { FinalizeSidecarAssembly(); return; }
+        if (want > remain) want = remain;
+    }
+    gDrv.chunkReqId = WebAssetsRangeFetch(gDrv.sidecarRel.c_str(),
+                                          gDrv.chunkOffset, (int)want);
+    gDrv.chunkReqLen = (int)want;
+    if (gDrv.chunkReqId == 0) {
+        // Immediate refusal — count it like an error at this offset.
+        gDrv.chunkErrs++;
+        if (gDrv.chunkErrs >= kChunkErrMax && gDrv.chunkOffset == 0)
+            gDrv.chunkFallback = true;
+    }
+}
+#endif // __EMSCRIPTEN__
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -217,25 +420,27 @@ extern "C" void RB3TexSharpenPoll(bool gameplayRunning) {
     ObjectDir* venueDir = (dl && dl->IsLoaded()) ? dl->GetDir() : nullptr;
     if (!venueDir) return; // venue not resident yet (shouldn't happen post-reveal)
 
-    // Kick the async fetch once (web); native is a no-op.
-    if (!gDrv.fetchKicked) {
-        KickSidecarFetch(gDrv.sidecarRel);
-        gDrv.fetchKicked = true;
-    }
-
-    // Wait for residency (web async; native local file).
+    // Transfer + wait for residency.
+#ifdef __EMSCRIPTEN__
+    // Web: chunked, mogg-yielding pump (research/14 Lane B; RB3_SHARPEN_CHUNK_KB,
+    // 0 = legacy single fetch). Runs one small step per frame until the sidecar
+    // is assembled + written to MEMFS (or the legacy fallback lands it).
     if (!SidecarResident(gDrv.sidecarRel)) {
-        // Missing on native == this venue wasn't downscaled → nothing to sharpen.
-        // (FileExists already returned false; treat as a clean no-op so we don't
-        // poll forever.) On web, keep waiting for the async fetch.
-#ifndef __EMSCRIPTEN__
+        PumpSidecarFetchWeb();
+        if (gDrv.finished || !SidecarResident(gDrv.sidecarRel))
+            return;   // still transferring (or clean no-op) — pump again next frame
+    }
+#else
+    // Native: the sidecar is a local file. Missing == this venue wasn't
+    // downscaled → nothing to sharpen (clean no-op so we don't poll forever).
+    if (!SidecarResident(gDrv.sidecarRel)) {
         gDrv.finished = true;
         if (RB3SharpenDriverDbg())
             MILO_LOG("RB3_SHARPEN: no sidecar at %s (venue not downscaled) — no-op\n",
                      gDrv.sidecarRel.c_str());
-#endif
         return;
     }
+#endif
 
     // Read the sidecar bytes and load the session.
     std::vector<uint8_t> bytes;
@@ -268,6 +473,14 @@ extern "C" void RB3TexSharpenPoll(bool gameplayRunning) {
 // RB3GameWarmReset (rb3_gamewarm_native.cpp) alongside the other per-song latches.
 extern "C" void RB3TexSharpenReset() {
     RB3SharpenReset();      // engine session
+#ifdef __EMSCRIPTEN__
+    // Release an in-flight chunk request. WebAssetsRangeDrop detaches it from
+    // the registry and, if the fetch is still running, marks it abandoned so
+    // the completion callback self-reclaims (the UAF-safe detach pattern —
+    // see WebAssets.cpp:RangeDrop). Never leaks a registry entry.
+    if (gDrv.chunkReqId != 0)
+        WebAssetsRangeDrop(gDrv.chunkReqId);
+#endif
     gDrv = SharpenDriver();
 }
 

@@ -235,6 +235,101 @@ TEST_F(TexSharpenManagerTest, NonMatchingSidecarIsNoOp) {
     delete dir;
 }
 
+// Research/14 Lane B fold-in: RB3SharpenReuploadTex returning false (GPU not
+// ready) must NOT mark the entry done and must NOT consume the per-frame budget
+// — the entry retries on later frames and succeeds once the GPU is back. We
+// simulate not-ready by flipping the public gBandRnd.mGpuReady latch (the exact
+// condition RB3SharpenReuploadTex early-outs on); the device itself stays alive.
+TEST_F(TexSharpenManagerTest, RetriesWhenGpuNotReady) {
+    if (!RB3ProgressiveSharpenEnabled())
+        GTEST_SKIP() << "RB3_PROGRESSIVE_SHARPEN disabled in env";
+
+    ObjectDir* dir = Hmx::Object::New<ObjectDir>();
+    LoadedTex a = MakeStrippedTex(dir, "tex_a", 128, 128, 66);
+    LoadedTex b = MakeStrippedTex(dir, "tex_b", 64,  64,  77);
+    ASSERT_TRUE(RB3DebugUploadTex(a.tex));
+    ASSERT_TRUE(RB3DebugUploadTex(b.tex));
+    RB3TexGpuInfo a0 = RB3DebugGetTexGpuInfo(a.tex);
+
+    std::vector<uint8_t> blob = MakeSidecarHeader(2);
+    AppendEntry(blob, 0, 256, 256, a.strippedW, a.strippedH, 4, 0x08, a.strippedFp, 3);
+    AppendEntry(blob, 1, 128, 128, b.strippedW, b.strippedH, 4, 0x08, b.strippedFp, 4);
+    ASSERT_EQ(RB3SharpenLoadSidecar(dir, blob.data(), (uint32_t)blob.size()), 2);
+
+    // GPU "not ready": several frames of stepping make NO progress — the head
+    // entry is retried (not marked done), the budget is not consumed (0 returned
+    // even with budget 4 and 2 entries pending), and the session is not complete.
+    gBandRnd.mGpuReady = false;
+    for (int frame = 0; frame < 5; frame++) {
+        EXPECT_EQ(RB3SharpenStep(4), 0) << "not-ready reupload must not consume budget";
+        EXPECT_EQ(RB3SharpenGetStatus().sharpened, 0) << "must not be marked done";
+        EXPECT_FALSE(RB3SharpenComplete());
+    }
+    // The GPU texture is untouched while not ready (no recreate happened).
+    RB3TexGpuInfo aDuring = RB3DebugGetTexGpuInfo(a.tex);
+    EXPECT_EQ(aDuring.texW, 128);
+    EXPECT_EQ(aDuring.viewPtr, a0.viewPtr);
+
+    // GPU back: the SAME entries complete (the retry path must not have lost the
+    // already-swapped full-res bitmap) and both recreate at full size.
+    gBandRnd.mGpuReady = true;
+    EXPECT_EQ(RB3SharpenStep(4), 2);
+    EXPECT_TRUE(RB3SharpenComplete());
+    RB3TexGpuInfo a1 = RB3DebugGetTexGpuInfo(a.tex);
+    RB3TexGpuInfo b1 = RB3DebugGetTexGpuInfo(b.tex);
+    EXPECT_EQ(a1.texW, 256); EXPECT_EQ(a1.texH, 256);
+    EXPECT_EQ(b1.texW, 128); EXPECT_EQ(b1.texH, 128);
+    EXPECT_NE(a1.viewPtr, a0.viewPtr);
+    EXPECT_EQ(RB3SharpenGetStatus().sharpened, 2);
+
+    RB3SharpenReset();
+    delete dir;
+}
+
+// The retry is BOUNDED (~120 frames): a permanently-not-ready GPU eventually
+// marks the entry done (so the session can complete and the driver stops
+// polling) without ever recreating the GPU texture, and without spinning
+// within a single frame.
+TEST_F(TexSharpenManagerTest, RetryCapMarksDoneEventually) {
+    if (!RB3ProgressiveSharpenEnabled())
+        GTEST_SKIP() << "RB3_PROGRESSIVE_SHARPEN disabled in env";
+
+    ObjectDir* dir = Hmx::Object::New<ObjectDir>();
+    LoadedTex a = MakeStrippedTex(dir, "tex_a", 128, 128, 88);
+    ASSERT_TRUE(RB3DebugUploadTex(a.tex));
+    RB3TexGpuInfo a0 = RB3DebugGetTexGpuInfo(a.tex);
+
+    std::vector<uint8_t> blob = MakeSidecarHeader(1);
+    AppendEntry(blob, 0, 256, 256, a.strippedW, a.strippedH, 4, 0x08, a.strippedFp, 5);
+    ASSERT_EQ(RB3SharpenLoadSidecar(dir, blob.data(), (uint32_t)blob.size()), 1);
+
+    gBandRnd.mGpuReady = false;
+    // One retry per Step call; the cap is 120 → the entry must be abandoned
+    // (marked done) within a bounded number of calls, well under 200.
+    int stepsUntilDone = -1;
+    for (int frame = 0; frame < 200; frame++) {
+        if (RB3SharpenStep(4) > 0) { stepsUntilDone = frame + 1; break; }
+    }
+    bool completeWhileDown = RB3SharpenComplete();
+    int sharpenedWhileDown = RB3SharpenGetStatus().sharpened;
+    // No GPU work ever happened (still the stripped texture + original view).
+    RB3TexGpuInfo a1 = RB3DebugGetTexGpuInfo(a.tex);
+    // Restore the GPU latch BEFORE any assert can abort the test body — later
+    // tests depend on it.
+    gBandRnd.mGpuReady = true;
+
+    EXPECT_GT(stepsUntilDone, 100) << "cap must allow ~120 retry frames";
+    EXPECT_GE(stepsUntilDone, 0)   << "entry must eventually be marked done";
+    EXPECT_LE(stepsUntilDone, 130) << "cap must bound the retry";
+    EXPECT_TRUE(completeWhileDown) << "capped-out entry counts as consumed";
+    EXPECT_EQ(sharpenedWhileDown, 1);
+    EXPECT_EQ(a1.texW, 128);
+    EXPECT_EQ(a1.viewPtr, a0.viewPtr);
+
+    RB3SharpenReset();
+    delete dir;
+}
+
 // A corrupt blob (bad magic / short) is rejected without crashing.
 TEST_F(TexSharpenManagerTest, RejectsGarbageSidecar) {
     ObjectDir* dir = Hmx::Object::New<ObjectDir>();
