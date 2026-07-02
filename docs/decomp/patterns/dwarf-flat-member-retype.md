@@ -221,6 +221,44 @@ exists: a `RETYPE_CANDIDATE` verdict is worth a Bank-8 confirmation and a header
 edit; every other verdict tells you to stop and move on, without re-reading the
 DWARF by hand.
 
+## Whole-codebase sweep, 2026-07-02 (verdict: no other instance)
+
+Running the tool over the entire in-scope surface (261 structs with flat scalar
+runs) surfaced **6 raw `RETYPE_CANDIDATE`s**, all flagged `strong=False`. Each was
+confirmed against the decisive Bank-8 objdiff signature and **all six are
+negatives** — the retype lever does **not** apply anywhere except `RndLine::Point`.
+Two *distinct* recurring false-positive shapes fell out, and the tool now
+recognizes both so future runs stay quiet:
+
+**1. Color-packing inverse (the opposite of the lever).** `LightPreset::EnvLightEntry`
+and `LightPreset::EnvironmentEntry` name-anchor a Bank-5 `Hmx::Color` (16 B) onto
+our field of the same name — but Bank 8 deliberately **packed** that color into a
+4-byte `Color32 int` (`int mColor; // 0x1c - Color32?`). Re-expanding to
+`Hmx::Color` would *grow* the field `0x10` and shift every later member — the exact
+opposite of flattening. The tool now emits a `COLOR_PACKED` finding for
+`Bank-5 Color → our same-named 4-byte int` and never proposes the retype. (Note
+`RndLine::Point::c` is the same packing done right: `Hmx::Color32 c` was already
+typed as the 4-byte form.)
+
+**2. Positional false-alignment in a bank-divergent struct.** `RndPostProc`
+(B5 `mMotionBlurBlendWeight` Color) and `CharLookAt` (B5 `mSourceFilter` Vector3)
+positionally align a Bank-5 aggregate onto an unrelated run of our scalars (timing
+fields / yaw limits) purely because earlier members shifted between banks — while
+the *real* aggregate is already typed elsewhere in our header. Signature: a
+**positional** anchor in a struct whose aggregate account already balances
+(`account_ok`). The tool now demotes those to `POSITIONAL_REDUNDANT` (kept: a
+positional anchor where the aggregate is genuinely missing — that is exactly
+`RndLine::Point` pre-retype, `account_ok=False`).
+
+The two residual candidates (`CamShotFrame`, `CharIKHead::Point`) are legitimately
+confirmation-worthy on static evidence and were checked by hand: `CamShotFrame`'s
+`_M_fill_insert_aux<CamShotFrame>` carrier @97.3% shows the coin-flip
+insert/delete residue with **no** `lfs/stfs`-vs-`lwz/stw` split (already
+member-faithful, permuter-class), and `CharIKHead::Point` is a leaf-name collision
+(matched a physics `Point` DIE) whose `UpdatePoints` residual is FPR coloring. Both
+negative. **Net: the sweep confirms the 1-in-N base rate — do not hand-retype any
+of the six.**
+
 ## Related
 
 - [fixable-struct-layout.md](fixable-struct-layout.md) — vtable/member-offset

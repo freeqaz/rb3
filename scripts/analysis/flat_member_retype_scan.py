@@ -434,6 +434,14 @@ def classify(cls_name, ours, b5, probe, min_run=3):
             on = norm_type(om.type_str)
             if on in AGG:
                 agg_findings.append((m["name"], "TYPED"))
+            elif n == "Color" and osize[i] == 4:
+                # COLOR-PACKING INVERSE (not a retype): the Bank-5 source used a
+                # 16-byte Hmx::Color here, but Bank 8 deliberately PACKED it to a
+                # 4-byte Color32 int at the same name/offset (e.g.
+                # LightPreset::EnvLightEntry::mColor). Re-expanding to Hmx::Color
+                # would GROW the field 0x10 and shift every later member — the
+                # opposite of the RndLine::Point lever. Treat as already-correct.
+                agg_findings.append((m["name"], "COLOR_PACKED"))
             else:
                 # name-paired to a scalar: consume the following 4-byte scalars
                 span = [j for j in range(i, len(ours.members))
@@ -522,6 +530,23 @@ def classify(cls_name, ours, b5, probe, min_run=3):
         return True
 
     account_ok = acct_ok()
+
+    # A POSITIONAL retype anchor (weakest kind) is the false-alignment trap when
+    # the struct ALREADY has that aggregate family fully typed (`account_ok`): the
+    # Bank-5 member lands on an unrelated run of our scalars purely because earlier
+    # members shifted between banks, while the real aggregate is typed elsewhere
+    # (e.g. RndPostProc's B5 mMotionBlurBlendWeight Color aligning onto our timing
+    # scalars though mMotionBlurWeight is already Hmx::Color; CharLookAt's
+    # mSourceFilter onto angle scalars). Demote those to a caution finding rather
+    # than assert a retype. Name-anchored retypes, and positional retypes where the
+    # aggregate is genuinely MISSING from our layout (RndLine::Point pre-retype:
+    # account_ok is False — cam/base/dir/delta are not yet typed), are kept.
+    demoted_positional = [r for r in retype
+                          if r.get("mode") == "positional" and account_ok]
+    if demoted_positional:
+        retype = [r for r in retype if r not in demoted_positional]
+        for r in demoted_positional:
+            agg_findings.append((r["b5_member"], "POSITIONAL_REDUNDANT"))
 
     # -- headline verdict (validated order)
     if retype:
