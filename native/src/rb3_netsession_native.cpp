@@ -228,9 +228,21 @@ public:
         // index 1 (index 0 is the receiver object), per BEGIN_HANDLERS.
         Symbol type = msg->Size() > 1 ? msg->Sym(1) : Symbol("");
         if (type == Symbol("clear") || type == Symbol("disconnect")
-            || type == Symbol("end_game") || type == Symbol("start_game")
+            || type == Symbol("start_game")
             || type == Symbol("register_online") || type == Symbol("update_settings"))
             return DataNode(0); // offline session-control no-ops
+        // {session end_game <result>} must NOT be a no-op: it is the pause-menu
+        // restart trigger (overshell slot_states.dta `{session end_game kRestart}`)
+        // and mirrors the real HANDLE_ACTION(end_game, EndGame(_msg->Int(2), false, 0)).
+        // EndGame drops mGameState back to kInLobby and fires GameEndedMsg —
+        // Game::OnMsg(GameEndedMsg) with result kRestart(0) then executes
+        // {game_restart} itself, and the sync panel's StartGame passes its
+        // kInLobby gate. With this a no-op, a mid-song restart left the session
+        // kInLocalGame, StartGame early-returned, SyncStartGameMsg never fired,
+        // and the restart stalled forever on restart_sync_audio_net_screen
+        // (sync panel stuck at kStartingSession).
+        if (type == Symbol("end_game"))
+            return EndGame(msg->Size() > 2 ? msg->Int(2) : 0, false, 0), DataNode(0);
         if (type == Symbol("is_local"))
             return DataNode(IsLocal() ? 1 : 0);
         if (type == Symbol("is_in_game"))

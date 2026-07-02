@@ -543,12 +543,21 @@ void GamePanel::ClearDrawGlitch() {
     TheGameMode->Property(game_screen, true)->Obj<UIScreen>()->SetShowing(false);
     RndPostProc::Reset();
     TheRnd->ForceColorClear();
+#ifndef HX_NATIVE
+    // Wii-only stale-frame flush. On native TheWiiRnd is a weak no-op stub
+    // (rndobj_synth_link_stubs.s), so mFramesBuffered reads relocated-pointer
+    // bytes at stub+0x2C0 — an ASLR-dependent garbage bound that can be in the
+    // billions. Every restart path runs {game clear_draw_glitch} (game_restart,
+    // endgame play-again, complete_panel exit), so the loop wedged the main
+    // thread in nested draws: frozen game on native, frozen/killed tab on web.
+    // The native renderer has no Wii frame-buffering glitch to clear; skip it.
     for (int i = 0; i < TheWiiRnd.mFramesBuffered; i++) {
         TheRnd->BeginDrawing();
         TheRnd->EndWorld();
         TheUI.Draw();
         TheRnd->EndDrawing();
     }
+#endif
 }
 
 void GamePanel::SendRestartGameNetMsg(bool b1) {
