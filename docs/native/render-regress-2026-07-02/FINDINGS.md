@@ -81,10 +81,21 @@ opt-outs RB3_CHAR_REAL_LIGHT_OFF / RB3_COMPOSE_MULT_OFF exist for A/B.
 
 ## 5. Web-specific residuals (pre-existing — present in the PRE-fix run too)
 
-- **Grey/flat char composites on web** while native (same code) is textured:
-  the outfit composite bakes once at load, before web's async/mip-stripped/
-  progressively-sharpened source textures are fully resident → RT bakes grey
-  forever. Fix lane running (recompose-after-resident / strip-list exclusion).
+- **Grey/flat char SKIN on web — FIXED `266ffb1b`** (rb3-only, HX_NATIVE,
+  Wii .o byte-identical). The async-residency premise above was DISPROVEN by
+  staged probes: all compose inputs were resident + correct at compose time,
+  and re-compositing every frame stayed grey — the engine's skin RTT composite
+  itself produces grey on web (suspect: interp_gw alpha-weight decode; NOT
+  root-caused). Native never runs the skin composite (direct-bind path), which
+  is why it looked right. Fix: SetSkinTextures binds the source `_diff` detail
+  texture directly and tints with the palette skin tone (diff × tone); the
+  broken RTT path is preserved behind `RB3_SKIN_RTT=1` for whoever fixes the
+  engine shader properly (deferred). Verified: web debug + served release
+  textured; native band-closeup non-regression PASS. Wire size unchanged.
+  NOTE: a full `build.sh` during verification compiled a CONCURRENT agent's
+  uncommitted Stats.h/MetaPerformer WIP which crashes the RELEASE web build at
+  boot; the served release was re-deployed from a clean worktree at committed
+  code. That agent must re-run build.sh once their WIP lands.
 - **One member floats horizontally through gameplay** (same white-boots member
   pre- and post-fix, ~9-20s+): never receives a live clip on web — likely
   clip streaming/bundle gap, NOT the walk-on snap (A/B: pre-fix run shows the
