@@ -1,0 +1,43 @@
+diff --git a/src/system/bandobj/OutfitConfig.cpp b/src/system/bandobj/OutfitConfig.cpp
+index 208df921..1a838a51 100644
+--- a/src/system/bandobj/OutfitConfig.cpp
++++ b/src/system/bandobj/OutfitConfig.cpp
+@@ -110,6 +110,38 @@ void OutfitConfig::MatSwap::Compose(
+     if (!MatchesPatchCategory(category, patches))
+         return;
+     RndTex *diffTex = mMat->GetDiffuseTex();
++#ifdef HX_NATIVE
++    // TEMP EXPERIMENT (c8-eyes research 2026-07-02): scope flag so the native
++    // DrawRect can identify outfit-composite layer draws (mirrors the Wii's
++    // WiiTex::bComposingOutfitTexture pattern).
++    extern bool gRB3OutfitComposeActive;
++    struct ComposeScope {
++        ComposeScope() { gRB3OutfitComposeActive = true; }
++        ~ComposeScope() { gRB3OutfitComposeActive = false; }
++    } composeScope;
++    // TEMP PROBE (c8-eyes research 2026-07-02): dump every Compose invocation.
++    if (getenv("RB3_COMPOSE_DBG")) {
++        bool rtBranch =
++            diffTex && (diffTex->GetType() & RndTex::kRenderedNoZ) == RndTex::kRenderedNoZ;
++        fprintf(stderr,
++                "[COMPOSE] mat='%s' diff='%s'@%p type=0x%x rtBranch=%d twoColor=%d "
++                "tcDiff='%s' tcInterp='%s' tcMask='%s' pal1='%s' pal2='%s' "
++                "c1opt=%d c2opt=%d colors=(%d,%d,%d) nTex=%d cat=0x%x\n",
++                mMat->Name() ? mMat->Name() : "?",
++                diffTex ? (diffTex->Name() ? diffTex->Name() : "?") : "<null>",
++                (void *)diffTex, diffTex ? (int)diffTex->GetType() : -1,
++                (int)rtBranch, (int)mTwoColor,
++                mTwoColorDiffuse ? mTwoColorDiffuse->Name() : "<null>",
++                mTwoColorInterp ? mTwoColorInterp->Name() : "<null>",
++                mTwoColorMask ? mTwoColorMask->Name() : "<null>",
++                mColor1Palette ? mColor1Palette->Name() : "<null>",
++                mColor2Palette ? mColor2Palette->Name() : "<null>",
++                mColor1Option, mColor2Option,
++                colors ? colors[0] : -999, colors ? colors[1] : -999,
++                colors ? colors[2] : -999,
++                (int)mTextures.size(), category);
++    }
++#endif
+     if (!diffTex || (diffTex->GetType() & RndTex::kRenderedNoZ) != RndTex::kRenderedNoZ) {
+         if (mTwoColor)
+             return;

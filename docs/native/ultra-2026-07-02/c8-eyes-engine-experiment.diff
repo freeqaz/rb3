@@ -1,0 +1,72 @@
+diff --git a/src/platform/Rnd_Wgpu_RB3.cpp b/src/platform/Rnd_Wgpu_RB3.cpp
+index 260af44..67a9155 100644
+--- a/src/platform/Rnd_Wgpu_RB3.cpp
++++ b/src/platform/Rnd_Wgpu_RB3.cpp
+@@ -3351,6 +3351,11 @@ static uint64_t RB3QuadPipeKey(wgpu::TextureFormat fmt, WgpuBlend blend,
+            (uint64_t)(notex ? 1 : 0);
+ }
+ 
++// TEMP EXPERIMENT (c8-eyes research 2026-07-02): set by OutfitConfig::MatSwap::
++// Compose (rb3 side) around the outfit two-color composite so the modulate
++// layers below can be identified. Defined here so the engine always links.
++bool gRB3OutfitComposeActive = false;
++
+ void BandRnd::DrawRect(const Hmx::Rect& rect, const Hmx::Color& paramColor,
+                        RndMat* mat, const Hmx::Color* topRight,
+                        const Hmx::Color* botLeft) {
+@@ -3467,6 +3472,31 @@ void BandRnd::DrawRect(const Hmx::Rect& rect, const Hmx::Color& paramColor,
+         int b = (int)mat->GetBlend();
+         if (b >= 0 && b <= 10) blend = (WgpuBlend)b;
+     }
++    // TEMP EXPERIMENT (c8-eyes research 2026-07-02): treat colorMod modulate
++    // layers of the outfit two-color composite as DEST-MULTIPLY blends instead
++    // of replace. RB3_COMPOSE_MULT=1 enables.
++    {
++        static int sCompMult = -1;
++        if (sCompMult < 0) { const char* e = getenv("RB3_COMPOSE_MULT"); sCompMult = (e && e[0] && e[0] != '0') ? 1 : 0; }
++        extern bool gRB3OutfitComposeActive;
++        if (sCompMult && gRB3OutfitComposeActive &&
++            (colorMod == 2 || colorMod == 3) && mRtActiveTex)
++            blend = WgpuBlend::Multiply;
++        // TEMP TRACE: attribute every DrawRect while hunting the white-blob wash.
++        if (getenv("RB3_RECT_TRACE")) {
++            static int sRectN = 0;
++            if (sRectN < 4000)
++                fprintf(stderr, "[RECT] n=%d mat='%s' diff='%s' blend=%d colorMod=%d "
++                        "compose=%d rt='%s' rect=(%.0f,%.0f %.0fx%.0f) mod=(%.2f,%.2f,%.2f,%.2f)\n",
++                        sRectN++, (mat && mat->Name()) ? mat->Name() : "?",
++                        (mat && mat->GetDiffuseTex() && mat->GetDiffuseTex()->Name())
++                            ? mat->GetDiffuseTex()->Name() : "<null>",
++                        (int)blend, colorMod, (int)gRB3OutfitComposeActive,
++                        mRtActiveTex ? "RT" : "main",
++                        rect.x, rect.y, rect.w, rect.h,
++                        ub.mod[0], ub.mod[1], ub.mod[2], ub.mod[3]);
++        }
++    }
+     bool rtPass = (mRtActiveTex != nullptr);
+     wgpu::TextureFormat fmt = rtPass ? mRtFmt : mTargetFmt;   // NEVER hardcode RGBA8
+     bool hasDepth = !rtPass;   // RT pass: no depth; main pass: depth-disabled D24S8
+@@ -5570,14 +5600,21 @@ void BandRnd::DrawMesh(RndMesh* mesh) {
+                     fprintf(stderr,
+                         "[HEADMAT] mesh='%s' dir='%s' owner=%p mat='%s'@%p diffuse='%s' hasTex=%d isRT=%d "
+                         "blend=%d alphaCut=%d alphaThresh=%d zmode=%d color=(%.2f,%.2f,%.2f,a=%.2f) "
+-                        "prelit=%d useEnviron=%d texWrap=%d\n",
++                        "prelit=%d useEnviron=%d texWrap=%d emMap='%s' emMult=%.3f "
++                        "intensify=%d ppl=%d ptLights=%d nextPass='%s'\n",
+                         mnm, (meshDir && meshDir->Name()) ? meshDir->Name() : "-",
+                         (void*)mesh, mat->Name() ? mat->Name() : "?", (void*)mat,
+                         dt ? (dt->Name() ? dt->Name() : "?") : "<null>",
+                         (int)hasTex, dt ? (int)dt->IsRenderTarget() : 0,
+                         (int)mat->GetBlend(), (int)mat->mAlphaCut, (int)mat->mAlphaThresh,
+                         (int)mat->GetZMode(), mc.red, mc.green, mc.blue, mc.alpha,
+-                        (int)mat->mPreLit, (int)mat->mUseEnviron, (int)mat->GetTexWrap());
++                        (int)mat->mPreLit, (int)mat->mUseEnviron, (int)mat->GetTexWrap(),
++                        (mat->mEmissiveMap && ((RndTex*)mat->mEmissiveMap)->Name())
++                            ? ((RndTex*)mat->mEmissiveMap)->Name() : "<null>",
++                        mat->mEmissiveMultiplier,
++                        (int)mat->mIntensify, (int)mat->mPerPixelLit, (int)mat->mPointLights,
++                        (mat->mNextPass && ((RndMat*)mat->mNextPass)->Name())
++                            ? ((RndMat*)mat->mNextPass)->Name() : "<null>");
+                 }
+             }
+         }
