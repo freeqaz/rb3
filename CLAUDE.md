@@ -210,6 +210,24 @@ Prefer high-value areas. Use `/progress` and `scripts/dc3_compare.py` for per-un
 - Do not include `Co-Authored-By` lines in commit messages
 - Use worktrees for isolated experiments. A bare `git worktree add` is unbuildable here (build inputs/toolchain are gitignored); run `tools/setup-worktree.sh <name>` to get a buildable + diffable worktree in ~1.5s via CoW reflinks (see docs/decomp/worktree-setup.md)
 
+## Multi-Agent Workflows (ultracode / Workflow tool)
+
+- **Checkpoint agent outputs to disk.** Every workflow subagent whose result
+  feeds later stages must (a) write its structured result JSON to a
+  deterministic path (e.g. `$CLAUDE_JOB_DIR/tmp/<workflow-name>/<stage>-<label>.json`)
+  BEFORE returning, and (b) start by checking that path — if a valid checkpoint
+  already exists, return its contents instead of redoing the work. Workflow
+  resume only reuses agents whose (prompt, opts) are byte-identical; a prompt
+  edit or journal miss otherwise re-runs the whole expensive stage from scratch.
+- **Structured outputs (schema) can fail** and return null — don't let that
+  silently drop a lane (`.filter(Boolean)` hides it). The disk checkpoint is
+  the recovery path: a tiny follow-up agent (or the coordinator) reads the
+  checkpoint file and re-emits the result without repeating the work. Log a
+  warning in the script when a stage's result count is short.
+- When resuming a partially-run workflow, only add checkpoint instructions to
+  stages that have NOT yet been journaled — editing already-completed prompts
+  busts their cache and forces the redo you were trying to avoid.
+
 ## Decompilation Tools
 
 ### Ghidra
