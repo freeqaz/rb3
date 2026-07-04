@@ -340,7 +340,7 @@ namespace std {
                     copy.do_replace(
                         0, append_size, start, end, random_access_iterator_tag()
                     );
-                    CharT *new_start;
+                    const CharT *new_start;
                     size_t dummy;
                     copy.pointer_size(new_start, dummy);
                     start = new_start;
