@@ -323,6 +323,15 @@ public:
     void AddTambourineSeen() { mTambourineCount++; }
     void AddTambourineHit() { mTambourineHitCount++; }
     int GetHopoPercent() {
+#ifdef HX_NATIVE
+        // With no HOPO gems this is 0/0 -> NaN, and NaN->int is UB. At emcc
+        // -O2 the poison propagated into TriggerSongCompletion's BandStatsInfo
+        // vector and wedged the web build at song end (UBSan-confirmed,
+        // Stats.h:326). x86/-O0 only yield a garbage percent, but guard the
+        // divide at its source. Wii codegen below is unchanged.
+        if (mHopoGemCount == 0)
+            return 0;
+#endif
         return ((float)mHopoGemsHopoed / (float)mHopoGemCount) * 100.0f;
     }
 

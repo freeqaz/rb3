@@ -179,6 +179,18 @@ MetaPerformer::MetaPerformer(const BandSongMgr &mgr, const char *cc)
     TheNetSession->AddSink(this);
     TheProfileMgr.AddSink(this, Symbol("primary_profile_changed_msg"));
     mIsBattle = false;
+#ifdef HX_NATIVE
+    // Stomp-watch (RB3_STATS_DBG=1): publish this object's address range and
+    // ask the Mesh.cpp vert-alloc ring which vert buffer overlaps it — the web
+    // song-end wedge is mesh Vert records stomping mPendingData.
+    if (getenv("RB3_STATS_DBG")) {
+        extern char *gRB3StompWatchLo, *gRB3StompWatchHi;
+        extern void RB3StompScanVertAllocs();
+        gRB3StompWatchLo = (char *)this;
+        gRB3StompWatchHi = (char *)this + sizeof(MetaPerformer);
+        RB3StompScanVertAllocs();
+    }
+#endif
 }
 
 MetaPerformer::~MetaPerformer() {
@@ -1133,11 +1145,24 @@ void MetaPerformer::Restart() {
 }
 
 void MetaPerformer::TriggerSongCompletion() {
+#ifdef HX_NATIVE
+// RB3_STATS_DBG=1: bracket the web-release song-end wedge — print the solo
+// stats vector's raw state around each phase so the corrupting call is
+// identifiable from the browser console. Cheap no-op when unset.
+#define STATS_DBG(tag)                                                             \
+    if (getenv("RB3_STATS_DBG"))                                                   \
+        MILO_LOG("RB3 STATS_DBG %s: info=%p solo(data=%p size=%d cap=%d)\n", tag,  \
+                 (void *)&info, (void *)info.mSoloStats.data(),                    \
+                 (int)info.mSoloStats.size(), (int)info.mSoloStats.capacity());
+#else
+#define STATS_DBG(tag)
+#endif
     bool m16 = GetCheating();
     SetCheating(false);
     Difficulty d15 = kDifficultyExpert;
     short i14 = 0;
     BandStatsInfo info;
+    STATS_DBG("ctor")
     Band *band = TheGame->GetBand();
     Performer *perf = band->MainPerformer();
     std::vector<BandUser *> users;
@@ -1163,7 +1188,9 @@ void MetaPerformer::TriggerSongCompletion() {
                 Difficulty d8 = localUser->GetDifficulty();
                 if (!player->GetQuarantined() && localUser->unkc) {
                     int i7 = localUser->GetPadNum();
+                    STATS_DBG("pre-AddSoloStats")
                     info.AddSoloStats(i7, localUser->GetSlot(), s, d8, profile, player);
+                    STATS_DBG("post-AddSoloStats")
                     if (player->IsAutoplay()) {
                         m16 = true;
                     }
@@ -1182,7 +1209,9 @@ void MetaPerformer::TriggerSongCompletion() {
         }
     }
     unk2c0 = i14;
+    STATS_DBG("post-loop")
     info.UpdateBandStats(d15, i14, perf);
+    STATS_DBG("post-UpdateBandStats")
     BandProfile *profile = TheProfileMgr.GetPrimaryProfile();
     if (profile) {
         profile->UpdatePerformanceData(
@@ -1196,7 +1225,10 @@ void MetaPerformer::TriggerSongCompletion() {
             m16
         );
     }
+    STATS_DBG("pre-CompleteSong")
     CompleteSong(users, &info, false);
+    STATS_DBG("post-CompleteSong")
+#undef STATS_DBG
 }
 
 void MetaPerformer::CompleteSong(
@@ -1822,3 +1854,47 @@ BEGIN_HANDLERS(MetaPerformer)
     HANDLE_CHECK(0xADB)
 END_HANDLERS
 #pragma pop
+#ifdef HX_NATIVE
+// Web song-end wedge diagnosis (RB3_STATS_DBG=1): mPendingData.stats.mSoloStats
+// is corrupt by the time PotentiallyUpdateLeaderboards copy-assigns into it.
+// Poll its raw state once per frame from the web main loop and log on change —
+// the printing frame is the stomping frame. The member is only legitimately
+// written at song completion, so any earlier transition is the corruption.
+static void RB3MetaPerfIntegrityCheckImpl(int frame, const char *ctx) {
+    if (!getenv("RB3_STATS_DBG"))
+        return;
+    MetaPerformer *mp = MetaPerformer::sMetaPerformer;
+    if (!mp)
+        return;
+    BandStatsInfo &st = mp->mPendingData.stats;
+    void *d = (void *)st.mSoloStats.data();
+    unsigned long n = (unsigned long)st.mSoloStats.size();
+    unsigned long c = (unsigned long)st.mSoloStats.capacity();
+    static void *sLastData = (void *)-1;
+    static unsigned long sLastCap = (unsigned long)-1;
+    if (d != sLastData || c != sLastCap) {
+        MILO_LOG("RB3 STATS_WATCH frame=%d ctx='%s' mp=%p pendSolo(data=%p "
+                 "size=%lu cap=%lu)\n",
+                 frame, ctx ? ctx : "-", (void *)mp, d, n, c);
+        // Raw u32 dump around mPendingData (0x40 before, 0x140 total) — shows
+        // the stomp's extent across neighboring members, not just the struct.
+        unsigned int *w = (unsigned int *)((char *)&mp->mPendingData - 0x40);
+        MILO_LOG("RB3 STATS_WATCH raw mPendingData@%p sizeof=0x%x statsOff=0x%x "
+                 "soloOff=0x%x (dump starts -0x40)\n",
+                 (void *)&mp->mPendingData, (unsigned)sizeof(mp->mPendingData),
+                 (unsigned)((char *)&st - (char *)&mp->mPendingData),
+                 (unsigned)((char *)&st.mSoloStats - (char *)&mp->mPendingData));
+        for (int i = 0; i < 0x50; i += 4)
+            MILO_LOG("RB3 STATS_WATCH raw off=%d: %08x %08x %08x %08x\n",
+                     (i - 0x10) * 4, w[i], w[i + 1], w[i + 2], w[i + 3]);
+        sLastData = d;
+        sLastCap = c;
+    }
+}
+void RB3MetaPerfIntegrityCheck(int frame) { RB3MetaPerfIntegrityCheckImpl(frame, nullptr); }
+// File-open bisect hook (os/File.cpp NewFile): the first check that reports a
+// transition names the file whose load/parse stomped the region.
+void RB3MetaPerfIntegrityCheckAt(const char *ctx) {
+    RB3MetaPerfIntegrityCheckImpl(-999, ctx);
+}
+#endif

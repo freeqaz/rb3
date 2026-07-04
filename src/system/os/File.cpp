@@ -159,6 +159,18 @@ File *NewFile(const char *cc, int i) {
 #ifdef HX_NATIVE
     if (!cc || !*cc)
         return nullptr;
+    // Stomp-watch bisect (RB3_STATS_DBG=1): check MetaPerformer integrity at
+    // every file open — the FIRST corrupt check names the file whose load or
+    // parse stomped it (web song-end wedge diagnosis). No-op unless env set.
+    {
+        static int sStompDbg = -1;
+        if (sStompDbg < 0)
+            sStompDbg = getenv("RB3_STATS_DBG") ? 1 : 0;
+        if (sStompDbg) {
+            extern void RB3MetaPerfIntegrityCheckAt(const char *ctx);
+            RB3MetaPerfIntegrityCheckAt(cc);
+        }
+    }
     // NOTE: we intentionally return the (possibly failing) File handle WITHOUT
     // null-checking ->Fail() here. A missing DTA #include must parse as an empty
     // file (the flex lexer reads via this File directly), which is how the boot

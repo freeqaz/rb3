@@ -1142,6 +1142,34 @@ if(RB3_WEB_RELEASE)
     set_source_files_properties(
         ${REPO_ROOT}/src/system/bandobj/OutfitConfig.cpp
         PROPERTIES COMPILE_OPTIONS "-O0")
+    # Diagnosis hatch (mirrors RB3_WEB_O0_GLOB): compile the named TUs with
+    # UBSan (recover mode — reports stream to the browser console with
+    # file:line, execution continues). This is how "release-only freeze" bugs
+    # split into "UB in the TU" vs "wasm backend miscompile": if an -O0 pin
+    # fixes a TU, UBSan it at -O2 and read the console. Proven on the song-end
+    # freeze (Stats.h GetHopoPercent NaN->int, 2026-07-02).
+    if(RB3_WEB_UBSAN_GLOB)
+        file(GLOB _rb3_ubsan_srcs ${RB3_WEB_UBSAN_GLOB})
+        set_source_files_properties(${_rb3_ubsan_srcs}
+            PROPERTIES COMPILE_OPTIONS "-fsanitize=undefined")
+        target_link_options(rb3-web PRIVATE -fsanitize=undefined)
+    endif()
+    # Diagnosis hatch: whole-program AddressSanitizer for the web build.
+    # Catches heap OOB/UAF WRITES at the writer with a C++ stack — the tool for
+    # "deterministic heap stomp visible at boot" bugs the per-TU UBSan hatch
+    # can't see. Boots much slower and needs extra memory; pair with the
+    # boot-only probes, not gameplay perf work.
+    if(RB3_WEB_ASAN)
+        # recover mode so reports stream instead of aborting on the first (the
+        # Symbols*.cpp duplicate-global odr-violation would otherwise kill boot
+        # before anything interesting). Runtime options can't come from ENV on
+        # web (ASan init runs in __wasm_call_ctors, before ENV lands), so
+        # main_web.cpp compiles in __asan_default_options under this define.
+        target_compile_options(rb3-web PRIVATE -fsanitize=address -fsanitize-recover=address)
+        target_link_options(rb3-web PRIVATE -fsanitize=address -fsanitize-recover=address)
+        target_compile_definitions(rb3-web PRIVATE RB3_WEB_ASAN_BUILD=1)
+        message(STATUS "rb3-web: ASan build (RB3_WEB_ASAN=ON)")
+    endif()
     # Escape hatch for re-testing the underlying fault / further bisects:
     # cmake -DRB3_WEB_O0_GLOB="<paths-or-globs>" forces extra TUs to -O0.
     if(RB3_WEB_O0_GLOB)

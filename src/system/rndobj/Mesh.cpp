@@ -28,6 +28,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>     // stomp-watch VertVector->mesh registry (RB3_STATS_DBG)
+#include <string>  // stomp-watch labels
 #endif
 #include "utl/Symbols.h"
 #include <vector>
@@ -342,6 +344,12 @@ RndMesh::RndMesh()
     mForceNoQuantize = false;
 #ifdef HX_NATIVE
     mNativeBonesRebound = false;
+    {
+        // Stomp-watch (RB3_STATS_DBG): map &mVerts -> this so the vert-alloc
+        // ring can print mesh names. No-op unless the env is set.
+        extern void RB3StompRegisterMeshVV(void *, RndMesh *);
+        RB3StompRegisterMeshVV(&mVerts, this);
+    }
 #endif
 }
 
@@ -351,6 +359,10 @@ RndMesh::~RndMesh() {
     // MeshGpuCache (src/platform/MeshGpuCache.cpp) before the CPU mesh dies.
     extern void CleanupGpuMesh(RndMesh *);
     CleanupGpuMesh(this);
+    {
+        extern void RB3StompUnregisterMeshVV(void *);
+        RB3StompUnregisterMeshVV(&mVerts);
+    }
 #endif
     RELEASE(mFileLoader);
     RELEASE(mBSPTree);
@@ -358,12 +370,143 @@ RndMesh::~RndMesh() {
     ClearCompressedVerts();
 }
 
+#ifdef HX_NATIVE
+// Stomp-watch (RB3_STATS_DBG=1): the web song-end wedge traced to
+// MetaPerformer::mPendingData holding RndMesh::Vert records at boot — a mesh
+// vert buffer and the MetaPerformer allocation occupy overlapping memory.
+// Record every Vert-array alloc/free (ring) plus live-intersection checks so
+// the MetaPerformer ctor can name the overlapping buffer and we can see
+// whether it was live (allocator overlap) or freed (use-after-free write).
+char *gRB3StompWatchLo = nullptr;
+char *gRB3StompWatchHi = nullptr;
+namespace {
+struct StompVertRec {
+    void *owner; // VertVector*
+    void *lo, *hi;
+    bool freed;
+    const char *freeSite;
+    int allocSeq, freeSeq;
+};
+StompVertRec sStompRing[1024];
+int sStompCount = 0;
+int sStompSeq = 0;
+// VertVector* -> owning RndMesh, registered by the RndMesh ctor so the scan
+// can print mesh names without wild pointer recovery.
+std::map<void *, RndMesh *> &StompVVOwners() {
+    static std::map<void *, RndMesh *> m;
+    return m;
+}
+// VertVector* -> static label for non-RndMesh embedders (GemRepTemplate) and
+// tombstones for deleted meshes (name captured at dtor time).
+std::map<void *, std::string> &StompVVLabels() {
+    static std::map<void *, std::string> m;
+    return m;
+}
+bool StompDbg() {
+    static int s = -1;
+    if (s < 0)
+        s = getenv("RB3_STATS_DBG") ? 1 : 0;
+    return s != 0;
+}
+void StompNoteAlloc(void *owner, void *lo, void *hi) {
+    if (!StompDbg() || lo == nullptr)
+        return;
+    StompVertRec &r = sStompRing[(sStompCount++) & 1023];
+    r.owner = owner;
+    r.lo = lo;
+    r.hi = hi;
+    r.freed = false;
+    r.freeSite = nullptr;
+    r.allocSeq = ++sStompSeq;
+    r.freeSeq = 0;
+    if (gRB3StompWatchLo && (char *)hi > gRB3StompWatchLo
+        && (char *)lo < gRB3StompWatchHi)
+        MILO_LOG("RB3 STOMP_WATCH: vert alloc vv=%p [%p,%p) INTERSECTS "
+                 "MetaPerformer [%p,%p)\n",
+                 owner, lo, hi, gRB3StompWatchLo, gRB3StompWatchHi);
+}
+void StompNoteFree(void *lo, const char *site) {
+    if (!StompDbg() || lo == nullptr)
+        return;
+    int n = sStompCount < 1024 ? sStompCount : 1024;
+    for (int i = 0; i < n; i++)
+        if (sStompRing[i].lo == lo && !sStompRing[i].freed) {
+            sStompRing[i].freed = true;
+            sStompRing[i].freeSite = site;
+            sStompRing[i].freeSeq = ++sStompSeq;
+        }
+}
+const char *StompVVName(void *vv) {
+    std::map<void *, RndMesh *>::iterator it = StompVVOwners().find(vv);
+    if (it != StompVVOwners().end()) {
+        const char *n = it->second->Name();
+        return (n && n[0]) ? n : "(unnamed mesh)";
+    }
+    std::map<void *, std::string>::iterator lt = StompVVLabels().find(vv);
+    if (lt != StompVVLabels().end())
+        return lt->second.c_str();
+    return "(unknown VertVector)";
+}
+}
+void RB3StompRegisterMeshVV(void *vv, RndMesh *mesh) {
+    if (StompDbg())
+        StompVVOwners()[vv] = mesh;
+}
+void RB3StompUnregisterMeshVV(void *vv) {
+    if (!StompDbg())
+        return;
+    std::map<void *, RndMesh *>::iterator it = StompVVOwners().find(vv);
+    if (it != StompVVOwners().end()) {
+        const char *n = it->second->Name();
+        StompVVLabels()[vv] =
+            std::string("DELETED mesh '") + ((n && n[0]) ? n : "?") + "'";
+        StompVVOwners().erase(it);
+    }
+}
+// Non-RndMesh embedders (GemRepTemplate::mTailVerts/mCapVerts) label here.
+void RB3StompLabelVV(void *vv, const char *label) {
+    if (StompDbg())
+        StompVVLabels()[vv] = label;
+}
+// Called by the MetaPerformer ctor once its address range is known: report any
+// recorded vert buffer overlapping it (freed => UAF write suspect; live =>
+// allocator handed out overlapping blocks).
+void RB3StompScanVertAllocs() {
+    if (!StompDbg())
+        return;
+    int n = sStompCount < 1024 ? sStompCount : 1024;
+    int hits = 0;
+    for (int i = 0; i < n; i++) {
+        StompVertRec &r = sStompRing[i];
+        if ((char *)r.hi > gRB3StompWatchLo && (char *)r.lo < gRB3StompWatchHi) {
+            hits++;
+            MILO_LOG("RB3 STOMP_WATCH: prior vert alloc vv=%p mesh='%s' [%p,%p) "
+                     "overlaps MetaPerformer\n",
+                     r.owner, StompVVName(r.owner), r.lo, r.hi);
+            MILO_LOG("RB3 STOMP_WATCH:   ... freed=%d site=%s allocSeq=%d "
+                     "freeSeq=%d\n",
+                     (int)r.freed, r.freeSite ? r.freeSite : "-", r.allocSeq,
+                     r.freeSeq);
+        }
+    }
+    MILO_LOG("RB3 STOMP_WATCH: scanned %d vert allocs (total %d), %d overlap, "
+             "watch=[%p,%p)\n",
+             n, sStompCount, hits, gRB3StompWatchLo, gRB3StompWatchHi);
+}
+#define RB3_STOMP_NOTE_ALLOC(vv, lo, hi) StompNoteAlloc(vv, lo, hi)
+#define RB3_STOMP_NOTE_FREE(lo) StompNoteFree(lo, __FUNCTION__)
+#else
+#define RB3_STOMP_NOTE_ALLOC(vv, lo, hi)
+#define RB3_STOMP_NOTE_FREE(lo)
+#endif
+
 void RndMesh::VertVector::resize(int n, bool b) {
     unka = b;
     if (mCapacity) {
         MILO_ASSERT(n <= mCapacity, 0x26A);
         mNumVerts = n;
     } else if (n == 0) {
+        RB3_STOMP_NOTE_FREE(mVerts);
         delete[] mVerts;
         mVerts = 0;
         mNumVerts = 0;
@@ -375,6 +518,7 @@ void RndMesh::VertVector::resize(int n, bool b) {
             MemDoTempAllocations m(true, false);
             mVerts = new Vert[n];
         }
+        RB3_STOMP_NOTE_ALLOC(this, mVerts, mVerts + n);
         mNumVerts = n;
 
         Vert *newit = mVerts;
@@ -382,6 +526,7 @@ void RndMesh::VertVector::resize(int n, bool b) {
             *newit++ = *oldit++;
         }
 
+        RB3_STOMP_NOTE_FREE(oldverts);
         delete[] oldverts;
     }
 }
@@ -406,9 +551,11 @@ void RndMesh::VertVector::realloc_perm() {
         MemDoTempAllocations m(false, false);
         Vert *oldverts = mVerts;
         mVerts = new Vert[mNumVerts];
+        RB3_STOMP_NOTE_ALLOC(this, mVerts, mVerts + mNumVerts);
         for (int i = 0; i < mNumVerts; i++) {
             mVerts[i] = oldverts[i];
         }
+        RB3_STOMP_NOTE_FREE(oldverts);
         delete[] oldverts;
         unka = 0;
         mCapacity = 0;
@@ -420,6 +567,7 @@ RndMesh::VertVector &RndMesh::VertVector::operator=(const RndMesh::VertVector &c
     MILO_ASSERT(c.mCapacity == 0, 0x2E1);
     if (c.mNumVerts != mNumVerts) {
         mNumVerts = Max(c.mNumVerts, 0);
+        RB3_STOMP_NOTE_FREE(mVerts);
         delete[] mVerts;
         mVerts = nullptr;
         if (mNumVerts != 0) {
@@ -427,6 +575,7 @@ RndMesh::VertVector &RndMesh::VertVector::operator=(const RndMesh::VertVector &c
             unka = 1;
             mVerts = new Vert[mNumVerts];
         }
+        RB3_STOMP_NOTE_ALLOC(this, mVerts, mVerts + mNumVerts);
     }
     if (mVerts) {
         Vert *myVerts = mVerts;

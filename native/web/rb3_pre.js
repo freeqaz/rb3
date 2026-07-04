@@ -142,7 +142,7 @@
                 // milo-native-engine Rnd_Wgpu_RB3.cpp) so visual bugs can be
                 // probed in-browser without a rebuild. Anything else (PATH,
                 // HOME, ...) is still rejected.
-                var dbgProbes = /^(SKIN_PROBE|SHARD_CATCH|SKIN_CLAMP_PROBE|GEM_VTX|SLOT_PROBE|CAM_DBG|XBONE|XBONE_TRACK|BAND_ANIM_PROBE|REBIND_DRAW_SKINPOS|REBIND_DRAW_FLING)$/;
+                var dbgProbes = /^(SKIN_PROBE|SHARD_CATCH|SKIN_CLAMP_PROBE|GEM_VTX|SLOT_PROBE|CAM_DBG|XBONE|XBONE_TRACK|BAND_ANIM_PROBE|REBIND_DRAW_SKINPOS|REBIND_DRAW_FLING|ASAN_OPTIONS|UBSAN_OPTIONS)$/;
                 if (!/^RB3_[A-Z0-9_]+$/.test(name) && !dbgProbes.test(name)) {
                     console.warn('[rb3-pre] ignoring non-RB3 env param: ' + name);
                     return;

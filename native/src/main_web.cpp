@@ -494,6 +494,30 @@ static void WebSplashAdvanceHook() {
         RB3GameInputInjectVerb("confirm");
     }
 }
+
+// Generic JS->verb bridge: a harness (Playwright probe, dev console) pushes
+// verb strings onto window._rb3VerbQueue and this drains one per frame into
+// the SAME thread-safe injected-verb queue the splash hook / native HTTP
+// /api/input use ("msg:game:jump:600000", "nofail", "confirm", ...). This is
+// the web stand-in for the native HTTP debug server's /api/input — without it
+// song-end/restart scenarios aren't scriptable on web at all.
+static void WebVerbQueueHook() {
+    char *verb = (char *)EM_ASM_PTR({
+        var q = window._rb3VerbQueue;
+        if (!q || !q.length)
+            return 0;
+        var v = String(q.shift());
+        var len = lengthBytesUTF8(v) + 1;
+        var buf = _malloc(len);
+        stringToUTF8(v, buf, len);
+        return buf;
+    });
+    if (!verb)
+        return;
+    printf("RB3 Web verb bridge: inject '%s'\n", verb);
+    RB3GameInputInjectVerb(verb);
+    free(verb);
+}
 #endif  // HX_WEB
 
 // ============================================================================
@@ -693,7 +717,29 @@ static void BootMark(const char *phase) {
     RB3RecordBootMark(phase);
 }
 
+#ifdef RB3_WEB_ASAN_BUILD
+// ASan runtime options for the RB3_WEB_ASAN diagnosis build. ENV-based
+// ASAN_OPTIONS can't work on web (ASan initializes inside __wasm_call_ctors,
+// long before Module.ENV is applied), so bake the defaults in:
+//  - halt_on_error=0: stream every report; don't abort on the first.
+//  - detect_odr_violation=0: Symbols*.cpp legitimately re-defines identically
+//    named symbol globals across TUs; that report would otherwise kill boot.
+extern "C" const char *__asan_default_options() {
+    return "halt_on_error=0:detect_odr_violation=0";
+}
+#endif
+
 static void mainLoop() {
+#ifdef HX_WEB
+    // Song-end wedge diagnosis: also poll DURING boot ticks (negative pseudo
+    // frame) so a boot-time stomp of MetaPerformer::mPendingData is timestamped
+    // before the first RUNNING frame. No-op unless RB3_STATS_DBG=1.
+    {
+        extern void RB3MetaPerfIntegrityCheck(int frame);
+        static int sBootTick = 0;
+        RB3MetaPerfIntegrityCheck(-(++sBootTick));
+    }
+#endif
     switch (sBootState) {
     case BOOT_INIT: {
         ApplyUrlLoaderEnv();  // URL-param loader/perf knobs (before first Poll)
@@ -952,6 +998,14 @@ static void mainLoop() {
         // injected last frame, edge-detect splash Start/Confirm and enqueue the
         // verb for the NEXT frame's poll. Web-only; no-op off splash_screen.
         WebSplashAdvanceHook();
+        // JS->verb bridge (window._rb3VerbQueue) — one verb per frame, drained
+        // by the NEXT frame's RB3GameInputPoll like every other injected verb.
+        WebVerbQueueHook();
+        // Song-end wedge diagnosis watch (no-op unless RB3_STATS_DBG=1).
+        {
+            extern void RB3MetaPerfIntegrityCheck(int frame);
+            RB3MetaPerfIntegrityCheck(sFrameCount);
+        }
 #endif
         // A2 (T9): on a screen change, async-prefetch the next screen's
         // dependency bundle into MEMFS during the dwell. No-op when disabled
