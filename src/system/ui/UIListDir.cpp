@@ -91,7 +91,7 @@ void UIListDir::BuildDrawState(
     drawState.mHighlightDisplay = selectedDisplay;
 
     if (state.IsScrolling()) {
-        if (state.Speed() > mScrollHighlightChange) {
+        if (state.StepPercent() > mScrollHighlightChange) {
             selected += direction;
             drawState.mHighlightDisplay += direction;
         }

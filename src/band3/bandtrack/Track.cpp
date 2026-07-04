@@ -59,10 +59,12 @@ void Track::Poll(float f) {
         if (TheGame->mProperties.mEnableStreak && curstreak != mLastStreakCount) {
             BandTrack *bandtrack = GetBandTrack();
             if (!bandtrack) {
+                const HxGuid *guid = &mTrackConfig.GetBandUser()->mUserGuid;
+                const BandUser *user = mTrackConfig.GetBandUser();
                 MILO_FAIL(
                     "no track dir for track %s (%s)!",
-                    mTrackConfig.GetBandUser()->UserName(),
-                    mTrackConfig.GetBandUser()->mUserGuid.ToString()
+                    user->UserName(),
+                    guid->ToString()
                 );
             }
             if (!TheGamePanel->IsGameOver()) {

@@ -50,7 +50,7 @@ typedef struct _CNTHandleDVD {
     u8 reserved[24];
 } CNTHandleDVD;
 
-typedef struct _CNTHandle {
+typedef struct CNTHandle {
     union {
         CNTHandleNAND nand;
         CNTHandleDVD dvd;

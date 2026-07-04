@@ -64,6 +64,8 @@ static s32 NWC24iCloseResourceManager_(const char* funcName, s32 fd);
 static s32 NWC24iCloseResourceManagerAsync_(const char* funcName, s32 fd, void* callbackArg);
 static s32 CheckCallingStatus(const char* funcName);
 
+#pragma push
+#pragma dont_inline on
 DECL_WEAK NWC24Err NWC24iPrepareShutdown(){
     s32 result;
     
@@ -82,10 +84,13 @@ DECL_WEAK NWC24Err NWC24iPrepareShutdown(){
     }
     return result;
 }
+#pragma pop
 
 static s32 GetRTC(s32* destPtr);
 static s32 NWC24iSetRtcCounter_(u32 rtc, u32 param_2);
 
+#pragma push
+#pragma dont_inline on
 DECL_WEAK NWC24Err NWC24iSynchronizeRtcCounter(BOOL val){
     s32 result;
     s32 rtc;
@@ -98,7 +103,10 @@ DECL_WEAK NWC24Err NWC24iSynchronizeRtcCounter(BOOL val){
         return NWC24iSetRtcCounter_(rtc, val != FALSE);
     }
 }
+#pragma pop
 
+#pragma push
+#pragma dont_inline on
 DECL_WEAK s32 NWC24SuspendScheduler(){
     int iVar1;
     int iVar2;
@@ -121,6 +129,7 @@ DECL_WEAK s32 NWC24SuspendScheduler(){
     }
     return iVar1;
 }
+#pragma pop
 
 //unused
 DECL_WEAK s32 NWC24ResumeScheduler(){

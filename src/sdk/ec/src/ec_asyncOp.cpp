@@ -46,6 +46,22 @@ struct ECNandUsage {
     unsigned long f30;
 };
 
+// ECParentalControlInfo struct - from getParentalControlInfo asm analysis
+// (0x1C-byte region at env+0x204, cleared with memset(...,0,0x1C) on failure)
+struct ECParentalControlInfo {
+    unsigned long f00;
+    unsigned long f04;
+    unsigned long f08;
+    unsigned long f0C;
+    unsigned long f10;
+    unsigned long f14;
+    unsigned long f18;
+};
+
+struct ECSerialNumber {
+    char value[36];
+};
+
 // Forward declarations for functions in other ec modules
 namespace ec {
     // from ec_file_bw
@@ -54,12 +70,12 @@ namespace ec {
     ECResult checkDeviceKeyPair();
 
     // from ec_sysconfig_bw
-    ECResult getSysParentalControlInfo(void *out, bool *enabled);
+    ECResult getSysParentalControlInfo(ECParentalControlInfo *out, bool *enabled);
     ECResult getSysNetContentRestrictions(unsigned long *out);
     const char *getSysCountry();
     const char *getSysRegion();
     const char *getSysLanguage();
-    ECResult getSysSerialNumber(void *out);
+    ECResult getSysSerialNumber(ECSerialNumber *out);
     ECResult getSysDeviceType(unsigned long *out);
     ECResult getSysWifiMac(unsigned char *out);
     ECResult getSysFreeChannelAppCount(unsigned long *out);
@@ -76,10 +92,6 @@ namespace ec {
     ECString tostring(T value);
 }
 
-struct ECSerialNumber {
-    char value[36];
-};
-
 // Unnamed namespace - file-local static variables
 namespace {
     _SHRThread asyncOpThread__24_unnamed_ec_asyncOp_cpp_;
@@ -92,7 +104,7 @@ namespace {
 
     // File-local helper: parse one name=\0value\0 record from config data
     // Returns pointer to next record, or NULL if none
-    const char *getNextNameValue__24_unnamed_ec_asyncOp_cpp_(
+    const char *getNextNameValue(
         const char *data, unsigned long *remaining,
         const char **outName, const char **outValue,
         unsigned long *outValueLen)
@@ -521,14 +533,14 @@ ECResult ECAsyncOpEnv::getConfig() {
     unsigned long valueLen;
     const char *data = cfgStr.data();
     unsigned long remaining = cfgStr.size();
-    const char *next = getNextNameValue__24_unnamed_ec_asyncOp_cpp_(
+    const char *next = getNextNameValue(
         data, &remaining, &name, &value, &valueLen);
     if (next == 0 || strcmp(name, "cfgVersion") != 0 ||
         valueLen != 2 || memcmp(value, "0", valueLen) != 0) {
         return ECResult_ECFail;
     }
     ((std::__vec_deleter<ec::ECNamValStr, ECAllocator<ec::ECNamValStr> > *)&namedValues)->clear();
-    while ((next = getNextNameValue__24_unnamed_ec_asyncOp_cpp_(
+    while ((next = getNextNameValue(
                 next, &remaining, &name, &value, 0)) != 0) {
         setNamedValue(name, value);
     }
@@ -600,7 +612,7 @@ ECResult ECAsyncOpEnv::checkParentalControlPassword(const char *pin, long *resul
 
 ECResult ECAsyncOpEnv::getParentalControlInfo() {
     int rv = ec::getSysParentalControlInfo(
-        (void *)(((char *)this) + 0x204),
+        (ECParentalControlInfo *)(((char *)this) + 0x204),
         (bool *)(((char *)this) + 0x220)
     );
     if (rv == 0) {
@@ -668,9 +680,9 @@ ECResult ECAsyncOpEnv::getSerialNumber() {
     ECResult rv = (ECResult)ec::getSysSerialNumber(&sn);
     if (rv == 0) {
         ENV_STR(this, 0x230) = sn.value;
-        return ECResult_Success;
+        return rv;
     }
-    ECString snStr = ECString("fakeSN") + ENV_STR(this, 0x1B0);
+    ECString snStr = "fakeSN" + ENV_STR(this, 0x1B0);
     ENV_STR(this, 0x230) = snStr;
     return ECResult_NotFound;
 }
@@ -888,8 +900,10 @@ ECAsyncOp::~ECAsyncOp() {
 // Out-of-line ECString member functions needed by ec_asyncOp
 int ECString::compare(const char *str) const {
     unsigned long str_len = strlen(str);
-    const char *self_ptr = data();
     unsigned long self_len = size();
+    const char *self_ptr;
+    unsigned long dummy_len;
+    pointer_size(self_ptr, dummy_len);
     unsigned long cmp_len = (self_len < str_len) ? self_len : str_len;
     int result = memcmp(self_ptr, str, cmp_len);
     if (result != 0) return result;

@@ -25,7 +25,7 @@ public:
 };
 
 void CM_CNTSDCacheClearRSO();
-int CM_CNTSDCachePushDeleteContentRSO(unsigned long, unsigned long long, unsigned short, ...);
+int CM_CNTSDCachePushDeleteContentRSO(unsigned long, unsigned long long, unsigned long, ...);
 int DebugSdBackup(unsigned long long, unsigned short);
 
 extern "C" {

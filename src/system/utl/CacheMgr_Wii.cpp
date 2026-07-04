@@ -7,7 +7,7 @@
 #include "utl/MakeString.h"
 #include "utl/Symbols2.h"
 
-extern "C" int CM_CNTSDNANDCheckRSO(unsigned long, unsigned long, unsigned long *);
+int CM_CNTSDNANDCheckRSO(unsigned long, unsigned long, unsigned long *);
 
 extern const char *kVFSysFileName;
 extern const char *kCacheMgrVFDir;
@@ -159,10 +159,6 @@ bool CacheMgrWii::DeleteAsync(CacheID *) {
     MILO_ASSERT(false, 296);
     return false;
 }
-__declspec(noinline) const char * _outline_c_str(String* _obj) {
-    return _obj->c_str();
-}
-
 void CacheMgrWii::PollSearch() {
     SetOp((CacheMgr::OpType)0);
     Cache *localCache = NULL;
@@ -177,9 +173,10 @@ void CacheMgrWii::PollSearch() {
     }
     auto _tmp0 = IsDone();
     MILO_ASSERT(_tmp0, 0x13e);
-    String vfDir = String(kCacheMgrVFDir) + "/" + mVar1;
+    String vfDir(kCacheMgrVFDir);
+    vfDir = vfDir + "/" + mVar1;
     char foundName[0x80];
-    int searchResult = VFFileSearchFirst(foundName, _outline_c_str(&vfDir), 0x7f);
+    int searchResult = VFFileSearchFirst(foundName, vfDir.c_str(), 0x7f);
     if (UnmountAsync(&localCache, NULL)) {
         PollUnmount();
     }

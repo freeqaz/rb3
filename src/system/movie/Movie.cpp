@@ -421,7 +421,7 @@ void Movie::Impl::MovieLoader::OpenFile() {
         this->mFile->ReadAsync(mBuffer, 0x20);
         mOpenState = &MovieLoader::LoadFile;
     } else {
-        MILO_WARN("Could not load: %s", (char *)FileLocalize(Loader::mFile.c_str(), NULL));
+        MILO_WARN("Could not load: %s", FileLocalize(Loader::mFile.c_str(), NULL));
         mOpenState = &MovieLoader::DoneLoading;
     }
 }

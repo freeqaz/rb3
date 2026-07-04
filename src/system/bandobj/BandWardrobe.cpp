@@ -658,7 +658,7 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
         Symbol inst = bchar->mInstrumentType;
         BandCharDesc::OutfitPiece *piece = bchar->mInstruments.GetPiece(inst);
         if (piece->mName.mStr == gNullStr) {
-            MILO_WARN(
+            MILO_LOG(
                 "NOTIFY: %s (%s) has no %s\n",
                 PathName(bchar),
                 mVenueNames.names[i],

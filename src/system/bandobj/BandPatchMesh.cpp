@@ -505,7 +505,7 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
     int reject = (allOut != 0) ? 1 : 0;
     if (reject == 0) {
         MeshVert temp;
-        temp.SetVert(verts[0]->mVert);
+        temp.SetVert(verts[0], verts[0]->mVert);
         reject = 0;
         Vector2 v(temp.unk1c);
         int _tmp0 = temp.AddUV(verts[1], unk34, &v);

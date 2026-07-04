@@ -207,11 +207,6 @@ void WorldCrowd::Sort3DCharList() {
         it->m3DCharsCreated = it->m3DChars;
     }
 }
-__declspec(noinline) void _outline_InvalidateProxies(RndMultiMesh* _obj) {
-    return _obj->InvalidateProxies();
-}
-
-
 // matches in retail
 void WorldCrowd::Set3DCharAll() {
     START_AUTO_TIMER("crowd_set3d");
@@ -228,7 +223,7 @@ void WorldCrowd::Set3DCharAll() {
                 it->m3DChars.push_back(char3D);
             }
             multiMesh->mInstances.clear();
-            _outline_InvalidateProxies(multiMesh);
+            multiMesh->InvalidateProxies();
         }
     }
     Sort3DCharList();

@@ -366,15 +366,10 @@ void Heap::Init(const char *name, int heapNum, int *start, int sizeWords,
         }
     }
 }
-__declspec(noinline) const char * _outline_Str(FormatString* _obj) {
-    return _obj->Str();
-}
-
-
 int *Heap::SplitFromBack(int n) {
     if (mSizeWords != ((FreeBlock *)mStart)->mSizeWords) {
         FormatString fs("can't split heap if it is in use.");
-        TheDebug.Fail(_outline_Str(&fs));
+        TheDebug.Fail(fs.Str());
     }
     int newSize = mSizeWords - n;
     if (n == 0 || newSize < 8) {

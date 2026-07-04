@@ -203,7 +203,7 @@ void OSShutdownSystem(void) {
     }
 }
 
-void OSReturnToMenu(void) {
+static void __OSReturnToMenu(void) {
     OSStateFlags stateFlags;
 
     __OSStopPlayRecord();
@@ -224,9 +224,13 @@ void OSReturnToMenu(void) {
     OSDisableScheduler();
     __VISetRGBModeImm();
     __OSHotReset();
+}
+
+void OSReturnToMenu(void) {
+    __OSReturnToMenu();
 
     // clang-format off
-#line 843
+#line 895
     OSError("OSReturnToMenu(): Falied to boot system menu.\n");
     // clang-format on
 }

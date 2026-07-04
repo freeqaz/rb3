@@ -505,11 +505,6 @@ void AccomplishmentPanel::BuildSetList() {
     } else
         FillSetlistWithAccomplishmentSongs(selacc, 0);
 }
-__declspec(noinline) const AccomplishmentProgress & _outline_GetAccomplishmentProgress(BandProfile* _obj) {
-    return _obj->GetAccomplishmentProgress();
-}
-
-
 void AccomplishmentPanel::FillSetlistWithAccomplishmentSongs(Symbol s, int i) {
     MetaPerformer *pPerformer = MetaPerformer::Current();
     MILO_ASSERT(pPerformer, 0x586);
@@ -517,7 +512,7 @@ void AccomplishmentPanel::FillSetlistWithAccomplishmentSongs(Symbol s, int i) {
     MILO_ASSERT(pAccomplishment, 0x589);
     BandProfile *pProfile = TheCampaign->GetProfile();
     MILO_ASSERT(pProfile, 0x58C);
-    const AccomplishmentProgress &prog = _outline_GetAccomplishmentProgress(pProfile);
+    const AccomplishmentProgress &prog = pProfile->GetAccomplishmentProgress();
     bool accomplished = prog.IsAccomplished(s);
     std::vector<Symbol> vSongs;
     std::vector<Symbol> v40;
@@ -793,7 +788,7 @@ bool AccomplishmentPanel::HasCorrectPlayerCount() {
         return false;
     if (pAccomplishment->GetRequiresUnisonAbility()) {
         std::vector<BandUser *> users;
-        TheBandUserMgr->GetParticipatingBandUsers(users);
+        TheBandUserMgr->GetParticipatingBandUsersInSession(users);
         int newnum = TheBandUserMgr->GetNumParticipants();
         for (std::vector<BandUser *>::iterator it = users.begin(); it != users.end();
              ++it) {

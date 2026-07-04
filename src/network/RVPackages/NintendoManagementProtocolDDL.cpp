@@ -19,40 +19,6 @@ namespace Quazal {
             StringListNode *prev;
             String value;
         };
-
-        // Match retail asm: push_back via raw allocator (avoids STLport placement-new
-        // on Quazal::String, which hides global operator new via RootObject inheritance).
-        void AppendStringToList(qList<String> *pList, const String &src) {
-            MemoryManager *mgr = MemoryManager::GetDefaultMemoryManager();
-            StringListNode *node = (StringListNode *)MemoryManager::Allocate(
-                mgr, sizeof(StringListNode), __FILE__, 0, MemoryManager::_InstType7
-            );
-            // Copy-construct the String value in place (skip placement-new).
-            node->value.m_szContent = NULL;
-            node->value = src;
-            // Splice at tail. The qList's head node sentinel has prev = tail.
-            StringListNode *head = (StringListNode *)pList;
-            StringListNode *tail = head->prev;
-            node->next = head;
-            node->prev = tail;
-            tail->next = node;
-            head->prev = node;
-        }
-
-        void ClearStringList(qList<String> *pList) {
-            StringListNode *head = (StringListNode *)pList;
-            StringListNode *cur = head->next;
-            while (cur != head) {
-                StringListNode *nxt = cur->next;
-                cur->value.~String();
-                MemoryManager::Free(
-                    MemoryManager::GetDefaultMemoryManager(), cur, MemoryManager::_InstType7
-                );
-                cur = nxt;
-            }
-            head->next = head;
-            head->prev = head;
-        }
     }
 
     bool NintendoManagementProtocolClient::CallGetConsoleUsernames(
@@ -87,13 +53,38 @@ namespace Quazal {
                 qList<String> *pReturn =
                     (qList<String> *)pContext->GetReturnValuePtr(0);
                 if (pReturn) {
-                    ClearStringList(pReturn);
+                    // Clear the existing list, matching retail's inlined clear().
+                    {
+                        StringListNode *head = (StringListNode *)pReturn;
+                        StringListNode *cur = head->next;
+                        while (cur != head) {
+                            StringListNode *nxt = cur->next;
+                            cur->value.~String();
+                            MemoryManager::Free(
+                                MemoryManager::GetDefaultMemoryManager(), cur, MemoryManager::_InstType7
+                            );
+                            cur = nxt;
+                        }
+                        head->next = head;
+                        head->prev = head;
+                    }
                     unsigned int uiCount = 0;
                     pMessage->Extract((unsigned char *)&uiCount, 4, 1);
                     for (unsigned int i = 0; i < uiCount; i++) {
                         String s;
                         _Type_string::Extract(pMessage, &s);
-                        AppendStringToList(pReturn, s);
+                        // Append, matching retail's inlined push_back().
+                        MemoryManager *mgr = MemoryManager::GetDefaultMemoryManager();
+                        StringListNode *node = (StringListNode *)MemoryManager::Allocate(
+                            mgr, sizeof(StringListNode), __FILE__, 0, MemoryManager::_InstType7
+                        );
+                        ::new (&node->value) String(s);
+                        StringListNode *head = (StringListNode *)pReturn;
+                        StringListNode *tail = head->prev;
+                        node->next = head;
+                        node->prev = tail;
+                        tail->next = node;
+                        head->prev = node;
                     }
                 } else {
                     qList<String> oTmp;
@@ -102,9 +93,32 @@ namespace Quazal {
                     for (unsigned int i = 0; i < uiCount; i++) {
                         String s;
                         _Type_string::Extract(pMessage, &s);
-                        AppendStringToList(&oTmp, s);
+                        MemoryManager *mgr = MemoryManager::GetDefaultMemoryManager();
+                        StringListNode *node = (StringListNode *)MemoryManager::Allocate(
+                            mgr, sizeof(StringListNode), __FILE__, 0, MemoryManager::_InstType7
+                        );
+                        ::new (&node->value) String(s);
+                        StringListNode *head = (StringListNode *)&oTmp;
+                        StringListNode *tail = head->prev;
+                        node->next = head;
+                        node->prev = tail;
+                        tail->next = node;
+                        head->prev = node;
                     }
-                    ClearStringList(&oTmp);
+                    {
+                        StringListNode *head = (StringListNode *)&oTmp;
+                        StringListNode *cur = head->next;
+                        while (cur != head) {
+                            StringListNode *nxt = cur->next;
+                            cur->value.~String();
+                            MemoryManager::Free(
+                                MemoryManager::GetDefaultMemoryManager(), cur, MemoryManager::_InstType7
+                            );
+                            cur = nxt;
+                        }
+                        head->next = head;
+                        head->prev = head;
+                    }
                 }
                 break;
             }

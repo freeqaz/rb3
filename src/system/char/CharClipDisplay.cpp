@@ -304,9 +304,9 @@ void CharClipDisplay::DrawCursor() {
     TheRnd->DrawRect(rect, yellow, NULL, NULL, NULL);
     const char *text;
     if (mBlendFrac < 1.0f) {
-        text = MakeString("%.1f", mBeat);
-    } else {
         text = MakeString("%.1f (%.2f)", mBeat, mBlendFrac);
+    } else {
+        text = MakeString("%.1f", mBeat);
     }
     DrawBeatString(text, mBeat, yellow);
 }

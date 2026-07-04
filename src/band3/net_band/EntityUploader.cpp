@@ -221,22 +221,6 @@ int EntityUploader::GetNumUpdates(BandProfile *profile) {
     }
     return num;
 }
-__declspec(noinline) int _outline_NumChars(BandProfile* _obj) {
-    return _obj->NumChars();
-}
-__declspec(noinline) TourBand * _outline_GetTourBand(BandProfile* _obj) {
-    return _obj->GetTourBand();
-}
-__declspec(noinline) String _outline_GetBandName(BandProfile* _obj) {
-    return _obj->GetBandName();
-}
-__declspec(noinline) const std::vector<LocalSavedSetlist *> & _outline_GetSavedSetlists(BandProfile* _obj) {
-    return _obj->GetSavedSetlists();
-}
-
-
-
-
 
 int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profile) {
     int opCount = GetNumUpdates(profile);
@@ -246,7 +230,7 @@ int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profi
         data = new EntityData *[opCount];
         int curOp = 0;
         mNumUploadOps = opCount;
-        for (int i = 0; i < _outline_NumChars(profile); i++) {
+        for (int i = 0; i < profile->NumChars(); i++) {
             TourCharLocal *cur = profile->CharAt(i);
             if (cur->IsUploadNeeded()) {
                 int id = GenerateOpID();
@@ -261,20 +245,20 @@ int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profi
                 cur->UploadAttempted();
             }
         }
-        TourBand *band = _outline_GetTourBand(profile);
+        TourBand *band = profile->GetTourBand();
         if (band->IsUploadNeeded()) {
             int id = GenerateOpID();
             data[curOp] = new EntityData();
             data[curOp]->mOpID = id;
             data[curOp]->mOpType = 3;
-            data[curOp]->mString = _outline_GetBandName(profile);
+            data[curOp]->mString = profile->GetBandName();
             data[curOp]->mRetCode = 0;
             data[curOp]->mOpFinished = false;
             data[curOp]->mSavableObject = band;
             curOp++;
             band->UploadAttempted();
         }
-        const std::vector<LocalSavedSetlist *> &setlists = _outline_GetSavedSetlists(profile);
+        const std::vector<LocalSavedSetlist *> &setlists = profile->GetSavedSetlists();
         FOREACH (it, setlists) {
             LocalSavedSetlist *cur = *it;
             if (cur->NeedsUpload()) {

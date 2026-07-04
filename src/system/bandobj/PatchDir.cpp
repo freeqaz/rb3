@@ -821,14 +821,10 @@ void PatchDir::Poll() {
         }
     }
 }
-__declspec(noinline) void _outline_MakeLoader(PatchSticker* _obj) {
-    _obj->MakeLoader();
-}
-
 void PatchDir::LoadStickerTex(PatchSticker *sticker, bool push) {
     if (sticker->mTex || sticker->mLoader)
         return;
-    _outline_MakeLoader(sticker);
+    sticker->MakeLoader();
     MILO_ASSERT(sticker->GetLoader(), 0x4EE);
     if (push)
         mStickersLoading.push_back(sticker);

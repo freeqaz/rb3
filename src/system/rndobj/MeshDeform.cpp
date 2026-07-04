@@ -322,7 +322,7 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         if (vertIdx == meshNumVerts) {
             TheDebug.Notify(MakeString(
                 "%s cannot reskin %s, the vert counts differ mesh:%d me:%d",
-                PathName(this), PathName(mMesh.Ptr()), meshNumVerts,
+                PathName(this), mMesh->Name(), meshNumVerts,
                 mVerts.NumVerts()));
             return;
         }

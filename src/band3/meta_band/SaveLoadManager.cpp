@@ -236,7 +236,7 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x15);
                 break;
                 default:
-                TheDebug << MakeString<int>("SaveLoadManager - CacheMgr search returned error %d\n", (int)result);
+                TheDebug.Notify(MakeString<int>("SaveLoadManager - CacheMgr search returned error %d\n", (int)result));
                 SetState((State)0x25);
                 break;
             }
@@ -454,7 +454,7 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x2f);
                 break;
                 default:
-                TheDebug.Fail(MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result));
+                TheDebug.Notify(MakeString<int, int>("SaveLoadManager - unknown error %d during state %d.\n", (int)result, (int)_ref0));
                 SetState((State)0x37);
                 break;
             }
@@ -478,7 +478,7 @@ void SaveLoadManager::Poll() {
                 break;
                 default:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
-                TheDebug << MakeString<int, int>("SaveLoadManager - unknown error %d during state %d.\n", (int)result, (int)_ref0);
+                TheDebug.Notify(MakeString<int, int>("SaveLoadManager - unknown error %d during state %d.\n", (int)result, (int)_ref0));
                 SetState((State)0x37);
                 break;
             }
@@ -517,7 +517,7 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x3a);
                 break;
                 default:
-                TheDebug << MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result);
+                TheDebug.Notify(MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result));
                 SetState((State)0x40);
                 break;
             }
@@ -1125,7 +1125,7 @@ void SaveLoadManager::SetState(State newState) {
         if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
             if (TheCacheMgr->GetLastResult() != kCache_ErrorStorageDeviceMissing) {
 #pragma dont_inline on
-                TheDebug.Notify(MakeString<int>("UnmountAsync failed with error %d\n", (int)TheCacheMgr->GetLastResult()));
+                TheDebug.Notify(MakeString<CacheResult>("UnmountAsync failed with error %d\n", TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
             }
         }
@@ -1790,15 +1790,10 @@ void SaveLoadManager::ManualSave(LocalBandUser *user) {
     TheMemcardMgr.AddSink(this);
     SetState(kS_ManualLoadInit);
 }
-__declspec(noinline) const char * _outline_Str(FormatString* _obj) {
-    return _obj->Str();
-}
-
-
 void SaveLoadManager::PrintoutSaveSizeInfo() {
     FixedSizeSaveable::EnablePrintouts(true);
     FormatString fmt("SAVESIZE\n");
-    TheDebug << _outline_Str(&fmt);
+    TheDebug << fmt.Str();
     unsigned int profileSize = BandProfile::SaveSize(0x97);
     int symbolSize = FixedSizeSaveableStream::GetSymbolTableSize(0x97);
     TheDebug << MakeString<int>("Symbol Table Size = %i\n", symbolSize);

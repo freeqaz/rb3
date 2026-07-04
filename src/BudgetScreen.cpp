@@ -1,4 +1,10 @@
+#pragma push
+#pragma inline_depth(255)
+// band aid fix: force inlining of the inherited UIScreen vector<PanelRef>
+// dtor into ~BudgetScreen (-inline noauto exhausts the caller budget here,
+// emitting an out-of-line vector dtor call instead of the inlined loop).
 #include "BudgetScreen.h"
+#pragma pop
 
 #include "system/os/Debug.h"
 #include "system/os/Timer.h"

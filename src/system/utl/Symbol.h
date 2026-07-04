@@ -1,5 +1,6 @@
 #pragma once
 #include <string.h>
+#include "utl/MemMgr.h"
 
 #define STR_TO_SYM(str) *reinterpret_cast<Symbol *>(const_cast<char **>(&str))
 
@@ -17,6 +18,8 @@ public:
 
     Symbol() : mStr(gNullStr) {}
     Symbol(const char *); // ctor pulled from gdrb
+
+    void *operator new[](size_t t) { return _MemAlloc(t, 0); }
 
     // used for maps
     bool operator<(const Symbol &s) const { return mStr < s.mStr; }

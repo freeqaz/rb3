@@ -28,8 +28,8 @@ bool JoypadTrackWatcherImpl::Swing(int i1, bool b1, bool b2, GemHitFlags flags) 
     KillSustainForSlot(i1);
     float now = mParent->GetNow();
     int unplayedGem = ClosestUnplayedGem(now, i1);
-    mGemList->TimeAtNext(unplayedGem);
-    bool i4 = InSlopWindow(mGemList->TimeAt(unplayedGem), now);
+    mGemList->TimeAt(unplayedGem);
+    bool i4 = InSlopWindow(mGemList->TimeAtNext(unplayedGem), now);
     GameGem &gem5 = mGemList->GetGem(unplayedGem);
     int i6 = mGemList->GetGem(unplayedGem).GetTick();
     unsigned int u13;

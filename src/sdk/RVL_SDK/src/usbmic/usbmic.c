@@ -22,6 +22,11 @@ extern "C" {
     void OSRegisterVersion(const char* str);
 }
 
+/* micOpenParam is a global (non-namespaced) type: the mic*() public API and
+ * the internal Mic_Open() both take it unqualified, so it is declared at
+ * global scope rather than inside namespace usbmic. */
+struct micOpenParam { char _[0x20]; };
+
 namespace usbmic {
 
 /* -------------------------------------------------------------------------
@@ -31,7 +36,6 @@ namespace usbmic {
 /* Forward-declared opaque types */
 struct Mic;
 struct micDesc;
-struct micOpenParam;
 struct DPCContext;
 struct DPCEntry;
 struct IsoTransfer;
@@ -96,7 +100,7 @@ extern s32  Mic_Read(Mic* mic, void* buf, unsigned long* size);
 extern s32  Mic_IncOutstandingRequests(Mic* mic);
 extern s32  Mic_DecOutstandingRequests(Mic* mic);
 extern s32  Mic_SetVolume(Mic* mic, u16 vol);
-extern s32  Mic_SetMute(Mic* mic, BOOL mute);
+extern s32  Mic_SetMute(Mic* mic, bool mute);
 
 /* dpc.c */
 extern void DPC_Initialize(DPCContext* ctx);
@@ -136,9 +140,6 @@ struct micDesc {
     unsigned int   sampRates[5];/* +0x0c */
     unsigned int   _pad[3];     /* +0x20 */
 };
-
-/* micOpenParam placeholder */
-struct micOpenParam { char _[0x20]; };
 
 /* -------------------------------------------------------------------------
  * Library global struct
@@ -293,8 +294,26 @@ void Library_OnGetVolDone(s32 result, void* arg)
         unsigned int step = g_lib.descStep + 1;
         void* buf = g_lib.descBuf;
         g_lib.descStep = step;
-        if (step != 3) {
-            if (step == 4) {
+        switch (step) {
+        case 3:
+            {
+                u16 raw = *(u16*)buf;
+                *(u16*)((char*)mic + 0x6c) =
+                    (u16)(raw >> 8) | (u16)(raw << 8);
+                ret = StartGetMinMaxReq(*(s32*)((char*)mic + 8),
+                                        0x83, 2,
+                                        *(u8*)((char*)mic + 0x62),
+                                        *(u8*)((char*)mic + 0x61),
+                                        *(u8*)((char*)mic + 0x60),
+                                        buf, 2,
+                                        Library_OnGetVolDone, mic);
+                if (ret >= 0) {
+                    failed = FALSE;
+                }
+            }
+            break;
+        case 4:
+            {
                 u16 raw = *(u16*)buf;
                 *(u16*)((char*)mic + 0x6e) =
                     (u16)(raw >> 8) | (u16)(raw << 8);
@@ -306,20 +325,7 @@ void Library_OnGetVolDone(s32 result, void* arg)
                     failed = FALSE;
                 }
             }
-        } else {
-            u16 raw = *(u16*)buf;
-            *(u16*)((char*)mic + 0x6c) =
-                (u16)(raw >> 8) | (u16)(raw << 8);
-            ret = StartGetMinMaxReq(*(s32*)((char*)mic + 8),
-                                    0x83, 2,
-                                    *(u8*)((char*)mic + 0x62),
-                                    *(u8*)((char*)mic + 0x61),
-                                    *(u8*)((char*)mic + 0x60),
-                                    buf, 2,
-                                    Library_OnGetVolDone, mic);
-            if (ret >= 0) {
-                failed = FALSE;
-            }
+            break;
         }
     }
 
@@ -910,7 +916,6 @@ using usbmic::Mic_Read;
 using usbmic::Mic_SetVolume;
 using usbmic::Mic_SetMute;
 using usbmic::micDesc;
-using usbmic::micOpenParam;
 
 extern "C" {
 

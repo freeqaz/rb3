@@ -92,6 +92,7 @@ void RVSessionSearcher::StartSearching(User *user, const SearchSettings &setting
     static int queryID = settings.mQueryID;
     props.clear();
     for (int i = 0; i < settings.NumCustomSettings(); i++) {
+        props.push_back(settings.GetCustomValue(i));
     }
     if (TheNet.GetServer()->IsConnected()) {
         TheNet.GetServer()->GetCustomMatchMakingClient()->CallCustomFind(
