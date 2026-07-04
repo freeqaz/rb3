@@ -477,9 +477,11 @@ RateTransposerFloat::RateTransposerFloat() : RateTransposer()
     setRate(1.0f);
 }
 
+#pragma dont_inline off
+#pragma inline_depth(1)
 RateTransposerFloat::~RateTransposerFloat()
 {
-}   
+}
 #pragma pop
 
 void RateTransposerFloat::resetRegisters()

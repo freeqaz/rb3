@@ -27,6 +27,17 @@ extern "C" {
  * global scope rather than inside namespace usbmic. */
 struct micOpenParam { char _[0x20]; };
 
+/* micDesc is likewise a global (non-namespaced) type: the mic*() public API
+ * and the internal Mic_GetDescription() both take it unqualified, so it is
+ * declared at global scope rather than inside namespace usbmic.
+ * (0x2c bytes, from the standardMic symbol size below.) */
+struct micDesc {
+    unsigned char  header[8];   /* +0x00 */
+    unsigned int   numSampRates;/* +0x08 */
+    unsigned int   sampRates[5];/* +0x0c */
+    unsigned int   _pad[3];     /* +0x20 */
+};
+
 namespace usbmic {
 
 /* -------------------------------------------------------------------------
@@ -35,7 +46,6 @@ namespace usbmic {
 
 /* Forward-declared opaque types */
 struct Mic;
-struct micDesc;
 struct DPCContext;
 struct DPCEntry;
 struct IsoTransfer;
@@ -132,14 +142,6 @@ struct Mic { char _[0x74]; };
 
 /* DPCContext = 0x8c bytes */
 struct DPCContext { char _[0x8c]; };
-
-/* micDesc = 0x2c bytes (from standardMic symbol size) */
-struct micDesc {
-    unsigned char  header[8];   /* +0x00 */
-    unsigned int   numSampRates;/* +0x08 */
-    unsigned int   sampRates[5];/* +0x0c */
-    unsigned int   _pad[3];     /* +0x20 */
-};
 
 /* -------------------------------------------------------------------------
  * Library global struct
@@ -915,7 +917,6 @@ using usbmic::Mic_Close;
 using usbmic::Mic_Read;
 using usbmic::Mic_SetVolume;
 using usbmic::Mic_SetMute;
-using usbmic::micDesc;
 
 extern "C" {
 

@@ -1,4 +1,5 @@
 #include "bandobj/PatchRenderer.h"
+#include "bandobj/PatchDir.h"
 #include "rndobj/Rnd.h"
 #include "utl/Symbols.h"
 
@@ -19,7 +20,7 @@ void PatchRenderer::Init() {
         }
         if (!sTestPatch)
             sTestPatch = Hmx::Object::New<RndDir>();
-        InitResources();
+        PatchLayer::InitResources();
     }
     Register();
 }

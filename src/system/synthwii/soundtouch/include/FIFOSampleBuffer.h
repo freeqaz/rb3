@@ -47,6 +47,7 @@
 #define FIFOSampleBuffer_H
 
 #include "FIFOSamplePipe.h"
+#include "utl/MemMgr.h"
 
 namespace soundtouch
 {
@@ -167,6 +168,8 @@ public:
 
     /// Clears all the samples.
     virtual void clear();
+
+    DELETE_OVERLOAD;
 };
 
 }

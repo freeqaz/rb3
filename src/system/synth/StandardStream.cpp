@@ -841,7 +841,7 @@ void StandardStream::UpdateTime() {
         }
         mTimer.Reset(mTimer.Ms() + drift);
         if (fabsf(drift) > 50.0f && sReportLargeTimerErrors) {
-            MILO_LOG("timer error is large: %f\n", drift);
+            MILO_WARN("timer error is large: %f\n", drift);
         }
     }
     mLastStreamTime = mTimer.Ms();
@@ -857,7 +857,7 @@ void StandardStream::UpdateTimeByFiltering() {
 
     if (fabsf(drift) > 50.0f) {
         if (sReportLargeTimerErrors) {
-            MILO_LOG("timer error is large: %f\n", drift);
+            MILO_WARN("timer error is large: %f\n", drift);
         }
     } else {
         drift *= 0.1f;

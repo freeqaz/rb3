@@ -20,6 +20,7 @@ public:
     Symbol(const char *); // ctor pulled from gdrb
 
     void *operator new[](size_t t) { return _MemAlloc(t, 0); }
+    void operator delete[](void *v) { _MemFree(v); }
 
     // used for maps
     bool operator<(const Symbol &s) const { return mStr < s.mStr; }

@@ -84,8 +84,8 @@ void __AXAllocInit(void) {
 
     __AXCallbackStack = NULL;
     for (i = 0; i < AX_NUM_STACKS; i++) {
-        __AXStackHead[i] = NULL;
         __AXStackTail[i] = NULL;
+        __AXStackHead[i] = NULL;
     }
 }
 
@@ -94,8 +94,8 @@ void __AXAllocQuit(void) {
 
     __AXCallbackStack = NULL;
     for (i = 0; i < AX_NUM_STACKS; i++) {
-        __AXStackHead[i] = NULL;
         __AXStackTail[i] = NULL;
+        __AXStackHead[i] = NULL;
     }
 }
 

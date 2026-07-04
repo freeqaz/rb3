@@ -679,7 +679,7 @@ void AccomplishmentPanel::SelectGroup(Symbol s) {
     UIList *pGroupList = mDir->Find<UIList>("groups.lst", true);
     MILO_ASSERT(pGroupList, 0x6A7);
     pGroupList->SetSelected(idx, -1);
-    UpdateForGoalSelection();
+    UpdateForGroupSelection();
 }
 
 inline Symbol AccomplishmentGroupProvider::DataSymbol(int i_iData) const {

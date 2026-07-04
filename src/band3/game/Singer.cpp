@@ -107,7 +107,7 @@ __copy_ptrs< ::Singer::AmbiguousData*, ::Singer::AmbiguousData*>(
 } // namespace stlpmtx_std
 #endif // !HX_NATIVE
 
-MicClientID sNullClientID(-1, -1);
+MicClientID sNullMicClientID(-1, -1);
 
 Singer::Singer(VocalPlayer *vp, int n)
     : mPlayer(vp), unkc(0), mSingerIndex(n), unk14(0), unk18(0), unk1c(0), mIsSinging(0),
@@ -166,7 +166,7 @@ void Singer::PostLoad() {
 void Singer::CreateMicClientID() {
     BandUser *u = mPlayer->GetUser();
     if ((!TheNet.GetNetSession()->HasUser(u) || !u->IsLocal()) && !u->IsNullUser()) {
-        mMicClientID = sNullClientID;
+        mMicClientID = sNullMicClientID;
     } else {
         mMicClientID = MicClientID(mSingerIndex, -1);
     }

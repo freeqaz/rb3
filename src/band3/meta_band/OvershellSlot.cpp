@@ -1675,9 +1675,9 @@ void OvershellSlot::SelectChar(int i1) {
         } else if (!profile || !profile->HasValidSaveData()) {
             ShowState(kState_CharCreatorDenialNoProfile);
         } else if (profile->NumChars() >= 10) {
-            ShowEnterFlowPrompt(kState_CharCreatorDenialMaxChars);
+            ShowState(kState_CharCreatorDenialMaxChars);
         } else
-            ShowState(kState_EnterCharCreator);
+            ShowEnterFlowPrompt(kState_EnterCharCreator);
     } else if (mCharProvider->GetCharData(i1)) {
         pUser->SetChar(mCharProvider->GetCharData(i1));
         LeaveOptions();

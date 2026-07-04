@@ -5,7 +5,9 @@
 #include "obj/Msg.h"
 #include "os/Timer.h"
 #include "utl/MakeString.h"
+#define t t_reserved_symbol_extern
 #include "utl/Symbols.h"
+#undef t
 #include <cmath>
 #include <math.h>
 
@@ -13,7 +15,7 @@ using std::abs;
 
 INIT_REVS(ChordShapeGenerator);
 
-static Transform sDefaultTransform;
+static Transform t;
 
 ChordShapeGenerator::ChordShapeGenerator()
     : mFingerSrcMesh(this, 0), mChordSrcMesh(this, 0), mBaseXSection(this, 0),
@@ -108,7 +110,7 @@ const Transform &ChordShapeGenerator::SlotXfm(int idx) const {
         return mString5->WorldXfm();
     default:
         MILO_WARN("string index %d out of range", idx);
-        return sDefaultTransform;
+        return t;
     }
 }
 
