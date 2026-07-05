@@ -1147,6 +1147,24 @@ if(RB3_WEB_RELEASE)
     set_source_files_properties(
         ${REPO_ROOT}/src/system/bandobj/OutfitConfig.cpp
         PROPERTIES COMPILE_OPTIONS "-O0")
+    # -O>0 CTOR-MISCOMPILE WORKAROUND #2 (web song-end freeze, 2026-07-03/05):
+    # MetaPerformer.cpp miscompiles at -O2 — the MetaPerformer ctor's emitted
+    # call sequence is correct (PendingDataInfoC2 at this+0x2C0, verified by
+    # disasm) but the member-construction writes never land: at ctor-body-start
+    # mPendingData.stats.mSoloStats already reads recycled-heap garbage
+    # (bisect-proven via the RB3_STATS_DBG stomp-watch; debug -O0 web and
+    # native x86 are healthy; NOT fixed by the web_data_stubs.cpp addr-0 data
+    # fix — re-verified 2026-07-05). First touch of the garbage vector is the
+    # song-end {meta_performer trigger_song_completion} copy, whose
+    # __base_destruct_at_end wedges the tab on endgame_waiting ("render
+    # freezes, audio drains out, then nothing"). One TU at -O0 (rest -O2)
+    # passes the full song-end round trip (scripts/web/song-end-web-test.mjs).
+    # Same class as the OutfitConfig pin above (suspect: wasm-EH scaffolding
+    # around the vbase-heavy ctor at -O2). Drop when the emscripten toolchain
+    # is upgraded past the codegen bug and song-end-web-test.mjs still passes.
+    set_source_files_properties(
+        ${REPO_ROOT}/src/band3/meta_band/MetaPerformer.cpp
+        PROPERTIES COMPILE_OPTIONS "-O0")
     # Diagnosis hatch (mirrors RB3_WEB_O0_GLOB): compile the named TUs with
     # UBSan (recover mode — reports stream to the browser console with
     # file:line, execution continues). This is how "release-only freeze" bugs
@@ -1155,8 +1173,13 @@ if(RB3_WEB_RELEASE)
     # freeze (Stats.h GetHopoPercent NaN->int, 2026-07-02).
     if(RB3_WEB_UBSAN_GLOB)
         file(GLOB _rb3_ubsan_srcs ${RB3_WEB_UBSAN_GLOB})
-        set_source_files_properties(${_rb3_ubsan_srcs}
-            PROPERTIES COMPILE_OPTIONS "-fsanitize=undefined")
+        # APPEND, not set: set_source_files_properties would silently OVERWRITE
+        # a per-TU -O0 pin above (COMPILE_OPTIONS last-write-wins), putting the
+        # pinned TU back at -O2 and resurrecting the very bug being diagnosed.
+        foreach(_rb3_ubsan_src ${_rb3_ubsan_srcs})
+            set_property(SOURCE ${_rb3_ubsan_src} APPEND PROPERTY
+                COMPILE_OPTIONS "-fsanitize=undefined")
+        endforeach()
         target_link_options(rb3-web PRIVATE -fsanitize=undefined)
     endif()
     # Diagnosis hatch: whole-program AddressSanitizer for the web build.

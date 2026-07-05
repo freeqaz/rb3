@@ -66,8 +66,10 @@ const state = (page, ms) => evalT(page, () => ({
 }), ms);
 
 async function press(page, key, holdMs = 220, gapMs = 400) {
-  await page.keyboard.down(key); await sleep(holdMs);
-  await page.keyboard.up(key); await sleep(gapMs);
+  // Race every CDP input call: against a wedged/closed page these block forever.
+  const t = (p) => Promise.race([p.catch(() => {}), sleep(4000)]);
+  await t(page.keyboard.down(key)); await sleep(holdMs);
+  await t(page.keyboard.up(key)); await sleep(gapMs);
 }
 async function waitScreen(page, pred, timeoutMs, label) {
   const dl = Date.now() + timeoutMs; let last = '';
@@ -120,12 +122,17 @@ page.on('pageerror', (e) => { logs.push(`PAGEERROR: ${e.message}`); L(`PAGEERROR
 
 // GAME_DBG prints Game::Poll songMs lines; UISCREEN_DBG prints screen/panel
 // state transitions — both read via getenv from window.__rb3ExtraEnv.
-await page.addInitScript(() => {
+// RB3_STATS_DBG (--stats-dbg) additionally arms the MetaPerformer stomp-watch;
+// leave it OFF for regression runs — its MILO_LOG dumps recycle the MakeString
+// ring and can poison an in-flight file path (diagnosis-only).
+const STATS_DBG = argv.includes('--stats-dbg');
+await page.addInitScript((statsDbg) => {
   window.__rb3ExtraEnv = Object.assign(window.__rb3ExtraEnv || {}, {
-    GAME_DBG: '1', UISCREEN_DBG: '1', RB3_STATS_DBG: '1',
+    GAME_DBG: '1', UISCREEN_DBG: '1',
   });
+  if (statsDbg) window.__rb3ExtraEnv.RB3_STATS_DBG = '1';
   window._rb3VerbQueue = [];
-});
+}, STATS_DBG);
 
 const cdp = await page.context().newCDPSession(page);
 await cdp.send('Debugger.enable').catch(() => {});
