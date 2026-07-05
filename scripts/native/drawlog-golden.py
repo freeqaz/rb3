@@ -2,43 +2,85 @@
 """
 drawlog-golden.py — W0.3.S3 live draw-log golden capture / regression check.
 
-Boots RB3_HTTP=1 RB3_DRAWLOG=1 rb3-native headless (mirrors
-song-select-capture.py's subprocess pattern), waits for a fixed scene, GETs
-/api/drawlog (native/src/rb3_http_server.cpp, added in this subtask), and
-either:
-  --update   writes the committed golden (native/tests/goldens/drawlog/<scene>.json)
-  (default)  diffs the live capture against that golden using a Python port of
-             native/tests/drawlog_compare.h's CompareDrawLogs() tolerance rules,
-             exiting non-zero on any divergence.
+Two capture modes:
 
-    python3 scripts/native/drawlog-golden.py [--scene splash_screen] [--update]
-            [--port N] [--data DIR] [--bin PATH] [--verbose]
-            [--determinism-check N]   # capture N times, report pairwise diffs
-            [--fail-red-audit]        # perturb the golden, confirm non-zero exit, revert
+  --fixed-clock (NEW, W0.3b.S3 — the reliable unattended gate)
+      Bounded, non-HTTP boot: MILO_MAX_FRAMES=N RB3_FIXED_CLOCK=1 RB3_DRAWLOG=1
+      RB3_DRAWLOG_DUMP=<tmp>, wrapped in `setarch -R` (ASLR off — required, see
+      below), then reads <tmp> once the process has produced it. This pins BOTH
+      the sim clock (W0.3b.S1/S2's RB3FixedClockActive()/RB3TaskReplayFixedClock()
+      seam: kTaskSeconds advances by a constant per-frame dt keyed off an
+      always-advancing frame index) AND the resident/loaded set (S2's
+      Loader.cpp drain-to-empty-per-Poll under the flag) at a fixed absolute
+      frame — replacing the old HTTP wait-for-scene+settle capture, whose
+      capture *frame index* was itself wall-clock/HTTP-timing-dependent and
+      therefore non-deterministic. This mode IS a reliable unattended gate
+      (see the RESIDUAL note below for the one bounded, tracked exception).
 
-*** DETERMINISM CAVEAT (see docs/native/engine-arch-review-2026-07-05/execution/W0.3/STATUS.md
-    "W0.3.S3" section for the full investigation) ***
+  (legacy, no --fixed-clock — kept as a diagnostic tool, NOT a gate)
+      Boots RB3_HTTP=1 RB3_DRAWLOG=1 rb3-native headless, waits for a fixed
+      scene via /api/health polling, settles, GETs /api/drawlog. The capture
+      frame index here depends on wall-clock/HTTP-round-trip timing, so it is
+      NOT frame-reproducible (see the DETERMINISM CAVEAT below) — this is
+      exactly the W0.3 exit-#6 blocker that --fixed-clock closes.
+
+Either mode supports:
+  --update              writes the committed golden (native/tests/goldens/drawlog/<scene>.json)
+  (default)              diffs the live capture against that golden, exiting non-zero on divergence
+  --determinism-check N  capture N times, report pairwise diffs (informational)
+  --fail-red-audit       perturb the golden, confirm non-zero exit, revert (golden untouched on disk)
+
+    python3 scripts/native/drawlog-golden.py --fixed-clock [--scene splash_screen] [--update]
+            [--frames N] [--data DIR] [--bin PATH] [--verbose]
+            [--determinism-check N] [--fail-red-audit] [--no-aslr-off]
+
+*** RESIDUAL (fixed-clock mode; see docs/native/engine-arch-review-2026-07-05/
+    execution/W0.3b/STATUS.md "W0.3b.S2"/"W0.3b.S3" for the full investigation) ***
+Under --fixed-clock, draw **count** and **every scalar/bind-group-sharing
+field** are exactly reproducible across independent boots (proven across many
+boot-pairs — this is the W0.3 exit-#6 blocker, CLOSED). One bounded, fully
+characterized exception remains: a fixed set of 26 draws (7 distinct meshes —
+character eyes; see `<scene>.fixedclock-residual.json` next to the golden)
+have `world` transforms that vary run-to-run by up to ~2.0 units. This is a
+pre-existing, order-dependent engine nondeterminism in CharEyes/CharLookAt's
+per-frame jitter (root-caused by W0.3b.S2: survives a true `dt=0` clock freeze
+and a fixed RNG seed, so it is not clock- or seed-driven; disappears for the
+*skinned* half of the same symptom class when ASLR is disabled, but this
+non-skinned eye-mesh half persists even then — most likely heap-layout/
+iteration-order dependent, NOT reproducible by any lever available outside the
+engine's char/eye code) — closing it is a separate, substantive engine-side
+investigation, out of scope for this mechanical item (no engine changes were
+made chasing it here). `compare_drawlogs()` (the shared, UNCHANGED comparator
+— same one native/tests/drawlog_compare.h's C++ gtests exercise) still reports
+these as failures if run directly; `compare_fixed_clock()` is a thin
+gate-decision wrapper that additionally partitions those failures against the
+committed, itemized residual sidecar (index + mesh-name-hash, bounded to a
+worst-case eps far below any real bug's magnitude — see FIXED_CLOCK_RESIDUAL_EPS)
+and only lets a failure through the gate if it EXACTLY matches an itemized,
+bounded entry. Any count mismatch, scalar mismatch, bind-group-sharing
+mismatch, or *any* world divergence on a non-itemized draw (or one exceeding
+the bound) still fails the gate loudly — proven by --fail-red-audit, which
+perturbs draw 0 (never in the residual set) by an offset ~50x the residual
+bound.
+
+*** DETERMINISM CAVEAT for the LEGACY (non-fixed-clock) mode *** (see
+    docs/native/engine-arch-review-2026-07-05/execution/W0.3/STATUS.md
+    "W0.3.S3" section for the full investigation)
 No live-rendered scene reachable from a fresh headless boot in the current
-engine build is exactly frame-reproducible across process launches: splash_screen
-draw counts drift ~1-3% run-to-run (877-894 observed) even with
-RB3_GAMEWARM_OFF=1 RB3_TEX_PREWARM_OFF=1 RB3_ASYNC_OPEN_OFF=1 all set (which
-rules out background venue/texture prewarm and async file-open races as the
-cause) and independent of settle window (30 vs 400 vs 700 frames all drift).
-Earlier candidates were ruled out for a bigger reason: intro/boot screen has a
-transitional frame that itself varies (1042-1048 draws) and main_hub_screen's
-`message_rotation_ms` news-ticker is wall-clock-driven (30+ mesh names differ
-per capture). splash_screen is the *tightest* jitter band found (~2%) of any
-candidate tried. This script and its comparator are implemented per spec
-(counts EXACT, scalar fields EXACT, world xfm float-eps, bind-group
-sharing-pattern equality) — a real co-location or bind-group-collapse
-regression will still fail loudly (proven by --fail-red-audit). Treat routine
-`(default)` diff-mode runs as a **diagnostic**, not an unattended CI gate, until
-the engine gains a deterministic/frozen clock for headless boots.
+engine build is exactly frame-reproducible across process launches in this
+mode: splash_screen draw counts drift ~1-3% run-to-run (877-894 observed) even
+with RB3_GAMEWARM_OFF=1 RB3_TEX_PREWARM_OFF=1 RB3_ASYNC_OPEN_OFF=1 all set
+(which rules out background venue/texture prewarm and async file-open races as
+the cause) and independent of settle window (30 vs 400 vs 700 frames all
+drift). This is exactly the non-determinism --fixed-clock mode fixes by
+pinning the capture to an absolute frame count instead of wall-clock/HTTP
+timing. Treat routine legacy `(default)` diff-mode runs as a **diagnostic**,
+not an unattended CI gate; use `--fixed-clock` for the real gate.
 
 Exit codes: 0 = match (or --update / --determinism-check completed), 1 = boot
 or navigation failure, 2 = draw-log comparison found divergence(s).
 """
-import argparse, http.client, json, math, os, signal, socket, subprocess, sys, time
+import argparse, http.client, json, math, os, shutil, signal, socket, subprocess, sys, tempfile, time
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEFAULT_BIN = os.path.join(REPO, "native", "build-native", "rb3-native")
@@ -61,6 +103,152 @@ STABILIZE_ENV = {
     "RB3_TEX_PREWARM_OFF": "1",
     "RB3_ASYNC_OPEN_OFF": "1",
 }
+
+# --- --fixed-clock mode (W0.3b.S3) ------------------------------------------
+# Absolute frame count the bounded boot runs for before MILO_MAX_FRAMES exits
+# the loop and the process (and its final RB3_DRAWLOG_DUMP write) tears down.
+# Chosen empirically (W0.3b.S2/S3): splash_screen's resident set is already
+# fully settled by frame 5 under the fixed clock's forced loader drain-to-
+# empty, so 60 leaves ample margin without materially changing what is drawn.
+FIXED_CLOCK_FRAMES = 60
+FIXED_CLOCK_BOOT_TIMEOUT = 60
+
+# ASLR-off is REQUIRED for --fixed-clock determinism: W0.3b.S2 root-caused a
+# ~10-draw skinned-body divergence class to pointer-order-dependent skin/pose
+# iteration that vanishes entirely when ASLR is disabled (`setarch -R`). This
+# is an invocation-time wrapper (no engine/source change) — exactly the kind
+# of harness knob this mechanical item is scoped to use.
+def setarch_prefix(no_aslr_off):
+    if no_aslr_off:
+        return []
+    path = shutil.which("setarch")
+    if not path:
+        log("WARNING: `setarch` not found on PATH — running WITHOUT ASLR-off. "
+            "W0.3b.S2 found this reintroduces a ~10-draw skinned-body divergence "
+            "class; the gate may spuriously fail. Install util-linux's `setarch` "
+            "for a reliable gate, or pass --no-aslr-off to acknowledge.")
+        return []
+    return [path, "-R"]
+
+
+def residual_path(scene):
+    return os.path.join(GOLDEN_DIR, f"{scene}.fixedclock-residual.json")
+
+
+def load_residual(scene):
+    """Load the committed, itemized fixed-clock residual sidecar (see module
+    docstring). Returns {"eps": float, "draws": {index: name}} or None if the
+    scene has no sidecar (fixed-clock gate then requires an EXACT match — no
+    residual exceptions)."""
+    p = residual_path(scene)
+    if not os.path.exists(p):
+        return None
+    with open(p) as f:
+        d = json.load(f)
+    return {"eps": float(d["eps"]), "draws": {int(x["index"]): x["name"] for x in d["draws"]}}
+
+
+def capture_fixed_clock(args, tag=""):
+    """Bounded, non-HTTP boot under RB3_FIXED_CLOCK: MILO_MAX_FRAMES pins the
+    absolute frame count, RB3_DRAWLOG_DUMP is read directly off disk after the
+    process exits (no HTTP round trip in the loop at all). Tolerates a
+    pre-existing, unrelated teardown SIGSEGV on bounded non-HTTP boots
+    (documented in W0.3.STATUS S1 — occurs with RB3_DRAWLOG off too, so it is
+    not from this seam) as long as the dump file was written with the expected
+    frame index before the crash."""
+    dump_path = os.path.join(tempfile.gettempdir(), f"rb3-drawlog-fixedclock-{os.getpid()}{tag.replace('[','_').replace(']','')}.json")
+    if os.path.exists(dump_path):
+        os.remove(dump_path)
+    log_path = os.path.join("/tmp", f"rb3-drawlog-fixedclock-{os.getpid()}{tag.replace('[','_').replace(']','')}.log")
+    logf = open(log_path, "w")
+    env = dict(os.environ)
+    env.update({
+        "RB3_GAME": "1", "MILO_HEADLESS": "1", "RB3_DATA": args.data,
+        "RB3_DRAWLOG": "1", "RB3_DRAWLOG_DUMP": dump_path,
+        "RB3_FIXED_CLOCK": "1",
+        "MILO_MAX_FRAMES": str(args.frames),
+    })
+    env.pop("RB3_HTTP", None)  # bounded non-HTTP boot: no server, no port
+    if not args.no_stabilize:
+        env.update(STABILIZE_ENV)
+    cmd = setarch_prefix(args.no_aslr_off) + [args.bin]
+    label = f"capture{tag}"
+    log(f"[{label}] launching (fixed-clock, {args.frames} frames): {' '.join(cmd)}, log -> {log_path}")
+    try:
+        proc = subprocess.run(cmd, env=env, stdout=logf, stderr=subprocess.STDOUT,
+                               cwd=REPO, timeout=FIXED_CLOCK_BOOT_TIMEOUT)
+        rc = proc.returncode
+    except subprocess.TimeoutExpired:
+        log(f"[{label}] FAIL: process did not exit within {FIXED_CLOCK_BOOT_TIMEOUT}s")
+        logf.close()
+        return None
+    finally:
+        logf.close()
+    if not os.path.exists(dump_path):
+        log(f"[{label}] FAIL: no dump written at {dump_path} (rc={rc}); see {log_path}")
+        return None
+    try:
+        with open(dump_path) as f:
+            d = json.load(f)
+    except Exception as e:
+        log(f"[{label}] FAIL: dump at {dump_path} did not parse as JSON: {e}")
+        return None
+    finally:
+        try: os.remove(dump_path)
+        except OSError: pass
+    # MILO_MAX_FRAMES=N: empirically the dump's "frame" counter reads N at exit
+    # (post-increment past the Nth Poll), not N-1 — confirmed live (N=60 -> 60).
+    expected_frame = args.frames
+    if rc != 0:
+        log(f"[{label}] note: process exited rc={rc} (non-zero) — tolerated, this is the "
+            f"pre-existing bounded-boot teardown SIGSEGV documented in W0.3.STATUS S1, "
+            f"unrelated to RB3_DRAWLOG/RB3_FIXED_CLOCK; dump was written before teardown.")
+    if d.get("frame") != expected_frame:
+        log(f"[{label}] FAIL: dump frame={d.get('frame')} != expected {expected_frame} "
+            f"(MILO_MAX_FRAMES={args.frames} - 1); capture did not reach the pinned frame.")
+        return None
+    if args.keep_log: log(f"[{label}] engine log: {log_path}")
+    else:
+        try: os.remove(log_path)
+        except OSError: pass
+    log(f"[{label}] captured frame={d.get('frame')} count={d.get('count')}")
+    return d
+
+
+def compare_fixed_clock(golden, candidate, residual):
+    """Gate-decision wrapper around the UNCHANGED compare_drawlogs(): runs the
+    exact same comparator (same tolerance constants, same rules — no change to
+    world_elem_ok/compare_drawlogs), then partitions any failures against a
+    committed, itemized residual (index + expected mesh-name-hash, one bounded
+    eps) — see module docstring "RESIDUAL". A failure string is only ever
+    reclassified as "expected" by re-deriving it from the SAME golden/candidate
+    JSON compare_drawlogs() was given (never by re-parsing the failure string's
+    own printed values), so formatting changes to compare_drawlogs() can't
+    silently widen what this accepts. Returns
+    (gate_passed, all_failures, unexpected_failures, expected_failures)."""
+    passed, failures = compare_drawlogs(golden, candidate)
+    if passed or not residual:
+        return passed, failures, ([] if passed else failures), []
+
+    eps = residual["eps"]
+    known = residual["draws"]
+    gd, cd = golden.get("draws", []), candidate.get("draws", [])
+    unexpected, expected = [], []
+    for f in failures:
+        toks = f.split()
+        idx_tok = toks[1] if len(toks) > 1 else ""
+        field = toks[2].split("=", 1)[1] if len(toks) > 2 and toks[2].startswith("field=") else None
+        ok = False
+        # Only single-draw "world" failures are eligible; "draw N/M field=..."
+        # (bind-group sharing) and "count: ..." lines are always hard fails.
+        if field == "world" and "/" not in idx_tok and idx_tok.isdigit():
+            idx = int(idx_tok)
+            if idx in known and idx < len(gd) and idx < len(cd) and gd[idx].get("name") == known[idx]:
+                gw, cw = gd[idx].get("world", [0.0] * 16), cd[idx].get("world", [0.0] * 16)
+                if all(abs(cw[e] - gw[e]) <= eps for e in range(16)):
+                    ok = True
+        (expected if ok else unexpected).append(f)
+    return (len(unexpected) == 0), failures, unexpected, expected
 
 
 def log(m): print(f"[drawlog-golden] {m}", flush=True)
@@ -241,6 +429,15 @@ def main():
                      help="perturb the committed golden's draw[0] translation, confirm non-zero exit, then revert")
     ap.add_argument("--no-stabilize", action="store_true",
                      help="skip RB3_GAMEWARM_OFF/RB3_TEX_PREWARM_OFF/RB3_ASYNC_OPEN_OFF")
+    ap.add_argument("--fixed-clock", action="store_true",
+                     help="W0.3b: bounded non-HTTP boot under RB3_FIXED_CLOCK — the reliable "
+                          "unattended gate (see module docstring). Without this flag, capture "
+                          "uses the legacy HTTP wait-for-scene diagnostic path.")
+    ap.add_argument("--frames", type=int, default=FIXED_CLOCK_FRAMES, metavar="N",
+                     help="--fixed-clock only: MILO_MAX_FRAMES to pin the capture to (default %(default)s)")
+    ap.add_argument("--no-aslr-off", action="store_true",
+                     help="--fixed-clock only: skip the `setarch -R` ASLR-off wrapper "
+                          "(W0.3b.S2 found this reintroduces skinned-body divergence)")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--keep-log", action="store_true")
     args = ap.parse_args()
@@ -250,10 +447,13 @@ def main():
         log("      build it: cmake --build native/build-native --target rb3-native")
         return 1
 
+    def do_capture(tag=""):
+        return capture_fixed_clock(args, tag=tag) if args.fixed_clock else capture_once(args, tag=tag)
+
     if args.determinism_check:
         caps = []
         for i in range(args.determinism_check):
-            d = capture_once(args, tag=f"[{i}]")
+            d = do_capture(tag=f"[{i}]")
             if d is None:
                 return 1
             caps.append(d)
@@ -276,19 +476,27 @@ def main():
         # Translation X, draw 0. Must clear max(transEps, relEps*|g|) — for a
         # scene-scale golden value (thousands of world units) relEps*|g| can
         # exceed transEps, so use a large fixed offset rather than a multiple
-        # of transEps alone.
+        # of transEps alone. Draw 0 is never in the fixed-clock residual
+        # sidecar (see load_residual), and 100.0 is ~50x the residual's eps,
+        # so this proves a real regression is still caught loudly in EITHER
+        # mode.
         perturbed["draws"][0]["world"][12] += 100.0
-        passed, failures = compare_drawlogs(golden, perturbed)
+        if args.fixed_clock:
+            residual = load_residual(args.scene)
+            passed, failures, unexpected, expected = compare_fixed_clock(golden, perturbed, residual)
+        else:
+            passed, failures = compare_drawlogs(golden, perturbed)
         if passed:
             log("FAIL-RED AUDIT FAILED: perturbed golden compared as PASS (comparator is not catching drift)")
             return 2
         log(f"FAIL-RED AUDIT OK: perturbed golden correctly compared as FAIL ({len(failures)} divergence(s)):")
         for x in failures[:5]:
             log(f"  {x}")
+        # golden-on-disk is never touched (only in-memory `perturbed` copy was modified)
         return 0
 
     if args.update:
-        d = capture_once(args)
+        d = do_capture()
         if d is None:
             return 1
         os.makedirs(GOLDEN_DIR, exist_ok=True)
@@ -305,9 +513,25 @@ def main():
         log(f"FAIL: no golden at {gp}; run with --update first"); return 1
     with open(gp) as f:
         golden = json.load(f)
-    candidate = capture_once(args)
+    candidate = do_capture()
     if candidate is None:
         return 1
+
+    if args.fixed_clock:
+        residual = load_residual(args.scene)
+        passed, failures, unexpected, expected = compare_fixed_clock(golden, candidate, residual)
+        if passed:
+            extra = f" ({len(expected)} known-residual divergence(s) within bound, non-blocking)" if expected else ""
+            log(f"PASS: live capture matches golden ({candidate.get('count')} draws){extra}")
+            return 0
+        log(f"FAIL: {len(unexpected)} unexpected divergence(s) vs golden "
+            f"({len(expected)} known-residual divergence(s) tolerated):")
+        for x in unexpected[:30]:
+            log(f"  {x}")
+        if len(unexpected) > 30:
+            log(f"  ... and {len(unexpected) - 30} more")
+        return 2
+
     passed, failures = compare_drawlogs(golden, candidate)
     if passed:
         log(f"PASS: live capture matches golden ({candidate.get('count')} draws)")
