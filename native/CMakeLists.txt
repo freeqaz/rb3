@@ -703,6 +703,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_overpress.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_wgsl_validation.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)
