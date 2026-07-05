@@ -164,3 +164,130 @@ name being a valid asm label), and the human-readable name is preserved in the
 
 **Remaining for S3:** reclassify the 16 boot-hit rows, add the gtest
 `test_stub_census.cpp` + `stub_census_smoke.py`, prove GREEN, demo FAIL-RED.
+
+## W0.2.S3 — done
+
+**Commit:** `03b03948` — "W0.2: stub-census gate (gtest + smoke) + reclassify boot-hit stubs to ok-noop" (CHANGES)
+
+Reclassified the 16 boot-hit func stubs S2 captured from `assert-unreachable ->
+ok-noop`, added the two gate surfaces (gtest + boot-smoke/sync script), proved
+GREEN, and demonstrated + recorded the required FAIL-RED. `rb3-tests` finishes
+GREEN on the committed registry.
+
+**Files touched (all W0.2-owned + one CMake line):**
+- `native/src/band3_stub_registry.tsv` — 16 rows promoted `assert-unreachable ->
+  ok-noop`, note `hit during boot smoke 2026-07-05; returns 0 accepted
+  (platform/offline/no-video no-op)`.
+- `native/src/band3_stub_table.inc` — regenerated (16 `'A' -> 'N'` class flips).
+- `native/src/band3_link_stubs.s` — UNCHANGED: in loud mode the trampoline for a
+  func row is byte-identical regardless of class; `class` only feeds the `.inc`
+  table. (Confirmed `git diff` clean — still S2's committed `.s`.)
+- `native/tests/test_stub_census.cpp` (NEW) — `EngineTestFixture`-derived
+  `StubCensus` suite: `NoAssertUnreachableStubHitDuringBoot`
+  (`__hmx_stub_census_assert_unreachable_hits(out)` must be empty, prints the
+  offenders on failure) + `CensusTableComplete` (kHmxStubTotal==582==521+61, every
+  row has valid F/D kind and A/N/D class, data⇒D / func⇒A|N — the "no unclassified
+  row" completeness check).
+- `scripts/native/stub_census_smoke.py` (NEW) — headless `RB3_HTTP` boot-smoke:
+  launches `rb3-native`, polls `/api/health`, parses the `[STUB CENSUS]` banner +
+  `[STUB] first call to <sym>` lines into the clean-boot hit-list, cross-refs the
+  registry, exits non-zero on any `assert-unreachable` (or unclassified/drift)
+  hit. `--check-sync` runs the generator drift gate (registry ↔ `.s`/`.inc`).
+- `native/CMakeLists.txt` — one line: `tests/test_stub_census.cpp` into the
+  `add_executable(rb3-tests …)` list.
+
+**Reclassification list (16 boot-hit func stubs → ok-noop):**
+```
+_ZN14DataResultListC1Ev                                     DataResultList ctor (empty result list)
+_ZN5Movie4Impl12PlatformInitEv                              Movie video backend init — no native video decode
+_ZN5Movie4Impl4DrawEv                                       Movie video draw — no native video decode
+_ZN15SaveLoadManager4InitEv                                 saveload subsystem — replaced by host storage
+_ZN10MemcardMgr4InitEv                                      Wii memcard — no such device on native
+_ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE     sign-in callback — offline, no sign-in
+_ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE   net-message factory reg — offline
+_ZNK7Profile9GetPadNumEv                                    profile pad-num — returns 0 (pad 0)
+_ZN14ProfilePictureC1EiPN3Hmx6ObjectE                       ProfilePicture ctor
+_ZN12WiiFriendMgr17UseConsoleFriendsEb                      Wii friends — WFC shut down 2014
+_ZN11UIListState8ProviderEv                                 UI-list provider accessor — null provider tolerated
+_ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE       Wii disc-error mgr
+_ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE     Wii disc-error mgr
+_ZN15WaitingUserGate4PollEv                                 per-frame gate poll — returns 0
+_ZN6WiiRnd20SetTriFrameRenderingEb                          Wii GX renderer — replaced backend
+_ZN15VirtualKeyboard17IsKeyboardShowingEv                   returns 0 (keyboard not showing)
+```
+**Findings (scrutinized, none left red):** the S2 note flagged
+`NetMessageFactory::RegisterNetMessage`, `SaveLoadManager::Init`,
+`MemcardMgr::Init` and `UIListState::Provider` as "verify before silencing —
+could drop registration." All four are squarely in the port's *replaced-wholesale*
+surface per CLAUDE.md's roadmap (networking, memcard/saveload, Wii disc are host-
+platform responsibilities, not gameplay logic). None is a gameplay-visible
+swallowed call à la `DrawParticlesBillboard`/`EndGame` (those broke the note
+highway / song-end on frame 1). Returning 0 is the intended offline/native
+behavior. **Zero left as `assert-unreachable`-findings** → gate is GREEN by design,
+per exit criteria 4. If online-multiplayer or host save is later brought online,
+these are the exact rows to re-audit.
+
+**GREEN proof:**
+- Build: `cmake --build native/build-agent-W0.2 --target rb3-tests -j8` → clean.
+- `RB3_DATA=…/orig-assets/extracted ctest --test-dir native/build-agent-W0.2 -R
+  StubCensus` → `100% tests passed, 0 failed out of 2`
+  (`NoAssertUnreachableStubHitDuringBoot` + `CensusTableComplete`).
+- `python3 scripts/native/stub_census_smoke.py` → PASS: 16 stubs fired, **16
+  ok-noop, 0 assert-unreachable, 0 unclassified** (boot settled to
+  `splash_screen`, banner `linked=582 (func=521 data=61)`). Same 16-symbol set S2
+  captured. Exit 0.
+- `python3 scripts/native/stub_census_smoke.py --check-sync` → `OK: no drift`, exit 0.
+
+**FAIL-RED demo (captured, then reverted before commit):** demoting one boot-hit
+row back to `assert-unreachable` and rebuilding makes the gtest fail red. The
+gtest fixture only runs `SystemInit` (no frame loop), so the demo symbol must be
+one that fires during that boot — `DataResultListC1Ev` (static-init construction)
+does; `Movie::Impl::Draw` (first tried) does NOT fire without a frame loop, so
+demoting it stayed green (an instructive gotcha, noted). Demoting
+`_ZN14DataResultListC1Ev`:
+```
+[  FAILED  ] StubCensus.NoAssertUnreachableStubHitDuringBoot
+1 weak stub(s) classified `assert-unreachable` were hit during boot — a swallowed
+call the port believes is unreachable. … :
+    _ZN14DataResultListC1Ev
+test_stub_census.cpp:58: Failure   Expected equality of these values: n Which is: 1  0
+test_stub_census.cpp:59: Failure   Value of: hits.empty()  Actual: false  Expected: true
+0% tests passed, 1 tests failed out of 1
+```
+Reverted `_ZN14DataResultListC1Ev` back to `ok-noop`, regenerated, rebuilt, re-ran
+→ GREEN. The committed registry is the GREEN state (the demoted state was never
+committed).
+
+**Deviations from PLAN.md (recorded):**
+1. `--check-sync` reuses the generator's own `--check` (in-memory generate + diff
+   vs on-disk) rather than "regenerate into a temp dir and diff" — functionally
+   identical drift gate, and it avoids a temp-file dance. The smoke's registry
+   cross-reference reads `band3_stub_registry.tsv` directly for the hit
+   classification.
+2. FAIL-RED was demonstrated via the gtest (per exit criterion 5). Because
+   `EngineTestFixture` boots `SystemInit`-only, the demo symbol is an init-path
+   stub (`DataResultListC1Ev`), not the frame-loop `Movie::Impl::Draw` the plan's
+   text implies; the smoke script (full frame boot) sees all 16.
+
+**Git-hygiene incident (fully repaired, recorded for transparency):** my first
+commit used `git commit <pathspec>`, which commits the *working-tree* version of
+the path and folded a concurrent agent's uncommitted `test_native_compat.cpp`
+CMakeLists line into my commit; a follow-up `git commit --amend` then landed on a
+W0.4 STATUS-only commit that had raced in between my two flock windows,
+corrupting it, and a no-pathspec recommit swept several other agents' *staged*
+index files into my commit. All repaired under `flock /tmp/rb3-git.lock` via
+`reset --soft`/mixed-reset + explicit per-file staging (CMakeLists staged as a
+HEAD-relative one-line index patch): final `03b03948` contains exactly my 5
+files, W0.4's commit was faithfully reconstructed (`e64a4ef1`, STATUS.md only,
+same message/author), and every concurrent agent's file (`test_native_compat.cpp`,
+`native_compat_census.py`, `rb3_{gamewarm,heap_maint,platform,prefetch}_native.cpp`,
+W0.5/W0.6/W1.1 STATUS.md, the CMakeLists `test_native_compat` line) is preserved
+intact as an unstaged working-tree change for its owner. Lesson for the wave:
+**never `git commit <pathspec>` or no-pathspec `git commit` in this shared
+tree — stage explicitly and `git commit` only your own just-staged set; the
+shared index routinely holds other agents' `git add`s.**
+
+**Build dir:** `native/build-agent-W0.2` (reused from S1/S2).
+
+**W0.2.S4 (extend to dta/rndobj_synth stub files):** OPTIONAL, not started — the
+W0.2 exit gate does not require it.
