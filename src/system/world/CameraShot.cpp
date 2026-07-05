@@ -1344,7 +1344,7 @@ void CamShotCrowd::SetCrowdChars() {
         MILO_WARN("No selected crowd members in this crowd");
     } else {
         ClearCrowdChars();
-        AddCrowdChars(meshlist);
+        AddCrowdChars(&meshlist);
     }
 }
 
@@ -1355,7 +1355,7 @@ void CamShotCrowd::AddCrowdChars() {
     if (meshlist.begin() == meshlist.end()) {
         MILO_WARN("No selected crowd members in this crowd");
     } else
-        AddCrowdChars(meshlist);
+        AddCrowdChars(&meshlist);
 }
 
 void CamShotCrowd::GetSelectedCrowd(

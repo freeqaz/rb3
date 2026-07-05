@@ -374,7 +374,7 @@ DataNode AccomplishmentPanel::Goal_HandleButtonDownMsg(const ButtonDownMsg &msg)
         return 0;
     case kAction_Cancel:
         SetCareerState(kCareerStateCategory, true);
-        HandleSoundSelect(msg.GetUser());
+        HandleSoundBack(msg.GetUser());
         break;
     case kAction_WiiHomeMenu:
         if (CanNavigateList()) {

@@ -9,7 +9,7 @@ namespace Quazal {
         unk20 = 0;
         unk24 = 0;
         mSourceEndPoint = 0;
-        Clear();
+        ByteStream::Clear();
         mIOTime = 0;
         SetLength(4);
         int size = mBuffer->GetContentSize();
