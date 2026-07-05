@@ -417,6 +417,12 @@ add_executable(rb3-dta
     ${DTA_FORK_SOURCES}
     ${DTA_LEXER}
     ${NATIVE_SHIMS}
+    # W0.2.S4: dta_link_stubs.s (part of NATIVE_SHIMS) went "loud" — its weak
+    # stub trampolines call the census hook __hmx_stub_first_hit, defined here.
+    # rb3-dta must link this TU too (not just rb3-native) or the symbol is
+    # undefined. No HX_NATIVE-specific deps (just <mutex>/<cstdio>/<vector>),
+    # so this is a safe, additive one-line link addition.
+    ${CMAKE_SOURCE_DIR}/src/rb3_stub_census.cpp
     # Session-telemetry recorder CORE + Tier-1 replay loader. The telemetry
     # wave's HX_NATIVE hooks in shared fork TUs rb3-dta compiles (obj/Task.cpp
     # gRB3TraceFrame/RB3ReplayDtForFrame/RB3ReplayFixedClock/RB3ReplayActive,
@@ -708,6 +714,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_wgsl_validation.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_native_compat.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_stub_census.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)
