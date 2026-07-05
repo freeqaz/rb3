@@ -59,7 +59,7 @@ _ZN10GameConfig16ChangeRandomSeedEv	func	assert-unreachable
 _ZN10GameConfig19GetFxSwitchPositionEP13LocalBandUser	func	assert-unreachable	
 _ZN10GameConfigC1Ev	func	assert-unreachable	
 _ZN10GameConfigD1Ev	func	assert-unreachable	
-_ZN10MemcardMgr4InitEv	func	assert-unreachable	
+_ZN10MemcardMgr4InitEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN10MidiParser4InitEv	func	assert-unreachable	
 _ZN10MidiParser5ResetEf	func	assert-unreachable	
 _ZN10MidiReader13ReadAllTracksEv	func	assert-unreachable	
@@ -88,7 +88,7 @@ _ZN11PlatformMgr15SetUserSignedInEi	func	assert-unreachable
 _ZN11PlatformMgr16EnumerateFriendsEiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectE	func	assert-unreachable	
 _ZN11PlatformMgr16SetUserSignedOutEi	func	assert-unreachable	
 _ZN11PlatformMgr23RegisterSendMsgCallbackEPFbP6FriendPKcS3_R9MemStreamE	func	assert-unreachable	
-_ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE	func	assert-unreachable	
+_ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN11PlatformMgr32RegisterEnumerateFriendsCallbackEPFbiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectEE	func	assert-unreachable	
 _ZN11PlatformMgr4DrawEv	func	assert-unreachable	
 _ZN11RockCentral10GetArtFileE6StringP6RndTexPjPN3Hmx6ObjectEi	func	assert-unreachable	
@@ -144,7 +144,7 @@ _ZN11SetlistSort16BuildSetlistListEv	func	assert-unreachable
 _ZN11SetlistSort16BuildSetlistTreeERSt3mapI6Symbol13SetlistRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEE	func	assert-unreachable	
 _ZN11SingerStats17SetPartPercentageEif	func	assert-unreachable	
 _ZN11SingerStats21SetPitchDeviationInfoEff	func	assert-unreachable	
-_ZN11UIListState8ProviderEv	func	assert-unreachable	
+_ZN11UIListState8ProviderEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN11VocalPhraseC1Ev	func	assert-unreachable	
 _ZN12BandDirector14HarvestDircutsEv	func	assert-unreachable	
 _ZN12BandDirector19ReadyForMidiParsersEv	func	assert-unreachable	
@@ -159,7 +159,7 @@ _ZN12VoiceChatMgr16ToggleMuteStatusEP4User	func	assert-unreachable
 _ZN12WiiFriendMgr16EnumerateFriendsEP13WiiFriendListPN3Hmx6ObjectE	func	assert-unreachable	
 _ZN12WiiFriendMgr16GetCachedFriendsEP13WiiFriendList	func	assert-unreachable	
 _ZN12WiiFriendMgr16SetProfileStatusEi6String	func	assert-unreachable	
-_ZN12WiiFriendMgr17UseConsoleFriendsEb	func	assert-unreachable	
+_ZN12WiiFriendMgr17UseConsoleFriendsEb	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN12WiiFriendMgr22SetMasterProfileStatusE6String	func	assert-unreachable	
 _ZN12WiiMessenger11SendMessageEiPKcS1_PN3Hmx6ObjectEi	func	assert-unreachable	
 _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE	func	assert-unreachable	
@@ -209,9 +209,9 @@ _ZN13WiiFriendListD1Ev	func	assert-unreachable
 _ZN14DataResultList5ClearEv	func	assert-unreachable	
 _ZN14DataResultList5PrintER10TextStream	func	assert-unreachable	
 _ZN14DataResultList6UpdateEP7Message	func	assert-unreachable	
-_ZN14DataResultListC1Ev	func	assert-unreachable	
+_ZN14DataResultListC1Ev	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN14DataResultListD1Ev	func	assert-unreachable	
-_ZN14ProfilePictureC1EiPN3Hmx6ObjectE	func	assert-unreachable	
+_ZN14ProfilePictureC1EiPN3Hmx6ObjectE	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN14SearchSettingsC1Eibi	func	assert-unreachable	
 _ZN14WiiCommerceMgr12InitCommerceEPN3Hmx6ObjectE	func	assert-unreachable	
 _ZN14WiiCommerceMgr12SpecifyOfferEP17StorePurchaseable	func	assert-unreachable	
@@ -221,19 +221,19 @@ _ZN14WiiCommerceMgr15MakeDataTitleIdEPKc	func	assert-unreachable
 _ZN14WiiCommerceMgr19SpecifyContentUnitsERKSt6vectorItSaItEE	func	assert-unreachable	
 _ZN14WiiMessageListC1Ev	func	assert-unreachable	
 _ZN14WiiMessageListD1Ev	func	assert-unreachable	
-_ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE	func	assert-unreachable	
-_ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE	func	assert-unreachable	
+_ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
+_ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN15SaveLoadManager11AutoSaveNowEv	func	assert-unreachable	
-_ZN15SaveLoadManager4InitEv	func	assert-unreachable	
+_ZN15SaveLoadManager4InitEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN15SaveLoadManager8AutoSaveEv	func	assert-unreachable	
 _ZN15SessionSearcher13GetNextResultEv	func	assert-unreachable	
 _ZN15SessionSearcher16GetSearchResultsERSt6vectorIP15NetSearchResultSaIS2_EE	func	assert-unreachable	
 _ZN15SessionSettings9SetPublicEb	func	assert-unreachable	
-_ZN15VirtualKeyboard17IsKeyboardShowingEv	func	assert-unreachable	
+_ZN15VirtualKeyboard17IsKeyboardShowingEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN15WaitingUserGate4InitEv	func	assert-unreachable	
-_ZN15WaitingUserGate4PollEv	func	assert-unreachable	
+_ZN15WaitingUserGate4PollEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN15WaitingUserGateC1Ev	func	assert-unreachable	
-_ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE	func	assert-unreachable	
+_ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN18TourPerformerLocal15SetCurrentQuestE6Symbol	func	assert-unreachable	
 _ZN18TourPerformerLocal17CheatCycleSetlistEv	func	assert-unreachable	
 _ZN18TourPerformerLocal17ClearCurrentQuestEv	func	assert-unreachable	
@@ -280,9 +280,9 @@ _ZN4Band20AddPlayerDynamicallyEP10BeatMasterP8BandUser	func	assert-unreachable
 _ZN4Band4PollEfR7SongPos	func	assert-unreachable	
 _ZN4Band7RestartEb	func	assert-unreachable	
 _ZN4BandC1EbiP8BandUserP10BeatMaster	func	assert-unreachable	
-_ZN5Movie4Impl12PlatformInitEv	func	assert-unreachable	
+_ZN5Movie4Impl12PlatformInitEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN5Movie4Impl17PlatformCacheFileEPKc	func	assert-unreachable	
-_ZN5Movie4Impl4DrawEv	func	assert-unreachable	
+_ZN5Movie4Impl4DrawEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN5Stats10AddSustainEf	func	assert-unreachable	
 _ZN5Stats10StreakInfoC1Ev	func	assert-unreachable	
 _ZN5Stats11AddAccuracyEi	func	assert-unreachable	
@@ -338,7 +338,7 @@ _ZN6Quazal8ProtocolC2Ej	func	assert-unreachable
 _ZN6Splash4PollEv	func	assert-unreachable	
 _ZN6WiiRnd18PrepareRenderAlleyEv	func	assert-unreachable	
 _ZN6WiiRnd18RestoreRenderAlleyEv	func	assert-unreachable	
-_ZN6WiiRnd20SetTriFrameRenderingEb	func	assert-unreachable	
+_ZN6WiiRnd20SetTriFrameRenderingEb	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZN6WiiTex13DeleteSurfaceEv	func	assert-unreachable	
 _ZN7UILabel12CanHaveFocusEv	func	assert-unreachable	
 _ZN8AppLabel11SetSongNameE6Symbolb	func	assert-unreachable	
@@ -510,7 +510,7 @@ _ZNK5Stats19GetSingerRankedPartEii	func	assert-unreachable
 _ZNK5Stats22GetUnisonPhrasePercentEv	func	assert-unreachable	
 _ZNK5Stats25GetSingerRankedPercentageEii	func	assert-unreachable	
 _ZNK5Stats7GetSoloEv	func	assert-unreachable	
-_ZNK7Profile9GetPadNumEv	func	assert-unreachable	
+_ZNK7Profile9GetPadNumEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
 _ZNK8AssetMgr11GetEyebrowsERSt6vectorI6SymbolSaIS1_EES1_	func	assert-unreachable	
 _ZNK8AssetMgr15GetTypeFromNameE6Symbol	func	assert-unreachable	
 _ZNK8AssetMgr16GetEyebrowsCountE6Symbol	func	assert-unreachable	
