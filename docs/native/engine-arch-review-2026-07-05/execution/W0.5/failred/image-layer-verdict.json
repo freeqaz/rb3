@@ -1,0 +1,1 @@
+{"mode": "perceptual", "grid_w": 64, "grid_h": 36, "a_size": "1280x720", "b_size": "1280x720", "struct_score": 79.45, "block_score": 95.1, "ssim_score": 77.58, "detail_ratio": 0.699, "score": 81.24, "min_score": 35.0, "verdict": "PASS"}
