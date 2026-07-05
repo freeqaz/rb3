@@ -755,9 +755,17 @@ static int RunGame(int argc, char **argv) {
     return 0;
 }
 
+// Loud-by-default weak-stub census startup (W0.2, rb3_stub_census.cpp).
+extern "C" void __hmx_stub_census_startup();
+
 int main(int argc, char **argv) {
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
+
+    // Loud-by-default weak-stub census (W0.2): prints the linked-stub count now
+    // and arms an atexit hit dump; each band3_link_stubs.s trampoline logs its
+    // first call. Silence with RB3_STUB_QUIET. All entry modes get the census.
+    __hmx_stub_census_startup();
 
     // Reliable signal handling for the full-boot modes (see RB3SignalHandler).
     // Under AddressSanitizer the handler chains to ASan's default for non-

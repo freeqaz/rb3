@@ -644,6 +644,8 @@ add_executable(rb3-native
     # weak no-op stubs for the boot-path symbols defined by the band3/bandobj/char
     # TUs that don't yet compile under clang (see _NATIVE_FORK_EXCLUDE)
     ${CMAKE_SOURCE_DIR}/src/band3_link_stubs.s
+    # loud-by-default census for the band3_link_stubs.s weak trampolines (W0.2)
+    ${CMAKE_SOURCE_DIR}/src/rb3_stub_census.cpp
 )
 rb3_configure_target(rb3-native)
 

@@ -9,1071 +9,7855 @@
 // from the rb3-native link; the boot spine (App.cpp) + the compiled boot-path
 // TUs still REFERENCE symbols those excluded TUs would define (BandInit,
 // MetaPanel::Init, manager singletons/vtables/typeinfo, static members, …).
-// Each name is WEAK -> any real definition wins; the rest resolve to a shared
-// no-op. Splits FUNCTION stubs (point at a .text noop; safe to call) from
-// DATA stubs (each gets its own writable .bss reservation; safe to read AND
-// write — singletons/globals/static members/vtables/typeinfo). None is on
-// the matched-fork asm-match line.
+// Each name is WEAK -> any real definition wins; the rest resolve to a stub.
+// Splits FUNCTION stubs from DATA stubs (each gets its own writable .bss
+// reservation; safe to read AND write — singletons/globals/static members/
+// vtables/typeinfo). None is on the matched-fork asm-match line.
 //
 // The classification (assert-unreachable | ok-noop | data-blob) and any
 // per-symbol justification live in band3_stub_registry.tsv; historical
 // "REMOVED — now strongly defined" notes for symbols that graduated out of
 // this file live in its git history, not here.
 //
+// MODE: loud (default) — each FUNCTION stub is a per-symbol trampoline
+// __hmx_tramp_<i> that logs its FIRST call to stderr (via the extern "C"
+// census hook __hmx_stub_first_hit) and records the hit for a startup+atexit
+// census (rb3_stub_census.cpp), then falls through to the legacy behavior of
+// returning 0. The already-hit fast path is cmpb/jne/xor/ret (≤4 insns), so a
+// hot stub is ~free. Returning 0 is behavior-identical to the old shared
+// no-op; the trampoline only ADDS the loud first-hit signal so an invisible
+// swallowed call (à la DrawParticlesBillboard / EndGame) surfaces on frame 1.
+//
+// A parallel C++ table is emitted as band3_stub_table.inc (kept in sync by
+// this generator — do not hand-edit either). rb3-native links PIE, so the
+// trampoline uses RIP-relative addressing + call ...@PLT.
+//
 // Regenerate: edit native/src/band3_stub_registry.tsv, then run
-//   python3 scripts/native/gen_band3_link_stubs.py --mode legacy
+//   python3 scripts/native/gen_band3_link_stubs.py
     .text
+    // ---- FUNCTION stubs: per-symbol loud first-hit trampolines ----
     .p2align 4
-__hmx_band3_noop_stub:
-    xorl %eax, %eax
+__hmx_tramp_0:
+    cmpb $0, __hmx_latch_0(%rip)
+    jne 1f
+    movb $1, __hmx_latch_0(%rip)
+    leaq __hmx_name_0(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
     ret
-
-    // ---- FUNCTION stubs (call -> harmless no-op returning 0) ----
     .weak AddRedeemedOffer__21StoreRedemptionsTableFPCc
-    .set AddRedeemedOffer__21StoreRedemptionsTableFPCc, __hmx_band3_noop_stub
+    .set AddRedeemedOffer__21StoreRedemptionsTableFPCc, __hmx_tramp_0
+    .p2align 4
+__hmx_tramp_1:
+    cmpb $0, __hmx_latch_1(%rip)
+    jne 1f
+    movb $1, __hmx_latch_1(%rip)
+    leaq __hmx_name_1(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf
-    .set AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf, __hmx_band3_noop_stub
+    .set AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf, __hmx_tramp_1
+    .p2align 4
+__hmx_tramp_2:
+    cmpb $0, __hmx_latch_2(%rip)
+    jne 1f
+    movb $1, __hmx_latch_2(%rip)
+    leaq __hmx_name_2(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkDoFrame
-    .set BinkDoFrame, __hmx_band3_noop_stub
+    .set BinkDoFrame, __hmx_tramp_2
+    .p2align 4
+__hmx_tramp_3:
+    cmpb $0, __hmx_latch_3(%rip)
+    jne 1f
+    movb $1, __hmx_latch_3(%rip)
+    leaq __hmx_name_3(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkGetFrameBuffersInfo
-    .set BinkGetFrameBuffersInfo, __hmx_band3_noop_stub
+    .set BinkGetFrameBuffersInfo, __hmx_tramp_3
+    .p2align 4
+__hmx_tramp_4:
+    cmpb $0, __hmx_latch_4(%rip)
+    jne 1f
+    movb $1, __hmx_latch_4(%rip)
+    leaq __hmx_name_4(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkGetSummary
-    .set BinkGetSummary, __hmx_band3_noop_stub
+    .set BinkGetSummary, __hmx_tramp_4
+    .p2align 4
+__hmx_tramp_5:
+    cmpb $0, __hmx_latch_5(%rip)
+    jne 1f
+    movb $1, __hmx_latch_5(%rip)
+    leaq __hmx_name_5(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkPause
-    .set BinkPause, __hmx_band3_noop_stub
+    .set BinkPause, __hmx_tramp_5
+    .p2align 4
+__hmx_tramp_6:
+    cmpb $0, __hmx_latch_6(%rip)
+    jne 1f
+    movb $1, __hmx_latch_6(%rip)
+    leaq __hmx_name_6(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkRegisterFrameBuffers
-    .set BinkRegisterFrameBuffers, __hmx_band3_noop_stub
+    .set BinkRegisterFrameBuffers, __hmx_tramp_6
+    .p2align 4
+__hmx_tramp_7:
+    cmpb $0, __hmx_latch_7(%rip)
+    jne 1f
+    movb $1, __hmx_latch_7(%rip)
+    leaq __hmx_name_7(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkSetSoundOnOff
-    .set BinkSetSoundOnOff, __hmx_band3_noop_stub
+    .set BinkSetSoundOnOff, __hmx_tramp_7
+    .p2align 4
+__hmx_tramp_8:
+    cmpb $0, __hmx_latch_8(%rip)
+    jne 1f
+    movb $1, __hmx_latch_8(%rip)
+    leaq __hmx_name_8(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkShouldSkip
-    .set BinkShouldSkip, __hmx_band3_noop_stub
+    .set BinkShouldSkip, __hmx_tramp_8
+    .p2align 4
+__hmx_tramp_9:
+    cmpb $0, __hmx_latch_9(%rip)
+    jne 1f
+    movb $1, __hmx_latch_9(%rip)
+    leaq __hmx_name_9(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkWait
-    .set BinkWait, __hmx_band3_noop_stub
+    .set BinkWait, __hmx_tramp_9
+    .p2align 4
+__hmx_tramp_10:
+    cmpb $0, __hmx_latch_10(%rip)
+    jne 1f
+    movb $1, __hmx_latch_10(%rip)
+    leaq __hmx_name_10(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak JoypadSetCalbertMode
-    .set JoypadSetCalbertMode, __hmx_band3_noop_stub
+    .set JoypadSetCalbertMode, __hmx_tramp_10
+    .p2align 4
+__hmx_tramp_11:
+    cmpb $0, __hmx_latch_11(%rip)
+    jne 1f
+    movb $1, __hmx_latch_11(%rip)
+    leaq __hmx_name_11(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak NoteAt__13VocalNoteListCFf
-    .set NoteAt__13VocalNoteListCFf, __hmx_band3_noop_stub
+    .set NoteAt__13VocalNoteListCFf, __hmx_tramp_11
+    .p2align 4
+__hmx_tramp_12:
+    cmpb $0, __hmx_latch_12(%rip)
+    jne 1f
+    movb $1, __hmx_latch_12(%rip)
+    leaq __hmx_name_12(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak PitchAt__13VocalNoteListCFf
-    .set PitchAt__13VocalNoteListCFf, __hmx_band3_noop_stub
+    .set PitchAt__13VocalNoteListCFf, __hmx_tramp_12
+    .p2align 4
+__hmx_tramp_13:
+    cmpb $0, __hmx_latch_13(%rip)
+    jne 1f
+    movb $1, __hmx_latch_13(%rip)
+    leaq __hmx_name_13(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak PlayableBy__9VocalNoteCFi
-    .set PlayableBy__9VocalNoteCFi, __hmx_band3_noop_stub
+    .set PlayableBy__9VocalNoteCFi, __hmx_tramp_13
+    .p2align 4
+__hmx_tramp_14:
+    cmpb $0, __hmx_latch_14(%rip)
+    jne 1f
+    movb $1, __hmx_latch_14(%rip)
+    leaq __hmx_name_14(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RbnOffer__9StorePageCFi
-    .set RbnOffer__9StorePageCFi, __hmx_band3_noop_stub
+    .set RbnOffer__9StorePageCFi, __hmx_tramp_14
+    .p2align 4
+__hmx_tramp_15:
+    cmpb $0, __hmx_latch_15(%rip)
+    jne 1f
+    movb $1, __hmx_latch_15(%rip)
+    leaq __hmx_name_15(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z12CntSdRsoInitP15RSOObjectHeader
-    .set _Z12CntSdRsoInitP15RSOObjectHeader, __hmx_band3_noop_stub
+    .set _Z12CntSdRsoInitP15RSOObjectHeader, __hmx_tramp_15
+    .p2align 4
+__hmx_tramp_16:
+    cmpb $0, __hmx_latch_16(%rip)
+    jne 1f
+    movb $1, __hmx_latch_16(%rip)
+    leaq __hmx_name_16(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z13SystemPreInitiPPcPKc
-    .set _Z13SystemPreInitiPPcPKc, __hmx_band3_noop_stub
+    .set _Z13SystemPreInitiPPcPKc, __hmx_tramp_16
+    .p2align 4
+__hmx_tramp_17:
+    cmpb $0, __hmx_latch_17(%rip)
+    jne 1f
+    movb $1, __hmx_latch_17(%rip)
+    leaq __hmx_name_17(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17CntSdRsoTerminatev
-    .set _Z17CntSdRsoTerminatev, __hmx_band3_noop_stub
+    .set _Z17CntSdRsoTerminatev, __hmx_tramp_17
+    .p2align 4
+__hmx_tramp_18:
+    cmpb $0, __hmx_latch_18(%rip)
+    jne 1f
+    movb $1, __hmx_latch_18(%rip)
+    leaq __hmx_name_18(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z18SemitoneToWhiteKeyi
-    .set _Z18SemitoneToWhiteKeyi, __hmx_band3_noop_stub
+    .set _Z18SemitoneToWhiteKeyi, __hmx_tramp_18
+    .p2align 4
+__hmx_tramp_19:
+    cmpb $0, __hmx_latch_19(%rip)
+    jne 1f
+    movb $1, __hmx_latch_19(%rip)
+    leaq __hmx_name_19(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z18WhiteKeyToSemitonei
-    .set _Z18WhiteKeyToSemitonei, __hmx_band3_noop_stub
+    .set _Z18WhiteKeyToSemitonei, __hmx_tramp_19
+    .p2align 4
+__hmx_tramp_20:
+    cmpb $0, __hmx_latch_20(%rip)
+    jne 1f
+    movb $1, __hmx_latch_20(%rip)
+    leaq __hmx_name_20(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z19JoypadWiiOnUserLeftib
-    .set _Z19JoypadWiiOnUserLeftib, __hmx_band3_noop_stub
+    .set _Z19JoypadWiiOnUserLeftib, __hmx_tramp_20
+    .p2align 4
+__hmx_tramp_21:
+    cmpb $0, __hmx_latch_21(%rip)
+    jne 1f
+    movb $1, __hmx_latch_21(%rip)
+    leaq __hmx_name_21(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z21JoypadGetCalbertValueib
-    .set _Z21JoypadGetCalbertValueib, __hmx_band3_noop_stub
+    .set _Z21JoypadGetCalbertValueib, __hmx_tramp_21
+    .p2align 4
+__hmx_tramp_22:
+    cmpb $0, __hmx_latch_22(%rip)
+    jne 1f
+    movb $1, __hmx_latch_22(%rip)
+    leaq __hmx_name_22(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z26GetWiiJoypadDisconnectTypeiP10JoypadTypeS0_
-    .set _Z26GetWiiJoypadDisconnectTypeiP10JoypadTypeS0_, __hmx_band3_noop_stub
+    .set _Z26GetWiiJoypadDisconnectTypeiP10JoypadTypeS0_, __hmx_tramp_22
+    .p2align 4
+__hmx_tramp_23:
+    cmpb $0, __hmx_latch_23(%rip)
+    jne 1f
+    movb $1, __hmx_latch_23(%rip)
+    leaq __hmx_name_23(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z8BandInitv
-    .set _Z8BandInitv, __hmx_band3_noop_stub
+    .set _Z8BandInitv, __hmx_tramp_23
+    .p2align 4
+__hmx_tramp_24:
+    cmpb $0, __hmx_latch_24(%rip)
+    jne 1f
+    movb $1, __hmx_latch_24(%rip)
+    leaq __hmx_name_24(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z8PropSyncR13BandPatchMeshR8DataNodeP9DataArrayi6PropOp
-    .set _Z8PropSyncR13BandPatchMeshR8DataNodeP9DataArrayi6PropOp, __hmx_band3_noop_stub
+    .set _Z8PropSyncR13BandPatchMeshR8DataNodeP9DataArrayi6PropOp, __hmx_tramp_24
+    .p2align 4
+__hmx_tramp_25:
+    cmpb $0, __hmx_latch_25(%rip)
+    jne 1f
+    movb $1, __hmx_latch_25(%rip)
+    leaq __hmx_name_25(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z8PropSyncR13CharacterTestR8DataNodeP9DataArrayi6PropOp
-    .set _Z8PropSyncR13CharacterTestR8DataNodeP9DataArrayi6PropOp, __hmx_band3_noop_stub
+    .set _Z8PropSyncR13CharacterTestR8DataNodeP9DataArrayi6PropOp, __hmx_tramp_25
+    .p2align 4
+__hmx_tramp_26:
+    cmpb $0, __hmx_latch_26(%rip)
+    jne 1f
+    movb $1, __hmx_latch_26(%rip)
+    leaq __hmx_name_26(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMerger10FindMergerE6Symbolb
-    .set _ZN10FileMerger10FindMergerE6Symbolb, __hmx_band3_noop_stub
+    .set _ZN10FileMerger10FindMergerE6Symbolb, __hmx_tramp_26
+    .p2align 4
+__hmx_tramp_27:
+    cmpb $0, __hmx_latch_27(%rip)
+    jne 1f
+    movb $1, __hmx_latch_27(%rip)
+    leaq __hmx_name_27(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMerger11MergeActionEPN3Hmx6ObjectES2_P9ObjectDir
-    .set _ZN10FileMerger11MergeActionEPN3Hmx6ObjectES2_P9ObjectDir, __hmx_band3_noop_stub
+    .set _ZN10FileMerger11MergeActionEPN3Hmx6ObjectES2_P9ObjectDir, __hmx_tramp_27
+    .p2align 4
+__hmx_tramp_28:
+    cmpb $0, __hmx_latch_28(%rip)
+    jne 1f
+    movb $1, __hmx_latch_28(%rip)
+    leaq __hmx_name_28(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMerger15FindMergerIndexE6Symbolb
-    .set _ZN10FileMerger15FindMergerIndexE6Symbolb, __hmx_band3_noop_stub
+    .set _ZN10FileMerger15FindMergerIndexE6Symbolb, __hmx_tramp_28
+    .p2align 4
+__hmx_tramp_29:
+    cmpb $0, __hmx_latch_29(%rip)
+    jne 1f
+    movb $1, __hmx_latch_29(%rip)
+    leaq __hmx_name_29(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMerger16LaunchNextLoaderEv
-    .set _ZN10FileMerger16LaunchNextLoaderEv, __hmx_band3_noop_stub
+    .set _ZN10FileMerger16LaunchNextLoaderEv, __hmx_tramp_29
+    .p2align 4
+__hmx_tramp_30:
+    cmpb $0, __hmx_latch_30(%rip)
+    jne 1f
+    movb $1, __hmx_latch_30(%rip)
+    leaq __hmx_name_30(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMerger5ClearEv
-    .set _ZN10FileMerger5ClearEv, __hmx_band3_noop_stub
+    .set _ZN10FileMerger5ClearEv, __hmx_tramp_30
+    .p2align 4
+__hmx_tramp_31:
+    cmpb $0, __hmx_latch_31(%rip)
+    jne 1f
+    movb $1, __hmx_latch_31(%rip)
+    leaq __hmx_name_31(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMerger6SelectE6SymbolRK8FilePathb
-    .set _ZN10FileMerger6SelectE6SymbolRK8FilePathb, __hmx_band3_noop_stub
+    .set _ZN10FileMerger6SelectE6SymbolRK8FilePathb, __hmx_tramp_31
+    .p2align 4
+__hmx_tramp_32:
+    cmpb $0, __hmx_latch_32(%rip)
+    jne 1f
+    movb $1, __hmx_latch_32(%rip)
+    leaq __hmx_name_32(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMerger9StartLoadEb
-    .set _ZN10FileMerger9StartLoadEb, __hmx_band3_noop_stub
+    .set _ZN10FileMerger9StartLoadEb, __hmx_tramp_32
+    .p2align 4
+__hmx_tramp_33:
+    cmpb $0, __hmx_latch_33(%rip)
+    jne 1f
+    movb $1, __hmx_latch_33(%rip)
+    leaq __hmx_name_33(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10FileMergerC1Ev
-    .set _ZN10FileMergerC1Ev, __hmx_band3_noop_stub
+    .set _ZN10FileMergerC1Ev, __hmx_tramp_33
+    .p2align 4
+__hmx_tramp_34:
+    cmpb $0, __hmx_latch_34(%rip)
+    jne 1f
+    movb $1, __hmx_latch_34(%rip)
+    leaq __hmx_name_34(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfig10RemoveUserEP8BandUser
-    .set _ZN10GameConfig10RemoveUserEP8BandUser, __hmx_band3_noop_stub
+    .set _ZN10GameConfig10RemoveUserEP8BandUser, __hmx_tramp_34
+    .p2align 4
+__hmx_tramp_35:
+    cmpb $0, __hmx_latch_35(%rip)
+    jne 1f
+    movb $1, __hmx_latch_35(%rip)
+    leaq __hmx_name_35(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfig11AssignTrackEP8BandUser
-    .set _ZN10GameConfig11AssignTrackEP8BandUser, __hmx_band3_noop_stub
+    .set _ZN10GameConfig11AssignTrackEP8BandUser, __hmx_tramp_35
+    .p2align 4
+__hmx_tramp_36:
+    cmpb $0, __hmx_latch_36(%rip)
+    jne 1f
+    movb $1, __hmx_latch_36(%rip)
+    leaq __hmx_name_36(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfig12AssignTracksEv
-    .set _ZN10GameConfig12AssignTracksEv, __hmx_band3_noop_stub
+    .set _ZN10GameConfig12AssignTracksEv, __hmx_tramp_36
+    .p2align 4
+__hmx_tramp_37:
+    cmpb $0, __hmx_latch_37(%rip)
+    jne 1f
+    movb $1, __hmx_latch_37(%rip)
+    leaq __hmx_name_37(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfig12SyncPropertyER8DataNodeP9DataArrayi6PropOp
-    .set _ZN10GameConfig12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_band3_noop_stub
+    .set _ZN10GameConfig12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_tramp_37
+    .p2align 4
+__hmx_tramp_38:
+    cmpb $0, __hmx_latch_38(%rip)
+    jne 1f
+    movb $1, __hmx_latch_38(%rip)
+    leaq __hmx_name_38(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfig16ChangeDifficultyEP8BandUseri
-    .set _ZN10GameConfig16ChangeDifficultyEP8BandUseri, __hmx_band3_noop_stub
+    .set _ZN10GameConfig16ChangeDifficultyEP8BandUseri, __hmx_tramp_38
+    .p2align 4
+__hmx_tramp_39:
+    cmpb $0, __hmx_latch_39(%rip)
+    jne 1f
+    movb $1, __hmx_latch_39(%rip)
+    leaq __hmx_name_39(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfig16ChangeRandomSeedEv
-    .set _ZN10GameConfig16ChangeRandomSeedEv, __hmx_band3_noop_stub
+    .set _ZN10GameConfig16ChangeRandomSeedEv, __hmx_tramp_39
+    .p2align 4
+__hmx_tramp_40:
+    cmpb $0, __hmx_latch_40(%rip)
+    jne 1f
+    movb $1, __hmx_latch_40(%rip)
+    leaq __hmx_name_40(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfig19GetFxSwitchPositionEP13LocalBandUser
-    .set _ZN10GameConfig19GetFxSwitchPositionEP13LocalBandUser, __hmx_band3_noop_stub
+    .set _ZN10GameConfig19GetFxSwitchPositionEP13LocalBandUser, __hmx_tramp_40
+    .p2align 4
+__hmx_tramp_41:
+    cmpb $0, __hmx_latch_41(%rip)
+    jne 1f
+    movb $1, __hmx_latch_41(%rip)
+    leaq __hmx_name_41(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfigC1Ev
-    .set _ZN10GameConfigC1Ev, __hmx_band3_noop_stub
+    .set _ZN10GameConfigC1Ev, __hmx_tramp_41
+    .p2align 4
+__hmx_tramp_42:
+    cmpb $0, __hmx_latch_42(%rip)
+    jne 1f
+    movb $1, __hmx_latch_42(%rip)
+    leaq __hmx_name_42(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10GameConfigD1Ev
-    .set _ZN10GameConfigD1Ev, __hmx_band3_noop_stub
+    .set _ZN10GameConfigD1Ev, __hmx_tramp_42
+    .p2align 4
+__hmx_tramp_43:
+    cmpb $0, __hmx_latch_43(%rip)
+    jne 1f
+    movb $1, __hmx_latch_43(%rip)
+    leaq __hmx_name_43(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MemcardMgr4InitEv
-    .set _ZN10MemcardMgr4InitEv, __hmx_band3_noop_stub
+    .set _ZN10MemcardMgr4InitEv, __hmx_tramp_43
+    .p2align 4
+__hmx_tramp_44:
+    cmpb $0, __hmx_latch_44(%rip)
+    jne 1f
+    movb $1, __hmx_latch_44(%rip)
+    leaq __hmx_name_44(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiParser4InitEv
-    .set _ZN10MidiParser4InitEv, __hmx_band3_noop_stub
+    .set _ZN10MidiParser4InitEv, __hmx_tramp_44
+    .p2align 4
+__hmx_tramp_45:
+    cmpb $0, __hmx_latch_45(%rip)
+    jne 1f
+    movb $1, __hmx_latch_45(%rip)
+    leaq __hmx_name_45(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiParser5ResetEf
-    .set _ZN10MidiParser5ResetEf, __hmx_band3_noop_stub
+    .set _ZN10MidiParser5ResetEf, __hmx_tramp_45
+    .p2align 4
+__hmx_tramp_46:
+    cmpb $0, __hmx_latch_46(%rip)
+    jne 1f
+    movb $1, __hmx_latch_46(%rip)
+    leaq __hmx_name_46(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiReader13ReadAllTracksEv
-    .set _ZN10MidiReader13ReadAllTracksEv, __hmx_band3_noop_stub
+    .set _ZN10MidiReader13ReadAllTracksEv, __hmx_tramp_46
+    .p2align 4
+__hmx_tramp_47:
+    cmpb $0, __hmx_latch_47(%rip)
+    jne 1f
+    movb $1, __hmx_latch_47(%rip)
+    leaq __hmx_name_47(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiReader14ReadSomeEventsEi
-    .set _ZN10MidiReader14ReadSomeEventsEi, __hmx_band3_noop_stub
+    .set _ZN10MidiReader14ReadSomeEventsEi, __hmx_tramp_47
+    .p2align 4
+__hmx_tramp_48:
+    cmpb $0, __hmx_latch_48(%rip)
+    jne 1f
+    movb $1, __hmx_latch_48(%rip)
+    leaq __hmx_name_48(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiReaderC1ER9BinStreamR12MidiReceiverPKc
-    .set _ZN10MidiReaderC1ER9BinStreamR12MidiReceiverPKc, __hmx_band3_noop_stub
+    .set _ZN10MidiReaderC1ER9BinStreamR12MidiReceiverPKc, __hmx_tramp_48
+    .p2align 4
+__hmx_tramp_49:
+    cmpb $0, __hmx_latch_49(%rip)
+    jne 1f
+    movb $1, __hmx_latch_49(%rip)
+    leaq __hmx_name_49(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiReaderD1Ev
-    .set _ZN10MidiReaderD1Ev, __hmx_band3_noop_stub
+    .set _ZN10MidiReaderD1Ev, __hmx_tramp_49
+    .p2align 4
+__hmx_tramp_50:
+    cmpb $0, __hmx_latch_50(%rip)
+    jne 1f
+    movb $1, __hmx_latch_50(%rip)
+    leaq __hmx_name_50(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession10DisconnectEv
-    .set _ZN10NetSession10DisconnectEv, __hmx_band3_noop_stub
+    .set _ZN10NetSession10DisconnectEv, __hmx_tramp_50
+    .p2align 4
+__hmx_tramp_51:
+    cmpb $0, __hmx_latch_51(%rip)
+    jne 1f
+    movb $1, __hmx_latch_51(%rip)
+    leaq __hmx_name_51(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession12SendMsgToAllER10NetMessage10PacketType
-    .set _ZN10NetSession12SendMsgToAllER10NetMessage10PacketType, __hmx_band3_noop_stub
+    .set _ZN10NetSession12SendMsgToAllER10NetMessage10PacketType, __hmx_tramp_51
+    .p2align 4
+__hmx_tramp_52:
+    cmpb $0, __hmx_latch_52(%rip)
+    jne 1f
+    movb $1, __hmx_latch_52(%rip)
+    leaq __hmx_name_52(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession14RegisterOnlineEv
-    .set _ZN10NetSession14RegisterOnlineEv, __hmx_band3_noop_stub
+    .set _ZN10NetSession14RegisterOnlineEv, __hmx_tramp_52
+    .p2align 4
+__hmx_tramp_53:
+    cmpb $0, __hmx_latch_53(%rip)
+    jne 1f
+    movb $1, __hmx_latch_53(%rip)
+    leaq __hmx_name_53(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession14UpdateUserDataEP4Userj
-    .set _ZN10NetSession14UpdateUserDataEP4Userj, __hmx_band3_noop_stub
+    .set _ZN10NetSession14UpdateUserDataEP4Userj, __hmx_tramp_53
+    .p2align 4
+__hmx_tramp_54:
+    cmpb $0, __hmx_latch_54(%rip)
+    jne 1f
+    movb $1, __hmx_latch_54(%rip)
+    leaq __hmx_name_54(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession15RemoveLocalUserEP9LocalUser
-    .set _ZN10NetSession15RemoveLocalUserEP9LocalUser, __hmx_band3_noop_stub
+    .set _ZN10NetSession15RemoveLocalUserEP9LocalUser, __hmx_tramp_54
+    .p2align 4
+__hmx_tramp_55:
+    cmpb $0, __hmx_latch_55(%rip)
+    jne 1f
+    movb $1, __hmx_latch_55(%rip)
+    leaq __hmx_name_55(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession4JoinEP15NetSearchResult
-    .set _ZN10NetSession4JoinEP15NetSearchResult, __hmx_band3_noop_stub
+    .set _ZN10NetSession4JoinEP15NetSearchResult, __hmx_tramp_55
+    .p2align 4
+__hmx_tramp_56:
+    cmpb $0, __hmx_latch_56(%rip)
+    jne 1f
+    movb $1, __hmx_latch_56(%rip)
+    leaq __hmx_name_56(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession7EndGameEibf
-    .set _ZN10NetSession7EndGameEibf, __hmx_band3_noop_stub
+    .set _ZN10NetSession7EndGameEibf, __hmx_tramp_56
+    .p2align 4
+__hmx_tramp_57:
+    cmpb $0, __hmx_latch_57(%rip)
+    jne 1f
+    movb $1, __hmx_latch_57(%rip)
+    leaq __hmx_name_57(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession7SendMsgEP4UserR10NetMessage10PacketType
-    .set _ZN10NetSession7SendMsgEP4UserR10NetMessage10PacketType, __hmx_band3_noop_stub
+    .set _ZN10NetSession7SendMsgEP4UserR10NetMessage10PacketType, __hmx_tramp_57
+    .p2align 4
+__hmx_tramp_58:
+    cmpb $0, __hmx_latch_58(%rip)
+    jne 1f
+    movb $1, __hmx_latch_58(%rip)
+    leaq __hmx_name_58(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession7SendMsgERKSt6vectorIP10RemoteUserSaIS2_EER10NetMessage10PacketType
-    .set _ZN10NetSession7SendMsgERKSt6vectorIP10RemoteUserSaIS2_EER10NetMessage10PacketType, __hmx_band3_noop_stub
+    .set _ZN10NetSession7SendMsgERKSt6vectorIP10RemoteUserSaIS2_EER10NetMessage10PacketType, __hmx_tramp_58
+    .p2align 4
+__hmx_tramp_59:
+    cmpb $0, __hmx_latch_59(%rip)
+    jne 1f
+    movb $1, __hmx_latch_59(%rip)
+    leaq __hmx_name_59(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10NetSession9StartGameEv
-    .set _ZN10NetSession9StartGameEv, __hmx_band3_noop_stub
+    .set _ZN10NetSession9StartGameEv, __hmx_tramp_59
+    .p2align 4
+__hmx_tramp_60:
+    cmpb $0, __hmx_latch_60(%rip)
+    jne 1f
+    movb $1, __hmx_latch_60(%rip)
+    leaq __hmx_name_60(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10ProfileMgr29GetShouldShowWiiFriendsPromptEv
-    .set _ZN10ProfileMgr29GetShouldShowWiiFriendsPromptEv, __hmx_band3_noop_stub
+    .set _ZN10ProfileMgr29GetShouldShowWiiFriendsPromptEv, __hmx_tramp_60
+    .p2align 4
+__hmx_tramp_61:
+    cmpb $0, __hmx_latch_61(%rip)
+    jne 1f
+    movb $1, __hmx_latch_61(%rip)
+    leaq __hmx_name_61(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10TrackPanel19TrackerDisplayResetEv
-    .set _ZN10TrackPanel19TrackerDisplayResetEv, __hmx_band3_noop_stub
+    .set _ZN10TrackPanel19TrackerDisplayResetEv, __hmx_tramp_61
+    .p2align 4
+__hmx_tramp_62:
+    cmpb $0, __hmx_latch_62(%rip)
+    jne 1f
+    movb $1, __hmx_latch_62(%rip)
+    leaq __hmx_name_62(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11ClipDistMap4DrawEffP10CharDriver
-    .set _ZN11ClipDistMap4DrawEffP10CharDriver, __hmx_band3_noop_stub
+    .set _ZN11ClipDistMap4DrawEffP10CharDriver, __hmx_tramp_62
+    .p2align 4
+__hmx_tramp_63:
+    cmpb $0, __hmx_latch_63(%rip)
+    jne 1f
+    movb $1, __hmx_latch_63(%rip)
+    leaq __hmx_name_63(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11ClipDistMap8SetNodesEPNS_4NodeES1_
-    .set _ZN11ClipDistMap8SetNodesEPNS_4NodeES1_, __hmx_band3_noop_stub
+    .set _ZN11ClipDistMap8SetNodesEPNS_4NodeES1_, __hmx_tramp_63
+    .p2align 4
+__hmx_tramp_64:
+    cmpb $0, __hmx_latch_64(%rip)
+    jne 1f
+    movb $1, __hmx_latch_64(%rip)
+    leaq __hmx_name_64(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11ClipDistMap9FindDistsEfP9DataArray
-    .set _ZN11ClipDistMap9FindDistsEfP9DataArray, __hmx_band3_noop_stub
+    .set _ZN11ClipDistMap9FindDistsEfP9DataArray, __hmx_tramp_64
+    .p2align 4
+__hmx_tramp_65:
+    cmpb $0, __hmx_latch_65(%rip)
+    jne 1f
+    movb $1, __hmx_latch_65(%rip)
+    leaq __hmx_name_65(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11ClipDistMap9FindNodesEfff
-    .set _ZN11ClipDistMap9FindNodesEfff, __hmx_band3_noop_stub
+    .set _ZN11ClipDistMap9FindNodesEfff, __hmx_tramp_65
+    .p2align 4
+__hmx_tramp_66:
+    cmpb $0, __hmx_latch_66(%rip)
+    jne 1f
+    movb $1, __hmx_latch_66(%rip)
+    leaq __hmx_name_66(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11ClipDistMapC1EP8CharClipS1_ffiPK9DataArray
-    .set _ZN11ClipDistMapC1EP8CharClipS1_ffiPK9DataArray, __hmx_band3_noop_stub
+    .set _ZN11ClipDistMapC1EP8CharClipS1_ffiPK9DataArray, __hmx_tramp_66
+    .p2align 4
+__hmx_tramp_67:
+    cmpb $0, __hmx_latch_67(%rip)
+    jne 1f
+    movb $1, __hmx_latch_67(%rip)
+    leaq __hmx_name_67(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr14StartProfanityEPPKtiPcPN3Hmx6ObjectE
-    .set _ZN11PlatformMgr14StartProfanityEPPKtiPcPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr14StartProfanityEPPKtiPcPN3Hmx6ObjectE, __hmx_tramp_67
+    .p2align 4
+__hmx_tramp_68:
+    cmpb $0, __hmx_latch_68(%rip)
+    jne 1f
+    movb $1, __hmx_latch_68(%rip)
+    leaq __hmx_name_68(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr15SetUserSignedInEi
-    .set _ZN11PlatformMgr15SetUserSignedInEi, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr15SetUserSignedInEi, __hmx_tramp_68
+    .p2align 4
+__hmx_tramp_69:
+    cmpb $0, __hmx_latch_69(%rip)
+    jne 1f
+    movb $1, __hmx_latch_69(%rip)
+    leaq __hmx_name_69(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr16EnumerateFriendsEiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectE
-    .set _ZN11PlatformMgr16EnumerateFriendsEiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr16EnumerateFriendsEiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectE, __hmx_tramp_69
+    .p2align 4
+__hmx_tramp_70:
+    cmpb $0, __hmx_latch_70(%rip)
+    jne 1f
+    movb $1, __hmx_latch_70(%rip)
+    leaq __hmx_name_70(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr16SetUserSignedOutEi
-    .set _ZN11PlatformMgr16SetUserSignedOutEi, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr16SetUserSignedOutEi, __hmx_tramp_70
+    .p2align 4
+__hmx_tramp_71:
+    cmpb $0, __hmx_latch_71(%rip)
+    jne 1f
+    movb $1, __hmx_latch_71(%rip)
+    leaq __hmx_name_71(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr23RegisterSendMsgCallbackEPFbP6FriendPKcS3_R9MemStreamE
-    .set _ZN11PlatformMgr23RegisterSendMsgCallbackEPFbP6FriendPKcS3_R9MemStreamE, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr23RegisterSendMsgCallbackEPFbP6FriendPKcS3_R9MemStreamE, __hmx_tramp_71
+    .p2align 4
+__hmx_tramp_72:
+    cmpb $0, __hmx_latch_72(%rip)
+    jne 1f
+    movb $1, __hmx_latch_72(%rip)
+    leaq __hmx_name_72(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE
-    .set _ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE, __hmx_tramp_72
+    .p2align 4
+__hmx_tramp_73:
+    cmpb $0, __hmx_latch_73(%rip)
+    jne 1f
+    movb $1, __hmx_latch_73(%rip)
+    leaq __hmx_name_73(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr32RegisterEnumerateFriendsCallbackEPFbiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectEE
-    .set _ZN11PlatformMgr32RegisterEnumerateFriendsCallbackEPFbiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectEE, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr32RegisterEnumerateFriendsCallbackEPFbiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectEE, __hmx_tramp_73
+    .p2align 4
+__hmx_tramp_74:
+    cmpb $0, __hmx_latch_74(%rip)
+    jne 1f
+    movb $1, __hmx_latch_74(%rip)
+    leaq __hmx_name_74(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr4DrawEv
-    .set _ZN11PlatformMgr4DrawEv, __hmx_band3_noop_stub
+    .set _ZN11PlatformMgr4DrawEv, __hmx_tramp_74
+    .p2align 4
+__hmx_tramp_75:
+    cmpb $0, __hmx_latch_75(%rip)
+    jne 1f
+    movb $1, __hmx_latch_75(%rip)
+    leaq __hmx_name_75(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral10GetArtFileE6StringP6RndTexPjPN3Hmx6ObjectEi
-    .set _ZN11RockCentral10GetArtFileE6StringP6RndTexPjPN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN11RockCentral10GetArtFileE6StringP6RndTexPjPN3Hmx6ObjectEi, __hmx_tramp_75
+    .p2align 4
+__hmx_tramp_76:
+    cmpb $0, __hmx_latch_76(%rip)
+    jne 1f
+    movb $1, __hmx_latch_76(%rip)
+    leaq __hmx_name_76(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral10GetMaxRankERSt6vectorIiSaIiEEi9ScoreType15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral10GetMaxRankERSt6vectorIiSaIiEEi9ScoreType15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral10GetMaxRankERSt6vectorIiSaIiEEi9ScoreType15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_76
+    .p2align 4
+__hmx_tramp_77:
+    cmpb $0, __hmx_latch_77(%rip)
+    jne 1f
+    movb $1, __hmx_latch_77(%rip)
+    leaq __hmx_name_77(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral10UpdateBandEP8TourBandR14DataResultListPN3Hmx6ObjectEii
-    .set _ZN11RockCentral10UpdateBandEP8TourBandR14DataResultListPN3Hmx6ObjectEii, __hmx_band3_noop_stub
+    .set _ZN11RockCentral10UpdateBandEP8TourBandR14DataResultListPN3Hmx6ObjectEii, __hmx_tramp_77
+    .p2align 4
+__hmx_tramp_78:
+    cmpb $0, __hmx_latch_78(%rip)
+    jne 1f
+    movb $1, __hmx_latch_78(%rip)
+    leaq __hmx_name_78(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral10UpdateCharEP13TourCharLocalR14DataResultListPN3Hmx6ObjectEii
-    .set _ZN11RockCentral10UpdateCharEP13TourCharLocalR14DataResultListPN3Hmx6ObjectEii, __hmx_band3_noop_stub
+    .set _ZN11RockCentral10UpdateCharEP13TourCharLocalR14DataResultListPN3Hmx6ObjectEii, __hmx_tramp_78
+    .p2align 4
+__hmx_tramp_79:
+    cmpb $0, __hmx_latch_79(%rip)
+    jne 1f
+    movb $1, __hmx_latch_79(%rip)
+    leaq __hmx_name_79(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral11ForceLogoutEv
-    .set _ZN11RockCentral11ForceLogoutEv, __hmx_band3_noop_stub
+    .set _ZN11RockCentral11ForceLogoutEv, __hmx_tramp_79
+    .p2align 4
+__hmx_tramp_80:
+    cmpb $0, __hmx_latch_80(%rip)
+    jne 1f
+    movb $1, __hmx_latch_80(%rip)
+    leaq __hmx_name_80(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral11RecordScoreEiiRSt6vectorI11PlayerScoreSaIS1_EEiibPN3Hmx6ObjectER14DataResultList
-    .set _ZN11RockCentral11RecordScoreEiiRSt6vectorI11PlayerScoreSaIS1_EEiibPN3Hmx6ObjectER14DataResultList, __hmx_band3_noop_stub
+    .set _ZN11RockCentral11RecordScoreEiiRSt6vectorI11PlayerScoreSaIS1_EEiibPN3Hmx6ObjectER14DataResultList, __hmx_tramp_80
+    .p2align 4
+__hmx_tramp_81:
+    cmpb $0, __hmx_latch_81(%rip)
+    jne 1f
+    movb $1, __hmx_latch_81(%rip)
+    leaq __hmx_name_81(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral11RedeemTokenEi6StringR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral11RedeemTokenEi6StringR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral11RedeemTokenEi6StringR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_81
+    .p2align 4
+__hmx_tramp_82:
+    cmpb $0, __hmx_latch_82(%rip)
+    jne 1f
+    movb $1, __hmx_latch_82(%rip)
+    leaq __hmx_name_82(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral12CreateBattleEP11BandProfilePKcS3_RKSt6vectorIiSaIiEER15PatchDescriptori9ScoreTypei15BattleTimeUnitsR14DataResultListPN3Hmx6ObjectEii
-    .set _ZN11RockCentral12CreateBattleEP11BandProfilePKcS3_RKSt6vectorIiSaIiEER15PatchDescriptori9ScoreTypei15BattleTimeUnitsR14DataResultListPN3Hmx6ObjectEii, __hmx_band3_noop_stub
+    .set _ZN11RockCentral12CreateBattleEP11BandProfilePKcS3_RKSt6vectorIiSaIiEER15PatchDescriptori9ScoreTypei15BattleTimeUnitsR14DataResultListPN3Hmx6ObjectEii, __hmx_tramp_82
+    .p2align 4
+__hmx_tramp_83:
+    cmpb $0, __hmx_latch_83(%rip)
+    jne 1f
+    movb $1, __hmx_latch_83(%rip)
+    leaq __hmx_name_83(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral12GetBattleArtEiP6RndTexPN3Hmx6ObjectEi
-    .set _ZN11RockCentral12GetBattleArtEiP6RndTexPN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN11RockCentral12GetBattleArtEiP6RndTexPN3Hmx6ObjectEi, __hmx_tramp_83
+    .p2align 4
+__hmx_tramp_84:
+    cmpb $0, __hmx_latch_84(%rip)
+    jne 1f
+    movb $1, __hmx_latch_84(%rip)
+    leaq __hmx_name_84(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral12SyncSetlistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral12SyncSetlistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral12SyncSetlistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE, __hmx_tramp_84
+    .p2align 4
+__hmx_tramp_85:
+    cmpb $0, __hmx_latch_85(%rip)
+    jne 1f
+    movb $1, __hmx_latch_85(%rip)
+    leaq __hmx_name_85(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral13EncodeMessageE15_WiiMessageTypejPKc
-    .set _ZN11RockCentral13EncodeMessageE15_WiiMessageTypejPKc, __hmx_band3_noop_stub
+    .set _ZN11RockCentral13EncodeMessageE15_WiiMessageTypejPKc, __hmx_tramp_85
+    .p2align 4
+__hmx_tramp_86:
+    cmpb $0, __hmx_latch_86(%rip)
+    jne 1f
+    movb $1, __hmx_latch_86(%rip)
+    leaq __hmx_name_86(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral13GetAccMaxRankERSt6vectorIiSaIiEER6SymbolR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral13GetAccMaxRankERSt6vectorIiSaIiEER6SymbolR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral13GetAccMaxRankERSt6vectorIiSaIiEER6SymbolR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_86
+    .p2align 4
+__hmx_tramp_87:
+    cmpb $0, __hmx_latch_87(%rip)
+    jne 1f
+    movb $1, __hmx_latch_87(%rip)
+    leaq __hmx_name_87(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral13GetSetlistArtEPKcP6RndTexPN3Hmx6ObjectEi
-    .set _ZN11RockCentral13GetSetlistArtEPKcP6RndTexPN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN11RockCentral13GetSetlistArtEPKcP6RndTexPN3Hmx6ObjectEi, __hmx_tramp_87
+    .p2align 4
+__hmx_tramp_88:
+    cmpb $0, __hmx_latch_88(%rip)
+    jne 1f
+    movb $1, __hmx_latch_88(%rip)
+    leaq __hmx_name_88(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral13GetTickerInfoEPK7Profile9ScoreTypeR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral13GetTickerInfoEPK7Profile9ScoreTypeR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral13GetTickerInfoEPK7Profile9ScoreTypeR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_88
+    .p2align 4
+__hmx_tramp_89:
+    cmpb $0, __hmx_latch_89(%rip)
+    jne 1f
+    movb $1, __hmx_latch_89(%rip)
+    leaq __hmx_name_89(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral13UpdateSetlistEP17LocalSavedSetlistR14DataResultListPN3Hmx6ObjectEii
-    .set _ZN11RockCentral13UpdateSetlistEP17LocalSavedSetlistR14DataResultListPN3Hmx6ObjectEii, __hmx_band3_noop_stub
+    .set _ZN11RockCentral13UpdateSetlistEP17LocalSavedSetlistR14DataResultListPN3Hmx6ObjectEii, __hmx_tramp_89
+    .p2align 4
+__hmx_tramp_90:
+    cmpb $0, __hmx_latch_90(%rip)
+    jne 1f
+    movb $1, __hmx_latch_90(%rip)
+    leaq __hmx_name_90(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral14GetLinkingCodeEiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral14GetLinkingCodeEiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral14GetLinkingCodeEiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_90
+    .p2align 4
+__hmx_tramp_91:
+    cmpb $0, __hmx_latch_91(%rip)
+    jne 1f
+    movb $1, __hmx_latch_91(%rip)
+    leaq __hmx_name_91(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral14SaveBinaryDataEP6RndTexR6StringPN3Hmx6ObjectEi
-    .set _ZN11RockCentral14SaveBinaryDataEP6RndTexR6StringPN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN11RockCentral14SaveBinaryDataEP6RndTexR6StringPN3Hmx6ObjectEi, __hmx_tramp_91
+    .p2align 4
+__hmx_tramp_92:
+    cmpb $0, __hmx_latch_92(%rip)
+    jne 1f
+    movb $1, __hmx_latch_92(%rip)
+    leaq __hmx_name_92(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral14UpdateBandLogoEiP6RndTexiPN3Hmx6ObjectEi
-    .set _ZN11RockCentral14UpdateBandLogoEiP6RndTexiPN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN11RockCentral14UpdateBandLogoEiP6RndTexiPN3Hmx6ObjectEi, __hmx_tramp_92
+    .p2align 4
+__hmx_tramp_93:
+    cmpb $0, __hmx_latch_93(%rip)
+    jne 1f
+    movb $1, __hmx_latch_93(%rip)
+    leaq __hmx_name_93(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral14VerifyBandNameEPKcR14DataResultListPN3Hmx6ObjectEii
-    .set _ZN11RockCentral14VerifyBandNameEPKcR14DataResultListPN3Hmx6ObjectEii, __hmx_band3_noop_stub
+    .set _ZN11RockCentral14VerifyBandNameEPKcR14DataResultListPN3Hmx6ObjectEii, __hmx_tramp_93
+    .p2align 4
+__hmx_tramp_94:
+    cmpb $0, __hmx_latch_94(%rip)
+    jne 1f
+    movb $1, __hmx_latch_94(%rip)
+    leaq __hmx_name_94(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral14VerifyCharNameEPKcR14DataResultListPN3Hmx6ObjectEii
-    .set _ZN11RockCentral14VerifyCharNameEPKcR14DataResultListPN3Hmx6ObjectEii, __hmx_band3_noop_stub
+    .set _ZN11RockCentral14VerifyCharNameEPKcR14DataResultListPN3Hmx6ObjectEii, __hmx_tramp_94
+    .p2align 4
+__hmx_tramp_95:
+    cmpb $0, __hmx_latch_95(%rip)
+    jne 1f
+    movb $1, __hmx_latch_95(%rip)
+    leaq __hmx_name_95(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral15GetAllSonglistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral15GetAllSonglistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral15GetAllSonglistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE, __hmx_tramp_95
+    .p2align 4
+__hmx_tramp_96:
+    cmpb $0, __hmx_latch_96(%rip)
+    jne 1f
+    movb $1, __hmx_latch_96(%rip)
+    leaq __hmx_name_96(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral15UpdateBattleArtEP6RndTexPN3Hmx6ObjectEi
-    .set _ZN11RockCentral15UpdateBattleArtEP6RndTexPN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN11RockCentral15UpdateBattleArtEP6RndTexPN3Hmx6ObjectEi, __hmx_tramp_96
+    .p2align 4
+__hmx_tramp_97:
+    cmpb $0, __hmx_latch_97(%rip)
+    jne 1f
+    movb $1, __hmx_latch_97(%rip)
+    leaq __hmx_name_97(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral16GetBattleMaxRankERSt6vectorIiSaIiEEiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral16GetBattleMaxRankERSt6vectorIiSaIiEEiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral16GetBattleMaxRankERSt6vectorIiSaIiEEiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_97
+    .p2align 4
+__hmx_tramp_98:
+    cmpb $0, __hmx_latch_98(%rip)
+    jne 1f
+    movb $1, __hmx_latch_98(%rip)
+    leaq __hmx_name_98(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral16GetSongFullOfferEiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral16GetSongFullOfferEiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral16GetSongFullOfferEiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_98
+    .p2align 4
+__hmx_tramp_99:
+    cmpb $0, __hmx_latch_99(%rip)
+    jne 1f
+    movb $1, __hmx_latch_99(%rip)
+    leaq __hmx_name_99(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral16GetWebLinkStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral16GetWebLinkStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral16GetWebLinkStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_99
+    .p2align 4
+__hmx_tramp_100:
+    cmpb $0, __hmx_latch_100(%rip)
+    jne 1f
+    movb $1, __hmx_latch_100(%rip)
+    leaq __hmx_name_100(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral16RecordOptionDataEv
-    .set _ZN11RockCentral16RecordOptionDataEv, __hmx_band3_noop_stub
+    .set _ZN11RockCentral16RecordOptionDataEv, __hmx_tramp_100
+    .p2align 4
+__hmx_tramp_101:
+    cmpb $0, __hmx_latch_101(%rip)
+    jne 1f
+    movb $1, __hmx_latch_101(%rip)
+    leaq __hmx_name_101(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral16UpdateFriendListEP7ProfileSt6vectorIP6FriendSaIS4_EER14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral16UpdateFriendListEP7ProfileSt6vectorIP6FriendSaIS4_EER14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral16UpdateFriendListEP7ProfileSt6vectorIP6FriendSaIS4_EER14DataResultListPN3Hmx6ObjectE, __hmx_tramp_101
+    .p2align 4
+__hmx_tramp_102:
+    cmpb $0, __hmx_latch_102(%rip)
+    jne 1f
+    movb $1, __hmx_latch_102(%rip)
+    leaq __hmx_name_102(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral16UpdateFriendListEiSt6vectorIP6FriendSaIS2_EER14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral16UpdateFriendListEiSt6vectorIP6FriendSaIS2_EER14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral16UpdateFriendListEiSt6vectorIP6FriendSaIS2_EER14DataResultListPN3Hmx6ObjectE, __hmx_tramp_102
+    .p2align 4
+__hmx_tramp_103:
+    cmpb $0, __hmx_latch_103(%rip)
+    jne 1f
+    movb $1, __hmx_latch_103(%rip)
+    leaq __hmx_name_103(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral16UpdateSetlistArtEP17LocalSavedSetlistiPN3Hmx6ObjectEi
-    .set _ZN11RockCentral16UpdateSetlistArtEP17LocalSavedSetlistiPN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN11RockCentral16UpdateSetlistArtEP17LocalSavedSetlistiPN3Hmx6ObjectEi, __hmx_tramp_103
+    .p2align 4
+__hmx_tramp_104:
+    cmpb $0, __hmx_latch_104(%rip)
+    jne 1f
+    movb $1, __hmx_latch_104(%rip)
+    leaq __hmx_name_104(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral17CheckBattleLimitsEP11BandProfileR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral17CheckBattleLimitsEP11BandProfileR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral17CheckBattleLimitsEP11BandProfileR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_104
+    .p2align 4
+__hmx_tramp_105:
+    cmpb $0, __hmx_latch_105(%rip)
+    jne 1f
+    movb $1, __hmx_latch_105(%rip)
+    leaq __hmx_name_105(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral17RecordBattleScoreEiiRSt6vectorIP11BandProfileSaIS2_EEiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral17RecordBattleScoreEiiRSt6vectorIP11BandProfileSaIS2_EEiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral17RecordBattleScoreEiiRSt6vectorIP11BandProfileSaIS2_EEiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_105
+    .p2align 4
+__hmx_tramp_106:
+    cmpb $0, __hmx_latch_106(%rip)
+    jne 1f
+    movb $1, __hmx_latch_106(%rip)
+    leaq __hmx_name_106(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral17RecordPerformanceEPK7ProfilePK15PerformanceDataiPN3Hmx6ObjectER14DataResultList
-    .set _ZN11RockCentral17RecordPerformanceEPK7ProfilePK15PerformanceDataiPN3Hmx6ObjectER14DataResultList, __hmx_band3_noop_stub
+    .set _ZN11RockCentral17RecordPerformanceEPK7ProfilePK15PerformanceDataiPN3Hmx6ObjectER14DataResultList, __hmx_tramp_106
+    .p2align 4
+__hmx_tramp_107:
+    cmpb $0, __hmx_latch_107(%rip)
+    jne 1f
+    movb $1, __hmx_latch_107(%rip)
+    leaq __hmx_name_107(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral18SyncAvailableSongsERKSt6vectorIP11BandProfileSaIS2_EERKS0_IiSaIiEESA_PN3Hmx6ObjectE
-    .set _ZN11RockCentral18SyncAvailableSongsERKSt6vectorIP11BandProfileSaIS2_EERKS0_IiSaIiEESA_PN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral18SyncAvailableSongsERKSt6vectorIP11BandProfileSaIS2_EERKS0_IiSaIiEESA_PN3Hmx6ObjectE, __hmx_tramp_107
+    .p2align 4
+__hmx_tramp_108:
+    cmpb $0, __hmx_latch_108(%rip)
+    jne 1f
+    movb $1, __hmx_latch_108(%rip)
+    leaq __hmx_name_108(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral18UpdateOnlineStatusEv
-    .set _ZN11RockCentral18UpdateOnlineStatusEv, __hmx_band3_noop_stub
+    .set _ZN11RockCentral18UpdateOnlineStatusEv, __hmx_tramp_108
+    .p2align 4
+__hmx_tramp_109:
+    cmpb $0, __hmx_latch_109(%rip)
+    jne 1f
+    movb $1, __hmx_latch_109(%rip)
+    leaq __hmx_name_109(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral22CancelOutstandingCallsEPN3Hmx6ObjectE
-    .set _ZN11RockCentral22CancelOutstandingCallsEPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral22CancelOutstandingCallsEPN3Hmx6ObjectE, __hmx_tramp_109
+    .p2align 4
+__hmx_tramp_110:
+    cmpb $0, __hmx_latch_110(%rip)
+    jne 1f
+    movb $1, __hmx_latch_110(%rip)
+    leaq __hmx_name_110(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral22GetLeaderboardByPlayerERSt6vectorIiSaIiEEi9ScoreType15LeaderboardType15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral22GetLeaderboardByPlayerERSt6vectorIiSaIiEEi9ScoreType15LeaderboardType15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral22GetLeaderboardByPlayerERSt6vectorIiSaIiEEi9ScoreType15LeaderboardType15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_110
+    .p2align 4
+__hmx_tramp_111:
+    cmpb $0, __hmx_latch_111(%rip)
+    jne 1f
+    movb $1, __hmx_latch_111(%rip)
+    leaq __hmx_name_111(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral23FailAllOutstandingCallsEv
-    .set _ZN11RockCentral23FailAllOutstandingCallsEv, __hmx_band3_noop_stub
+    .set _ZN11RockCentral23FailAllOutstandingCallsEv, __hmx_tramp_111
+    .p2align 4
+__hmx_tramp_112:
+    cmpb $0, __hmx_latch_112(%rip)
+    jne 1f
+    movb $1, __hmx_latch_112(%rip)
+    leaq __hmx_name_112(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral24GetSetlistCreationStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral24GetSetlistCreationStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral24GetSetlistCreationStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_112
+    .p2align 4
+__hmx_tramp_113:
+    cmpb $0, __hmx_latch_113(%rip)
+    jne 1f
+    movb $1, __hmx_latch_113(%rip)
+    leaq __hmx_name_113(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral24RecordAccomplishmentDataEPK7ProfileP22AccomplishmentProgressiPN3Hmx6ObjectER14DataResultList
-    .set _ZN11RockCentral24RecordAccomplishmentDataEPK7ProfileP22AccomplishmentProgressiPN3Hmx6ObjectER14DataResultList, __hmx_band3_noop_stub
+    .set _ZN11RockCentral24RecordAccomplishmentDataEPK7ProfileP22AccomplishmentProgressiPN3Hmx6ObjectER14DataResultList, __hmx_tramp_113
+    .p2align 4
+__hmx_tramp_114:
+    cmpb $0, __hmx_latch_114(%rip)
+    jne 1f
+    movb $1, __hmx_latch_114(%rip)
+    leaq __hmx_name_114(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral25GetAccLeaderboardByPlayerERSt6vectorIiSaIiEER6Symbol15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral25GetAccLeaderboardByPlayerERSt6vectorIiSaIiEER6Symbol15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral25GetAccLeaderboardByPlayerERSt6vectorIiSaIiEER6Symbol15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_114
+    .p2align 4
+__hmx_tramp_115:
+    cmpb $0, __hmx_latch_115(%rip)
+    jne 1f
+    movb $1, __hmx_latch_115(%rip)
+    leaq __hmx_name_115(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral25GetLeaderboardByRankRangeERSt6vectorIiSaIiEEi9ScoreTypeii15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral25GetLeaderboardByRankRangeERSt6vectorIiSaIiEEi9ScoreTypeii15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral25GetLeaderboardByRankRangeERSt6vectorIiSaIiEEi9ScoreTypeii15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_115
+    .p2align 4
+__hmx_tramp_116:
+    cmpb $0, __hmx_latch_116(%rip)
+    jne 1f
+    movb $1, __hmx_latch_116(%rip)
+    leaq __hmx_name_116(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral25GetRedeemedTokensByPlayerEiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral25GetRedeemedTokensByPlayerEiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral25GetRedeemedTokensByPlayerEiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_116
+    .p2align 4
+__hmx_tramp_117:
+    cmpb $0, __hmx_latch_117(%rip)
+    jne 1f
+    movb $1, __hmx_latch_117(%rip)
+    leaq __hmx_name_117(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral28GetAccLeaderboardByRankRangeERSt6vectorIiSaIiEER6SymboliiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral28GetAccLeaderboardByRankRangeERSt6vectorIiSaIiEER6SymboliiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral28GetAccLeaderboardByRankRangeERSt6vectorIiSaIiEER6SymboliiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_117
+    .p2align 4
+__hmx_tramp_118:
+    cmpb $0, __hmx_latch_118(%rip)
+    jne 1f
+    movb $1, __hmx_latch_118(%rip)
+    leaq __hmx_name_118(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral28GetBattleLeaderboardByPlayerERSt6vectorIiSaIiEEi15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral28GetBattleLeaderboardByPlayerERSt6vectorIiSaIiEEi15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral28GetBattleLeaderboardByPlayerERSt6vectorIiSaIiEEi15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_118
+    .p2align 4
+__hmx_tramp_119:
+    cmpb $0, __hmx_latch_119(%rip)
+    jne 1f
+    movb $1, __hmx_latch_119(%rip)
+    leaq __hmx_name_119(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral28GetMultipleRankingsForPlayerEP7Profile9ScoreTypeRSt6vectorIiSaIiEER14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral28GetMultipleRankingsForPlayerEP7Profile9ScoreTypeRSt6vectorIiSaIiEER14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral28GetMultipleRankingsForPlayerEP7Profile9ScoreTypeRSt6vectorIiSaIiEER14DataResultListPN3Hmx6ObjectE, __hmx_tramp_119
+    .p2align 4
+__hmx_tramp_120:
+    cmpb $0, __hmx_latch_120(%rip)
+    jne 1f
+    movb $1, __hmx_latch_120(%rip)
+    leaq __hmx_name_120(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral29GetActiveContextHighWatermarkEv
-    .set _ZN11RockCentral29GetActiveContextHighWatermarkEv, __hmx_band3_noop_stub
+    .set _ZN11RockCentral29GetActiveContextHighWatermarkEv, __hmx_tramp_120
+    .p2align 4
+__hmx_tramp_121:
+    cmpb $0, __hmx_latch_121(%rip)
+    jne 1f
+    movb $1, __hmx_latch_121(%rip)
+    leaq __hmx_name_121(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral31GetBattleLeaderboardByRankRangeERSt6vectorIiSaIiEEiiiR14DataResultListPN3Hmx6ObjectE
-    .set _ZN11RockCentral31GetBattleLeaderboardByRankRangeERSt6vectorIiSaIiEEiiiR14DataResultListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN11RockCentral31GetBattleLeaderboardByRankRangeERSt6vectorIiSaIiEEiiiR14DataResultListPN3Hmx6ObjectE, __hmx_tramp_121
+    .p2align 4
+__hmx_tramp_122:
+    cmpb $0, __hmx_latch_122(%rip)
+    jne 1f
+    movb $1, __hmx_latch_122(%rip)
+    leaq __hmx_name_122(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral5OnMsgERK24WiiFriendsListChangedMsg
-    .set _ZN11RockCentral5OnMsgERK24WiiFriendsListChangedMsg, __hmx_band3_noop_stub
+    .set _ZN11RockCentral5OnMsgERK24WiiFriendsListChangedMsg, __hmx_tramp_122
+    .p2align 4
+__hmx_tramp_123:
+    cmpb $0, __hmx_latch_123(%rip)
+    jne 1f
+    movb $1, __hmx_latch_123(%rip)
+    leaq __hmx_name_123(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11RockCentral5OnMsgERK25WiiFriendMgrOpCompleteMsg
-    .set _ZN11RockCentral5OnMsgERK25WiiFriendMgrOpCompleteMsg, __hmx_band3_noop_stub
+    .set _ZN11RockCentral5OnMsgERK25WiiFriendMgrOpCompleteMsg, __hmx_tramp_123
+    .p2align 4
+__hmx_tramp_124:
+    cmpb $0, __hmx_latch_124(%rip)
+    jne 1f
+    movb $1, __hmx_latch_124(%rip)
+    leaq __hmx_name_124(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11SetlistSort16BuildSetlistListEv
-    .set _ZN11SetlistSort16BuildSetlistListEv, __hmx_band3_noop_stub
+    .set _ZN11SetlistSort16BuildSetlistListEv, __hmx_tramp_124
+    .p2align 4
+__hmx_tramp_125:
+    cmpb $0, __hmx_latch_125(%rip)
+    jne 1f
+    movb $1, __hmx_latch_125(%rip)
+    leaq __hmx_name_125(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11SetlistSort16BuildSetlistTreeERSt3mapI6Symbol13SetlistRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEE
-    .set _ZN11SetlistSort16BuildSetlistTreeERSt3mapI6Symbol13SetlistRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEE, __hmx_band3_noop_stub
+    .set _ZN11SetlistSort16BuildSetlistTreeERSt3mapI6Symbol13SetlistRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEE, __hmx_tramp_125
+    .p2align 4
+__hmx_tramp_126:
+    cmpb $0, __hmx_latch_126(%rip)
+    jne 1f
+    movb $1, __hmx_latch_126(%rip)
+    leaq __hmx_name_126(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11SingerStats17SetPartPercentageEif
-    .set _ZN11SingerStats17SetPartPercentageEif, __hmx_band3_noop_stub
+    .set _ZN11SingerStats17SetPartPercentageEif, __hmx_tramp_126
+    .p2align 4
+__hmx_tramp_127:
+    cmpb $0, __hmx_latch_127(%rip)
+    jne 1f
+    movb $1, __hmx_latch_127(%rip)
+    leaq __hmx_name_127(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11SingerStats21SetPitchDeviationInfoEff
-    .set _ZN11SingerStats21SetPitchDeviationInfoEff, __hmx_band3_noop_stub
+    .set _ZN11SingerStats21SetPitchDeviationInfoEff, __hmx_tramp_127
+    .p2align 4
+__hmx_tramp_128:
+    cmpb $0, __hmx_latch_128(%rip)
+    jne 1f
+    movb $1, __hmx_latch_128(%rip)
+    leaq __hmx_name_128(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11UIListState8ProviderEv
-    .set _ZN11UIListState8ProviderEv, __hmx_band3_noop_stub
+    .set _ZN11UIListState8ProviderEv, __hmx_tramp_128
+    .p2align 4
+__hmx_tramp_129:
+    cmpb $0, __hmx_latch_129(%rip)
+    jne 1f
+    movb $1, __hmx_latch_129(%rip)
+    leaq __hmx_name_129(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11VocalPhraseC1Ev
-    .set _ZN11VocalPhraseC1Ev, __hmx_band3_noop_stub
+    .set _ZN11VocalPhraseC1Ev, __hmx_tramp_129
+    .p2align 4
+__hmx_tramp_130:
+    cmpb $0, __hmx_latch_130(%rip)
+    jne 1f
+    movb $1, __hmx_latch_130(%rip)
+    leaq __hmx_name_130(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12BandDirector14HarvestDircutsEv
-    .set _ZN12BandDirector14HarvestDircutsEv, __hmx_band3_noop_stub
+    .set _ZN12BandDirector14HarvestDircutsEv, __hmx_tramp_130
+    .p2align 4
+__hmx_tramp_131:
+    cmpb $0, __hmx_latch_131(%rip)
+    jne 1f
+    movb $1, __hmx_latch_131(%rip)
+    leaq __hmx_name_131(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12BandDirector19ReadyForMidiParsersEv
-    .set _ZN12BandDirector19ReadyForMidiParsersEv, __hmx_band3_noop_stub
+    .set _ZN12BandDirector19ReadyForMidiParsersEv, __hmx_tramp_131
+    .p2align 4
+__hmx_tramp_132:
+    cmpb $0, __hmx_latch_132(%rip)
+    jne 1f
+    movb $1, __hmx_latch_132(%rip)
+    leaq __hmx_name_132(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12BudgetScreenC1Ev
-    .set _ZN12BudgetScreenC1Ev, __hmx_band3_noop_stub
+    .set _ZN12BudgetScreenC1Ev, __hmx_tramp_132
+    .p2align 4
+__hmx_tramp_133:
+    cmpb $0, __hmx_latch_133(%rip)
+    jne 1f
+    movb $1, __hmx_latch_133(%rip)
+    leaq __hmx_name_133(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12MidiReceiver16SkipCurrentTrackEv
-    .set _ZN12MidiReceiver16SkipCurrentTrackEv, __hmx_band3_noop_stub
+    .set _ZN12MidiReceiver16SkipCurrentTrackEv, __hmx_tramp_133
+    .p2align 4
+__hmx_tramp_134:
+    cmpb $0, __hmx_latch_134(%rip)
+    jne 1f
+    movb $1, __hmx_latch_134(%rip)
+    leaq __hmx_name_134(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12MusicLibrary11SetlistSizeEv
-    .set _ZN12MusicLibrary11SetlistSizeEv, __hmx_band3_noop_stub
+    .set _ZN12MusicLibrary11SetlistSizeEv, __hmx_tramp_134
+    .p2align 4
+__hmx_tramp_135:
+    cmpb $0, __hmx_latch_135(%rip)
+    jne 1f
+    movb $1, __hmx_latch_135(%rip)
+    leaq __hmx_name_135(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12MusicLibrary17GetMaxSetlistSizeEv
-    .set _ZN12MusicLibrary17GetMaxSetlistSizeEv, __hmx_band3_noop_stub
+    .set _ZN12MusicLibrary17GetMaxSetlistSizeEv, __hmx_tramp_135
+    .p2align 4
+__hmx_tramp_136:
+    cmpb $0, __hmx_latch_136(%rip)
+    jne 1f
+    movb $1, __hmx_latch_136(%rip)
+    leaq __hmx_name_136(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12MusicLibrary20CanHeadersBeSelectedEv
-    .set _ZN12MusicLibrary20CanHeadersBeSelectedEv, __hmx_band3_noop_stub
+    .set _ZN12MusicLibrary20CanHeadersBeSelectedEv, __hmx_tramp_136
+    .p2align 4
+__hmx_tramp_137:
+    cmpb $0, __hmx_latch_137(%rip)
+    jne 1f
+    movb $1, __hmx_latch_137(%rip)
+    leaq __hmx_name_137(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12SavedSetlist14SetDescriptionEPKc
-    .set _ZN12SavedSetlist14SetDescriptionEPKc, __hmx_band3_noop_stub
+    .set _ZN12SavedSetlist14SetDescriptionEPKc, __hmx_tramp_137
+    .p2align 4
+__hmx_tramp_138:
+    cmpb $0, __hmx_latch_138(%rip)
+    jne 1f
+    movb $1, __hmx_latch_138(%rip)
+    leaq __hmx_name_138(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12SavedSetlist8SetTitleEPKc
-    .set _ZN12SavedSetlist8SetTitleEPKc, __hmx_band3_noop_stub
+    .set _ZN12SavedSetlist8SetTitleEPKc, __hmx_tramp_138
+    .p2align 4
+__hmx_tramp_139:
+    cmpb $0, __hmx_latch_139(%rip)
+    jne 1f
+    movb $1, __hmx_latch_139(%rip)
+    leaq __hmx_name_139(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12VoiceChatMgr16ToggleMuteStatusEP4User
-    .set _ZN12VoiceChatMgr16ToggleMuteStatusEP4User, __hmx_band3_noop_stub
+    .set _ZN12VoiceChatMgr16ToggleMuteStatusEP4User, __hmx_tramp_139
+    .p2align 4
+__hmx_tramp_140:
+    cmpb $0, __hmx_latch_140(%rip)
+    jne 1f
+    movb $1, __hmx_latch_140(%rip)
+    leaq __hmx_name_140(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WiiFriendMgr16EnumerateFriendsEP13WiiFriendListPN3Hmx6ObjectE
-    .set _ZN12WiiFriendMgr16EnumerateFriendsEP13WiiFriendListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN12WiiFriendMgr16EnumerateFriendsEP13WiiFriendListPN3Hmx6ObjectE, __hmx_tramp_140
+    .p2align 4
+__hmx_tramp_141:
+    cmpb $0, __hmx_latch_141(%rip)
+    jne 1f
+    movb $1, __hmx_latch_141(%rip)
+    leaq __hmx_name_141(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WiiFriendMgr16GetCachedFriendsEP13WiiFriendList
-    .set _ZN12WiiFriendMgr16GetCachedFriendsEP13WiiFriendList, __hmx_band3_noop_stub
+    .set _ZN12WiiFriendMgr16GetCachedFriendsEP13WiiFriendList, __hmx_tramp_141
+    .p2align 4
+__hmx_tramp_142:
+    cmpb $0, __hmx_latch_142(%rip)
+    jne 1f
+    movb $1, __hmx_latch_142(%rip)
+    leaq __hmx_name_142(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WiiFriendMgr16SetProfileStatusEi6String
-    .set _ZN12WiiFriendMgr16SetProfileStatusEi6String, __hmx_band3_noop_stub
+    .set _ZN12WiiFriendMgr16SetProfileStatusEi6String, __hmx_tramp_142
+    .p2align 4
+__hmx_tramp_143:
+    cmpb $0, __hmx_latch_143(%rip)
+    jne 1f
+    movb $1, __hmx_latch_143(%rip)
+    leaq __hmx_name_143(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WiiFriendMgr17UseConsoleFriendsEb
-    .set _ZN12WiiFriendMgr17UseConsoleFriendsEb, __hmx_band3_noop_stub
+    .set _ZN12WiiFriendMgr17UseConsoleFriendsEb, __hmx_tramp_143
+    .p2align 4
+__hmx_tramp_144:
+    cmpb $0, __hmx_latch_144(%rip)
+    jne 1f
+    movb $1, __hmx_latch_144(%rip)
+    leaq __hmx_name_144(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WiiFriendMgr22SetMasterProfileStatusE6String
-    .set _ZN12WiiFriendMgr22SetMasterProfileStatusE6String, __hmx_band3_noop_stub
+    .set _ZN12WiiFriendMgr22SetMasterProfileStatusE6String, __hmx_tramp_144
+    .p2align 4
+__hmx_tramp_145:
+    cmpb $0, __hmx_latch_145(%rip)
+    jne 1f
+    movb $1, __hmx_latch_145(%rip)
+    leaq __hmx_name_145(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WiiMessenger11SendMessageEiPKcS1_PN3Hmx6ObjectEi
-    .set _ZN12WiiMessenger11SendMessageEiPKcS1_PN3Hmx6ObjectEi, __hmx_band3_noop_stub
+    .set _ZN12WiiMessenger11SendMessageEiPKcS1_PN3Hmx6ObjectEi, __hmx_tramp_145
+    .p2align 4
+__hmx_tramp_146:
+    cmpb $0, __hmx_latch_146(%rip)
+    jne 1f
+    movb $1, __hmx_latch_146(%rip)
+    leaq __hmx_name_146(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE
-    .set _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE, __hmx_tramp_146
+    .p2align 4
+__hmx_tramp_147:
+    cmpb $0, __hmx_latch_147(%rip)
+    jne 1f
+    movb $1, __hmx_latch_147(%rip)
+    leaq __hmx_name_147(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMesh10PostRenderEv
-    .set _ZN13BandPatchMesh10PostRenderEv, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMesh10PostRenderEv, __hmx_tramp_147
+    .p2align 4
+__hmx_tramp_148:
+    cmpb $0, __hmx_latch_148(%rip)
+    jne 1f
+    movb $1, __hmx_latch_148(%rip)
+    leaq __hmx_name_148(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMesh13ConstructQuadEP6RndTex
-    .set _ZN13BandPatchMesh13ConstructQuadEP6RndTex, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMesh13ConstructQuadEP6RndTex, __hmx_tramp_148
+    .p2align 4
+__hmx_tramp_149:
+    cmpb $0, __hmx_latch_149(%rip)
+    jne 1f
+    movb $1, __hmx_latch_149(%rip)
+    leaq __hmx_name_149(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMesh16ListDrawChildrenERNSt7__cxx114listIP11RndDrawableSaIS3_EEE
-    .set _ZN13BandPatchMesh16ListDrawChildrenERNSt7__cxx114listIP11RndDrawableSaIS3_EEE, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMesh16ListDrawChildrenERNSt7__cxx114listIP11RndDrawableSaIS3_EEE, __hmx_tramp_149
+    .p2align 4
+__hmx_tramp_150:
+    cmpb $0, __hmx_latch_150(%rip)
+    jne 1f
+    movb $1, __hmx_latch_150(%rip)
+    leaq __hmx_name_150(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMesh6RenderEP6RndTexP6RndMat
-    .set _ZN13BandPatchMesh6RenderEP6RndTexP6RndMat, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMesh6RenderEP6RndTexP6RndMat, __hmx_tramp_150
+    .p2align 4
+__hmx_tramp_151:
+    cmpb $0, __hmx_latch_151(%rip)
+    jne 1f
+    movb $1, __hmx_latch_151(%rip)
+    leaq __hmx_name_151(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMesh8CompressEP12BandCharDesc
-    .set _ZN13BandPatchMesh8CompressEP12BandCharDesc, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMesh8CompressEP12BandCharDesc, __hmx_tramp_151
+    .p2align 4
+__hmx_tramp_152:
+    cmpb $0, __hmx_latch_152(%rip)
+    jne 1f
+    movb $1, __hmx_latch_152(%rip)
+    leaq __hmx_name_152(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMesh9PreRenderEP12BandCharDesci
-    .set _ZN13BandPatchMesh9PreRenderEP12BandCharDesci, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMesh9PreRenderEP12BandCharDesci, __hmx_tramp_152
+    .p2align 4
+__hmx_tramp_153:
+    cmpb $0, __hmx_latch_153(%rip)
+    jne 1f
+    movb $1, __hmx_latch_153(%rip)
+    leaq __hmx_name_153(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMesh9ReProjectEv
-    .set _ZN13BandPatchMesh9ReProjectEv, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMesh9ReProjectEv, __hmx_tramp_153
+    .p2align 4
+__hmx_tramp_154:
+    cmpb $0, __hmx_latch_154(%rip)
+    jne 1f
+    movb $1, __hmx_latch_154(%rip)
+    leaq __hmx_name_154(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMeshC1EPN3Hmx6ObjectE
-    .set _ZN13BandPatchMeshC1EPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMeshC1EPN3Hmx6ObjectE, __hmx_tramp_154
+    .p2align 4
+__hmx_tramp_155:
+    cmpb $0, __hmx_latch_155(%rip)
+    jne 1f
+    movb $1, __hmx_latch_155(%rip)
+    leaq __hmx_name_155(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMeshC1ERKS_
-    .set _ZN13BandPatchMeshC1ERKS_, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMeshC1ERKS_, __hmx_tramp_155
+    .p2align 4
+__hmx_tramp_156:
+    cmpb $0, __hmx_latch_156(%rip)
+    jne 1f
+    movb $1, __hmx_latch_156(%rip)
+    leaq __hmx_name_156(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13BandPatchMeshaSERKS_
-    .set _ZN13BandPatchMeshaSERKS_, __hmx_band3_noop_stub
+    .set _ZN13BandPatchMeshaSERKS_, __hmx_tramp_156
+    .p2align 4
+__hmx_tramp_157:
+    cmpb $0, __hmx_latch_157(%rip)
+    jne 1f
+    movb $1, __hmx_latch_157(%rip)
+    leaq __hmx_name_157(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13CharacterTest4DrawEv
-    .set _ZN13CharacterTest4DrawEv, __hmx_band3_noop_stub
+    .set _ZN13CharacterTest4DrawEv, __hmx_tramp_157
+    .p2align 4
+__hmx_tramp_158:
+    cmpb $0, __hmx_latch_158(%rip)
+    jne 1f
+    movb $1, __hmx_latch_158(%rip)
+    leaq __hmx_name_158(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13CharacterTest4LoadER9BinStream
-    .set _ZN13CharacterTest4LoadER9BinStream, __hmx_band3_noop_stub
+    .set _ZN13CharacterTest4LoadER9BinStream, __hmx_tramp_158
+    .p2align 4
+__hmx_tramp_159:
+    cmpb $0, __hmx_latch_159(%rip)
+    jne 1f
+    movb $1, __hmx_latch_159(%rip)
+    leaq __hmx_name_159(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13CharacterTest4PollEv
-    .set _ZN13CharacterTest4PollEv, __hmx_band3_noop_stub
+    .set _ZN13CharacterTest4PollEv, __hmx_tramp_159
+    .p2align 4
+__hmx_tramp_160:
+    cmpb $0, __hmx_latch_160(%rip)
+    jne 1f
+    movb $1, __hmx_latch_160(%rip)
+    leaq __hmx_name_160(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13CharacterTestC1EP9Character
-    .set _ZN13CharacterTestC1EP9Character, __hmx_band3_noop_stub
+    .set _ZN13CharacterTestC1EP9Character, __hmx_tramp_160
+    .p2align 4
+__hmx_tramp_161:
+    cmpb $0, __hmx_latch_161(%rip)
+    jne 1f
+    movb $1, __hmx_latch_161(%rip)
+    leaq __hmx_name_161(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13JsonConverter6NewIntEi
-    .set _ZN13JsonConverter6NewIntEi, __hmx_band3_noop_stub
+    .set _ZN13JsonConverter6NewIntEi, __hmx_tramp_161
+    .p2align 4
+__hmx_tramp_162:
+    cmpb $0, __hmx_latch_162(%rip)
+    jne 1f
+    movb $1, __hmx_latch_162(%rip)
+    leaq __hmx_name_162(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13JsonConverter8NewArrayEv
-    .set _ZN13JsonConverter8NewArrayEv, __hmx_band3_noop_stub
+    .set _ZN13JsonConverter8NewArrayEv, __hmx_tramp_162
+    .p2align 4
+__hmx_tramp_163:
+    cmpb $0, __hmx_latch_163(%rip)
+    jne 1f
+    movb $1, __hmx_latch_163(%rip)
+    leaq __hmx_name_163(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13JsonConverter9NewDoubleEd
-    .set _ZN13JsonConverter9NewDoubleEd, __hmx_band3_noop_stub
+    .set _ZN13JsonConverter9NewDoubleEd, __hmx_tramp_163
+    .p2align 4
+__hmx_tramp_164:
+    cmpb $0, __hmx_latch_164(%rip)
+    jne 1f
+    movb $1, __hmx_latch_164(%rip)
+    leaq __hmx_name_164(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13JsonConverter9NewStringEPKc
-    .set _ZN13JsonConverter9NewStringEPKc, __hmx_band3_noop_stub
+    .set _ZN13JsonConverter9NewStringEPKc, __hmx_tramp_164
+    .p2align 4
+__hmx_tramp_165:
+    cmpb $0, __hmx_latch_165(%rip)
+    jne 1f
+    movb $1, __hmx_latch_165(%rip)
+    leaq __hmx_name_165(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13JsonConverterC1Ev
-    .set _ZN13JsonConverterC1Ev, __hmx_band3_noop_stub
+    .set _ZN13JsonConverterC1Ev, __hmx_tramp_165
+    .p2align 4
+__hmx_tramp_166:
+    cmpb $0, __hmx_latch_166(%rip)
+    jne 1f
+    movb $1, __hmx_latch_166(%rip)
+    leaq __hmx_name_166(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13JsonConverterD1Ev
-    .set _ZN13JsonConverterD1Ev, __hmx_band3_noop_stub
+    .set _ZN13JsonConverterD1Ev, __hmx_tramp_166
+    .p2align 4
+__hmx_tramp_167:
+    cmpb $0, __hmx_latch_167(%rip)
+    jne 1f
+    movb $1, __hmx_latch_167(%rip)
+    leaq __hmx_name_167(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer10SetSetlistEPK12SavedSetlist
-    .set _ZN13MetaPerformer10SetSetlistEPK12SavedSetlist, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer10SetSetlistEPK12SavedSetlist, __hmx_tramp_167
+    .p2align 4
+__hmx_tramp_168:
+    cmpb $0, __hmx_latch_168(%rip)
+    jne 1f
+    movb $1, __hmx_latch_168(%rip)
+    leaq __hmx_name_168(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer14LockBandOrSoloEv
-    .set _ZN13MetaPerformer14LockBandOrSoloEv, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer14LockBandOrSoloEv, __hmx_tramp_168
+    .p2align 4
+__hmx_tramp_169:
+    cmpb $0, __hmx_latch_169(%rip)
+    jne 1f
+    movb $1, __hmx_latch_169(%rip)
+    leaq __hmx_name_169(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer16UnlockBandOrSoloEv
-    .set _ZN13MetaPerformer16UnlockBandOrSoloEv, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer16UnlockBandOrSoloEv, __hmx_tramp_169
+    .p2align 4
+__hmx_tramp_170:
+    cmpb $0, __hmx_latch_170(%rip)
+    jne 1f
+    movb $1, __hmx_latch_170(%rip)
+    leaq __hmx_name_170(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer17SetCreditsPendingEv
-    .set _ZN13MetaPerformer17SetCreditsPendingEv, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer17SetCreditsPendingEv, __hmx_tramp_170
+    .p2align 4
+__hmx_tramp_171:
+    cmpb $0, __hmx_latch_171(%rip)
+    jne 1f
+    movb $1, __hmx_latch_171(%rip)
+    leaq __hmx_name_171(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer19GetScoreTypeForUserEP8BandUser
-    .set _ZN13MetaPerformer19GetScoreTypeForUserEP8BandUser, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer19GetScoreTypeForUserEP8BandUser, __hmx_tramp_171
+    .p2align 4
+__hmx_tramp_172:
+    cmpb $0, __hmx_latch_172(%rip)
+    jne 1f
+    movb $1, __hmx_latch_172(%rip)
+    leaq __hmx_name_172(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer7CurrentEv
-    .set _ZN13MetaPerformer7CurrentEv, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer7CurrentEv, __hmx_tramp_172
+    .p2align 4
+__hmx_tramp_173:
+    cmpb $0, __hmx_latch_173(%rip)
+    jne 1f
+    movb $1, __hmx_latch_173(%rip)
+    leaq __hmx_name_173(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer8SetSongsERKSt6vectorI6SymbolSaIS1_EE
-    .set _ZN13MetaPerformer8SetSongsERKSt6vectorI6SymbolSaIS1_EE, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer8SetSongsERKSt6vectorI6SymbolSaIS1_EE, __hmx_tramp_173
+    .p2align 4
+__hmx_tramp_174:
+    cmpb $0, __hmx_latch_174(%rip)
+    jne 1f
+    movb $1, __hmx_latch_174(%rip)
+    leaq __hmx_name_174(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer8SetSongsERKSt6vectorIiSaIiEE
-    .set _ZN13MetaPerformer8SetSongsERKSt6vectorIiSaIiEE, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer8SetSongsERKSt6vectorIiSaIiEE, __hmx_tramp_174
+    .p2align 4
+__hmx_tramp_175:
+    cmpb $0, __hmx_latch_175(%rip)
+    jne 1f
+    movb $1, __hmx_latch_175(%rip)
+    leaq __hmx_name_175(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MetaPerformer9SetBattleEPK18BattleSavedSetlist
-    .set _ZN13MetaPerformer9SetBattleEPK18BattleSavedSetlist, __hmx_band3_noop_stub
+    .set _ZN13MetaPerformer9SetBattleEPK18BattleSavedSetlist, __hmx_tramp_175
+    .p2align 4
+__hmx_tramp_176:
+    cmpb $0, __hmx_latch_176(%rip)
+    jne 1f
+    movb $1, __hmx_latch_176(%rip)
+    leaq __hmx_name_176(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MidiParserMgr10FinishLoadEv
-    .set _ZN13MidiParserMgr10FinishLoadEv, __hmx_band3_noop_stub
+    .set _ZN13MidiParserMgr10FinishLoadEv, __hmx_tramp_176
+    .p2align 4
+__hmx_tramp_177:
+    cmpb $0, __hmx_latch_177(%rip)
+    jne 1f
+    movb $1, __hmx_latch_177(%rip)
+    leaq __hmx_name_177(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MidiParserMgr13GetEventsListEv
-    .set _ZN13MidiParserMgr13GetEventsListEv, __hmx_band3_noop_stub
+    .set _ZN13MidiParserMgr13GetEventsListEv, __hmx_tramp_177
+    .p2align 4
+__hmx_tramp_178:
+    cmpb $0, __hmx_latch_178(%rip)
+    jne 1f
+    movb $1, __hmx_latch_178(%rip)
+    leaq __hmx_name_178(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MidiParserMgr4PollEv
-    .set _ZN13MidiParserMgr4PollEv, __hmx_band3_noop_stub
+    .set _ZN13MidiParserMgr4PollEv, __hmx_tramp_178
+    .p2align 4
+__hmx_tramp_179:
+    cmpb $0, __hmx_latch_179(%rip)
+    jne 1f
+    movb $1, __hmx_latch_179(%rip)
+    leaq __hmx_name_179(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MidiParserMgr5ResetEi
-    .set _ZN13MidiParserMgr5ResetEi, __hmx_band3_noop_stub
+    .set _ZN13MidiParserMgr5ResetEi, __hmx_tramp_179
+    .p2align 4
+__hmx_tramp_180:
+    cmpb $0, __hmx_latch_180(%rip)
+    jne 1f
+    movb $1, __hmx_latch_180(%rip)
+    leaq __hmx_name_180(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MidiParserMgr5ResetEv
-    .set _ZN13MidiParserMgr5ResetEv, __hmx_band3_noop_stub
+    .set _ZN13MidiParserMgr5ResetEv, __hmx_tramp_180
+    .p2align 4
+__hmx_tramp_181:
+    cmpb $0, __hmx_latch_181(%rip)
+    jne 1f
+    movb $1, __hmx_latch_181(%rip)
+    leaq __hmx_name_181(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MidiParserMgr9GetParserE6Symbol
-    .set _ZN13MidiParserMgr9GetParserE6Symbol, __hmx_band3_noop_stub
+    .set _ZN13MidiParserMgr9GetParserE6Symbol, __hmx_tramp_181
+    .p2align 4
+__hmx_tramp_182:
+    cmpb $0, __hmx_latch_182(%rip)
+    jne 1f
+    movb $1, __hmx_latch_182(%rip)
+    leaq __hmx_name_182(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13MidiParserMgrC1EP16GemListInterface6Symbol
-    .set _ZN13MidiParserMgrC1EP16GemListInterface6Symbol, __hmx_band3_noop_stub
+    .set _ZN13MidiParserMgrC1EP16GemListInterface6Symbol, __hmx_tramp_182
+    .p2align 4
+__hmx_tramp_183:
+    cmpb $0, __hmx_latch_183(%rip)
+    jne 1f
+    movb $1, __hmx_latch_183(%rip)
+    leaq __hmx_name_183(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13PatchRenderer13InitResourcesEv
-    .set _ZN13PatchRenderer13InitResourcesEv, __hmx_band3_noop_stub
+    .set _ZN13PatchRenderer13InitResourcesEv, __hmx_tramp_183
+    .p2align 4
+__hmx_tramp_184:
+    cmpb $0, __hmx_latch_184(%rip)
+    jne 1f
+    movb $1, __hmx_latch_184(%rip)
+    leaq __hmx_name_184(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13PitchDetectorC1Ei
-    .set _ZN13PitchDetectorC1Ei, __hmx_band3_noop_stub
+    .set _ZN13PitchDetectorC1Ei, __hmx_tramp_184
+    .p2align 4
+__hmx_tramp_185:
+    cmpb $0, __hmx_latch_185(%rip)
+    jne 1f
+    movb $1, __hmx_latch_185(%rip)
+    leaq __hmx_name_185(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13PitchDetectorD1Ev
-    .set _ZN13PitchDetectorD1Ev, __hmx_band3_noop_stub
+    .set _ZN13PitchDetectorD1Ev, __hmx_tramp_185
+    .p2align 4
+__hmx_tramp_186:
+    cmpb $0, __hmx_latch_186(%rip)
+    jne 1f
+    movb $1, __hmx_latch_186(%rip)
+    leaq __hmx_name_186(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13WiiContentMgr15UnmountContentsE6Symbol
-    .set _ZN13WiiContentMgr15UnmountContentsE6Symbol, __hmx_band3_noop_stub
+    .set _ZN13WiiContentMgr15UnmountContentsE6Symbol, __hmx_tramp_186
+    .p2align 4
+__hmx_tramp_187:
+    cmpb $0, __hmx_latch_187(%rip)
+    jne 1f
+    movb $1, __hmx_latch_187(%rip)
+    leaq __hmx_name_187(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13WiiContentMgr9ContentOfE6Symbol
-    .set _ZN13WiiContentMgr9ContentOfE6Symbol, __hmx_band3_noop_stub
+    .set _ZN13WiiContentMgr9ContentOfE6Symbol, __hmx_tramp_187
+    .p2align 4
+__hmx_tramp_188:
+    cmpb $0, __hmx_latch_188(%rip)
+    jne 1f
+    movb $1, __hmx_latch_188(%rip)
+    leaq __hmx_name_188(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13WiiFriendListC1Ev
-    .set _ZN13WiiFriendListC1Ev, __hmx_band3_noop_stub
+    .set _ZN13WiiFriendListC1Ev, __hmx_tramp_188
+    .p2align 4
+__hmx_tramp_189:
+    cmpb $0, __hmx_latch_189(%rip)
+    jne 1f
+    movb $1, __hmx_latch_189(%rip)
+    leaq __hmx_name_189(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13WiiFriendListD1Ev
-    .set _ZN13WiiFriendListD1Ev, __hmx_band3_noop_stub
+    .set _ZN13WiiFriendListD1Ev, __hmx_tramp_189
+    .p2align 4
+__hmx_tramp_190:
+    cmpb $0, __hmx_latch_190(%rip)
+    jne 1f
+    movb $1, __hmx_latch_190(%rip)
+    leaq __hmx_name_190(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14DataResultList5ClearEv
-    .set _ZN14DataResultList5ClearEv, __hmx_band3_noop_stub
+    .set _ZN14DataResultList5ClearEv, __hmx_tramp_190
+    .p2align 4
+__hmx_tramp_191:
+    cmpb $0, __hmx_latch_191(%rip)
+    jne 1f
+    movb $1, __hmx_latch_191(%rip)
+    leaq __hmx_name_191(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14DataResultList5PrintER10TextStream
-    .set _ZN14DataResultList5PrintER10TextStream, __hmx_band3_noop_stub
+    .set _ZN14DataResultList5PrintER10TextStream, __hmx_tramp_191
+    .p2align 4
+__hmx_tramp_192:
+    cmpb $0, __hmx_latch_192(%rip)
+    jne 1f
+    movb $1, __hmx_latch_192(%rip)
+    leaq __hmx_name_192(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14DataResultList6UpdateEP7Message
-    .set _ZN14DataResultList6UpdateEP7Message, __hmx_band3_noop_stub
+    .set _ZN14DataResultList6UpdateEP7Message, __hmx_tramp_192
+    .p2align 4
+__hmx_tramp_193:
+    cmpb $0, __hmx_latch_193(%rip)
+    jne 1f
+    movb $1, __hmx_latch_193(%rip)
+    leaq __hmx_name_193(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14DataResultListC1Ev
-    .set _ZN14DataResultListC1Ev, __hmx_band3_noop_stub
+    .set _ZN14DataResultListC1Ev, __hmx_tramp_193
+    .p2align 4
+__hmx_tramp_194:
+    cmpb $0, __hmx_latch_194(%rip)
+    jne 1f
+    movb $1, __hmx_latch_194(%rip)
+    leaq __hmx_name_194(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14DataResultListD1Ev
-    .set _ZN14DataResultListD1Ev, __hmx_band3_noop_stub
+    .set _ZN14DataResultListD1Ev, __hmx_tramp_194
+    .p2align 4
+__hmx_tramp_195:
+    cmpb $0, __hmx_latch_195(%rip)
+    jne 1f
+    movb $1, __hmx_latch_195(%rip)
+    leaq __hmx_name_195(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14ProfilePictureC1EiPN3Hmx6ObjectE
-    .set _ZN14ProfilePictureC1EiPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN14ProfilePictureC1EiPN3Hmx6ObjectE, __hmx_tramp_195
+    .p2align 4
+__hmx_tramp_196:
+    cmpb $0, __hmx_latch_196(%rip)
+    jne 1f
+    movb $1, __hmx_latch_196(%rip)
+    leaq __hmx_name_196(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14SearchSettingsC1Eibi
-    .set _ZN14SearchSettingsC1Eibi, __hmx_band3_noop_stub
+    .set _ZN14SearchSettingsC1Eibi, __hmx_tramp_196
+    .p2align 4
+__hmx_tramp_197:
+    cmpb $0, __hmx_latch_197(%rip)
+    jne 1f
+    movb $1, __hmx_latch_197(%rip)
+    leaq __hmx_name_197(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiCommerceMgr12InitCommerceEPN3Hmx6ObjectE
-    .set _ZN14WiiCommerceMgr12InitCommerceEPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN14WiiCommerceMgr12InitCommerceEPN3Hmx6ObjectE, __hmx_tramp_197
+    .p2align 4
+__hmx_tramp_198:
+    cmpb $0, __hmx_latch_198(%rip)
+    jne 1f
+    movb $1, __hmx_latch_198(%rip)
+    leaq __hmx_name_198(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiCommerceMgr12SpecifyOfferEP17StorePurchaseable
-    .set _ZN14WiiCommerceMgr12SpecifyOfferEP17StorePurchaseable, __hmx_band3_noop_stub
+    .set _ZN14WiiCommerceMgr12SpecifyOfferEP17StorePurchaseable, __hmx_tramp_198
+    .p2align 4
+__hmx_tramp_199:
+    cmpb $0, __hmx_latch_199(%rip)
+    jne 1f
+    movb $1, __hmx_latch_199(%rip)
+    leaq __hmx_name_199(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiCommerceMgr15DestroyCommerceEv
-    .set _ZN14WiiCommerceMgr15DestroyCommerceEv, __hmx_band3_noop_stub
+    .set _ZN14WiiCommerceMgr15DestroyCommerceEv, __hmx_tramp_199
+    .p2align 4
+__hmx_tramp_200:
+    cmpb $0, __hmx_latch_200(%rip)
+    jne 1f
+    movb $1, __hmx_latch_200(%rip)
+    leaq __hmx_name_200(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiCommerceMgr15InitPreDownloadEv
-    .set _ZN14WiiCommerceMgr15InitPreDownloadEv, __hmx_band3_noop_stub
+    .set _ZN14WiiCommerceMgr15InitPreDownloadEv, __hmx_tramp_200
+    .p2align 4
+__hmx_tramp_201:
+    cmpb $0, __hmx_latch_201(%rip)
+    jne 1f
+    movb $1, __hmx_latch_201(%rip)
+    leaq __hmx_name_201(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiCommerceMgr15MakeDataTitleIdEPKc
-    .set _ZN14WiiCommerceMgr15MakeDataTitleIdEPKc, __hmx_band3_noop_stub
+    .set _ZN14WiiCommerceMgr15MakeDataTitleIdEPKc, __hmx_tramp_201
+    .p2align 4
+__hmx_tramp_202:
+    cmpb $0, __hmx_latch_202(%rip)
+    jne 1f
+    movb $1, __hmx_latch_202(%rip)
+    leaq __hmx_name_202(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiCommerceMgr19SpecifyContentUnitsERKSt6vectorItSaItEE
-    .set _ZN14WiiCommerceMgr19SpecifyContentUnitsERKSt6vectorItSaItEE, __hmx_band3_noop_stub
+    .set _ZN14WiiCommerceMgr19SpecifyContentUnitsERKSt6vectorItSaItEE, __hmx_tramp_202
+    .p2align 4
+__hmx_tramp_203:
+    cmpb $0, __hmx_latch_203(%rip)
+    jne 1f
+    movb $1, __hmx_latch_203(%rip)
+    leaq __hmx_name_203(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiMessageListC1Ev
-    .set _ZN14WiiMessageListC1Ev, __hmx_band3_noop_stub
+    .set _ZN14WiiMessageListC1Ev, __hmx_tramp_203
+    .p2align 4
+__hmx_tramp_204:
+    cmpb $0, __hmx_latch_204(%rip)
+    jne 1f
+    movb $1, __hmx_latch_204(%rip)
+    leaq __hmx_name_204(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiMessageListD1Ev
-    .set _ZN14WiiMessageListD1Ev, __hmx_band3_noop_stub
+    .set _ZN14WiiMessageListD1Ev, __hmx_tramp_204
+    .p2align 4
+__hmx_tramp_205:
+    cmpb $0, __hmx_latch_205(%rip)
+    jne 1f
+    movb $1, __hmx_latch_205(%rip)
+    leaq __hmx_name_205(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE
-    .set _ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE, __hmx_band3_noop_stub
+    .set _ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE, __hmx_tramp_205
+    .p2align 4
+__hmx_tramp_206:
+    cmpb $0, __hmx_latch_206(%rip)
+    jne 1f
+    movb $1, __hmx_latch_206(%rip)
+    leaq __hmx_name_206(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE
-    .set _ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE, __hmx_band3_noop_stub
+    .set _ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE, __hmx_tramp_206
+    .p2align 4
+__hmx_tramp_207:
+    cmpb $0, __hmx_latch_207(%rip)
+    jne 1f
+    movb $1, __hmx_latch_207(%rip)
+    leaq __hmx_name_207(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15SaveLoadManager11AutoSaveNowEv
-    .set _ZN15SaveLoadManager11AutoSaveNowEv, __hmx_band3_noop_stub
+    .set _ZN15SaveLoadManager11AutoSaveNowEv, __hmx_tramp_207
+    .p2align 4
+__hmx_tramp_208:
+    cmpb $0, __hmx_latch_208(%rip)
+    jne 1f
+    movb $1, __hmx_latch_208(%rip)
+    leaq __hmx_name_208(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15SaveLoadManager4InitEv
-    .set _ZN15SaveLoadManager4InitEv, __hmx_band3_noop_stub
+    .set _ZN15SaveLoadManager4InitEv, __hmx_tramp_208
+    .p2align 4
+__hmx_tramp_209:
+    cmpb $0, __hmx_latch_209(%rip)
+    jne 1f
+    movb $1, __hmx_latch_209(%rip)
+    leaq __hmx_name_209(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15SaveLoadManager8AutoSaveEv
-    .set _ZN15SaveLoadManager8AutoSaveEv, __hmx_band3_noop_stub
+    .set _ZN15SaveLoadManager8AutoSaveEv, __hmx_tramp_209
+    .p2align 4
+__hmx_tramp_210:
+    cmpb $0, __hmx_latch_210(%rip)
+    jne 1f
+    movb $1, __hmx_latch_210(%rip)
+    leaq __hmx_name_210(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15SessionSearcher13GetNextResultEv
-    .set _ZN15SessionSearcher13GetNextResultEv, __hmx_band3_noop_stub
+    .set _ZN15SessionSearcher13GetNextResultEv, __hmx_tramp_210
+    .p2align 4
+__hmx_tramp_211:
+    cmpb $0, __hmx_latch_211(%rip)
+    jne 1f
+    movb $1, __hmx_latch_211(%rip)
+    leaq __hmx_name_211(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15SessionSearcher16GetSearchResultsERSt6vectorIP15NetSearchResultSaIS2_EE
-    .set _ZN15SessionSearcher16GetSearchResultsERSt6vectorIP15NetSearchResultSaIS2_EE, __hmx_band3_noop_stub
+    .set _ZN15SessionSearcher16GetSearchResultsERSt6vectorIP15NetSearchResultSaIS2_EE, __hmx_tramp_211
+    .p2align 4
+__hmx_tramp_212:
+    cmpb $0, __hmx_latch_212(%rip)
+    jne 1f
+    movb $1, __hmx_latch_212(%rip)
+    leaq __hmx_name_212(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15SessionSettings9SetPublicEb
-    .set _ZN15SessionSettings9SetPublicEb, __hmx_band3_noop_stub
+    .set _ZN15SessionSettings9SetPublicEb, __hmx_tramp_212
+    .p2align 4
+__hmx_tramp_213:
+    cmpb $0, __hmx_latch_213(%rip)
+    jne 1f
+    movb $1, __hmx_latch_213(%rip)
+    leaq __hmx_name_213(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15VirtualKeyboard17IsKeyboardShowingEv
-    .set _ZN15VirtualKeyboard17IsKeyboardShowingEv, __hmx_band3_noop_stub
+    .set _ZN15VirtualKeyboard17IsKeyboardShowingEv, __hmx_tramp_213
+    .p2align 4
+__hmx_tramp_214:
+    cmpb $0, __hmx_latch_214(%rip)
+    jne 1f
+    movb $1, __hmx_latch_214(%rip)
+    leaq __hmx_name_214(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15WaitingUserGate4InitEv
-    .set _ZN15WaitingUserGate4InitEv, __hmx_band3_noop_stub
+    .set _ZN15WaitingUserGate4InitEv, __hmx_tramp_214
+    .p2align 4
+__hmx_tramp_215:
+    cmpb $0, __hmx_latch_215(%rip)
+    jne 1f
+    movb $1, __hmx_latch_215(%rip)
+    leaq __hmx_name_215(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15WaitingUserGate4PollEv
-    .set _ZN15WaitingUserGate4PollEv, __hmx_band3_noop_stub
+    .set _ZN15WaitingUserGate4PollEv, __hmx_tramp_215
+    .p2align 4
+__hmx_tramp_216:
+    cmpb $0, __hmx_latch_216(%rip)
+    jne 1f
+    movb $1, __hmx_latch_216(%rip)
+    leaq __hmx_name_216(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15WaitingUserGateC1Ev
-    .set _ZN15WaitingUserGateC1Ev, __hmx_band3_noop_stub
+    .set _ZN15WaitingUserGateC1Ev, __hmx_tramp_216
+    .p2align 4
+__hmx_tramp_217:
+    cmpb $0, __hmx_latch_217(%rip)
+    jne 1f
+    movb $1, __hmx_latch_217(%rip)
+    leaq __hmx_name_217(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE
-    .set _ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE, __hmx_band3_noop_stub
+    .set _ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE, __hmx_tramp_217
+    .p2align 4
+__hmx_tramp_218:
+    cmpb $0, __hmx_latch_218(%rip)
+    jne 1f
+    movb $1, __hmx_latch_218(%rip)
+    leaq __hmx_name_218(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocal15SetCurrentQuestE6Symbol
-    .set _ZN18TourPerformerLocal15SetCurrentQuestE6Symbol, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocal15SetCurrentQuestE6Symbol, __hmx_tramp_218
+    .p2align 4
+__hmx_tramp_219:
+    cmpb $0, __hmx_latch_219(%rip)
+    jne 1f
+    movb $1, __hmx_latch_219(%rip)
+    leaq __hmx_name_219(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocal17CheatCycleSetlistEv
-    .set _ZN18TourPerformerLocal17CheatCycleSetlistEv, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocal17CheatCycleSetlistEv, __hmx_tramp_219
+    .p2align 4
+__hmx_tramp_220:
+    cmpb $0, __hmx_latch_220(%rip)
+    jne 1f
+    movb $1, __hmx_latch_220(%rip)
+    leaq __hmx_name_220(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocal17ClearCurrentQuestEv
-    .set _ZN18TourPerformerLocal17ClearCurrentQuestEv, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocal17ClearCurrentQuestEv, __hmx_tramp_220
+    .p2align 4
+__hmx_tramp_221:
+    cmpb $0, __hmx_latch_221(%rip)
+    jne 1f
+    movb $1, __hmx_latch_221(%rip)
+    leaq __hmx_name_221(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocal19CheatCycleChallengeEv
-    .set _ZN18TourPerformerLocal19CheatCycleChallengeEv, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocal19CheatCycleChallengeEv, __hmx_tramp_221
+    .p2align 4
+__hmx_tramp_222:
+    cmpb $0, __hmx_latch_222(%rip)
+    jne 1f
+    movb $1, __hmx_latch_222(%rip)
+    leaq __hmx_name_222(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocal21SetCurrentQuestFilterE6Symbol15TourSetlistType
-    .set _ZN18TourPerformerLocal21SetCurrentQuestFilterE6Symbol15TourSetlistType, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocal21SetCurrentQuestFilterE6Symbol15TourSetlistType, __hmx_tramp_222
+    .p2align 4
+__hmx_tramp_223:
+    cmpb $0, __hmx_latch_223(%rip)
+    jne 1f
+    movb $1, __hmx_latch_223(%rip)
+    leaq __hmx_name_223(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocal23ClearCurrentQuestFilterEv
-    .set _ZN18TourPerformerLocal23ClearCurrentQuestFilterEv, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocal23ClearCurrentQuestFilterEv, __hmx_tramp_223
+    .p2align 4
+__hmx_tramp_224:
+    cmpb $0, __hmx_latch_224(%rip)
+    jne 1f
+    movb $1, __hmx_latch_224(%rip)
+    leaq __hmx_name_224(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocal23SanityCheckQuestFiltersEv
-    .set _ZN18TourPerformerLocal23SanityCheckQuestFiltersEv, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocal23SanityCheckQuestFiltersEv, __hmx_tramp_224
+    .p2align 4
+__hmx_tramp_225:
+    cmpb $0, __hmx_latch_225(%rip)
+    jne 1f
+    movb $1, __hmx_latch_225(%rip)
+    leaq __hmx_name_225(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18TourPerformerLocalC1ER11BandUserMgr
-    .set _ZN18TourPerformerLocalC1ER11BandUserMgr, __hmx_band3_noop_stub
+    .set _ZN18TourPerformerLocalC1ER11BandUserMgr, __hmx_tramp_225
+    .p2align 4
+__hmx_tramp_226:
+    cmpb $0, __hmx_latch_226(%rip)
+    jne 1f
+    movb $1, __hmx_latch_226(%rip)
+    leaq __hmx_name_226(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18WiiFriendsProvider19GetPossessiveSuffixEPKc
-    .set _ZN18WiiFriendsProvider19GetPossessiveSuffixEPKc, __hmx_band3_noop_stub
+    .set _ZN18WiiFriendsProvider19GetPossessiveSuffixEPKc, __hmx_tramp_226
+    .p2align 4
+__hmx_tramp_227:
+    cmpb $0, __hmx_latch_227(%rip)
+    jne 1f
+    movb $1, __hmx_latch_227(%rip)
+    leaq __hmx_name_227(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18WiiFriendsProvider24IsPossessiveSuffixNeededEPKc
-    .set _ZN18WiiFriendsProvider24IsPossessiveSuffixNeededEPKc, __hmx_band3_noop_stub
+    .set _ZN18WiiFriendsProvider24IsPossessiveSuffixNeededEPKc, __hmx_tramp_227
+    .p2align 4
+__hmx_tramp_228:
+    cmpb $0, __hmx_latch_228(%rip)
+    jne 1f
+    movb $1, __hmx_latch_228(%rip)
+    leaq __hmx_name_228(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN19MatchmakingSettings19ClearCustomSettingsEv
-    .set _ZN19MatchmakingSettings19ClearCustomSettingsEv, __hmx_band3_noop_stub
+    .set _ZN19MatchmakingSettings19ClearCustomSettingsEv, __hmx_tramp_228
+    .p2align 4
+__hmx_tramp_229:
+    cmpb $0, __hmx_latch_229(%rip)
+    jne 1f
+    movb $1, __hmx_latch_229(%rip)
+    leaq __hmx_name_229(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20MovieInternalBuffers3NewESt6vectorIP4BINKSaIS2_EE
-    .set _ZN20MovieInternalBuffers3NewESt6vectorIP4BINKSaIS2_EE, __hmx_band3_noop_stub
+    .set _ZN20MovieInternalBuffers3NewESt6vectorIP4BINKSaIS2_EE, __hmx_tramp_229
+    .p2align 4
+__hmx_tramp_230:
+    cmpb $0, __hmx_latch_230(%rip)
+    jne 1f
+    movb $1, __hmx_latch_230(%rip)
+    leaq __hmx_name_230(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20MovieInternalBuffersD1Ev
-    .set _ZN20MovieInternalBuffersD1Ev, __hmx_band3_noop_stub
+    .set _ZN20MovieInternalBuffersD1Ev, __hmx_tramp_230
+    .p2align 4
+__hmx_tramp_231:
+    cmpb $0, __hmx_latch_231(%rip)
+    jne 1f
+    movb $1, __hmx_latch_231(%rip)
+    leaq __hmx_name_231(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager14GetOfferStatusEPK20StorePackedOfferBase
-    .set _ZN20StoreMetadataManager14GetOfferStatusEPK20StorePackedOfferBase, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager14GetOfferStatusEPK20StorePackedOfferBase, __hmx_tramp_231
+    .p2align 4
+__hmx_tramp_232:
+    cmpb $0, __hmx_latch_232(%rip)
+    jne 1f
+    movb $1, __hmx_latch_232(%rip)
+    leaq __hmx_name_232(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager14SongStateFlagsEPK15StorePackedSong
-    .set _ZN20StoreMetadataManager14SongStateFlagsEPK15StorePackedSong, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager14SongStateFlagsEPK15StorePackedSong, __hmx_tramp_232
+    .p2align 4
+__hmx_tramp_233:
+    cmpb $0, __hmx_latch_233(%rip)
+    jne 1f
+    movb $1, __hmx_latch_233(%rip)
+    leaq __hmx_name_233(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager15AddSetlistOfferEi
-    .set _ZN20StoreMetadataManager15AddSetlistOfferEi, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager15AddSetlistOfferEi, __hmx_tramp_233
+    .p2align 4
+__hmx_tramp_234:
+    cmpb $0, __hmx_latch_234(%rip)
+    jne 1f
+    movb $1, __hmx_latch_234(%rip)
+    leaq __hmx_name_234(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager15LoadDynamicPageEP9DataArray
-    .set _ZN20StoreMetadataManager15LoadDynamicPageEP9DataArray, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager15LoadDynamicPageEP9DataArray, __hmx_tramp_234
+    .p2align 4
+__hmx_tramp_235:
+    cmpb $0, __hmx_latch_235(%rip)
+    jne 1f
+    movb $1, __hmx_latch_235(%rip)
+    leaq __hmx_name_235(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager18ClearSetlistOffersEv
-    .set _ZN20StoreMetadataManager18ClearSetlistOffersEv, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager18ClearSetlistOffersEv, __hmx_tramp_235
+    .p2align 4
+__hmx_tramp_236:
+    cmpb $0, __hmx_latch_236(%rip)
+    jne 1f
+    movb $1, __hmx_latch_236(%rip)
+    leaq __hmx_name_236(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager20GetContentStateFlagsEyt
-    .set _ZN20StoreMetadataManager20GetContentStateFlagsEyt, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager20GetContentStateFlagsEyt, __hmx_tramp_236
+    .p2align 4
+__hmx_tramp_237:
+    cmpb $0, __hmx_latch_237(%rip)
+    jne 1f
+    movb $1, __hmx_latch_237(%rip)
+    leaq __hmx_name_237(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager20UpdateOfferOwnershipEv
-    .set _ZN20StoreMetadataManager20UpdateOfferOwnershipEv, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager20UpdateOfferOwnershipEv, __hmx_tramp_237
+    .p2align 4
+__hmx_tramp_238:
+    cmpb $0, __hmx_latch_238(%rip)
+    jne 1f
+    movb $1, __hmx_latch_238(%rip)
+    leaq __hmx_name_238(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager4LoadEPKc
-    .set _ZN20StoreMetadataManager4LoadEPKc, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager4LoadEPKc, __hmx_tramp_238
+    .p2align 4
+__hmx_tramp_239:
+    cmpb $0, __hmx_latch_239(%rip)
+    jne 1f
+    movb $1, __hmx_latch_239(%rip)
+    leaq __hmx_name_239(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager6UnloadEv
-    .set _ZN20StoreMetadataManager6UnloadEv, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager6UnloadEv, __hmx_tramp_239
+    .p2align 4
+__hmx_tramp_240:
+    cmpb $0, __hmx_latch_240(%rip)
+    jne 1f
+    movb $1, __hmx_latch_240(%rip)
+    leaq __hmx_name_240(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN20StoreMetadataManager8LoadPageEt
-    .set _ZN20StoreMetadataManager8LoadPageEt, __hmx_band3_noop_stub
+    .set _ZN20StoreMetadataManager8LoadPageEt, __hmx_tramp_240
+    .p2align 4
+__hmx_tramp_241:
+    cmpb $0, __hmx_latch_241(%rip)
+    jne 1f
+    movb $1, __hmx_latch_241(%rip)
+    leaq __hmx_name_241(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN22MainHubMessageProvider13AddTickerDataE14TickerDataTypeiibb
-    .set _ZN22MainHubMessageProvider13AddTickerDataE14TickerDataTypeiibb, __hmx_band3_noop_stub
+    .set _ZN22MainHubMessageProvider13AddTickerDataE14TickerDataTypeiibb, __hmx_tramp_241
+    .p2align 4
+__hmx_tramp_242:
+    cmpb $0, __hmx_latch_242(%rip)
+    jne 1f
+    movb $1, __hmx_latch_242(%rip)
+    leaq __hmx_name_242(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN22MainHubMessageProvider15AddUnlinkedMotdEPKc
-    .set _ZN22MainHubMessageProvider15AddUnlinkedMotdEPKc, __hmx_band3_noop_stub
+    .set _ZN22MainHubMessageProvider15AddUnlinkedMotdEPKc, __hmx_tramp_242
+    .p2align 4
+__hmx_tramp_243:
+    cmpb $0, __hmx_latch_243(%rip)
+    jne 1f
+    movb $1, __hmx_latch_243(%rip)
+    leaq __hmx_name_243(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN22MainHubMessageProvider17IsTickerDataValidE14TickerDataType
-    .set _ZN22MainHubMessageProvider17IsTickerDataValidE14TickerDataType, __hmx_band3_noop_stub
+    .set _ZN22MainHubMessageProvider17IsTickerDataValidE14TickerDataType, __hmx_tramp_243
+    .p2align 4
+__hmx_tramp_244:
+    cmpb $0, __hmx_latch_244(%rip)
+    jne 1f
+    movb $1, __hmx_latch_244(%rip)
+    leaq __hmx_name_244(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN22MainHubMessageProvider9ClearDataEv
-    .set _ZN22MainHubMessageProvider9ClearDataEv, __hmx_band3_noop_stub
+    .set _ZN22MainHubMessageProvider9ClearDataEv, __hmx_tramp_244
+    .p2align 4
+__hmx_tramp_245:
+    cmpb $0, __hmx_latch_245(%rip)
+    jne 1f
+    movb $1, __hmx_latch_245(%rip)
+    leaq __hmx_name_245(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN22MainHubMessageProviderC1EP12MainHubPanel
-    .set _ZN22MainHubMessageProviderC1EP12MainHubPanel, __hmx_band3_noop_stub
+    .set _ZN22MainHubMessageProviderC1EP12MainHubPanel, __hmx_tramp_245
+    .p2align 4
+__hmx_tramp_246:
+    cmpb $0, __hmx_latch_246(%rip)
+    jne 1f
+    movb $1, __hmx_latch_246(%rip)
+    leaq __hmx_name_246(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN25WiiFriendsDetailsProviderC1Ev
-    .set _ZN25WiiFriendsDetailsProviderC1Ev, __hmx_band3_noop_stub
+    .set _ZN25WiiFriendsDetailsProviderC1Ev, __hmx_tramp_246
+    .p2align 4
+__hmx_tramp_247:
+    cmpb $0, __hmx_latch_247(%rip)
+    jne 1f
+    movb $1, __hmx_latch_247(%rip)
+    leaq __hmx_name_247(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN33AccomplishmentDiscSongConditionalC2EP9DataArrayi
-    .set _ZN33AccomplishmentDiscSongConditionalC2EP9DataArrayi, __hmx_band3_noop_stub
+    .set _ZN33AccomplishmentDiscSongConditionalC2EP9DataArrayi, __hmx_tramp_247
+    .p2align 4
+__hmx_tramp_248:
+    cmpb $0, __hmx_latch_248(%rip)
+    jne 1f
+    movb $1, __hmx_latch_248(%rip)
+    leaq __hmx_name_248(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN33AccomplishmentDiscSongConditionalD2Ev
-    .set _ZN33AccomplishmentDiscSongConditionalD2Ev, __hmx_band3_noop_stub
+    .set _ZN33AccomplishmentDiscSongConditionalD2Ev, __hmx_tramp_248
+    .p2align 4
+__hmx_tramp_249:
+    cmpb $0, __hmx_latch_249(%rip)
+    jne 1f
+    movb $1, __hmx_latch_249(%rip)
+    leaq __hmx_name_249(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band10ForceStarsEi
-    .set _ZN4Band10ForceStarsEi, __hmx_band3_noop_stub
+    .set _ZN4Band10ForceStarsEi, __hmx_tramp_249
+    .p2align 4
+__hmx_tramp_250:
+    cmpb $0, __hmx_latch_250(%rip)
+    jne 1f
+    movb $1, __hmx_latch_250(%rip)
+    leaq __hmx_name_250(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band10RemoveUserEP8BandUser
-    .set _ZN4Band10RemoveUserEP8BandUser, __hmx_band3_noop_stub
+    .set _ZN4Band10RemoveUserEP8BandUser, __hmx_tramp_250
+    .p2align 4
+__hmx_tramp_251:
+    cmpb $0, __hmx_latch_251(%rip)
+    jne 1f
+    movb $1, __hmx_latch_251(%rip)
+    leaq __hmx_name_251(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band11SetGameOverEv
-    .set _ZN4Band11SetGameOverEv, __hmx_band3_noop_stub
+    .set _ZN4Band11SetGameOverEv, __hmx_tramp_251
+    .p2align 4
+__hmx_tramp_252:
+    cmpb $0, __hmx_latch_252(%rip)
+    jne 1f
+    movb $1, __hmx_latch_252(%rip)
+    leaq __hmx_name_252(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band13LocalBlowCodaEP6Player
-    .set _ZN4Band13LocalBlowCodaEP6Player, __hmx_band3_noop_stub
+    .set _ZN4Band13LocalBlowCodaEP6Player, __hmx_tramp_252
+    .p2align 4
+__hmx_tramp_253:
+    cmpb $0, __hmx_latch_253(%rip)
+    jne 1f
+    movb $1, __hmx_latch_253(%rip)
+    leaq __hmx_name_253(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band15DealWithCodaGemEP6Playeribb
-    .set _ZN4Band15DealWithCodaGemEP6Playeribb, __hmx_band3_noop_stub
+    .set _ZN4Band15DealWithCodaGemEP6Playeribb, __hmx_tramp_253
+    .p2align 4
+__hmx_tramp_254:
+    cmpb $0, __hmx_latch_254(%rip)
+    jne 1f
+    movb $1, __hmx_latch_254(%rip)
+    leaq __hmx_name_254(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band16DeployBandEnergyEP8BandUser
-    .set _ZN4Band16DeployBandEnergyEP8BandUser, __hmx_band3_noop_stub
+    .set _ZN4Band16DeployBandEnergyEP8BandUser, __hmx_tramp_254
+    .p2align 4
+__hmx_tramp_255:
+    cmpb $0, __hmx_latch_255(%rip)
+    jne 1f
+    movb $1, __hmx_latch_255(%rip)
+    leaq __hmx_name_255(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band16GetActivePlayersEv
-    .set _ZN4Band16GetActivePlayersEv, __hmx_band3_noop_stub
+    .set _ZN4Band16GetActivePlayersEv, __hmx_tramp_255
+    .p2align 4
+__hmx_tramp_256:
+    cmpb $0, __hmx_latch_256(%rip)
+    jne 1f
+    movb $1, __hmx_latch_256(%rip)
+    leaq __hmx_name_256(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band16UpdateBonusLevelEf
-    .set _ZN4Band16UpdateBonusLevelEf, __hmx_band3_noop_stub
+    .set _ZN4Band16UpdateBonusLevelEf, __hmx_tramp_256
+    .p2align 4
+__hmx_tramp_257:
+    cmpb $0, __hmx_latch_257(%rip)
+    jne 1f
+    movb $1, __hmx_latch_257(%rip)
+    leaq __hmx_name_257(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band17LocalFinishedCodaEP6Player
-    .set _ZN4Band17LocalFinishedCodaEP6Player, __hmx_band3_noop_stub
+    .set _ZN4Band17LocalFinishedCodaEP6Player, __hmx_tramp_257
+    .p2align 4
+__hmx_tramp_258:
+    cmpb $0, __hmx_latch_258(%rip)
+    jne 1f
+    movb $1, __hmx_latch_258(%rip)
+    leaq __hmx_name_258(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band18AddUserDynamicallyEP8BandUser
-    .set _ZN4Band18AddUserDynamicallyEP8BandUser, __hmx_band3_noop_stub
+    .set _ZN4Band18AddUserDynamicallyEP8BandUser, __hmx_tramp_258
+    .p2align 4
+__hmx_tramp_259:
+    cmpb $0, __hmx_latch_259(%rip)
+    jne 1f
+    movb $1, __hmx_latch_259(%rip)
+    leaq __hmx_name_259(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band19SetAccumulatedScoreEi
-    .set _ZN4Band19SetAccumulatedScoreEi, __hmx_band3_noop_stub
+    .set _ZN4Band19SetAccumulatedScoreEi, __hmx_tramp_259
+    .p2align 4
+__hmx_tramp_260:
+    cmpb $0, __hmx_latch_260(%rip)
+    jne 1f
+    movb $1, __hmx_latch_260(%rip)
+    leaq __hmx_name_260(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band20AddPlayerDynamicallyEP10BeatMasterP8BandUser
-    .set _ZN4Band20AddPlayerDynamicallyEP10BeatMasterP8BandUser, __hmx_band3_noop_stub
+    .set _ZN4Band20AddPlayerDynamicallyEP10BeatMasterP8BandUser, __hmx_tramp_260
+    .p2align 4
+__hmx_tramp_261:
+    cmpb $0, __hmx_latch_261(%rip)
+    jne 1f
+    movb $1, __hmx_latch_261(%rip)
+    leaq __hmx_name_261(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band4PollEfR7SongPos
-    .set _ZN4Band4PollEfR7SongPos, __hmx_band3_noop_stub
+    .set _ZN4Band4PollEfR7SongPos, __hmx_tramp_261
+    .p2align 4
+__hmx_tramp_262:
+    cmpb $0, __hmx_latch_262(%rip)
+    jne 1f
+    movb $1, __hmx_latch_262(%rip)
+    leaq __hmx_name_262(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4Band7RestartEb
-    .set _ZN4Band7RestartEb, __hmx_band3_noop_stub
+    .set _ZN4Band7RestartEb, __hmx_tramp_262
+    .p2align 4
+__hmx_tramp_263:
+    cmpb $0, __hmx_latch_263(%rip)
+    jne 1f
+    movb $1, __hmx_latch_263(%rip)
+    leaq __hmx_name_263(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN4BandC1EbiP8BandUserP10BeatMaster
-    .set _ZN4BandC1EbiP8BandUserP10BeatMaster, __hmx_band3_noop_stub
+    .set _ZN4BandC1EbiP8BandUserP10BeatMaster, __hmx_tramp_263
+    .p2align 4
+__hmx_tramp_264:
+    cmpb $0, __hmx_latch_264(%rip)
+    jne 1f
+    movb $1, __hmx_latch_264(%rip)
+    leaq __hmx_name_264(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Movie4Impl12PlatformInitEv
-    .set _ZN5Movie4Impl12PlatformInitEv, __hmx_band3_noop_stub
+    .set _ZN5Movie4Impl12PlatformInitEv, __hmx_tramp_264
+    .p2align 4
+__hmx_tramp_265:
+    cmpb $0, __hmx_latch_265(%rip)
+    jne 1f
+    movb $1, __hmx_latch_265(%rip)
+    leaq __hmx_name_265(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Movie4Impl17PlatformCacheFileEPKc
-    .set _ZN5Movie4Impl17PlatformCacheFileEPKc, __hmx_band3_noop_stub
+    .set _ZN5Movie4Impl17PlatformCacheFileEPKc, __hmx_tramp_265
+    .p2align 4
+__hmx_tramp_266:
+    cmpb $0, __hmx_latch_266(%rip)
+    jne 1f
+    movb $1, __hmx_latch_266(%rip)
+    leaq __hmx_name_266(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Movie4Impl4DrawEv
-    .set _ZN5Movie4Impl4DrawEv, __hmx_band3_noop_stub
+    .set _ZN5Movie4Impl4DrawEv, __hmx_tramp_266
+    .p2align 4
+__hmx_tramp_267:
+    cmpb $0, __hmx_latch_267(%rip)
+    jne 1f
+    movb $1, __hmx_latch_267(%rip)
+    leaq __hmx_name_267(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats10AddSustainEf
-    .set _ZN5Stats10AddSustainEf, __hmx_band3_noop_stub
+    .set _ZN5Stats10AddSustainEf, __hmx_tramp_267
+    .p2align 4
+__hmx_tramp_268:
+    cmpb $0, __hmx_latch_268(%rip)
+    jne 1f
+    movb $1, __hmx_latch_268(%rip)
+    leaq __hmx_name_268(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats10StreakInfoC1Ev
-    .set _ZN5Stats10StreakInfoC1Ev, __hmx_band3_noop_stub
+    .set _ZN5Stats10StreakInfoC1Ev, __hmx_tramp_268
+    .p2align 4
+__hmx_tramp_269:
+    cmpb $0, __hmx_latch_269(%rip)
+    jne 1f
+    movb $1, __hmx_latch_269(%rip)
+    leaq __hmx_name_269(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats11AddAccuracyEi
-    .set _ZN5Stats11AddAccuracyEi, __hmx_band3_noop_stub
+    .set _ZN5Stats11AddAccuracyEi, __hmx_tramp_269
+    .p2align 4
+__hmx_tramp_270:
+    cmpb $0, __hmx_latch_270(%rip)
+    jne 1f
+    movb $1, __hmx_latch_270(%rip)
+    leaq __hmx_name_270(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats11SectionInfoC1Ev
-    .set _ZN5Stats11SectionInfoC1Ev, __hmx_band3_noop_stub
+    .set _ZN5Stats11SectionInfoC1Ev, __hmx_tramp_270
+    .p2align 4
+__hmx_tramp_271:
+    cmpb $0, __hmx_latch_271(%rip)
+    jne 1f
+    movb $1, __hmx_latch_271(%rip)
+    leaq __hmx_name_271(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats12AddOverdriveEf
-    .set _ZN5Stats12AddOverdriveEf, __hmx_band3_noop_stub
+    .set _ZN5Stats12AddOverdriveEf, __hmx_tramp_271
+    .p2align 4
+__hmx_tramp_272:
+    cmpb $0, __hmx_latch_272(%rip)
+    jne 1f
+    movb $1, __hmx_latch_272(%rip)
+    leaq __hmx_name_272(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats12EndHitStreakEv
-    .set _ZN5Stats12EndHitStreakEv, __hmx_band3_noop_stub
+    .set _ZN5Stats12EndHitStreakEv, __hmx_tramp_272
+    .p2align 4
+__hmx_tramp_273:
+    cmpb $0, __hmx_latch_273(%rip)
+    jne 1f
+    movb $1, __hmx_latch_273(%rip)
+    leaq __hmx_name_273(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats12SetFinalizedEb
-    .set _ZN5Stats12SetFinalizedEb, __hmx_band3_noop_stub
+    .set _ZN5Stats12SetFinalizedEb, __hmx_tramp_273
+    .p2align 4
+__hmx_tramp_274:
+    cmpb $0, __hmx_latch_274(%rip)
+    jne 1f
+    movb $1, __hmx_latch_274(%rip)
+    leaq __hmx_name_274(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats13AddCodaPointsEi
-    .set _ZN5Stats13AddCodaPointsEi, __hmx_band3_noop_stub
+    .set _ZN5Stats13AddCodaPointsEi, __hmx_tramp_274
+    .p2align 4
+__hmx_tramp_275:
+    cmpb $0, __hmx_latch_275(%rip)
+    jne 1f
+    movb $1, __hmx_latch_275(%rip)
+    leaq __hmx_name_275(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats13EndMissStreakEv
-    .set _ZN5Stats13EndMissStreakEv, __hmx_band3_noop_stub
+    .set _ZN5Stats13EndMissStreakEv, __hmx_tramp_275
+    .p2align 4
+__hmx_tramp_276:
+    cmpb $0, __hmx_latch_276(%rip)
+    jne 1f
+    movb $1, __hmx_latch_276(%rip)
+    leaq __hmx_name_276(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats14AddScoreStreakEf
-    .set _ZN5Stats14AddScoreStreakEf, __hmx_band3_noop_stub
+    .set _ZN5Stats14AddScoreStreakEf, __hmx_tramp_276
+    .p2align 4
+__hmx_tramp_277:
+    cmpb $0, __hmx_latch_277(%rip)
+    jne 1f
+    movb $1, __hmx_latch_277(%rip)
+    leaq __hmx_name_277(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats14BuildHitStreakEif
-    .set _ZN5Stats14BuildHitStreakEif, __hmx_band3_noop_stub
+    .set _ZN5Stats14BuildHitStreakEif, __hmx_tramp_277
+    .p2align 4
+__hmx_tramp_278:
+    cmpb $0, __hmx_latch_278(%rip)
+    jne 1f
+    movb $1, __hmx_latch_278(%rip)
+    leaq __hmx_name_278(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats14LoadForEndGameER9BinStream
-    .set _ZN5Stats14LoadForEndGameER9BinStream, __hmx_band3_noop_stub
+    .set _ZN5Stats14LoadForEndGameER9BinStream, __hmx_tramp_278
+    .p2align 4
+__hmx_tramp_279:
+    cmpb $0, __hmx_latch_279(%rip)
+    jne 1f
+    movb $1, __hmx_latch_279(%rip)
+    leaq __hmx_name_279(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats14MultiplierInfoC1Ev
-    .set _ZN5Stats14MultiplierInfoC1Ev, __hmx_band3_noop_stub
+    .set _ZN5Stats14MultiplierInfoC1Ev, __hmx_tramp_279
+    .p2align 4
+__hmx_tramp_280:
+    cmpb $0, __hmx_latch_280(%rip)
+    jne 1f
+    movb $1, __hmx_latch_280(%rip)
+    leaq __hmx_name_280(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats14SetHopoGemInfoEiii
-    .set _ZN5Stats14SetHopoGemInfoEiii, __hmx_band3_noop_stub
+    .set _ZN5Stats14SetHopoGemInfoEiii, __hmx_tramp_280
+    .p2align 4
+__hmx_tramp_281:
+    cmpb $0, __hmx_latch_281(%rip)
+    jne 1f
+    movb $1, __hmx_latch_281(%rip)
+    leaq __hmx_name_281(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats14SetSectionInfoEi6Symbolff
-    .set _ZN5Stats14SetSectionInfoEi6Symbolff, __hmx_band3_noop_stub
+    .set _ZN5Stats14SetSectionInfoEi6Symbolff, __hmx_tramp_281
+    .p2align 4
+__hmx_tramp_282:
+    cmpb $0, __hmx_latch_282(%rip)
+    jne 1f
+    movb $1, __hmx_latch_282(%rip)
+    leaq __hmx_name_282(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats14UpdateBestSoloEi
-    .set _ZN5Stats14UpdateBestSoloEi, __hmx_band3_noop_stub
+    .set _ZN5Stats14UpdateBestSoloEi, __hmx_tramp_282
+    .p2align 4
+__hmx_tramp_283:
+    cmpb $0, __hmx_latch_283(%rip)
+    jne 1f
+    movb $1, __hmx_latch_283(%rip)
+    leaq __hmx_name_283(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats15AddFailurePointEf
-    .set _ZN5Stats15AddFailurePointEf, __hmx_band3_noop_stub
+    .set _ZN5Stats15AddFailurePointEf, __hmx_tramp_283
+    .p2align 4
+__hmx_tramp_284:
+    cmpb $0, __hmx_latch_284(%rip)
+    jne 1f
+    movb $1, __hmx_latch_284(%rip)
+    leaq __hmx_name_284(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats15AddToTimesSavedEff
-    .set _ZN5Stats15AddToTimesSavedEff, __hmx_band3_noop_stub
+    .set _ZN5Stats15AddToTimesSavedEff, __hmx_tramp_284
+    .p2align 4
+__hmx_tramp_285:
+    cmpb $0, __hmx_latch_285(%rip)
+    jne 1f
+    movb $1, __hmx_latch_285(%rip)
+    leaq __hmx_name_285(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats15BuildMissStreakEi
-    .set _ZN5Stats15BuildMissStreakEi, __hmx_band3_noop_stub
+    .set _ZN5Stats15BuildMissStreakEi, __hmx_tramp_285
+    .p2align 4
+__hmx_tramp_286:
+    cmpb $0, __hmx_latch_286(%rip)
+    jne 1f
+    movb $1, __hmx_latch_286(%rip)
+    leaq __hmx_name_286(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats15DeployOverdriveEfi
-    .set _ZN5Stats15DeployOverdriveEfi, __hmx_band3_noop_stub
+    .set _ZN5Stats15DeployOverdriveEfi, __hmx_tramp_286
+    .p2align 4
+__hmx_tramp_287:
+    cmpb $0, __hmx_latch_287(%rip)
+    jne 1f
+    movb $1, __hmx_latch_287(%rip)
+    leaq __hmx_name_287(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats16SetCurrentStreakEi
-    .set _ZN5Stats16SetCurrentStreakEi, __hmx_band3_noop_stub
+    .set _ZN5Stats16SetCurrentStreakEi, __hmx_tramp_287
+    .p2align 4
+__hmx_tramp_288:
+    cmpb $0, __hmx_latch_288(%rip)
+    jne 1f
+    movb $1, __hmx_latch_288(%rip)
+    leaq __hmx_name_288(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats16SetCymbalGemInfoEiii
-    .set _ZN5Stats16SetCymbalGemInfoEiii, __hmx_band3_noop_stub
+    .set _ZN5Stats16SetCymbalGemInfoEiii, __hmx_tramp_288
+    .p2align 4
+__hmx_tramp_289:
+    cmpb $0, __hmx_latch_289(%rip)
+    jne 1f
+    movb $1, __hmx_latch_289(%rip)
+    leaq __hmx_name_289(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats17AddToPlayersSavedEif
-    .set _ZN5Stats17AddToPlayersSavedEif, __hmx_band3_noop_stub
+    .set _ZN5Stats17AddToPlayersSavedEif, __hmx_tramp_289
+    .p2align 4
+__hmx_tramp_290:
+    cmpb $0, __hmx_latch_290(%rip)
+    jne 1f
+    movb $1, __hmx_latch_290(%rip)
+    leaq __hmx_name_290(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats17SetNoScorePercentEf
-    .set _ZN5Stats17SetNoScorePercentEf, __hmx_band3_noop_stub
+    .set _ZN5Stats17SetNoScorePercentEf, __hmx_tramp_290
+    .p2align 4
+__hmx_tramp_291:
+    cmpb $0, __hmx_latch_291(%rip)
+    jne 1f
+    movb $1, __hmx_latch_291(%rip)
+    leaq __hmx_name_291(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats18IncrementTrillsHitEb
-    .set _ZN5Stats18IncrementTrillsHitEb, __hmx_band3_noop_stub
+    .set _ZN5Stats18IncrementTrillsHitEb, __hmx_tramp_291
+    .p2align 4
+__hmx_tramp_292:
+    cmpb $0, __hmx_latch_292(%rip)
+    jne 1f
+    movb $1, __hmx_latch_292(%rip)
+    leaq __hmx_name_292(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats19AddBandContributionEf
-    .set _ZN5Stats19AddBandContributionEf, __hmx_band3_noop_stub
+    .set _ZN5Stats19AddBandContributionEf, __hmx_tramp_292
+    .p2align 4
+__hmx_tramp_293:
+    cmpb $0, __hmx_latch_293(%rip)
+    jne 1f
+    movb $1, __hmx_latch_293(%rip)
+    leaq __hmx_name_293(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats19EndStreakMultiplierEfi
-    .set _ZN5Stats19EndStreakMultiplierEfi, __hmx_band3_noop_stub
+    .set _ZN5Stats19EndStreakMultiplierEfi, __hmx_tramp_293
+    .p2align 4
+__hmx_tramp_294:
+    cmpb $0, __hmx_latch_294(%rip)
+    jne 1f
+    movb $1, __hmx_latch_294(%rip)
+    leaq __hmx_name_294(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats19SetPersistentStreakEi
-    .set _ZN5Stats19SetPersistentStreakEi, __hmx_band3_noop_stub
+    .set _ZN5Stats19SetPersistentStreakEi, __hmx_tramp_294
+    .p2align 4
+__hmx_tramp_295:
+    cmpb $0, __hmx_latch_295(%rip)
+    jne 1f
+    movb $1, __hmx_latch_295(%rip)
+    leaq __hmx_name_295(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats21BeginStreakMultiplierEfi
-    .set _ZN5Stats21BeginStreakMultiplierEfi, __hmx_band3_noop_stub
+    .set _ZN5Stats21BeginStreakMultiplierEfi, __hmx_tramp_295
+    .p2align 4
+__hmx_tramp_296:
+    cmpb $0, __hmx_latch_296(%rip)
+    jne 1f
+    movb $1, __hmx_latch_296(%rip)
+    leaq __hmx_name_296(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats22StopDeployingOverdriveEfi
-    .set _ZN5Stats22StopDeployingOverdriveEfi, __hmx_band3_noop_stub
+    .set _ZN5Stats22StopDeployingOverdriveEfi, __hmx_tramp_296
+    .p2align 4
+__hmx_tramp_297:
+    cmpb $0, __hmx_latch_297(%rip)
+    jne 1f
+    movb $1, __hmx_latch_297(%rip)
+    leaq __hmx_name_297(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats23IncrementSustainGemsHitEb
-    .set _ZN5Stats23IncrementSustainGemsHitEb, __hmx_band3_noop_stub
+    .set _ZN5Stats23IncrementSustainGemsHitEb, __hmx_tramp_297
+    .p2align 4
+__hmx_tramp_298:
+    cmpb $0, __hmx_latch_298(%rip)
+    jne 1f
+    movb $1, __hmx_latch_298(%rip)
+    leaq __hmx_name_298(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats24IncrementHighFretGemsHitEb
-    .set _ZN5Stats24IncrementHighFretGemsHitEb, __hmx_band3_noop_stub
+    .set _ZN5Stats24IncrementHighFretGemsHitEb, __hmx_tramp_298
+    .p2align 4
+__hmx_tramp_299:
+    cmpb $0, __hmx_latch_299(%rip)
+    jne 1f
+    movb $1, __hmx_latch_299(%rip)
+    leaq __hmx_name_299(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats27SetVocalSingerAndPartCountsEii
-    .set _ZN5Stats27SetVocalSingerAndPartCountsEii, __hmx_band3_noop_stub
+    .set _ZN5Stats27SetVocalSingerAndPartCountsEii, __hmx_tramp_299
+    .p2align 4
+__hmx_tramp_300:
+    cmpb $0, __hmx_latch_300(%rip)
+    jne 1f
+    movb $1, __hmx_latch_300(%rip)
+    leaq __hmx_name_300(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats29SetSoloButtonedSoloPercentageEi
-    .set _ZN5Stats29SetSoloButtonedSoloPercentageEi, __hmx_band3_noop_stub
+    .set _ZN5Stats29SetSoloButtonedSoloPercentageEi, __hmx_tramp_300
+    .p2align 4
+__hmx_tramp_301:
+    cmpb $0, __hmx_latch_301(%rip)
+    jne 1f
+    movb $1, __hmx_latch_301(%rip)
+    leaq __hmx_name_301(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats7AddRollEb
-    .set _ZN5Stats7AddRollEb, __hmx_band3_noop_stub
+    .set _ZN5Stats7AddRollEb, __hmx_tramp_301
+    .p2align 4
+__hmx_tramp_302:
+    cmpb $0, __hmx_latch_302(%rip)
+    jne 1f
+    movb $1, __hmx_latch_302(%rip)
+    leaq __hmx_name_302(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Stats7AddSoloEi
-    .set _ZN5Stats7AddSoloEi, __hmx_band3_noop_stub
+    .set _ZN5Stats7AddSoloEi, __hmx_tramp_302
+    .p2align 4
+__hmx_tramp_303:
+    cmpb $0, __hmx_latch_303(%rip)
+    jne 1f
+    movb $1, __hmx_latch_303(%rip)
+    leaq __hmx_name_303(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5StatsC1Ev
-    .set _ZN5StatsC1Ev, __hmx_band3_noop_stub
+    .set _ZN5StatsC1Ev, __hmx_tramp_303
+    .p2align 4
+__hmx_tramp_304:
+    cmpb $0, __hmx_latch_304(%rip)
+    jne 1f
+    movb $1, __hmx_latch_304(%rip)
+    leaq __hmx_name_304(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5WiiFX5SetFXEii
-    .set _ZN5WiiFX5SetFXEii, __hmx_band3_noop_stub
+    .set _ZN5WiiFX5SetFXEii, __hmx_tramp_304
+    .p2align 4
+__hmx_tramp_305:
+    cmpb $0, __hmx_latch_305(%rip)
+    jne 1f
+    movb $1, __hmx_latch_305(%rip)
+    leaq __hmx_name_305(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5WiiFX8IsReverbEi
-    .set _ZN5WiiFX8IsReverbEi, __hmx_band3_noop_stub
+    .set _ZN5WiiFX8IsReverbEi, __hmx_tramp_305
+    .p2align 4
+__hmx_tramp_306:
+    cmpb $0, __hmx_latch_306(%rip)
+    jne 1f
+    movb $1, __hmx_latch_306(%rip)
+    leaq __hmx_name_306(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5WiiFX9SetReverbEib
-    .set _ZN5WiiFX9SetReverbEib, __hmx_band3_noop_stub
+    .set _ZN5WiiFX9SetReverbEib, __hmx_tramp_306
+    .p2align 4
+__hmx_tramp_307:
+    cmpb $0, __hmx_latch_307(%rip)
+    jne 1f
+    movb $1, __hmx_latch_307(%rip)
+    leaq __hmx_name_307(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal10RootObjectdlEPv
-    .set _ZN6Quazal10RootObjectdlEPv, __hmx_band3_noop_stub
+    .set _ZN6Quazal10RootObjectdlEPv, __hmx_tramp_307
+    .p2align 4
+__hmx_tramp_308:
+    cmpb $0, __hmx_latch_308(%rip)
+    jne 1f
+    movb $1, __hmx_latch_308(%rip)
+    leaq __hmx_name_308(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal10RootObjectnwEm
-    .set _ZN6Quazal10RootObjectnwEm, __hmx_band3_noop_stub
+    .set _ZN6Quazal10RootObjectnwEm, __hmx_tramp_308
+    .p2align 4
+__hmx_tramp_309:
+    cmpb $0, __hmx_latch_309(%rip)
+    jne 1f
+    movb $1, __hmx_latch_309(%rip)
+    leaq __hmx_name_309(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal12RBDataClient13CallDataPointEPNS_19ProtocolCallContextERKNS_6StringEPS3_
-    .set _ZN6Quazal12RBDataClient13CallDataPointEPNS_19ProtocolCallContextERKNS_6StringEPS3_, __hmx_band3_noop_stub
+    .set _ZN6Quazal12RBDataClient13CallDataPointEPNS_19ProtocolCallContextERKNS_6StringEPS3_, __hmx_tramp_309
+    .p2align 4
+__hmx_tramp_310:
+    cmpb $0, __hmx_latch_310(%rip)
+    jne 1f
+    movb $1, __hmx_latch_310(%rip)
+    leaq __hmx_name_310(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal12RBDataClient18CallDataPointNoRetEPNS_19ProtocolCallContextERKNS_6StringE
-    .set _ZN6Quazal12RBDataClient18CallDataPointNoRetEPNS_19ProtocolCallContextERKNS_6StringE, __hmx_band3_noop_stub
+    .set _ZN6Quazal12RBDataClient18CallDataPointNoRetEPNS_19ProtocolCallContextERKNS_6StringE, __hmx_tramp_310
+    .p2align 4
+__hmx_tramp_311:
+    cmpb $0, __hmx_latch_311(%rip)
+    jne 1f
+    movb $1, __hmx_latch_311(%rip)
+    leaq __hmx_name_311(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal13ServiceClient21RegisterExtraProtocolEPNS_8ProtocolEh
-    .set _ZN6Quazal13ServiceClient21RegisterExtraProtocolEPNS_8ProtocolEh, __hmx_band3_noop_stub
+    .set _ZN6Quazal13ServiceClient21RegisterExtraProtocolEPNS_8ProtocolEh, __hmx_tramp_311
+    .p2align 4
+__hmx_tramp_312:
+    cmpb $0, __hmx_latch_312(%rip)
+    jne 1f
+    movb $1, __hmx_latch_312(%rip)
+    leaq __hmx_name_312(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal15BackEndServices22FormatQErrorCodeStringERKNS_6StringEj
-    .set _ZN6Quazal15BackEndServices22FormatQErrorCodeStringERKNS_6StringEj, __hmx_band3_noop_stub
+    .set _ZN6Quazal15BackEndServices22FormatQErrorCodeStringERKNS_6StringEj, __hmx_tramp_312
+    .p2align 4
+__hmx_tramp_313:
+    cmpb $0, __hmx_latch_313(%rip)
+    jne 1f
+    movb $1, __hmx_latch_313(%rip)
+    leaq __hmx_name_313(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal19ProtocolCallContextC1Ev
-    .set _ZN6Quazal19ProtocolCallContextC1Ev, __hmx_band3_noop_stub
+    .set _ZN6Quazal19ProtocolCallContextC1Ev, __hmx_tramp_313
+    .p2align 4
+__hmx_tramp_314:
+    cmpb $0, __hmx_latch_314(%rip)
+    jne 1f
+    movb $1, __hmx_latch_314(%rip)
+    leaq __hmx_name_314(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal6StringC1EPKc
-    .set _ZN6Quazal6StringC1EPKc, __hmx_band3_noop_stub
+    .set _ZN6Quazal6StringC1EPKc, __hmx_tramp_314
+    .p2align 4
+__hmx_tramp_315:
+    cmpb $0, __hmx_latch_315(%rip)
+    jne 1f
+    movb $1, __hmx_latch_315(%rip)
+    leaq __hmx_name_315(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal6StringC1Ev
-    .set _ZN6Quazal6StringC1Ev, __hmx_band3_noop_stub
+    .set _ZN6Quazal6StringC1Ev, __hmx_tramp_315
+    .p2align 4
+__hmx_tramp_316:
+    cmpb $0, __hmx_latch_316(%rip)
+    jne 1f
+    movb $1, __hmx_latch_316(%rip)
+    leaq __hmx_name_316(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal6StringD1Ev
-    .set _ZN6Quazal6StringD1Ev, __hmx_band3_noop_stub
+    .set _ZN6Quazal6StringD1Ev, __hmx_tramp_316
+    .p2align 4
+__hmx_tramp_317:
+    cmpb $0, __hmx_latch_317(%rip)
+    jne 1f
+    movb $1, __hmx_latch_317(%rip)
+    leaq __hmx_name_317(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal6StringaSEPKc
-    .set _ZN6Quazal6StringaSEPKc, __hmx_band3_noop_stub
+    .set _ZN6Quazal6StringaSEPKc, __hmx_tramp_317
+    .p2align 4
+__hmx_tramp_318:
+    cmpb $0, __hmx_latch_318(%rip)
+    jne 1f
+    movb $1, __hmx_latch_318(%rip)
+    leaq __hmx_name_318(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Quazal8ProtocolC2Ej
-    .set _ZN6Quazal8ProtocolC2Ej, __hmx_band3_noop_stub
+    .set _ZN6Quazal8ProtocolC2Ej, __hmx_tramp_318
+    .p2align 4
+__hmx_tramp_319:
+    cmpb $0, __hmx_latch_319(%rip)
+    jne 1f
+    movb $1, __hmx_latch_319(%rip)
+    leaq __hmx_name_319(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6Splash4PollEv
-    .set _ZN6Splash4PollEv, __hmx_band3_noop_stub
+    .set _ZN6Splash4PollEv, __hmx_tramp_319
+    .p2align 4
+__hmx_tramp_320:
+    cmpb $0, __hmx_latch_320(%rip)
+    jne 1f
+    movb $1, __hmx_latch_320(%rip)
+    leaq __hmx_name_320(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6WiiRnd18PrepareRenderAlleyEv
-    .set _ZN6WiiRnd18PrepareRenderAlleyEv, __hmx_band3_noop_stub
+    .set _ZN6WiiRnd18PrepareRenderAlleyEv, __hmx_tramp_320
+    .p2align 4
+__hmx_tramp_321:
+    cmpb $0, __hmx_latch_321(%rip)
+    jne 1f
+    movb $1, __hmx_latch_321(%rip)
+    leaq __hmx_name_321(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6WiiRnd18RestoreRenderAlleyEv
-    .set _ZN6WiiRnd18RestoreRenderAlleyEv, __hmx_band3_noop_stub
+    .set _ZN6WiiRnd18RestoreRenderAlleyEv, __hmx_tramp_321
+    .p2align 4
+__hmx_tramp_322:
+    cmpb $0, __hmx_latch_322(%rip)
+    jne 1f
+    movb $1, __hmx_latch_322(%rip)
+    leaq __hmx_name_322(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6WiiRnd20SetTriFrameRenderingEb
-    .set _ZN6WiiRnd20SetTriFrameRenderingEb, __hmx_band3_noop_stub
+    .set _ZN6WiiRnd20SetTriFrameRenderingEb, __hmx_tramp_322
+    .p2align 4
+__hmx_tramp_323:
+    cmpb $0, __hmx_latch_323(%rip)
+    jne 1f
+    movb $1, __hmx_latch_323(%rip)
+    leaq __hmx_name_323(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6WiiTex13DeleteSurfaceEv
-    .set _ZN6WiiTex13DeleteSurfaceEv, __hmx_band3_noop_stub
+    .set _ZN6WiiTex13DeleteSurfaceEv, __hmx_tramp_323
+    .p2align 4
+__hmx_tramp_324:
+    cmpb $0, __hmx_latch_324(%rip)
+    jne 1f
+    movb $1, __hmx_latch_324(%rip)
+    leaq __hmx_name_324(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN7UILabel12CanHaveFocusEv
-    .set _ZN7UILabel12CanHaveFocusEv, __hmx_band3_noop_stub
+    .set _ZN7UILabel12CanHaveFocusEv, __hmx_tramp_324
+    .p2align 4
+__hmx_tramp_325:
+    cmpb $0, __hmx_latch_325(%rip)
+    jne 1f
+    movb $1, __hmx_latch_325(%rip)
+    leaq __hmx_name_325(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel11SetSongNameE6Symbolb
-    .set _ZN8AppLabel11SetSongNameE6Symbolb, __hmx_band3_noop_stub
+    .set _ZN8AppLabel11SetSongNameE6Symbolb, __hmx_tramp_325
+    .p2align 4
+__hmx_tramp_326:
+    cmpb $0, __hmx_latch_326(%rip)
+    jne 1f
+    movb $1, __hmx_latch_326(%rip)
+    leaq __hmx_name_326(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel11SetUserNameEPK4User
-    .set _ZN8AppLabel11SetUserNameEPK4User, __hmx_band3_noop_stub
+    .set _ZN8AppLabel11SetUserNameEPK4User, __hmx_tramp_326
+    .p2align 4
+__hmx_tramp_327:
+    cmpb $0, __hmx_latch_327(%rip)
+    jne 1f
+    movb $1, __hmx_latch_327(%rip)
+    leaq __hmx_name_327(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel12SetIntroNameEP8BandUser
-    .set _ZN8AppLabel12SetIntroNameEP8BandUser, __hmx_band3_noop_stub
+    .set _ZN8AppLabel12SetIntroNameEP8BandUser, __hmx_tramp_327
+    .p2align 4
+__hmx_tramp_328:
+    cmpb $0, __hmx_latch_328(%rip)
+    jne 1f
+    movb $1, __hmx_latch_328(%rip)
+    leaq __hmx_name_328(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel12SetOfferCostEPK10StoreOffer
-    .set _ZN8AppLabel12SetOfferCostEPK10StoreOffer, __hmx_band3_noop_stub
+    .set _ZN8AppLabel12SetOfferCostEPK10StoreOffer, __hmx_tramp_328
+    .p2align 4
+__hmx_tramp_329:
+    cmpb $0, __hmx_latch_329(%rip)
+    jne 1f
+    movb $1, __hmx_latch_329(%rip)
+    leaq __hmx_name_329(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel12SetOfferNameEPK10StoreOffer
-    .set _ZN8AppLabel12SetOfferNameEPK10StoreOffer, __hmx_band3_noop_stub
+    .set _ZN8AppLabel12SetOfferNameEPK10StoreOffer, __hmx_tramp_329
+    .p2align 4
+__hmx_tramp_330:
+    cmpb $0, __hmx_latch_330(%rip)
+    jne 1f
+    movb $1, __hmx_latch_330(%rip)
+    leaq __hmx_name_330(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel14SetSectionNameERK15PracticeSection
-    .set _ZN8AppLabel14SetSectionNameERK15PracticeSection, __hmx_band3_noop_stub
+    .set _ZN8AppLabel14SetSectionNameERK15PracticeSection, __hmx_tramp_330
+    .p2align 4
+__hmx_tramp_331:
+    cmpb $0, __hmx_latch_331(%rip)
+    jne 1f
+    movb $1, __hmx_latch_331(%rip)
+    leaq __hmx_name_331(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel14SetViewSettingEPK11ViewSetting
-    .set _ZN8AppLabel14SetViewSettingEPK11ViewSetting, __hmx_band3_noop_stub
+    .set _ZN8AppLabel14SetViewSettingEPK11ViewSetting, __hmx_tramp_331
+    .p2align 4
+__hmx_tramp_332:
+    cmpb $0, __hmx_latch_332(%rip)
+    jne 1f
+    movb $1, __hmx_latch_332(%rip)
+    leaq __hmx_name_332(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel16SetFromCharacterEPK8CharData
-    .set _ZN8AppLabel16SetFromCharacterEPK8CharData, __hmx_band3_noop_stub
+    .set _ZN8AppLabel16SetFromCharacterEPK8CharData, __hmx_tramp_332
+    .p2align 4
+__hmx_tramp_333:
+    cmpb $0, __hmx_latch_333(%rip)
+    jne 1f
+    movb $1, __hmx_latch_333(%rip)
+    leaq __hmx_name_333(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel17SetStoreGroupNameEPK18StoreOfferProvideri
-    .set _ZN8AppLabel17SetStoreGroupNameEPK18StoreOfferProvideri, __hmx_band3_noop_stub
+    .set _ZN8AppLabel17SetStoreGroupNameEPK18StoreOfferProvideri, __hmx_tramp_333
+    .p2align 4
+__hmx_tramp_334:
+    cmpb $0, __hmx_latch_334(%rip)
+    jne 1f
+    movb $1, __hmx_latch_334(%rip)
+    leaq __hmx_name_334(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel18SetLeaderboardNameERK14LeaderboardRow
-    .set _ZN8AppLabel18SetLeaderboardNameERK14LeaderboardRow, __hmx_band3_noop_stub
+    .set _ZN8AppLabel18SetLeaderboardNameERK14LeaderboardRow, __hmx_tramp_334
+    .p2align 4
+__hmx_tramp_335:
+    cmpb $0, __hmx_latch_335(%rip)
+    jne 1f
+    movb $1, __hmx_latch_335(%rip)
+    leaq __hmx_name_335(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel19SetRawStoreShortcutEi
-    .set _ZN8AppLabel19SetRawStoreShortcutEi, __hmx_band3_noop_stub
+    .set _ZN8AppLabel19SetRawStoreShortcutEi, __hmx_tramp_335
+    .p2align 4
+__hmx_tramp_336:
+    cmpb $0, __hmx_latch_336(%rip)
+    jne 1f
+    movb $1, __hmx_latch_336(%rip)
+    leaq __hmx_name_336(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel20SetViewSettingStatusEPK11ViewSetting
-    .set _ZN8AppLabel20SetViewSettingStatusEPK11ViewSetting, __hmx_band3_noop_stub
+    .set _ZN8AppLabel20SetViewSettingStatusEPK11ViewSetting, __hmx_tramp_336
+    .p2align 4
+__hmx_tramp_337:
+    cmpb $0, __hmx_latch_337(%rip)
+    jne 1f
+    movb $1, __hmx_latch_337(%rip)
+    leaq __hmx_name_337(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel21SetSongNameWithNumberEiiPKc
-    .set _ZN8AppLabel21SetSongNameWithNumberEiiPKc, __hmx_band3_noop_stub
+    .set _ZN8AppLabel21SetSongNameWithNumberEiiPKc, __hmx_tramp_337
+    .p2align 4
+__hmx_tramp_338:
+    cmpb $0, __hmx_latch_338(%rip)
+    jne 1f
+    movb $1, __hmx_latch_338(%rip)
+    leaq __hmx_name_338(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel23SetFromScoreDisplayDataEsiib
-    .set _ZN8AppLabel23SetFromScoreDisplayDataEsiib, __hmx_band3_noop_stub
+    .set _ZN8AppLabel23SetFromScoreDisplayDataEsiib, __hmx_tramp_338
+    .p2align 4
+__hmx_tramp_339:
+    cmpb $0, __hmx_latch_339(%rip)
+    jne 1f
+    movb $1, __hmx_latch_339(%rip)
+    leaq __hmx_name_339(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel23SetNewReleaseEntryText1EPK14StoreMainPanel
-    .set _ZN8AppLabel23SetNewReleaseEntryText1EPK14StoreMainPanel, __hmx_band3_noop_stub
+    .set _ZN8AppLabel23SetNewReleaseEntryText1EPK14StoreMainPanel, __hmx_tramp_339
+    .p2align 4
+__hmx_tramp_340:
+    cmpb $0, __hmx_latch_340(%rip)
+    jne 1f
+    movb $1, __hmx_latch_340(%rip)
+    leaq __hmx_name_340(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel23SetNewReleaseEntryText2EPK14StoreMainPanel
-    .set _ZN8AppLabel23SetNewReleaseEntryText2EPK14StoreMainPanel, __hmx_band3_noop_stub
+    .set _ZN8AppLabel23SetNewReleaseEntryText2EPK14StoreMainPanel, __hmx_tramp_340
+    .p2align 4
+__hmx_tramp_341:
+    cmpb $0, __hmx_latch_341(%rip)
+    jne 1f
+    movb $1, __hmx_latch_341(%rip)
+    leaq __hmx_name_341(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel23SetNewReleaseEntryText3EPK14StoreMainPanel
-    .set _ZN8AppLabel23SetNewReleaseEntryText3EPK14StoreMainPanel, __hmx_band3_noop_stub
+    .set _ZN8AppLabel23SetNewReleaseEntryText3EPK14StoreMainPanel, __hmx_tramp_341
+    .p2align 4
+__hmx_tramp_342:
+    cmpb $0, __hmx_latch_342(%rip)
+    jne 1f
+    movb $1, __hmx_latch_342(%rip)
+    leaq __hmx_name_342(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel24SetTokenRedemptionStringEPK20TokenRedemptionPaneli
-    .set _ZN8AppLabel24SetTokenRedemptionStringEPK20TokenRedemptionPaneli, __hmx_band3_noop_stub
+    .set _ZN8AppLabel24SetTokenRedemptionStringEPK20TokenRedemptionPaneli, __hmx_tramp_342
+    .p2align 4
+__hmx_tramp_343:
+    cmpb $0, __hmx_latch_343(%rip)
+    jne 1f
+    movb $1, __hmx_latch_343(%rip)
+    leaq __hmx_name_343(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel25SetLeaderboardRankAndNameERK14LeaderboardRow
-    .set _ZN8AppLabel25SetLeaderboardRankAndNameERK14LeaderboardRow, __hmx_band3_noop_stub
+    .set _ZN8AppLabel25SetLeaderboardRankAndNameERK14LeaderboardRow, __hmx_tramp_343
+    .p2align 4
+__hmx_tramp_344:
+    cmpb $0, __hmx_latch_344(%rip)
+    jne 1f
+    movb $1, __hmx_latch_344(%rip)
+    leaq __hmx_name_344(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AppLabel8SetPitchEii
-    .set _ZN8AppLabel8SetPitchEii, __hmx_band3_noop_stub
+    .set _ZN8AppLabel8SetPitchEii, __hmx_tramp_344
+    .p2align 4
+__hmx_tramp_345:
+    cmpb $0, __hmx_latch_345(%rip)
+    jne 1f
+    movb $1, __hmx_latch_345(%rip)
+    leaq __hmx_name_345(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AssetMgr11GetAssetMgrEv
-    .set _ZN8AssetMgr11GetAssetMgrEv, __hmx_band3_noop_stub
+    .set _ZN8AssetMgr11GetAssetMgrEv, __hmx_tramp_345
+    .p2align 4
+__hmx_tramp_346:
+    cmpb $0, __hmx_latch_346(%rip)
+    jne 1f
+    movb $1, __hmx_latch_346(%rip)
+    leaq __hmx_name_346(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AssetMgr11StripFinishE6Symbol
-    .set _ZN8AssetMgr11StripFinishE6Symbol, __hmx_band3_noop_stub
+    .set _ZN8AssetMgr11StripFinishE6Symbol, __hmx_tramp_346
+    .p2align 4
+__hmx_tramp_347:
+    cmpb $0, __hmx_latch_347(%rip)
+    jne 1f
+    movb $1, __hmx_latch_347(%rip)
+    leaq __hmx_name_347(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8AssetMgr4InitEv
-    .set _ZN8AssetMgr4InitEv, __hmx_band3_noop_stub
+    .set _ZN8AssetMgr4InitEv, __hmx_tramp_347
+    .p2align 4
+__hmx_tramp_348:
+    cmpb $0, __hmx_latch_348(%rip)
+    jne 1f
+    movb $1, __hmx_latch_348(%rip)
+    leaq __hmx_name_348(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8CharClip6ExportEP9DataArrayb
-    .set _ZN8CharClip6ExportEP9DataArrayb, __hmx_band3_noop_stub
+    .set _ZN8CharClip6ExportEP9DataArrayb, __hmx_tramp_348
+    .p2align 4
+__hmx_tramp_349:
+    cmpb $0, __hmx_latch_349(%rip)
+    jne 1f
+    movb $1, __hmx_latch_349(%rip)
+    leaq __hmx_name_349(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8CharHair6HookupER10ObjPtrListI11CharCollide9ObjectDirE
-    .set _ZN8CharHair6HookupER10ObjPtrListI11CharCollide9ObjectDirE, __hmx_band3_noop_stub
+    .set _ZN8CharHair6HookupER10ObjPtrListI11CharCollide9ObjectDirE, __hmx_tramp_349
+    .p2align 4
+__hmx_tramp_350:
+    cmpb $0, __hmx_latch_350(%rip)
+    jne 1f
+    movb $1, __hmx_latch_350(%rip)
+    leaq __hmx_name_350(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8CharHairC1Ev
-    .set _ZN8CharHairC1Ev, __hmx_band3_noop_stub
+    .set _ZN8CharHairC1Ev, __hmx_tramp_350
+    .p2align 4
+__hmx_tramp_351:
+    cmpb $0, __hmx_latch_351(%rip)
+    jne 1f
+    movb $1, __hmx_latch_351(%rip)
+    leaq __hmx_name_351(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8InputMgr21IsValidButtonForShellE12JoypadButtonP13LocalBandUser
-    .set _ZN8InputMgr21IsValidButtonForShellE12JoypadButtonP13LocalBandUser, __hmx_band3_noop_stub
+    .set _ZN8InputMgr21IsValidButtonForShellE12JoypadButtonP13LocalBandUser, __hmx_tramp_351
+    .p2align 4
+__hmx_tramp_352:
+    cmpb $0, __hmx_latch_352(%rip)
+    jne 1f
+    movb $1, __hmx_latch_352(%rip)
+    leaq __hmx_name_352(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8InputMgr21SetInvalidMessageSinkEPN3Hmx6ObjectE
-    .set _ZN8InputMgr21SetInvalidMessageSinkEPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZN8InputMgr21SetInvalidMessageSinkEPN3Hmx6ObjectE, __hmx_tramp_352
+    .p2align 4
+__hmx_tramp_353:
+    cmpb $0, __hmx_latch_353(%rip)
+    jne 1f
+    movb $1, __hmx_latch_353(%rip)
+    leaq __hmx_name_353(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8InputMgr23ClearInvalidMessageSinkEv
-    .set _ZN8InputMgr23ClearInvalidMessageSinkEv, __hmx_band3_noop_stub
+    .set _ZN8InputMgr23ClearInvalidMessageSinkEv, __hmx_tramp_353
+    .p2align 4
+__hmx_tramp_354:
+    cmpb $0, __hmx_latch_354(%rip)
+    jne 1f
+    movb $1, __hmx_latch_354(%rip)
+    leaq __hmx_name_354(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8InputMgr4InitEv
-    .set _ZN8InputMgr4InitEv, __hmx_band3_noop_stub
+    .set _ZN8InputMgr4InitEv, __hmx_tramp_354
+    .p2align 4
+__hmx_tramp_355:
+    cmpb $0, __hmx_latch_355(%rip)
+    jne 1f
+    movb $1, __hmx_latch_355(%rip)
+    leaq __hmx_name_355(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8InputMgr7GetUserEv
-    .set _ZN8InputMgr7GetUserEv, __hmx_band3_noop_stub
+    .set _ZN8InputMgr7GetUserEv, __hmx_tramp_355
+    .p2align 4
+__hmx_tramp_356:
+    cmpb $0, __hmx_latch_356(%rip)
+    jne 1f
+    movb $1, __hmx_latch_356(%rip)
+    leaq __hmx_name_356(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8InputMgr9TerminateEv
-    .set _ZN8InputMgr9TerminateEv, __hmx_band3_noop_stub
+    .set _ZN8InputMgr9TerminateEv, __hmx_tramp_356
+    .p2align 4
+__hmx_tramp_357:
+    cmpb $0, __hmx_latch_357(%rip)
+    jne 1f
+    movb $1, __hmx_latch_357(%rip)
+    leaq __hmx_name_357(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8NodeSort10DeleteListEv
-    .set _ZN8NodeSort10DeleteListEv, __hmx_band3_noop_stub
+    .set _ZN8NodeSort10DeleteListEv, __hmx_tramp_357
+    .p2align 4
+__hmx_tramp_358:
+    cmpb $0, __hmx_latch_358(%rip)
+    jne 1f
+    movb $1, __hmx_latch_358(%rip)
+    leaq __hmx_name_358(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8NodeSort10DeleteTreeEv
-    .set _ZN8NodeSort10DeleteTreeEv, __hmx_band3_noop_stub
+    .set _ZN8NodeSort10DeleteTreeEv, __hmx_tramp_358
+    .p2align 4
+__hmx_tramp_359:
+    cmpb $0, __hmx_latch_359(%rip)
+    jne 1f
+    movb $1, __hmx_latch_359(%rip)
+    leaq __hmx_name_359(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8NodeSort9FirstCharEPKcb
-    .set _ZN8NodeSort9FirstCharEPKcb, __hmx_band3_noop_stub
+    .set _ZN8NodeSort9FirstCharEPKcb, __hmx_tramp_359
+    .p2align 4
+__hmx_tramp_360:
+    cmpb $0, __hmx_latch_360(%rip)
+    jne 1f
+    movb $1, __hmx_latch_360(%rip)
+    leaq __hmx_name_360(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8NodeSortC2Ev
-    .set _ZN8NodeSortC2Ev, __hmx_band3_noop_stub
+    .set _ZN8NodeSortC2Ev, __hmx_tramp_360
+    .p2align 4
+__hmx_tramp_361:
+    cmpb $0, __hmx_latch_361(%rip)
+    jne 1f
+    movb $1, __hmx_latch_361(%rip)
+    leaq __hmx_name_361(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8SongSort13BuildSongListEv
-    .set _ZN8SongSort13BuildSongListEv, __hmx_band3_noop_stub
+    .set _ZN8SongSort13BuildSongListEv, __hmx_tramp_361
+    .p2align 4
+__hmx_tramp_362:
+    cmpb $0, __hmx_latch_362(%rip)
+    jne 1f
+    movb $1, __hmx_latch_362(%rip)
+    leaq __hmx_name_362(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8SongSort13BuildSongTreeERSt3mapI6Symbol10SongRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEERSt6vectorIP10StoreOfferSaISD_EE
-    .set _ZN8SongSort13BuildSongTreeERSt3mapI6Symbol10SongRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEERSt6vectorIP10StoreOfferSaISD_EE, __hmx_band3_noop_stub
+    .set _ZN8SongSort13BuildSongTreeERSt3mapI6Symbol10SongRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEERSt6vectorIP10StoreOfferSaISD_EE, __hmx_tramp_362
+    .p2align 4
+__hmx_tramp_363:
+    cmpb $0, __hmx_latch_363(%rip)
+    jne 1f
+    movb $1, __hmx_latch_363(%rip)
+    leaq __hmx_name_363(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9JsonArray9AddMemberEP10JsonObject
-    .set _ZN9JsonArray9AddMemberEP10JsonObject, __hmx_band3_noop_stub
+    .set _ZN9JsonArray9AddMemberEP10JsonObject, __hmx_tramp_363
+    .p2align 4
+__hmx_tramp_364:
+    cmpb $0, __hmx_latch_364(%rip)
+    jne 1f
+    movb $1, __hmx_latch_364(%rip)
+    leaq __hmx_name_364(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9MetaPanel4InitEv
-    .set _ZN9MetaPanel4InitEv, __hmx_band3_noop_stub
+    .set _ZN9MetaPanel4InitEv, __hmx_tramp_364
+    .p2align 4
+__hmx_tramp_365:
+    cmpb $0, __hmx_latch_365(%rip)
+    jne 1f
+    movb $1, __hmx_latch_365(%rip)
+    leaq __hmx_name_365(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9PrefabMgr11GetFaceTypeE6Symbol
-    .set _ZN9PrefabMgr11GetFaceTypeE6Symbol, __hmx_band3_noop_stub
+    .set _ZN9PrefabMgr11GetFaceTypeE6Symbol, __hmx_tramp_365
+    .p2align 4
+__hmx_tramp_366:
+    cmpb $0, __hmx_latch_366(%rip)
+    jne 1f
+    movb $1, __hmx_latch_366(%rip)
+    leaq __hmx_name_366(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9PrefabMgr12GetPrefabMgrEv
-    .set _ZN9PrefabMgr12GetPrefabMgrEv, __hmx_band3_noop_stub
+    .set _ZN9PrefabMgr12GetPrefabMgrEv, __hmx_tramp_366
+    .p2align 4
+__hmx_tramp_367:
+    cmpb $0, __hmx_latch_367(%rip)
+    jne 1f
+    movb $1, __hmx_latch_367(%rip)
+    leaq __hmx_name_367(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9PrefabMgr20PrefabIsCustomizableEv
-    .set _ZN9PrefabMgr20PrefabIsCustomizableEv, __hmx_band3_noop_stub
+    .set _ZN9PrefabMgr20PrefabIsCustomizableEv, __hmx_tramp_367
+    .p2align 4
+__hmx_tramp_368:
+    cmpb $0, __hmx_latch_368(%rip)
+    jne 1f
+    movb $1, __hmx_latch_368(%rip)
+    leaq __hmx_name_368(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9PrefabMgr24PrefabUsesProfilePatchesEv
-    .set _ZN9PrefabMgr24PrefabUsesProfilePatchesEv, __hmx_band3_noop_stub
+    .set _ZN9PrefabMgr24PrefabUsesProfilePatchesEv, __hmx_tramp_368
+    .p2align 4
+__hmx_tramp_369:
+    cmpb $0, __hmx_latch_369(%rip)
+    jne 1f
+    movb $1, __hmx_latch_369(%rip)
+    leaq __hmx_name_369(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9PrefabMgr4InitEP11BandUserMgr
-    .set _ZN9PrefabMgr4InitEP11BandUserMgr, __hmx_band3_noop_stub
+    .set _ZN9PrefabMgr4InitEP11BandUserMgr, __hmx_tramp_369
+    .p2align 4
+__hmx_tramp_370:
+    cmpb $0, __hmx_latch_370(%rip)
+    jne 1f
+    movb $1, __hmx_latch_370(%rip)
+    leaq __hmx_name_370(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9PrefabMgr9GetPrefabE6Symbol
-    .set _ZN9PrefabMgr9GetPrefabE6Symbol, __hmx_band3_noop_stub
+    .set _ZN9PrefabMgr9GetPrefabE6Symbol, __hmx_tramp_370
+    .p2align 4
+__hmx_tramp_371:
+    cmpb $0, __hmx_latch_371(%rip)
+    jne 1f
+    movb $1, __hmx_latch_371(%rip)
+    leaq __hmx_name_371(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9SyncStore4PollEv
-    .set _ZN9SyncStore4PollEv, __hmx_band3_noop_stub
+    .set _ZN9SyncStore4PollEv, __hmx_tramp_371
+    .p2align 4
+__hmx_tramp_372:
+    cmpb $0, __hmx_latch_372(%rip)
+    jne 1f
+    movb $1, __hmx_latch_372(%rip)
+    leaq __hmx_name_372(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10DataResult18GetDataResultValueE6StringR8DataNode
-    .set _ZNK10DataResult18GetDataResultValueE6StringR8DataNode, __hmx_band3_noop_stub
+    .set _ZNK10DataResult18GetDataResultValueE6StringR8DataNode, __hmx_tramp_372
+    .p2align 4
+__hmx_tramp_373:
+    cmpb $0, __hmx_latch_373(%rip)
+    jne 1f
+    movb $1, __hmx_latch_373(%rip)
+    leaq __hmx_name_373(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig10CanEndGameEv
-    .set _ZNK10GameConfig10CanEndGameEv, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig10CanEndGameEv, __hmx_tramp_373
+    .p2align 4
+__hmx_tramp_374:
+    cmpb $0, __hmx_latch_374(%rip)
+    jne 1f
+    movb $1, __hmx_latch_374(%rip)
+    leaq __hmx_name_374(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig11GetTrackNumERK8UserGuid
-    .set _ZNK10GameConfig11GetTrackNumERK8UserGuid, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig11GetTrackNumERK8UserGuid, __hmx_tramp_374
+    .p2align 4
+__hmx_tramp_375:
+    cmpb $0, __hmx_latch_375(%rip)
+    jne 1f
+    movb $1, __hmx_latch_375(%rip)
+    leaq __hmx_name_375(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig13GetControllerEP8BandUser
-    .set _ZNK10GameConfig13GetControllerEP8BandUser, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig13GetControllerEP8BandUser, __hmx_tramp_375
+    .p2align 4
+__hmx_tramp_376:
+    cmpb $0, __hmx_latch_376(%rip)
+    jne 1f
+    movb $1, __hmx_latch_376(%rip)
+    leaq __hmx_name_376(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig16GetSectionBoundsEiRfS0_
-    .set _ZNK10GameConfig16GetSectionBoundsEiRfS0_, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig16GetSectionBoundsEiRfS0_, __hmx_tramp_376
+    .p2align 4
+__hmx_tramp_377:
+    cmpb $0, __hmx_latch_377(%rip)
+    jne 1f
+    movb $1, __hmx_latch_377(%rip)
+    leaq __hmx_name_377(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig16IsInstrumentUsedE6Symbol
-    .set _ZNK10GameConfig16IsInstrumentUsedE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig16IsInstrumentUsedE6Symbol, __hmx_tramp_377
+    .p2align 4
+__hmx_tramp_378:
+    cmpb $0, __hmx_latch_378(%rip)
+    jne 1f
+    movb $1, __hmx_latch_378(%rip)
+    leaq __hmx_name_378(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig19GetPracticeSectionsERiS0_
-    .set _ZNK10GameConfig19GetPracticeSectionsERiS0_, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig19GetPracticeSectionsERiS0_, __hmx_tramp_378
+    .p2align 4
+__hmx_tramp_379:
+    cmpb $0, __hmx_latch_379(%rip)
+    jne 1f
+    movb $1, __hmx_latch_379(%rip)
+    leaq __hmx_name_379(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig20GetAverageDifficultyEv
-    .set _ZNK10GameConfig20GetAverageDifficultyEv, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig20GetAverageDifficultyEv, __hmx_tramp_379
+    .p2align 4
+__hmx_tramp_380:
+    cmpb $0, __hmx_latch_380(%rip)
+    jne 1f
+    movb $1, __hmx_latch_380(%rip)
+    leaq __hmx_name_380(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10GameConfig20GetSectionBoundsTickEiRiS0_
-    .set _ZNK10GameConfig20GetSectionBoundsTickEiRiS0_, __hmx_band3_noop_stub
+    .set _ZNK10GameConfig20GetSectionBoundsTickEiRiS0_, __hmx_tramp_380
+    .p2align 4
+__hmx_tramp_381:
+    cmpb $0, __hmx_latch_381(%rip)
+    jne 1f
+    movb $1, __hmx_latch_381(%rip)
+    leaq __hmx_name_381(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10JsonObject17GetObjectAsStringEv
-    .set _ZNK10JsonObject17GetObjectAsStringEv, __hmx_band3_noop_stub
+    .set _ZNK10JsonObject17GetObjectAsStringEv, __hmx_tramp_381
+    .p2align 4
+__hmx_tramp_382:
+    cmpb $0, __hmx_latch_382(%rip)
+    jne 1f
+    movb $1, __hmx_latch_382(%rip)
+    leaq __hmx_name_382(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession12GetLocalHostEv
-    .set _ZNK10NetSession12GetLocalHostEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession12GetLocalHostEv, __hmx_tramp_382
+    .p2align 4
+__hmx_tramp_383:
+    cmpb $0, __hmx_latch_383(%rip)
+    jne 1f
+    movb $1, __hmx_latch_383(%rip)
+    leaq __hmx_name_383(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession12NumOpenSlotsEv
-    .set _ZNK10NetSession12NumOpenSlotsEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession12NumOpenSlotsEv, __hmx_tramp_383
+    .p2align 4
+__hmx_tramp_384:
+    cmpb $0, __hmx_latch_384(%rip)
+    jne 1f
+    movb $1, __hmx_latch_384(%rip)
+    leaq __hmx_name_384(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession14IsStartingGameEv
-    .set _ZNK10NetSession14IsStartingGameEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession14IsStartingGameEv, __hmx_tramp_384
+    .p2align 4
+__hmx_tramp_385:
+    cmpb $0, __hmx_latch_385(%rip)
+    jne 1f
+    movb $1, __hmx_latch_385(%rip)
+    leaq __hmx_name_385(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession15IsOnlineEnabledEv
-    .set _ZNK10NetSession15IsOnlineEnabledEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession15IsOnlineEnabledEv, __hmx_tramp_385
+    .p2align 4
+__hmx_tramp_386:
+    cmpb $0, __hmx_latch_386(%rip)
+    jne 1f
+    movb $1, __hmx_latch_386(%rip)
+    leaq __hmx_name_386(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession16GetLocalUserListERSt6vectorIP9LocalUserSaIS2_EE
-    .set _ZNK10NetSession16GetLocalUserListERSt6vectorIP9LocalUserSaIS2_EE, __hmx_band3_noop_stub
+    .set _ZNK10NetSession16GetLocalUserListERSt6vectorIP9LocalUserSaIS2_EE, __hmx_tramp_386
+    .p2align 4
+__hmx_tramp_387:
+    cmpb $0, __hmx_latch_387(%rip)
+    jne 1f
+    movb $1, __hmx_latch_387(%rip)
+    leaq __hmx_name_387(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession6IsBusyEv
-    .set _ZNK10NetSession6IsBusyEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession6IsBusyEv, __hmx_tramp_387
+    .p2align 4
+__hmx_tramp_388:
+    cmpb $0, __hmx_latch_388(%rip)
+    jne 1f
+    movb $1, __hmx_latch_388(%rip)
+    leaq __hmx_name_388(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession7IsLocalEv
-    .set _ZNK10NetSession7IsLocalEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession7IsLocalEv, __hmx_tramp_388
+    .p2align 4
+__hmx_tramp_389:
+    cmpb $0, __hmx_latch_389(%rip)
+    jne 1f
+    movb $1, __hmx_latch_389(%rip)
+    leaq __hmx_name_389(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession8IsInGameEv
-    .set _ZNK10NetSession8IsInGameEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession8IsInGameEv, __hmx_tramp_389
+    .p2align 4
+__hmx_tramp_390:
+    cmpb $0, __hmx_latch_390(%rip)
+    jne 1f
+    movb $1, __hmx_latch_390(%rip)
+    leaq __hmx_name_390(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK10NetSession9IsJoiningEv
-    .set _ZNK10NetSession9IsJoiningEv, __hmx_band3_noop_stub
+    .set _ZNK10NetSession9IsJoiningEv, __hmx_tramp_390
+    .p2align 4
+__hmx_tramp_391:
+    cmpb $0, __hmx_latch_391(%rip)
+    jne 1f
+    movb $1, __hmx_latch_391(%rip)
+    leaq __hmx_name_391(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11BandSongMgr29WriteCachedMetadataFromStreamER9BinStream
-    .set _ZNK11BandSongMgr29WriteCachedMetadataFromStreamER9BinStream, __hmx_band3_noop_stub
+    .set _ZNK11BandSongMgr29WriteCachedMetadataFromStreamER9BinStream, __hmx_tramp_391
+    .p2align 4
+__hmx_tramp_392:
+    cmpb $0, __hmx_latch_392(%rip)
+    jne 1f
+    movb $1, __hmx_latch_392(%rip)
+    leaq __hmx_name_392(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr11IsPadAGuestEi
-    .set _ZNK11PlatformMgr11IsPadAGuestEi, __hmx_band3_noop_stub
+    .set _ZNK11PlatformMgr11IsPadAGuestEi, __hmx_tramp_392
+    .p2align 4
+__hmx_tramp_393:
+    cmpb $0, __hmx_latch_393(%rip)
+    jne 1f
+    movb $1, __hmx_latch_393(%rip)
+    leaq __hmx_name_393(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr15IsGuestOnlineIDEPK8OnlineID
-    .set _ZNK11PlatformMgr15IsGuestOnlineIDEPK8OnlineID, __hmx_band3_noop_stub
+    .set _ZNK11PlatformMgr15IsGuestOnlineIDEPK8OnlineID, __hmx_tramp_393
+    .p2align 4
+__hmx_tramp_394:
+    cmpb $0, __hmx_latch_394(%rip)
+    jne 1f
+    movb $1, __hmx_latch_394(%rip)
+    leaq __hmx_name_394(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr24CanSeeUserCreatedContentEPK8OnlineID
-    .set _ZNK11PlatformMgr24CanSeeUserCreatedContentEPK8OnlineID, __hmx_band3_noop_stub
+    .set _ZNK11PlatformMgr24CanSeeUserCreatedContentEPK8OnlineID, __hmx_tramp_394
+    .p2align 4
+__hmx_tramp_395:
+    cmpb $0, __hmx_latch_395(%rip)
+    jne 1f
+    movb $1, __hmx_latch_395(%rip)
+    leaq __hmx_name_395(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11SetlistSort13NewHeaderNodeEP12LeafSortNode
-    .set _ZNK11SetlistSort13NewHeaderNodeEP12LeafSortNode, __hmx_band3_noop_stub
+    .set _ZNK11SetlistSort13NewHeaderNodeEP12LeafSortNode, __hmx_tramp_395
+    .p2align 4
+__hmx_tramp_396:
+    cmpb $0, __hmx_latch_396(%rip)
+    jne 1f
+    movb $1, __hmx_latch_396(%rip)
+    leaq __hmx_name_396(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11SetlistSort15NewShortcutNodeEP12LeafSortNode
-    .set _ZNK11SetlistSort15NewShortcutNodeEP12LeafSortNode, __hmx_band3_noop_stub
+    .set _ZNK11SetlistSort15NewShortcutNodeEP12LeafSortNode, __hmx_tramp_396
+    .p2align 4
+__hmx_tramp_397:
+    cmpb $0, __hmx_latch_397(%rip)
+    jne 1f
+    movb $1, __hmx_latch_397(%rip)
+    leaq __hmx_name_397(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11SetlistSort16NewSubheaderNodeEP12LeafSortNode
-    .set _ZNK11SetlistSort16NewSubheaderNodeEP12LeafSortNode, __hmx_band3_noop_stub
+    .set _ZNK11SetlistSort16NewSubheaderNodeEP12LeafSortNode, __hmx_tramp_397
+    .p2align 4
+__hmx_tramp_398:
+    cmpb $0, __hmx_latch_398(%rip)
+    jne 1f
+    movb $1, __hmx_latch_398(%rip)
+    leaq __hmx_name_398(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11SingerStats11GetRankDataEi
-    .set _ZNK11SingerStats11GetRankDataEi, __hmx_band3_noop_stub
+    .set _ZNK11SingerStats11GetRankDataEi, __hmx_tramp_398
+    .p2align 4
+__hmx_tramp_399:
+    cmpb $0, __hmx_latch_399(%rip)
+    jne 1f
+    movb $1, __hmx_latch_399(%rip)
+    leaq __hmx_name_399(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11SingerStats21GetPitchDeviationInfoERfS0_
-    .set _ZNK11SingerStats21GetPitchDeviationInfoERfS0_, __hmx_band3_noop_stub
+    .set _ZNK11SingerStats21GetPitchDeviationInfoERfS0_, __hmx_tramp_399
+    .p2align 4
+__hmx_tramp_400:
+    cmpb $0, __hmx_latch_400(%rip)
+    jne 1f
+    movb $1, __hmx_latch_400(%rip)
+    leaq __hmx_name_400(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK12MusicLibrary16GetMakingSetlistEb
-    .set _ZNK12MusicLibrary16GetMakingSetlistEb, __hmx_band3_noop_stub
+    .set _ZNK12MusicLibrary16GetMakingSetlistEb, __hmx_tramp_400
+    .p2align 4
+__hmx_tramp_401:
+    cmpb $0, __hmx_latch_401(%rip)
+    jne 1f
+    movb $1, __hmx_latch_401(%rip)
+    leaq __hmx_name_401(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK12MusicLibrary18GetHighlightedNodeEv
-    .set _ZNK12MusicLibrary18GetHighlightedNodeEv, __hmx_band3_noop_stub
+    .set _ZNK12MusicLibrary18GetHighlightedNodeEv, __hmx_tramp_401
+    .p2align 4
+__hmx_tramp_402:
+    cmpb $0, __hmx_latch_402(%rip)
+    jne 1f
+    movb $1, __hmx_latch_402(%rip)
+    leaq __hmx_name_402(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK12SavedSetlist8GetOwnerEv
-    .set _ZNK12SavedSetlist8GetOwnerEv, __hmx_band3_noop_stub
+    .set _ZNK12SavedSetlist8GetOwnerEv, __hmx_tramp_402
+    .p2align 4
+__hmx_tramp_403:
+    cmpb $0, __hmx_latch_403(%rip)
+    jne 1f
+    movb $1, __hmx_latch_403(%rip)
+    leaq __hmx_name_403(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK12SavedSetlist8IsBattleEv
-    .set _ZNK12SavedSetlist8IsBattleEv, __hmx_band3_noop_stub
+    .set _ZNK12SavedSetlist8IsBattleEv, __hmx_tramp_403
+    .p2align 4
+__hmx_tramp_404:
+    cmpb $0, __hmx_latch_404(%rip)
+    jne 1f
+    movb $1, __hmx_latch_404(%rip)
+    leaq __hmx_name_404(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK12SavedSetlist9GetArtTexEv
-    .set _ZNK12SavedSetlist9GetArtTexEv, __hmx_band3_noop_stub
+    .set _ZNK12SavedSetlist9GetArtTexEv, __hmx_tramp_404
+    .p2align 4
+__hmx_tramp_405:
+    cmpb $0, __hmx_latch_405(%rip)
+    jne 1f
+    movb $1, __hmx_latch_405(%rip)
+    leaq __hmx_name_405(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK12VoiceChatMgr7IsMutedEP4User
-    .set _ZNK12VoiceChatMgr7IsMutedEP4User, __hmx_band3_noop_stub
+    .set _ZNK12VoiceChatMgr7IsMutedEP4User, __hmx_tramp_405
+    .p2align 4
+__hmx_tramp_406:
+    cmpb $0, __hmx_latch_406(%rip)
+    jne 1f
+    movb $1, __hmx_latch_406(%rip)
+    leaq __hmx_name_406(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13BandStatsInfo12GetBandStatsEv
-    .set _ZNK13BandStatsInfo12GetBandStatsEv, __hmx_band3_noop_stub
+    .set _ZNK13BandStatsInfo12GetBandStatsEv, __hmx_tramp_406
+    .p2align 4
+__hmx_tramp_407:
+    cmpb $0, __hmx_latch_407(%rip)
+    jne 1f
+    movb $1, __hmx_latch_407(%rip)
+    leaq __hmx_name_407(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13DataEventList5EventEi
-    .set _ZNK13DataEventList5EventEi, __hmx_band3_noop_stub
+    .set _ZNK13DataEventList5EventEi, __hmx_tramp_407
+    .p2align 4
+__hmx_tramp_408:
+    cmpb $0, __hmx_latch_408(%rip)
+    jne 1f
+    movb $1, __hmx_latch_408(%rip)
+    leaq __hmx_name_408(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer10HasSetlistEv
-    .set _ZNK13MetaPerformer10HasSetlistEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer10HasSetlistEv, __hmx_tramp_408
+    .p2align 4
+__hmx_tramp_409:
+    cmpb $0, __hmx_latch_409(%rip)
+    jne 1f
+    movb $1, __hmx_latch_409(%rip)
+    leaq __hmx_name_409(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer10IsLastSongEv
-    .set _ZNK13MetaPerformer10IsLastSongEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer10IsLastSongEv, __hmx_tramp_409
+    .p2align 4
+__hmx_tramp_410:
+    cmpb $0, __hmx_latch_410(%rip)
+    jne 1f
+    movb $1, __hmx_latch_410(%rip)
+    leaq __hmx_name_410(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer11GetBattleIDEv
-    .set _ZNK13MetaPerformer11GetBattleIDEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer11GetBattleIDEv, __hmx_tramp_410
+    .p2align 4
+__hmx_tramp_411:
+    cmpb $0, __hmx_latch_411(%rip)
+    jne 1f
+    movb $1, __hmx_latch_411(%rip)
+    leaq __hmx_name_411(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer11IsFirstSongEv
-    .set _ZNK13MetaPerformer11IsFirstSongEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer11IsFirstSongEv, __hmx_tramp_411
+    .p2align 4
+__hmx_tramp_412:
+    cmpb $0, __hmx_latch_412(%rip)
+    jne 1f
+    movb $1, __hmx_latch_412(%rip)
+    leaq __hmx_name_412(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer13IsSetCompleteEv
-    .set _ZNK13MetaPerformer13IsSetCompleteEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer13IsSetCompleteEv, __hmx_tramp_412
+    .p2align 4
+__hmx_tramp_413:
+    cmpb $0, __hmx_latch_413(%rip)
+    jne 1f
+    movb $1, __hmx_latch_413(%rip)
+    leaq __hmx_name_413(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer14GetSetlistNameEv
-    .set _ZNK13MetaPerformer14GetSetlistNameEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer14GetSetlistNameEv, __hmx_tramp_413
+    .p2align 4
+__hmx_tramp_414:
+    cmpb $0, __hmx_latch_414(%rip)
+    jne 1f
+    movb $1, __hmx_latch_414(%rip)
+    leaq __hmx_name_414(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer14IsNoFailActiveEv
-    .set _ZNK13MetaPerformer14IsNoFailActiveEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer14IsNoFailActiveEv, __hmx_tramp_414
+    .p2align 4
+__hmx_tramp_415:
+    cmpb $0, __hmx_latch_415(%rip)
+    jne 1f
+    movb $1, __hmx_latch_415(%rip)
+    leaq __hmx_name_415(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer14PartPlaysInSetE6Symbol
-    .set _ZNK13MetaPerformer14PartPlaysInSetE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer14PartPlaysInSetE6Symbol, __hmx_tramp_415
+    .p2align 4
+__hmx_tramp_416:
+    cmpb $0, __hmx_latch_416(%rip)
+    jne 1f
+    movb $1, __hmx_latch_416(%rip)
+    leaq __hmx_name_416(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer15IsRandomSetListEv
-    .set _ZNK13MetaPerformer15IsRandomSetListEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer15IsRandomSetListEv, __hmx_tramp_416
+    .p2align 4
+__hmx_tramp_417:
+    cmpb $0, __hmx_latch_417(%rip)
+    jne 1f
+    movb $1, __hmx_latch_417(%rip)
+    leaq __hmx_name_417(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer15PartPlaysInSongE6Symbol
-    .set _ZNK13MetaPerformer15PartPlaysInSongE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer15PartPlaysInSongE6Symbol, __hmx_tramp_417
+    .p2align 4
+__hmx_tramp_418:
+    cmpb $0, __hmx_latch_418(%rip)
+    jne 1f
+    movb $1, __hmx_latch_418(%rip)
+    leaq __hmx_name_418(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer16GetCompletedSongEv
-    .set _ZNK13MetaPerformer16GetCompletedSongEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer16GetCompletedSongEv, __hmx_tramp_418
+    .p2align 4
+__hmx_tramp_419:
+    cmpb $0, __hmx_latch_419(%rip)
+    jne 1f
+    movb $1, __hmx_latch_419(%rip)
+    leaq __hmx_name_419(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer16IsUsingRealDrumsEv
-    .set _ZNK13MetaPerformer16IsUsingRealDrumsEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer16IsUsingRealDrumsEv, __hmx_tramp_419
+    .p2align 4
+__hmx_tramp_420:
+    cmpb $0, __hmx_latch_420(%rip)
+    jne 1f
+    movb $1, __hmx_latch_420(%rip)
+    leaq __hmx_name_420(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer17SetHasMissingPartE6Symbol
-    .set _ZNK13MetaPerformer17SetHasMissingPartE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer17SetHasMissingPartE6Symbol, __hmx_tramp_420
+    .p2align 4
+__hmx_tramp_421:
+    cmpb $0, __hmx_latch_421(%rip)
+    jne 1f
+    movb $1, __hmx_latch_421(%rip)
+    leaq __hmx_name_421(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer18VocalHarmonyInSongEv
-    .set _ZNK13MetaPerformer18VocalHarmonyInSongEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer18VocalHarmonyInSongEv, __hmx_tramp_421
+    .p2align 4
+__hmx_tramp_422:
+    cmpb $0, __hmx_latch_422(%rip)
+    jne 1f
+    movb $1, __hmx_latch_422(%rip)
+    leaq __hmx_name_422(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer19GetBattleInstrumentEv
-    .set _ZNK13MetaPerformer19GetBattleInstrumentEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer19GetBattleInstrumentEv, __hmx_tramp_422
+    .p2align 4
+__hmx_tramp_423:
+    cmpb $0, __hmx_latch_423(%rip)
+    jne 1f
+    movb $1, __hmx_latch_423(%rip)
+    leaq __hmx_name_423(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer22IsNowUsingVocalHarmonyEv
-    .set _ZNK13MetaPerformer22IsNowUsingVocalHarmonyEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer22IsNowUsingVocalHarmonyEv, __hmx_tramp_423
+    .p2align 4
+__hmx_tramp_424:
+    cmpb $0, __hmx_latch_424(%rip)
+    jne 1f
+    movb $1, __hmx_latch_424(%rip)
+    leaq __hmx_name_424(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer22SetlistHasVocalHarmonyEv
-    .set _ZNK13MetaPerformer22SetlistHasVocalHarmonyEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer22SetlistHasVocalHarmonyEv, __hmx_tramp_424
+    .p2align 4
+__hmx_tramp_425:
+    cmpb $0, __hmx_latch_425(%rip)
+    jne 1f
+    movb $1, __hmx_latch_425(%rip)
+    leaq __hmx_name_425(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer23GetSetlistMaxVocalPartsEv
-    .set _ZNK13MetaPerformer23GetSetlistMaxVocalPartsEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer23GetSetlistMaxVocalPartsEv, __hmx_tramp_425
+    .p2align 4
+__hmx_tramp_426:
+    cmpb $0, __hmx_latch_426(%rip)
+    jne 1f
+    movb $1, __hmx_latch_426(%rip)
+    leaq __hmx_name_426(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer25SetHasMissingVocalHarmonyEv
-    .set _ZNK13MetaPerformer25SetHasMissingVocalHarmonyEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer25SetHasMissingVocalHarmonyEv, __hmx_tramp_426
+    .p2align 4
+__hmx_tramp_427:
+    cmpb $0, __hmx_latch_427(%rip)
+    jne 1f
+    movb $1, __hmx_latch_427(%rip)
+    leaq __hmx_name_427(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer27GetHighestDifficultyForPartE6Symbol
-    .set _ZNK13MetaPerformer27GetHighestDifficultyForPartE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer27GetHighestDifficultyForPartE6Symbol, __hmx_tramp_427
+    .p2align 4
+__hmx_tramp_428:
+    cmpb $0, __hmx_latch_428(%rip)
+    jne 1f
+    movb $1, __hmx_latch_428(%rip)
+    leaq __hmx_name_428(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer27SongEndsWithEndgameSequenceEv
-    .set _ZNK13MetaPerformer27SongEndsWithEndgameSequenceEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer27SongEndsWithEndgameSequenceEv, __hmx_tramp_428
+    .p2align 4
+__hmx_tramp_429:
+    cmpb $0, __hmx_latch_429(%rip)
+    jne 1f
+    movb $1, __hmx_latch_429(%rip)
+    leaq __hmx_name_429(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer4SongEv
-    .set _ZNK13MetaPerformer4SongEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer4SongEv, __hmx_tramp_429
+    .p2align 4
+__hmx_tramp_430:
+    cmpb $0, __hmx_latch_430(%rip)
+    jne 1f
+    movb $1, __hmx_latch_430(%rip)
+    leaq __hmx_name_430(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer7HasSongEv
-    .set _ZNK13MetaPerformer7HasSongEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer7HasSongEv, __hmx_tramp_430
+    .p2align 4
+__hmx_tramp_431:
+    cmpb $0, __hmx_latch_431(%rip)
+    jne 1f
+    movb $1, __hmx_latch_431(%rip)
+    leaq __hmx_name_431(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer8GetSongsEv
-    .set _ZNK13MetaPerformer8GetSongsEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer8GetSongsEv, __hmx_tramp_431
+    .p2align 4
+__hmx_tramp_432:
+    cmpb $0, __hmx_latch_432(%rip)
+    jne 1f
+    movb $1, __hmx_latch_432(%rip)
+    leaq __hmx_name_432(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer8GetVenueEv
-    .set _ZNK13MetaPerformer8GetVenueEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer8GetVenueEv, __hmx_tramp_432
+    .p2align 4
+__hmx_tramp_433:
+    cmpb $0, __hmx_latch_433(%rip)
+    jne 1f
+    movb $1, __hmx_latch_433(%rip)
+    leaq __hmx_name_433(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer8NumSongsEv
-    .set _ZNK13MetaPerformer8NumSongsEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer8NumSongsEv, __hmx_tramp_433
+    .p2align 4
+__hmx_tramp_434:
+    cmpb $0, __hmx_latch_434(%rip)
+    jne 1f
+    movb $1, __hmx_latch_434(%rip)
+    leaq __hmx_name_434(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13MetaPerformer9HasBattleEv
-    .set _ZNK13MetaPerformer9HasBattleEv, __hmx_band3_noop_stub
+    .set _ZNK13MetaPerformer9HasBattleEv, __hmx_tramp_434
+    .p2align 4
+__hmx_tramp_435:
+    cmpb $0, __hmx_latch_435(%rip)
+    jne 1f
+    movb $1, __hmx_latch_435(%rip)
+    leaq __hmx_name_435(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13WiiFriendList10GetProfileEi
-    .set _ZNK13WiiFriendList10GetProfileEi, __hmx_band3_noop_stub
+    .set _ZNK13WiiFriendList10GetProfileEi, __hmx_tramp_435
+    .p2align 4
+__hmx_tramp_436:
+    cmpb $0, __hmx_latch_436(%rip)
+    jne 1f
+    movb $1, __hmx_latch_436(%rip)
+    leaq __hmx_name_436(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13WiiFriendList14GetFriendByIdxEi
-    .set _ZNK13WiiFriendList14GetFriendByIdxEi, __hmx_band3_noop_stub
+    .set _ZNK13WiiFriendList14GetFriendByIdxEi, __hmx_tramp_436
+    .p2align 4
+__hmx_tramp_437:
+    cmpb $0, __hmx_latch_437(%rip)
+    jne 1f
+    movb $1, __hmx_latch_437(%rip)
+    leaq __hmx_name_437(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK14DataResultList13GetDataResultEi
-    .set _ZNK14DataResultList13GetDataResultEi, __hmx_band3_noop_stub
+    .set _ZNK14DataResultList13GetDataResultEi, __hmx_tramp_437
+    .p2align 4
+__hmx_tramp_438:
+    cmpb $0, __hmx_latch_438(%rip)
+    jne 1f
+    movb $1, __hmx_latch_438(%rip)
+    leaq __hmx_name_438(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK15StorePackedPage11DefaultSortEv
-    .set _ZNK15StorePackedPage11DefaultSortEv, __hmx_band3_noop_stub
+    .set _ZNK15StorePackedPage11DefaultSortEv, __hmx_tramp_438
+    .p2align 4
+__hmx_tramp_439:
+    cmpb $0, __hmx_latch_439(%rip)
+    jne 1f
+    movb $1, __hmx_latch_439(%rip)
+    leaq __hmx_name_439(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK15StorePackedSong12GetDataTitleEv
-    .set _ZNK15StorePackedSong12GetDataTitleEv, __hmx_band3_noop_stub
+    .set _ZNK15StorePackedSong12GetDataTitleEv, __hmx_tramp_439
+    .p2align 4
+__hmx_tramp_440:
+    cmpb $0, __hmx_latch_440(%rip)
+    jne 1f
+    movb $1, __hmx_latch_440(%rip)
+    leaq __hmx_name_440(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK15StorePackedSong12GetShortNameEv
-    .set _ZNK15StorePackedSong12GetShortNameEv, __hmx_band3_noop_stub
+    .set _ZNK15StorePackedSong12GetShortNameEv, __hmx_tramp_440
+    .p2align 4
+__hmx_tramp_441:
+    cmpb $0, __hmx_latch_441(%rip)
+    jne 1f
+    movb $1, __hmx_latch_441(%rip)
+    leaq __hmx_name_441(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK15StorePackedSong19GetUpgradeDataTitleEv
-    .set _ZNK15StorePackedSong19GetUpgradeDataTitleEv, __hmx_band3_noop_stub
+    .set _ZNK15StorePackedSong19GetUpgradeDataTitleEv, __hmx_tramp_441
+    .p2align 4
+__hmx_tramp_442:
+    cmpb $0, __hmx_latch_442(%rip)
+    jne 1f
+    movb $1, __hmx_latch_442(%rip)
+    leaq __hmx_name_442(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK15StorePackedSong7GetNameEv
-    .set _ZNK15StorePackedSong7GetNameEv, __hmx_band3_noop_stub
+    .set _ZNK15StorePackedSong7GetNameEv, __hmx_tramp_442
+    .p2align 4
+__hmx_tramp_443:
+    cmpb $0, __hmx_latch_443(%rip)
+    jne 1f
+    movb $1, __hmx_latch_443(%rip)
+    leaq __hmx_name_443(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK15StorePackedSong9DataTitleEv
-    .set _ZNK15StorePackedSong9DataTitleEv, __hmx_band3_noop_stub
+    .set _ZNK15StorePackedSong9DataTitleEv, __hmx_tramp_443
+    .p2align 4
+__hmx_tramp_444:
+    cmpb $0, __hmx_latch_444(%rip)
+    jne 1f
+    movb $1, __hmx_latch_444(%rip)
+    leaq __hmx_name_444(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK15StorePackedSong9GetArtistEv
-    .set _ZNK15StorePackedSong9GetArtistEv, __hmx_band3_noop_stub
+    .set _ZNK15StorePackedSong9GetArtistEv, __hmx_tramp_444
+    .p2align 4
+__hmx_tramp_445:
+    cmpb $0, __hmx_latch_445(%rip)
+    jne 1f
+    movb $1, __hmx_latch_445(%rip)
+    leaq __hmx_name_445(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK16StorePackedOffer10GetArtPathEv
-    .set _ZNK16StorePackedOffer10GetArtPathEv, __hmx_band3_noop_stub
+    .set _ZNK16StorePackedOffer10GetArtPathEv, __hmx_tramp_445
+    .p2align 4
+__hmx_tramp_446:
+    cmpb $0, __hmx_latch_446(%rip)
+    jne 1f
+    movb $1, __hmx_latch_446(%rip)
+    leaq __hmx_name_446(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK16StorePackedOffer14GetPreviewPathEv
-    .set _ZNK16StorePackedOffer14GetPreviewPathEv, __hmx_band3_noop_stub
+    .set _ZNK16StorePackedOffer14GetPreviewPathEv, __hmx_tramp_446
+    .p2align 4
+__hmx_tramp_447:
+    cmpb $0, __hmx_latch_447(%rip)
+    jne 1f
+    movb $1, __hmx_latch_447(%rip)
+    leaq __hmx_name_447(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK17NetMessageFactory21GetNetMessageByteCodeE6String
-    .set _ZNK17NetMessageFactory21GetNetMessageByteCodeE6String, __hmx_band3_noop_stub
+    .set _ZNK17NetMessageFactory21GetNetMessageByteCodeE6String, __hmx_tramp_447
+    .p2align 4
+__hmx_tramp_448:
+    cmpb $0, __hmx_latch_448(%rip)
+    jne 1f
+    movb $1, __hmx_latch_448(%rip)
+    leaq __hmx_name_448(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK18StoreRbnOfferTable10OfferIndexEPK20StorePackedOfferBase
-    .set _ZNK18StoreRbnOfferTable10OfferIndexEPK20StorePackedOfferBase, __hmx_band3_noop_stub
+    .set _ZNK18StoreRbnOfferTable10OfferIndexEPK20StorePackedOfferBase, __hmx_tramp_448
+    .p2align 4
+__hmx_tramp_449:
+    cmpb $0, __hmx_latch_449(%rip)
+    jne 1f
+    movb $1, __hmx_latch_449(%rip)
+    leaq __hmx_name_449(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK19MatchmakingSettings18GetCustomValueByIDEi
-    .set _ZNK19MatchmakingSettings18GetCustomValueByIDEi, __hmx_band3_noop_stub
+    .set _ZNK19MatchmakingSettings18GetCustomValueByIDEi, __hmx_tramp_449
+    .p2align 4
+__hmx_tramp_450:
+    cmpb $0, __hmx_latch_450(%rip)
+    jne 1f
+    movb $1, __hmx_latch_450(%rip)
+    leaq __hmx_name_450(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK19StorePackedRBNOffer10GetArtPathEv
-    .set _ZNK19StorePackedRBNOffer10GetArtPathEv, __hmx_band3_noop_stub
+    .set _ZNK19StorePackedRBNOffer10GetArtPathEv, __hmx_tramp_450
+    .p2align 4
+__hmx_tramp_451:
+    cmpb $0, __hmx_latch_451(%rip)
+    jne 1f
+    movb $1, __hmx_latch_451(%rip)
+    leaq __hmx_name_451(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK19StorePackedRBNOffer14GetPreviewPathEv
-    .set _ZNK19StorePackedRBNOffer14GetPreviewPathEv, __hmx_band3_noop_stub
+    .set _ZNK19StorePackedRBNOffer14GetPreviewPathEv, __hmx_tramp_451
+    .p2align 4
+__hmx_tramp_452:
+    cmpb $0, __hmx_latch_452(%rip)
+    jne 1f
+    movb $1, __hmx_latch_452(%rip)
+    leaq __hmx_name_452(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StoreMetadataManager13LoadingFailedEv
-    .set _ZNK20StoreMetadataManager13LoadingFailedEv, __hmx_band3_noop_stub
+    .set _ZNK20StoreMetadataManager13LoadingFailedEv, __hmx_tramp_452
+    .p2align 4
+__hmx_tramp_453:
+    cmpb $0, __hmx_latch_453(%rip)
+    jne 1f
+    movb $1, __hmx_latch_453(%rip)
+    leaq __hmx_name_453(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StoreMetadataManager19FindOfferFromSongIdEi
-    .set _ZNK20StoreMetadataManager19FindOfferFromSongIdEi, __hmx_band3_noop_stub
+    .set _ZNK20StoreMetadataManager19FindOfferFromSongIdEi, __hmx_tramp_453
+    .p2align 4
+__hmx_tramp_454:
+    cmpb $0, __hmx_latch_454(%rip)
+    jne 1f
+    movb $1, __hmx_latch_454(%rip)
+    leaq __hmx_name_454(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StoreMetadataManager9LoadErrorEv
-    .set _ZNK20StoreMetadataManager9LoadErrorEv, __hmx_band3_noop_stub
+    .set _ZNK20StoreMetadataManager9LoadErrorEv, __hmx_tramp_454
+    .p2align 4
+__hmx_tramp_455:
+    cmpb $0, __hmx_latch_455(%rip)
+    jne 1f
+    movb $1, __hmx_latch_455(%rip)
+    leaq __hmx_name_455(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StorePackedOfferBase10GetOfferIdEv
-    .set _ZNK20StorePackedOfferBase10GetOfferIdEv, __hmx_band3_noop_stub
+    .set _ZNK20StorePackedOfferBase10GetOfferIdEv, __hmx_tramp_455
+    .p2align 4
+__hmx_tramp_456:
+    cmpb $0, __hmx_latch_456(%rip)
+    jne 1f
+    movb $1, __hmx_latch_456(%rip)
+    leaq __hmx_name_456(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StorePackedOfferBase12GetAlbumNameEv
-    .set _ZNK20StorePackedOfferBase12GetAlbumNameEv, __hmx_band3_noop_stub
+    .set _ZNK20StorePackedOfferBase12GetAlbumNameEv, __hmx_tramp_456
+    .p2align 4
+__hmx_tramp_457:
+    cmpb $0, __hmx_latch_457(%rip)
+    jne 1f
+    movb $1, __hmx_latch_457(%rip)
+    leaq __hmx_name_457(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StorePackedOfferBase12GetUpgradeIdEv
-    .set _ZNK20StorePackedOfferBase12GetUpgradeIdEv, __hmx_band3_noop_stub
+    .set _ZNK20StorePackedOfferBase12GetUpgradeIdEv, __hmx_tramp_457
+    .p2align 4
+__hmx_tramp_458:
+    cmpb $0, __hmx_latch_458(%rip)
+    jne 1f
+    movb $1, __hmx_latch_458(%rip)
+    leaq __hmx_name_458(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StorePackedOfferBase15IsVariousArtistEv
-    .set _ZNK20StorePackedOfferBase15IsVariousArtistEv, __hmx_band3_noop_stub
+    .set _ZNK20StorePackedOfferBase15IsVariousArtistEv, __hmx_tramp_458
+    .p2align 4
+__hmx_tramp_459:
+    cmpb $0, __hmx_latch_459(%rip)
+    jne 1f
+    movb $1, __hmx_latch_459(%rip)
+    leaq __hmx_name_459(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StorePackedOfferBase7GetNameEv
-    .set _ZNK20StorePackedOfferBase7GetNameEv, __hmx_band3_noop_stub
+    .set _ZNK20StorePackedOfferBase7GetNameEv, __hmx_tramp_459
+    .p2align 4
+__hmx_tramp_460:
+    cmpb $0, __hmx_latch_460(%rip)
+    jne 1f
+    movb $1, __hmx_latch_460(%rip)
+    leaq __hmx_name_460(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK20StorePackedOfferBase9GetArtistEv
-    .set _ZNK20StorePackedOfferBase9GetArtistEv, __hmx_band3_noop_stub
+    .set _ZNK20StorePackedOfferBase9GetArtistEv, __hmx_tramp_460
+    .p2align 4
+__hmx_tramp_461:
+    cmpb $0, __hmx_latch_461(%rip)
+    jne 1f
+    movb $1, __hmx_latch_461(%rip)
+    leaq __hmx_name_461(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK22MainHubMessageProvider15SetMessageLabelEP8AppLabeli
-    .set _ZNK22MainHubMessageProvider15SetMessageLabelEP8AppLabeli, __hmx_band3_noop_stub
+    .set _ZNK22MainHubMessageProvider15SetMessageLabelEP8AppLabeli, __hmx_tramp_461
+    .p2align 4
+__hmx_tramp_462:
+    cmpb $0, __hmx_latch_462(%rip)
+    jne 1f
+    movb $1, __hmx_latch_462(%rip)
+    leaq __hmx_name_462(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK33AccomplishmentDiscSongConditional11IsFulfilledEP11BandProfile
-    .set _ZNK33AccomplishmentDiscSongConditional11IsFulfilledEP11BandProfile, __hmx_band3_noop_stub
+    .set _ZNK33AccomplishmentDiscSongConditional11IsFulfilledEP11BandProfile, __hmx_tramp_462
+    .p2align 4
+__hmx_tramp_463:
+    cmpb $0, __hmx_latch_463(%rip)
+    jne 1f
+    movb $1, __hmx_latch_463(%rip)
+    leaq __hmx_name_463(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK33AccomplishmentDiscSongConditional13CanBeLaunchedEv
-    .set _ZNK33AccomplishmentDiscSongConditional13CanBeLaunchedEv, __hmx_band3_noop_stub
+    .set _ZNK33AccomplishmentDiscSongConditional13CanBeLaunchedEv, __hmx_tramp_463
+    .p2align 4
+__hmx_tramp_464:
+    cmpb $0, __hmx_latch_464(%rip)
+    jne 1f
+    movb $1, __hmx_latch_464(%rip)
+    leaq __hmx_name_464(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK33AccomplishmentDiscSongConditional16GetTotalNumSongsEv
-    .set _ZNK33AccomplishmentDiscSongConditional16GetTotalNumSongsEv, __hmx_band3_noop_stub
+    .set _ZNK33AccomplishmentDiscSongConditional16GetTotalNumSongsEv, __hmx_tramp_464
+    .p2align 4
+__hmx_tramp_465:
+    cmpb $0, __hmx_latch_465(%rip)
+    jne 1f
+    movb $1, __hmx_latch_465(%rip)
+    leaq __hmx_name_465(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK33AccomplishmentDiscSongConditional17IsRelevantForSongE6Symbol
-    .set _ZNK33AccomplishmentDiscSongConditional17IsRelevantForSongE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK33AccomplishmentDiscSongConditional17IsRelevantForSongE6Symbol, __hmx_tramp_465
+    .p2align 4
+__hmx_tramp_466:
+    cmpb $0, __hmx_latch_466(%rip)
+    jne 1f
+    movb $1, __hmx_latch_466(%rip)
+    leaq __hmx_name_466(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK33AccomplishmentDiscSongConditional20GetNumCompletedSongsEP11BandProfile
-    .set _ZNK33AccomplishmentDiscSongConditional20GetNumCompletedSongsEP11BandProfile, __hmx_band3_noop_stub
+    .set _ZNK33AccomplishmentDiscSongConditional20GetNumCompletedSongsEP11BandProfile, __hmx_tramp_466
+    .p2align 4
+__hmx_tramp_467:
+    cmpb $0, __hmx_latch_467(%rip)
+    jne 1f
+    movb $1, __hmx_latch_467(%rip)
+    leaq __hmx_name_467(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK33AccomplishmentDiscSongConditional21InqIncrementalSymbolsEP11BandProfileRSt6vectorI6SymbolSaIS3_EE
-    .set _ZNK33AccomplishmentDiscSongConditional21InqIncrementalSymbolsEP11BandProfileRSt6vectorI6SymbolSaIS3_EE, __hmx_band3_noop_stub
+    .set _ZNK33AccomplishmentDiscSongConditional21InqIncrementalSymbolsEP11BandProfileRSt6vectorI6SymbolSaIS3_EE, __hmx_tramp_467
+    .p2align 4
+__hmx_tramp_468:
+    cmpb $0, __hmx_latch_468(%rip)
+    jne 1f
+    movb $1, __hmx_latch_468(%rip)
+    leaq __hmx_name_468(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK33AccomplishmentDiscSongConditional24HasSpecificSongsToLaunchEv
-    .set _ZNK33AccomplishmentDiscSongConditional24HasSpecificSongsToLaunchEv, __hmx_band3_noop_stub
+    .set _ZNK33AccomplishmentDiscSongConditional24HasSpecificSongsToLaunchEv, __hmx_tramp_468
+    .p2align 4
+__hmx_tramp_469:
+    cmpb $0, __hmx_latch_469(%rip)
+    jne 1f
+    movb $1, __hmx_latch_469(%rip)
+    leaq __hmx_name_469(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK4Band13GetMultiplierEbRiS0_S0_
-    .set _ZNK4Band13GetMultiplierEbRiS0_S0_, __hmx_band3_noop_stub
+    .set _ZNK4Band13GetMultiplierEbRiS0_S0_, __hmx_tramp_469
+    .p2align 4
+__hmx_tramp_470:
+    cmpb $0, __hmx_latch_470(%rip)
+    jne 1f
+    movb $1, __hmx_latch_470(%rip)
+    leaq __hmx_name_470(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK4Band13MainPerformerEv
-    .set _ZNK4Band13MainPerformerEv, __hmx_band3_noop_stub
+    .set _ZNK4Band13MainPerformerEv, __hmx_tramp_470
+    .p2align 4
+__hmx_tramp_471:
+    cmpb $0, __hmx_latch_471(%rip)
+    jne 1f
+    movb $1, __hmx_latch_471(%rip)
+    leaq __hmx_name_471(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK4Band14AnyoneSaveableEv
-    .set _ZNK4Band14AnyoneSaveableEv, __hmx_band3_noop_stub
+    .set _ZNK4Band14AnyoneSaveableEv, __hmx_tramp_471
+    .p2align 4
+__hmx_tramp_472:
+    cmpb $0, __hmx_latch_472(%rip)
+    jne 1f
+    movb $1, __hmx_latch_472(%rip)
+    leaq __hmx_name_472(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK4Band16EnergyCrowdBoostEv
-    .set _ZNK4Band16EnergyCrowdBoostEv, __hmx_band3_noop_stub
+    .set _ZNK4Band16EnergyCrowdBoostEv, __hmx_tramp_472
+    .p2align 4
+__hmx_tramp_473:
+    cmpb $0, __hmx_latch_473(%rip)
+    jne 1f
+    movb $1, __hmx_latch_473(%rip)
+    leaq __hmx_name_473(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK4Band16EnergyMultiplierEv
-    .set _ZNK4Band16EnergyMultiplierEv, __hmx_band3_noop_stub
+    .set _ZNK4Band16EnergyMultiplierEv, __hmx_tramp_473
+    .p2align 4
+__hmx_tramp_474:
+    cmpb $0, __hmx_latch_474(%rip)
+    jne 1f
+    movb $1, __hmx_latch_474(%rip)
+    leaq __hmx_name_474(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK4Band20EveryoneDoneWithSongEv
-    .set _ZNK4Band20EveryoneDoneWithSongEv, __hmx_band3_noop_stub
+    .set _ZNK4Band20EveryoneDoneWithSongEv, __hmx_tramp_474
+    .p2align 4
+__hmx_tramp_475:
+    cmpb $0, __hmx_latch_475(%rip)
+    jne 1f
+    movb $1, __hmx_latch_475(%rip)
+    leaq __hmx_name_475(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK4Band7GetBandEv
-    .set _ZNK4Band7GetBandEv, __hmx_band3_noop_stub
+    .set _ZNK4Band7GetBandEv, __hmx_tramp_475
+    .p2align 4
+__hmx_tramp_476:
+    cmpb $0, __hmx_latch_476(%rip)
+    jne 1f
+    movb $1, __hmx_latch_476(%rip)
+    leaq __hmx_name_476(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats10GetHarmonyEv
-    .set _ZNK5Stats10GetHarmonyEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats10GetHarmonyEv, __hmx_tramp_476
+    .p2align 4
+__hmx_tramp_477:
+    cmpb $0, __hmx_latch_477(%rip)
+    jne 1f
+    movb $1, __hmx_latch_477(%rip)
+    leaq __hmx_name_477(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats10GetSustainEv
-    .set _ZNK5Stats10GetSustainEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats10GetSustainEv, __hmx_tramp_477
+    .p2align 4
+__hmx_tramp_478:
+    cmpb $0, __hmx_latch_478(%rip)
+    jne 1f
+    movb $1, __hmx_latch_478(%rip)
+    leaq __hmx_name_478(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats11GetAccuracyEv
-    .set _ZNK5Stats11GetAccuracyEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats11GetAccuracyEv, __hmx_tramp_478
+    .p2align 4
+__hmx_tramp_479:
+    cmpb $0, __hmx_latch_479(%rip)
+    jne 1f
+    movb $1, __hmx_latch_479(%rip)
+    leaq __hmx_name_479(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats12GetOverdriveEv
-    .set _ZNK5Stats12GetOverdriveEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats12GetOverdriveEv, __hmx_tramp_479
+    .p2align 4
+__hmx_tramp_480:
+    cmpb $0, __hmx_latch_480(%rip)
+    jne 1f
+    movb $1, __hmx_latch_480(%rip)
+    leaq __hmx_name_480(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats13FailedNoScoreEv
-    .set _ZNK5Stats13FailedNoScoreEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats13FailedNoScoreEv, __hmx_tramp_480
+    .p2align 4
+__hmx_tramp_481:
+    cmpb $0, __hmx_latch_481(%rip)
+    jne 1f
+    movb $1, __hmx_latch_481(%rip)
+    leaq __hmx_name_481(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats13GetCodaPointsEv
-    .set _ZNK5Stats13GetCodaPointsEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats13GetCodaPointsEv, __hmx_tramp_481
+    .p2align 4
+__hmx_tramp_482:
+    cmpb $0, __hmx_latch_482(%rip)
+    jne 1f
+    movb $1, __hmx_latch_482(%rip)
+    leaq __hmx_name_482(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats13GetTambourineEv
-    .set _ZNK5Stats13GetTambourineEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats13GetTambourineEv, __hmx_tramp_482
+    .p2align 4
+__hmx_tramp_483:
+    cmpb $0, __hmx_latch_483(%rip)
+    jne 1f
+    movb $1, __hmx_latch_483(%rip)
+    leaq __hmx_name_483(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats14GetScoreStreakEv
-    .set _ZNK5Stats14GetScoreStreakEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats14GetScoreStreakEv, __hmx_tramp_483
+    .p2align 4
+__hmx_tramp_484:
+    cmpb $0, __hmx_latch_484(%rip)
+    jne 1f
+    movb $1, __hmx_latch_484(%rip)
+    leaq __hmx_name_484(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats14GetSectionInfoEi
-    .set _ZNK5Stats14GetSectionInfoEi, __hmx_band3_noop_stub
+    .set _ZNK5Stats14GetSectionInfoEi, __hmx_tramp_484
+    .p2align 4
+__hmx_tramp_485:
+    cmpb $0, __hmx_latch_485(%rip)
+    jne 1f
+    movb $1, __hmx_latch_485(%rip)
+    leaq __hmx_name_485(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats14SaveForEndGameER9BinStream
-    .set _ZNK5Stats14SaveForEndGameER9BinStream, __hmx_band3_noop_stub
+    .set _ZNK5Stats14SaveForEndGameER9BinStream, __hmx_tramp_485
+    .p2align 4
+__hmx_tramp_486:
+    cmpb $0, __hmx_latch_486(%rip)
+    jne 1f
+    movb $1, __hmx_latch_486(%rip)
+    leaq __hmx_name_486(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats16GetCurrentStreakEv
-    .set _ZNK5Stats16GetCurrentStreakEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats16GetCurrentStreakEv, __hmx_tramp_486
+    .p2align 4
+__hmx_tramp_487:
+    cmpb $0, __hmx_latch_487(%rip)
+    jne 1f
+    movb $1, __hmx_latch_487(%rip)
+    leaq __hmx_name_487(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats16GetLongestStreakEv
-    .set _ZNK5Stats16GetLongestStreakEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats16GetLongestStreakEv, __hmx_tramp_487
+    .p2align 4
+__hmx_tramp_488:
+    cmpb $0, __hmx_latch_488(%rip)
+    jne 1f
+    movb $1, __hmx_latch_488(%rip)
+    leaq __hmx_name_488(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats17GetAverageMsErrorEv
-    .set _ZNK5Stats17GetAverageMsErrorEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats17GetAverageMsErrorEv, __hmx_tramp_488
+    .p2align 4
+__hmx_tramp_489:
+    cmpb $0, __hmx_latch_489(%rip)
+    jne 1f
+    movb $1, __hmx_latch_489(%rip)
+    leaq __hmx_name_489(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats19GetBandContributionEv
-    .set _ZNK5Stats19GetBandContributionEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats19GetBandContributionEv, __hmx_tramp_489
+    .p2align 4
+__hmx_tramp_490:
+    cmpb $0, __hmx_latch_490(%rip)
+    jne 1f
+    movb $1, __hmx_latch_490(%rip)
+    leaq __hmx_name_490(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats19GetSingerRankedPartEii
-    .set _ZNK5Stats19GetSingerRankedPartEii, __hmx_band3_noop_stub
+    .set _ZNK5Stats19GetSingerRankedPartEii, __hmx_tramp_490
+    .p2align 4
+__hmx_tramp_491:
+    cmpb $0, __hmx_latch_491(%rip)
+    jne 1f
+    movb $1, __hmx_latch_491(%rip)
+    leaq __hmx_name_491(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats22GetUnisonPhrasePercentEv
-    .set _ZNK5Stats22GetUnisonPhrasePercentEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats22GetUnisonPhrasePercentEv, __hmx_tramp_491
+    .p2align 4
+__hmx_tramp_492:
+    cmpb $0, __hmx_latch_492(%rip)
+    jne 1f
+    movb $1, __hmx_latch_492(%rip)
+    leaq __hmx_name_492(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats25GetSingerRankedPercentageEii
-    .set _ZNK5Stats25GetSingerRankedPercentageEii, __hmx_band3_noop_stub
+    .set _ZNK5Stats25GetSingerRankedPercentageEii, __hmx_tramp_492
+    .p2align 4
+__hmx_tramp_493:
+    cmpb $0, __hmx_latch_493(%rip)
+    jne 1f
+    movb $1, __hmx_latch_493(%rip)
+    leaq __hmx_name_493(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK5Stats7GetSoloEv
-    .set _ZNK5Stats7GetSoloEv, __hmx_band3_noop_stub
+    .set _ZNK5Stats7GetSoloEv, __hmx_tramp_493
+    .p2align 4
+__hmx_tramp_494:
+    cmpb $0, __hmx_latch_494(%rip)
+    jne 1f
+    movb $1, __hmx_latch_494(%rip)
+    leaq __hmx_name_494(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK7Profile9GetPadNumEv
-    .set _ZNK7Profile9GetPadNumEv, __hmx_band3_noop_stub
+    .set _ZNK7Profile9GetPadNumEv, __hmx_tramp_494
+    .p2align 4
+__hmx_tramp_495:
+    cmpb $0, __hmx_latch_495(%rip)
+    jne 1f
+    movb $1, __hmx_latch_495(%rip)
+    leaq __hmx_name_495(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8AssetMgr11GetEyebrowsERSt6vectorI6SymbolSaIS1_EES1_
-    .set _ZNK8AssetMgr11GetEyebrowsERSt6vectorI6SymbolSaIS1_EES1_, __hmx_band3_noop_stub
+    .set _ZNK8AssetMgr11GetEyebrowsERSt6vectorI6SymbolSaIS1_EES1_, __hmx_tramp_495
+    .p2align 4
+__hmx_tramp_496:
+    cmpb $0, __hmx_latch_496(%rip)
+    jne 1f
+    movb $1, __hmx_latch_496(%rip)
+    leaq __hmx_name_496(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8AssetMgr15GetTypeFromNameE6Symbol
-    .set _ZNK8AssetMgr15GetTypeFromNameE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK8AssetMgr15GetTypeFromNameE6Symbol, __hmx_tramp_496
+    .p2align 4
+__hmx_tramp_497:
+    cmpb $0, __hmx_latch_497(%rip)
+    jne 1f
+    movb $1, __hmx_latch_497(%rip)
+    leaq __hmx_name_497(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8AssetMgr16GetEyebrowsCountE6Symbol
-    .set _ZNK8AssetMgr16GetEyebrowsCountE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK8AssetMgr16GetEyebrowsCountE6Symbol, __hmx_tramp_497
+    .p2align 4
+__hmx_tramp_498:
+    cmpb $0, __hmx_latch_498(%rip)
+    jne 1f
+    movb $1, __hmx_latch_498(%rip)
+    leaq __hmx_name_498(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8AssetMgr8GetAssetE6Symbol
-    .set _ZNK8AssetMgr8GetAssetE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK8AssetMgr8GetAssetE6Symbol, __hmx_tramp_498
+    .p2align 4
+__hmx_tramp_499:
+    cmpb $0, __hmx_latch_499(%rip)
+    jne 1f
+    movb $1, __hmx_latch_499(%rip)
+    leaq __hmx_name_499(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8AssetMgr8HasAssetE6Symbol
-    .set _ZNK8AssetMgr8HasAssetE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK8AssetMgr8HasAssetE6Symbol, __hmx_tramp_499
+    .p2align 4
+__hmx_tramp_500:
+    cmpb $0, __hmx_latch_500(%rip)
+    jne 1f
+    movb $1, __hmx_latch_500(%rip)
+    leaq __hmx_name_500(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8InputMgr20IsActiveAndConnectedE14ControllerType
-    .set _ZNK8InputMgr20IsActiveAndConnectedE14ControllerType, __hmx_band3_noop_stub
+    .set _ZNK8InputMgr20IsActiveAndConnectedE14ControllerType, __hmx_tramp_500
+    .p2align 4
+__hmx_tramp_501:
+    cmpb $0, __hmx_latch_501(%rip)
+    jne 1f
+    movb $1, __hmx_latch_501(%rip)
+    leaq __hmx_name_501(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8NodeSort4TextEiiP11UIListLabelP7UILabel
-    .set _ZNK8NodeSort4TextEiiP11UIListLabelP7UILabel, __hmx_band3_noop_stub
+    .set _ZNK8NodeSort4TextEiiP11UIListLabelP7UILabel, __hmx_tramp_501
+    .p2align 4
+__hmx_tramp_502:
+    cmpb $0, __hmx_latch_502(%rip)
+    jne 1f
+    movb $1, __hmx_latch_502(%rip)
+    leaq __hmx_name_502(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8NodeSort6CustomEiiP12UIListCustomPN3Hmx6ObjectE
-    .set _ZNK8NodeSort6CustomEiiP12UIListCustomPN3Hmx6ObjectE, __hmx_band3_noop_stub
+    .set _ZNK8NodeSort6CustomEiiP12UIListCustomPN3Hmx6ObjectE, __hmx_tramp_502
+    .p2align 4
+__hmx_tramp_503:
+    cmpb $0, __hmx_latch_503(%rip)
+    jne 1f
+    movb $1, __hmx_latch_503(%rip)
+    leaq __hmx_name_503(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8NodeSort7NumDataEv
-    .set _ZNK8NodeSort7NumDataEv, __hmx_band3_noop_stub
+    .set _ZNK8NodeSort7NumDataEv, __hmx_tramp_503
+    .p2align 4
+__hmx_tramp_504:
+    cmpb $0, __hmx_latch_504(%rip)
+    jne 1f
+    movb $1, __hmx_latch_504(%rip)
+    leaq __hmx_name_504(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8NodeSort8IsActiveEi
-    .set _ZNK8NodeSort8IsActiveEi, __hmx_band3_noop_stub
+    .set _ZNK8NodeSort8IsActiveEi, __hmx_tramp_504
+    .p2align 4
+__hmx_tramp_505:
+    cmpb $0, __hmx_latch_505(%rip)
+    jne 1f
+    movb $1, __hmx_latch_505(%rip)
+    leaq __hmx_name_505(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8SongSort13NewHeaderNodeEP12LeafSortNode
-    .set _ZNK8SongSort13NewHeaderNodeEP12LeafSortNode, __hmx_band3_noop_stub
+    .set _ZNK8SongSort13NewHeaderNodeEP12LeafSortNode, __hmx_tramp_505
+    .p2align 4
+__hmx_tramp_506:
+    cmpb $0, __hmx_latch_506(%rip)
+    jne 1f
+    movb $1, __hmx_latch_506(%rip)
+    leaq __hmx_name_506(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8SongSort15NewShortcutNodeEP12LeafSortNode
-    .set _ZNK8SongSort15NewShortcutNodeEP12LeafSortNode, __hmx_band3_noop_stub
+    .set _ZNK8SongSort15NewShortcutNodeEP12LeafSortNode, __hmx_tramp_506
+    .p2align 4
+__hmx_tramp_507:
+    cmpb $0, __hmx_latch_507(%rip)
+    jne 1f
+    movb $1, __hmx_latch_507(%rip)
+    leaq __hmx_name_507(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK8SongSort16NewSubheaderNodeEP12LeafSortNode
-    .set _ZNK8SongSort16NewSubheaderNodeEP12LeafSortNode, __hmx_band3_noop_stub
+    .set _ZNK8SongSort16NewSubheaderNodeEP12LeafSortNode, __hmx_tramp_507
+    .p2align 4
+__hmx_tramp_508:
+    cmpb $0, __hmx_latch_508(%rip)
+    jne 1f
+    movb $1, __hmx_latch_508(%rip)
+    leaq __hmx_name_508(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9PrefabMgr10GetPrefabsERSt6vectorIP10PrefabCharSaIS2_EE
-    .set _ZNK9PrefabMgr10GetPrefabsERSt6vectorIP10PrefabCharSaIS2_EE, __hmx_band3_noop_stub
+    .set _ZNK9PrefabMgr10GetPrefabsERSt6vectorIP10PrefabCharSaIS2_EE, __hmx_tramp_508
+    .p2align 4
+__hmx_tramp_509:
+    cmpb $0, __hmx_latch_509(%rip)
+    jne 1f
+    movb $1, __hmx_latch_509(%rip)
+    leaq __hmx_name_509(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9PrefabMgr12GetFaceTypesERSt6vectorI6SymbolSaIS1_EES1_
-    .set _ZNK9PrefabMgr12GetFaceTypesERSt6vectorI6SymbolSaIS1_EES1_, __hmx_band3_noop_stub
+    .set _ZNK9PrefabMgr12GetFaceTypesERSt6vectorI6SymbolSaIS1_EES1_, __hmx_tramp_509
+    .p2align 4
+__hmx_tramp_510:
+    cmpb $0, __hmx_latch_510(%rip)
+    jne 1f
+    movb $1, __hmx_latch_510(%rip)
+    leaq __hmx_name_510(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9PrefabMgr16GetDefaultPrefabEi
-    .set _ZNK9PrefabMgr16GetDefaultPrefabEi, __hmx_band3_noop_stub
+    .set _ZNK9PrefabMgr16GetDefaultPrefabEi, __hmx_tramp_510
+    .p2align 4
+__hmx_tramp_511:
+    cmpb $0, __hmx_latch_511(%rip)
+    jne 1f
+    movb $1, __hmx_latch_511(%rip)
+    leaq __hmx_name_511(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9PrefabMgr19GetAvailablePrefabsERSt6vectorIP10PrefabCharSaIS2_EE
-    .set _ZNK9PrefabMgr19GetAvailablePrefabsERSt6vectorIP10PrefabCharSaIS2_EE, __hmx_band3_noop_stub
+    .set _ZNK9PrefabMgr19GetAvailablePrefabsERSt6vectorIP10PrefabCharSaIS2_EE, __hmx_tramp_511
+    .p2align 4
+__hmx_tramp_512:
+    cmpb $0, __hmx_latch_512(%rip)
+    jne 1f
+    movb $1, __hmx_latch_512(%rip)
+    leaq __hmx_name_512(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9PrefabMgr20GetCharCreatorPrefabE6SymbolS0_
-    .set _ZNK9PrefabMgr20GetCharCreatorPrefabE6SymbolS0_, __hmx_band3_noop_stub
+    .set _ZNK9PrefabMgr20GetCharCreatorPrefabE6SymbolS0_, __hmx_tramp_512
+    .p2align 4
+__hmx_tramp_513:
+    cmpb $0, __hmx_latch_513(%rip)
+    jne 1f
+    movb $1, __hmx_latch_513(%rip)
+    leaq __hmx_name_513(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9PrefabMgr26GetRandomCharCreatorPrefabE6Symbol
-    .set _ZNK9PrefabMgr26GetRandomCharCreatorPrefabE6Symbol, __hmx_band3_noop_stub
+    .set _ZNK9PrefabMgr26GetRandomCharCreatorPrefabE6Symbol, __hmx_tramp_513
+    .p2align 4
+__hmx_tramp_514:
+    cmpb $0, __hmx_latch_514(%rip)
+    jne 1f
+    movb $1, __hmx_latch_514(%rip)
+    leaq __hmx_name_514(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9StorePage5OfferEi
-    .set _ZNK9StorePage5OfferEi, __hmx_band3_noop_stub
+    .set _ZNK9StorePage5OfferEi, __hmx_tramp_514
+    .p2align 4
+__hmx_tramp_515:
+    cmpb $0, __hmx_latch_515(%rip)
+    jne 1f
+    movb $1, __hmx_latch_515(%rip)
+    leaq __hmx_name_515(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9StorePage7SubmenuEi
-    .set _ZNK9StorePage7SubmenuEi, __hmx_band3_noop_stub
+    .set _ZNK9StorePage7SubmenuEi, __hmx_tramp_515
+    .p2align 4
+__hmx_tramp_516:
+    cmpb $0, __hmx_latch_516(%rip)
+    jne 1f
+    movb $1, __hmx_latch_516(%rip)
+    leaq __hmx_name_516(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9StorePage9BaseOfferEi
-    .set _ZNK9StorePage9BaseOfferEi, __hmx_band3_noop_stub
+    .set _ZNK9StorePage9BaseOfferEi, __hmx_tramp_516
+    .p2align 4
+__hmx_tramp_517:
+    cmpb $0, __hmx_latch_517(%rip)
+    jne 1f
+    movb $1, __hmx_latch_517(%rip)
+    leaq __hmx_name_517(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK9WiiFriend10GetProfileEPKc
-    .set _ZNK9WiiFriend10GetProfileEPKc, __hmx_band3_noop_stub
+    .set _ZNK9WiiFriend10GetProfileEPKc, __hmx_tramp_517
+    .p2align 4
+__hmx_tramp_518:
+    cmpb $0, __hmx_latch_518(%rip)
+    jne 1f
+    movb $1, __hmx_latch_518(%rip)
+    leaq __hmx_name_518(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZThn92_N12TexLoadPanel13ContentFailedEPKc
-    .set _ZThn92_N12TexLoadPanel13ContentFailedEPKc, __hmx_band3_noop_stub
+    .set _ZThn92_N12TexLoadPanel13ContentFailedEPKc, __hmx_tramp_518
+    .p2align 4
+__hmx_tramp_519:
+    cmpb $0, __hmx_latch_519(%rip)
+    jne 1f
+    movb $1, __hmx_latch_519(%rip)
+    leaq __hmx_name_519(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZThn92_N12TexLoadPanel14ContentMountedEPKcS1_
-    .set _ZThn92_N12TexLoadPanel14ContentMountedEPKcS1_, __hmx_band3_noop_stub
+    .set _ZThn92_N12TexLoadPanel14ContentMountedEPKcS1_, __hmx_tramp_519
+    .p2align 4
+__hmx_tramp_520:
+    cmpb $0, __hmx_latch_520(%rip)
+    jne 1f
+    movb $1, __hmx_latch_520(%rip)
+    leaq __hmx_name_520(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZrsR9BinStreamR13BandPatchMesh
-    .set _ZrsR9BinStreamR13BandPatchMesh, __hmx_band3_noop_stub
+    .set _ZrsR9BinStreamR13BandPatchMesh, __hmx_tramp_520
+
+    .section .rodata
+__hmx_name_0:
+    .asciz "AddRedeemedOffer__21StoreRedemptionsTableFPCc"
+__hmx_name_1:
+    .asciz "AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf"
+__hmx_name_2:
+    .asciz "BinkDoFrame"
+__hmx_name_3:
+    .asciz "BinkGetFrameBuffersInfo"
+__hmx_name_4:
+    .asciz "BinkGetSummary"
+__hmx_name_5:
+    .asciz "BinkPause"
+__hmx_name_6:
+    .asciz "BinkRegisterFrameBuffers"
+__hmx_name_7:
+    .asciz "BinkSetSoundOnOff"
+__hmx_name_8:
+    .asciz "BinkShouldSkip"
+__hmx_name_9:
+    .asciz "BinkWait"
+__hmx_name_10:
+    .asciz "JoypadSetCalbertMode"
+__hmx_name_11:
+    .asciz "NoteAt__13VocalNoteListCFf"
+__hmx_name_12:
+    .asciz "PitchAt__13VocalNoteListCFf"
+__hmx_name_13:
+    .asciz "PlayableBy__9VocalNoteCFi"
+__hmx_name_14:
+    .asciz "RbnOffer__9StorePageCFi"
+__hmx_name_15:
+    .asciz "_Z12CntSdRsoInitP15RSOObjectHeader"
+__hmx_name_16:
+    .asciz "_Z13SystemPreInitiPPcPKc"
+__hmx_name_17:
+    .asciz "_Z17CntSdRsoTerminatev"
+__hmx_name_18:
+    .asciz "_Z18SemitoneToWhiteKeyi"
+__hmx_name_19:
+    .asciz "_Z18WhiteKeyToSemitonei"
+__hmx_name_20:
+    .asciz "_Z19JoypadWiiOnUserLeftib"
+__hmx_name_21:
+    .asciz "_Z21JoypadGetCalbertValueib"
+__hmx_name_22:
+    .asciz "_Z26GetWiiJoypadDisconnectTypeiP10JoypadTypeS0_"
+__hmx_name_23:
+    .asciz "_Z8BandInitv"
+__hmx_name_24:
+    .asciz "_Z8PropSyncR13BandPatchMeshR8DataNodeP9DataArrayi6PropOp"
+__hmx_name_25:
+    .asciz "_Z8PropSyncR13CharacterTestR8DataNodeP9DataArrayi6PropOp"
+__hmx_name_26:
+    .asciz "_ZN10FileMerger10FindMergerE6Symbolb"
+__hmx_name_27:
+    .asciz "_ZN10FileMerger11MergeActionEPN3Hmx6ObjectES2_P9ObjectDir"
+__hmx_name_28:
+    .asciz "_ZN10FileMerger15FindMergerIndexE6Symbolb"
+__hmx_name_29:
+    .asciz "_ZN10FileMerger16LaunchNextLoaderEv"
+__hmx_name_30:
+    .asciz "_ZN10FileMerger5ClearEv"
+__hmx_name_31:
+    .asciz "_ZN10FileMerger6SelectE6SymbolRK8FilePathb"
+__hmx_name_32:
+    .asciz "_ZN10FileMerger9StartLoadEb"
+__hmx_name_33:
+    .asciz "_ZN10FileMergerC1Ev"
+__hmx_name_34:
+    .asciz "_ZN10GameConfig10RemoveUserEP8BandUser"
+__hmx_name_35:
+    .asciz "_ZN10GameConfig11AssignTrackEP8BandUser"
+__hmx_name_36:
+    .asciz "_ZN10GameConfig12AssignTracksEv"
+__hmx_name_37:
+    .asciz "_ZN10GameConfig12SyncPropertyER8DataNodeP9DataArrayi6PropOp"
+__hmx_name_38:
+    .asciz "_ZN10GameConfig16ChangeDifficultyEP8BandUseri"
+__hmx_name_39:
+    .asciz "_ZN10GameConfig16ChangeRandomSeedEv"
+__hmx_name_40:
+    .asciz "_ZN10GameConfig19GetFxSwitchPositionEP13LocalBandUser"
+__hmx_name_41:
+    .asciz "_ZN10GameConfigC1Ev"
+__hmx_name_42:
+    .asciz "_ZN10GameConfigD1Ev"
+__hmx_name_43:
+    .asciz "_ZN10MemcardMgr4InitEv"
+__hmx_name_44:
+    .asciz "_ZN10MidiParser4InitEv"
+__hmx_name_45:
+    .asciz "_ZN10MidiParser5ResetEf"
+__hmx_name_46:
+    .asciz "_ZN10MidiReader13ReadAllTracksEv"
+__hmx_name_47:
+    .asciz "_ZN10MidiReader14ReadSomeEventsEi"
+__hmx_name_48:
+    .asciz "_ZN10MidiReaderC1ER9BinStreamR12MidiReceiverPKc"
+__hmx_name_49:
+    .asciz "_ZN10MidiReaderD1Ev"
+__hmx_name_50:
+    .asciz "_ZN10NetSession10DisconnectEv"
+__hmx_name_51:
+    .asciz "_ZN10NetSession12SendMsgToAllER10NetMessage10PacketType"
+__hmx_name_52:
+    .asciz "_ZN10NetSession14RegisterOnlineEv"
+__hmx_name_53:
+    .asciz "_ZN10NetSession14UpdateUserDataEP4Userj"
+__hmx_name_54:
+    .asciz "_ZN10NetSession15RemoveLocalUserEP9LocalUser"
+__hmx_name_55:
+    .asciz "_ZN10NetSession4JoinEP15NetSearchResult"
+__hmx_name_56:
+    .asciz "_ZN10NetSession7EndGameEibf"
+__hmx_name_57:
+    .asciz "_ZN10NetSession7SendMsgEP4UserR10NetMessage10PacketType"
+__hmx_name_58:
+    .asciz "_ZN10NetSession7SendMsgERKSt6vectorIP10RemoteUserSaIS2_EER10NetMessage10PacketType"
+__hmx_name_59:
+    .asciz "_ZN10NetSession9StartGameEv"
+__hmx_name_60:
+    .asciz "_ZN10ProfileMgr29GetShouldShowWiiFriendsPromptEv"
+__hmx_name_61:
+    .asciz "_ZN10TrackPanel19TrackerDisplayResetEv"
+__hmx_name_62:
+    .asciz "_ZN11ClipDistMap4DrawEffP10CharDriver"
+__hmx_name_63:
+    .asciz "_ZN11ClipDistMap8SetNodesEPNS_4NodeES1_"
+__hmx_name_64:
+    .asciz "_ZN11ClipDistMap9FindDistsEfP9DataArray"
+__hmx_name_65:
+    .asciz "_ZN11ClipDistMap9FindNodesEfff"
+__hmx_name_66:
+    .asciz "_ZN11ClipDistMapC1EP8CharClipS1_ffiPK9DataArray"
+__hmx_name_67:
+    .asciz "_ZN11PlatformMgr14StartProfanityEPPKtiPcPN3Hmx6ObjectE"
+__hmx_name_68:
+    .asciz "_ZN11PlatformMgr15SetUserSignedInEi"
+__hmx_name_69:
+    .asciz "_ZN11PlatformMgr16EnumerateFriendsEiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectE"
+__hmx_name_70:
+    .asciz "_ZN11PlatformMgr16SetUserSignedOutEi"
+__hmx_name_71:
+    .asciz "_ZN11PlatformMgr23RegisterSendMsgCallbackEPFbP6FriendPKcS3_R9MemStreamE"
+__hmx_name_72:
+    .asciz "_ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE"
+__hmx_name_73:
+    .asciz "_ZN11PlatformMgr32RegisterEnumerateFriendsCallbackEPFbiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectEE"
+__hmx_name_74:
+    .asciz "_ZN11PlatformMgr4DrawEv"
+__hmx_name_75:
+    .asciz "_ZN11RockCentral10GetArtFileE6StringP6RndTexPjPN3Hmx6ObjectEi"
+__hmx_name_76:
+    .asciz "_ZN11RockCentral10GetMaxRankERSt6vectorIiSaIiEEi9ScoreType15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_77:
+    .asciz "_ZN11RockCentral10UpdateBandEP8TourBandR14DataResultListPN3Hmx6ObjectEii"
+__hmx_name_78:
+    .asciz "_ZN11RockCentral10UpdateCharEP13TourCharLocalR14DataResultListPN3Hmx6ObjectEii"
+__hmx_name_79:
+    .asciz "_ZN11RockCentral11ForceLogoutEv"
+__hmx_name_80:
+    .asciz "_ZN11RockCentral11RecordScoreEiiRSt6vectorI11PlayerScoreSaIS1_EEiibPN3Hmx6ObjectER14DataResultList"
+__hmx_name_81:
+    .asciz "_ZN11RockCentral11RedeemTokenEi6StringR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_82:
+    .asciz "_ZN11RockCentral12CreateBattleEP11BandProfilePKcS3_RKSt6vectorIiSaIiEER15PatchDescriptori9ScoreTypei15BattleTimeUnitsR14DataResultListPN3Hmx6ObjectEii"
+__hmx_name_83:
+    .asciz "_ZN11RockCentral12GetBattleArtEiP6RndTexPN3Hmx6ObjectEi"
+__hmx_name_84:
+    .asciz "_ZN11RockCentral12SyncSetlistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE"
+__hmx_name_85:
+    .asciz "_ZN11RockCentral13EncodeMessageE15_WiiMessageTypejPKc"
+__hmx_name_86:
+    .asciz "_ZN11RockCentral13GetAccMaxRankERSt6vectorIiSaIiEER6SymbolR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_87:
+    .asciz "_ZN11RockCentral13GetSetlistArtEPKcP6RndTexPN3Hmx6ObjectEi"
+__hmx_name_88:
+    .asciz "_ZN11RockCentral13GetTickerInfoEPK7Profile9ScoreTypeR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_89:
+    .asciz "_ZN11RockCentral13UpdateSetlistEP17LocalSavedSetlistR14DataResultListPN3Hmx6ObjectEii"
+__hmx_name_90:
+    .asciz "_ZN11RockCentral14GetLinkingCodeEiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_91:
+    .asciz "_ZN11RockCentral14SaveBinaryDataEP6RndTexR6StringPN3Hmx6ObjectEi"
+__hmx_name_92:
+    .asciz "_ZN11RockCentral14UpdateBandLogoEiP6RndTexiPN3Hmx6ObjectEi"
+__hmx_name_93:
+    .asciz "_ZN11RockCentral14VerifyBandNameEPKcR14DataResultListPN3Hmx6ObjectEii"
+__hmx_name_94:
+    .asciz "_ZN11RockCentral14VerifyCharNameEPKcR14DataResultListPN3Hmx6ObjectEii"
+__hmx_name_95:
+    .asciz "_ZN11RockCentral15GetAllSonglistsERSt6vectorIP11BandProfileSaIS2_EER14DataResultListPN3Hmx6ObjectE"
+__hmx_name_96:
+    .asciz "_ZN11RockCentral15UpdateBattleArtEP6RndTexPN3Hmx6ObjectEi"
+__hmx_name_97:
+    .asciz "_ZN11RockCentral16GetBattleMaxRankERSt6vectorIiSaIiEEiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_98:
+    .asciz "_ZN11RockCentral16GetSongFullOfferEiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_99:
+    .asciz "_ZN11RockCentral16GetWebLinkStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_100:
+    .asciz "_ZN11RockCentral16RecordOptionDataEv"
+__hmx_name_101:
+    .asciz "_ZN11RockCentral16UpdateFriendListEP7ProfileSt6vectorIP6FriendSaIS4_EER14DataResultListPN3Hmx6ObjectE"
+__hmx_name_102:
+    .asciz "_ZN11RockCentral16UpdateFriendListEiSt6vectorIP6FriendSaIS2_EER14DataResultListPN3Hmx6ObjectE"
+__hmx_name_103:
+    .asciz "_ZN11RockCentral16UpdateSetlistArtEP17LocalSavedSetlistiPN3Hmx6ObjectEi"
+__hmx_name_104:
+    .asciz "_ZN11RockCentral17CheckBattleLimitsEP11BandProfileR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_105:
+    .asciz "_ZN11RockCentral17RecordBattleScoreEiiRSt6vectorIP11BandProfileSaIS2_EEiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_106:
+    .asciz "_ZN11RockCentral17RecordPerformanceEPK7ProfilePK15PerformanceDataiPN3Hmx6ObjectER14DataResultList"
+__hmx_name_107:
+    .asciz "_ZN11RockCentral18SyncAvailableSongsERKSt6vectorIP11BandProfileSaIS2_EERKS0_IiSaIiEESA_PN3Hmx6ObjectE"
+__hmx_name_108:
+    .asciz "_ZN11RockCentral18UpdateOnlineStatusEv"
+__hmx_name_109:
+    .asciz "_ZN11RockCentral22CancelOutstandingCallsEPN3Hmx6ObjectE"
+__hmx_name_110:
+    .asciz "_ZN11RockCentral22GetLeaderboardByPlayerERSt6vectorIiSaIiEEi9ScoreType15LeaderboardType15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_111:
+    .asciz "_ZN11RockCentral23FailAllOutstandingCallsEv"
+__hmx_name_112:
+    .asciz "_ZN11RockCentral24GetSetlistCreationStatusEPK7ProfileiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_113:
+    .asciz "_ZN11RockCentral24RecordAccomplishmentDataEPK7ProfileP22AccomplishmentProgressiPN3Hmx6ObjectER14DataResultList"
+__hmx_name_114:
+    .asciz "_ZN11RockCentral25GetAccLeaderboardByPlayerERSt6vectorIiSaIiEER6Symbol15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_115:
+    .asciz "_ZN11RockCentral25GetLeaderboardByRankRangeERSt6vectorIiSaIiEEi9ScoreTypeii15LeaderboardTypeR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_116:
+    .asciz "_ZN11RockCentral25GetRedeemedTokensByPlayerEiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_117:
+    .asciz "_ZN11RockCentral28GetAccLeaderboardByRankRangeERSt6vectorIiSaIiEER6SymboliiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_118:
+    .asciz "_ZN11RockCentral28GetBattleLeaderboardByPlayerERSt6vectorIiSaIiEEi15LeaderboardModeiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_119:
+    .asciz "_ZN11RockCentral28GetMultipleRankingsForPlayerEP7Profile9ScoreTypeRSt6vectorIiSaIiEER14DataResultListPN3Hmx6ObjectE"
+__hmx_name_120:
+    .asciz "_ZN11RockCentral29GetActiveContextHighWatermarkEv"
+__hmx_name_121:
+    .asciz "_ZN11RockCentral31GetBattleLeaderboardByRankRangeERSt6vectorIiSaIiEEiiiR14DataResultListPN3Hmx6ObjectE"
+__hmx_name_122:
+    .asciz "_ZN11RockCentral5OnMsgERK24WiiFriendsListChangedMsg"
+__hmx_name_123:
+    .asciz "_ZN11RockCentral5OnMsgERK25WiiFriendMgrOpCompleteMsg"
+__hmx_name_124:
+    .asciz "_ZN11SetlistSort16BuildSetlistListEv"
+__hmx_name_125:
+    .asciz "_ZN11SetlistSort16BuildSetlistTreeERSt3mapI6Symbol13SetlistRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEE"
+__hmx_name_126:
+    .asciz "_ZN11SingerStats17SetPartPercentageEif"
+__hmx_name_127:
+    .asciz "_ZN11SingerStats21SetPitchDeviationInfoEff"
+__hmx_name_128:
+    .asciz "_ZN11UIListState8ProviderEv"
+__hmx_name_129:
+    .asciz "_ZN11VocalPhraseC1Ev"
+__hmx_name_130:
+    .asciz "_ZN12BandDirector14HarvestDircutsEv"
+__hmx_name_131:
+    .asciz "_ZN12BandDirector19ReadyForMidiParsersEv"
+__hmx_name_132:
+    .asciz "_ZN12BudgetScreenC1Ev"
+__hmx_name_133:
+    .asciz "_ZN12MidiReceiver16SkipCurrentTrackEv"
+__hmx_name_134:
+    .asciz "_ZN12MusicLibrary11SetlistSizeEv"
+__hmx_name_135:
+    .asciz "_ZN12MusicLibrary17GetMaxSetlistSizeEv"
+__hmx_name_136:
+    .asciz "_ZN12MusicLibrary20CanHeadersBeSelectedEv"
+__hmx_name_137:
+    .asciz "_ZN12SavedSetlist14SetDescriptionEPKc"
+__hmx_name_138:
+    .asciz "_ZN12SavedSetlist8SetTitleEPKc"
+__hmx_name_139:
+    .asciz "_ZN12VoiceChatMgr16ToggleMuteStatusEP4User"
+__hmx_name_140:
+    .asciz "_ZN12WiiFriendMgr16EnumerateFriendsEP13WiiFriendListPN3Hmx6ObjectE"
+__hmx_name_141:
+    .asciz "_ZN12WiiFriendMgr16GetCachedFriendsEP13WiiFriendList"
+__hmx_name_142:
+    .asciz "_ZN12WiiFriendMgr16SetProfileStatusEi6String"
+__hmx_name_143:
+    .asciz "_ZN12WiiFriendMgr17UseConsoleFriendsEb"
+__hmx_name_144:
+    .asciz "_ZN12WiiFriendMgr22SetMasterProfileStatusE6String"
+__hmx_name_145:
+    .asciz "_ZN12WiiMessenger11SendMessageEiPKcS1_PN3Hmx6ObjectEi"
+__hmx_name_146:
+    .asciz "_ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE"
+__hmx_name_147:
+    .asciz "_ZN13BandPatchMesh10PostRenderEv"
+__hmx_name_148:
+    .asciz "_ZN13BandPatchMesh13ConstructQuadEP6RndTex"
+__hmx_name_149:
+    .asciz "_ZN13BandPatchMesh16ListDrawChildrenERNSt7__cxx114listIP11RndDrawableSaIS3_EEE"
+__hmx_name_150:
+    .asciz "_ZN13BandPatchMesh6RenderEP6RndTexP6RndMat"
+__hmx_name_151:
+    .asciz "_ZN13BandPatchMesh8CompressEP12BandCharDesc"
+__hmx_name_152:
+    .asciz "_ZN13BandPatchMesh9PreRenderEP12BandCharDesci"
+__hmx_name_153:
+    .asciz "_ZN13BandPatchMesh9ReProjectEv"
+__hmx_name_154:
+    .asciz "_ZN13BandPatchMeshC1EPN3Hmx6ObjectE"
+__hmx_name_155:
+    .asciz "_ZN13BandPatchMeshC1ERKS_"
+__hmx_name_156:
+    .asciz "_ZN13BandPatchMeshaSERKS_"
+__hmx_name_157:
+    .asciz "_ZN13CharacterTest4DrawEv"
+__hmx_name_158:
+    .asciz "_ZN13CharacterTest4LoadER9BinStream"
+__hmx_name_159:
+    .asciz "_ZN13CharacterTest4PollEv"
+__hmx_name_160:
+    .asciz "_ZN13CharacterTestC1EP9Character"
+__hmx_name_161:
+    .asciz "_ZN13JsonConverter6NewIntEi"
+__hmx_name_162:
+    .asciz "_ZN13JsonConverter8NewArrayEv"
+__hmx_name_163:
+    .asciz "_ZN13JsonConverter9NewDoubleEd"
+__hmx_name_164:
+    .asciz "_ZN13JsonConverter9NewStringEPKc"
+__hmx_name_165:
+    .asciz "_ZN13JsonConverterC1Ev"
+__hmx_name_166:
+    .asciz "_ZN13JsonConverterD1Ev"
+__hmx_name_167:
+    .asciz "_ZN13MetaPerformer10SetSetlistEPK12SavedSetlist"
+__hmx_name_168:
+    .asciz "_ZN13MetaPerformer14LockBandOrSoloEv"
+__hmx_name_169:
+    .asciz "_ZN13MetaPerformer16UnlockBandOrSoloEv"
+__hmx_name_170:
+    .asciz "_ZN13MetaPerformer17SetCreditsPendingEv"
+__hmx_name_171:
+    .asciz "_ZN13MetaPerformer19GetScoreTypeForUserEP8BandUser"
+__hmx_name_172:
+    .asciz "_ZN13MetaPerformer7CurrentEv"
+__hmx_name_173:
+    .asciz "_ZN13MetaPerformer8SetSongsERKSt6vectorI6SymbolSaIS1_EE"
+__hmx_name_174:
+    .asciz "_ZN13MetaPerformer8SetSongsERKSt6vectorIiSaIiEE"
+__hmx_name_175:
+    .asciz "_ZN13MetaPerformer9SetBattleEPK18BattleSavedSetlist"
+__hmx_name_176:
+    .asciz "_ZN13MidiParserMgr10FinishLoadEv"
+__hmx_name_177:
+    .asciz "_ZN13MidiParserMgr13GetEventsListEv"
+__hmx_name_178:
+    .asciz "_ZN13MidiParserMgr4PollEv"
+__hmx_name_179:
+    .asciz "_ZN13MidiParserMgr5ResetEi"
+__hmx_name_180:
+    .asciz "_ZN13MidiParserMgr5ResetEv"
+__hmx_name_181:
+    .asciz "_ZN13MidiParserMgr9GetParserE6Symbol"
+__hmx_name_182:
+    .asciz "_ZN13MidiParserMgrC1EP16GemListInterface6Symbol"
+__hmx_name_183:
+    .asciz "_ZN13PatchRenderer13InitResourcesEv"
+__hmx_name_184:
+    .asciz "_ZN13PitchDetectorC1Ei"
+__hmx_name_185:
+    .asciz "_ZN13PitchDetectorD1Ev"
+__hmx_name_186:
+    .asciz "_ZN13WiiContentMgr15UnmountContentsE6Symbol"
+__hmx_name_187:
+    .asciz "_ZN13WiiContentMgr9ContentOfE6Symbol"
+__hmx_name_188:
+    .asciz "_ZN13WiiFriendListC1Ev"
+__hmx_name_189:
+    .asciz "_ZN13WiiFriendListD1Ev"
+__hmx_name_190:
+    .asciz "_ZN14DataResultList5ClearEv"
+__hmx_name_191:
+    .asciz "_ZN14DataResultList5PrintER10TextStream"
+__hmx_name_192:
+    .asciz "_ZN14DataResultList6UpdateEP7Message"
+__hmx_name_193:
+    .asciz "_ZN14DataResultListC1Ev"
+__hmx_name_194:
+    .asciz "_ZN14DataResultListD1Ev"
+__hmx_name_195:
+    .asciz "_ZN14ProfilePictureC1EiPN3Hmx6ObjectE"
+__hmx_name_196:
+    .asciz "_ZN14SearchSettingsC1Eibi"
+__hmx_name_197:
+    .asciz "_ZN14WiiCommerceMgr12InitCommerceEPN3Hmx6ObjectE"
+__hmx_name_198:
+    .asciz "_ZN14WiiCommerceMgr12SpecifyOfferEP17StorePurchaseable"
+__hmx_name_199:
+    .asciz "_ZN14WiiCommerceMgr15DestroyCommerceEv"
+__hmx_name_200:
+    .asciz "_ZN14WiiCommerceMgr15InitPreDownloadEv"
+__hmx_name_201:
+    .asciz "_ZN14WiiCommerceMgr15MakeDataTitleIdEPKc"
+__hmx_name_202:
+    .asciz "_ZN14WiiCommerceMgr19SpecifyContentUnitsERKSt6vectorItSaItEE"
+__hmx_name_203:
+    .asciz "_ZN14WiiMessageListC1Ev"
+__hmx_name_204:
+    .asciz "_ZN14WiiMessageListD1Ev"
+__hmx_name_205:
+    .asciz "_ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE"
+__hmx_name_206:
+    .asciz "_ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE"
+__hmx_name_207:
+    .asciz "_ZN15SaveLoadManager11AutoSaveNowEv"
+__hmx_name_208:
+    .asciz "_ZN15SaveLoadManager4InitEv"
+__hmx_name_209:
+    .asciz "_ZN15SaveLoadManager8AutoSaveEv"
+__hmx_name_210:
+    .asciz "_ZN15SessionSearcher13GetNextResultEv"
+__hmx_name_211:
+    .asciz "_ZN15SessionSearcher16GetSearchResultsERSt6vectorIP15NetSearchResultSaIS2_EE"
+__hmx_name_212:
+    .asciz "_ZN15SessionSettings9SetPublicEb"
+__hmx_name_213:
+    .asciz "_ZN15VirtualKeyboard17IsKeyboardShowingEv"
+__hmx_name_214:
+    .asciz "_ZN15WaitingUserGate4InitEv"
+__hmx_name_215:
+    .asciz "_ZN15WaitingUserGate4PollEv"
+__hmx_name_216:
+    .asciz "_ZN15WaitingUserGateC1Ev"
+__hmx_name_217:
+    .asciz "_ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE"
+__hmx_name_218:
+    .asciz "_ZN18TourPerformerLocal15SetCurrentQuestE6Symbol"
+__hmx_name_219:
+    .asciz "_ZN18TourPerformerLocal17CheatCycleSetlistEv"
+__hmx_name_220:
+    .asciz "_ZN18TourPerformerLocal17ClearCurrentQuestEv"
+__hmx_name_221:
+    .asciz "_ZN18TourPerformerLocal19CheatCycleChallengeEv"
+__hmx_name_222:
+    .asciz "_ZN18TourPerformerLocal21SetCurrentQuestFilterE6Symbol15TourSetlistType"
+__hmx_name_223:
+    .asciz "_ZN18TourPerformerLocal23ClearCurrentQuestFilterEv"
+__hmx_name_224:
+    .asciz "_ZN18TourPerformerLocal23SanityCheckQuestFiltersEv"
+__hmx_name_225:
+    .asciz "_ZN18TourPerformerLocalC1ER11BandUserMgr"
+__hmx_name_226:
+    .asciz "_ZN18WiiFriendsProvider19GetPossessiveSuffixEPKc"
+__hmx_name_227:
+    .asciz "_ZN18WiiFriendsProvider24IsPossessiveSuffixNeededEPKc"
+__hmx_name_228:
+    .asciz "_ZN19MatchmakingSettings19ClearCustomSettingsEv"
+__hmx_name_229:
+    .asciz "_ZN20MovieInternalBuffers3NewESt6vectorIP4BINKSaIS2_EE"
+__hmx_name_230:
+    .asciz "_ZN20MovieInternalBuffersD1Ev"
+__hmx_name_231:
+    .asciz "_ZN20StoreMetadataManager14GetOfferStatusEPK20StorePackedOfferBase"
+__hmx_name_232:
+    .asciz "_ZN20StoreMetadataManager14SongStateFlagsEPK15StorePackedSong"
+__hmx_name_233:
+    .asciz "_ZN20StoreMetadataManager15AddSetlistOfferEi"
+__hmx_name_234:
+    .asciz "_ZN20StoreMetadataManager15LoadDynamicPageEP9DataArray"
+__hmx_name_235:
+    .asciz "_ZN20StoreMetadataManager18ClearSetlistOffersEv"
+__hmx_name_236:
+    .asciz "_ZN20StoreMetadataManager20GetContentStateFlagsEyt"
+__hmx_name_237:
+    .asciz "_ZN20StoreMetadataManager20UpdateOfferOwnershipEv"
+__hmx_name_238:
+    .asciz "_ZN20StoreMetadataManager4LoadEPKc"
+__hmx_name_239:
+    .asciz "_ZN20StoreMetadataManager6UnloadEv"
+__hmx_name_240:
+    .asciz "_ZN20StoreMetadataManager8LoadPageEt"
+__hmx_name_241:
+    .asciz "_ZN22MainHubMessageProvider13AddTickerDataE14TickerDataTypeiibb"
+__hmx_name_242:
+    .asciz "_ZN22MainHubMessageProvider15AddUnlinkedMotdEPKc"
+__hmx_name_243:
+    .asciz "_ZN22MainHubMessageProvider17IsTickerDataValidE14TickerDataType"
+__hmx_name_244:
+    .asciz "_ZN22MainHubMessageProvider9ClearDataEv"
+__hmx_name_245:
+    .asciz "_ZN22MainHubMessageProviderC1EP12MainHubPanel"
+__hmx_name_246:
+    .asciz "_ZN25WiiFriendsDetailsProviderC1Ev"
+__hmx_name_247:
+    .asciz "_ZN33AccomplishmentDiscSongConditionalC2EP9DataArrayi"
+__hmx_name_248:
+    .asciz "_ZN33AccomplishmentDiscSongConditionalD2Ev"
+__hmx_name_249:
+    .asciz "_ZN4Band10ForceStarsEi"
+__hmx_name_250:
+    .asciz "_ZN4Band10RemoveUserEP8BandUser"
+__hmx_name_251:
+    .asciz "_ZN4Band11SetGameOverEv"
+__hmx_name_252:
+    .asciz "_ZN4Band13LocalBlowCodaEP6Player"
+__hmx_name_253:
+    .asciz "_ZN4Band15DealWithCodaGemEP6Playeribb"
+__hmx_name_254:
+    .asciz "_ZN4Band16DeployBandEnergyEP8BandUser"
+__hmx_name_255:
+    .asciz "_ZN4Band16GetActivePlayersEv"
+__hmx_name_256:
+    .asciz "_ZN4Band16UpdateBonusLevelEf"
+__hmx_name_257:
+    .asciz "_ZN4Band17LocalFinishedCodaEP6Player"
+__hmx_name_258:
+    .asciz "_ZN4Band18AddUserDynamicallyEP8BandUser"
+__hmx_name_259:
+    .asciz "_ZN4Band19SetAccumulatedScoreEi"
+__hmx_name_260:
+    .asciz "_ZN4Band20AddPlayerDynamicallyEP10BeatMasterP8BandUser"
+__hmx_name_261:
+    .asciz "_ZN4Band4PollEfR7SongPos"
+__hmx_name_262:
+    .asciz "_ZN4Band7RestartEb"
+__hmx_name_263:
+    .asciz "_ZN4BandC1EbiP8BandUserP10BeatMaster"
+__hmx_name_264:
+    .asciz "_ZN5Movie4Impl12PlatformInitEv"
+__hmx_name_265:
+    .asciz "_ZN5Movie4Impl17PlatformCacheFileEPKc"
+__hmx_name_266:
+    .asciz "_ZN5Movie4Impl4DrawEv"
+__hmx_name_267:
+    .asciz "_ZN5Stats10AddSustainEf"
+__hmx_name_268:
+    .asciz "_ZN5Stats10StreakInfoC1Ev"
+__hmx_name_269:
+    .asciz "_ZN5Stats11AddAccuracyEi"
+__hmx_name_270:
+    .asciz "_ZN5Stats11SectionInfoC1Ev"
+__hmx_name_271:
+    .asciz "_ZN5Stats12AddOverdriveEf"
+__hmx_name_272:
+    .asciz "_ZN5Stats12EndHitStreakEv"
+__hmx_name_273:
+    .asciz "_ZN5Stats12SetFinalizedEb"
+__hmx_name_274:
+    .asciz "_ZN5Stats13AddCodaPointsEi"
+__hmx_name_275:
+    .asciz "_ZN5Stats13EndMissStreakEv"
+__hmx_name_276:
+    .asciz "_ZN5Stats14AddScoreStreakEf"
+__hmx_name_277:
+    .asciz "_ZN5Stats14BuildHitStreakEif"
+__hmx_name_278:
+    .asciz "_ZN5Stats14LoadForEndGameER9BinStream"
+__hmx_name_279:
+    .asciz "_ZN5Stats14MultiplierInfoC1Ev"
+__hmx_name_280:
+    .asciz "_ZN5Stats14SetHopoGemInfoEiii"
+__hmx_name_281:
+    .asciz "_ZN5Stats14SetSectionInfoEi6Symbolff"
+__hmx_name_282:
+    .asciz "_ZN5Stats14UpdateBestSoloEi"
+__hmx_name_283:
+    .asciz "_ZN5Stats15AddFailurePointEf"
+__hmx_name_284:
+    .asciz "_ZN5Stats15AddToTimesSavedEff"
+__hmx_name_285:
+    .asciz "_ZN5Stats15BuildMissStreakEi"
+__hmx_name_286:
+    .asciz "_ZN5Stats15DeployOverdriveEfi"
+__hmx_name_287:
+    .asciz "_ZN5Stats16SetCurrentStreakEi"
+__hmx_name_288:
+    .asciz "_ZN5Stats16SetCymbalGemInfoEiii"
+__hmx_name_289:
+    .asciz "_ZN5Stats17AddToPlayersSavedEif"
+__hmx_name_290:
+    .asciz "_ZN5Stats17SetNoScorePercentEf"
+__hmx_name_291:
+    .asciz "_ZN5Stats18IncrementTrillsHitEb"
+__hmx_name_292:
+    .asciz "_ZN5Stats19AddBandContributionEf"
+__hmx_name_293:
+    .asciz "_ZN5Stats19EndStreakMultiplierEfi"
+__hmx_name_294:
+    .asciz "_ZN5Stats19SetPersistentStreakEi"
+__hmx_name_295:
+    .asciz "_ZN5Stats21BeginStreakMultiplierEfi"
+__hmx_name_296:
+    .asciz "_ZN5Stats22StopDeployingOverdriveEfi"
+__hmx_name_297:
+    .asciz "_ZN5Stats23IncrementSustainGemsHitEb"
+__hmx_name_298:
+    .asciz "_ZN5Stats24IncrementHighFretGemsHitEb"
+__hmx_name_299:
+    .asciz "_ZN5Stats27SetVocalSingerAndPartCountsEii"
+__hmx_name_300:
+    .asciz "_ZN5Stats29SetSoloButtonedSoloPercentageEi"
+__hmx_name_301:
+    .asciz "_ZN5Stats7AddRollEb"
+__hmx_name_302:
+    .asciz "_ZN5Stats7AddSoloEi"
+__hmx_name_303:
+    .asciz "_ZN5StatsC1Ev"
+__hmx_name_304:
+    .asciz "_ZN5WiiFX5SetFXEii"
+__hmx_name_305:
+    .asciz "_ZN5WiiFX8IsReverbEi"
+__hmx_name_306:
+    .asciz "_ZN5WiiFX9SetReverbEib"
+__hmx_name_307:
+    .asciz "_ZN6Quazal10RootObjectdlEPv"
+__hmx_name_308:
+    .asciz "_ZN6Quazal10RootObjectnwEm"
+__hmx_name_309:
+    .asciz "_ZN6Quazal12RBDataClient13CallDataPointEPNS_19ProtocolCallContextERKNS_6StringEPS3_"
+__hmx_name_310:
+    .asciz "_ZN6Quazal12RBDataClient18CallDataPointNoRetEPNS_19ProtocolCallContextERKNS_6StringE"
+__hmx_name_311:
+    .asciz "_ZN6Quazal13ServiceClient21RegisterExtraProtocolEPNS_8ProtocolEh"
+__hmx_name_312:
+    .asciz "_ZN6Quazal15BackEndServices22FormatQErrorCodeStringERKNS_6StringEj"
+__hmx_name_313:
+    .asciz "_ZN6Quazal19ProtocolCallContextC1Ev"
+__hmx_name_314:
+    .asciz "_ZN6Quazal6StringC1EPKc"
+__hmx_name_315:
+    .asciz "_ZN6Quazal6StringC1Ev"
+__hmx_name_316:
+    .asciz "_ZN6Quazal6StringD1Ev"
+__hmx_name_317:
+    .asciz "_ZN6Quazal6StringaSEPKc"
+__hmx_name_318:
+    .asciz "_ZN6Quazal8ProtocolC2Ej"
+__hmx_name_319:
+    .asciz "_ZN6Splash4PollEv"
+__hmx_name_320:
+    .asciz "_ZN6WiiRnd18PrepareRenderAlleyEv"
+__hmx_name_321:
+    .asciz "_ZN6WiiRnd18RestoreRenderAlleyEv"
+__hmx_name_322:
+    .asciz "_ZN6WiiRnd20SetTriFrameRenderingEb"
+__hmx_name_323:
+    .asciz "_ZN6WiiTex13DeleteSurfaceEv"
+__hmx_name_324:
+    .asciz "_ZN7UILabel12CanHaveFocusEv"
+__hmx_name_325:
+    .asciz "_ZN8AppLabel11SetSongNameE6Symbolb"
+__hmx_name_326:
+    .asciz "_ZN8AppLabel11SetUserNameEPK4User"
+__hmx_name_327:
+    .asciz "_ZN8AppLabel12SetIntroNameEP8BandUser"
+__hmx_name_328:
+    .asciz "_ZN8AppLabel12SetOfferCostEPK10StoreOffer"
+__hmx_name_329:
+    .asciz "_ZN8AppLabel12SetOfferNameEPK10StoreOffer"
+__hmx_name_330:
+    .asciz "_ZN8AppLabel14SetSectionNameERK15PracticeSection"
+__hmx_name_331:
+    .asciz "_ZN8AppLabel14SetViewSettingEPK11ViewSetting"
+__hmx_name_332:
+    .asciz "_ZN8AppLabel16SetFromCharacterEPK8CharData"
+__hmx_name_333:
+    .asciz "_ZN8AppLabel17SetStoreGroupNameEPK18StoreOfferProvideri"
+__hmx_name_334:
+    .asciz "_ZN8AppLabel18SetLeaderboardNameERK14LeaderboardRow"
+__hmx_name_335:
+    .asciz "_ZN8AppLabel19SetRawStoreShortcutEi"
+__hmx_name_336:
+    .asciz "_ZN8AppLabel20SetViewSettingStatusEPK11ViewSetting"
+__hmx_name_337:
+    .asciz "_ZN8AppLabel21SetSongNameWithNumberEiiPKc"
+__hmx_name_338:
+    .asciz "_ZN8AppLabel23SetFromScoreDisplayDataEsiib"
+__hmx_name_339:
+    .asciz "_ZN8AppLabel23SetNewReleaseEntryText1EPK14StoreMainPanel"
+__hmx_name_340:
+    .asciz "_ZN8AppLabel23SetNewReleaseEntryText2EPK14StoreMainPanel"
+__hmx_name_341:
+    .asciz "_ZN8AppLabel23SetNewReleaseEntryText3EPK14StoreMainPanel"
+__hmx_name_342:
+    .asciz "_ZN8AppLabel24SetTokenRedemptionStringEPK20TokenRedemptionPaneli"
+__hmx_name_343:
+    .asciz "_ZN8AppLabel25SetLeaderboardRankAndNameERK14LeaderboardRow"
+__hmx_name_344:
+    .asciz "_ZN8AppLabel8SetPitchEii"
+__hmx_name_345:
+    .asciz "_ZN8AssetMgr11GetAssetMgrEv"
+__hmx_name_346:
+    .asciz "_ZN8AssetMgr11StripFinishE6Symbol"
+__hmx_name_347:
+    .asciz "_ZN8AssetMgr4InitEv"
+__hmx_name_348:
+    .asciz "_ZN8CharClip6ExportEP9DataArrayb"
+__hmx_name_349:
+    .asciz "_ZN8CharHair6HookupER10ObjPtrListI11CharCollide9ObjectDirE"
+__hmx_name_350:
+    .asciz "_ZN8CharHairC1Ev"
+__hmx_name_351:
+    .asciz "_ZN8InputMgr21IsValidButtonForShellE12JoypadButtonP13LocalBandUser"
+__hmx_name_352:
+    .asciz "_ZN8InputMgr21SetInvalidMessageSinkEPN3Hmx6ObjectE"
+__hmx_name_353:
+    .asciz "_ZN8InputMgr23ClearInvalidMessageSinkEv"
+__hmx_name_354:
+    .asciz "_ZN8InputMgr4InitEv"
+__hmx_name_355:
+    .asciz "_ZN8InputMgr7GetUserEv"
+__hmx_name_356:
+    .asciz "_ZN8InputMgr9TerminateEv"
+__hmx_name_357:
+    .asciz "_ZN8NodeSort10DeleteListEv"
+__hmx_name_358:
+    .asciz "_ZN8NodeSort10DeleteTreeEv"
+__hmx_name_359:
+    .asciz "_ZN8NodeSort9FirstCharEPKcb"
+__hmx_name_360:
+    .asciz "_ZN8NodeSortC2Ev"
+__hmx_name_361:
+    .asciz "_ZN8SongSort13BuildSongListEv"
+__hmx_name_362:
+    .asciz "_ZN8SongSort13BuildSongTreeERSt3mapI6Symbol10SongRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEERSt6vectorIP10StoreOfferSaISD_EE"
+__hmx_name_363:
+    .asciz "_ZN9JsonArray9AddMemberEP10JsonObject"
+__hmx_name_364:
+    .asciz "_ZN9MetaPanel4InitEv"
+__hmx_name_365:
+    .asciz "_ZN9PrefabMgr11GetFaceTypeE6Symbol"
+__hmx_name_366:
+    .asciz "_ZN9PrefabMgr12GetPrefabMgrEv"
+__hmx_name_367:
+    .asciz "_ZN9PrefabMgr20PrefabIsCustomizableEv"
+__hmx_name_368:
+    .asciz "_ZN9PrefabMgr24PrefabUsesProfilePatchesEv"
+__hmx_name_369:
+    .asciz "_ZN9PrefabMgr4InitEP11BandUserMgr"
+__hmx_name_370:
+    .asciz "_ZN9PrefabMgr9GetPrefabE6Symbol"
+__hmx_name_371:
+    .asciz "_ZN9SyncStore4PollEv"
+__hmx_name_372:
+    .asciz "_ZNK10DataResult18GetDataResultValueE6StringR8DataNode"
+__hmx_name_373:
+    .asciz "_ZNK10GameConfig10CanEndGameEv"
+__hmx_name_374:
+    .asciz "_ZNK10GameConfig11GetTrackNumERK8UserGuid"
+__hmx_name_375:
+    .asciz "_ZNK10GameConfig13GetControllerEP8BandUser"
+__hmx_name_376:
+    .asciz "_ZNK10GameConfig16GetSectionBoundsEiRfS0_"
+__hmx_name_377:
+    .asciz "_ZNK10GameConfig16IsInstrumentUsedE6Symbol"
+__hmx_name_378:
+    .asciz "_ZNK10GameConfig19GetPracticeSectionsERiS0_"
+__hmx_name_379:
+    .asciz "_ZNK10GameConfig20GetAverageDifficultyEv"
+__hmx_name_380:
+    .asciz "_ZNK10GameConfig20GetSectionBoundsTickEiRiS0_"
+__hmx_name_381:
+    .asciz "_ZNK10JsonObject17GetObjectAsStringEv"
+__hmx_name_382:
+    .asciz "_ZNK10NetSession12GetLocalHostEv"
+__hmx_name_383:
+    .asciz "_ZNK10NetSession12NumOpenSlotsEv"
+__hmx_name_384:
+    .asciz "_ZNK10NetSession14IsStartingGameEv"
+__hmx_name_385:
+    .asciz "_ZNK10NetSession15IsOnlineEnabledEv"
+__hmx_name_386:
+    .asciz "_ZNK10NetSession16GetLocalUserListERSt6vectorIP9LocalUserSaIS2_EE"
+__hmx_name_387:
+    .asciz "_ZNK10NetSession6IsBusyEv"
+__hmx_name_388:
+    .asciz "_ZNK10NetSession7IsLocalEv"
+__hmx_name_389:
+    .asciz "_ZNK10NetSession8IsInGameEv"
+__hmx_name_390:
+    .asciz "_ZNK10NetSession9IsJoiningEv"
+__hmx_name_391:
+    .asciz "_ZNK11BandSongMgr29WriteCachedMetadataFromStreamER9BinStream"
+__hmx_name_392:
+    .asciz "_ZNK11PlatformMgr11IsPadAGuestEi"
+__hmx_name_393:
+    .asciz "_ZNK11PlatformMgr15IsGuestOnlineIDEPK8OnlineID"
+__hmx_name_394:
+    .asciz "_ZNK11PlatformMgr24CanSeeUserCreatedContentEPK8OnlineID"
+__hmx_name_395:
+    .asciz "_ZNK11SetlistSort13NewHeaderNodeEP12LeafSortNode"
+__hmx_name_396:
+    .asciz "_ZNK11SetlistSort15NewShortcutNodeEP12LeafSortNode"
+__hmx_name_397:
+    .asciz "_ZNK11SetlistSort16NewSubheaderNodeEP12LeafSortNode"
+__hmx_name_398:
+    .asciz "_ZNK11SingerStats11GetRankDataEi"
+__hmx_name_399:
+    .asciz "_ZNK11SingerStats21GetPitchDeviationInfoERfS0_"
+__hmx_name_400:
+    .asciz "_ZNK12MusicLibrary16GetMakingSetlistEb"
+__hmx_name_401:
+    .asciz "_ZNK12MusicLibrary18GetHighlightedNodeEv"
+__hmx_name_402:
+    .asciz "_ZNK12SavedSetlist8GetOwnerEv"
+__hmx_name_403:
+    .asciz "_ZNK12SavedSetlist8IsBattleEv"
+__hmx_name_404:
+    .asciz "_ZNK12SavedSetlist9GetArtTexEv"
+__hmx_name_405:
+    .asciz "_ZNK12VoiceChatMgr7IsMutedEP4User"
+__hmx_name_406:
+    .asciz "_ZNK13BandStatsInfo12GetBandStatsEv"
+__hmx_name_407:
+    .asciz "_ZNK13DataEventList5EventEi"
+__hmx_name_408:
+    .asciz "_ZNK13MetaPerformer10HasSetlistEv"
+__hmx_name_409:
+    .asciz "_ZNK13MetaPerformer10IsLastSongEv"
+__hmx_name_410:
+    .asciz "_ZNK13MetaPerformer11GetBattleIDEv"
+__hmx_name_411:
+    .asciz "_ZNK13MetaPerformer11IsFirstSongEv"
+__hmx_name_412:
+    .asciz "_ZNK13MetaPerformer13IsSetCompleteEv"
+__hmx_name_413:
+    .asciz "_ZNK13MetaPerformer14GetSetlistNameEv"
+__hmx_name_414:
+    .asciz "_ZNK13MetaPerformer14IsNoFailActiveEv"
+__hmx_name_415:
+    .asciz "_ZNK13MetaPerformer14PartPlaysInSetE6Symbol"
+__hmx_name_416:
+    .asciz "_ZNK13MetaPerformer15IsRandomSetListEv"
+__hmx_name_417:
+    .asciz "_ZNK13MetaPerformer15PartPlaysInSongE6Symbol"
+__hmx_name_418:
+    .asciz "_ZNK13MetaPerformer16GetCompletedSongEv"
+__hmx_name_419:
+    .asciz "_ZNK13MetaPerformer16IsUsingRealDrumsEv"
+__hmx_name_420:
+    .asciz "_ZNK13MetaPerformer17SetHasMissingPartE6Symbol"
+__hmx_name_421:
+    .asciz "_ZNK13MetaPerformer18VocalHarmonyInSongEv"
+__hmx_name_422:
+    .asciz "_ZNK13MetaPerformer19GetBattleInstrumentEv"
+__hmx_name_423:
+    .asciz "_ZNK13MetaPerformer22IsNowUsingVocalHarmonyEv"
+__hmx_name_424:
+    .asciz "_ZNK13MetaPerformer22SetlistHasVocalHarmonyEv"
+__hmx_name_425:
+    .asciz "_ZNK13MetaPerformer23GetSetlistMaxVocalPartsEv"
+__hmx_name_426:
+    .asciz "_ZNK13MetaPerformer25SetHasMissingVocalHarmonyEv"
+__hmx_name_427:
+    .asciz "_ZNK13MetaPerformer27GetHighestDifficultyForPartE6Symbol"
+__hmx_name_428:
+    .asciz "_ZNK13MetaPerformer27SongEndsWithEndgameSequenceEv"
+__hmx_name_429:
+    .asciz "_ZNK13MetaPerformer4SongEv"
+__hmx_name_430:
+    .asciz "_ZNK13MetaPerformer7HasSongEv"
+__hmx_name_431:
+    .asciz "_ZNK13MetaPerformer8GetSongsEv"
+__hmx_name_432:
+    .asciz "_ZNK13MetaPerformer8GetVenueEv"
+__hmx_name_433:
+    .asciz "_ZNK13MetaPerformer8NumSongsEv"
+__hmx_name_434:
+    .asciz "_ZNK13MetaPerformer9HasBattleEv"
+__hmx_name_435:
+    .asciz "_ZNK13WiiFriendList10GetProfileEi"
+__hmx_name_436:
+    .asciz "_ZNK13WiiFriendList14GetFriendByIdxEi"
+__hmx_name_437:
+    .asciz "_ZNK14DataResultList13GetDataResultEi"
+__hmx_name_438:
+    .asciz "_ZNK15StorePackedPage11DefaultSortEv"
+__hmx_name_439:
+    .asciz "_ZNK15StorePackedSong12GetDataTitleEv"
+__hmx_name_440:
+    .asciz "_ZNK15StorePackedSong12GetShortNameEv"
+__hmx_name_441:
+    .asciz "_ZNK15StorePackedSong19GetUpgradeDataTitleEv"
+__hmx_name_442:
+    .asciz "_ZNK15StorePackedSong7GetNameEv"
+__hmx_name_443:
+    .asciz "_ZNK15StorePackedSong9DataTitleEv"
+__hmx_name_444:
+    .asciz "_ZNK15StorePackedSong9GetArtistEv"
+__hmx_name_445:
+    .asciz "_ZNK16StorePackedOffer10GetArtPathEv"
+__hmx_name_446:
+    .asciz "_ZNK16StorePackedOffer14GetPreviewPathEv"
+__hmx_name_447:
+    .asciz "_ZNK17NetMessageFactory21GetNetMessageByteCodeE6String"
+__hmx_name_448:
+    .asciz "_ZNK18StoreRbnOfferTable10OfferIndexEPK20StorePackedOfferBase"
+__hmx_name_449:
+    .asciz "_ZNK19MatchmakingSettings18GetCustomValueByIDEi"
+__hmx_name_450:
+    .asciz "_ZNK19StorePackedRBNOffer10GetArtPathEv"
+__hmx_name_451:
+    .asciz "_ZNK19StorePackedRBNOffer14GetPreviewPathEv"
+__hmx_name_452:
+    .asciz "_ZNK20StoreMetadataManager13LoadingFailedEv"
+__hmx_name_453:
+    .asciz "_ZNK20StoreMetadataManager19FindOfferFromSongIdEi"
+__hmx_name_454:
+    .asciz "_ZNK20StoreMetadataManager9LoadErrorEv"
+__hmx_name_455:
+    .asciz "_ZNK20StorePackedOfferBase10GetOfferIdEv"
+__hmx_name_456:
+    .asciz "_ZNK20StorePackedOfferBase12GetAlbumNameEv"
+__hmx_name_457:
+    .asciz "_ZNK20StorePackedOfferBase12GetUpgradeIdEv"
+__hmx_name_458:
+    .asciz "_ZNK20StorePackedOfferBase15IsVariousArtistEv"
+__hmx_name_459:
+    .asciz "_ZNK20StorePackedOfferBase7GetNameEv"
+__hmx_name_460:
+    .asciz "_ZNK20StorePackedOfferBase9GetArtistEv"
+__hmx_name_461:
+    .asciz "_ZNK22MainHubMessageProvider15SetMessageLabelEP8AppLabeli"
+__hmx_name_462:
+    .asciz "_ZNK33AccomplishmentDiscSongConditional11IsFulfilledEP11BandProfile"
+__hmx_name_463:
+    .asciz "_ZNK33AccomplishmentDiscSongConditional13CanBeLaunchedEv"
+__hmx_name_464:
+    .asciz "_ZNK33AccomplishmentDiscSongConditional16GetTotalNumSongsEv"
+__hmx_name_465:
+    .asciz "_ZNK33AccomplishmentDiscSongConditional17IsRelevantForSongE6Symbol"
+__hmx_name_466:
+    .asciz "_ZNK33AccomplishmentDiscSongConditional20GetNumCompletedSongsEP11BandProfile"
+__hmx_name_467:
+    .asciz "_ZNK33AccomplishmentDiscSongConditional21InqIncrementalSymbolsEP11BandProfileRSt6vectorI6SymbolSaIS3_EE"
+__hmx_name_468:
+    .asciz "_ZNK33AccomplishmentDiscSongConditional24HasSpecificSongsToLaunchEv"
+__hmx_name_469:
+    .asciz "_ZNK4Band13GetMultiplierEbRiS0_S0_"
+__hmx_name_470:
+    .asciz "_ZNK4Band13MainPerformerEv"
+__hmx_name_471:
+    .asciz "_ZNK4Band14AnyoneSaveableEv"
+__hmx_name_472:
+    .asciz "_ZNK4Band16EnergyCrowdBoostEv"
+__hmx_name_473:
+    .asciz "_ZNK4Band16EnergyMultiplierEv"
+__hmx_name_474:
+    .asciz "_ZNK4Band20EveryoneDoneWithSongEv"
+__hmx_name_475:
+    .asciz "_ZNK4Band7GetBandEv"
+__hmx_name_476:
+    .asciz "_ZNK5Stats10GetHarmonyEv"
+__hmx_name_477:
+    .asciz "_ZNK5Stats10GetSustainEv"
+__hmx_name_478:
+    .asciz "_ZNK5Stats11GetAccuracyEv"
+__hmx_name_479:
+    .asciz "_ZNK5Stats12GetOverdriveEv"
+__hmx_name_480:
+    .asciz "_ZNK5Stats13FailedNoScoreEv"
+__hmx_name_481:
+    .asciz "_ZNK5Stats13GetCodaPointsEv"
+__hmx_name_482:
+    .asciz "_ZNK5Stats13GetTambourineEv"
+__hmx_name_483:
+    .asciz "_ZNK5Stats14GetScoreStreakEv"
+__hmx_name_484:
+    .asciz "_ZNK5Stats14GetSectionInfoEi"
+__hmx_name_485:
+    .asciz "_ZNK5Stats14SaveForEndGameER9BinStream"
+__hmx_name_486:
+    .asciz "_ZNK5Stats16GetCurrentStreakEv"
+__hmx_name_487:
+    .asciz "_ZNK5Stats16GetLongestStreakEv"
+__hmx_name_488:
+    .asciz "_ZNK5Stats17GetAverageMsErrorEv"
+__hmx_name_489:
+    .asciz "_ZNK5Stats19GetBandContributionEv"
+__hmx_name_490:
+    .asciz "_ZNK5Stats19GetSingerRankedPartEii"
+__hmx_name_491:
+    .asciz "_ZNK5Stats22GetUnisonPhrasePercentEv"
+__hmx_name_492:
+    .asciz "_ZNK5Stats25GetSingerRankedPercentageEii"
+__hmx_name_493:
+    .asciz "_ZNK5Stats7GetSoloEv"
+__hmx_name_494:
+    .asciz "_ZNK7Profile9GetPadNumEv"
+__hmx_name_495:
+    .asciz "_ZNK8AssetMgr11GetEyebrowsERSt6vectorI6SymbolSaIS1_EES1_"
+__hmx_name_496:
+    .asciz "_ZNK8AssetMgr15GetTypeFromNameE6Symbol"
+__hmx_name_497:
+    .asciz "_ZNK8AssetMgr16GetEyebrowsCountE6Symbol"
+__hmx_name_498:
+    .asciz "_ZNK8AssetMgr8GetAssetE6Symbol"
+__hmx_name_499:
+    .asciz "_ZNK8AssetMgr8HasAssetE6Symbol"
+__hmx_name_500:
+    .asciz "_ZNK8InputMgr20IsActiveAndConnectedE14ControllerType"
+__hmx_name_501:
+    .asciz "_ZNK8NodeSort4TextEiiP11UIListLabelP7UILabel"
+__hmx_name_502:
+    .asciz "_ZNK8NodeSort6CustomEiiP12UIListCustomPN3Hmx6ObjectE"
+__hmx_name_503:
+    .asciz "_ZNK8NodeSort7NumDataEv"
+__hmx_name_504:
+    .asciz "_ZNK8NodeSort8IsActiveEi"
+__hmx_name_505:
+    .asciz "_ZNK8SongSort13NewHeaderNodeEP12LeafSortNode"
+__hmx_name_506:
+    .asciz "_ZNK8SongSort15NewShortcutNodeEP12LeafSortNode"
+__hmx_name_507:
+    .asciz "_ZNK8SongSort16NewSubheaderNodeEP12LeafSortNode"
+__hmx_name_508:
+    .asciz "_ZNK9PrefabMgr10GetPrefabsERSt6vectorIP10PrefabCharSaIS2_EE"
+__hmx_name_509:
+    .asciz "_ZNK9PrefabMgr12GetFaceTypesERSt6vectorI6SymbolSaIS1_EES1_"
+__hmx_name_510:
+    .asciz "_ZNK9PrefabMgr16GetDefaultPrefabEi"
+__hmx_name_511:
+    .asciz "_ZNK9PrefabMgr19GetAvailablePrefabsERSt6vectorIP10PrefabCharSaIS2_EE"
+__hmx_name_512:
+    .asciz "_ZNK9PrefabMgr20GetCharCreatorPrefabE6SymbolS0_"
+__hmx_name_513:
+    .asciz "_ZNK9PrefabMgr26GetRandomCharCreatorPrefabE6Symbol"
+__hmx_name_514:
+    .asciz "_ZNK9StorePage5OfferEi"
+__hmx_name_515:
+    .asciz "_ZNK9StorePage7SubmenuEi"
+__hmx_name_516:
+    .asciz "_ZNK9StorePage9BaseOfferEi"
+__hmx_name_517:
+    .asciz "_ZNK9WiiFriend10GetProfileEPKc"
+__hmx_name_518:
+    .asciz "_ZThn92_N12TexLoadPanel13ContentFailedEPKc"
+__hmx_name_519:
+    .asciz "_ZThn92_N12TexLoadPanel14ContentMountedEPKcS1_"
+__hmx_name_520:
+    .asciz "_ZrsR9BinStreamR13BandPatchMesh"
+
+    .bss
+    // ---- per-symbol first-hit latches (1 byte each) ----
+__hmx_latch_0:
+    .zero 1
+__hmx_latch_1:
+    .zero 1
+__hmx_latch_2:
+    .zero 1
+__hmx_latch_3:
+    .zero 1
+__hmx_latch_4:
+    .zero 1
+__hmx_latch_5:
+    .zero 1
+__hmx_latch_6:
+    .zero 1
+__hmx_latch_7:
+    .zero 1
+__hmx_latch_8:
+    .zero 1
+__hmx_latch_9:
+    .zero 1
+__hmx_latch_10:
+    .zero 1
+__hmx_latch_11:
+    .zero 1
+__hmx_latch_12:
+    .zero 1
+__hmx_latch_13:
+    .zero 1
+__hmx_latch_14:
+    .zero 1
+__hmx_latch_15:
+    .zero 1
+__hmx_latch_16:
+    .zero 1
+__hmx_latch_17:
+    .zero 1
+__hmx_latch_18:
+    .zero 1
+__hmx_latch_19:
+    .zero 1
+__hmx_latch_20:
+    .zero 1
+__hmx_latch_21:
+    .zero 1
+__hmx_latch_22:
+    .zero 1
+__hmx_latch_23:
+    .zero 1
+__hmx_latch_24:
+    .zero 1
+__hmx_latch_25:
+    .zero 1
+__hmx_latch_26:
+    .zero 1
+__hmx_latch_27:
+    .zero 1
+__hmx_latch_28:
+    .zero 1
+__hmx_latch_29:
+    .zero 1
+__hmx_latch_30:
+    .zero 1
+__hmx_latch_31:
+    .zero 1
+__hmx_latch_32:
+    .zero 1
+__hmx_latch_33:
+    .zero 1
+__hmx_latch_34:
+    .zero 1
+__hmx_latch_35:
+    .zero 1
+__hmx_latch_36:
+    .zero 1
+__hmx_latch_37:
+    .zero 1
+__hmx_latch_38:
+    .zero 1
+__hmx_latch_39:
+    .zero 1
+__hmx_latch_40:
+    .zero 1
+__hmx_latch_41:
+    .zero 1
+__hmx_latch_42:
+    .zero 1
+__hmx_latch_43:
+    .zero 1
+__hmx_latch_44:
+    .zero 1
+__hmx_latch_45:
+    .zero 1
+__hmx_latch_46:
+    .zero 1
+__hmx_latch_47:
+    .zero 1
+__hmx_latch_48:
+    .zero 1
+__hmx_latch_49:
+    .zero 1
+__hmx_latch_50:
+    .zero 1
+__hmx_latch_51:
+    .zero 1
+__hmx_latch_52:
+    .zero 1
+__hmx_latch_53:
+    .zero 1
+__hmx_latch_54:
+    .zero 1
+__hmx_latch_55:
+    .zero 1
+__hmx_latch_56:
+    .zero 1
+__hmx_latch_57:
+    .zero 1
+__hmx_latch_58:
+    .zero 1
+__hmx_latch_59:
+    .zero 1
+__hmx_latch_60:
+    .zero 1
+__hmx_latch_61:
+    .zero 1
+__hmx_latch_62:
+    .zero 1
+__hmx_latch_63:
+    .zero 1
+__hmx_latch_64:
+    .zero 1
+__hmx_latch_65:
+    .zero 1
+__hmx_latch_66:
+    .zero 1
+__hmx_latch_67:
+    .zero 1
+__hmx_latch_68:
+    .zero 1
+__hmx_latch_69:
+    .zero 1
+__hmx_latch_70:
+    .zero 1
+__hmx_latch_71:
+    .zero 1
+__hmx_latch_72:
+    .zero 1
+__hmx_latch_73:
+    .zero 1
+__hmx_latch_74:
+    .zero 1
+__hmx_latch_75:
+    .zero 1
+__hmx_latch_76:
+    .zero 1
+__hmx_latch_77:
+    .zero 1
+__hmx_latch_78:
+    .zero 1
+__hmx_latch_79:
+    .zero 1
+__hmx_latch_80:
+    .zero 1
+__hmx_latch_81:
+    .zero 1
+__hmx_latch_82:
+    .zero 1
+__hmx_latch_83:
+    .zero 1
+__hmx_latch_84:
+    .zero 1
+__hmx_latch_85:
+    .zero 1
+__hmx_latch_86:
+    .zero 1
+__hmx_latch_87:
+    .zero 1
+__hmx_latch_88:
+    .zero 1
+__hmx_latch_89:
+    .zero 1
+__hmx_latch_90:
+    .zero 1
+__hmx_latch_91:
+    .zero 1
+__hmx_latch_92:
+    .zero 1
+__hmx_latch_93:
+    .zero 1
+__hmx_latch_94:
+    .zero 1
+__hmx_latch_95:
+    .zero 1
+__hmx_latch_96:
+    .zero 1
+__hmx_latch_97:
+    .zero 1
+__hmx_latch_98:
+    .zero 1
+__hmx_latch_99:
+    .zero 1
+__hmx_latch_100:
+    .zero 1
+__hmx_latch_101:
+    .zero 1
+__hmx_latch_102:
+    .zero 1
+__hmx_latch_103:
+    .zero 1
+__hmx_latch_104:
+    .zero 1
+__hmx_latch_105:
+    .zero 1
+__hmx_latch_106:
+    .zero 1
+__hmx_latch_107:
+    .zero 1
+__hmx_latch_108:
+    .zero 1
+__hmx_latch_109:
+    .zero 1
+__hmx_latch_110:
+    .zero 1
+__hmx_latch_111:
+    .zero 1
+__hmx_latch_112:
+    .zero 1
+__hmx_latch_113:
+    .zero 1
+__hmx_latch_114:
+    .zero 1
+__hmx_latch_115:
+    .zero 1
+__hmx_latch_116:
+    .zero 1
+__hmx_latch_117:
+    .zero 1
+__hmx_latch_118:
+    .zero 1
+__hmx_latch_119:
+    .zero 1
+__hmx_latch_120:
+    .zero 1
+__hmx_latch_121:
+    .zero 1
+__hmx_latch_122:
+    .zero 1
+__hmx_latch_123:
+    .zero 1
+__hmx_latch_124:
+    .zero 1
+__hmx_latch_125:
+    .zero 1
+__hmx_latch_126:
+    .zero 1
+__hmx_latch_127:
+    .zero 1
+__hmx_latch_128:
+    .zero 1
+__hmx_latch_129:
+    .zero 1
+__hmx_latch_130:
+    .zero 1
+__hmx_latch_131:
+    .zero 1
+__hmx_latch_132:
+    .zero 1
+__hmx_latch_133:
+    .zero 1
+__hmx_latch_134:
+    .zero 1
+__hmx_latch_135:
+    .zero 1
+__hmx_latch_136:
+    .zero 1
+__hmx_latch_137:
+    .zero 1
+__hmx_latch_138:
+    .zero 1
+__hmx_latch_139:
+    .zero 1
+__hmx_latch_140:
+    .zero 1
+__hmx_latch_141:
+    .zero 1
+__hmx_latch_142:
+    .zero 1
+__hmx_latch_143:
+    .zero 1
+__hmx_latch_144:
+    .zero 1
+__hmx_latch_145:
+    .zero 1
+__hmx_latch_146:
+    .zero 1
+__hmx_latch_147:
+    .zero 1
+__hmx_latch_148:
+    .zero 1
+__hmx_latch_149:
+    .zero 1
+__hmx_latch_150:
+    .zero 1
+__hmx_latch_151:
+    .zero 1
+__hmx_latch_152:
+    .zero 1
+__hmx_latch_153:
+    .zero 1
+__hmx_latch_154:
+    .zero 1
+__hmx_latch_155:
+    .zero 1
+__hmx_latch_156:
+    .zero 1
+__hmx_latch_157:
+    .zero 1
+__hmx_latch_158:
+    .zero 1
+__hmx_latch_159:
+    .zero 1
+__hmx_latch_160:
+    .zero 1
+__hmx_latch_161:
+    .zero 1
+__hmx_latch_162:
+    .zero 1
+__hmx_latch_163:
+    .zero 1
+__hmx_latch_164:
+    .zero 1
+__hmx_latch_165:
+    .zero 1
+__hmx_latch_166:
+    .zero 1
+__hmx_latch_167:
+    .zero 1
+__hmx_latch_168:
+    .zero 1
+__hmx_latch_169:
+    .zero 1
+__hmx_latch_170:
+    .zero 1
+__hmx_latch_171:
+    .zero 1
+__hmx_latch_172:
+    .zero 1
+__hmx_latch_173:
+    .zero 1
+__hmx_latch_174:
+    .zero 1
+__hmx_latch_175:
+    .zero 1
+__hmx_latch_176:
+    .zero 1
+__hmx_latch_177:
+    .zero 1
+__hmx_latch_178:
+    .zero 1
+__hmx_latch_179:
+    .zero 1
+__hmx_latch_180:
+    .zero 1
+__hmx_latch_181:
+    .zero 1
+__hmx_latch_182:
+    .zero 1
+__hmx_latch_183:
+    .zero 1
+__hmx_latch_184:
+    .zero 1
+__hmx_latch_185:
+    .zero 1
+__hmx_latch_186:
+    .zero 1
+__hmx_latch_187:
+    .zero 1
+__hmx_latch_188:
+    .zero 1
+__hmx_latch_189:
+    .zero 1
+__hmx_latch_190:
+    .zero 1
+__hmx_latch_191:
+    .zero 1
+__hmx_latch_192:
+    .zero 1
+__hmx_latch_193:
+    .zero 1
+__hmx_latch_194:
+    .zero 1
+__hmx_latch_195:
+    .zero 1
+__hmx_latch_196:
+    .zero 1
+__hmx_latch_197:
+    .zero 1
+__hmx_latch_198:
+    .zero 1
+__hmx_latch_199:
+    .zero 1
+__hmx_latch_200:
+    .zero 1
+__hmx_latch_201:
+    .zero 1
+__hmx_latch_202:
+    .zero 1
+__hmx_latch_203:
+    .zero 1
+__hmx_latch_204:
+    .zero 1
+__hmx_latch_205:
+    .zero 1
+__hmx_latch_206:
+    .zero 1
+__hmx_latch_207:
+    .zero 1
+__hmx_latch_208:
+    .zero 1
+__hmx_latch_209:
+    .zero 1
+__hmx_latch_210:
+    .zero 1
+__hmx_latch_211:
+    .zero 1
+__hmx_latch_212:
+    .zero 1
+__hmx_latch_213:
+    .zero 1
+__hmx_latch_214:
+    .zero 1
+__hmx_latch_215:
+    .zero 1
+__hmx_latch_216:
+    .zero 1
+__hmx_latch_217:
+    .zero 1
+__hmx_latch_218:
+    .zero 1
+__hmx_latch_219:
+    .zero 1
+__hmx_latch_220:
+    .zero 1
+__hmx_latch_221:
+    .zero 1
+__hmx_latch_222:
+    .zero 1
+__hmx_latch_223:
+    .zero 1
+__hmx_latch_224:
+    .zero 1
+__hmx_latch_225:
+    .zero 1
+__hmx_latch_226:
+    .zero 1
+__hmx_latch_227:
+    .zero 1
+__hmx_latch_228:
+    .zero 1
+__hmx_latch_229:
+    .zero 1
+__hmx_latch_230:
+    .zero 1
+__hmx_latch_231:
+    .zero 1
+__hmx_latch_232:
+    .zero 1
+__hmx_latch_233:
+    .zero 1
+__hmx_latch_234:
+    .zero 1
+__hmx_latch_235:
+    .zero 1
+__hmx_latch_236:
+    .zero 1
+__hmx_latch_237:
+    .zero 1
+__hmx_latch_238:
+    .zero 1
+__hmx_latch_239:
+    .zero 1
+__hmx_latch_240:
+    .zero 1
+__hmx_latch_241:
+    .zero 1
+__hmx_latch_242:
+    .zero 1
+__hmx_latch_243:
+    .zero 1
+__hmx_latch_244:
+    .zero 1
+__hmx_latch_245:
+    .zero 1
+__hmx_latch_246:
+    .zero 1
+__hmx_latch_247:
+    .zero 1
+__hmx_latch_248:
+    .zero 1
+__hmx_latch_249:
+    .zero 1
+__hmx_latch_250:
+    .zero 1
+__hmx_latch_251:
+    .zero 1
+__hmx_latch_252:
+    .zero 1
+__hmx_latch_253:
+    .zero 1
+__hmx_latch_254:
+    .zero 1
+__hmx_latch_255:
+    .zero 1
+__hmx_latch_256:
+    .zero 1
+__hmx_latch_257:
+    .zero 1
+__hmx_latch_258:
+    .zero 1
+__hmx_latch_259:
+    .zero 1
+__hmx_latch_260:
+    .zero 1
+__hmx_latch_261:
+    .zero 1
+__hmx_latch_262:
+    .zero 1
+__hmx_latch_263:
+    .zero 1
+__hmx_latch_264:
+    .zero 1
+__hmx_latch_265:
+    .zero 1
+__hmx_latch_266:
+    .zero 1
+__hmx_latch_267:
+    .zero 1
+__hmx_latch_268:
+    .zero 1
+__hmx_latch_269:
+    .zero 1
+__hmx_latch_270:
+    .zero 1
+__hmx_latch_271:
+    .zero 1
+__hmx_latch_272:
+    .zero 1
+__hmx_latch_273:
+    .zero 1
+__hmx_latch_274:
+    .zero 1
+__hmx_latch_275:
+    .zero 1
+__hmx_latch_276:
+    .zero 1
+__hmx_latch_277:
+    .zero 1
+__hmx_latch_278:
+    .zero 1
+__hmx_latch_279:
+    .zero 1
+__hmx_latch_280:
+    .zero 1
+__hmx_latch_281:
+    .zero 1
+__hmx_latch_282:
+    .zero 1
+__hmx_latch_283:
+    .zero 1
+__hmx_latch_284:
+    .zero 1
+__hmx_latch_285:
+    .zero 1
+__hmx_latch_286:
+    .zero 1
+__hmx_latch_287:
+    .zero 1
+__hmx_latch_288:
+    .zero 1
+__hmx_latch_289:
+    .zero 1
+__hmx_latch_290:
+    .zero 1
+__hmx_latch_291:
+    .zero 1
+__hmx_latch_292:
+    .zero 1
+__hmx_latch_293:
+    .zero 1
+__hmx_latch_294:
+    .zero 1
+__hmx_latch_295:
+    .zero 1
+__hmx_latch_296:
+    .zero 1
+__hmx_latch_297:
+    .zero 1
+__hmx_latch_298:
+    .zero 1
+__hmx_latch_299:
+    .zero 1
+__hmx_latch_300:
+    .zero 1
+__hmx_latch_301:
+    .zero 1
+__hmx_latch_302:
+    .zero 1
+__hmx_latch_303:
+    .zero 1
+__hmx_latch_304:
+    .zero 1
+__hmx_latch_305:
+    .zero 1
+__hmx_latch_306:
+    .zero 1
+__hmx_latch_307:
+    .zero 1
+__hmx_latch_308:
+    .zero 1
+__hmx_latch_309:
+    .zero 1
+__hmx_latch_310:
+    .zero 1
+__hmx_latch_311:
+    .zero 1
+__hmx_latch_312:
+    .zero 1
+__hmx_latch_313:
+    .zero 1
+__hmx_latch_314:
+    .zero 1
+__hmx_latch_315:
+    .zero 1
+__hmx_latch_316:
+    .zero 1
+__hmx_latch_317:
+    .zero 1
+__hmx_latch_318:
+    .zero 1
+__hmx_latch_319:
+    .zero 1
+__hmx_latch_320:
+    .zero 1
+__hmx_latch_321:
+    .zero 1
+__hmx_latch_322:
+    .zero 1
+__hmx_latch_323:
+    .zero 1
+__hmx_latch_324:
+    .zero 1
+__hmx_latch_325:
+    .zero 1
+__hmx_latch_326:
+    .zero 1
+__hmx_latch_327:
+    .zero 1
+__hmx_latch_328:
+    .zero 1
+__hmx_latch_329:
+    .zero 1
+__hmx_latch_330:
+    .zero 1
+__hmx_latch_331:
+    .zero 1
+__hmx_latch_332:
+    .zero 1
+__hmx_latch_333:
+    .zero 1
+__hmx_latch_334:
+    .zero 1
+__hmx_latch_335:
+    .zero 1
+__hmx_latch_336:
+    .zero 1
+__hmx_latch_337:
+    .zero 1
+__hmx_latch_338:
+    .zero 1
+__hmx_latch_339:
+    .zero 1
+__hmx_latch_340:
+    .zero 1
+__hmx_latch_341:
+    .zero 1
+__hmx_latch_342:
+    .zero 1
+__hmx_latch_343:
+    .zero 1
+__hmx_latch_344:
+    .zero 1
+__hmx_latch_345:
+    .zero 1
+__hmx_latch_346:
+    .zero 1
+__hmx_latch_347:
+    .zero 1
+__hmx_latch_348:
+    .zero 1
+__hmx_latch_349:
+    .zero 1
+__hmx_latch_350:
+    .zero 1
+__hmx_latch_351:
+    .zero 1
+__hmx_latch_352:
+    .zero 1
+__hmx_latch_353:
+    .zero 1
+__hmx_latch_354:
+    .zero 1
+__hmx_latch_355:
+    .zero 1
+__hmx_latch_356:
+    .zero 1
+__hmx_latch_357:
+    .zero 1
+__hmx_latch_358:
+    .zero 1
+__hmx_latch_359:
+    .zero 1
+__hmx_latch_360:
+    .zero 1
+__hmx_latch_361:
+    .zero 1
+__hmx_latch_362:
+    .zero 1
+__hmx_latch_363:
+    .zero 1
+__hmx_latch_364:
+    .zero 1
+__hmx_latch_365:
+    .zero 1
+__hmx_latch_366:
+    .zero 1
+__hmx_latch_367:
+    .zero 1
+__hmx_latch_368:
+    .zero 1
+__hmx_latch_369:
+    .zero 1
+__hmx_latch_370:
+    .zero 1
+__hmx_latch_371:
+    .zero 1
+__hmx_latch_372:
+    .zero 1
+__hmx_latch_373:
+    .zero 1
+__hmx_latch_374:
+    .zero 1
+__hmx_latch_375:
+    .zero 1
+__hmx_latch_376:
+    .zero 1
+__hmx_latch_377:
+    .zero 1
+__hmx_latch_378:
+    .zero 1
+__hmx_latch_379:
+    .zero 1
+__hmx_latch_380:
+    .zero 1
+__hmx_latch_381:
+    .zero 1
+__hmx_latch_382:
+    .zero 1
+__hmx_latch_383:
+    .zero 1
+__hmx_latch_384:
+    .zero 1
+__hmx_latch_385:
+    .zero 1
+__hmx_latch_386:
+    .zero 1
+__hmx_latch_387:
+    .zero 1
+__hmx_latch_388:
+    .zero 1
+__hmx_latch_389:
+    .zero 1
+__hmx_latch_390:
+    .zero 1
+__hmx_latch_391:
+    .zero 1
+__hmx_latch_392:
+    .zero 1
+__hmx_latch_393:
+    .zero 1
+__hmx_latch_394:
+    .zero 1
+__hmx_latch_395:
+    .zero 1
+__hmx_latch_396:
+    .zero 1
+__hmx_latch_397:
+    .zero 1
+__hmx_latch_398:
+    .zero 1
+__hmx_latch_399:
+    .zero 1
+__hmx_latch_400:
+    .zero 1
+__hmx_latch_401:
+    .zero 1
+__hmx_latch_402:
+    .zero 1
+__hmx_latch_403:
+    .zero 1
+__hmx_latch_404:
+    .zero 1
+__hmx_latch_405:
+    .zero 1
+__hmx_latch_406:
+    .zero 1
+__hmx_latch_407:
+    .zero 1
+__hmx_latch_408:
+    .zero 1
+__hmx_latch_409:
+    .zero 1
+__hmx_latch_410:
+    .zero 1
+__hmx_latch_411:
+    .zero 1
+__hmx_latch_412:
+    .zero 1
+__hmx_latch_413:
+    .zero 1
+__hmx_latch_414:
+    .zero 1
+__hmx_latch_415:
+    .zero 1
+__hmx_latch_416:
+    .zero 1
+__hmx_latch_417:
+    .zero 1
+__hmx_latch_418:
+    .zero 1
+__hmx_latch_419:
+    .zero 1
+__hmx_latch_420:
+    .zero 1
+__hmx_latch_421:
+    .zero 1
+__hmx_latch_422:
+    .zero 1
+__hmx_latch_423:
+    .zero 1
+__hmx_latch_424:
+    .zero 1
+__hmx_latch_425:
+    .zero 1
+__hmx_latch_426:
+    .zero 1
+__hmx_latch_427:
+    .zero 1
+__hmx_latch_428:
+    .zero 1
+__hmx_latch_429:
+    .zero 1
+__hmx_latch_430:
+    .zero 1
+__hmx_latch_431:
+    .zero 1
+__hmx_latch_432:
+    .zero 1
+__hmx_latch_433:
+    .zero 1
+__hmx_latch_434:
+    .zero 1
+__hmx_latch_435:
+    .zero 1
+__hmx_latch_436:
+    .zero 1
+__hmx_latch_437:
+    .zero 1
+__hmx_latch_438:
+    .zero 1
+__hmx_latch_439:
+    .zero 1
+__hmx_latch_440:
+    .zero 1
+__hmx_latch_441:
+    .zero 1
+__hmx_latch_442:
+    .zero 1
+__hmx_latch_443:
+    .zero 1
+__hmx_latch_444:
+    .zero 1
+__hmx_latch_445:
+    .zero 1
+__hmx_latch_446:
+    .zero 1
+__hmx_latch_447:
+    .zero 1
+__hmx_latch_448:
+    .zero 1
+__hmx_latch_449:
+    .zero 1
+__hmx_latch_450:
+    .zero 1
+__hmx_latch_451:
+    .zero 1
+__hmx_latch_452:
+    .zero 1
+__hmx_latch_453:
+    .zero 1
+__hmx_latch_454:
+    .zero 1
+__hmx_latch_455:
+    .zero 1
+__hmx_latch_456:
+    .zero 1
+__hmx_latch_457:
+    .zero 1
+__hmx_latch_458:
+    .zero 1
+__hmx_latch_459:
+    .zero 1
+__hmx_latch_460:
+    .zero 1
+__hmx_latch_461:
+    .zero 1
+__hmx_latch_462:
+    .zero 1
+__hmx_latch_463:
+    .zero 1
+__hmx_latch_464:
+    .zero 1
+__hmx_latch_465:
+    .zero 1
+__hmx_latch_466:
+    .zero 1
+__hmx_latch_467:
+    .zero 1
+__hmx_latch_468:
+    .zero 1
+__hmx_latch_469:
+    .zero 1
+__hmx_latch_470:
+    .zero 1
+__hmx_latch_471:
+    .zero 1
+__hmx_latch_472:
+    .zero 1
+__hmx_latch_473:
+    .zero 1
+__hmx_latch_474:
+    .zero 1
+__hmx_latch_475:
+    .zero 1
+__hmx_latch_476:
+    .zero 1
+__hmx_latch_477:
+    .zero 1
+__hmx_latch_478:
+    .zero 1
+__hmx_latch_479:
+    .zero 1
+__hmx_latch_480:
+    .zero 1
+__hmx_latch_481:
+    .zero 1
+__hmx_latch_482:
+    .zero 1
+__hmx_latch_483:
+    .zero 1
+__hmx_latch_484:
+    .zero 1
+__hmx_latch_485:
+    .zero 1
+__hmx_latch_486:
+    .zero 1
+__hmx_latch_487:
+    .zero 1
+__hmx_latch_488:
+    .zero 1
+__hmx_latch_489:
+    .zero 1
+__hmx_latch_490:
+    .zero 1
+__hmx_latch_491:
+    .zero 1
+__hmx_latch_492:
+    .zero 1
+__hmx_latch_493:
+    .zero 1
+__hmx_latch_494:
+    .zero 1
+__hmx_latch_495:
+    .zero 1
+__hmx_latch_496:
+    .zero 1
+__hmx_latch_497:
+    .zero 1
+__hmx_latch_498:
+    .zero 1
+__hmx_latch_499:
+    .zero 1
+__hmx_latch_500:
+    .zero 1
+__hmx_latch_501:
+    .zero 1
+__hmx_latch_502:
+    .zero 1
+__hmx_latch_503:
+    .zero 1
+__hmx_latch_504:
+    .zero 1
+__hmx_latch_505:
+    .zero 1
+__hmx_latch_506:
+    .zero 1
+__hmx_latch_507:
+    .zero 1
+__hmx_latch_508:
+    .zero 1
+__hmx_latch_509:
+    .zero 1
+__hmx_latch_510:
+    .zero 1
+__hmx_latch_511:
+    .zero 1
+__hmx_latch_512:
+    .zero 1
+__hmx_latch_513:
+    .zero 1
+__hmx_latch_514:
+    .zero 1
+__hmx_latch_515:
+    .zero 1
+__hmx_latch_516:
+    .zero 1
+__hmx_latch_517:
+    .zero 1
+__hmx_latch_518:
+    .zero 1
+__hmx_latch_519:
+    .zero 1
+__hmx_latch_520:
+    .zero 1
 
     // ---- DATA stubs (each: own writable zero-filled reservation) ----
-    .bss
     .p2align 4
     .weak TheAccomplishmentMgr
 TheAccomplishmentMgr:
