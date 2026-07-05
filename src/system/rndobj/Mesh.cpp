@@ -502,6 +502,42 @@ void RB3StompScanVertAllocs() {
 
 void RndMesh::VertVector::resize(int n, bool b) {
     unka = b;
+#ifdef HX_NATIVE
+    // Web/native port: MILO_ASSERT is NON-FATAL here (os/Debug.cpp Debug::Fail
+    // logs and returns on HX_WEB), so the original `mNumVerts = n` fast path
+    // would leave the count PAST the reserved buffer whenever n > mCapacity, and
+    // every later mVerts[i] write with i >= mCapacity would run off the end of
+    // `new Vert[mCapacity]` and stomp neighbouring heap allocations. That is a
+    // release-only web heap corruption (the OOB Vert records overwrite adjacent
+    // objects with a repeating packed-vertex pattern, and the allocator later
+    // wedges walking a corrupted bin -> a freeze). This path is reachable from
+    // the reserved gameplay meshes (gem Tail/GemRep/TubePlate), whose write loops
+    // advance by the source vert count regardless of mNumVerts (see
+    // Tail::UpdateVerts), so clamping would still write OOB — grow the buffer to n
+    // instead. The Wii MWCC build (HX_NATIVE undefined) keeps the original
+    // asserting fast path below, so the matched asm is unchanged.
+    if (mCapacity && n > (int)mCapacity) {
+        MILO_LOG(
+            "RB3: VertVector::resize n=%d > reserved cap=%d — reallocating to "
+            "prevent heap OOB\n",
+            n, (int)mCapacity
+        );
+        Vert *oldverts = mVerts;
+        int keep = Min(n, mNumVerts);
+        {
+            MemDoTempAllocations m(true, false);
+            mVerts = new Vert[n];
+        }
+        RB3_STOMP_NOTE_ALLOC(this, mVerts, mVerts + n);
+        for (int i = 0; i < keep; i++)
+            mVerts[i] = oldverts[i];
+        RB3_STOMP_NOTE_FREE(oldverts);
+        delete[] oldverts;
+        mNumVerts = n;
+        mCapacity = n <= 0xFFFF ? (unsigned short)n : (unsigned short)0xFFFF;
+        return;
+    }
+#endif
     if (mCapacity) {
         MILO_ASSERT(n <= mCapacity, 0x26A);
         mNumVerts = n;
