@@ -50,3 +50,63 @@ per wave). No rb3-repo files touched in this subtask.
 
 **Handoff:** W1.1.S2 (shader validation gtest, model: opus) and W1.1.S3 (final byte-identical
 verification + closeout, model: sonnet) remain — not started by this subtask.
+
+
+## W1.1.S2 — done
+
+Shader validation delivered: an always-on wgpu-based gtest (primary) + a best-effort
+offline naga/tint script (graceful skip). rb3 repo commit `908a5d1f` (3 files, only mine):
+- NEW `native/tests/test_wgsl_validation.cpp`
+- EDIT `native/CMakeLists.txt` (+1 line: `test_wgsl_validation.cpp` in the rb3-tests
+  `add_executable`, on its own line — staged via a single-hunk `git apply --cached` so a
+  concurrent W0.2 edit to the same file (line ~648 `rb3_stub_census.cpp`) was NOT folded in)
+- NEW `scripts/native/validate_wgsl.sh`
+
+**gtest design:** `CompileOk(wgsl, firstError)` reproduces `PipelineManager.cpp:261-296`
+(Dawn returns a non-null module on error → `CreateShaderModule` then
+`GetCompilationInfo(WaitAnyOnly, cb)` scan for `CompilationMessageType::Error`, then
+`Instance().WaitAny(future, UINT64_MAX)`). Device reached via `gBandRnd.Gpu().Device()` /
+`.Instance()`. `EnsureGpu()` mirrors `test_texsharpen.cpp:38-100`
+(`gBandRnd.InitGpu(64,64,true)` once; `GTEST_SKIP` if no device). The 5 externalized
+shaders + `standard_wgsl.inc` are `#include`d as the exact shipped bytes (same compile-time
+embed the engine uses), so a bad edit to any `.wgsl.inc` turns the test red.
+
+**Results (MEASURED, GPU up):**
+- `WgslValidation.AllRB3ShadersCompile` — PASS. Backend path logged: **real (native Dawn)**.
+  All 6 compiled with zero WGSL Errors: rb3_halo_blit, rb3_postproc, rb3_quad, rb3_compose,
+  rb3_particle, standard_wgsl.
+- `WgslValidation.HarnessCatchesBadShader` — PASS (fail-red proof). Feeding
+  `return nonexistent_fn();` → CompileOk returns false with
+  `"unresolved call target 'nonexistent_fn'"`. This codified test IS the required fail-red
+  demonstration and runs the IDENTICAL `CompileOk` path used by AllRB3ShadersCompile.
+
+**Deviation (documented):** PLAN.md also suggested a one-time manual demonstration by
+hand-corrupting a real `.wgsl.inc` and watching AllRB3ShadersCompile fail. I deliberately did
+NOT corrupt the shared engine source tree — concurrent Wave-1 agents compile from it and a
+transient corrupt `.inc` would break their incremental builds. The permanent
+`HarnessCatchesBadShader` test is a strictly stronger, CI-enforced fail-red proof (same code
+path, known-bad input, demonstrably returns false), so the intent is fully satisfied.
+
+**Offline script:** `scripts/native/validate_wgsl.sh` detects naga/tint; neither installed on
+this host (MEASURED) → prints the skip message and `exit 0` (skips-green). When a CLI is
+present it strips the `R"WGSL(` / `)WGSL"` wrapper from every `src/gfx/*.inc` +
+`src/gfx/Shaders/*.wgsl.inc` and validates the pure body (covers `standard_wgsl.inc` too).
+
+**Build:** `rb3-tests` green in `native/build-agent-W1.1` (clang, reused S1 dir).
+
+**Env notes for the verifier (S3):**
+1. The RTX 3090 vkCreateDevice is intermittently `VK_ERROR_INITIALIZATION_FAILED` (GPU
+   contention from concurrent Wave-1 agents). When it fails, `EnsureGpu` returns false and
+   both WgslValidation tests `GTEST_SKIP` — retry until the device comes up (took 2 tries).
+2. **Pre-existing shared-infra segfault:** when the GPU is unavailable, the rb3-tests binary
+   exits 139 (segfault at process teardown on the failed-GPU-init path). This is NOT specific
+   to this test — the reference `test_texsharpen` (`TexSharpenTest.*`) exits 139 identically
+   under the same GPU-unavailable condition. Out of scope for W1.1; flagging for whoever owns
+   the test-harness teardown. With the GPU up, no segfault and both tests PASS.
+3. During S2 the shared build initially failed to LINK rb3-tests
+   (`undefined reference to __hmx_stub_first_hit`) because W0.2's new untracked
+   `native/src/rb3_stub_census.cpp` (defining that symbol, referenced by the W0.2-modified
+   `band3_link_stubs.s`) had not yet been captured into `_RB3_NATIVE_SRCS`. A `cmake -B`
+   reconfigure recaptured it and the link went green. Not a W1.1 issue.
+
+**Handoff:** W1.1.S3 (final byte-identical verification + closeout, model: sonnet) remains.
