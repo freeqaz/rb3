@@ -1,0 +1,279 @@
+Running main() from /usr/src/debug/gtest/googletest-1.17.0/googletest/src/gtest_main.cc
+Note: Google Test filter = SkinGolden.*:ClipPoseFixture.*
+[==========] Running 16 tests from 2 test suites.
+[----------] Global test environment set-up.
+[----------] 12 tests from ClipPoseFixture
+Reading the archive
+reading system config file "config/ham_preinit_keep.dta" took 104.876007 ms
+[Native] JoypadInit
+[Native] KeyboardInit
+Resetting macro kRockCentralConnectionTimeout (file ui/challenges/challenges.dta, line 4)
+reading system config file "config/ham_keep.dta" took 299.917023 ms
+Resizing string table (139392) adding High Five to Start!
+=== Test Engine Init ===
+DC3 Native: data dir from DC3_DATA=/home/free/code/milohax/dc3-decomp/orig-assets
+DC3 Native: overlay dir=/home/free/code/milohax/dc3-decomp/orig-assets/../native/dta
+DC3 Native: Loading archive gen/main_xbox.hdr
+DC3 Native: Archive loaded, 10 ark files
+DC3 Native: BlockMgr initialized
+DC3 Native: WgpuRnd::Init() — WebGPU renderer
+GpuDevice: GPU = NVIDIA GeForce RTX 3090 (NVIDIA: 610.43.02 610.43.2.0)
+GpuDevice: BC texture compression supported
+GpuDevice: initialized (1280x720, headless)
+PipelineManager: initialized with 4 bind group layouts
+ShadowPass: pipelines initialized (1024x1024 depth texture)
+WgpuRnd: GPU resources initialized (1280x720, Rnd 1280x720, BC supported)
+Native: headless mode, using dummy skeleton (no pose server)
+=== Test Engine Init Complete ===
+  TryLoadMilo: char/shared/gen/skeleton_bones_resource.milo_xbox
+  TryLoadMilo: OK 'skeleton_bones_resource' class='CharBoneDir'
+  TryLoadMilo: char/crowd/anim/gen/female_base.milo_xbox
+  TryLoadMilo: OK 'female_base' class='CharClipSet'
+ClipPoseFixture: found dance clip 'crouching_great_01' in char/crowd/anim/gen/female_base.milo_xbox
+[ RUN      ] ClipPoseFixture.ClipExists
+  clip[0]: 'crouching_great_01'
+  clip[1]: 'crouching_great_02'
+  clip[2]: 'crouching_great_03'
+  clip[3]: 'crouching_great_04'
+  clip[4]: 'sit_realtime_idle_01'
+  Total CharClips: 55
+  Dance clip: yes
+[       OK ] ClipPoseFixture.ClipExists (0 ms)
+[ RUN      ] ClipPoseFixture.CrouchingGreatClipContainsForeArmAndHandChannels
+  crouching_great_01 bone channels: 30
+    [00] 'bone_pelvis.pos' weight=1.00 type=0
+    [01] 'bone_L-ankle.quat' weight=1.00 type=2
+    [02] 'bone_L-clavicle.quat' weight=1.00 type=2
+    [03] 'bone_L-hand.quat' weight=1.00 type=2
+    [04] 'bone_L-index01.quat' weight=1.00 type=2
+    [05] 'bone_L-thigh.quat' weight=1.00 type=2
+    [06] 'bone_L-thumb01.quat' weight=1.00 type=2
+    [07] 'bone_L-upperArm.quat' weight=1.00 type=2
+    [08] 'bone_R-ankle.quat' weight=1.00 type=2
+    [09] 'bone_R-clavicle.quat' weight=1.00 type=2
+    [10] 'bone_R-hand.quat' weight=1.00 type=2
+    [11] 'bone_R-index01.quat' weight=1.00 type=2
+    [12] 'bone_R-thigh.quat' weight=1.00 type=2
+    [13] 'bone_R-thumb01.quat' weight=1.00 type=2
+    [14] 'bone_R-upperArm.quat' weight=1.00 type=2
+    [15] 'bone_head.quat' weight=1.00 type=2
+    [16] 'bone_neck.quat' weight=1.00 type=2
+    [17] 'bone_pelvis.quat' weight=1.00 type=2
+    [18] 'bone_spine1.quat' weight=1.00 type=2
+    [19] 'bone_spine2.quat' weight=1.00 type=2
+    [20] 'bone_L-foreArm.rotz' weight=1.00 type=5
+    [21] 'bone_L-index02.rotz' weight=1.00 type=5
+    [22] 'bone_L-knee.rotz' weight=1.00 type=5
+    [23] 'bone_L-thumb02.rotz' weight=1.00 type=5
+    [24] 'bone_R-foreArm.rotz' weight=1.00 type=5
+    [25] 'bone_R-index02.rotz' weight=1.00 type=5
+    [26] 'bone_R-knee.rotz' weight=1.00 type=5
+    [27] 'bone_R-thumb02.rotz' weight=1.00 type=5
+    [28] 'bone_R-toe.rotz' weight=1.00 type=5
+    [29] 'bone_L-toe.rotz' weight=1.00 type=5
+  forearm/hand presence: L-foreArm=1 R-foreArm=1 L-hand=1 R-hand=1
+[       OK ] ClipPoseFixture.CrouchingGreatClipContainsForeArmAndHandChannels (0 ms)
+[ RUN      ] ClipPoseFixture.PoseMeshesDoesNotCrash
+POSEMESHES dir='skeleton_bones_resource' servo='tmp_viseme_bones' meshCount=30 boneCount=30
+  servo_mesh[ 0] 'bone_pelvis.mesh' bone='bone_pelvis.pos'
+  servo_mesh[ 1] 'bone_L-ankle.mesh' bone='bone_L-ankle.quat'
+  servo_mesh[ 2] 'bone_L-clavicle.mesh' bone='bone_L-clavicle.quat'
+  servo_mesh[ 3] 'bone_L-hand.mesh' bone='bone_L-hand.quat'
+  servo_mesh[ 4] 'bone_L-index01.mesh' bone='bone_L-index01.quat'
+  servo_mesh[ 5] 'bone_L-thigh.mesh' bone='bone_L-thigh.quat'
+  servo_mesh[ 6] 'bone_L-thumb01.mesh' bone='bone_L-thumb01.quat'
+  servo_mesh[ 7] 'bone_L-upperArm.mesh' bone='bone_L-upperArm.quat'
+  servo_mesh[ 8] 'bone_R-ankle.mesh' bone='bone_R-ankle.quat'
+  servo_mesh[ 9] 'bone_R-clavicle.mesh' bone='bone_R-clavicle.quat'
+  servo_mesh[10] 'bone_R-hand.mesh' bone='bone_R-hand.quat'
+  servo_mesh[11] 'bone_R-index01.mesh' bone='bone_R-index01.quat'
+  servo_mesh[12] 'bone_R-thigh.mesh' bone='bone_R-thigh.quat'
+  servo_mesh[13] 'bone_R-thumb01.mesh' bone='bone_R-thumb01.quat'
+  servo_mesh[14] 'bone_R-upperArm.mesh' bone='bone_R-upperArm.quat'
+  servo_mesh[15] 'bone_head.mesh' bone='bone_head.quat'
+  servo_mesh[16] 'bone_neck.mesh' bone='bone_neck.quat'
+  servo_mesh[17] 'bone_pelvis.mesh' bone='bone_pelvis.quat'
+  servo_mesh[18] 'bone_spine1.mesh' bone='bone_spine1.quat'
+  servo_mesh[19] 'bone_spine2.mesh' bone='bone_spine2.quat'
+  servo_mesh[20] 'bone_L-foreArm.mesh' bone='bone_L-foreArm.rotz'
+  servo_mesh[21] 'bone_L-index02.mesh' bone='bone_L-index02.rotz'
+  servo_mesh[22] 'bone_L-knee.mesh' bone='bone_L-knee.rotz'
+  servo_mesh[23] 'bone_L-thumb02.mesh' bone='bone_L-thumb02.rotz'
+  servo_mesh[24] 'bone_L-toe.mesh' bone='bone_L-toe.rotz'
+  servo_mesh[25] 'bone_R-foreArm.mesh' bone='bone_R-foreArm.rotz'
+  servo_mesh[26] 'bone_R-index02.mesh' bone='bone_R-index02.rotz'
+  servo_mesh[27] 'bone_R-knee.mesh' bone='bone_R-knee.rotz'
+  servo_mesh[28] 'bone_R-thumb02.mesh' bone='bone_R-thumb02.rotz'
+  servo_mesh[29] 'bone_R-toe.mesh' bone='bone_R-toe.rotz'
+  ROTZ[20] 'bone_L-foreArm.rotz' value=-0.9790
+  ROTZ[21] 'bone_L-index02.rotz' value=0.5902
+  ROTZ[22] 'bone_L-knee.rotz' value=-2.6257
+  ROTZ[23] 'bone_L-thumb02.rotz' value=0.0940
+  ROTZ[24] 'bone_L-toe.rotz' value=1.5753
+  ROTZ[25] 'bone_R-foreArm.rotz' value=-1.1169
+  ROTZ[26] 'bone_R-index02.rotz' value=0.4297
+  ROTZ[27] 'bone_R-knee.rotz' value=-2.6147
+  ROTZ[28] 'bone_R-thumb02.rotz' value=0.5151
+  ROTZ[29] 'bone_R-toe.rotz' value=1.8909
+  PoseMeshes(dir, 29.490) completed without crash
+[       OK ] ClipPoseFixture.PoseMeshesDoesNotCrash (0 ms)
+[ RUN      ] ClipPoseFixture.PoseChangesTransforms
+POSEMESHES dir='skeleton_bones_resource' servo='tmp_viseme_bones' meshCount=30 boneCount=30
+  servo_mesh[ 0] 'bone_pelvis.mesh' bone='bone_pelvis.pos'
+  servo_mesh[ 1] 'bone_L-ankle.mesh' bone='bone_L-ankle.quat'
+  servo_mesh[ 2] 'bone_L-clavicle.mesh' bone='bone_L-clavicle.quat'
+  servo_mesh[ 3] 'bone_L-hand.mesh' bone='bone_L-hand.quat'
+  servo_mesh[ 4] 'bone_L-index01.mesh' bone='bone_L-index01.quat'
+  servo_mesh[ 5] 'bone_L-thigh.mesh' bone='bone_L-thigh.quat'
+  servo_mesh[ 6] 'bone_L-thumb01.mesh' bone='bone_L-thumb01.quat'
+  servo_mesh[ 7] 'bone_L-upperArm.mesh' bone='bone_L-upperArm.quat'
+  servo_mesh[ 8] 'bone_R-ankle.mesh' bone='bone_R-ankle.quat'
+  servo_mesh[ 9] 'bone_R-clavicle.mesh' bone='bone_R-clavicle.quat'
+  servo_mesh[10] 'bone_R-hand.mesh' bone='bone_R-hand.quat'
+  servo_mesh[11] 'bone_R-index01.mesh' bone='bone_R-index01.quat'
+  servo_mesh[12] 'bone_R-thigh.mesh' bone='bone_R-thigh.quat'
+  servo_mesh[13] 'bone_R-thumb01.mesh' bone='bone_R-thumb01.quat'
+  servo_mesh[14] 'bone_R-upperArm.mesh' bone='bone_R-upperArm.quat'
+  servo_mesh[15] 'bone_head.mesh' bone='bone_head.quat'
+  servo_mesh[16] 'bone_neck.mesh' bone='bone_neck.quat'
+  servo_mesh[17] 'bone_pelvis.mesh' bone='bone_pelvis.quat'
+  servo_mesh[18] 'bone_spine1.mesh' bone='bone_spine1.quat'
+  servo_mesh[19] 'bone_spine2.mesh' bone='bone_spine2.quat'
+  servo_mesh[20] 'bone_L-foreArm.mesh' bone='bone_L-foreArm.rotz'
+  servo_mesh[21] 'bone_L-index02.mesh' bone='bone_L-index02.rotz'
+  servo_mesh[22] 'bone_L-knee.mesh' bone='bone_L-knee.rotz'
+  servo_mesh[23] 'bone_L-thumb02.mesh' bone='bone_L-thumb02.rotz'
+  servo_mesh[24] 'bone_L-toe.mesh' bone='bone_L-toe.rotz'
+  servo_mesh[25] 'bone_R-foreArm.mesh' bone='bone_R-foreArm.rotz'
+  servo_mesh[26] 'bone_R-index02.mesh' bone='bone_R-index02.rotz'
+  servo_mesh[27] 'bone_R-knee.mesh' bone='bone_R-knee.rotz'
+  servo_mesh[28] 'bone_R-thumb02.mesh' bone='bone_R-thumb02.rotz'
+  servo_mesh[29] 'bone_R-toe.mesh' bone='bone_R-toe.rotz'
+  ROTZ[20] 'bone_L-foreArm.rotz' value=-0.9790
+  ROTZ[21] 'bone_L-index02.rotz' value=0.5902
+  ROTZ[22] 'bone_L-knee.rotz' value=-2.6257
+  ROTZ[23] 'bone_L-thumb02.rotz' value=0.0940
+  ROTZ[24] 'bone_L-toe.rotz' value=1.5753
+  ROTZ[25] 'bone_R-foreArm.rotz' value=-1.1169
+  ROTZ[26] 'bone_R-index02.rotz' value=0.4297
+  ROTZ[27] 'bone_R-knee.rotz' value=-2.6147
+  ROTZ[28] 'bone_R-thumb02.rotz' value=0.5151
+  ROTZ[29] 'bone_R-toe.rotz' value=1.8909
+POSEMESHES dir='skeleton_bones_resource' servo='tmp_viseme_bones' meshCount=30 boneCount=30
+  servo_mesh[ 0] 'bone_pelvis.mesh' bone='bone_pelvis.pos'
+  servo_mesh[ 1] 'bone_L-ankle.mesh' bone='bone_L-ankle.quat'
+  servo_mesh[ 2] 'bone_L-clavicle.mesh' bone='bone_L-clavicle.quat'
+  servo_mesh[ 3] 'bone_L-hand.mesh' bone='bone_L-hand.quat'
+  servo_mesh[ 4] 'bone_L-index01.mesh' bone='bone_L-index01.quat'
+  servo_mesh[ 5] 'bone_L-thigh.mesh' bone='bone_L-thigh.quat'
+  servo_mesh[ 6] 'bone_L-thumb01.mesh' bone='bone_L-thumb01.quat'
+  servo_mesh[ 7] 'bone_L-upperArm.mesh' bone='bone_L-upperArm.quat'
+  servo_mesh[ 8] 'bone_R-ankle.mesh' bone='bone_R-ankle.quat'
+  servo_mesh[ 9] 'bone_R-clavicle.mesh' bone='bone_R-clavicle.quat'
+  servo_mesh[10] 'bone_R-hand.mesh' bone='bone_R-hand.quat'
+  servo_mesh[11] 'bone_R-index01.mesh' bone='bone_R-index01.quat'
+  servo_mesh[12] 'bone_R-thigh.mesh' bone='bone_R-thigh.quat'
+  servo_mesh[13] 'bone_R-thumb01.mesh' bone='bone_R-thumb01.quat'
+  servo_mesh[14] 'bone_R-upperArm.mesh' bone='bone_R-upperArm.quat'
+  servo_mesh[15] 'bone_head.mesh' bone='bone_head.quat'
+  servo_mesh[16] 'bone_neck.mesh' bone='bone_neck.quat'
+  servo_mesh[17] 'bone_pelvis.mesh' bone='bone_pelvis.quat'
+  servo_mesh[18] 'bone_spine1.mesh' bone='bone_spine1.quat'
+  servo_mesh[19] 'bone_spine2.mesh' bone='bone_spine2.quat'
+  servo_mesh[20] 'bone_L-foreArm.mesh' bone='bone_L-foreArm.rotz'
+  servo_mesh[21] 'bone_L-index02.mesh' bone='bone_L-index02.rotz'
+  servo_mesh[22] 'bone_L-knee.mesh' bone='bone_L-knee.rotz'
+  servo_mesh[23] 'bone_L-thumb02.mesh' bone='bone_L-thumb02.rotz'
+  servo_mesh[24] 'bone_L-toe.mesh' bone='bone_L-toe.rotz'
+  servo_mesh[25] 'bone_R-foreArm.mesh' bone='bone_R-foreArm.rotz'
+  servo_mesh[26] 'bone_R-index02.mesh' bone='bone_R-index02.rotz'
+  servo_mesh[27] 'bone_R-knee.mesh' bone='bone_R-knee.rotz'
+  servo_mesh[28] 'bone_R-thumb02.mesh' bone='bone_R-thumb02.rotz'
+  servo_mesh[29] 'bone_R-toe.mesh' bone='bone_R-toe.rotz'
+  ROTZ[20] 'bone_L-foreArm.rotz' value=-0.8679
+  ROTZ[21] 'bone_L-index02.rotz' value=0.3735
+  ROTZ[22] 'bone_L-knee.rotz' value=-2.5812
+  ROTZ[23] 'bone_L-thumb02.rotz' value=0.2222
+  ROTZ[24] 'bone_L-toe.rotz' value=1.5753
+  ROTZ[25] 'bone_R-foreArm.rotz' value=-1.3367
+  ROTZ[26] 'bone_R-index02.rotz' value=0.2216
+  ROTZ[27] 'bone_R-knee.rotz' value=-2.5842
+  ROTZ[28] 'bone_R-thumb02.rotz' value=0.3284
+  ROTZ[29] 'bone_R-toe.rotz' value=1.9080
+  Clip: 'crouching_great_01'
+  NumFrames: 251
+  StartBeat: 29.490  EndBeat: 46.296  LengthBeats: 16.806
+  FramesPerSec: 30.0
+  Full: NumSamples=251, NumFrames=0, TotalSize=192, Compression=1
+  One:  NumSamples=1, NumFrames=0, TotalSize=16
+  Clip has 30 bone channels
+    bone: 'bone_pelvis.pos' weight=1.00
+    bone: 'bone_L-ankle.quat' weight=1.00
+    bone: 'bone_L-clavicle.quat' weight=1.00
+    bone: 'bone_L-hand.quat' weight=1.00
+    bone: 'bone_L-index01.quat' weight=1.00
+    bone: 'bone_L-thigh.quat' weight=1.00
+    bone: 'bone_L-thumb01.quat' weight=1.00
+    bone: 'bone_L-upperArm.quat' weight=1.00
+    bone: 'bone_R-ankle.quat' weight=1.00
+    bone: 'bone_R-clavicle.quat' weight=1.00
+    ... and 20 more
+  Bone lookup: 30 found, 0 missing in dir 'skeleton_bones_resource'
+  BeatToSample(29.490): sample=0 frac=0.0000
+  BeatToSample(37.893): sample=124 frac=1.0000
+    LOCAL moved: 'bone_pelvis.mesh' (-1.618,-1.041,12.645)->(-0.926,-1.081,13.575) d=1.1602
+  1/145 bones LOCAL pos moved, 139/145 bones WORLD pos moved (beat 29.5→37.9)
+[       OK ] ClipPoseFixture.PoseChangesTransforms (0 ms)
+[ RUN      ] ClipPoseFixture.PoseDeterminism
+  0/145 bones had non-deterministic results
+[       OK ] ClipPoseFixture.PoseDeterminism (0 ms)
+[ RUN      ] ClipPoseFixture.ChannelEvaluationIsFiniteAtKeyBeats
+[       OK ] ClipPoseFixture.ChannelEvaluationIsFiniteAtKeyBeats (0 ms)
+[ RUN      ] ClipPoseFixture.PelvisPosChannelMatchesPoseMeshesLocalPos
+[       OK ] ClipPoseFixture.PelvisPosChannelMatchesPoseMeshesLocalPos (0 ms)
+[ RUN      ] ClipPoseFixture.WeightedPosAndQuatChannelsMatchLocalPose
+  weighted channel/local checks: pos=2 quat=38 unresolved=0 partialWeight=0
+[       OK ] ClipPoseFixture.WeightedPosAndQuatChannelsMatchLocalPose (0 ms)
+[ RUN      ] ClipPoseFixture.BoneWorldMatchesLocalComposedWithParent
+  checked parent/local/world composition on 119 bones
+[       OK ] ClipPoseFixture.BoneWorldMatchesLocalComposedWithParent (0 ms)
+[ RUN      ] ClipPoseFixture.KeyBoneWorldDeltasAreFiniteAcrossBeats
+[       OK ] ClipPoseFixture.KeyBoneWorldDeltasAreFiniteAcrossBeats (0 ms)
+[ RUN      ] ClipPoseFixture.FootOrientationCorrectAfterClip
+  Checked 8 ankle/toe pairs across 4 beats, 0 inverted
+[       OK ] ClipPoseFixture.FootOrientationCorrectAfterClip (0 ms)
+[ RUN      ] ClipPoseFixture.EffectorWorldPositionsMatchGolden
+  effector: 'bone_R-hand.mesh'
+  effector: 'bone_L-hand.mesh'
+  effector: 'bone_R-toe.mesh'
+  effector: 'bone_L-toe.mesh'
+  prop/stick effector included: 'bone_prop3.mesh'
+  checked 15 effector golden(s) against eps=0.050
+[       OK ] ClipPoseFixture.EffectorWorldPositionsMatchGolden (0 ms)
+[----------] 12 tests from ClipPoseFixture (1 ms total)
+
+[----------] 4 tests from SkinGolden
+HamCharacter::EnableFacialAnimation Name:main lipsync name:NULL
+  SkinTryLoadMilo: char/main/gen/main.milo_xbox
+  SkinTryLoadMilo: OK 'main' class='HamCharacter'
+[ RUN      ] SkinGolden.CaptureGolden
+/home/free/code/milohax/milo-native-engine/tests/test_skin_golden.cpp:426: Skipped
+capture mode off (set MILO_SKIN_GOLDEN_CAPTURE=1)
+
+[  SKIPPED ] SkinGolden.CaptureGolden (0 ms)
+[ RUN      ] SkinGolden.GoldenMatchesReference
+  checked 10 golden verts (6 hand/finger-region)
+[       OK ] SkinGolden.GoldenMatchesReference (2 ms)
+[ RUN      ] SkinGolden.ReferenceMatchesCompiledSkinVertex
+[       OK ] SkinGolden.ReferenceMatchesCompiledSkinVertex (1 ms)
+[ RUN      ] SkinGolden.BrokenSkinDivergesFromGolden
+  hand verts=6  maxHandFling=25.479 (threshold 5.0)
+[       OK ] SkinGolden.BrokenSkinDivergesFromGolden (1 ms)
+[----------] 4 tests from SkinGolden (5 ms total)
+
+[----------] Global test environment tear-down
+[==========] 16 tests from 2 test suites ran. (740 ms total)
+[  PASSED  ] 15 tests.
+[  SKIPPED ] 1 test, listed below:
+[  SKIPPED ] SkinGolden.CaptureGolden
+GpuDevice: device lost (reason 2): Device was destroyed.

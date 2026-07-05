@@ -1,0 +1,660 @@
+{
+  "verdict": "PASS",
+  "layers": {
+    "image_advisory": "PASS",
+    "segA": "PASS",
+    "ratioB": "PASS",
+    "countC": "PASS",
+    "pin": "PASS"
+  },
+  "any_black_frame": false,
+  "capture_rc": 0,
+  "ratioB_detail": {
+    "pass": true,
+    "per_mesh_ratio_cap": 8.0,
+    "offenders": [],
+    "n_offenders": 0,
+    "max_band_ratio": 2.91,
+    "max_band_bound": 8.0,
+    "max_band_ok": true
+  },
+  "frames": [
+    {
+      "key": [
+        "coop_g_n03",
+        0
+      ],
+      "file": "/tmp/w1.2-lineup-baseline/cand_coop_g_n03_0.png",
+      "black": false,
+      "image": {
+        "verdict": "PASS",
+        "score": 81.14,
+        "min_score": 35.0
+      },
+      "segA": "PASS",
+      "segA_gating": [
+        "n_slivers",
+        "n_components_abs"
+      ],
+      "segA_checks": {
+        "n_slivers": {
+          "pass": true,
+          "observed": 0,
+          "bound": 8,
+          "rule": "<= golden(0) + 8"
+        },
+        "n_components": {
+          "pass": true,
+          "observed": 35,
+          "bound": 156.0,
+          "rule": "<= golden(39) * 4.00"
+        },
+        "mean_solidity": {
+          "pass": true,
+          "observed": 0.4600585406966165,
+          "bound": 0.004514155195965535,
+          "rule": ">= golden(0.451) * 0.01"
+        },
+        "fg_fill": {
+          "pass": true,
+          "observed": 0.16368598090277778,
+          "bound": 0.0017092824074074087,
+          "rule": ">= golden(0.171) * 0.01"
+        },
+        "fg_bbox_diag": {
+          "pass": true,
+          "observed": 1468.6047800548656,
+          "bound": [
+            -5597.713819051489,
+            8396.570728577233
+          ],
+          "rule": "|obs/golden(1399.4) - 1| <= 5.00 (ratio=1.049)"
+        },
+        "n_components_abs": {
+          "pass": true,
+          "observed": 35,
+          "bound": 110,
+          "rule": "<= 110 (absolute explosion cap)"
+        }
+      },
+      "countC": true,
+      "countC_slots": [
+        {
+          "slot": 0,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 1,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 2,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 144,
+              "observed": 144,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 4,
+              "observed": 4,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 3,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 142,
+              "observed": 142,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": [
+        "coop_g_n03",
+        1
+      ],
+      "file": "/tmp/w1.2-lineup-baseline/cand_coop_g_n03_1.png",
+      "black": false,
+      "image": {
+        "verdict": "PASS",
+        "score": 66.6,
+        "min_score": 35.0
+      },
+      "segA": "PASS",
+      "segA_gating": [
+        "n_slivers",
+        "n_components_abs"
+      ],
+      "segA_checks": {
+        "n_slivers": {
+          "pass": true,
+          "observed": 0,
+          "bound": 11,
+          "rule": "<= golden(3) + 8"
+        },
+        "n_components": {
+          "pass": true,
+          "observed": 28,
+          "bound": 108.0,
+          "rule": "<= golden(27) * 4.00"
+        },
+        "mean_solidity": {
+          "pass": true,
+          "observed": 0.43484523999686264,
+          "bound": 0.004011815065322427,
+          "rule": ">= golden(0.401) * 0.01"
+        },
+        "fg_fill": {
+          "pass": true,
+          "observed": 0.14852864583333333,
+          "bound": 0.002229777167277169,
+          "rule": ">= golden(0.223) * 0.01"
+        },
+        "fg_bbox_diag": {
+          "pass": true,
+          "observed": 1468.6047800548656,
+          "bound": [
+            -5853.513133153457,
+            8780.269699730185
+          ],
+          "rule": "|obs/golden(1463.4) - 1| <= 5.00 (ratio=1.004)"
+        },
+        "n_components_abs": {
+          "pass": true,
+          "observed": 28,
+          "bound": 110,
+          "rule": "<= 110 (absolute explosion cap)"
+        }
+      },
+      "countC": true,
+      "countC_slots": [
+        {
+          "slot": 0,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 1,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 2,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 144,
+              "observed": 144,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 4,
+              "observed": 4,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 3,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 142,
+              "observed": 142,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": [
+        "coop_g_b",
+        0
+      ],
+      "file": "/tmp/w1.2-lineup-baseline/cand_coop_g_b_0.png",
+      "black": false,
+      "image": {
+        "verdict": "PASS",
+        "score": 79.0,
+        "min_score": 35.0
+      },
+      "segA": "PASS",
+      "segA_gating": [
+        "n_slivers",
+        "n_components_abs"
+      ],
+      "segA_checks": {
+        "n_slivers": {
+          "pass": true,
+          "observed": 0,
+          "bound": 11,
+          "rule": "<= golden(3) + 8"
+        },
+        "n_components": {
+          "pass": true,
+          "observed": 26,
+          "bound": 136.0,
+          "rule": "<= golden(34) * 4.00"
+        },
+        "mean_solidity": {
+          "pass": true,
+          "observed": 0.44354480984381256,
+          "bound": 0.004110574799019724,
+          "rule": ">= golden(0.411) * 0.01"
+        },
+        "fg_fill": {
+          "pass": true,
+          "observed": 0.17668511284722221,
+          "bound": 0.0019579684763572696,
+          "rule": ">= golden(0.196) * 0.01"
+        },
+        "fg_bbox_diag": {
+          "pass": true,
+          "observed": 1468.6047800548656,
+          "bound": [
+            -5400.094813982436,
+            8100.142220973654
+          ],
+          "rule": "|obs/golden(1350.0) - 1| <= 5.00 (ratio=1.088)"
+        },
+        "n_components_abs": {
+          "pass": true,
+          "observed": 26,
+          "bound": 110,
+          "rule": "<= 110 (absolute explosion cap)"
+        }
+      },
+      "countC": true,
+      "countC_slots": [
+        {
+          "slot": 0,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 1,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 2,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 144,
+              "observed": 144,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 4,
+              "observed": 4,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 3,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 142,
+              "observed": 142,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": [
+        "coop_g_b",
+        1
+      ],
+      "file": "/tmp/w1.2-lineup-baseline/cand_coop_g_b_1.png",
+      "black": false,
+      "image": {
+        "verdict": "PASS",
+        "score": 81.49,
+        "min_score": 35.0
+      },
+      "segA": "PASS",
+      "segA_gating": [
+        "n_slivers",
+        "n_components_abs"
+      ],
+      "segA_checks": {
+        "n_slivers": {
+          "pass": true,
+          "observed": 0,
+          "bound": 10,
+          "rule": "<= golden(2) + 8"
+        },
+        "n_components": {
+          "pass": true,
+          "observed": 31,
+          "bound": 164.0,
+          "rule": "<= golden(41) * 4.00"
+        },
+        "mean_solidity": {
+          "pass": true,
+          "observed": 0.45115813386645126,
+          "bound": 0.004309437431104669,
+          "rule": ">= golden(0.431) * 0.01"
+        },
+        "fg_fill": {
+          "pass": true,
+          "observed": 0.17145941840277779,
+          "bound": 0.001992766685154374,
+          "rule": ">= golden(0.199) * 0.01"
+        },
+        "fg_bbox_diag": {
+          "pass": true,
+          "observed": 1468.6047800548656,
+          "bound": [
+            -5604.575273827625,
+            8406.862910741438
+          ],
+          "rule": "|obs/golden(1401.1) - 1| <= 5.00 (ratio=1.048)"
+        },
+        "n_components_abs": {
+          "pass": true,
+          "observed": 31,
+          "bound": 110,
+          "rule": "<= 110 (absolute explosion cap)"
+        }
+      },
+      "countC": true,
+      "countC_slots": [
+        {
+          "slot": 0,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 1,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 140,
+              "observed": 140,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 2,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 144,
+              "observed": 144,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 4,
+              "observed": 4,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        },
+        {
+          "slot": 3,
+          "pass": true,
+          "detail": {
+            "meshes": {
+              "golden": 142,
+              "observed": 142,
+              "ratio": 1.0,
+              "pass": true
+            },
+            "skinned": {
+              "golden": 0,
+              "observed": 0,
+              "ratio": null,
+              "pass": true
+            },
+            "verts": {
+              "golden": 15395,
+              "observed": 15395,
+              "ratio": 1.0,
+              "pass": true
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "golden": "/home/free/code/milohax/rb3/scripts/native/goldens/w0.5-lineup/golden.json",
+  "shots": [
+    "coop_g_n03.shot",
+    "coop_g_b.shot"
+  ]
+}
