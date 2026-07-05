@@ -72,8 +72,11 @@ fi
 BINARY_PATH="${BINARY_PATHS[0]}"  # for log/status lines below
 
 export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
-# Use stock Ghidra (the VMX128 fork is Xbox-specific, not needed for Wii/Gekko)
-export GHIDRA_INSTALL_DIR="/opt/ghidra"
+# The RB3 project's programs are PowerPC:BE:32:Gekko_Broadway (Wii). /opt/ghidra
+# (stock 12.1.2) does NOT define that language id, so opening the project throws
+# LanguageNotFoundException. Use the local 12.2_DEV build (symlink -> ghidra_12.2_DEV),
+# which HAS Gekko_Broadway and is what the working rb3-xenon MCP instance uses.
+export GHIDRA_INSTALL_DIR="/home/free/code/milohax/ghidra/build/ghidra"
 # Use writable temp directory for Ghidra user home
 export GHIDRA_USER_HOME="/tmp/claude/ghidra_user_rb3"
 
