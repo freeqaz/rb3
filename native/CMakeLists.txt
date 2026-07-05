@@ -917,6 +917,11 @@ set(RB3_WEB_SHIMS
     ${CMAKE_SOURCE_DIR}/src/rvl_shims.cpp
     ${CMAKE_SOURCE_DIR}/src/native_link_glue.cpp
     ${CMAKE_SOURCE_DIR}/src/native_file.cpp
+    # Weak zero-blob DATA twins of the .s stub files' .zero entries. The JS
+    # safety net only stubs undefined FUNCTIONS; undefined DATA symbols
+    # resolve to address 0 in wasm-ld (null writes/reads — see the file
+    # header for the App::App gInitComplete ASan null-deref this fixes).
+    ${CMAKE_SOURCE_DIR}/src/web_data_stubs.cpp
 )
 
 # Web-only fork-source filter: a handful of matched-fork TUs hit
