@@ -1,0 +1,67 @@
+{
+  "lane": "mesh-skinning",
+  "docPath": "/home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/02-mesh-skinning.md",
+  "verdict": "refactor",
+  "topFindings": [
+    {
+      "title": "GPU blend math is faithful; hands/fingers are wrong because of the BIND, not the blend",
+      "severity": "high",
+      "evidence": "Engine skinMat=BoneOffsetAt(i)*boneWorld_i weighted sum (Rnd_Wgpu_RB3.cpp:4594-4620 + standard_wgsl.inc:669-704) is algebraically identical to Wii RndMesh::SkinVertex (rb3/src/system/rndobj/Mesh.cpp:1368). MAX_BONES=40 matches (Mesh.h:17 == UniformStructs.h:98). Outfit/appendage meshes bind the SHARED STATIC char/main/skeleton.milo magnet not the per-member animated skeleton_unshared (CHAR_SKINNING_DEFORM_INVESTIGATION.md wave-07/08: animated bone 0x..ca28700 never in outfit bound-bone list; magnet static across 1424 draws)."
+    },
+    {
+      "title": "Hands/fingers can't use the torso workaround: invBind rotation-basis mismatch shards thin geometry",
+      "severity": "high",
+      "evidence": "RebindOutfitBonesToOwnSkeleton rebinds only torso; head/hands/fingers excluded because animated bone basis differs from the magnet basis the invBind offset was baked against (worldRot.x sign-flip, investigation L149-158). Finger vertex at radius R flings ~R*sin(theta). Finger bones are also IK-driven (CharIKFingers) and excluded from every static correction (Rnd_Wgpu_RB3.cpp:4678-4681), so IK-correct pose is re-projected through a wrong offset. Real fix: rebake offset'=meshBindWorld*inverse(perMemberBoneBindWorld) at skeleton bind/first-pose, then rebind full body."
+    },
+    {
+      "title": "BandPatchMesh is the structural probe: two Wii-faithful rewrites each exploded characters and were reverted, gate blind",
+      "severity": "critical",
+      "evidence": "CPU geometry surgery on RndMesh::Vert via exact-offset MeshVert structs (BandPatchMesh.h:37-55, kMVFaceList). Heavy methods weak-stubbed (band3_link_stubs.s:339,1094) but class compiled (OutfitConfig::Load, CMakeLists.txt:334). 4a49b1a4 reverted by 82f390b1 'deformed characters'; 30c51bad reverted by f0a95910 'exploded characters' - both semantically correct FOR WII. LP64 layout fix needed first (3d00d1dd MeshVert LP64 arena heap corruption). Faithful-to-Wii change breaks native => native mesh-data layout != Wii shape; partial-match code works by accident. Visual gate blind (PASS 34/34 on exploded frames)."
+    },
+    {
+      "title": "Duplicate unpack paths disagree on weight decode; shader normalize masks a raw-u16 bug",
+      "severity": "medium",
+      "evidence": "Vector4_16_01 stores u16 fixed-point weights (Vec.h:179-217, GetX()=raw/65535). RB3 live path RB3UnpackMeshVerts uses GetX() (correct, Rnd_Wgpu_RB3.cpp:2013); DC3 VertexFormats.cpp:141 reads raw .x (0-65535) 'works' only because vs_skinned normalizeBoneWeights (standard_wgsl.inc:235) divides by sum. Faithful SkinVertex does NOT normalize. Two duplicated skinning paths (Mesh_Wgpu.cpp vs Rnd_Wgpu_RB3.cpp) are a structural duplication hazard."
+    },
+    {
+      "title": "Skinned WorldXfm==IDENTITY invariant is undocumented and untooled; source of phantom bugs + count-in shards",
+      "severity": "medium",
+      "evidence": "Skinned draws force object transform to identity; palette carries world-space (Mesh_Wgpu.cpp:245-249). mesh->WorldXfm() reads origin for skinned meshes; mesh-local metric falsely reads a fling (investigation L160-163). Count-in: empty/frozen driver holds degenerate pose -> thin geo flings -> V24 shard guard (Rnd_Wgpu_RB3.cpp:5464) drops draw or renders slivers. Guard is symptom-suppression riddled with per-feature exemptions (:5491, :5514)."
+    },
+    {
+      "title": "Test harness validates only the pose pipeline (which works), not the divergence surface",
+      "severity": "high",
+      "evidence": "test_bone_ground_truth.cpp (1005 lines) tests skeleton pose (bone hierarchy, clip eval, PoseMeshes determinism, BoneWorldMatchesLocalComposedWithParent :717, foot orientation). Never tests GPU blend, invBind composition, outfit->skeleton bind, weight/index unpack, or BandPatchMesh topology. A faithful BandPatchMesh rewrite passes 100% and still explodes - exactly what happened."
+    }
+  ],
+  "bugRootCauseHypotheses": [
+    {
+      "bug": "hands/fingers deform wrong",
+      "hypothesis": "PRIMARY: outfit/appendage skin meshes' RndBone.mBone resolve at load to the shared static skeleton.milo magnet, not the per-member animated skeleton_unshared (bind divergence). COMPOUND: the baked invBind offset (BoneOffsetAt) is in the magnet's rotation basis; the animated per-member bone has a different basis, so a full-body rebind shards thin finger geometry by ~R*sin(theta). Hands are therefore left bound to the static magnet (frozen/wrong) while their IK-driven finger bones compose through a wrong offset. Fix: rebind to per-member skeleton + rebake invBind against the per-member BIND pose captured at skeleton load.",
+      "confidence": "measured"
+    },
+    {
+      "bug": "faithful BandPatchMesh rewrites broke rendering twice",
+      "hypothesis": "BandPatchMesh does CPU geometry surgery on RndMesh::Vert arrays via 32-bit-ABI-shaped MeshVert structs (raw offsets, pointer/index arithmetic). Asm-faithful reconstructions reproduce the Wii's exact index/pointer/float behavior which under LP64 struct layout yields degenerate topology; the partial-match 'unfaithful' versions stay in portable typed C++ whose LP64 lowering keeps topology non-degenerate. The invariant the unfaithful code satisfies is layout-neutrality; the faithful code violates it. The drop/ratio visual gate is blind to patch-shard corruption, so the revert cycle repeats.",
+      "confidence": "measured"
+    },
+    {
+      "bug": "count-in thin-geo skinning shards",
+      "hypothesis": "During count-in an empty/frozen character driver holds the loading-vignette (degenerate) pose; thin finger/hair geometry then flings (amplified by the same invBind basis error), and the V24 shard guard either drops the draw (blank) or, off, it renders as thin slivers. Symptom of the same pose/bind fault, not a distinct bug.",
+      "confidence": "measured"
+    },
+    {
+      "bug": "crowd/drum-kit all at the same point (cross-lane note)",
+      "hypothesis": "Consistent with skinned-mesh placement living entirely in the bone palette while the node WorldXfm is identity: if something reads the identity node transform for placement, or the palette resolves to a shared instance, all instances collapse to one point. Flagged for the transforms-placement lane.",
+      "confidence": "low"
+    }
+  ],
+  "refactorRecs": [
+    "Collapse the DC3 (VertexFormats.cpp/Mesh_Wgpu.cpp/BoneSetup.cpp) and RB3 (Rnd_Wgpu_RB3.cpp inline) unpack+palette duplication into one UnpackSkinnedVertex (always GetX()/FloatAt, never raw .x) and one FillBonePalette - kills the raw-u16 latent bug.",
+    "Make the blend faithful: drop or neutralize normalizeBoneWeights (SkinVertex does not normalize) and add the idx<NumBones skip to match faithful and avoid implementation-defined WGSL OOB indexing.",
+    "HIGHEST VALUE: fix the bind at load - band-scoped un-share/rebind so outfit+appendage meshes resolve to the per-member animated skeleton_unshared, AND rebake invBind against the per-member BIND pose (offset'=meshBindWorld*inverse(perMemberBoneBindWorld)) captured at skeleton load/first-pose. Then delete the four stacked render-side hacks (RebindOutfitBonesToOwnSkeleton torso-only, SKEL_REBAKE, fling-clamp, V24 shard guard).",
+    "Resolve BandPatchMesh's half-state: either port it faithfully with an explicitly LP64-correct MeshVert layout (typed members, no raw offsets) + a topology golden test and compile it (skin decals composite), or formally accept the stub and stop attempting faithful re-matches.",
+    "Codify the skinned-transform invariant (node xfm identity, placement in palette) with a single SkinnedWorldAABB accessor so no code reads mesh->WorldXfm() for a skinned mesh.",
+    "Add the missing tests: (a) golden skinned-vertex world-position test, (b) outfit->skeleton bind-integrity test, (c) BandPatchMesh WorkVerts topology test, (d) Vector4_16_01 weight-unpack round-trip test, (e) skinned-AABB CI gate replacing the shard-blind drop/ratio visual gate."
+  ]
+}

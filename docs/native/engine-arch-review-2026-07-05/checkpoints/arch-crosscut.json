@@ -1,0 +1,40 @@
+{
+  "lane": "arch-crosscut",
+  "docPath": "/home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md",
+  "verdict": "refactor",
+  "topFindings": [
+    {
+      "title": "RB3 render backend is a 7,017-line god-file (Rnd_Wgpu_RB3.cpp) with 113 getenv calls, inline shaders, and the entire default-ON hack economy — the one overhaul target",
+      "severity": "high",
+      "evidence": "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp = 7017 lines / 383KB, 113 getenv; next-largest render TU Rnd_Wgpu.cpp = 1861; zero .wgsl files (all shaders C++ strings); default-ON gate pattern at :1196/:2278/:4538/:6157"
+    },
+    {
+      "title": "832 weak link-stubs resolve to a single silent 'xorl %eax; ret' no-op with zero logging — the exact mechanism behind the particles and NetSession invisible-failure bugs",
+      "severity": "critical",
+      "evidence": "rb3/native/src/band3_link_stubs.s:19-21 (noop body), 582 weak syms (521 FUNC + 61 DATA); 832 total across 3 .s files; safety asserted only by code comment :1-14; NetSession promotion scar at :24-37; web_data_stubs.cpp mirrors data half after an address-0 ASan bug"
+    },
+    {
+      "title": "No render-correctness test in the engine — all 16 gtests are CPU data-path; bone test validates topology/symmetry but never a skinned vertex; visual gates are documented BLIND (band-closeup PASSed 34/34 on exploded shards; BandPatchMesh broke twice undetected)",
+      "severity": "critical",
+      "evidence": "milo-native-engine/tests/ 16 files 8029 lines, grep golden/ssim/pixeldiff empty; test_bone_ground_truth.cpp:115-225 asserts existence/hierarchy/symmetry/limb-distance only; memory feedback_decomp_sweep_native_visual_gate"
+    },
+    {
+      "title": "~38 default-ON workaround flags ship as live behavior (21 engine _OFF + 17 glue) plus baked heuristics with no flag; the entire synthetic lighting stack is default-ON-workaround-gated with no combined regression gate",
+      "severity": "high",
+      "evidence": "229 distinct getenv flags total (140 engine + 89 glue); default-ON confirmed sTrackLight=getenv(RB3_TRACK_LIGHT_OFF)?0:1 at Rnd_Wgpu_RB3.cpp:6157; UiRenderHeuristics.h:5 magic alpha<0.01 baked into text path"
+    },
+    {
+      "title": "Engine is genuinely shared (one lib, configure-time GPU-backend flavor off/dc3/rb3) NOT two forks; boundary largely clean (rb3_band_rnd.cpp graduated to 0 lines) but RB3 renderer names game types and DC3 keeps a 105-cpp parallel copy = latent masking hazard",
+      "severity": "medium",
+      "evidence": "CMakeLists.txt:89-134,303-323,445 single milo-engine lib; rb3/native/src/rb3_band_rnd.cpp=0 lines (graduated); dc3-decomp/native/src=105 cpp mirroring engine dirs (2026-06-06 masking incident structure persists)"
+    }
+  ],
+  "refactorRecs": [
+    "Loud-by-default stubs: replace shared no-op with log-once-per-symbol shim + startup census dump (linked vs hit) + machine-checkable stub registry classifying each of the 832 syms assert-unreachable/ok-noop/data-blob in CI",
+    "Build a CPU reference skinner + per-vertex golden gtest against real char assets (decomp skinning semantics) — the highest-leverage net; gives BandPatchMesh a faithful oracle so the next rewrite is graded, not eyeballed",
+    "Add per-draw state-log golden (pipeline/blend/bind-group/world-xfm/counts) to catch co-location and uniform-collapse; fix the band-closeup blindness with a patch-bearing + wide reviewer-judged lineup layered over numeric per-mesh-bbox/draw-count assertions",
+    "Collapse ~229 scattered getenv into one typed NativeCompat registry (probe/workaround/feature/perf) with a generated tracking doc and a burn-down rule; compile debug probes out of release builds",
+    "Scoped overhaul of Rnd_Wgpu_RB3.cpp into BandRnd/BandMaterial/BandSkin/BandLighting/BandCompose reusing existing gfx/ passes; move inline shader strings to .wgsl; enforce no-duplicate-engine-symbol CI audit to close the DC3 masking hazard",
+    "Sequencing constraint: loud stubs + CPU reference skinner + per-vertex golden + non-blind patch-bearing gate MUST exist before re-attempting the faithful BandPatchMesh/mesh rewrite; flag registry + per-draw golden before lighting rewrites"
+  ]
+}

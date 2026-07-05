@@ -1,0 +1,68 @@
+{
+  "lane": "ui-2d",
+  "docPath": "/home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/05-ui-2d.md",
+  "verdict": "refactor",
+  "topFindings": [
+    {
+      "title": "UI layout code is FAITHFUL; song-library/HUD bugs are NOT layout-math divergences",
+      "severity": "critical",
+      "evidence": "native/CMakeLists.txt:250,261 compile the decomp's own src/system/ui/*.cpp (UIList/UILabel/UIScreen) and src/system/rndobj/Text.cpp directly. No native reimpl of text layout, wrap, width, or UIList slot math. The bugs live elsewhere (data + render backend + transforms)."
+    },
+    {
+      "title": "Dominant root cause is DATA: 360 .milo_xbox assets run through Wii-decomp engine",
+      "severity": "critical",
+      "evidence": "main_native.cpp:360,527,715 force TheLoadMgr.mPlatform=kPlatformXBox loading orig-assets/extracted. Squished text (non-square 360 atlas, Font.h:97-124), stale-slot overlap (MusicLibrary.cpp:1094-1108), HUD score not updating (UILabel vs AppLabel class mismatch, UILabel.cpp:952) are ALL 360-vs-Wii asset-format mismatches, not renderer bugs."
+    },
+    {
+      "title": "Render backend re-derives camera projection, discarding faithful RndCam::mWorldProjectXfm",
+      "severity": "high",
+      "evidence": "Rnd_Wgpu_RB3.cpp:1308-1400 calls cam->UpdateLocal() then ignores mLocalProjectXfm/mWorldProjectXfm and rebuilds from YFov+window-aspect, dropping mScreenRect, mUnknownFloat, GetAspect()/YRatio(), and mZRange (Cam.cpp:155-192). Coincidentally matches only for full-screen 16:9 (YRatio kWidescreen=0.5625). Forces per-mesh zMode=Disable text heuristic instead of faithful mZRange layering."
+    },
+    {
+      "title": "Text detection by nameless-mesh proxy is unsound; collides with impostor crowd billboards",
+      "severity": "high",
+      "evidence": "isTextMeshHeur = !mesh->Name()[0] (Rnd_Wgpu_RB3.cpp:5772) mis-tags nameless impostor-crowd billboards (:6054-6060 must re-exclude) and misses NAMED score digits (:5807 isLikelyUiText broadening). Should key off material font-texture + pre_lit/use_environ (data-driven), not name substrings. Removes useAlphaAsRGB icon exclusion + num/_source/.lbl/font/label nets."
+    },
+    {
+      "title": "Highlight-bar and scrollbar-thumb wrong position are a real transform-propagation gap",
+      "severity": "high",
+      "evidence": "Rnd_Wgpu_RB3.cpp:4459-4535: SetWorldXfm on a UI labelDir (UILabel.cpp:334) does not reach skinned corner-bone parent chain, so skinned UI meshes render at world origin (screen center). Two name-scoped workarounds (RB3_NO_HUB_BAR_PLACEMENT_FIX + scrollbar block). Same root cause as lane-3 crowd/drum placement."
+    },
+    {
+      "title": "TransparentQueue is dead code for RB3; draw order is faithful submission order",
+      "severity": "low",
+      "evidence": "TransparentQueue.cpp/FlushTextDraws/DrawMeshImmediate are DC3's Mesh_Wgpu path; zero refs in Rnd_Wgpu_RB3.cpp. BandRnd::DrawMesh (:3837) issues DrawIndexed immediately (:6383) in traversal order = Wii painter order. The DC3 back-to-front distSq sort (wrong for co-planar 2D) is not in play. UI ordering is equivalent to Wii."
+    }
+  ],
+  "bugRootCauseHypotheses": [
+    {
+      "bug": "Song library layout/overlap family (stale-slot, squished text, headers-as-rows)",
+      "hypothesis": "360-ARK .milo_xbox assets differ from Wii assets the decomp expects: non-square font atlases (bad glyph aspect), slots authored visible-not-hidden (MusicLibrary::Text override never clears), widgets authored UILabel not AppLabel (cast drops text). Fix at asset layer or load Wii assets; NOT a layout-math or z-order bug.",
+      "confidence": "measured"
+    },
+    {
+      "bug": "HUD score mid-screen / star meter wrong / score not updating",
+      "hypothesis": "Mix of widget-class data mismatch (score.lbl authored UILabel; set_score_or_stars unhandled without the UILabel.cpp:952 fallback) and the origin-placement transform family (SetWorldXfm not reaching skinned bones).",
+      "confidence": "high"
+    },
+    {
+      "bug": "Grey ticker quad on main hub",
+      "hypothesis": "Not root-caused in this lane; likely a missing/mis-bound diffuse or alpha-write masking interaction on the ticker material (render bug), per project_visual_diff_2026_07_02.md.",
+      "confidence": "low"
+    },
+    {
+      "bug": "Text invisible / black-on-dark; white-icon-blob",
+      "hypothesis": "RENDER: font glyphs live in texture alpha (RGB==0); default shader samples RGB. Faithful mechanism is material-authored alpha-as-color-source (WiiMat GX_SRC_REG + TEV). Current name-heuristic useAlphaAsRGB + 'icon' exclusion approximate it.",
+      "confidence": "measured"
+    }
+  ],
+  "refactorRecs": [
+    "Re-evaluate loading Wii .milo assets instead of 360 .milo_xbox — deletes the entire DATA bug bucket at the source (squished text, stale-slot overlap, widget-class mismatch) with zero heuristics.",
+    "If 360 assets must stay, build ONE load-time asset-normalization layer (square-normalize font cell metrics, promote UILabel->AppLabel where code casts, honor author-hidden slots) instead of scattered #ifdef HX_NATIVE patches in faithful source.",
+    "Consume RndCam::mWorldProjectXfm (already computed by UpdateLocal) instead of rebuilding the projection from YFov+window-aspect; honors mScreenRect/mUnknownFloat/aspect/mZRange automatically and lets you delete the zMode=Disable text heuristic.",
+    "Replace the nameless-mesh text proxy + name-substring nets with material-driven detection (font texture + pre_lit/use_environ, which RndMat already carries).",
+    "Fold highlight-bar + scrollbar-thumb placement fixes into the lane-3 skinned-UI SetWorldXfm transform-propagation fix.",
+    "Delete the >=0.6 UI text color floor (no faithful basis; can only diverge from retail).",
+    "Add a UI-parity screenshot-diff gate on scripts/analysis/visual_diff.py against images/retail-screenshots (Wii song_select_list/album_art/diff_ratings/filter_panel + 360 menu_hub), driven headless via /api/screenshot + song-select-capture.py, using per-slot text-region SSIM + bbox-overlap (not global RMSE) to catch stale-slot overlap and squished-glyph regressions; run in the integration-worktree full-rebuild gate."
+  ]
+}
