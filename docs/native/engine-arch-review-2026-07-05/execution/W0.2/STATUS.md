@@ -408,3 +408,120 @@ which is exactly the "reclassify boot-hits as in S3" instruction, not a scope ex
 
 **W0.2 status: all four subtasks (S1-S4) done.** Exit criteria 1-6 all satisfied across
 all three stub sets (band3/dta/rndobj_synth), census `linked=832`.
+
+## VERIFY — complete
+
+Independently re-ran W0.2's exit criteria for real (fresh commands, own
+observations, not a re-paste of the implementer's log), reusing
+`native/build-agent-W0.2` (build dir left in place by S1-S4). All commits
+already landed on `master` (`1f8057f9` S1, `f66ea359` S2, `03b03948` S3,
+`417d1b62` S4, + 4 STATUS-append commits). No code changes were needed — no
+`W0.2: fix ...` commit was required.
+
+**Criterion 1 (generator-produced, idempotent, no drift):**
+```
+$ python3 scripts/native/gen_band3_link_stubs.py --all --check
+[band3] registry: 582 symbols (521 func / 61 data)  ->  OK: no drift
+[dta] registry: 196 symbols (196 func / 0 data)      ->  OK: no drift
+[rndobj_synth] registry: 54 symbols (54 func / 0 data) -> OK: no drift
+$ python3 scripts/native/stub_census_smoke.py --check-sync
+[stub-census-smoke] PASS: no drift — all 3 sets' committed .s/.inc match their registries.
+```
+PASS.
+
+**Criterion 2 (every weak symbol has exactly one classified registry row):**
+Generator asserts `func` rows are in `{assert-unreachable, ok-noop}` (raises
+otherwise, `gen_band3_link_stubs.py:361-363`) and the `CensusTableComplete`
+gtest (below) walks every `band3` table row asserting non-null/non-empty
+name, valid `kind`, valid `cls`, and the `kind=data⇒cls=data-blob` /
+`kind=func⇒cls∈{A,N}` cross-invariant, plus exact count match (582=521+61).
+PASS for band3 (the required S1-S3 scope). **Gap noted** (not blocking): the
+`CensusTableComplete` gtest was never extended in S4 to walk
+`kHmxDtaStubTable`/`kHmxRndSynthStubTable` for the same per-row completeness
+check — it only hardcodes the band3 582/521/61 counts. The runtime
+assert-unreachable-hit query (`__hmx_stub_census_assert_unreachable_hits`)
+*does* correctly aggregate across all three tables (confirmed by the
+fail-red demo below using a `dta`-set symbol), so the gate itself is not
+blind to dta/rndobj_synth hits — only the static "no unclassified row"
+completeness check is band3-only. Fine to leave as a documented follow-up;
+S4 was optional and its own PLAN.md verification bullet doesn't require this.
+
+**Criterion 3 (headless boot, loud shim, non-empty hit-list, banner):**
+```
+$ RB3_GAME=1 RB3_HTTP=1 RB3_HTTP_PORT=18499 MILO_HEADLESS=1 MILO_MAX_FRAMES=30 \
+    RB3_DATA=orig-assets/extracted native/build-agent-W0.2/rb3-native
+$ curl -s http://localhost:18499/api/health
+{"ok":true,"data":{"status":"ok","frame":0,"songMs":-1.0,"currentScreen":""}}
+stderr: [STUB CENSUS] linked=832 (func=771 data=61)
+        ... 39 `[STUB] first call to ...` lines (once each, no dupes)
+        [STUB CENSUS] exit: 39 of 832 weak stubs hit this run
+```
+All 39 are pre-classified `ok-noop` (0 `assert-unreachable` in the printed
+list). PASS. Also independently ran `stub_census_smoke.py` fresh (its own
+launch/poll/parse, 30s settle to `splash_screen`):
+```
+[stub-census-smoke] boot hit-list: 34 weak stub(s) fired (34 ok-noop, 0 assert-unreachable, 0 unclassified)
+[stub-census-smoke] PASS: no assert-unreachable stub hit during boot.
+```
+PASS.
+
+**Criterion 4 (gtest GREEN):**
+```
+$ cmake --build native/build-agent-W0.2 --target rb3-tests -j8      # clean build
+$ RB3_DATA=.../orig-assets/extracted native/build-agent-W0.2/rb3-tests --gtest_filter='StubCensus.*'
+[ RUN      ] StubCensus.NoAssertUnreachableStubHitDuringBoot
+[       OK ] StubCensus.NoAssertUnreachableStubHitDuringBoot (0 ms)
+[ RUN      ] StubCensus.CensusTableComplete
+[       OK ] StubCensus.CensusTableComplete (0 ms)
+[  PASSED  ] 2 tests.
+```
+(Ran the binary directly rather than via `ctest` — S4's STATUS already
+recorded `ctest -R StubCensus` reporting `Skipped` in this multi-agent
+sandbox as a resource-lock scheduling quirk; confirmed that's still the case
+and the direct binary invocation is authoritative.) PASS.
+
+**Criterion 5 (FAIL-RED demo, independently reproduced by the verifier):**
+Backed up `native/src/band3_stub_registry.tsv`, demoted the already-committed
+`_ZN14DataResultListC1Ev` row from `ok-noop` back to `assert-unreachable`,
+regenerated (`--set band3`), rebuilt `rb3-tests`:
+```
+Value of: hits.empty()
+  Actual: false
+  Expected: true
+[  FAILED  ] StubCensus.NoAssertUnreachableStubHitDuringBoot (0 ms)
+[  PASSED  ] 1 test.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] StubCensus.NoAssertUnreachableStubHitDuringBoot
+```
+Then restored the registry from the backup, regenerated, rebuilt, reran:
+`git diff` on `band3_stub_registry.tsv`/`band3_link_stubs.s`/
+`band3_stub_table.inc` was empty (byte-identical to committed state) and
+both `StubCensus` tests passed again. No demoted state was left uncommitted
+or committed. PASS — fail-red mechanism independently confirmed, not just
+trusted from S3's log.
+
+**Criterion 6 (already-hit fast path ≤ ~4 instructions):**
+```
+__hmx_tramp_0:
+    cmpb $0, __hmx_latch_0(%rip)
+    jne 1f
+    movb $1, __hmx_latch_0(%rip)
+    leaq __hmx_name_0(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
+```
+Fast path (already-hit, branch taken at `jne 1f`) = `cmpb; jne; xorl; ret` =
+4 instructions. PASS.
+
+**Summary:** all 6 exit criteria PASS on independent re-verification. One
+non-blocking gap recorded above (S4's `CensusTableComplete` gtest doesn't
+enumerate dta/rndobj_synth row-completeness, though the runtime
+assert-unreachable-hit gate does cover them) — left as a follow-up note, not
+a fix, since it's outside S1-S3's required scope and S4 was optional. No
+code changes were made by this verify pass (working tree is clean vs HEAD
+for every W0.2-owned file); no new commit was needed.
+
+**Build dir used:** `native/build-agent-W0.2` (reused, per item's own build
+dir; left in place, matches committed HEAD state after the fail-red
+revert).
