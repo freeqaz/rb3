@@ -17,6 +17,12 @@ behavior-preserving extraction · **KEEP** = faithful/sound, do not touch.
 
 ---
 
+> **STATUS (coordinator, 2026-07-05 after Wave 1):** Phase 0 is **6/7 DONE with fail-red
+> proven** — W0.1 ✅ W0.2 ✅ W0.4 ✅ W0.5 ✅ W0.6 ✅ W1.1 ✅ (Phase 1) · W0.3 ⚠️ partial
+> (infra + fail-red landed; integration golden blocked on a frozen-sim-clock seam → W0.3b,
+> Wave 2). See `execution/README.md` Wave-1 table for commits and evidence. **The Phase-2
+> preconditions W0.1/W0.4/W0.5 are green; W1.6 remains gated on W0.3b.**
+
 ## Phase 0 — Safety nets first (BLOCKS everything structural)
 
 **Goal:** make every bug on the list *catchable by an automated gate that can fail red* before any
