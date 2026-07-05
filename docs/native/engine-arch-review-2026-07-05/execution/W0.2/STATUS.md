@@ -291,3 +291,120 @@ shared index routinely holds other agents' `git add`s.**
 
 **W0.2.S4 (extend to dta/rndobj_synth stub files):** OPTIONAL, not started — the
 W0.2 exit gate does not require it.
+
+## W0.2.S4 — done
+
+**Commit:** `417d1b62` — "W0.2.S4: extend loud stubs + census to dta/rndobj_synth stub files" (CHANGES)
+
+Optional subtask; started because S1-S3 were already landed green. On starting, found
+that most of the work was **already sitting uncommitted in the shared working tree**
+(see Git-hygiene incident below) — verified it, finished the reclassification pass it
+was missing, and committed.
+
+**What I found already done (uncommitted) when I started:**
+- `native/src/dta_stub_registry.tsv` (196 func rows) and
+  `native/src/rndobj_synth_stub_registry.tsv` (54 func rows) already existed —
+  extended from the pre-existing hand-written `.s` files.
+- `scripts/native/gen_band3_link_stubs.py` already extended to a `StubSet`-parameterized
+  generator (`--set {band3,dta,rndobj_synth}`, `--all`), with per-set trampoline-label
+  infixes (`""`/`dta_`/`rs_`) and per-set C++ table names (`HmxStubInfo`/`HmxDtaStubInfo`/
+  `HmxRndSynthStubInfo`) so all three `.inc`s can be `#include`d in one TU with no ODR
+  clash. `dta`'s one real (non-stub) row, `_Z12EndianSwapEqIiEvRT_`, is preserved via a
+  per-set `SPECIAL_VERBATIM` block (unconditional, both modes).
+- `native/src/dta_link_stubs.s` and `native/src/rndobj_synth_link_stubs.s` already
+  regenerated in **loud mode** (uncommitted working-tree edit — the committed HEAD only
+  had the legacy-mode regeneration, see incident below).
+- `native/src/rb3_stub_census.cpp` already updated to `#include` all three `*_stub_table.inc`
+  files and aggregate totals/`assert-unreachable` hit-matching across all three (disjoint
+  symbol sets, `strcmp`-matched, union-safe) — **zero changes needed to the S2/S3 gtest**,
+  which calls the same `__hmx_stub_census_assert_unreachable_hits` aggregate query.
+- `scripts/native/stub_census_smoke.py` already extended to classify boot hits against a
+  `REGISTRIES` list (all three TSVs) instead of just band3, and `--check-sync` already
+  ran the generator's `--all --check`.
+
+**Git-hygiene incident (same failure mode as S3, happened twice more, repaired by
+committing forward, no history rewrite):** the MOVE half of this subtask — the new
+`dta_stub_registry.tsv`/`rndobj_synth_stub_registry.tsv`, the `StubSet`-parameterized
+generator, and legacy-mode-regenerated `dta_link_stubs.s`/`rndobj_synth_link_stubs.s` —
+was sitting uncommitted from an earlier (unknown, presumably interrupted) agent attempt
+at this same subtask. Two *different* concurrent W0.3 commits each accidentally staged a
+slice of it via bare/pathspec `git commit`:
+  - `e4e80f1b` ("W0.3: STATUS.md — S1 done") folded in the entire MOVE half (~770 lines:
+    both new registries, the generator rewrite, both `.s` files in legacy form).
+  - `1242531c` ("W0.3: draw-log comparator + golden gtest") folded in the one-line
+    `native/CMakeLists.txt` addition (`rb3_stub_census.cpp` into the `rb3-dta`
+    `add_executable` sources) that the S4 Design block calls for.
+  I did not rewrite either commit (both are shared/shared-branch history, and both slices
+  are individually correct, just mis-attributed) — I verified their content matches what
+  S4 needs (ran `gen_band3_link_stubs.py --all --check`: clean), then committed only the
+  **remaining** uncommitted delta as `417d1b62`: the loud-mode regeneration of both `.s`
+  files, the two new `.inc` tables, `rb3_stub_census.cpp`, `stub_census_smoke.py`, and 9
+  registry reclassifications my own boot-smoke run surfaced (see below). Confirmed via
+  `git status --porcelain` immediately after my commit that every other concurrently-dirty
+  file (`rb3_http_handlers.cpp`/`rb3_http_server.{cpp,h}` — a different agent's live
+  in-progress edit — plus two other agents' STATUS.md appends and several PLAN.md/scratch
+  files) was left untouched in the working tree, exactly as found.
+
+**Additional reclassification pass (my own contribution, not inherited):** a boot-smoke
+run against the just-verified loud-mode `.s` files surfaced **9 more assert-unreachable
+func stubs hit during boot** that the inherited registry state had not yet classified
+(the earlier uncommitted reclassification pass evidently used a shorter boot):
+```
+BinkSetMemory                                          Bink allocator hook - no Bink video backend on native
+FileEnumerate                                          Wii disc/NAND dir enumeration - host filesystem instead
+_Z12KeyboardPollv                                       Wii USB keyboard poll - native input is rb3_joypad_native.cpp
+_Z14ThreadCallPollv                                     Wii inter-core ThreadCall poll - native uses std::thread
+_Z16HolmesClientPollv                                   Holmes (EA debug/telemetry) poll - no Holmes backend
+_Z22SetGPHangDetectEnabledbPKc                          Wii GX hang-detect debug toggle - no GX backend
+_ZN11PlatformMgr14SetScreenSaverEb                      screen-saver-inhibit hint - no console shell on native
+_ZN11PlatformMgr18SetHomeMenuEnabledEb                  Wii Home-button enable hint - no console shell
+_ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation  notification-UI placement hint - no host overlay
+```
+All 9 are Wii-platform/offline surface already covered by CLAUDE.md's "replaced wholesale"
+roadmap categories (same rationale as the already-`ok-noop` sibling Init/Poll pairs in the
+inherited registry - e.g. `KeyboardInit`/`ThreadCallInit`/`HolmesClientInit` were already
+`ok-noop`, their `*Poll` siblings had been missed). None is a gameplay-visible swallowed
+call. Promoted all 9 `assert-unreachable -> ok-noop` in `dta_stub_registry.tsv` with a dated
+note, regenerated, rebuilt. Zero rows left `assert-unreachable` in the boot hit-list.
+
+**GREEN proof (`native/build-agent-W0.2`):**
+- `python3 scripts/native/gen_band3_link_stubs.py --all --check` -> `OK: no drift` all 3 sets.
+- `cmake --build native/build-agent-W0.2 --target rb3-native -j8` -> clean.
+- Headless boot (`RB3_HTTP=1 RB3_DATA=orig-assets/extracted`) -> `/api/health` 200; stderr
+  banner `[STUB CENSUS] linked=832 (func=771 data=61)` /
+  `[STUB CENSUS]   band3=582 dta=196 rndobj_synth=54` (matches PLAN.md's "~832" total
+  exactly: 582+196+54).
+- `python3 scripts/native/stub_census_smoke.py` -> `PASS: no assert-unreachable stub hit
+  during boot` (34 stubs fired, 34 ok-noop, 0 assert-unreachable, 0 unclassified).
+  `--check-sync` -> `PASS: no drift`.
+- `cmake --build native/build-agent-W0.2 --target rb3-tests -j8` -> clean (one transient
+  unrelated build hiccup: a stale/partial link against a concurrent agent's in-progress
+  `HandleDrawLog` implementation in `rb3_http_handlers.cpp`; resolved itself on a clean
+  rebuild once that agent finished their edit - not a change I made, not committed by me).
+- `rb3-tests --gtest_filter='StubCensus.*'` -> `[ PASSED ] 2 tests` (`ctest -R StubCensus`
+  reports both `Skipped` in this sandbox - a ctest/GTest resource-lock scheduling quirk in
+  this multi-agent box, not a real failure; confirmed by running the binary directly).
+
+**FAIL-RED demo (captured, then reverted before commit):** demoted `_Z12KeyboardInitv`
+(dta set) from `ok-noop` back to `assert-unreachable`, regenerated (`--set dta`), rebuilt:
+```
+[ RUN      ] StubCensus.NoAssertUnreachableStubHitDuringBoot
+.../test_stub_census.cpp:50: Failure
+1 weak stub(s) classified `assert-unreachable` were hit during boot ...
+    _Z12KeyboardInitv
+.../test_stub_census.cpp:58: Failure
+Expected equality of these values: n  Which is: 1  0
+[  FAILED  ] StubCensus.NoAssertUnreachableStubHitDuringBoot (0 ms)
+```
+Reverted `dta_stub_registry.tsv` to the pre-demo state (`diff` confirmed byte-identical),
+regenerated + rebuilt, re-ran -> GREEN again before committing.
+
+**Deviations from PLAN.md:** none beyond S1-S3's already-recorded ones; the file list,
+generator design, and per-set trampoline/table naming all followed the Design block as
+inherited. The only S4-specific addition is the 9-symbol reclassification pass above,
+which is exactly the "reclassify boot-hits as in S3" instruction, not a scope expansion.
+
+**Build dir:** `native/build-agent-W0.2` (reused from S1-S3).
+
+**W0.2 status: all four subtasks (S1-S4) done.** Exit criteria 1-6 all satisfied across
+all three stub sets (band3/dta/rndobj_synth), census `linked=832`.
