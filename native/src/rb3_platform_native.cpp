@@ -39,6 +39,7 @@
 #include "os/HomeMenu_Wii.h"
 #include "os/ContentMgr.h"
 #include "os/Debug.h"
+#include "platform/NativeCompatFlags.h" // NativeCompat read-once flag registry (W0.6)
 #include "meta_band/BandSongMgr.h"
 #include "obj/DataFile.h"
 #include "obj/Data.h"
@@ -74,8 +75,11 @@ PlatformMgr::PlatformMgr()
     // loading their payloads — AreSFXEnabled() gates SampleData::Load. RB3_NO_SFX=1
     // restores the retail-disabled behavior (payloads seeked past → silent, lower
     // memory/load) for A/B or if a bank ships an unsupported (XMA/etc) format.
-    if (const char *e = ::getenv("RB3_NO_SFX"); e && e[0] && e[0] != '0')
-        mEnableSFX = false;
+    // Truthy opt-in: RB3_NO_SFX set to a non-empty, non-"0" value restores the
+    // retail-disabled-SFX behaviour. OptOutActive resolves the same truthy idiom
+    // and returns the SFX-ENABLED state (!truthy) — identical to the prior
+    // `e && e[0] && e[0] != '0' ? false : (init-list) true`.
+    mEnableSFX = NativeCompat::Get().OptOutActive("RB3_NO_SFX");
 }
 
 PlatformMgr::~PlatformMgr() {

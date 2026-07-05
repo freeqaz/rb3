@@ -14,6 +14,8 @@
 
 #include "rb3_prefetch_native.h"
 
+#include "platform/NativeCompatFlags.h" // NativeCompat read-once flag registry (W0.6)
+
 #include <cstdlib> // getenv
 #include <cstring>
 #include <string>
@@ -27,12 +29,10 @@
 // Flag: RB3_PREVIEW_PREFETCH_OFF (default ON). Read once.
 // ---------------------------------------------------------------------------
 bool RB3PreviewPrefetchEnabled() {
-    static int sEnabled = -1;
-    if (sEnabled < 0) {
-        const char *e = ::getenv("RB3_PREVIEW_PREFETCH_OFF");
-        sEnabled = (e && e[0] && e[0] != '0') ? 0 : 1;
-    }
-    return sEnabled != 0;
+    // Truthy opt-out: RB3_PREVIEW_PREFETCH_OFF set to a non-empty, non-"0" value
+    // disables the prefetch. Behaviour-identical to the prior
+    // `(e && e[0] && e[0] != '0') ? 0 : 1` read.
+    return NativeCompat::Get().OptOutActive("RB3_PREVIEW_PREFETCH_OFF");
 }
 
 // T7 coordination (PLAN.md): when the Range-backed mogg File is active

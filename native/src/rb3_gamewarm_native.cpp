@@ -69,6 +69,7 @@
 #include "obj/Data.h"                // DataNode (venue prop)
 #include "os/Debug.h"               // MILO_LOG
 #include "os/Timer.h"               // Timer (wall clock for the max-hold safety)
+#include "platform/NativeCompatFlags.h" // NativeCompat read-once flag registry (W0.6)
 
 #include <list>
 
@@ -81,9 +82,9 @@
 // Flag + dbg (getenv-once static, house style).
 // ---------------------------------------------------------------------------
 static bool RB3GameWarmEnabled() {
-    static int s = -1;
-    if (s < 0) s = (getenv("RB3_GAMEWARM_OFF") != nullptr) ? 0 : 1;
-    return s != 0;
+    // Presence opt-out: any value of RB3_GAMEWARM_OFF (incl. "" / "0") disables.
+    // Behaviour-identical to the prior `getenv(...) != nullptr ? 0 : 1` read.
+    return NativeCompat::Get().OptOutActive("RB3_GAMEWARM_OFF");
 }
 static bool RB3GameWarmDbg() {
     static int s = -1;
@@ -128,9 +129,9 @@ static bool RB3GameWarmDbg() {
 // loads. State is reset by RB3GameWarmReset() on GamePanel::Unload.
 // ===========================================================================
 static bool RB3TexPrewarmEnabled() {
-    static int s = -1;
-    if (s < 0) s = (getenv("RB3_TEX_PREWARM_OFF") != nullptr) ? 0 : 1;
-    return s != 0;
+    // Presence opt-out: any value of RB3_TEX_PREWARM_OFF (incl. "" / "0") disables.
+    // Behaviour-identical to the prior `getenv(...) != nullptr ? 0 : 1` read.
+    return NativeCompat::Get().OptOutActive("RB3_TEX_PREWARM_OFF");
 }
 static bool RB3TexPrewarmDbg() {
     static int s = -1;

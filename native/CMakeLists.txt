@@ -706,6 +706,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_wgsl_validation.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_native_compat.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_stub_census.cpp
         ${_RB3_NATIVE_SRCS}
     )

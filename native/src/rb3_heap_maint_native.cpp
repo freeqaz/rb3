@@ -32,6 +32,8 @@
 
 #include <cstdlib>
 
+#include "platform/NativeCompatFlags.h" // NativeCompat read-once flag registry (W0.6)
+
 #if defined(__GLIBC__) || (defined(__linux__) && !defined(__EMSCRIPTEN__))
 #include <malloc.h> // malloc_trim (glibc); harmless no-op elsewhere via the guard
 #define RB3_HAVE_MALLOC_TRIM 1
@@ -42,9 +44,12 @@ int HeapTrimPeriodFrames() {
     static int sPeriod = -1;
     if (sPeriod < 0) {
         sPeriod = 240; // default cadence
-        if (const char *off = getenv("RB3_HEAP_TRIM_OFF"))
-            if (off[0] && off[0] != '0')
-                sPeriod = 0; // disabled
+        // Truthy opt-out: RB3_HEAP_TRIM_OFF set to a non-empty, non-"0" value
+        // disables the trim. Behaviour-identical to the prior
+        // `off[0] && off[0] != '0'` gate. (RB3_HEAP_TRIM_FRAMES stays a raw
+        // value read below — out of this rewire's scope.)
+        if (!NativeCompat::Get().OptOutActive("RB3_HEAP_TRIM_OFF"))
+            sPeriod = 0; // disabled
         if (sPeriod != 0)
             if (const char *p = getenv("RB3_HEAP_TRIM_FRAMES")) {
                 int v = atoi(p);

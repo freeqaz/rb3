@@ -73,6 +73,17 @@ SCAN_EXTS = (".cpp", ".h", ".mm")
 
 GETENV_RE = re.compile(r'(?:std::)?getenv\(\s*"([A-Za-z0-9_]+)"\s*\)')
 
+# Registry-ROUTED reads: once a raw `getenv("X")` site is migrated to the
+# NativeCompat registry (W0.6.S2+), the literal getenv disappears but the flag
+# is still referenced by name via the read-once accessors. Without counting
+# these, migrating a site would DELETE its registry row (regen non-idempotent)
+# and — worse — drop the flag from the runtime table, silently breaking the
+# set-env behaviour it was rewired to preserve. So a routed reference keeps the
+# flag in the census. Only the accessor names unique to NativeCompat are matched
+# (OptOutActive / ProbeActive) to avoid capturing unrelated `Find("…")` calls;
+# routed sites carry no read-mode context (that lives in the sidecar).
+REGISTRY_REF_RE = re.compile(r'\b(?:OptOutActive|ProbeActive)\(\s*"([A-Za-z0-9_]+)"\s*\)')
+
 # Read-mode heuristics, checked in this priority order against a small text
 # window around each call site (its own line + a few lines of trailing
 # context, which covers the codebase's two dominant multi-line idioms — see
@@ -119,9 +130,11 @@ def _iter_source_files(root: Path):
 
 
 def scan_tree(root_label: str, root: Path):
-    """Yield (name, relpath, lineno, window_text) for every getenv("NAME") site
-    under `root`. `relpath` is relative to MILOHAX_ROOT for readability across
-    both repos."""
+    """Yield (name, relpath, lineno, window_text, kind) for every flag reference
+    under `root`, where kind is "getenv" (raw env read — contributes a read-mode
+    guess) or "routed" (a NativeCompat registry accessor — keeps the flag in the
+    census after its getenv site is migrated, but contributes no read-mode).
+    `relpath` is relative to MILOHAX_ROOT for readability across both repos."""
     for path in _iter_source_files(root):
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
@@ -136,7 +149,9 @@ def scan_tree(root_label: str, root: Path):
             for m in GETENV_RE.finditer(line):
                 name = m.group(1)
                 window = "\n".join(lines[i:i + 1 + WINDOW_LINES_AFTER])
-                yield name, relpath, i + 1, window
+                yield name, relpath, i + 1, window, "getenv"
+            for m in REGISTRY_REF_RE.finditer(line):
+                yield m.group(1), relpath, i + 1, "", "routed"
 
 
 def run_scan(roots=None):
@@ -145,10 +160,14 @@ def run_scan(roots=None):
     flags = {}  # name -> {sites: [...], read_modes: Counter-ish list}
     root_labels = {}  # name -> set of root labels it appears under
     for label, root in roots:
-        for name, relpath, lineno, window in scan_tree(label, root):
+        for name, relpath, lineno, window, kind in scan_tree(label, root):
             entry = flags.setdefault(name, {"sites": [], "read_modes": []})
             entry["sites"].append(f"{relpath}:{lineno}")
-            entry["read_modes"].append(_guess_read_mode(window))
+            # Routed (registry-accessor) sites carry no surrounding read-mode
+            # context — the flag's read mode is authoritative in the sidecar/
+            # committed table, not re-guessed from the migrated call site.
+            if kind == "getenv":
+                entry["read_modes"].append(_guess_read_mode(window))
             root_labels.setdefault(name, set()).add(label)
 
     _MODE_PRIORITY = {"presence": 0, "truthy": 1, "value": 2, "unknown": 3}
@@ -162,7 +181,12 @@ def run_scan(roots=None):
         counts = {}
         for m in modes:
             counts[m] = counts.get(m, 0) + 1
-        best = sorted(counts.items(), key=lambda kv: (-kv[1], _MODE_PRIORITY[kv[0]]))[0][0]
+        # A routed-only flag (all sites migrated to the registry) has no read-mode
+        # votes; its authoritative mode comes from the sidecar in `gen`.
+        if counts:
+            best = sorted(counts.items(), key=lambda kv: (-kv[1], _MODE_PRIORITY[kv[0]]))[0][0]
+        else:
+            best = "unknown"
         result_flags.append({
             "name": name,
             "sites": len(entry["sites"]),
@@ -243,7 +267,11 @@ def join_scan_and_sidecar(scan_result: dict, sidecar: dict):
         owner = curated.get("owner", "unclassified")
         status = curated.get("faithfulStatus", "n/a")
         default = curated.get("default", f["defaultGuess"])
-        read = f["readModeGuess"]
+        # The sidecar may pin a flag's read mode (REQUIRED for flags whose getenv
+        # sites have all been migrated to the registry, since the scan can no
+        # longer guess it from context — see REGISTRY_REF_RE). Otherwise the
+        # scan's contextual guess stands.
+        read = curated.get("read", f["readModeGuess"])
         rows.append({
             "name": name,
             "class": cls,
