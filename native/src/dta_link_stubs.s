@@ -12,11 +12,25 @@
 // reservation) and for why _Z12EndianSwapEqIiEvRT_ is NOT a registry row (it is
 // a REAL implementation, emitted verbatim below, unconditionally).
 //
-// MODE: legacy — every FUNCTION stub aliases the single shared
-// __hmx_native_noop_stub (xorl %eax,%eax; ret). No census.
+// MODE: loud (default) — each FUNCTION stub is a per-symbol trampoline
+// __hmx_tramp_dta_<i> that logs its FIRST call to stderr (via the extern "C"
+// census hook __hmx_stub_first_hit, shared with the band3/rndobj_synth sets)
+// and records the hit for the startup+atexit census (rb3_stub_census.cpp),
+// then falls through to returning 0 — behavior-identical to the old shared
+// no-op. Because this file is linked into BOTH rb3-dta and rb3-native
+# (native/CMakeLists.txt NATIVE_SHIMS), rb3-dta also links rb3_stub_census.cpp
+// so __hmx_stub_first_hit resolves there too.
+//
+// A parallel C++ table is emitted as dta_stub_table.inc (kept in sync by this
+// generator — do not hand-edit either). Uses its own struct/array/constant
+// names (HmxDtaStubInfo / kHmxDtaStubTable / kHmxDtaStubTotal&Func&Data) so it
+// can be #included alongside band3_stub_table.inc and
+// rndobj_synth_stub_table.inc in the same TU (rb3_stub_census.cpp) without an
+// ODR clash. rb3-native/rb3-dta link PIE, so the trampoline uses RIP-relative
+// addressing + call ...@PLT.
 //
 // Regenerate: edit native/src/dta_stub_registry.tsv, then run
-//   python3 scripts/native/gen_band3_link_stubs.py --set dta --mode legacy
+//   python3 scripts/native/gen_band3_link_stubs.py --set dta
     .text
     // EndianSwapEq<int>(int&) — a REAL in-place 4-byte byteswap, NOT a no-op.
     //
@@ -42,405 +56,2952 @@ __rb3_endian_swap_eq_int:
     .weak _Z12EndianSwapEqIiEvRT_
     .set  _Z12EndianSwapEqIiEvRT_, __rb3_endian_swap_eq_int
     .text
+    // ---- FUNCTION stubs: per-symbol loud first-hit trampolines ----
     .p2align 4
-__hmx_native_noop_stub:
-    xorl %eax, %eax
+__hmx_tramp_dta_0:
+    cmpb $0, __hmx_latch_dta_0(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_0(%rip)
+    leaq __hmx_name_dta_0(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
     ret
-
-    // ---- FUNCTION stubs (call -> harmless no-op returning 0) ----
     .weak AXSetCompressor
-    .set AXSetCompressor, __hmx_native_noop_stub
+    .set AXSetCompressor, __hmx_tramp_dta_0
+    .p2align 4
+__hmx_tramp_dta_1:
+    cmpb $0, __hmx_latch_dta_1(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_1(%rip)
+    leaq __hmx_name_dta_1(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkOpenAX
-    .set BinkOpenAX, __hmx_native_noop_stub
+    .set BinkOpenAX, __hmx_tramp_dta_1
+    .p2align 4
+__hmx_tramp_dta_2:
+    cmpb $0, __hmx_latch_dta_2(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_2(%rip)
+    leaq __hmx_name_dta_2(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkSetIO
-    .set BinkSetIO, __hmx_native_noop_stub
+    .set BinkSetIO, __hmx_tramp_dta_2
+    .p2align 4
+__hmx_tramp_dta_3:
+    cmpb $0, __hmx_latch_dta_3(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_3(%rip)
+    leaq __hmx_name_dta_3(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkSetMemory
-    .set BinkSetMemory, __hmx_native_noop_stub
+    .set BinkSetMemory, __hmx_tramp_dta_3
+    .p2align 4
+__hmx_tramp_dta_4:
+    cmpb $0, __hmx_latch_dta_4(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_4(%rip)
+    leaq __hmx_name_dta_4(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkSetSoundSystem
-    .set BinkSetSoundSystem, __hmx_native_noop_stub
+    .set BinkSetSoundSystem, __hmx_tramp_dta_4
+    .p2align 4
+__hmx_tramp_dta_5:
+    cmpb $0, __hmx_latch_dta_5(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_5(%rip)
+    leaq __hmx_name_dta_5(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak DVDInit
-    .set DVDInit, __hmx_native_noop_stub
+    .set DVDInit, __hmx_tramp_dta_5
+    .p2align 4
+__hmx_tramp_dta_6:
+    cmpb $0, __hmx_latch_dta_6(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_6(%rip)
+    leaq __hmx_name_dta_6(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak FileDelete
-    .set FileDelete, __hmx_native_noop_stub
+    .set FileDelete, __hmx_tramp_dta_6
+    .p2align 4
+__hmx_tramp_dta_7:
+    cmpb $0, __hmx_latch_dta_7(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_7(%rip)
+    leaq __hmx_name_dta_7(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak FileEnumerate
-    .set FileEnumerate, __hmx_native_noop_stub
+    .set FileEnumerate, __hmx_tramp_dta_7
+    .p2align 4
+__hmx_tramp_dta_8:
+    cmpb $0, __hmx_latch_dta_8(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_8(%rip)
+    leaq __hmx_name_dta_8(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak FileGetStat
-    .set FileGetStat, __hmx_native_noop_stub
+    .set FileGetStat, __hmx_tramp_dta_8
+    .p2align 4
+__hmx_tramp_dta_9:
+    cmpb $0, __hmx_latch_dta_9(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_9(%rip)
+    leaq __hmx_name_dta_9(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak FileMkDir
-    .set FileMkDir, __hmx_native_noop_stub
+    .set FileMkDir, __hmx_tramp_dta_9
+    .p2align 4
+__hmx_tramp_dta_10:
+    cmpb $0, __hmx_latch_dta_10(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_10(%rip)
+    leaq __hmx_name_dta_10(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak JoypadSetActuatorsImp
-    .set JoypadSetActuatorsImp, __hmx_native_noop_stub
+    .set JoypadSetActuatorsImp, __hmx_tramp_dta_10
+    .p2align 4
+__hmx_tramp_dta_11:
+    cmpb $0, __hmx_latch_dta_11(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_11(%rip)
+    leaq __hmx_name_dta_11(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak ParseStack
-    .set ParseStack, __hmx_native_noop_stub
+    .set ParseStack, __hmx_tramp_dta_11
+    .p2align 4
+__hmx_tramp_dta_12:
+    cmpb $0, __hmx_latch_dta_12(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_12(%rip)
+    leaq __hmx_name_dta_12(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RADTimerRead
-    .set RADTimerRead, __hmx_native_noop_stub
+    .set RADTimerRead, __hmx_tramp_dta_12
+    .p2align 4
+__hmx_tramp_dta_13:
+    cmpb $0, __hmx_latch_dta_13(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_13(%rip)
+    leaq __hmx_name_dta_13(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOGetFarCodeSize
-    .set RSOGetFarCodeSize, __hmx_native_noop_stub
+    .set RSOGetFarCodeSize, __hmx_tramp_dta_13
+    .p2align 4
+__hmx_tramp_dta_14:
+    cmpb $0, __hmx_latch_dta_14(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_14(%rip)
+    leaq __hmx_name_dta_14(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOGetImportSymbolName
-    .set RSOGetImportSymbolName, __hmx_native_noop_stub
+    .set RSOGetImportSymbolName, __hmx_tramp_dta_14
+    .p2align 4
+__hmx_tramp_dta_15:
+    cmpb $0, __hmx_latch_dta_15(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_15(%rip)
+    leaq __hmx_name_dta_15(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOGetJumpCodeSize
-    .set RSOGetJumpCodeSize, __hmx_native_noop_stub
+    .set RSOGetJumpCodeSize, __hmx_tramp_dta_15
+    .p2align 4
+__hmx_tramp_dta_16:
+    cmpb $0, __hmx_latch_dta_16(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_16(%rip)
+    leaq __hmx_name_dta_16(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOGetNumImportSymbols
-    .set RSOGetNumImportSymbols, __hmx_native_noop_stub
+    .set RSOGetNumImportSymbols, __hmx_tramp_dta_16
+    .p2align 4
+__hmx_tramp_dta_17:
+    cmpb $0, __hmx_latch_dta_17(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_17(%rip)
+    leaq __hmx_name_dta_17(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOIsImportSymbolResolved
-    .set RSOIsImportSymbolResolved, __hmx_native_noop_stub
+    .set RSOIsImportSymbolResolved, __hmx_tramp_dta_17
+    .p2align 4
+__hmx_tramp_dta_18:
+    cmpb $0, __hmx_latch_dta_18(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_18(%rip)
+    leaq __hmx_name_dta_18(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOIsImportSymbolResolvedAll
-    .set RSOIsImportSymbolResolvedAll, __hmx_native_noop_stub
+    .set RSOIsImportSymbolResolvedAll, __hmx_tramp_dta_18
+    .p2align 4
+__hmx_tramp_dta_19:
+    cmpb $0, __hmx_latch_dta_19(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_19(%rip)
+    leaq __hmx_name_dta_19(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOLinkFar
-    .set RSOLinkFar, __hmx_native_noop_stub
+    .set RSOLinkFar, __hmx_tramp_dta_19
+    .p2align 4
+__hmx_tramp_dta_20:
+    cmpb $0, __hmx_latch_dta_20(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_20(%rip)
+    leaq __hmx_name_dta_20(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOLinkJump
-    .set RSOLinkJump, __hmx_native_noop_stub
+    .set RSOLinkJump, __hmx_tramp_dta_20
+    .p2align 4
+__hmx_tramp_dta_21:
+    cmpb $0, __hmx_latch_dta_21(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_21(%rip)
+    leaq __hmx_name_dta_21(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOLinkList
-    .set RSOLinkList, __hmx_native_noop_stub
+    .set RSOLinkList, __hmx_tramp_dta_21
+    .p2align 4
+__hmx_tramp_dta_22:
+    cmpb $0, __hmx_latch_dta_22(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_22(%rip)
+    leaq __hmx_name_dta_22(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOListInit
-    .set RSOListInit, __hmx_native_noop_stub
+    .set RSOListInit, __hmx_tramp_dta_22
+    .p2align 4
+__hmx_tramp_dta_23:
+    cmpb $0, __hmx_latch_dta_23(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_23(%rip)
+    leaq __hmx_name_dta_23(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOMakeJumpCode
-    .set RSOMakeJumpCode, __hmx_native_noop_stub
+    .set RSOMakeJumpCode, __hmx_tramp_dta_23
+    .p2align 4
+__hmx_tramp_dta_24:
+    cmpb $0, __hmx_latch_dta_24(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_24(%rip)
+    leaq __hmx_name_dta_24(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak RSOUnLinkList
-    .set RSOUnLinkList, __hmx_native_noop_stub
+    .set RSOUnLinkList, __hmx_tramp_dta_24
+    .p2align 4
+__hmx_tramp_dta_25:
+    cmpb $0, __hmx_latch_dta_25(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_25(%rip)
+    leaq __hmx_name_dta_25(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheBaseSongManger
-    .set TheBaseSongManger, __hmx_native_noop_stub
+    .set TheBaseSongManger, __hmx_tramp_dta_25
+    .p2align 4
+__hmx_tramp_dta_26:
+    cmpb $0, __hmx_latch_dta_26(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_26(%rip)
+    leaq __hmx_name_dta_26(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheContentMgr
-    .set TheContentMgr, __hmx_native_noop_stub
+    .set TheContentMgr, __hmx_tramp_dta_26
+    .p2align 4
+__hmx_tramp_dta_27:
+    cmpb $0, __hmx_latch_dta_27(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_27(%rip)
+    leaq __hmx_name_dta_27(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheFakeSongMgr
-    .set TheFakeSongMgr, __hmx_native_noop_stub
+    .set TheFakeSongMgr, __hmx_tramp_dta_27
+    .p2align 4
+__hmx_tramp_dta_28:
+    cmpb $0, __hmx_latch_dta_28(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_28(%rip)
+    leaq __hmx_name_dta_28(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheMC
-    .set TheMC, __hmx_native_noop_stub
+    .set TheMC, __hmx_tramp_dta_28
+    .p2align 4
+__hmx_tramp_dta_29:
+    cmpb $0, __hmx_latch_dta_29(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_29(%rip)
+    leaq __hmx_name_dta_29(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheMidiParserMgr
-    .set TheMidiParserMgr, __hmx_native_noop_stub
+    .set TheMidiParserMgr, __hmx_tramp_dta_29
+    .p2align 4
+__hmx_tramp_dta_30:
+    cmpb $0, __hmx_latch_dta_30(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_30(%rip)
+    leaq __hmx_name_dta_30(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheSynth
-    .set TheSynth, __hmx_native_noop_stub
+    .set TheSynth, __hmx_tramp_dta_30
+    .p2align 4
+__hmx_tramp_dta_31:
+    cmpb $0, __hmx_latch_dta_31(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_31(%rip)
+    leaq __hmx_name_dta_31(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheWiiCommerceMgr
-    .set TheWiiCommerceMgr, __hmx_native_noop_stub
+    .set TheWiiCommerceMgr, __hmx_tramp_dta_31
+    .p2align 4
+__hmx_tramp_dta_32:
+    cmpb $0, __hmx_latch_dta_32(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_32(%rip)
+    leaq __hmx_name_dta_32(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheWiiProfileMgr
-    .set TheWiiProfileMgr, __hmx_native_noop_stub
+    .set TheWiiProfileMgr, __hmx_tramp_dta_32
+    .p2align 4
+__hmx_tramp_dta_33:
+    cmpb $0, __hmx_latch_dta_33(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_33(%rip)
+    leaq __hmx_name_dta_33(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z10CDGetErrorv
-    .set _Z10CDGetErrorv, __hmx_native_noop_stub
+    .set _Z10CDGetErrorv, __hmx_tramp_dta_33
+    .p2align 4
+__hmx_tramp_dta_34:
+    cmpb $0, __hmx_latch_dta_34(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_34(%rip)
+    leaq __hmx_name_dta_34(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z10CDReadDonev
-    .set _Z10CDReadDonev, __hmx_native_noop_stub
+    .set _Z10CDReadDonev, __hmx_tramp_dta_34
+    .p2align 4
+__hmx_tramp_dta_35:
+    cmpb $0, __hmx_latch_dta_35(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_35(%rip)
+    leaq __hmx_name_dta_35(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z10JoypadInitv
-    .set _Z10JoypadInitv, __hmx_native_noop_stub
+    .set _Z10JoypadInitv, __hmx_tramp_dta_35
+    .p2align 4
+__hmx_tramp_dta_36:
+    cmpb $0, __hmx_latch_dta_36(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_36(%rip)
+    leaq __hmx_name_dta_36(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z10JoypadPollv
-    .set _Z10JoypadPollv, __hmx_native_noop_stub
+    .set _Z10JoypadPollv, __hmx_tramp_dta_36
+    .p2align 4
+__hmx_tramp_dta_37:
+    cmpb $0, __hmx_latch_dta_37(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_37(%rip)
+    leaq __hmx_name_dta_37(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z10ThreadCallP14ThreadCallback
-    .set _Z10ThreadCallP14ThreadCallback, __hmx_native_noop_stub
+    .set _Z10ThreadCallP14ThreadCallback, __hmx_tramp_dta_37
+    .p2align 4
+__hmx_tramp_dta_38:
+    cmpb $0, __hmx_latch_dta_38(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_38(%rip)
+    leaq __hmx_name_dta_38(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z11FileIsLocalPKc
-    .set _Z11FileIsLocalPKc, __hmx_native_noop_stub
+    .set _Z11FileIsLocalPKc, __hmx_tramp_dta_38
+    .p2align 4
+__hmx_tramp_dta_39:
+    cmpb $0, __hmx_latch_dta_39(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_39(%rip)
+    leaq __hmx_name_dta_39(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z11JoypadResetv
-    .set _Z11JoypadResetv, __hmx_native_noop_stub
+    .set _Z11JoypadResetv, __hmx_tramp_dta_39
+    .p2align 4
+__hmx_tramp_dta_40:
+    cmpb $0, __hmx_latch_dta_40(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_40(%rip)
+    leaq __hmx_name_dta_40(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z11UsingHolmesi
-    .set _Z11UsingHolmesi, __hmx_native_noop_stub
+    .set _Z11UsingHolmesi, __hmx_tramp_dta_40
+    .p2align 4
+__hmx_tramp_dta_41:
+    cmpb $0, __hmx_latch_dta_41(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_41(%rip)
+    leaq __hmx_name_dta_41(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z12KeyboardInitv
-    .set _Z12KeyboardInitv, __hmx_native_noop_stub
+    .set _Z12KeyboardInitv, __hmx_tramp_dta_41
+    .p2align 4
+__hmx_tramp_dta_42:
+    cmpb $0, __hmx_latch_dta_42(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_42(%rip)
+    leaq __hmx_name_dta_42(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z12KeyboardPollv
-    .set _Z12KeyboardPollv, __hmx_native_noop_stub
+    .set _Z12KeyboardPollv, __hmx_tramp_dta_42
+    .p2align 4
+__hmx_tramp_dta_43:
+    cmpb $0, __hmx_latch_dta_43(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_43(%rip)
+    leaq __hmx_name_dta_43(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z13CacheResourcePKcPN3Hmx6ObjectE
-    .set _Z13CacheResourcePKcPN3Hmx6ObjectE, __hmx_native_noop_stub
+    .set _Z13CacheResourcePKcPN3Hmx6ObjectE, __hmx_tramp_dta_43
+    .p2align 4
+__hmx_tramp_dta_44:
+    cmpb $0, __hmx_latch_dta_44(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_44(%rip)
+    leaq __hmx_name_dta_44(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z13RndGxDrawDonev
-    .set _Z13RndGxDrawDonev, __hmx_native_noop_stub
+    .set _Z13RndGxDrawDonev, __hmx_tramp_dta_44
+    .p2align 4
+__hmx_tramp_dta_45:
+    cmpb $0, __hmx_latch_dta_45(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_45(%rip)
+    leaq __hmx_name_dta_45(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z14CDReadExternalRP11DVDFileInfoiy
-    .set _Z14CDReadExternalRP11DVDFileInfoiy, __hmx_native_noop_stub
+    .set _Z14CDReadExternalRP11DVDFileInfoiy, __hmx_tramp_dta_45
+    .p2align 4
+__hmx_tramp_dta_46:
+    cmpb $0, __hmx_latch_dta_46(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_46(%rip)
+    leaq __hmx_name_dta_46(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z14GetMapFileNameR6String
-    .set _Z14GetMapFileNameR6String, __hmx_native_noop_stub
+    .set _Z14GetMapFileNameR6String, __hmx_tramp_dta_46
+    .p2align 4
+__hmx_tramp_dta_47:
+    cmpb $0, __hmx_latch_dta_47(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_47(%rip)
+    leaq __hmx_name_dta_47(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z14ThreadCallInitv
-    .set _Z14ThreadCallInitv, __hmx_native_noop_stub
+    .set _Z14ThreadCallInitv, __hmx_tramp_dta_47
+    .p2align 4
+__hmx_tramp_dta_48:
+    cmpb $0, __hmx_latch_dta_48(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_48(%rip)
+    leaq __hmx_name_dta_48(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z14ThreadCallPollv
-    .set _Z14ThreadCallPollv, __hmx_native_noop_stub
+    .set _Z14ThreadCallPollv, __hmx_tramp_dta_48
+    .p2align 4
+__hmx_tramp_dta_49:
+    cmpb $0, __hmx_latch_dta_49(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_49(%rip)
+    leaq __hmx_name_dta_49(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z15HolmesResolveIPv
-    .set _Z15HolmesResolveIPv, __hmx_native_noop_stub
+    .set _Z15HolmesResolveIPv, __hmx_tramp_dta_49
+    .p2align 4
+__hmx_tramp_dta_50:
+    cmpb $0, __hmx_latch_dta_50(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_50(%rip)
+    leaq __hmx_name_dta_50(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z15InitDefaultHeapv
-    .set _Z15InitDefaultHeapv, __hmx_native_noop_stub
+    .set _Z15InitDefaultHeapv, __hmx_tramp_dta_50
+    .p2align 4
+__hmx_tramp_dta_51:
+    cmpb $0, __hmx_latch_dta_51(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_51(%rip)
+    leaq __hmx_name_dta_51(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z15JoypadTerminatev
-    .set _Z15JoypadTerminatev, __hmx_native_noop_stub
+    .set _Z15JoypadTerminatev, __hmx_tramp_dta_51
+    .p2align 4
+__hmx_tramp_dta_52:
+    cmpb $0, __hmx_latch_dta_52(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_52(%rip)
+    leaq __hmx_name_dta_52(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z16GetWiiJoypadTypei
-    .set _Z16GetWiiJoypadTypei, __hmx_native_noop_stub
+    .set _Z16GetWiiJoypadTypei, __hmx_tramp_dta_52
+    .p2align 4
+__hmx_tramp_dta_53:
+    cmpb $0, __hmx_latch_dta_53(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_53(%rip)
+    leaq __hmx_name_dta_53(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z16HolmesClientInitv
-    .set _Z16HolmesClientInitv, __hmx_native_noop_stub
+    .set _Z16HolmesClientInitv, __hmx_tramp_dta_53
+    .p2align 4
+__hmx_tramp_dta_54:
+    cmpb $0, __hmx_latch_dta_54(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_54(%rip)
+    leaq __hmx_name_dta_54(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z16HolmesClientOpenPKciRjRi
-    .set _Z16HolmesClientOpenPKciRjRi, __hmx_native_noop_stub
+    .set _Z16HolmesClientOpenPKciRjRi, __hmx_tramp_dta_54
+    .p2align 4
+__hmx_tramp_dta_55:
+    cmpb $0, __hmx_latch_dta_55(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_55(%rip)
+    leaq __hmx_name_dta_55(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z16HolmesClientPollv
-    .set _Z16HolmesClientPollv, __hmx_native_noop_stub
+    .set _Z16HolmesClientPollv, __hmx_tramp_dta_55
+    .p2align 4
+__hmx_tramp_dta_56:
+    cmpb $0, __hmx_latch_dta_56(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_56(%rip)
+    leaq __hmx_name_dta_56(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z16HolmesClientReadiiiPvP4File
-    .set _Z16HolmesClientReadiiiPvP4File, __hmx_native_noop_stub
+    .set _Z16HolmesClientReadiiiPvP4File, __hmx_tramp_dta_56
+    .p2align 4
+__hmx_tramp_dta_57:
+    cmpb $0, __hmx_latch_dta_57(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_57(%rip)
+    leaq __hmx_name_dta_57(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17CaptureStackTraceiPj
-    .set _Z17CaptureStackTraceiPj, __hmx_native_noop_stub
+    .set _Z17CaptureStackTraceiPj, __hmx_tramp_dta_57
+    .p2align 4
+__hmx_tramp_dta_58:
+    cmpb $0, __hmx_latch_dta_58(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_58(%rip)
+    leaq __hmx_name_dta_58(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17GetSystemLanguage6Symbol
-    .set _Z17GetSystemLanguage6Symbol, __hmx_native_noop_stub
+    .set _Z17GetSystemLanguage6Symbol, __hmx_tramp_dta_58
+    .p2align 4
+__hmx_tramp_dta_59:
+    cmpb $0, __hmx_latch_dta_59(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_59(%rip)
+    leaq __hmx_name_dta_59(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17HolmesClientCloseP4Filei
-    .set _Z17HolmesClientCloseP4Filei, __hmx_native_noop_stub
+    .set _Z17HolmesClientCloseP4Filei, __hmx_tramp_dta_59
+    .p2align 4
+__hmx_tramp_dta_60:
+    cmpb $0, __hmx_latch_dta_60(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_60(%rip)
+    leaq __hmx_name_dta_60(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17HolmesClientPrintPKc
-    .set _Z17HolmesClientPrintPKc, __hmx_native_noop_stub
+    .set _Z17HolmesClientPrintPKc, __hmx_tramp_dta_60
+    .p2align 4
+__hmx_tramp_dta_61:
+    cmpb $0, __hmx_latch_dta_61(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_61(%rip)
+    leaq __hmx_name_dta_61(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17HolmesClientWriteiiiPKv
-    .set _Z17HolmesClientWriteiiiPKv, __hmx_native_noop_stub
+    .set _Z17HolmesClientWriteiiiPKv, __hmx_tramp_dta_61
+    .p2align 4
+__hmx_tramp_dta_62:
+    cmpb $0, __hmx_latch_dta_62(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_62(%rip)
+    leaq __hmx_name_dta_62(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17KeyboardTerminatev
-    .set _Z17KeyboardTerminatev, __hmx_native_noop_stub
+    .set _Z17KeyboardTerminatev, __hmx_tramp_dta_62
+    .p2align 4
+__hmx_tramp_dta_63:
+    cmpb $0, __hmx_latch_dta_63(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_63(%rip)
+    leaq __hmx_name_dta_63(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z17ThreadCallPreInitv
-    .set _Z17ThreadCallPreInitv, __hmx_native_noop_stub
+    .set _Z17ThreadCallPreInitv, __hmx_tramp_dta_63
+    .p2align 4
+__hmx_tramp_dta_64:
+    cmpb $0, __hmx_latch_dta_64(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_64(%rip)
+    leaq __hmx_name_dta_64(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z18HolmesClientReInitv
-    .set _Z18HolmesClientReInitv, __hmx_native_noop_stub
+    .set _Z18HolmesClientReInitv, __hmx_tramp_dta_64
+    .p2align 4
+__hmx_tramp_dta_65:
+    cmpb $0, __hmx_latch_dta_65(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_65(%rip)
+    leaq __hmx_name_dta_65(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z18PlatformDebugBreakv
-    .set _Z18PlatformDebugBreakv, __hmx_native_noop_stub
+    .set _Z18PlatformDebugBreakv, __hmx_tramp_dta_65
+    .p2align 4
+__hmx_tramp_dta_66:
+    cmpb $0, __hmx_latch_dta_66(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_66(%rip)
+    leaq __hmx_name_dta_66(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z19HolmesClientSysExecPKc
-    .set _Z19HolmesClientSysExecPKc, __hmx_native_noop_stub
+    .set _Z19HolmesClientSysExecPKc, __hmx_tramp_dta_66
+    .p2align 4
+__hmx_tramp_dta_67:
+    cmpb $0, __hmx_latch_dta_67(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_67(%rip)
+    leaq __hmx_name_dta_67(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z19ThreadCallTerminatev
-    .set _Z19ThreadCallTerminatev, __hmx_native_noop_stub
+    .set _Z19ThreadCallTerminatev, __hmx_tramp_dta_67
+    .p2align 4
+__hmx_tramp_dta_68:
+    cmpb $0, __hmx_latch_dta_68(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_68(%rip)
+    leaq __hmx_name_dta_68(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z20HolmesClientReadDoneP4File
-    .set _Z20HolmesClientReadDoneP4File, __hmx_native_noop_stub
+    .set _Z20HolmesClientReadDoneP4File, __hmx_tramp_dta_68
+    .p2align 4
+__hmx_tramp_dta_69:
+    cmpb $0, __hmx_latch_dta_69(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_69(%rip)
+    leaq __hmx_name_dta_69(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z20HolmesClientTruncateii
-    .set _Z20HolmesClientTruncateii, __hmx_native_noop_stub
+    .set _Z20HolmesClientTruncateii, __hmx_tramp_dta_69
+    .p2align 4
+__hmx_tramp_dta_70:
+    cmpb $0, __hmx_latch_dta_70(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_70(%rip)
+    leaq __hmx_name_dta_70(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z21FileQualifiedFilenamePciPKc
-    .set _Z21FileQualifiedFilenamePciPKc, __hmx_native_noop_stub
+    .set _Z21FileQualifiedFilenamePciPKc, __hmx_tramp_dta_70
+    .p2align 4
+__hmx_tramp_dta_71:
+    cmpb $0, __hmx_latch_dta_71(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_71(%rip)
+    leaq __hmx_name_dta_71(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z21HolmesClientTerminatev
-    .set _Z21HolmesClientTerminatev, __hmx_native_noop_stub
+    .set _Z21HolmesClientTerminatev, __hmx_tramp_dta_71
+    .p2align 4
+__hmx_tramp_dta_72:
+    cmpb $0, __hmx_latch_dta_72(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_72(%rip)
+    leaq __hmx_name_dta_72(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z22HolmesClientStackTracePKcPjiR6String
-    .set _Z22HolmesClientStackTracePKcPjiR6String, __hmx_native_noop_stub
+    .set _Z22HolmesClientStackTracePKcPjiR6String, __hmx_tramp_dta_72
+    .p2align 4
+__hmx_tramp_dta_73:
+    cmpb $0, __hmx_latch_dta_73(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_73(%rip)
+    leaq __hmx_name_dta_73(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z22SetGPHangDetectEnabledbPKc
-    .set _Z22SetGPHangDetectEnabledbPKc, __hmx_native_noop_stub
+    .set _Z22SetGPHangDetectEnabledbPKc, __hmx_tramp_dta_73
+    .p2align 4
+__hmx_tramp_dta_74:
+    cmpb $0, __hmx_latch_dta_74(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_74(%rip)
+    leaq __hmx_name_dta_74(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z23RB3InitNativeNetSessionv
-    .set _Z23RB3InitNativeNetSessionv, __hmx_native_noop_stub
+    .set _Z23RB3InitNativeNetSessionv, __hmx_tramp_dta_74
+    .p2align 4
+__hmx_tramp_dta_75:
+    cmpb $0, __hmx_latch_dta_75(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_75(%rip)
+    leaq __hmx_name_dta_75(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z27RB3MetaPerfIntegrityCheckAtPKc
-    .set _Z27RB3MetaPerfIntegrityCheckAtPKc, __hmx_native_noop_stub
+    .set _Z27RB3MetaPerfIntegrityCheckAtPKc, __hmx_tramp_dta_75
+    .p2align 4
+__hmx_tramp_dta_76:
+    cmpb $0, __hmx_latch_dta_76(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_76(%rip)
+    leaq __hmx_name_dta_76(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z6CDReadiiiPv
-    .set _Z6CDReadiiiPv, __hmx_native_noop_stub
+    .set _Z6CDReadiiiPv, __hmx_tramp_dta_76
+    .p2align 4
+__hmx_tramp_dta_77:
+    cmpb $0, __hmx_latch_dta_77(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_77(%rip)
+    leaq __hmx_name_dta_77(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z8CacheWavPKcR19CacheResourceResult
-    .set _Z8CacheWavPKcR19CacheResourceResult, __hmx_native_noop_stub
+    .set _Z8CacheWavPKcR19CacheResourceResult, __hmx_tramp_dta_77
+    .p2align 4
+__hmx_tramp_dta_78:
+    cmpb $0, __hmx_latch_dta_78(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_78(%rip)
+    leaq __hmx_name_dta_78(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z9FileIsDLCPKc
-    .set _Z9FileIsDLCPKc, __hmx_native_noop_stub
+    .set _Z9FileIsDLCPKc, __hmx_tramp_dta_78
+    .p2align 4
+__hmx_tramp_dta_79:
+    cmpb $0, __hmx_latch_dta_79(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_79(%rip)
+    leaq __hmx_name_dta_79(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MemcardWii4InitEv
-    .set _ZN10MemcardWii4InitEv, __hmx_native_noop_stub
+    .set _ZN10MemcardWii4InitEv, __hmx_tramp_dta_79
+    .p2align 4
+__hmx_tramp_dta_80:
+    cmpb $0, __hmx_latch_dta_80(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_80(%rip)
+    leaq __hmx_name_dta_80(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MemcardWii9TerminateEv
-    .set _ZN10MemcardWii9TerminateEv, __hmx_native_noop_stub
+    .set _ZN10MemcardWii9TerminateEv, __hmx_tramp_dta_80
+    .p2align 4
+__hmx_tramp_dta_81:
+    cmpb $0, __hmx_latch_dta_81(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_81(%rip)
+    leaq __hmx_name_dta_81(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiParser4PollEv
-    .set _ZN10MidiParser4PollEv, __hmx_native_noop_stub
+    .set _ZN10MidiParser4PollEv, __hmx_tramp_dta_81
+    .p2align 4
+__hmx_tramp_dta_82:
+    cmpb $0, __hmx_latch_dta_82(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_82(%rip)
+    leaq __hmx_name_dta_82(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10MidiParser8sParsersB5cxx11E
-    .set _ZN10MidiParser8sParsersB5cxx11E, __hmx_native_noop_stub
+    .set _ZN10MidiParser8sParsersB5cxx11E, __hmx_tramp_dta_82
+    .p2align 4
+__hmx_tramp_dta_83:
+    cmpb $0, __hmx_latch_dta_83(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_83(%rip)
+    leaq __hmx_name_dta_83(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10RndOverlay4FindE6Symbolb
-    .set _ZN10RndOverlay4FindE6Symbolb, __hmx_native_noop_stub
+    .set _ZN10RndOverlay4FindE6Symbolb, __hmx_tramp_dta_83
+    .p2align 4
+__hmx_tramp_dta_84:
+    cmpb $0, __hmx_latch_dta_84(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_84(%rip)
+    leaq __hmx_name_dta_84(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_
-    .set _ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_, __hmx_native_noop_stub
+    .set _ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_, __hmx_tramp_dta_84
+    .p2align 4
+__hmx_tramp_dta_85:
+    cmpb $0, __hmx_latch_dta_85(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_85(%rip)
+    leaq __hmx_name_dta_85(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11ByteGrinder10GrindArrayEllPhii
-    .set _ZN11ByteGrinder10GrindArrayEllPhii, __hmx_native_noop_stub
+    .set _ZN11ByteGrinder10GrindArrayEllPhii, __hmx_tramp_dta_85
+    .p2align 4
+__hmx_tramp_dta_86:
+    cmpb $0, __hmx_latch_dta_86(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_86(%rip)
+    leaq __hmx_name_dta_86(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11CacheMgrWiiC1Ev
-    .set _ZN11CacheMgrWiiC1Ev, __hmx_native_noop_stub
+    .set _ZN11CacheMgrWiiC1Ev, __hmx_tramp_dta_86
+    .p2align 4
+__hmx_tramp_dta_87:
+    cmpb $0, __hmx_latch_dta_87(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_87(%rip)
+    leaq __hmx_name_dta_87(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11FakeSongMgr13GetSongConfigE6Symbol
-    .set _ZN11FakeSongMgr13GetSongConfigE6Symbol, __hmx_native_noop_stub
+    .set _ZN11FakeSongMgr13GetSongConfigE6Symbol, __hmx_tramp_dta_87
+    .p2align 4
+__hmx_tramp_dta_88:
+    cmpb $0, __hmx_latch_dta_88(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_88(%rip)
+    leaq __hmx_name_dta_88(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr10RegionInitEv
-    .set _ZN11PlatformMgr10RegionInitEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr10RegionInitEv, __hmx_tramp_dta_88
+    .p2align 4
+__hmx_tramp_dta_89:
+    cmpb $0, __hmx_latch_dta_89(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_89(%rip)
+    leaq __hmx_name_dta_89(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr11ContentDoneEv
-    .set _ZN11PlatformMgr11ContentDoneEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr11ContentDoneEv, __hmx_tramp_dta_89
+    .p2align 4
+__hmx_tramp_dta_90:
+    cmpb $0, __hmx_latch_dta_90(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_90(%rip)
+    leaq __hmx_name_dta_90(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr12SetConnectedEb
-    .set _ZN11PlatformMgr12SetConnectedEb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr12SetConnectedEb, __hmx_tramp_dta_90
+    .p2align 4
+__hmx_tramp_dta_91:
+    cmpb $0, __hmx_latch_dta_91(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_91(%rip)
+    leaq __hmx_name_dta_91(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr12SetDiskErrorE9DiskError
-    .set _ZN11PlatformMgr12SetDiskErrorE9DiskError, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr12SetDiskErrorE9DiskError, __hmx_tramp_dta_91
+    .p2align 4
+__hmx_tramp_dta_92:
+    cmpb $0, __hmx_latch_dta_92(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_92(%rip)
+    leaq __hmx_name_dta_92(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr13ClearDWCErrorEv
-    .set _ZN11PlatformMgr13ClearDWCErrorEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr13ClearDWCErrorEv, __hmx_tramp_dta_92
+    .p2align 4
+__hmx_tramp_dta_93:
+    cmpb $0, __hmx_latch_dta_93(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_93(%rip)
+    leaq __hmx_name_dta_93(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr13ClearNetErrorEv
-    .set _ZN11PlatformMgr13ClearNetErrorEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr13ClearNetErrorEv, __hmx_tramp_dta_93
+    .p2align 4
+__hmx_tramp_dta_94:
+    cmpb $0, __hmx_latch_dta_94(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_94(%rip)
+    leaq __hmx_name_dta_94(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr13OnSignInUsersEPK9DataArray
-    .set _ZN11PlatformMgr13OnSignInUsersEPK9DataArray, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr13OnSignInUsersEPK9DataArray, __hmx_tramp_dta_94
+    .p2align 4
+__hmx_tramp_dta_95:
+    cmpb $0, __hmx_latch_dta_95(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_95(%rip)
+    leaq __hmx_name_dta_95(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr14ContentStartedEv
-    .set _ZN11PlatformMgr14ContentStartedEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr14ContentStartedEv, __hmx_tramp_dta_95
+    .p2align 4
+__hmx_tramp_dta_96:
+    cmpb $0, __hmx_latch_dta_96(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_96(%rip)
+    leaq __hmx_name_dta_96(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr14SetScreenSaverEb
-    .set _ZN11PlatformMgr14SetScreenSaverEb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr14SetScreenSaverEb, __hmx_tramp_dta_96
+    .p2align 4
+__hmx_tramp_dta_97:
+    cmpb $0, __hmx_latch_dta_97(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_97(%rip)
+    leaq __hmx_name_dta_97(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE
-    .set _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE, __hmx_tramp_dta_97
+    .p2align 4
+__hmx_tramp_dta_98:
+    cmpb $0, __hmx_latch_dta_98(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_98(%rip)
+    leaq __hmx_name_dta_98(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr15EnableProfanityEb
-    .set _ZN11PlatformMgr15EnableProfanityEb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr15EnableProfanityEb, __hmx_tramp_dta_98
+    .p2align 4
+__hmx_tramp_dta_99:
+    cmpb $0, __hmx_latch_dta_99(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_99(%rip)
+    leaq __hmx_name_dta_99(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr15GetLastDNSErrorEv
-    .set _ZN11PlatformMgr15GetLastDNSErrorEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr15GetLastDNSErrorEv, __hmx_tramp_dta_99
+    .p2align 4
+__hmx_tramp_dta_100:
+    cmpb $0, __hmx_latch_dta_100(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_100(%rip)
+    leaq __hmx_name_dta_100(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr15GetLastDWCErrorEv
-    .set _ZN11PlatformMgr15GetLastDWCErrorEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr15GetLastDWCErrorEv, __hmx_tramp_dta_100
+    .p2align 4
+__hmx_tramp_dta_101:
+    cmpb $0, __hmx_latch_dta_101(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_101(%rip)
+    leaq __hmx_name_dta_101(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr16ContentCancelledEv
-    .set _ZN11PlatformMgr16ContentCancelledEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr16ContentCancelledEv, __hmx_tramp_dta_101
+    .p2align 4
+__hmx_tramp_dta_102:
+    cmpb $0, __hmx_latch_dta_102(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_102(%rip)
+    leaq __hmx_name_dta_102(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr16PrintParentalPinEv
-    .set _ZN11PlatformMgr16PrintParentalPinEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr16PrintParentalPinEv, __hmx_tramp_dta_102
+    .p2align 4
+__hmx_tramp_dta_103:
+    cmpb $0, __hmx_latch_dta_103(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_103(%rip)
+    leaq __hmx_name_dta_103(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr17GetLastNHTTPErrorEv
-    .set _ZN11PlatformMgr17GetLastNHTTPErrorEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr17GetLastNHTTPErrorEv, __hmx_tramp_dta_103
+    .p2align 4
+__hmx_tramp_dta_104:
+    cmpb $0, __hmx_latch_dta_104(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_104(%rip)
+    leaq __hmx_name_dta_104(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr17GetNetErrorStringEb
-    .set _ZN11PlatformMgr17GetNetErrorStringEb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr17GetNetErrorStringEb, __hmx_tramp_dta_104
+    .p2align 4
+__hmx_tramp_dta_105:
+    cmpb $0, __hmx_latch_dta_105(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_105(%rip)
+    leaq __hmx_name_dta_105(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr18RunNetStartUtilityEv
-    .set _ZN11PlatformMgr18RunNetStartUtilityEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr18RunNetStartUtilityEv, __hmx_tramp_dta_105
+    .p2align 4
+__hmx_tramp_dta_106:
+    cmpb $0, __hmx_latch_dta_106(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_106(%rip)
+    leaq __hmx_name_dta_106(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr18SetHomeMenuEnabledEb
-    .set _ZN11PlatformMgr18SetHomeMenuEnabledEb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr18SetHomeMenuEnabledEb, __hmx_tramp_dta_106
+    .p2align 4
+__hmx_tramp_dta_107:
+    cmpb $0, __hmx_latch_dta_107(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_107(%rip)
+    leaq __hmx_name_dta_107(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation
-    .set _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation, __hmx_tramp_dta_107
+    .p2align 4
+__hmx_tramp_dta_108:
+    cmpb $0, __hmx_latch_dta_108(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_108(%rip)
+    leaq __hmx_name_dta_108(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr22InitNintendoConnectionEv
-    .set _ZN11PlatformMgr22InitNintendoConnectionEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr22InitNintendoConnectionEv, __hmx_tramp_dta_108
+    .p2align 4
+__hmx_tramp_dta_109:
+    cmpb $0, __hmx_latch_dta_109(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_109(%rip)
+    leaq __hmx_name_dta_109(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr23CloseNintendoConnectionEbb
-    .set _ZN11PlatformMgr23CloseNintendoConnectionEbb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr23CloseNintendoConnectionEbb, __hmx_tramp_dta_109
+    .p2align 4
+__hmx_tramp_dta_110:
+    cmpb $0, __hmx_latch_dta_110(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_110(%rip)
+    leaq __hmx_name_dta_110(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr24IsEthernetCableConnectedEv
-    .set _ZN11PlatformMgr24IsEthernetCableConnectedEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr24IsEthernetCableConnectedEv, __hmx_tramp_dta_110
+    .p2align 4
+__hmx_tramp_dta_111:
+    cmpb $0, __hmx_latch_dta_111(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_111(%rip)
+    leaq __hmx_name_dta_111(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr25SetPartyMicOptionsShowingEb
-    .set _ZN11PlatformMgr25SetPartyMicOptionsShowingEb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr25SetPartyMicOptionsShowingEb, __hmx_tramp_dta_111
+    .p2align 4
+__hmx_tramp_dta_112:
+    cmpb $0, __hmx_latch_dta_112(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_112(%rip)
+    leaq __hmx_name_dta_112(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb
-    .set _ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb, __hmx_tramp_dta_112
+    .p2align 4
+__hmx_tramp_dta_113:
+    cmpb $0, __hmx_latch_dta_113(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_113(%rip)
+    leaq __hmx_name_dta_113(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr4InitEv
-    .set _ZN11PlatformMgr4InitEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr4InitEv, __hmx_tramp_dta_113
+    .p2align 4
+__hmx_tramp_dta_114:
+    cmpb $0, __hmx_latch_dta_114(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_114(%rip)
+    leaq __hmx_name_dta_114(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr4PollEv
-    .set _ZN11PlatformMgr4PollEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr4PollEv, __hmx_tramp_dta_114
+    .p2align 4
+__hmx_tramp_dta_115:
+    cmpb $0, __hmx_latch_dta_115(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_115(%rip)
+    leaq __hmx_name_dta_115(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr5OnMsgERK11ButtonUpMsg
-    .set _ZN11PlatformMgr5OnMsgERK11ButtonUpMsg, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr5OnMsgERK11ButtonUpMsg, __hmx_tramp_dta_115
+    .p2align 4
+__hmx_tramp_dta_116:
+    cmpb $0, __hmx_latch_dta_116(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_116(%rip)
+    leaq __hmx_name_dta_116(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr5OnMsgERK13ButtonDownMsg
-    .set _ZN11PlatformMgr5OnMsgERK13ButtonDownMsg, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr5OnMsgERK13ButtonDownMsg, __hmx_tramp_dta_116
+    .p2align 4
+__hmx_tramp_dta_117:
+    cmpb $0, __hmx_latch_dta_117(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_117(%rip)
+    leaq __hmx_name_dta_117(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr7PreInitEv
-    .set _ZN11PlatformMgr7PreInitEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr7PreInitEv, __hmx_tramp_dta_117
+    .p2align 4
+__hmx_tramp_dta_118:
+    cmpb $0, __hmx_latch_dta_118(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_118(%rip)
+    leaq __hmx_name_dta_118(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgr7WiiPollEv
-    .set _ZN11PlatformMgr7WiiPollEv, __hmx_native_noop_stub
+    .set _ZN11PlatformMgr7WiiPollEv, __hmx_tramp_dta_118
+    .p2align 4
+__hmx_tramp_dta_119:
+    cmpb $0, __hmx_latch_dta_119(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_119(%rip)
+    leaq __hmx_name_dta_119(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgrC1Ev
-    .set _ZN11PlatformMgrC1Ev, __hmx_native_noop_stub
+    .set _ZN11PlatformMgrC1Ev, __hmx_tramp_dta_119
+    .p2align 4
+__hmx_tramp_dta_120:
+    cmpb $0, __hmx_latch_dta_120(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_120(%rip)
+    leaq __hmx_name_dta_120(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgrD0Ev
-    .set _ZN11PlatformMgrD0Ev, __hmx_native_noop_stub
+    .set _ZN11PlatformMgrD0Ev, __hmx_tramp_dta_120
+    .p2align 4
+__hmx_tramp_dta_121:
+    cmpb $0, __hmx_latch_dta_121(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_121(%rip)
+    leaq __hmx_name_dta_121(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11PlatformMgrD1Ev
-    .set _ZN11PlatformMgrD1Ev, __hmx_native_noop_stub
+    .set _ZN11PlatformMgrD1Ev, __hmx_tramp_dta_121
+    .p2align 4
+__hmx_tramp_dta_122:
+    cmpb $0, __hmx_latch_dta_122(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_122(%rip)
+    leaq __hmx_name_dta_122(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12MidiReceiverC2Ev
-    .set _ZN12MidiReceiverC2Ev, __hmx_native_noop_stub
+    .set _ZN12MidiReceiverC2Ev, __hmx_tramp_dta_122
+    .p2align 4
+__hmx_tramp_dta_123:
+    cmpb $0, __hmx_latch_dta_123(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_123(%rip)
+    leaq __hmx_name_dta_123(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12NetLoaderWiiC1ERK6String
-    .set _ZN12NetLoaderWiiC1ERK6String, __hmx_native_noop_stub
+    .set _ZN12NetLoaderWiiC1ERK6String, __hmx_tramp_dta_123
+    .p2align 4
+__hmx_tramp_dta_124:
+    cmpb $0, __hmx_latch_dta_124(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_124(%rip)
+    leaq __hmx_name_dta_124(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13CameraManager4PollEv
-    .set _ZN13CameraManager4PollEv, __hmx_native_noop_stub
+    .set _ZN13CameraManager4PollEv, __hmx_tramp_dta_124
+    .p2align 4
+__hmx_tramp_dta_125:
+    cmpb $0, __hmx_latch_dta_125(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_125(%rip)
+    leaq __hmx_name_dta_125(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13NetworkSocket11GetHostNameEv
-    .set _ZN13NetworkSocket11GetHostNameEv, __hmx_native_noop_stub
+    .set _ZN13NetworkSocket11GetHostNameEv, __hmx_tramp_dta_125
+    .p2align 4
+__hmx_tramp_dta_126:
+    cmpb $0, __hmx_latch_dta_126(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_126(%rip)
+    leaq __hmx_name_dta_126(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13NetworkSocket6CreateEb
-    .set _ZN13NetworkSocket6CreateEb, __hmx_native_noop_stub
+    .set _ZN13NetworkSocket6CreateEb, __hmx_tramp_dta_126
+    .p2align 4
+__hmx_tramp_dta_127:
+    cmpb $0, __hmx_latch_dta_127(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_127(%rip)
+    leaq __hmx_name_dta_127(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp
-    .set _ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_native_noop_stub
+    .set _ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_tramp_dta_127
+    .p2align 4
+__hmx_tramp_dta_128:
+    cmpb $0, __hmx_latch_dta_128(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_128(%rip)
+    leaq __hmx_name_dta_128(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE
-    .set _ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_native_noop_stub
+    .set _ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_tramp_dta_128
+    .p2align 4
+__hmx_tramp_dta_129:
+    cmpb $0, __hmx_latch_dta_129(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_129(%rip)
+    leaq __hmx_name_dta_129(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13RndAnimatable4LoadER9BinStream
-    .set _ZN13RndAnimatable4LoadER9BinStream, __hmx_native_noop_stub
+    .set _ZN13RndAnimatable4LoadER9BinStream, __hmx_tramp_dta_129
+    .p2align 4
+__hmx_tramp_dta_130:
+    cmpb $0, __hmx_latch_dta_130(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_130(%rip)
+    leaq __hmx_name_dta_130(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13RndAnimatable4SaveER9BinStream
-    .set _ZN13RndAnimatable4SaveER9BinStream, __hmx_native_noop_stub
+    .set _ZN13RndAnimatable4SaveER9BinStream, __hmx_tramp_dta_130
+    .p2align 4
+__hmx_tramp_dta_131:
+    cmpb $0, __hmx_latch_dta_131(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_131(%rip)
+    leaq __hmx_name_dta_131(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13RndAnimatable6HandleEP9DataArrayb
-    .set _ZN13RndAnimatable6HandleEP9DataArrayb, __hmx_native_noop_stub
+    .set _ZN13RndAnimatable6HandleEP9DataArrayb, __hmx_tramp_dta_131
+    .p2align 4
+__hmx_tramp_dta_132:
+    cmpb $0, __hmx_latch_dta_132(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_132(%rip)
+    leaq __hmx_name_dta_132(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13RndAnimatableC2Ev
-    .set _ZN13RndAnimatableC2Ev, __hmx_native_noop_stub
+    .set _ZN13RndAnimatableC2Ev, __hmx_tramp_dta_132
+    .p2align 4
+__hmx_tramp_dta_133:
+    cmpb $0, __hmx_latch_dta_133(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_133(%rip)
+    leaq __hmx_name_dta_133(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14ProfilePicture13FetchUserDataEv
-    .set _ZN14ProfilePicture13FetchUserDataEv, __hmx_native_noop_stub
+    .set _ZN14ProfilePicture13FetchUserDataEv, __hmx_tramp_dta_133
+    .p2align 4
+__hmx_tramp_dta_134:
+    cmpb $0, __hmx_latch_dta_134(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_134(%rip)
+    leaq __hmx_name_dta_134(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14ProfilePicture15ReceiveUserDataEv
-    .set _ZN14ProfilePicture15ReceiveUserDataEv, __hmx_native_noop_stub
+    .set _ZN14ProfilePicture15ReceiveUserDataEv, __hmx_tramp_dta_134
+    .p2align 4
+__hmx_tramp_dta_135:
+    cmpb $0, __hmx_latch_dta_135(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_135(%rip)
+    leaq __hmx_name_dta_135(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14ProfilePicture16FetchUserPictureEv
-    .set _ZN14ProfilePicture16FetchUserPictureEv, __hmx_native_noop_stub
+    .set _ZN14ProfilePicture16FetchUserPictureEv, __hmx_tramp_dta_135
+    .p2align 4
+__hmx_tramp_dta_136:
+    cmpb $0, __hmx_latch_dta_136(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_136(%rip)
+    leaq __hmx_name_dta_136(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14ProfilePicture18ReceiveUserPictureEv
-    .set _ZN14ProfilePicture18ReceiveUserPictureEv, __hmx_native_noop_stub
+    .set _ZN14ProfilePicture18ReceiveUserPictureEv, __hmx_tramp_dta_136
+    .p2align 4
+__hmx_tramp_dta_137:
+    cmpb $0, __hmx_latch_dta_137(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_137(%rip)
+    leaq __hmx_name_dta_137(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14WiiCommerceMgr4InitEv
-    .set _ZN14WiiCommerceMgr4InitEv, __hmx_native_noop_stub
+    .set _ZN14WiiCommerceMgr4InitEv, __hmx_tramp_dta_137
+    .p2align 4
+__hmx_tramp_dta_138:
+    cmpb $0, __hmx_latch_dta_138(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_138(%rip)
+    leaq __hmx_name_dta_138(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15VirtualKeyboard12PlatformPollEv
-    .set _ZN15VirtualKeyboard12PlatformPollEv, __hmx_native_noop_stub
+    .set _ZN15VirtualKeyboard12PlatformPollEv, __hmx_tramp_dta_138
+    .p2align 4
+__hmx_tramp_dta_139:
+    cmpb $0, __hmx_latch_dta_139(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_139(%rip)
+    leaq __hmx_name_dta_139(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii
-    .set _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii, __hmx_native_noop_stub
+    .set _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii, __hmx_tramp_dta_139
+    .p2align 4
+__hmx_tramp_dta_140:
+    cmpb $0, __hmx_latch_dta_140(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_140(%rip)
+    leaq __hmx_name_dta_140(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN15VirtualKeyboard17PlatformTerminateEv
-    .set _ZN15VirtualKeyboard17PlatformTerminateEv, __hmx_native_noop_stub
+    .set _ZN15VirtualKeyboard17PlatformTerminateEv, __hmx_tramp_dta_140
+    .p2align 4
+__hmx_tramp_dta_141:
+    cmpb $0, __hmx_latch_dta_141(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_141(%rip)
+    leaq __hmx_name_dta_141(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN16WiiNetworkSocket4InitEv
-    .set _ZN16WiiNetworkSocket4InitEv, __hmx_native_noop_stub
+    .set _ZN16WiiNetworkSocket4InitEv, __hmx_tramp_dta_141
+    .p2align 4
+__hmx_tramp_dta_142:
+    cmpb $0, __hmx_latch_dta_142(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_142(%rip)
+    leaq __hmx_name_dta_142(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18LightPresetManager4PollEv
-    .set _ZN18LightPresetManager4PollEv, __hmx_native_noop_stub
+    .set _ZN18LightPresetManager4PollEv, __hmx_tramp_dta_142
+    .p2align 4
+__hmx_tramp_dta_143:
+    cmpb $0, __hmx_latch_dta_143(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_143(%rip)
+    leaq __hmx_name_dta_143(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN18LightPresetManager5EnterEv
-    .set _ZN18LightPresetManager5EnterEv, __hmx_native_noop_stub
+    .set _ZN18LightPresetManager5EnterEv, __hmx_tramp_dta_143
+    .p2align 4
+__hmx_tramp_dta_144:
+    cmpb $0, __hmx_latch_dta_144(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_144(%rip)
+    leaq __hmx_name_dta_144(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN3Hmx6Object7PreLoadER9BinStream
-    .set _ZN3Hmx6Object7PreLoadER9BinStream, __hmx_native_noop_stub
+    .set _ZN3Hmx6Object7PreLoadER9BinStream, __hmx_tramp_dta_144
+    .p2align 4
+__hmx_tramp_dta_145:
+    cmpb $0, __hmx_latch_dta_145(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_145(%rip)
+    leaq __hmx_name_dta_145(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Synth10StopAllSfxEb
-    .set _ZN5Synth10StopAllSfxEb, __hmx_native_noop_stub
+    .set _ZN5Synth10StopAllSfxEb, __hmx_tramp_dta_145
+    .p2align 4
+__hmx_tramp_dta_146:
+    cmpb $0, __hmx_latch_dta_146(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_146(%rip)
+    leaq __hmx_name_dta_146(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Synth15GetMasterVolumeEv
-    .set _ZN5Synth15GetMasterVolumeEv, __hmx_native_noop_stub
+    .set _ZN5Synth15GetMasterVolumeEv, __hmx_tramp_dta_146
+    .p2align 4
+__hmx_tramp_dta_147:
+    cmpb $0, __hmx_latch_dta_147(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_147(%rip)
+    leaq __hmx_name_dta_147(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN5Synth15SetMasterVolumeEf
-    .set _ZN5Synth15SetMasterVolumeEf, __hmx_native_noop_stub
+    .set _ZN5Synth15SetMasterVolumeEf, __hmx_tramp_dta_147
+    .p2align 4
+__hmx_tramp_dta_148:
+    cmpb $0, __hmx_latch_dta_148(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_148(%rip)
+    leaq __hmx_name_dta_148(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN7HDCache10WriteAsyncEiiPKv
-    .set _ZN7HDCache10WriteAsyncEiiPKv, __hmx_native_noop_stub
+    .set _ZN7HDCache10WriteAsyncEiiPKv, __hmx_tramp_dta_148
+    .p2align 4
+__hmx_tramp_dta_149:
+    cmpb $0, __hmx_latch_dta_149(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_149(%rip)
+    leaq __hmx_name_dta_149(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN7Memcard9TerminateEv
-    .set _ZN7Memcard9TerminateEv, __hmx_native_noop_stub
+    .set _ZN7Memcard9TerminateEv, __hmx_tramp_dta_149
+    .p2align 4
+__hmx_tramp_dta_150:
+    cmpb $0, __hmx_latch_dta_150(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_150(%rip)
+    leaq __hmx_name_dta_150(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8KeyChain6getKeyEiPhS0_
-    .set _ZN8KeyChain6getKeyEiPhS0_, __hmx_native_noop_stub
+    .set _ZN8KeyChain6getKeyEiPhS0_, __hmx_tramp_dta_150
+    .p2align 4
+__hmx_tramp_dta_151:
+    cmpb $0, __hmx_latch_dta_151(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_151(%rip)
+    leaq __hmx_name_dta_151(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile10WriteAsyncEPKvi
-    .set _ZN9AsyncFile10WriteAsyncEPKvi, __hmx_native_noop_stub
+    .set _ZN9AsyncFile10WriteAsyncEPKvi, __hmx_tramp_dta_151
+    .p2align 4
+__hmx_tramp_dta_152:
+    cmpb $0, __hmx_latch_dta_152(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_152(%rip)
+    leaq __hmx_name_dta_152(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile16UncompressedSizeEv
-    .set _ZN9AsyncFile16UncompressedSizeEv, __hmx_native_noop_stub
+    .set _ZN9AsyncFile16UncompressedSizeEv, __hmx_tramp_dta_152
+    .p2align 4
+__hmx_tramp_dta_153:
+    cmpb $0, __hmx_latch_dta_153(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_153(%rip)
+    leaq __hmx_name_dta_153(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile3EofEv
-    .set _ZN9AsyncFile3EofEv, __hmx_native_noop_stub
+    .set _ZN9AsyncFile3EofEv, __hmx_tramp_dta_153
+    .p2align 4
+__hmx_tramp_dta_154:
+    cmpb $0, __hmx_latch_dta_154(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_154(%rip)
+    leaq __hmx_name_dta_154(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile3NewEPKci
-    .set _ZN9AsyncFile3NewEPKci, __hmx_native_noop_stub
+    .set _ZN9AsyncFile3NewEPKci, __hmx_tramp_dta_154
+    .p2align 4
+__hmx_tramp_dta_155:
+    cmpb $0, __hmx_latch_dta_155(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_155(%rip)
+    leaq __hmx_name_dta_155(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile4FailEv
-    .set _ZN9AsyncFile4FailEv, __hmx_native_noop_stub
+    .set _ZN9AsyncFile4FailEv, __hmx_tramp_dta_155
+    .p2align 4
+__hmx_tramp_dta_156:
+    cmpb $0, __hmx_latch_dta_156(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_156(%rip)
+    leaq __hmx_name_dta_156(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile4ReadEPvi
-    .set _ZN9AsyncFile4ReadEPvi, __hmx_native_noop_stub
+    .set _ZN9AsyncFile4ReadEPvi, __hmx_tramp_dta_156
+    .p2align 4
+__hmx_tramp_dta_157:
+    cmpb $0, __hmx_latch_dta_157(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_157(%rip)
+    leaq __hmx_name_dta_157(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile4SeekEii
-    .set _ZN9AsyncFile4SeekEii, __hmx_native_noop_stub
+    .set _ZN9AsyncFile4SeekEii, __hmx_tramp_dta_157
+    .p2align 4
+__hmx_tramp_dta_158:
+    cmpb $0, __hmx_latch_dta_158(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_158(%rip)
+    leaq __hmx_name_dta_158(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile4SizeEv
-    .set _ZN9AsyncFile4SizeEv, __hmx_native_noop_stub
+    .set _ZN9AsyncFile4SizeEv, __hmx_tramp_dta_158
+    .p2align 4
+__hmx_tramp_dta_159:
+    cmpb $0, __hmx_latch_dta_159(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_159(%rip)
+    leaq __hmx_name_dta_159(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile4TellEv
-    .set _ZN9AsyncFile4TellEv, __hmx_native_noop_stub
+    .set _ZN9AsyncFile4TellEv, __hmx_tramp_dta_159
+    .p2align 4
+__hmx_tramp_dta_160:
+    cmpb $0, __hmx_latch_dta_160(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_160(%rip)
+    leaq __hmx_name_dta_160(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile5FlushEv
-    .set _ZN9AsyncFile5FlushEv, __hmx_native_noop_stub
+    .set _ZN9AsyncFile5FlushEv, __hmx_tramp_dta_160
+    .p2align 4
+__hmx_tramp_dta_161:
+    cmpb $0, __hmx_latch_dta_161(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_161(%rip)
+    leaq __hmx_name_dta_161(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile5WriteEPKvi
-    .set _ZN9AsyncFile5WriteEPKvi, __hmx_native_noop_stub
+    .set _ZN9AsyncFile5WriteEPKvi, __hmx_tramp_dta_161
+    .p2align 4
+__hmx_tramp_dta_162:
+    cmpb $0, __hmx_latch_dta_162(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_162(%rip)
+    leaq __hmx_name_dta_162(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile8ReadDoneERi
-    .set _ZN9AsyncFile8ReadDoneERi, __hmx_native_noop_stub
+    .set _ZN9AsyncFile8ReadDoneERi, __hmx_tramp_dta_162
+    .p2align 4
+__hmx_tramp_dta_163:
+    cmpb $0, __hmx_latch_dta_163(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_163(%rip)
+    leaq __hmx_name_dta_163(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile9ReadAsyncEPvi
-    .set _ZN9AsyncFile9ReadAsyncEPvi, __hmx_native_noop_stub
+    .set _ZN9AsyncFile9ReadAsyncEPvi, __hmx_tramp_dta_163
+    .p2align 4
+__hmx_tramp_dta_164:
+    cmpb $0, __hmx_latch_dta_164(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_164(%rip)
+    leaq __hmx_name_dta_164(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile9TerminateEv
-    .set _ZN9AsyncFile9TerminateEv, __hmx_native_noop_stub
+    .set _ZN9AsyncFile9TerminateEv, __hmx_tramp_dta_164
+    .p2align 4
+__hmx_tramp_dta_165:
+    cmpb $0, __hmx_latch_dta_165(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_165(%rip)
+    leaq __hmx_name_dta_165(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFile9WriteDoneERi
-    .set _ZN9AsyncFile9WriteDoneERi, __hmx_native_noop_stub
+    .set _ZN9AsyncFile9WriteDoneERi, __hmx_tramp_dta_165
+    .p2align 4
+__hmx_tramp_dta_166:
+    cmpb $0, __hmx_latch_dta_166(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_166(%rip)
+    leaq __hmx_name_dta_166(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9AsyncFileC2EPKci
-    .set _ZN9AsyncFileC2EPKci, __hmx_native_noop_stub
+    .set _ZN9AsyncFileC2EPKci, __hmx_tramp_dta_166
+    .p2align 4
+__hmx_tramp_dta_167:
+    cmpb $0, __hmx_latch_dta_167(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_167(%rip)
+    leaq __hmx_name_dta_167(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID
-    .set _ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID, __hmx_native_noop_stub
+    .set _ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID, __hmx_tramp_dta_167
+    .p2align 4
+__hmx_tramp_dta_168:
+    cmpb $0, __hmx_latch_dta_168(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_168(%rip)
+    leaq __hmx_name_dta_168(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr15GetOwnerOfGuestEi
-    .set _ZNK11PlatformMgr15GetOwnerOfGuestEi, __hmx_native_noop_stub
+    .set _ZNK11PlatformMgr15GetOwnerOfGuestEi, __hmx_tramp_dta_168
+    .p2align 4
+__hmx_tramp_dta_169:
+    cmpb $0, __hmx_latch_dta_169(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_169(%rip)
+    leaq __hmx_name_dta_169(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser
-    .set _ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser, __hmx_native_noop_stub
+    .set _ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser, __hmx_tramp_dta_169
+    .p2align 4
+__hmx_tramp_dta_170:
+    cmpb $0, __hmx_latch_dta_170(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_170(%rip)
+    leaq __hmx_name_dta_170(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr16IsSignedIntoLiveEi
-    .set _ZNK11PlatformMgr16IsSignedIntoLiveEi, __hmx_native_noop_stub
+    .set _ZNK11PlatformMgr16IsSignedIntoLiveEi, __hmx_tramp_dta_170
+    .p2align 4
+__hmx_tramp_dta_171:
+    cmpb $0, __hmx_latch_dta_171(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_171(%rip)
+    leaq __hmx_name_dta_171(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr18HasOnlinePrivilegeEi
-    .set _ZNK11PlatformMgr18HasOnlinePrivilegeEi, __hmx_native_noop_stub
+    .set _ZNK11PlatformMgr18HasOnlinePrivilegeEi, __hmx_tramp_dta_171
+    .p2align 4
+__hmx_tramp_dta_172:
+    cmpb $0, __hmx_latch_dta_172(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_172(%rip)
+    leaq __hmx_name_dta_172(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK11PlatformMgr7GetNameEi
-    .set _ZNK11PlatformMgr7GetNameEi, __hmx_native_noop_stub
+    .set _ZNK11PlatformMgr7GetNameEi, __hmx_tramp_dta_172
+    .p2align 4
+__hmx_tramp_dta_173:
+    cmpb $0, __hmx_latch_dta_173(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_173(%rip)
+    leaq __hmx_name_dta_173(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13WiiProfileMgr12IsIndexValidEi
-    .set _ZNK13WiiProfileMgr12IsIndexValidEi, __hmx_native_noop_stub
+    .set _ZNK13WiiProfileMgr12IsIndexValidEi, __hmx_tramp_dta_173
+    .p2align 4
+__hmx_tramp_dta_174:
+    cmpb $0, __hmx_latch_dta_174(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_174(%rip)
+    leaq __hmx_name_dta_174(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13WiiProfileMgr13GetIdForIndexEi
-    .set _ZNK13WiiProfileMgr13GetIdForIndexEi, __hmx_native_noop_stub
+    .set _ZNK13WiiProfileMgr13GetIdForIndexEi, __hmx_tramp_dta_174
+    .p2align 4
+__hmx_tramp_dta_175:
+    cmpb $0, __hmx_latch_dta_175(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_175(%rip)
+    leaq __hmx_name_dta_175(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser
-    .set _ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser, __hmx_native_noop_stub
+    .set _ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser, __hmx_tramp_dta_175
+    .p2align 4
+__hmx_tramp_dta_176:
+    cmpb $0, __hmx_latch_dta_176(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_176(%rip)
+    leaq __hmx_name_dta_176(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE
-    .set _ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE, __hmx_native_noop_stub
+    .set _ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE, __hmx_tramp_dta_176
+    .p2align 4
+__hmx_tramp_dta_177:
+    cmpb $0, __hmx_latch_dta_177(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_177(%rip)
+    leaq __hmx_name_dta_177(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTI10WiiContent
-    .set _ZTI10WiiContent, __hmx_native_noop_stub
+    .set _ZTI10WiiContent, __hmx_tramp_dta_177
+    .p2align 4
+__hmx_tramp_dta_178:
+    cmpb $0, __hmx_latch_dta_178(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_178(%rip)
+    leaq __hmx_name_dta_178(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTI11RndPollable
-    .set _ZTI11RndPollable, __hmx_native_noop_stub
+    .set _ZTI11RndPollable, __hmx_tramp_dta_178
+    .p2align 4
+__hmx_tramp_dta_179:
+    cmpb $0, __hmx_latch_dta_179(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_179(%rip)
+    leaq __hmx_name_dta_179(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTI13RndAnimatable
-    .set _ZTI13RndAnimatable, __hmx_native_noop_stub
+    .set _ZTI13RndAnimatable, __hmx_tramp_dta_179
+    .p2align 4
+__hmx_tramp_dta_180:
+    cmpb $0, __hmx_latch_dta_180(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_180(%rip)
+    leaq __hmx_name_dta_180(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTI8WorldDir
-    .set _ZTI8WorldDir, __hmx_native_noop_stub
+    .set _ZTI8WorldDir, __hmx_tramp_dta_180
+    .p2align 4
+__hmx_tramp_dta_181:
+    cmpb $0, __hmx_latch_dta_181(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_181(%rip)
+    leaq __hmx_name_dta_181(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTI9AsyncFile
-    .set _ZTI9AsyncFile, __hmx_native_noop_stub
+    .set _ZTI9AsyncFile, __hmx_tramp_dta_181
+    .p2align 4
+__hmx_tramp_dta_182:
+    cmpb $0, __hmx_latch_dta_182(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_182(%rip)
+    leaq __hmx_name_dta_182(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTT13RndAnimatable
-    .set _ZTT13RndAnimatable, __hmx_native_noop_stub
+    .set _ZTT13RndAnimatable, __hmx_tramp_dta_182
+    .p2align 4
+__hmx_tramp_dta_183:
+    cmpb $0, __hmx_latch_dta_183(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_183(%rip)
+    leaq __hmx_name_dta_183(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTV9AsyncFile
-    .set _ZTV9AsyncFile, __hmx_native_noop_stub
+    .set _ZTV9AsyncFile, __hmx_tramp_dta_183
+    .p2align 4
+__hmx_tramp_dta_184:
+    cmpb $0, __hmx_latch_dta_184(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_184(%rip)
+    leaq __hmx_name_dta_184(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZThn64_N11PlatformMgr11ContentDoneEv
-    .set _ZThn64_N11PlatformMgr11ContentDoneEv, __hmx_native_noop_stub
+    .set _ZThn64_N11PlatformMgr11ContentDoneEv, __hmx_tramp_dta_184
+    .p2align 4
+__hmx_tramp_dta_185:
+    cmpb $0, __hmx_latch_dta_185(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_185(%rip)
+    leaq __hmx_name_dta_185(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZThn64_N11PlatformMgr14ContentStartedEv
-    .set _ZThn64_N11PlatformMgr14ContentStartedEv, __hmx_native_noop_stub
+    .set _ZThn64_N11PlatformMgr14ContentStartedEv, __hmx_tramp_dta_185
+    .p2align 4
+__hmx_tramp_dta_186:
+    cmpb $0, __hmx_latch_dta_186(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_186(%rip)
+    leaq __hmx_name_dta_186(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZThn64_N11PlatformMgr16ContentCancelledEv
-    .set _ZThn64_N11PlatformMgr16ContentCancelledEv, __hmx_native_noop_stub
+    .set _ZThn64_N11PlatformMgr16ContentCancelledEv, __hmx_tramp_dta_186
+    .p2align 4
+__hmx_tramp_dta_187:
+    cmpb $0, __hmx_latch_dta_187(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_187(%rip)
+    leaq __hmx_name_dta_187(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZThn64_N11PlatformMgrD0Ev
-    .set _ZThn64_N11PlatformMgrD0Ev, __hmx_native_noop_stub
+    .set _ZThn64_N11PlatformMgrD0Ev, __hmx_tramp_dta_187
+    .p2align 4
+__hmx_tramp_dta_188:
+    cmpb $0, __hmx_latch_dta_188(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_188(%rip)
+    leaq __hmx_name_dta_188(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZThn64_N11PlatformMgrD1Ev
-    .set _ZThn64_N11PlatformMgrD1Ev, __hmx_native_noop_stub
+    .set _ZThn64_N11PlatformMgrD1Ev, __hmx_tramp_dta_188
+    .p2align 4
+__hmx_tramp_dta_189:
+    cmpb $0, __hmx_latch_dta_189(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_189(%rip)
+    leaq __hmx_name_dta_189(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTv0_n104_N13RndAnimatable4LoadER9BinStream
-    .set _ZTv0_n104_N13RndAnimatable4LoadER9BinStream, __hmx_native_noop_stub
+    .set _ZTv0_n104_N13RndAnimatable4LoadER9BinStream, __hmx_tramp_dta_189
+    .p2align 4
+__hmx_tramp_dta_190:
+    cmpb $0, __hmx_latch_dta_190(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_190(%rip)
+    leaq __hmx_name_dta_190(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTv0_n24_N11PlatformMgrD0Ev
-    .set _ZTv0_n24_N11PlatformMgrD0Ev, __hmx_native_noop_stub
+    .set _ZTv0_n24_N11PlatformMgrD0Ev, __hmx_tramp_dta_190
+    .p2align 4
+__hmx_tramp_dta_191:
+    cmpb $0, __hmx_latch_dta_191(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_191(%rip)
+    leaq __hmx_name_dta_191(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTv0_n24_N11PlatformMgrD1Ev
-    .set _ZTv0_n24_N11PlatformMgrD1Ev, __hmx_native_noop_stub
+    .set _ZTv0_n24_N11PlatformMgrD1Ev, __hmx_tramp_dta_191
+    .p2align 4
+__hmx_tramp_dta_192:
+    cmpb $0, __hmx_latch_dta_192(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_192(%rip)
+    leaq __hmx_name_dta_192(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb
-    .set _ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb, __hmx_native_noop_stub
+    .set _ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb, __hmx_tramp_dta_192
+    .p2align 4
+__hmx_tramp_dta_193:
+    cmpb $0, __hmx_latch_dta_193(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_193(%rip)
+    leaq __hmx_name_dta_193(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp
-    .set _ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_native_noop_stub
+    .set _ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_tramp_dta_193
+    .p2align 4
+__hmx_tramp_dta_194:
+    cmpb $0, __hmx_latch_dta_194(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_194(%rip)
+    leaq __hmx_name_dta_194(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTv0_n88_N13RndAnimatable4SaveER9BinStream
-    .set _ZTv0_n88_N13RndAnimatable4SaveER9BinStream, __hmx_native_noop_stub
+    .set _ZTv0_n88_N13RndAnimatable4SaveER9BinStream, __hmx_tramp_dta_194
+    .p2align 4
+__hmx_tramp_dta_195:
+    cmpb $0, __hmx_latch_dta_195(%rip)
+    jne 1f
+    movb $1, __hmx_latch_dta_195(%rip)
+    leaq __hmx_name_dta_195(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE
-    .set _ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_native_noop_stub
+    .set _ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_tramp_dta_195
+
+    .section .rodata
+__hmx_name_dta_0:
+    .asciz "AXSetCompressor"
+__hmx_name_dta_1:
+    .asciz "BinkOpenAX"
+__hmx_name_dta_2:
+    .asciz "BinkSetIO"
+__hmx_name_dta_3:
+    .asciz "BinkSetMemory"
+__hmx_name_dta_4:
+    .asciz "BinkSetSoundSystem"
+__hmx_name_dta_5:
+    .asciz "DVDInit"
+__hmx_name_dta_6:
+    .asciz "FileDelete"
+__hmx_name_dta_7:
+    .asciz "FileEnumerate"
+__hmx_name_dta_8:
+    .asciz "FileGetStat"
+__hmx_name_dta_9:
+    .asciz "FileMkDir"
+__hmx_name_dta_10:
+    .asciz "JoypadSetActuatorsImp"
+__hmx_name_dta_11:
+    .asciz "ParseStack"
+__hmx_name_dta_12:
+    .asciz "RADTimerRead"
+__hmx_name_dta_13:
+    .asciz "RSOGetFarCodeSize"
+__hmx_name_dta_14:
+    .asciz "RSOGetImportSymbolName"
+__hmx_name_dta_15:
+    .asciz "RSOGetJumpCodeSize"
+__hmx_name_dta_16:
+    .asciz "RSOGetNumImportSymbols"
+__hmx_name_dta_17:
+    .asciz "RSOIsImportSymbolResolved"
+__hmx_name_dta_18:
+    .asciz "RSOIsImportSymbolResolvedAll"
+__hmx_name_dta_19:
+    .asciz "RSOLinkFar"
+__hmx_name_dta_20:
+    .asciz "RSOLinkJump"
+__hmx_name_dta_21:
+    .asciz "RSOLinkList"
+__hmx_name_dta_22:
+    .asciz "RSOListInit"
+__hmx_name_dta_23:
+    .asciz "RSOMakeJumpCode"
+__hmx_name_dta_24:
+    .asciz "RSOUnLinkList"
+__hmx_name_dta_25:
+    .asciz "TheBaseSongManger"
+__hmx_name_dta_26:
+    .asciz "TheContentMgr"
+__hmx_name_dta_27:
+    .asciz "TheFakeSongMgr"
+__hmx_name_dta_28:
+    .asciz "TheMC"
+__hmx_name_dta_29:
+    .asciz "TheMidiParserMgr"
+__hmx_name_dta_30:
+    .asciz "TheSynth"
+__hmx_name_dta_31:
+    .asciz "TheWiiCommerceMgr"
+__hmx_name_dta_32:
+    .asciz "TheWiiProfileMgr"
+__hmx_name_dta_33:
+    .asciz "_Z10CDGetErrorv"
+__hmx_name_dta_34:
+    .asciz "_Z10CDReadDonev"
+__hmx_name_dta_35:
+    .asciz "_Z10JoypadInitv"
+__hmx_name_dta_36:
+    .asciz "_Z10JoypadPollv"
+__hmx_name_dta_37:
+    .asciz "_Z10ThreadCallP14ThreadCallback"
+__hmx_name_dta_38:
+    .asciz "_Z11FileIsLocalPKc"
+__hmx_name_dta_39:
+    .asciz "_Z11JoypadResetv"
+__hmx_name_dta_40:
+    .asciz "_Z11UsingHolmesi"
+__hmx_name_dta_41:
+    .asciz "_Z12KeyboardInitv"
+__hmx_name_dta_42:
+    .asciz "_Z12KeyboardPollv"
+__hmx_name_dta_43:
+    .asciz "_Z13CacheResourcePKcPN3Hmx6ObjectE"
+__hmx_name_dta_44:
+    .asciz "_Z13RndGxDrawDonev"
+__hmx_name_dta_45:
+    .asciz "_Z14CDReadExternalRP11DVDFileInfoiy"
+__hmx_name_dta_46:
+    .asciz "_Z14GetMapFileNameR6String"
+__hmx_name_dta_47:
+    .asciz "_Z14ThreadCallInitv"
+__hmx_name_dta_48:
+    .asciz "_Z14ThreadCallPollv"
+__hmx_name_dta_49:
+    .asciz "_Z15HolmesResolveIPv"
+__hmx_name_dta_50:
+    .asciz "_Z15InitDefaultHeapv"
+__hmx_name_dta_51:
+    .asciz "_Z15JoypadTerminatev"
+__hmx_name_dta_52:
+    .asciz "_Z16GetWiiJoypadTypei"
+__hmx_name_dta_53:
+    .asciz "_Z16HolmesClientInitv"
+__hmx_name_dta_54:
+    .asciz "_Z16HolmesClientOpenPKciRjRi"
+__hmx_name_dta_55:
+    .asciz "_Z16HolmesClientPollv"
+__hmx_name_dta_56:
+    .asciz "_Z16HolmesClientReadiiiPvP4File"
+__hmx_name_dta_57:
+    .asciz "_Z17CaptureStackTraceiPj"
+__hmx_name_dta_58:
+    .asciz "_Z17GetSystemLanguage6Symbol"
+__hmx_name_dta_59:
+    .asciz "_Z17HolmesClientCloseP4Filei"
+__hmx_name_dta_60:
+    .asciz "_Z17HolmesClientPrintPKc"
+__hmx_name_dta_61:
+    .asciz "_Z17HolmesClientWriteiiiPKv"
+__hmx_name_dta_62:
+    .asciz "_Z17KeyboardTerminatev"
+__hmx_name_dta_63:
+    .asciz "_Z17ThreadCallPreInitv"
+__hmx_name_dta_64:
+    .asciz "_Z18HolmesClientReInitv"
+__hmx_name_dta_65:
+    .asciz "_Z18PlatformDebugBreakv"
+__hmx_name_dta_66:
+    .asciz "_Z19HolmesClientSysExecPKc"
+__hmx_name_dta_67:
+    .asciz "_Z19ThreadCallTerminatev"
+__hmx_name_dta_68:
+    .asciz "_Z20HolmesClientReadDoneP4File"
+__hmx_name_dta_69:
+    .asciz "_Z20HolmesClientTruncateii"
+__hmx_name_dta_70:
+    .asciz "_Z21FileQualifiedFilenamePciPKc"
+__hmx_name_dta_71:
+    .asciz "_Z21HolmesClientTerminatev"
+__hmx_name_dta_72:
+    .asciz "_Z22HolmesClientStackTracePKcPjiR6String"
+__hmx_name_dta_73:
+    .asciz "_Z22SetGPHangDetectEnabledbPKc"
+__hmx_name_dta_74:
+    .asciz "_Z23RB3InitNativeNetSessionv"
+__hmx_name_dta_75:
+    .asciz "_Z27RB3MetaPerfIntegrityCheckAtPKc"
+__hmx_name_dta_76:
+    .asciz "_Z6CDReadiiiPv"
+__hmx_name_dta_77:
+    .asciz "_Z8CacheWavPKcR19CacheResourceResult"
+__hmx_name_dta_78:
+    .asciz "_Z9FileIsDLCPKc"
+__hmx_name_dta_79:
+    .asciz "_ZN10MemcardWii4InitEv"
+__hmx_name_dta_80:
+    .asciz "_ZN10MemcardWii9TerminateEv"
+__hmx_name_dta_81:
+    .asciz "_ZN10MidiParser4PollEv"
+__hmx_name_dta_82:
+    .asciz "_ZN10MidiParser8sParsersB5cxx11E"
+__hmx_name_dta_83:
+    .asciz "_ZN10RndOverlay4FindE6Symbolb"
+__hmx_name_dta_84:
+    .asciz "_ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_"
+__hmx_name_dta_85:
+    .asciz "_ZN11ByteGrinder10GrindArrayEllPhii"
+__hmx_name_dta_86:
+    .asciz "_ZN11CacheMgrWiiC1Ev"
+__hmx_name_dta_87:
+    .asciz "_ZN11FakeSongMgr13GetSongConfigE6Symbol"
+__hmx_name_dta_88:
+    .asciz "_ZN11PlatformMgr10RegionInitEv"
+__hmx_name_dta_89:
+    .asciz "_ZN11PlatformMgr11ContentDoneEv"
+__hmx_name_dta_90:
+    .asciz "_ZN11PlatformMgr12SetConnectedEb"
+__hmx_name_dta_91:
+    .asciz "_ZN11PlatformMgr12SetDiskErrorE9DiskError"
+__hmx_name_dta_92:
+    .asciz "_ZN11PlatformMgr13ClearDWCErrorEv"
+__hmx_name_dta_93:
+    .asciz "_ZN11PlatformMgr13ClearNetErrorEv"
+__hmx_name_dta_94:
+    .asciz "_ZN11PlatformMgr13OnSignInUsersEPK9DataArray"
+__hmx_name_dta_95:
+    .asciz "_ZN11PlatformMgr14ContentStartedEv"
+__hmx_name_dta_96:
+    .asciz "_ZN11PlatformMgr14SetScreenSaverEb"
+__hmx_name_dta_97:
+    .asciz "_ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE"
+__hmx_name_dta_98:
+    .asciz "_ZN11PlatformMgr15EnableProfanityEb"
+__hmx_name_dta_99:
+    .asciz "_ZN11PlatformMgr15GetLastDNSErrorEv"
+__hmx_name_dta_100:
+    .asciz "_ZN11PlatformMgr15GetLastDWCErrorEv"
+__hmx_name_dta_101:
+    .asciz "_ZN11PlatformMgr16ContentCancelledEv"
+__hmx_name_dta_102:
+    .asciz "_ZN11PlatformMgr16PrintParentalPinEv"
+__hmx_name_dta_103:
+    .asciz "_ZN11PlatformMgr17GetLastNHTTPErrorEv"
+__hmx_name_dta_104:
+    .asciz "_ZN11PlatformMgr17GetNetErrorStringEb"
+__hmx_name_dta_105:
+    .asciz "_ZN11PlatformMgr18RunNetStartUtilityEv"
+__hmx_name_dta_106:
+    .asciz "_ZN11PlatformMgr18SetHomeMenuEnabledEb"
+__hmx_name_dta_107:
+    .asciz "_ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation"
+__hmx_name_dta_108:
+    .asciz "_ZN11PlatformMgr22InitNintendoConnectionEv"
+__hmx_name_dta_109:
+    .asciz "_ZN11PlatformMgr23CloseNintendoConnectionEbb"
+__hmx_name_dta_110:
+    .asciz "_ZN11PlatformMgr24IsEthernetCableConnectedEv"
+__hmx_name_dta_111:
+    .asciz "_ZN11PlatformMgr25SetPartyMicOptionsShowingEb"
+__hmx_name_dta_112:
+    .asciz "_ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb"
+__hmx_name_dta_113:
+    .asciz "_ZN11PlatformMgr4InitEv"
+__hmx_name_dta_114:
+    .asciz "_ZN11PlatformMgr4PollEv"
+__hmx_name_dta_115:
+    .asciz "_ZN11PlatformMgr5OnMsgERK11ButtonUpMsg"
+__hmx_name_dta_116:
+    .asciz "_ZN11PlatformMgr5OnMsgERK13ButtonDownMsg"
+__hmx_name_dta_117:
+    .asciz "_ZN11PlatformMgr7PreInitEv"
+__hmx_name_dta_118:
+    .asciz "_ZN11PlatformMgr7WiiPollEv"
+__hmx_name_dta_119:
+    .asciz "_ZN11PlatformMgrC1Ev"
+__hmx_name_dta_120:
+    .asciz "_ZN11PlatformMgrD0Ev"
+__hmx_name_dta_121:
+    .asciz "_ZN11PlatformMgrD1Ev"
+__hmx_name_dta_122:
+    .asciz "_ZN12MidiReceiverC2Ev"
+__hmx_name_dta_123:
+    .asciz "_ZN12NetLoaderWiiC1ERK6String"
+__hmx_name_dta_124:
+    .asciz "_ZN13CameraManager4PollEv"
+__hmx_name_dta_125:
+    .asciz "_ZN13NetworkSocket11GetHostNameEv"
+__hmx_name_dta_126:
+    .asciz "_ZN13NetworkSocket6CreateEb"
+__hmx_name_dta_127:
+    .asciz "_ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp"
+__hmx_name_dta_128:
+    .asciz "_ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE"
+__hmx_name_dta_129:
+    .asciz "_ZN13RndAnimatable4LoadER9BinStream"
+__hmx_name_dta_130:
+    .asciz "_ZN13RndAnimatable4SaveER9BinStream"
+__hmx_name_dta_131:
+    .asciz "_ZN13RndAnimatable6HandleEP9DataArrayb"
+__hmx_name_dta_132:
+    .asciz "_ZN13RndAnimatableC2Ev"
+__hmx_name_dta_133:
+    .asciz "_ZN14ProfilePicture13FetchUserDataEv"
+__hmx_name_dta_134:
+    .asciz "_ZN14ProfilePicture15ReceiveUserDataEv"
+__hmx_name_dta_135:
+    .asciz "_ZN14ProfilePicture16FetchUserPictureEv"
+__hmx_name_dta_136:
+    .asciz "_ZN14ProfilePicture18ReceiveUserPictureEv"
+__hmx_name_dta_137:
+    .asciz "_ZN14WiiCommerceMgr4InitEv"
+__hmx_name_dta_138:
+    .asciz "_ZN15VirtualKeyboard12PlatformPollEv"
+__hmx_name_dta_139:
+    .asciz "_ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii"
+__hmx_name_dta_140:
+    .asciz "_ZN15VirtualKeyboard17PlatformTerminateEv"
+__hmx_name_dta_141:
+    .asciz "_ZN16WiiNetworkSocket4InitEv"
+__hmx_name_dta_142:
+    .asciz "_ZN18LightPresetManager4PollEv"
+__hmx_name_dta_143:
+    .asciz "_ZN18LightPresetManager5EnterEv"
+__hmx_name_dta_144:
+    .asciz "_ZN3Hmx6Object7PreLoadER9BinStream"
+__hmx_name_dta_145:
+    .asciz "_ZN5Synth10StopAllSfxEb"
+__hmx_name_dta_146:
+    .asciz "_ZN5Synth15GetMasterVolumeEv"
+__hmx_name_dta_147:
+    .asciz "_ZN5Synth15SetMasterVolumeEf"
+__hmx_name_dta_148:
+    .asciz "_ZN7HDCache10WriteAsyncEiiPKv"
+__hmx_name_dta_149:
+    .asciz "_ZN7Memcard9TerminateEv"
+__hmx_name_dta_150:
+    .asciz "_ZN8KeyChain6getKeyEiPhS0_"
+__hmx_name_dta_151:
+    .asciz "_ZN9AsyncFile10WriteAsyncEPKvi"
+__hmx_name_dta_152:
+    .asciz "_ZN9AsyncFile16UncompressedSizeEv"
+__hmx_name_dta_153:
+    .asciz "_ZN9AsyncFile3EofEv"
+__hmx_name_dta_154:
+    .asciz "_ZN9AsyncFile3NewEPKci"
+__hmx_name_dta_155:
+    .asciz "_ZN9AsyncFile4FailEv"
+__hmx_name_dta_156:
+    .asciz "_ZN9AsyncFile4ReadEPvi"
+__hmx_name_dta_157:
+    .asciz "_ZN9AsyncFile4SeekEii"
+__hmx_name_dta_158:
+    .asciz "_ZN9AsyncFile4SizeEv"
+__hmx_name_dta_159:
+    .asciz "_ZN9AsyncFile4TellEv"
+__hmx_name_dta_160:
+    .asciz "_ZN9AsyncFile5FlushEv"
+__hmx_name_dta_161:
+    .asciz "_ZN9AsyncFile5WriteEPKvi"
+__hmx_name_dta_162:
+    .asciz "_ZN9AsyncFile8ReadDoneERi"
+__hmx_name_dta_163:
+    .asciz "_ZN9AsyncFile9ReadAsyncEPvi"
+__hmx_name_dta_164:
+    .asciz "_ZN9AsyncFile9TerminateEv"
+__hmx_name_dta_165:
+    .asciz "_ZN9AsyncFile9WriteDoneERi"
+__hmx_name_dta_166:
+    .asciz "_ZN9AsyncFileC2EPKci"
+__hmx_name_dta_167:
+    .asciz "_ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID"
+__hmx_name_dta_168:
+    .asciz "_ZNK11PlatformMgr15GetOwnerOfGuestEi"
+__hmx_name_dta_169:
+    .asciz "_ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser"
+__hmx_name_dta_170:
+    .asciz "_ZNK11PlatformMgr16IsSignedIntoLiveEi"
+__hmx_name_dta_171:
+    .asciz "_ZNK11PlatformMgr18HasOnlinePrivilegeEi"
+__hmx_name_dta_172:
+    .asciz "_ZNK11PlatformMgr7GetNameEi"
+__hmx_name_dta_173:
+    .asciz "_ZNK13WiiProfileMgr12IsIndexValidEi"
+__hmx_name_dta_174:
+    .asciz "_ZNK13WiiProfileMgr13GetIdForIndexEi"
+__hmx_name_dta_175:
+    .asciz "_ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser"
+__hmx_name_dta_176:
+    .asciz "_ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE"
+__hmx_name_dta_177:
+    .asciz "_ZTI10WiiContent"
+__hmx_name_dta_178:
+    .asciz "_ZTI11RndPollable"
+__hmx_name_dta_179:
+    .asciz "_ZTI13RndAnimatable"
+__hmx_name_dta_180:
+    .asciz "_ZTI8WorldDir"
+__hmx_name_dta_181:
+    .asciz "_ZTI9AsyncFile"
+__hmx_name_dta_182:
+    .asciz "_ZTT13RndAnimatable"
+__hmx_name_dta_183:
+    .asciz "_ZTV9AsyncFile"
+__hmx_name_dta_184:
+    .asciz "_ZThn64_N11PlatformMgr11ContentDoneEv"
+__hmx_name_dta_185:
+    .asciz "_ZThn64_N11PlatformMgr14ContentStartedEv"
+__hmx_name_dta_186:
+    .asciz "_ZThn64_N11PlatformMgr16ContentCancelledEv"
+__hmx_name_dta_187:
+    .asciz "_ZThn64_N11PlatformMgrD0Ev"
+__hmx_name_dta_188:
+    .asciz "_ZThn64_N11PlatformMgrD1Ev"
+__hmx_name_dta_189:
+    .asciz "_ZTv0_n104_N13RndAnimatable4LoadER9BinStream"
+__hmx_name_dta_190:
+    .asciz "_ZTv0_n24_N11PlatformMgrD0Ev"
+__hmx_name_dta_191:
+    .asciz "_ZTv0_n24_N11PlatformMgrD1Ev"
+__hmx_name_dta_192:
+    .asciz "_ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb"
+__hmx_name_dta_193:
+    .asciz "_ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp"
+__hmx_name_dta_194:
+    .asciz "_ZTv0_n88_N13RndAnimatable4SaveER9BinStream"
+__hmx_name_dta_195:
+    .asciz "_ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE"
+
+    .bss
+    // ---- per-symbol first-hit latches (1 byte each) ----
+__hmx_latch_dta_0:
+    .zero 1
+__hmx_latch_dta_1:
+    .zero 1
+__hmx_latch_dta_2:
+    .zero 1
+__hmx_latch_dta_3:
+    .zero 1
+__hmx_latch_dta_4:
+    .zero 1
+__hmx_latch_dta_5:
+    .zero 1
+__hmx_latch_dta_6:
+    .zero 1
+__hmx_latch_dta_7:
+    .zero 1
+__hmx_latch_dta_8:
+    .zero 1
+__hmx_latch_dta_9:
+    .zero 1
+__hmx_latch_dta_10:
+    .zero 1
+__hmx_latch_dta_11:
+    .zero 1
+__hmx_latch_dta_12:
+    .zero 1
+__hmx_latch_dta_13:
+    .zero 1
+__hmx_latch_dta_14:
+    .zero 1
+__hmx_latch_dta_15:
+    .zero 1
+__hmx_latch_dta_16:
+    .zero 1
+__hmx_latch_dta_17:
+    .zero 1
+__hmx_latch_dta_18:
+    .zero 1
+__hmx_latch_dta_19:
+    .zero 1
+__hmx_latch_dta_20:
+    .zero 1
+__hmx_latch_dta_21:
+    .zero 1
+__hmx_latch_dta_22:
+    .zero 1
+__hmx_latch_dta_23:
+    .zero 1
+__hmx_latch_dta_24:
+    .zero 1
+__hmx_latch_dta_25:
+    .zero 1
+__hmx_latch_dta_26:
+    .zero 1
+__hmx_latch_dta_27:
+    .zero 1
+__hmx_latch_dta_28:
+    .zero 1
+__hmx_latch_dta_29:
+    .zero 1
+__hmx_latch_dta_30:
+    .zero 1
+__hmx_latch_dta_31:
+    .zero 1
+__hmx_latch_dta_32:
+    .zero 1
+__hmx_latch_dta_33:
+    .zero 1
+__hmx_latch_dta_34:
+    .zero 1
+__hmx_latch_dta_35:
+    .zero 1
+__hmx_latch_dta_36:
+    .zero 1
+__hmx_latch_dta_37:
+    .zero 1
+__hmx_latch_dta_38:
+    .zero 1
+__hmx_latch_dta_39:
+    .zero 1
+__hmx_latch_dta_40:
+    .zero 1
+__hmx_latch_dta_41:
+    .zero 1
+__hmx_latch_dta_42:
+    .zero 1
+__hmx_latch_dta_43:
+    .zero 1
+__hmx_latch_dta_44:
+    .zero 1
+__hmx_latch_dta_45:
+    .zero 1
+__hmx_latch_dta_46:
+    .zero 1
+__hmx_latch_dta_47:
+    .zero 1
+__hmx_latch_dta_48:
+    .zero 1
+__hmx_latch_dta_49:
+    .zero 1
+__hmx_latch_dta_50:
+    .zero 1
+__hmx_latch_dta_51:
+    .zero 1
+__hmx_latch_dta_52:
+    .zero 1
+__hmx_latch_dta_53:
+    .zero 1
+__hmx_latch_dta_54:
+    .zero 1
+__hmx_latch_dta_55:
+    .zero 1
+__hmx_latch_dta_56:
+    .zero 1
+__hmx_latch_dta_57:
+    .zero 1
+__hmx_latch_dta_58:
+    .zero 1
+__hmx_latch_dta_59:
+    .zero 1
+__hmx_latch_dta_60:
+    .zero 1
+__hmx_latch_dta_61:
+    .zero 1
+__hmx_latch_dta_62:
+    .zero 1
+__hmx_latch_dta_63:
+    .zero 1
+__hmx_latch_dta_64:
+    .zero 1
+__hmx_latch_dta_65:
+    .zero 1
+__hmx_latch_dta_66:
+    .zero 1
+__hmx_latch_dta_67:
+    .zero 1
+__hmx_latch_dta_68:
+    .zero 1
+__hmx_latch_dta_69:
+    .zero 1
+__hmx_latch_dta_70:
+    .zero 1
+__hmx_latch_dta_71:
+    .zero 1
+__hmx_latch_dta_72:
+    .zero 1
+__hmx_latch_dta_73:
+    .zero 1
+__hmx_latch_dta_74:
+    .zero 1
+__hmx_latch_dta_75:
+    .zero 1
+__hmx_latch_dta_76:
+    .zero 1
+__hmx_latch_dta_77:
+    .zero 1
+__hmx_latch_dta_78:
+    .zero 1
+__hmx_latch_dta_79:
+    .zero 1
+__hmx_latch_dta_80:
+    .zero 1
+__hmx_latch_dta_81:
+    .zero 1
+__hmx_latch_dta_82:
+    .zero 1
+__hmx_latch_dta_83:
+    .zero 1
+__hmx_latch_dta_84:
+    .zero 1
+__hmx_latch_dta_85:
+    .zero 1
+__hmx_latch_dta_86:
+    .zero 1
+__hmx_latch_dta_87:
+    .zero 1
+__hmx_latch_dta_88:
+    .zero 1
+__hmx_latch_dta_89:
+    .zero 1
+__hmx_latch_dta_90:
+    .zero 1
+__hmx_latch_dta_91:
+    .zero 1
+__hmx_latch_dta_92:
+    .zero 1
+__hmx_latch_dta_93:
+    .zero 1
+__hmx_latch_dta_94:
+    .zero 1
+__hmx_latch_dta_95:
+    .zero 1
+__hmx_latch_dta_96:
+    .zero 1
+__hmx_latch_dta_97:
+    .zero 1
+__hmx_latch_dta_98:
+    .zero 1
+__hmx_latch_dta_99:
+    .zero 1
+__hmx_latch_dta_100:
+    .zero 1
+__hmx_latch_dta_101:
+    .zero 1
+__hmx_latch_dta_102:
+    .zero 1
+__hmx_latch_dta_103:
+    .zero 1
+__hmx_latch_dta_104:
+    .zero 1
+__hmx_latch_dta_105:
+    .zero 1
+__hmx_latch_dta_106:
+    .zero 1
+__hmx_latch_dta_107:
+    .zero 1
+__hmx_latch_dta_108:
+    .zero 1
+__hmx_latch_dta_109:
+    .zero 1
+__hmx_latch_dta_110:
+    .zero 1
+__hmx_latch_dta_111:
+    .zero 1
+__hmx_latch_dta_112:
+    .zero 1
+__hmx_latch_dta_113:
+    .zero 1
+__hmx_latch_dta_114:
+    .zero 1
+__hmx_latch_dta_115:
+    .zero 1
+__hmx_latch_dta_116:
+    .zero 1
+__hmx_latch_dta_117:
+    .zero 1
+__hmx_latch_dta_118:
+    .zero 1
+__hmx_latch_dta_119:
+    .zero 1
+__hmx_latch_dta_120:
+    .zero 1
+__hmx_latch_dta_121:
+    .zero 1
+__hmx_latch_dta_122:
+    .zero 1
+__hmx_latch_dta_123:
+    .zero 1
+__hmx_latch_dta_124:
+    .zero 1
+__hmx_latch_dta_125:
+    .zero 1
+__hmx_latch_dta_126:
+    .zero 1
+__hmx_latch_dta_127:
+    .zero 1
+__hmx_latch_dta_128:
+    .zero 1
+__hmx_latch_dta_129:
+    .zero 1
+__hmx_latch_dta_130:
+    .zero 1
+__hmx_latch_dta_131:
+    .zero 1
+__hmx_latch_dta_132:
+    .zero 1
+__hmx_latch_dta_133:
+    .zero 1
+__hmx_latch_dta_134:
+    .zero 1
+__hmx_latch_dta_135:
+    .zero 1
+__hmx_latch_dta_136:
+    .zero 1
+__hmx_latch_dta_137:
+    .zero 1
+__hmx_latch_dta_138:
+    .zero 1
+__hmx_latch_dta_139:
+    .zero 1
+__hmx_latch_dta_140:
+    .zero 1
+__hmx_latch_dta_141:
+    .zero 1
+__hmx_latch_dta_142:
+    .zero 1
+__hmx_latch_dta_143:
+    .zero 1
+__hmx_latch_dta_144:
+    .zero 1
+__hmx_latch_dta_145:
+    .zero 1
+__hmx_latch_dta_146:
+    .zero 1
+__hmx_latch_dta_147:
+    .zero 1
+__hmx_latch_dta_148:
+    .zero 1
+__hmx_latch_dta_149:
+    .zero 1
+__hmx_latch_dta_150:
+    .zero 1
+__hmx_latch_dta_151:
+    .zero 1
+__hmx_latch_dta_152:
+    .zero 1
+__hmx_latch_dta_153:
+    .zero 1
+__hmx_latch_dta_154:
+    .zero 1
+__hmx_latch_dta_155:
+    .zero 1
+__hmx_latch_dta_156:
+    .zero 1
+__hmx_latch_dta_157:
+    .zero 1
+__hmx_latch_dta_158:
+    .zero 1
+__hmx_latch_dta_159:
+    .zero 1
+__hmx_latch_dta_160:
+    .zero 1
+__hmx_latch_dta_161:
+    .zero 1
+__hmx_latch_dta_162:
+    .zero 1
+__hmx_latch_dta_163:
+    .zero 1
+__hmx_latch_dta_164:
+    .zero 1
+__hmx_latch_dta_165:
+    .zero 1
+__hmx_latch_dta_166:
+    .zero 1
+__hmx_latch_dta_167:
+    .zero 1
+__hmx_latch_dta_168:
+    .zero 1
+__hmx_latch_dta_169:
+    .zero 1
+__hmx_latch_dta_170:
+    .zero 1
+__hmx_latch_dta_171:
+    .zero 1
+__hmx_latch_dta_172:
+    .zero 1
+__hmx_latch_dta_173:
+    .zero 1
+__hmx_latch_dta_174:
+    .zero 1
+__hmx_latch_dta_175:
+    .zero 1
+__hmx_latch_dta_176:
+    .zero 1
+__hmx_latch_dta_177:
+    .zero 1
+__hmx_latch_dta_178:
+    .zero 1
+__hmx_latch_dta_179:
+    .zero 1
+__hmx_latch_dta_180:
+    .zero 1
+__hmx_latch_dta_181:
+    .zero 1
+__hmx_latch_dta_182:
+    .zero 1
+__hmx_latch_dta_183:
+    .zero 1
+__hmx_latch_dta_184:
+    .zero 1
+__hmx_latch_dta_185:
+    .zero 1
+__hmx_latch_dta_186:
+    .zero 1
+__hmx_latch_dta_187:
+    .zero 1
+__hmx_latch_dta_188:
+    .zero 1
+__hmx_latch_dta_189:
+    .zero 1
+__hmx_latch_dta_190:
+    .zero 1
+__hmx_latch_dta_191:
+    .zero 1
+__hmx_latch_dta_192:
+    .zero 1
+__hmx_latch_dta_193:
+    .zero 1
+__hmx_latch_dta_194:
+    .zero 1
+__hmx_latch_dta_195:
+    .zero 1
 
     // ---- DATA stubs (each: own writable zero-filled reservation) ----
-    .bss
     .p2align 4

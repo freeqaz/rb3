@@ -31,11 +31,11 @@
 AXSetCompressor	func	assert-unreachable	
 BinkOpenAX	func	assert-unreachable	
 BinkSetIO	func	assert-unreachable	
-BinkSetMemory	func	assert-unreachable	
+BinkSetMemory	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Bink video allocator hook — native has no Bink video backend (no-video-decode story, same rationale as the Movie::Impl stubs), no-op safe
 BinkSetSoundSystem	func	assert-unreachable	
 DVDInit	func	assert-unreachable	
 FileDelete	func	assert-unreachable	
-FileEnumerate	func	assert-unreachable	
+FileEnumerate	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Wii disc/NAND directory enumeration — native reads assets via host filesystem, not this API; returning 0 (empty) matches the port's replaced-wholesale disc-I/O story
 FileGetStat	func	assert-unreachable	
 FileMkDir	func	assert-unreachable	
 JoypadSetActuatorsImp	func	assert-unreachable	
@@ -66,33 +66,33 @@ _Z10CDReadDonev	func	assert-unreachable
 _Z10JoypadInitv	func	assert-unreachable	
 _Z10JoypadPollv	func	assert-unreachable	
 _Z10ThreadCallP14ThreadCallback	func	assert-unreachable	
-_Z11FileIsLocalPKc	func	assert-unreachable	
+_Z11FileIsLocalPKc	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); returns 0(false); VERIFIED both call sites (obj/DataFile.cpp CachedDataFile, os/File.cpp NewFile) gate on UsingCD() which is itself a no-op(false) on native, so the false-vs-true distinction never reaches a branch on native
 _Z11JoypadResetv	func	assert-unreachable	
 _Z11UsingHolmesi	func	assert-unreachable	
-_Z12KeyboardInitv	func	assert-unreachable	
-_Z12KeyboardPollv	func	assert-unreachable	
+_Z12KeyboardInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Wii USB keyboard peripheral init — native input goes through rb3_joypad_native.cpp, not this Wii API
+_Z12KeyboardPollv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Wii USB keyboard poll — same as KeyboardInit, native input goes through rb3_joypad_native.cpp not this Wii API
 _Z13CacheResourcePKcPN3Hmx6ObjectE	func	assert-unreachable	
 _Z13RndGxDrawDonev	func	assert-unreachable	
 _Z14CDReadExternalRP11DVDFileInfoiy	func	assert-unreachable	
 _Z14GetMapFileNameR6String	func	assert-unreachable	
-_Z14ThreadCallInitv	func	assert-unreachable	
-_Z14ThreadCallPollv	func	assert-unreachable	
+_Z14ThreadCallInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Wii inter-core ThreadCall messaging init — same as ThreadCallPreInit, unused on native
+_Z14ThreadCallPollv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Wii inter-core ThreadCall poll — same as ThreadCallInit/PreInit, unused on native (std::thread instead)
 _Z15HolmesResolveIPv	func	assert-unreachable	
 _Z15InitDefaultHeapv	func	assert-unreachable	
 _Z15JoypadTerminatev	func	assert-unreachable	
 _Z16GetWiiJoypadTypei	func	assert-unreachable	
-_Z16HolmesClientInitv	func	assert-unreachable	
+_Z16HolmesClientInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Holmes (EA debug/telemetry client) init — native has no Holmes backend, benign no-op
 _Z16HolmesClientOpenPKciRjRi	func	assert-unreachable	
-_Z16HolmesClientPollv	func	assert-unreachable	
+_Z16HolmesClientPollv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Holmes (EA debug/telemetry client) poll — same as HolmesClientInit/ReInit, native has no Holmes backend, benign no-op
 _Z16HolmesClientReadiiiPvP4File	func	assert-unreachable	
 _Z17CaptureStackTraceiPj	func	assert-unreachable	
-_Z17GetSystemLanguage6Symbol	func	assert-unreachable	
+_Z17GetSystemLanguage6Symbol	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); returns a null/zero Symbol; System.cpp's LanguageInit then falls through its remap/force/OptionStr chain (a real fallback path already present), so this doesn't crash — no hard requirement on native without a Wii system menu language
 _Z17HolmesClientCloseP4Filei	func	assert-unreachable	
-_Z17HolmesClientPrintPKc	func	assert-unreachable	
+_Z17HolmesClientPrintPKc	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Holmes debug print — loses a debug log line only, not gameplay-visible
 _Z17HolmesClientWriteiiiPKv	func	assert-unreachable	
 _Z17KeyboardTerminatev	func	assert-unreachable	
-_Z17ThreadCallPreInitv	func	assert-unreachable	
-_Z18HolmesClientReInitv	func	assert-unreachable	
+_Z17ThreadCallPreInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Wii inter-core ThreadCall messaging pre-init — native uses std::thread, not the Wii IPC mechanism
+_Z18HolmesClientReInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Holmes debug/telemetry client re-init — same as HolmesClientInit, benign no-op
 _Z18PlatformDebugBreakv	func	assert-unreachable	
 _Z19HolmesClientSysExecPKc	func	assert-unreachable	
 _Z19ThreadCallTerminatev	func	assert-unreachable	
@@ -101,7 +101,7 @@ _Z20HolmesClientTruncateii	func	assert-unreachable
 _Z21FileQualifiedFilenamePciPKc	func	assert-unreachable	
 _Z21HolmesClientTerminatev	func	assert-unreachable	
 _Z22HolmesClientStackTracePKcPjiR6String	func	assert-unreachable	
-_Z22SetGPHangDetectEnabledbPKc	func	assert-unreachable	
+_Z22SetGPHangDetectEnabledbPKc	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Wii GX graphics-pipe hang-detection debug toggle — no GX backend on native (replaced by the WebGPU renderer), no-op safe
 _Z23RB3InitNativeNetSessionv	func	assert-unreachable	rb3-dta compiles os/System.cpp (whose native SystemInit now calls RB3InitNativeNetSession) but does not link rb3_netsession_native.cpp; rb3-dta never calls SystemInit, so this weak no-op never executes. rb3-native links the strong def, which wins.
 _Z27RB3MetaPerfIntegrityCheckAtPKc	func	assert-unreachable	discovered W0.2.S4: os/File.cpp (rb3 77304bba, song-end MetaPerformer ctor-miscompile fix) calls this from NewFile(); rb3-dta compiles os/File.cpp but not band3/MetaPerformer.cpp (no MetaPerformer in a DTA-only parser), so the strong def is absent there. rb3-native links the strong def, which wins.
 _Z6CDReadiiiPv	func	assert-unreachable	
@@ -121,10 +121,10 @@ _ZN11PlatformMgr11ContentDoneEv	func	assert-unreachable
 _ZN11PlatformMgr12SetConnectedEb	func	assert-unreachable	
 _ZN11PlatformMgr12SetDiskErrorE9DiskError	func	assert-unreachable	
 _ZN11PlatformMgr13ClearDWCErrorEv	func	assert-unreachable	
-_ZN11PlatformMgr13ClearNetErrorEv	func	assert-unreachable	
+_ZN11PlatformMgr13ClearNetErrorEv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); clearing an offline platform's net error — no-op fine (networking is host-replaced per CLAUDE.md roadmap)
 _ZN11PlatformMgr13OnSignInUsersEPK9DataArray	func	assert-unreachable	
 _ZN11PlatformMgr14ContentStartedEv	func	assert-unreachable	
-_ZN11PlatformMgr14SetScreenSaverEb	func	assert-unreachable	
+_ZN11PlatformMgr14SetScreenSaverEb	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); platform screen-saver-inhibit hint — offline/no-console-shell on native, no-op safe (same rationale as the other PlatformMgr::* stubs already ok-noop)
 _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE	func	assert-unreachable	
 _ZN11PlatformMgr15EnableProfanityEb	func	assert-unreachable	
 _ZN11PlatformMgr15GetLastDNSErrorEv	func	assert-unreachable	
@@ -134,8 +134,8 @@ _ZN11PlatformMgr16PrintParentalPinEv	func	assert-unreachable
 _ZN11PlatformMgr17GetLastNHTTPErrorEv	func	assert-unreachable	
 _ZN11PlatformMgr17GetNetErrorStringEb	func	assert-unreachable	
 _ZN11PlatformMgr18RunNetStartUtilityEv	func	assert-unreachable	
-_ZN11PlatformMgr18SetHomeMenuEnabledEb	func	assert-unreachable	
-_ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation	func	assert-unreachable	
+_ZN11PlatformMgr18SetHomeMenuEnabledEb	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Wii system-menu (Home Button) enable/disable hint — no console shell on native, no-op safe
+_ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); platform notification-UI placement hint — no host notification overlay on native, no-op safe
 _ZN11PlatformMgr22InitNintendoConnectionEv	func	assert-unreachable	
 _ZN11PlatformMgr23CloseNintendoConnectionEbb	func	assert-unreachable	
 _ZN11PlatformMgr24IsEthernetCableConnectedEv	func	assert-unreachable	

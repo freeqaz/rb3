@@ -21,127 +21,839 @@
 // write — see native/src/rndobj_synth_stub_registry.tsv's SHAPE NOTE for the
 // analogous still-open gDebugFullQuota caveat).
 //
-// MODE: legacy — every FUNCTION stub aliases the single shared
-// __hmx_rndsynth_noop_stub (xorl %eax,%eax; ret). No census.
+// MODE: loud (default) — each FUNCTION stub is a per-symbol trampoline
+// __hmx_tramp_rs_<i> that logs its FIRST call to stderr (via the extern "C"
+// census hook __hmx_stub_first_hit, shared with the band3/dta sets) and
+// records the hit for the startup+atexit census (rb3_stub_census.cpp), then
+// falls through to returning 0 — behavior-identical to the old shared no-op.
+//
+// A parallel C++ table is emitted as rndobj_synth_stub_table.inc (kept in sync
+// by this generator — do not hand-edit either). Uses its own struct/array/
+// constant names (HmxRndSynthStubInfo / kHmxRndSynthStubTable /
+// kHmxRndSynthStubTotal&Func&Data) so it can be #included alongside
+// band3_stub_table.inc and dta_stub_table.inc in the same TU
+// (rb3_stub_census.cpp) without an ODR clash. rb3-native links PIE, so the
+// trampoline uses RIP-relative addressing + call ...@PLT.
 //
 // Regenerate: edit native/src/rndobj_synth_stub_registry.tsv, then run
-//   python3 scripts/native/gen_band3_link_stubs.py --set rndobj_synth --mode legacy
+//   python3 scripts/native/gen_band3_link_stubs.py --set rndobj_synth
     .text
+    // ---- FUNCTION stubs: per-symbol loud first-hit trampolines ----
     .p2align 4
-__hmx_rndsynth_noop_stub:
-    xorl %eax, %eax
+__hmx_tramp_rs_0:
+    cmpb $0, __hmx_latch_rs_0(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_0(%rip)
+    leaq __hmx_name_rs_0(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
     ret
-
-    // ---- FUNCTION stubs (call -> harmless no-op returning 0) ----
     .weak BinkClose
-    .set BinkClose, __hmx_rndsynth_noop_stub
+    .set BinkClose, __hmx_tramp_rs_0
+    .p2align 4
+__hmx_tramp_rs_1:
+    cmpb $0, __hmx_latch_rs_1(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_1(%rip)
+    leaq __hmx_name_rs_1(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkCloseTrack
-    .set BinkCloseTrack, __hmx_rndsynth_noop_stub
+    .set BinkCloseTrack, __hmx_tramp_rs_1
+    .p2align 4
+__hmx_tramp_rs_2:
+    cmpb $0, __hmx_latch_rs_2(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_2(%rip)
+    leaq __hmx_name_rs_2(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkGetError
-    .set BinkGetError, __hmx_rndsynth_noop_stub
+    .set BinkGetError, __hmx_tramp_rs_2
+    .p2align 4
+__hmx_tramp_rs_3:
+    cmpb $0, __hmx_latch_rs_3(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_3(%rip)
+    leaq __hmx_name_rs_3(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkGetTrackData
-    .set BinkGetTrackData, __hmx_rndsynth_noop_stub
+    .set BinkGetTrackData, __hmx_tramp_rs_3
+    .p2align 4
+__hmx_tramp_rs_4:
+    cmpb $0, __hmx_latch_rs_4(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_4(%rip)
+    leaq __hmx_name_rs_4(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkGoto
-    .set BinkGoto, __hmx_rndsynth_noop_stub
+    .set BinkGoto, __hmx_tramp_rs_4
+    .p2align 4
+__hmx_tramp_rs_5:
+    cmpb $0, __hmx_latch_rs_5(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_5(%rip)
+    leaq __hmx_name_rs_5(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkNextFrame
-    .set BinkNextFrame, __hmx_rndsynth_noop_stub
+    .set BinkNextFrame, __hmx_tramp_rs_5
+    .p2align 4
+__hmx_tramp_rs_6:
+    cmpb $0, __hmx_latch_rs_6(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_6(%rip)
+    leaq __hmx_name_rs_6(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkOpen
-    .set BinkOpen, __hmx_rndsynth_noop_stub
+    .set BinkOpen, __hmx_tramp_rs_6
+    .p2align 4
+__hmx_tramp_rs_7:
+    cmpb $0, __hmx_latch_rs_7(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_7(%rip)
+    leaq __hmx_name_rs_7(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkOpenTrack
-    .set BinkOpenTrack, __hmx_rndsynth_noop_stub
+    .set BinkOpenTrack, __hmx_tramp_rs_7
+    .p2align 4
+__hmx_tramp_rs_8:
+    cmpb $0, __hmx_latch_rs_8(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_8(%rip)
+    leaq __hmx_name_rs_8(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkSetSoundTrack
-    .set BinkSetSoundTrack, __hmx_rndsynth_noop_stub
+    .set BinkSetSoundTrack, __hmx_tramp_rs_8
+    .p2align 4
+__hmx_tramp_rs_9:
+    cmpb $0, __hmx_latch_rs_9(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_9(%rip)
+    leaq __hmx_name_rs_9(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak BinkSetVideoOnOff
-    .set BinkSetVideoOnOff, __hmx_rndsynth_noop_stub
+    .set BinkSetVideoOnOff, __hmx_tramp_rs_9
+    .p2align 4
+__hmx_tramp_rs_10:
+    cmpb $0, __hmx_latch_rs_10(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_10(%rip)
+    leaq __hmx_name_rs_10(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak DCZeroRange
-    .set DCZeroRange, __hmx_rndsynth_noop_stub
+    .set DCZeroRange, __hmx_tramp_rs_10
+    .p2align 4
+__hmx_tramp_rs_11:
+    cmpb $0, __hmx_latch_rs_11(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_11(%rip)
+    leaq __hmx_name_rs_11(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak Ntsc__6WiiRndFv
-    .set Ntsc__6WiiRndFv, __hmx_rndsynth_noop_stub
+    .set Ntsc__6WiiRndFv, __hmx_tramp_rs_11
+    .p2align 4
+__hmx_tramp_rs_12:
+    cmpb $0, __hmx_latch_rs_12(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_12(%rip)
+    leaq __hmx_name_rs_12(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheBandDirector
-    .set TheBandDirector, __hmx_rndsynth_noop_stub
+    .set TheBandDirector, __hmx_tramp_rs_12
+    .p2align 4
+__hmx_tramp_rs_13:
+    cmpb $0, __hmx_latch_rs_13(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_13(%rip)
+    leaq __hmx_name_rs_13(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheRnd
-    .set TheRnd, __hmx_rndsynth_noop_stub
+    .set TheRnd, __hmx_tramp_rs_13
+    .p2align 4
+__hmx_tramp_rs_14:
+    cmpb $0, __hmx_latch_rs_14(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_14(%rip)
+    leaq __hmx_name_rs_14(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheUI
-    .set TheUI, __hmx_rndsynth_noop_stub
+    .set TheUI, __hmx_tramp_rs_14
+    .p2align 4
+__hmx_tramp_rs_15:
+    cmpb $0, __hmx_latch_rs_15(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_15(%rip)
+    leaq __hmx_name_rs_15(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak TheWiiRnd
-    .set TheWiiRnd, __hmx_rndsynth_noop_stub
+    .set TheWiiRnd, __hmx_tramp_rs_15
+    .p2align 4
+__hmx_tramp_rs_16:
+    cmpb $0, __hmx_latch_rs_16(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_16(%rip)
+    leaq __hmx_name_rs_16(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z13CleanupGpuTexP6RndTex
-    .set _Z13CleanupGpuTexP6RndTex, __hmx_rndsynth_noop_stub
+    .set _Z13CleanupGpuTexP6RndTex, __hmx_tramp_rs_16
+    .p2align 4
+__hmx_tramp_rs_17:
+    cmpb $0, __hmx_latch_rs_17(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_17(%rip)
+    leaq __hmx_name_rs_17(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z14CleanupGpuMeshP7RndMesh
-    .set _Z14CleanupGpuMeshP7RndMesh, __hmx_rndsynth_noop_stub
+    .set _Z14CleanupGpuMeshP7RndMesh, __hmx_tramp_rs_17
+    .p2align 4
+__hmx_tramp_rs_18:
+    cmpb $0, __hmx_latch_rs_18(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_18(%rip)
+    leaq __hmx_name_rs_18(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z22DrawParticlesBillboardP14RndParticleSys
-    .set _Z22DrawParticlesBillboardP14RndParticleSys, __hmx_rndsynth_noop_stub
+    .set _Z22DrawParticlesBillboardP14RndParticleSys, __hmx_tramp_rs_18
+    .p2align 4
+__hmx_tramp_rs_19:
+    cmpb $0, __hmx_latch_rs_19(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_19(%rip)
+    leaq __hmx_name_rs_19(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _Z25HolmesClientCacheResourcePKcS0_
-    .set _Z25HolmesClientCacheResourcePKcS0_, __hmx_rndsynth_noop_stub
+    .set _Z25HolmesClientCacheResourcePKcS0_, __hmx_tramp_rs_19
+    .p2align 4
+__hmx_tramp_rs_20:
+    cmpb $0, __hmx_latch_rs_20(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_20(%rip)
+    leaq __hmx_name_rs_20(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN11SynthSample7NewInstEbii
-    .set _ZN11SynthSample7NewInstEbii, __hmx_rndsynth_noop_stub
+    .set _ZN11SynthSample7NewInstEbii, __hmx_tramp_rs_20
+    .p2align 4
+__hmx_tramp_rs_21:
+    cmpb $0, __hmx_latch_rs_21(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_21(%rip)
+    leaq __hmx_name_rs_21(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12AsyncFileWii14FileExistsOnCDEPKc
-    .set _ZN12AsyncFileWii14FileExistsOnCDEPKc, __hmx_rndsynth_noop_stub
+    .set _ZN12AsyncFileWii14FileExistsOnCDEPKc, __hmx_tramp_rs_21
+    .p2align 4
+__hmx_tramp_rs_22:
+    cmpb $0, __hmx_latch_rs_22(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_22(%rip)
+    leaq __hmx_name_rs_22(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12BandDirector12IsMusicVideoEv
-    .set _ZN12BandDirector12IsMusicVideoEv, __hmx_rndsynth_noop_stub
+    .set _ZN12BandDirector12IsMusicVideoEv, __hmx_tramp_rs_22
+    .p2align 4
+__hmx_tramp_rs_23:
+    cmpb $0, __hmx_latch_rs_23(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_23(%rip)
+    leaq __hmx_name_rs_23(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WaveFileDataC1ER8WaveFile
-    .set _ZN12WaveFileDataC1ER8WaveFile, __hmx_rndsynth_noop_stub
+    .set _ZN12WaveFileDataC1ER8WaveFile, __hmx_tramp_rs_23
+    .p2align 4
+__hmx_tramp_rs_24:
+    cmpb $0, __hmx_latch_rs_24(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_24(%rip)
+    leaq __hmx_name_rs_24(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN12WaveFileDataD1Ev
-    .set _ZN12WaveFileDataD1Ev, __hmx_rndsynth_noop_stub
+    .set _ZN12WaveFileDataD1Ev, __hmx_tramp_rs_24
+    .p2align 4
+__hmx_tramp_rs_25:
+    cmpb $0, __hmx_latch_rs_25(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_25(%rip)
+    leaq __hmx_name_rs_25(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13STRIPERRESULT19AllocLengthsAndRunsEii
-    .set _ZN13STRIPERRESULT19AllocLengthsAndRunsEii, __hmx_rndsynth_noop_stub
+    .set _ZN13STRIPERRESULT19AllocLengthsAndRunsEii, __hmx_tramp_rs_25
+    .p2align 4
+__hmx_tramp_rs_26:
+    cmpb $0, __hmx_latch_rs_26(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_26(%rip)
+    leaq __hmx_name_rs_26(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13STRIPERRESULTC1ERKS_
-    .set _ZN13STRIPERRESULTC1ERKS_, __hmx_rndsynth_noop_stub
+    .set _ZN13STRIPERRESULTC1ERKS_, __hmx_tramp_rs_26
+    .p2align 4
+__hmx_tramp_rs_27:
+    cmpb $0, __hmx_latch_rs_27(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_27(%rip)
+    leaq __hmx_name_rs_27(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13STRIPERRESULTC1Ev
-    .set _ZN13STRIPERRESULTC1Ev, __hmx_rndsynth_noop_stub
+    .set _ZN13STRIPERRESULTC1Ev, __hmx_tramp_rs_27
+    .p2align 4
+__hmx_tramp_rs_28:
+    cmpb $0, __hmx_latch_rs_28(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_28(%rip)
+    leaq __hmx_name_rs_28(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13STRIPERRESULTD1Ev
-    .set _ZN13STRIPERRESULTD1Ev, __hmx_rndsynth_noop_stub
+    .set _ZN13STRIPERRESULTD1Ev, __hmx_tramp_rs_28
+    .p2align 4
+__hmx_tramp_rs_29:
+    cmpb $0, __hmx_latch_rs_29(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_29(%rip)
+    leaq __hmx_name_rs_29(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN13STRIPERRESULTaSERKS_
-    .set _ZN13STRIPERRESULTaSERKS_, __hmx_rndsynth_noop_stub
+    .set _ZN13STRIPERRESULTaSERKS_, __hmx_tramp_rs_29
+    .p2align 4
+__hmx_tramp_rs_30:
+    cmpb $0, __hmx_latch_rs_30(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_30(%rip)
+    leaq __hmx_name_rs_30(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN14StandardStream23sReportLargeTimerErrorsE
-    .set _ZN14StandardStream23sReportLargeTimerErrorsE, __hmx_rndsynth_noop_stub
+    .set _ZN14StandardStream23sReportLargeTimerErrorsE, __hmx_tramp_rs_30
+    .p2align 4
+__hmx_tramp_rs_31:
+    cmpb $0, __hmx_latch_rs_31(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_31(%rip)
+    leaq __hmx_name_rs_31(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6RndTex10SyncBitmapEv
-    .set _ZN6RndTex10SyncBitmapEv, __hmx_rndsynth_noop_stub
+    .set _ZN6RndTex10SyncBitmapEv, __hmx_tramp_rs_31
+    .p2align 4
+__hmx_tramp_rs_32:
+    cmpb $0, __hmx_latch_rs_32(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_32(%rip)
+    leaq __hmx_name_rs_32(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6RndTex13PresyncBitmapEv
-    .set _ZN6RndTex13PresyncBitmapEv, __hmx_rndsynth_noop_stub
+    .set _ZN6RndTex13PresyncBitmapEv, __hmx_tramp_rs_32
+    .p2align 4
+__hmx_tramp_rs_33:
+    cmpb $0, __hmx_latch_rs_33(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_33(%rip)
+    leaq __hmx_name_rs_33(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6RndTex14MakeDrawTargetEv
-    .set _ZN6RndTex14MakeDrawTargetEv, __hmx_rndsynth_noop_stub
+    .set _ZN6RndTex14MakeDrawTargetEv, __hmx_tramp_rs_33
+    .p2align 4
+__hmx_tramp_rs_34:
+    cmpb $0, __hmx_latch_rs_34(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_34(%rip)
+    leaq __hmx_name_rs_34(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6RndTex16FinishDrawTargetEv
-    .set _ZN6RndTex16FinishDrawTargetEv, __hmx_rndsynth_noop_stub
+    .set _ZN6RndTex16FinishDrawTargetEv, __hmx_tramp_rs_34
+    .p2align 4
+__hmx_tramp_rs_35:
+    cmpb $0, __hmx_latch_rs_35(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_35(%rip)
+    leaq __hmx_name_rs_35(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN6WiiRnd18GetProgressiveScanEv
-    .set _ZN6WiiRnd18GetProgressiveScanEv, __hmx_rndsynth_noop_stub
+    .set _ZN6WiiRnd18GetProgressiveScanEv, __hmx_tramp_rs_35
+    .p2align 4
+__hmx_tramp_rs_36:
+    cmpb $0, __hmx_latch_rs_36(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_36(%rip)
+    leaq __hmx_name_rs_36(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN7RndMesh11DrawShowingEv
-    .set _ZN7RndMesh11DrawShowingEv, __hmx_rndsynth_noop_stub
+    .set _ZN7RndMesh11DrawShowingEv, __hmx_tramp_rs_36
+    .p2align 4
+__hmx_tramp_rs_37:
+    cmpb $0, __hmx_latch_rs_37(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_37(%rip)
+    leaq __hmx_name_rs_37(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN7RndMesh6OnSyncEi
-    .set _ZN7RndMesh6OnSyncEi, __hmx_rndsynth_noop_stub
+    .set _ZN7RndMesh6OnSyncEi, __hmx_tramp_rs_37
+    .p2align 4
+__hmx_tramp_rs_38:
+    cmpb $0, __hmx_latch_rs_38(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_38(%rip)
+    leaq __hmx_name_rs_38(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN7Striper4InitER13STRIPERCREATE
-    .set _ZN7Striper4InitER13STRIPERCREATE, __hmx_rndsynth_noop_stub
+    .set _ZN7Striper4InitER13STRIPERCREATE, __hmx_tramp_rs_38
+    .p2align 4
+__hmx_tramp_rs_39:
+    cmpb $0, __hmx_latch_rs_39(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_39(%rip)
+    leaq __hmx_name_rs_39(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN7Striper7ComputeER13STRIPERRESULT
-    .set _ZN7Striper7ComputeER13STRIPERRESULT, __hmx_rndsynth_noop_stub
+    .set _ZN7Striper7ComputeER13STRIPERRESULT, __hmx_tramp_rs_39
+    .p2align 4
+__hmx_tramp_rs_40:
+    cmpb $0, __hmx_latch_rs_40(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_40(%rip)
+    leaq __hmx_name_rs_40(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8KeyChain10getNumKeysEv
-    .set _ZN8KeyChain10getNumKeysEv, __hmx_rndsynth_noop_stub
+    .set _ZN8KeyChain10getNumKeysEv, __hmx_tramp_rs_40
+    .p2align 4
+__hmx_tramp_rs_41:
+    cmpb $0, __hmx_latch_rs_41(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_41(%rip)
+    leaq __hmx_name_rs_41(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8KeyChain9getMasherEPh
-    .set _ZN8KeyChain9getMasherEPh, __hmx_rndsynth_noop_stub
+    .set _ZN8KeyChain9getMasherEPh, __hmx_tramp_rs_41
+    .p2align 4
+__hmx_tramp_rs_42:
+    cmpb $0, __hmx_latch_rs_42(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_42(%rip)
+    leaq __hmx_name_rs_42(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8WaveFileC1ER9BinStream
-    .set _ZN8WaveFileC1ER9BinStream, __hmx_rndsynth_noop_stub
+    .set _ZN8WaveFileC1ER9BinStream, __hmx_tramp_rs_42
+    .p2align 4
+__hmx_tramp_rs_43:
+    cmpb $0, __hmx_latch_rs_43(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_43(%rip)
+    leaq __hmx_name_rs_43(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN8WaveFileD1Ev
-    .set _ZN8WaveFileD1Ev, __hmx_rndsynth_noop_stub
+    .set _ZN8WaveFileD1Ev, __hmx_tramp_rs_43
+    .p2align 4
+__hmx_tramp_rs_44:
+    cmpb $0, __hmx_latch_rs_44(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_44(%rip)
+    leaq __hmx_name_rs_44(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZN9Transform6LookAtERK7Vector3S2_
-    .set _ZN9Transform6LookAtERK7Vector3S2_, __hmx_rndsynth_noop_stub
+    .set _ZN9Transform6LookAtERK7Vector3S2_, __hmx_tramp_rs_44
+    .p2align 4
+__hmx_tramp_rs_45:
+    cmpb $0, __hmx_latch_rs_45(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_45(%rip)
+    leaq __hmx_name_rs_45(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak _ZTV7BufFile
-    .set _ZTV7BufFile, __hmx_rndsynth_noop_stub
+    .set _ZTV7BufFile, __hmx_tramp_rs_45
+    .p2align 4
+__hmx_tramp_rs_46:
+    cmpb $0, __hmx_latch_rs_46(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_46(%rip)
+    leaq __hmx_name_rs_46(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak ctr_decrypt
-    .set ctr_decrypt, __hmx_rndsynth_noop_stub
+    .set ctr_decrypt, __hmx_tramp_rs_46
+    .p2align 4
+__hmx_tramp_rs_47:
+    cmpb $0, __hmx_latch_rs_47(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_47(%rip)
+    leaq __hmx_name_rs_47(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak ctr_reinit
-    .set ctr_reinit, __hmx_rndsynth_noop_stub
+    .set ctr_reinit, __hmx_tramp_rs_47
+    .p2align 4
+__hmx_tramp_rs_48:
+    cmpb $0, __hmx_latch_rs_48(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_48(%rip)
+    leaq __hmx_name_rs_48(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak ctr_start
-    .set ctr_start, __hmx_rndsynth_noop_stub
+    .set ctr_start, __hmx_tramp_rs_48
+    .p2align 4
+__hmx_tramp_rs_49:
+    cmpb $0, __hmx_latch_rs_49(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_49(%rip)
+    leaq __hmx_name_rs_49(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak gDebugFullQuota
-    .set gDebugFullQuota, __hmx_rndsynth_noop_stub
+    .set gDebugFullQuota, __hmx_tramp_rs_49
+    .p2align 4
+__hmx_tramp_rs_50:
+    cmpb $0, __hmx_latch_rs_50(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_50(%rip)
+    leaq __hmx_name_rs_50(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak register_cipher
-    .set register_cipher, __hmx_rndsynth_noop_stub
+    .set register_cipher, __hmx_tramp_rs_50
+    .p2align 4
+__hmx_tramp_rs_51:
+    cmpb $0, __hmx_latch_rs_51(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_51(%rip)
+    leaq __hmx_name_rs_51(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak rijndael_desc
-    .set rijndael_desc, __hmx_rndsynth_noop_stub
+    .set rijndael_desc, __hmx_tramp_rs_51
+    .p2align 4
+__hmx_tramp_rs_52:
+    cmpb $0, __hmx_latch_rs_52(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_52(%rip)
+    leaq __hmx_name_rs_52(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak rijndael_ecb_decrypt
-    .set rijndael_ecb_decrypt, __hmx_rndsynth_noop_stub
+    .set rijndael_ecb_decrypt, __hmx_tramp_rs_52
+    .p2align 4
+__hmx_tramp_rs_53:
+    cmpb $0, __hmx_latch_rs_53(%rip)
+    jne 1f
+    movb $1, __hmx_latch_rs_53(%rip)
+    leaq __hmx_name_rs_53(%rip), %rdi
+    call __hmx_stub_first_hit@PLT
+1:  xorl %eax, %eax
+    ret
     .weak rijndael_setup
-    .set rijndael_setup, __hmx_rndsynth_noop_stub
+    .set rijndael_setup, __hmx_tramp_rs_53
+
+    .section .rodata
+__hmx_name_rs_0:
+    .asciz "BinkClose"
+__hmx_name_rs_1:
+    .asciz "BinkCloseTrack"
+__hmx_name_rs_2:
+    .asciz "BinkGetError"
+__hmx_name_rs_3:
+    .asciz "BinkGetTrackData"
+__hmx_name_rs_4:
+    .asciz "BinkGoto"
+__hmx_name_rs_5:
+    .asciz "BinkNextFrame"
+__hmx_name_rs_6:
+    .asciz "BinkOpen"
+__hmx_name_rs_7:
+    .asciz "BinkOpenTrack"
+__hmx_name_rs_8:
+    .asciz "BinkSetSoundTrack"
+__hmx_name_rs_9:
+    .asciz "BinkSetVideoOnOff"
+__hmx_name_rs_10:
+    .asciz "DCZeroRange"
+__hmx_name_rs_11:
+    .asciz "Ntsc__6WiiRndFv"
+__hmx_name_rs_12:
+    .asciz "TheBandDirector"
+__hmx_name_rs_13:
+    .asciz "TheRnd"
+__hmx_name_rs_14:
+    .asciz "TheUI"
+__hmx_name_rs_15:
+    .asciz "TheWiiRnd"
+__hmx_name_rs_16:
+    .asciz "_Z13CleanupGpuTexP6RndTex"
+__hmx_name_rs_17:
+    .asciz "_Z14CleanupGpuMeshP7RndMesh"
+__hmx_name_rs_18:
+    .asciz "_Z22DrawParticlesBillboardP14RndParticleSys"
+__hmx_name_rs_19:
+    .asciz "_Z25HolmesClientCacheResourcePKcS0_"
+__hmx_name_rs_20:
+    .asciz "_ZN11SynthSample7NewInstEbii"
+__hmx_name_rs_21:
+    .asciz "_ZN12AsyncFileWii14FileExistsOnCDEPKc"
+__hmx_name_rs_22:
+    .asciz "_ZN12BandDirector12IsMusicVideoEv"
+__hmx_name_rs_23:
+    .asciz "_ZN12WaveFileDataC1ER8WaveFile"
+__hmx_name_rs_24:
+    .asciz "_ZN12WaveFileDataD1Ev"
+__hmx_name_rs_25:
+    .asciz "_ZN13STRIPERRESULT19AllocLengthsAndRunsEii"
+__hmx_name_rs_26:
+    .asciz "_ZN13STRIPERRESULTC1ERKS_"
+__hmx_name_rs_27:
+    .asciz "_ZN13STRIPERRESULTC1Ev"
+__hmx_name_rs_28:
+    .asciz "_ZN13STRIPERRESULTD1Ev"
+__hmx_name_rs_29:
+    .asciz "_ZN13STRIPERRESULTaSERKS_"
+__hmx_name_rs_30:
+    .asciz "_ZN14StandardStream23sReportLargeTimerErrorsE"
+__hmx_name_rs_31:
+    .asciz "_ZN6RndTex10SyncBitmapEv"
+__hmx_name_rs_32:
+    .asciz "_ZN6RndTex13PresyncBitmapEv"
+__hmx_name_rs_33:
+    .asciz "_ZN6RndTex14MakeDrawTargetEv"
+__hmx_name_rs_34:
+    .asciz "_ZN6RndTex16FinishDrawTargetEv"
+__hmx_name_rs_35:
+    .asciz "_ZN6WiiRnd18GetProgressiveScanEv"
+__hmx_name_rs_36:
+    .asciz "_ZN7RndMesh11DrawShowingEv"
+__hmx_name_rs_37:
+    .asciz "_ZN7RndMesh6OnSyncEi"
+__hmx_name_rs_38:
+    .asciz "_ZN7Striper4InitER13STRIPERCREATE"
+__hmx_name_rs_39:
+    .asciz "_ZN7Striper7ComputeER13STRIPERRESULT"
+__hmx_name_rs_40:
+    .asciz "_ZN8KeyChain10getNumKeysEv"
+__hmx_name_rs_41:
+    .asciz "_ZN8KeyChain9getMasherEPh"
+__hmx_name_rs_42:
+    .asciz "_ZN8WaveFileC1ER9BinStream"
+__hmx_name_rs_43:
+    .asciz "_ZN8WaveFileD1Ev"
+__hmx_name_rs_44:
+    .asciz "_ZN9Transform6LookAtERK7Vector3S2_"
+__hmx_name_rs_45:
+    .asciz "_ZTV7BufFile"
+__hmx_name_rs_46:
+    .asciz "ctr_decrypt"
+__hmx_name_rs_47:
+    .asciz "ctr_reinit"
+__hmx_name_rs_48:
+    .asciz "ctr_start"
+__hmx_name_rs_49:
+    .asciz "gDebugFullQuota"
+__hmx_name_rs_50:
+    .asciz "register_cipher"
+__hmx_name_rs_51:
+    .asciz "rijndael_desc"
+__hmx_name_rs_52:
+    .asciz "rijndael_ecb_decrypt"
+__hmx_name_rs_53:
+    .asciz "rijndael_setup"
+
+    .bss
+    // ---- per-symbol first-hit latches (1 byte each) ----
+__hmx_latch_rs_0:
+    .zero 1
+__hmx_latch_rs_1:
+    .zero 1
+__hmx_latch_rs_2:
+    .zero 1
+__hmx_latch_rs_3:
+    .zero 1
+__hmx_latch_rs_4:
+    .zero 1
+__hmx_latch_rs_5:
+    .zero 1
+__hmx_latch_rs_6:
+    .zero 1
+__hmx_latch_rs_7:
+    .zero 1
+__hmx_latch_rs_8:
+    .zero 1
+__hmx_latch_rs_9:
+    .zero 1
+__hmx_latch_rs_10:
+    .zero 1
+__hmx_latch_rs_11:
+    .zero 1
+__hmx_latch_rs_12:
+    .zero 1
+__hmx_latch_rs_13:
+    .zero 1
+__hmx_latch_rs_14:
+    .zero 1
+__hmx_latch_rs_15:
+    .zero 1
+__hmx_latch_rs_16:
+    .zero 1
+__hmx_latch_rs_17:
+    .zero 1
+__hmx_latch_rs_18:
+    .zero 1
+__hmx_latch_rs_19:
+    .zero 1
+__hmx_latch_rs_20:
+    .zero 1
+__hmx_latch_rs_21:
+    .zero 1
+__hmx_latch_rs_22:
+    .zero 1
+__hmx_latch_rs_23:
+    .zero 1
+__hmx_latch_rs_24:
+    .zero 1
+__hmx_latch_rs_25:
+    .zero 1
+__hmx_latch_rs_26:
+    .zero 1
+__hmx_latch_rs_27:
+    .zero 1
+__hmx_latch_rs_28:
+    .zero 1
+__hmx_latch_rs_29:
+    .zero 1
+__hmx_latch_rs_30:
+    .zero 1
+__hmx_latch_rs_31:
+    .zero 1
+__hmx_latch_rs_32:
+    .zero 1
+__hmx_latch_rs_33:
+    .zero 1
+__hmx_latch_rs_34:
+    .zero 1
+__hmx_latch_rs_35:
+    .zero 1
+__hmx_latch_rs_36:
+    .zero 1
+__hmx_latch_rs_37:
+    .zero 1
+__hmx_latch_rs_38:
+    .zero 1
+__hmx_latch_rs_39:
+    .zero 1
+__hmx_latch_rs_40:
+    .zero 1
+__hmx_latch_rs_41:
+    .zero 1
+__hmx_latch_rs_42:
+    .zero 1
+__hmx_latch_rs_43:
+    .zero 1
+__hmx_latch_rs_44:
+    .zero 1
+__hmx_latch_rs_45:
+    .zero 1
+__hmx_latch_rs_46:
+    .zero 1
+__hmx_latch_rs_47:
+    .zero 1
+__hmx_latch_rs_48:
+    .zero 1
+__hmx_latch_rs_49:
+    .zero 1
+__hmx_latch_rs_50:
+    .zero 1
+__hmx_latch_rs_51:
+    .zero 1
+__hmx_latch_rs_52:
+    .zero 1
+__hmx_latch_rs_53:
+    .zero 1
 
     // ---- DATA stubs (each: own writable zero-filled reservation) ----
-    .bss
     .p2align 4

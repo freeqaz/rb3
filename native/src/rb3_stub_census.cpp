@@ -1,9 +1,10 @@
 // rb3_stub_census.cpp — loud-by-default weak-stub census (W0.2).
 //
-// Pairs with the per-symbol trampolines in the generated band3_link_stubs.s
-// (loud mode). Each weak FUNCTION stub is a trampoline that, on its FIRST call,
-// jumps here via the extern "C" hook __hmx_stub_first_hit(name); the asm-side
-// latch guarantees at-most-once per symbol, so this file just logs + records.
+// Pairs with the per-symbol trampolines in the generated band3_link_stubs.s,
+// dta_link_stubs.s, and rndobj_synth_link_stubs.s (loud mode, W0.2.S2/S4).
+// Each weak FUNCTION stub is a trampoline that, on its FIRST call, jumps here
+// via the extern "C" hook __hmx_stub_first_hit(name); the asm-side latch
+// guarantees at-most-once per symbol, so this file just logs + records.
 //
 // Turns the old silent "none of these stubs is ever reached" belief into an
 // enforced, loud-by-default invariant: a swallowed call (à la
@@ -12,8 +13,17 @@
 // __hmx_stub_census_assert_unreachable_hits — fails the stub-census gate red
 // if an `assert-unreachable`-classified stub is hit.
 //
-// The census table (name/kind/class for every weak symbol) is generated
-// alongside the .s as band3_stub_table.inc — do not hand-edit either.
+// Three independent census tables (name/kind/class for every weak symbol in
+// their respective stub set) are generated alongside the three .s files as
+// band3_stub_table.inc / dta_stub_table.inc / rndobj_synth_stub_table.inc —
+// do not hand-edit any of them. Each carries its own struct/array/constant
+// names (HmxStubInfo/kHmxStubTable, HmxDtaStubInfo/kHmxDtaStubTable,
+// HmxRndSynthStubInfo/kHmxRndSynthStubTable) specifically so all three can be
+// #included in this one TU without an ODR clash. Hit matching is by
+// std::strcmp against each table's `name` column (NOT positional index), so
+// summing/iterating independent tables here needs no shared ordering — this
+// is what lets W0.2.S4 add two more tables with zero changes to the band3
+// table or the S1-S3 trampolines/gtest.
 //
 // All output is loud by default; set RB3_STUB_QUIET to silence the per-hit
 // line and the census dumps (the recorded hit list and the gate query are
@@ -27,6 +37,8 @@
 #include <vector>
 
 #include "band3_stub_table.inc"
+#include "dta_stub_table.inc"
+#include "rndobj_synth_stub_table.inc"
 
 namespace {
 
@@ -48,8 +60,9 @@ void census_atexit() {
     std::lock_guard<std::mutex> lock(census_mutex());
     const std::vector<const char *> &hits = hit_list();
     if (!quiet()) {
+        int total = kHmxStubTotal + kHmxDtaStubTotal + kHmxRndSynthStubTotal;
         fprintf(stderr, "[STUB CENSUS] exit: %zu of %d weak stubs hit this run\n",
-                hits.size(), kHmxStubTotal);
+                hits.size(), total);
         for (const char *n : hits)
             fprintf(stderr, "[STUB CENSUS]   hit: %s\n", n);
     }
@@ -77,26 +90,51 @@ extern "C" void __hmx_stub_census_startup() {
             return;
         armed = true;
     }
-    if (!quiet())
-        fprintf(stderr, "[STUB CENSUS] linked=%d (func=%d data=%d)\n",
-                kHmxStubTotal, kHmxStubFunc, kHmxStubData);
+    if (!quiet()) {
+        int total = kHmxStubTotal + kHmxDtaStubTotal + kHmxRndSynthStubTotal;
+        int func = kHmxStubFunc + kHmxDtaStubFunc + kHmxRndSynthStubFunc;
+        int data = kHmxStubData + kHmxDtaStubData + kHmxRndSynthStubData;
+        fprintf(stderr, "[STUB CENSUS] linked=%d (func=%d data=%d)\n", total, func, data);
+        fprintf(stderr, "[STUB CENSUS]   band3=%d dta=%d rndobj_synth=%d\n",
+                kHmxStubTotal, kHmxDtaStubTotal, kHmxRndSynthStubTotal);
+    }
     atexit(census_atexit);
 }
 
 // Gate query (consumed by the stub-census gtest in W0.2.S3): collects every
-// recorded hit whose registry class is `assert-unreachable` (cls == 'A').
+// recorded hit whose registry class is `assert-unreachable` (cls == 'A'),
+// across all three independent stub-set tables (band3, dta, rndobj_synth).
 // Returns the count; `out` receives the offending symbol names.
 int __hmx_stub_census_assert_unreachable_hits(std::vector<std::string> &out) {
     std::lock_guard<std::mutex> lock(census_mutex());
     int count = 0;
     for (const char *hit : hit_list()) {
-        for (int i = 0; i < kHmxStubTotal; ++i) {
+        bool matched = false;
+        for (int i = 0; i < kHmxStubTotal && !matched; ++i) {
             if (strcmp(hit, kHmxStubTable[i].name) == 0) {
+                matched = true;
                 if (kHmxStubTable[i].cls == 'A') {
                     out.push_back(hit);
                     ++count;
                 }
-                break;
+            }
+        }
+        for (int i = 0; i < kHmxDtaStubTotal && !matched; ++i) {
+            if (strcmp(hit, kHmxDtaStubTable[i].name) == 0) {
+                matched = true;
+                if (kHmxDtaStubTable[i].cls == 'A') {
+                    out.push_back(hit);
+                    ++count;
+                }
+            }
+        }
+        for (int i = 0; i < kHmxRndSynthStubTotal && !matched; ++i) {
+            if (strcmp(hit, kHmxRndSynthStubTable[i].name) == 0) {
+                matched = true;
+                if (kHmxRndSynthStubTable[i].cls == 'A') {
+                    out.push_back(hit);
+                    ++count;
+                }
             }
         }
     }

@@ -313,16 +313,21 @@ class StubSet:
         self.tramp_infix = tramp_infix  # e.g. "" | "dta_" | "rs_"
         self.struct_name = struct_name
         self.array_name = array_name
-        self.total_name = f"kHmx{self._camel()}StubTotal" if name != "band3" else "kHmxStubTotal"
-        self.func_name = f"kHmx{self._camel()}StubFunc" if name != "band3" else "kHmxStubFunc"
-        self.data_name = f"kHmx{self._camel()}StubData" if name != "band3" else "kHmxStubData"
+        # Derive the count-constant names from struct_name (strip the leading
+        # "Hmx" / trailing "StubInfo") rather than camel-casing `name`
+        # independently — keeps kHmx<X>StubTotal/Func/Data consistent with
+        # HmxXStubInfo / kHmxXStubTable even where the set's chosen label is
+        # shorter than its snake_case name (e.g. the "rndobj_synth" set uses
+        # the label "RndSynth" throughout, not "RndobjSynth").
+        assert struct_name.startswith("Hmx") and struct_name.endswith("StubInfo"), struct_name
+        infix_label = struct_name[len("Hmx"):-len("StubInfo")]
+        self.total_name = f"kHmx{infix_label}StubTotal"
+        self.func_name = f"kHmx{infix_label}StubFunc"
+        self.data_name = f"kHmx{infix_label}StubData"
         self.header_legacy = header_legacy
         self.header_loud = header_loud
         self.table_header = table_header
         self.special_verbatim = special_verbatim
-
-    def _camel(self):
-        return "".join(p.capitalize() for p in self.name.split("_"))
 
 
 STUB_SETS = {
