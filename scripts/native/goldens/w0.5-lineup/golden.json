@@ -1,0 +1,272 @@
+{
+  "generated_from": "/home/free/code/milohax/rb3/native/build-agent-W0.5/rb3-native",
+  "capture_params": {
+    "frames": 2,
+    "frame_dt": 500,
+    "anchor_ms": 24000.0,
+    "song_downs": 4,
+    "diff": "hard",
+    "slots": 4
+  },
+  "shots": [
+    "coop_g_n03.shot",
+    "coop_g_b.shot"
+  ],
+  "shard_ratio_max": 3.75,
+  "per_mesh_ratio_cap": 8.0,
+  "n_shard_meshes": 95,
+  "seg_gating": [
+    "n_slivers",
+    "n_components_abs"
+  ],
+  "seg_tol": {
+    "sliver_abs_slack": 8,
+    "component_factor": 3.0,
+    "solidity_factor": 0.99,
+    "fill_factor": 0.99,
+    "bbox_extent_factor": 5.0
+  },
+  "seg_abs_component_cap": 110,
+  "frames": [
+    {
+      "shot": "coop_g_n03",
+      "frame_idx": 0,
+      "png": "coop_g_n03_0.png",
+      "seg_metrics": {
+        "width": 1280,
+        "height": 720,
+        "total_fg_px": 154187,
+        "n_components": 39,
+        "n_slivers": 0,
+        "max_solidity": 0.9409493527140586,
+        "mean_solidity": 0.4514155195965531,
+        "fg_fill": 0.17092824074074073,
+        "fg_bbox": [
+          0,
+          0,
+          1199,
+          719
+        ],
+        "fg_bbox_w": 1200,
+        "fg_bbox_h": 720,
+        "fg_bbox_diag": 1399.4284547628722,
+        "bg_mode": "border"
+      },
+      "char_probe": [
+        {
+          "slot": 0,
+          "raw": "player0 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 1,
+          "raw": "player1 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 2,
+          "raw": "player2 meshes=144 skinned=4 verts=15395 loading=0",
+          "meshes": 144,
+          "skinned": 4,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 3,
+          "raw": "player3 meshes=142 skinned=0 verts=15395 loading=0",
+          "meshes": 142,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        }
+      ],
+      "songMs": 24019.1
+    },
+    {
+      "shot": "coop_g_n03",
+      "frame_idx": 1,
+      "png": "coop_g_n03_1.png",
+      "seg_metrics": {
+        "width": 1280,
+        "height": 720,
+        "total_fg_px": 210278,
+        "n_components": 27,
+        "n_slivers": 3,
+        "max_solidity": 0.7053061224489796,
+        "mean_solidity": 0.4011815065322424,
+        "fg_fill": 0.22297771672771674,
+        "fg_bbox": [
+          0,
+          0,
+          1273,
+          719
+        ],
+        "fg_bbox_w": 1274,
+        "fg_bbox_h": 720,
+        "fg_bbox_diag": 1463.3782832883642,
+        "bg_mode": "border"
+      },
+      "char_probe": [
+        {
+          "slot": 0,
+          "raw": "player0 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 1,
+          "raw": "player1 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 2,
+          "raw": "player2 meshes=144 skinned=4 verts=15395 loading=0",
+          "meshes": 144,
+          "skinned": 4,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 3,
+          "raw": "player3 meshes=142 skinned=0 verts=15395 loading=0",
+          "meshes": 142,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        }
+      ],
+      "songMs": 24520.8
+    },
+    {
+      "shot": "coop_g_b",
+      "frame_idx": 0,
+      "png": "coop_g_b_0.png",
+      "seg_metrics": {
+        "width": 1280,
+        "height": 720,
+        "total_fg_px": 166650,
+        "n_components": 34,
+        "n_slivers": 3,
+        "max_solidity": 0.9409493527140586,
+        "mean_solidity": 0.41105747990197206,
+        "fg_fill": 0.1957968476357268,
+        "fg_bbox": [
+          0,
+          0,
+          1141,
+          719
+        ],
+        "fg_bbox_w": 1142,
+        "fg_bbox_h": 720,
+        "fg_bbox_diag": 1350.023703495609,
+        "bg_mode": "border"
+      },
+      "char_probe": [
+        {
+          "slot": 0,
+          "raw": "player0 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 1,
+          "raw": "player1 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 2,
+          "raw": "player2 meshes=144 skinned=4 verts=15395 loading=0",
+          "meshes": 144,
+          "skinned": 4,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 3,
+          "raw": "player3 meshes=142 skinned=0 verts=15395 loading=0",
+          "meshes": 142,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        }
+      ],
+      "songMs": 25384.1
+    },
+    {
+      "shot": "coop_g_b",
+      "frame_idx": 1,
+      "png": "coop_g_b_1.png",
+      "seg_metrics": {
+        "width": 1280,
+        "height": 720,
+        "total_fg_px": 181783,
+        "n_components": 41,
+        "n_slivers": 2,
+        "max_solidity": 0.7053061224489796,
+        "mean_solidity": 0.43094374311046646,
+        "fg_fill": 0.19927666851543724,
+        "fg_bbox": [
+          0,
+          0,
+          1201,
+          719
+        ],
+        "fg_bbox_w": 1202,
+        "fg_bbox_h": 720,
+        "fg_bbox_diag": 1401.1438184569063,
+        "bg_mode": "border"
+      },
+      "char_probe": [
+        {
+          "slot": 0,
+          "raw": "player0 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 1,
+          "raw": "player1 meshes=140 skinned=0 verts=15395 loading=0",
+          "meshes": 140,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 2,
+          "raw": "player2 meshes=144 skinned=4 verts=15395 loading=0",
+          "meshes": 144,
+          "skinned": 4,
+          "verts": 15395,
+          "loading": 0
+        },
+        {
+          "slot": 3,
+          "raw": "player3 meshes=142 skinned=0 verts=15395 loading=0",
+          "meshes": 142,
+          "skinned": 0,
+          "verts": 15395,
+          "loading": 0
+        }
+      ],
+      "songMs": 25773.4
+    }
+  ]
+}

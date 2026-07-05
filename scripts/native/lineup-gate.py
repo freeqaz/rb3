@@ -87,6 +87,50 @@ COUNT_VERTS_SLACK = 0.08        # |verts   / golden - 1| <= this
 # Image layer (advisory only).
 IMAGE_MIN_SCORE = 35.0          # visual_diff --perceptual PASS threshold
 
+# Segmentation (layer A) gating policy. MEASURED across 3 good-build runs (12
+# WIDE venue frames), fill/solidity/component-count/bbox vary a lot run-to-run
+# from legit crowd/lighting/particle nondeterminism (fg_fill 0.17-0.76,
+# mean_solidity 0.34-0.57, n_components 5-36, fg_bbox_diag always ~frame diag),
+# so those are ADVISORY (reported, not gated). The shard-specific, RUN-STABLE
+# signal is the thin-sliver count (0-5 across all 12 good frames) plus gross
+# fragmentation: a BandPatchMesh explosion scatters MANY thin slivers / fragments
+# (S1 selftest: a modest shatter = 15+ slivers, 19 comps). So segA GATES on
+# n_slivers + n_components only; fill/solidity/bbox stay advisory. These land in
+# golden.json (per gen-golden) so the policy travels with the golden.
+# Two gating signals:
+#  - n_slivers: golden-relative (baseline is run-stable near 0-4). A shard
+#    explosion scatters MANY thin slivers -> count spikes past golden + slack.
+#  - n_components_abs: an ABSOLUTE explosion cap. Component count is too noisy
+#    run-to-run (measured 5-51 on good frames) to gate golden-relative, but an
+#    absolute ceiling well above the good max still catches a fragmentation
+#    explosion (patch shards -> hundreds of components) without false-failing.
+SEG_GATING = ["n_slivers", "n_components_abs"]
+SEG_ABS_COMPONENT_CAP = 110     # good-build max observed ~51; explosion -> 100s
+SEG_TOL = {
+    "sliver_abs_slack": 8,      # n_slivers <= golden + 8   (good envelope max 5)
+    # remaining checks are ADVISORY (excluded from the gating AND); kept loose so
+    # their reported bound is sane, not accidentally red on a noisy-but-good frame.
+    "component_factor": 3.0, "solidity_factor": 0.99,
+    "fill_factor": 0.99, "bbox_extent_factor": 5.0,
+}
+
+
+def seg_verdict(metrics, golden_seg, tol=None, gating=None, abs_comp_cap=None):
+    """Segmentation-layer verdict: compare_to_golden for the full advisory report,
+    plus an absolute component-explosion check; derive PASS/FAIL from ONLY the
+    gating signals (n_slivers golden-relative + n_components_abs). Returns
+    (gate_pass, checks_dict)."""
+    tol = tol or SEG_TOL
+    gating = gating or SEG_GATING
+    cap = SEG_ABS_COMPONENT_CAP if abs_comp_cap is None else abs_comp_cap
+    checks = lbm.compare_to_golden(metrics, golden_seg, tol=tol)["checks"]
+    ncomp = metrics.get("n_components", 0)
+    checks["n_components_abs"] = {
+        "pass": bool(ncomp <= cap), "observed": ncomp, "bound": cap,
+        "rule": f"<= {cap} (absolute explosion cap)"}
+    gate_pass = all(checks[n]["pass"] for n in gating if n in checks)
+    return gate_pass, checks
+
 # Golden-generation black-frame guard: reject a golden frame whose foreground is
 # below this fraction of the frame (GPU-OOM captured a black PNG).
 MIN_FG_FRAC = 0.01
@@ -285,6 +329,9 @@ def gen_golden(args):
         "shard_ratio_max": g_max,
         "per_mesh_ratio_cap": per_mesh_ratio_cap,
         "n_shard_meshes": len(shard_ratios),
+        "seg_gating": SEG_GATING,
+        "seg_tol": SEG_TOL,
+        "seg_abs_component_cap": SEG_ABS_COMPONENT_CAP,
         "frames": golden_frames,
     }
 
@@ -364,12 +411,17 @@ def gate(args):
             continue
         black = _is_black(metrics)
         any_black = any_black or black
-        segA = lbm.compare_to_golden(metrics, g["seg_metrics"])
+        seg_tol = golden.get("seg_tol", SEG_TOL)
+        seg_gating = golden.get("seg_gating", SEG_GATING)
+        seg_cap = golden.get("seg_abs_component_cap", SEG_ABS_COMPONENT_CAP)
+        segA_pass, segA_checks = seg_verdict(metrics, g["seg_metrics"], seg_tol,
+                                             seg_gating, seg_cap)
         countC = gate_counts(e.get("char_probe"), g.get("char_probe"))
         img = image_layer(png, os.path.join(GOLDEN_DIR, g["png"]))
         frame_verdicts.append({
             "key": list(key), "file": png, "black": black,
-            "image": img, "segA": segA["verdict"], "segA_checks": segA["checks"],
+            "image": img, "segA": "PASS" if segA_pass else "FAIL",
+            "segA_gating": seg_gating, "segA_checks": segA_checks,
             "countC": countC["pass"], "countC_slots": countC["slots"],
         })
 
@@ -415,10 +467,16 @@ def gate(args):
     # Human-readable per-layer verdicts.
     print("\n=== LINEUP GATE (per-layer) ===")
     for fv in matched:
-        sa_fail = [n for n, c in fv["segA_checks"].items() if not c["pass"]]
+        gating = fv.get("segA_gating", SEG_GATING)
+        ck = fv["segA_checks"]
+        sa_fail = [n for n in gating if n in ck and not ck[n]["pass"]]
+        adv = ck.get("mean_solidity", {}).get("observed"), ck.get("fg_fill", {}).get("observed")
         print(f"  frame {fv['key']} black={fv['black']} "
               f"img={fv['image'].get('verdict')}({fv['image'].get('score')}) "
               f"segA={fv['segA']}{'/'+','.join(sa_fail) if sa_fail else ''} "
+              f"[sliv={ck.get('n_slivers',{}).get('observed')} "
+              f"ncomp={ck.get('n_components',{}).get('observed')} "
+              f"adv:sol={adv[0]} fill={adv[1]}] "
               f"countC={'PASS' if fv['countC'] else 'FAIL'}")
     if not ratioB_ok:
         print(f"  ratioB FAIL: cap={ratioB['per_mesh_ratio_cap']} "
@@ -454,12 +512,15 @@ def selftest():
     # --- Layer A (segmentation) via S1's synthetic frames ------------------
     compact = lbm.analyze(lbm._synth_compact()).to_dict()
     shattered = lbm.analyze(lbm._synth_shattered()).to_dict()
-    a_clean = lbm.compare_to_golden(compact, compact)["verdict"]
-    a_boom = lbm.compare_to_golden(shattered, compact)["verdict"]
-    print(f"SELFTEST segA: clean={a_clean} exploded={a_boom}")
-    if a_clean != "PASS":
+    # Exercise the SAME gating (n_slivers + n_components) the real gate uses.
+    a_clean, _ = seg_verdict(compact, compact)
+    a_boom, cks = seg_verdict(shattered, compact)
+    print(f"SELFTEST segA: clean_pass={a_clean} exploded_pass={a_boom} "
+          f"(shattered n_sliv={cks['n_slivers']['observed']} "
+          f"n_comp={cks['n_components']['observed']})")
+    if not a_clean:
         ok = False; reasons.append("segA: clean frame did not PASS its own golden")
-    if a_boom != "FAIL":
+    if a_boom:
         ok = False; reasons.append("segA: exploded frame did not FAIL (BLIND)")
 
     # --- Synthetic golden shaped like a real capture -----------------------
