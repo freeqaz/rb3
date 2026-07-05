@@ -40,7 +40,11 @@ bool Task::IsLive(Task *t) { return LiveTasks().count(t) > 0; }
 static double sReplaySeconds = 0.0;   // accumulated replay seconds (kTaskSeconds)
 static int    sReplayLastFrame = -1;  // last frame we accumulated (avoid double-add)
 static inline bool RB3TaskReplayFixedClock() {
-    return RB3ReplayFixedClock() && RB3ReplayActive();
+    // W0.3b SEAM 1 widen: engage on EITHER an active recorded-trace fixed clock
+    // (RB3_REPLAY_FIXED_CLOCK + a loaded trace) OR the trace-free frozen-clock
+    // determinism harness (RB3_FIXED_CLOCK, a plain boot with NO trace). The dt
+    // source inside the seam branches on RB3ReplayActive() (recorded vs constant).
+    return (RB3ReplayFixedClock() && RB3ReplayActive()) || RB3FixedClockActive();
 }
 #endif
 
@@ -392,7 +396,12 @@ void TaskMgr::Poll() {
     // is the original Wii path, byte-identical.
     if (RB3TaskReplayFixedClock() && mAutoSecondsBeats) {
         if (gRB3TraceFrame != sReplayLastFrame) {
-            sReplaySeconds += (double)RB3ReplayDtForFrame(gRB3TraceFrame);
+            // dt source: the RECORDED per-frame dt when a trace is driving the
+            // clock, else the constant trace-free fixed timestep (W0.3b). Both
+            // advance the accumulator once per frame index (guarded above).
+            float dt = RB3ReplayActive() ? RB3ReplayDtForFrame(gRB3TraceFrame)
+                                         : RB3FixedClockDt();
+            sReplaySeconds += (double)dt;
             sReplayLastFrame = gRB3TraceFrame;
         }
         float secs = (float)sReplaySeconds;

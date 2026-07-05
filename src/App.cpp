@@ -554,6 +554,13 @@ void App::RunOneFrame(int frame) {
         gLoadPollMsThisFrame = 0.0f;
         gLoadPollUntilMsThisFrame = 0.0f;
         rb3FrameTimer.Restart();
+    } else if (RB3FixedClockActive()) {
+        // W0.3b frozen-clock determinism harness (no trace): advance the frame
+        // index every RunOneFrame so Task.cpp SEAM 1's once-per-frame accumulator
+        // (gRB3TraceFrame != sReplayLastFrame) steps deterministically without a
+        // loaded trace. No telemetry side-effects — the gRB3TraceActive fast-path
+        // above is byte-identical when this harness flag is unset.
+        RB3TraceSetFrame(frame);
     }
 
     SystemPoll(false);

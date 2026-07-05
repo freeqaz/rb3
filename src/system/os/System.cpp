@@ -389,10 +389,20 @@ void SystemPreInit(const char *config) {
     {
         extern bool RB3ReplaySeed(int *out);
         extern void RB3TraceSetSeed(int seed);
+        extern bool RB3FixedClockActive();
         int seed = dt.mSec + dt.mMin * 60 + dt.mHour * 3600;
         int replaySeed = 0;
         if (RB3ReplaySeed(&replaySeed))
             seed = replaySeed;
+        else if (RB3FixedClockActive())
+            // W0.3b frozen-clock determinism harness (no trace): the boot RNG is
+            // otherwise seeded from the wall-clock time-of-day, which makes every
+            // RNG-driven subset (crowd/particle/camera picks) differ run-to-run and
+            // is the dominant residual draw-count jitter once the sim clock is
+            // frozen + the loader drains deterministically. Pin a fixed seed so a
+            // plain bounded boot is reproducible. Flag-gated => shipping boot uses
+            // the live time-of-day seed unchanged.
+            seed = 0x5EED;
         SeedRand(seed);
         RB3TraceSetSeed(seed);
         srand(RandomInt());

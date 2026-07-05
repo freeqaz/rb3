@@ -33,6 +33,7 @@ int gLoaderPullCalls = 0;            // PollUntilLoaded invocations (web arm)
 #include <cstdlib> // QW-1: getenv/atof for RB3_LOADER_BUDGET_MS (guarded out of Wii asm)
 #include <cstring> // N1: strncmp/strlen for the read-ahead path normalization
 #include "obj/DirLoader.h" // N1: detect a DirLoader's pre-open state (mStream == 0)
+#include "rb3_replay.h" // W0.3b: RB3FixedClockActive — deterministic per-frame drain
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -615,7 +616,10 @@ void LoadMgr::Poll() {
         }
         // mPeriod >= sentinel ⇒ PollUntilEmpty's unbudgeted drain: empty the
         // whole queue (no per-frame break), yielding only every sYieldMs.
-        bool drainToEmpty = (mPeriod >= 1e29f);
+        // W0.3b: RB3_FIXED_CLOCK forces a full per-Poll drain here too (web arm)
+        // so the frozen-clock resident set is wall-clock-independent; flag-gated,
+        // so the shipping budgeted web path is byte-identical when unset.
+        bool drainToEmpty = (mPeriod >= 1e29f) || RB3FixedClockActive();
         // N1: pipeline the queue — kick the next K queued loaders' fetches once
         // per Poll() turn so file k+1..k+N download while file k loads. Fetch-
         // kick only (no early open, no state mutation). See KickReadAhead.
@@ -715,7 +719,14 @@ void LoadMgr::Poll() {
         // mPeriod >= sentinel ⇒ PollUntilEmpty's unbudgeted drain: empty the whole
         // queue this call (synchronous contract). Otherwise this is the per-frame
         // background drain and the budget break returns to the frame loop.
-        bool drainToEmpty = (mPeriod >= 1e29f);
+        //
+        // W0.3b: under the frozen-clock determinism harness (RB3_FIXED_CLOCK), the
+        // wall-clock time-slice is the dominant run-to-run jitter source (how much
+        // streams in per frame varies with CPU speed, not frame count). Force a
+        // full drain each Poll so the resident set at a fixed absolute frame N is a
+        // deterministic function of the (frozen) sim state alone, not wall-clock.
+        // Flag-gated ⇒ the shipping budgeted path is byte-identical when unset.
+        bool drainToEmpty = (mPeriod >= 1e29f) || RB3FixedClockActive();
         // Cumulative wall-clock across the whole Poll() call: mTimer is restarted
         // per-iteration (so each state func's CheckSplit() sees a fresh slice), so
         // a separate timer is needed to bound the total per-frame cost.
