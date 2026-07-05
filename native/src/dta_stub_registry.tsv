@@ -1,0 +1,226 @@
+# dta_stub_registry.tsv — source of truth for native/src/dta_link_stubs.s
+# Generated/consumed by scripts/native/gen_band3_link_stubs.py (--set dta). Columns
+# are tab-separated:
+#   symbol<TAB>kind<TAB>class<TAB>note
+#   kind  in {func, data} (dta_link_stubs.s currently has no genuine `data` rows —
+#         see below)
+#   class in {assert-unreachable, ok-noop, data-blob}
+#     invariant: kind=data => class=data-blob ; kind=func => class in
+#     {assert-unreachable, ok-noop}
+#   note  free text (safety justification for ok-noop rows; boot-hit provenance)
+#
+# Seeding rule (W0.2.S4, behavior-preserving MOVE): unknown => assert-unreachable
+# (conservative), matching band3_stub_registry.tsv's S1 rule. Every row here was
+# seeded assert-unreachable; promotions to ok-noop happen only from measured
+# boot-smoke evidence (mirrors S3's methodology), not from guessing.
+#
+# SHAPE NOTE: unlike band3_link_stubs.s, this file's typeinfo/vtable symbols
+# (_ZTI*/_ZTV*/_ZTT*/_ZThn64_*) are NOT given their own writable .bss reservation
+# today — they alias the same read-only .text no-op stub as ordinary functions.
+# That is almost certainly a latent bug if anything ever WRITES through one of
+# them (band3's own history records exactly that crash pattern for its data
+# stubs), but reclassifying them to kind=data (own .bss) would be a BEHAVIOR
+# CHANGE, out of scope for this registry-extraction MOVE. They are seeded here
+# with kind=func (matching current shape) so regeneration is byte-behavior-
+# identical; flag for a follow-up item if one is ever observed being written.
+#
+# EXCLUDED FROM THIS REGISTRY: _Z12EndianSwapEqIiEvRT_ (EndianSwapEq<int>) is a
+# REAL strong implementation (a faithful in-place 4-byte byteswap, __rb3_endian_
+# swap_eq_int), not a no-op stub — it is preserved verbatim by the generator's
+# per-set SPECIAL_VERBATIM block, not driven by a registry row.
+AXSetCompressor	func	assert-unreachable	
+BinkOpenAX	func	assert-unreachable	
+BinkSetIO	func	assert-unreachable	
+BinkSetMemory	func	assert-unreachable	
+BinkSetSoundSystem	func	assert-unreachable	
+DVDInit	func	assert-unreachable	
+FileDelete	func	assert-unreachable	
+FileEnumerate	func	assert-unreachable	
+FileGetStat	func	assert-unreachable	
+FileMkDir	func	assert-unreachable	
+JoypadSetActuatorsImp	func	assert-unreachable	
+ParseStack	func	assert-unreachable	
+RADTimerRead	func	assert-unreachable	
+RSOGetFarCodeSize	func	assert-unreachable	
+RSOGetImportSymbolName	func	assert-unreachable	
+RSOGetJumpCodeSize	func	assert-unreachable	
+RSOGetNumImportSymbols	func	assert-unreachable	
+RSOIsImportSymbolResolved	func	assert-unreachable	
+RSOIsImportSymbolResolvedAll	func	assert-unreachable	
+RSOLinkFar	func	assert-unreachable	
+RSOLinkJump	func	assert-unreachable	
+RSOLinkList	func	assert-unreachable	
+RSOListInit	func	assert-unreachable	
+RSOMakeJumpCode	func	assert-unreachable	
+RSOUnLinkList	func	assert-unreachable	
+TheBaseSongManger	func	assert-unreachable	
+TheContentMgr	func	assert-unreachable	
+TheFakeSongMgr	func	assert-unreachable	
+TheMC	func	assert-unreachable	
+TheMidiParserMgr	func	assert-unreachable	
+TheSynth	func	assert-unreachable	
+TheWiiCommerceMgr	func	assert-unreachable	
+TheWiiProfileMgr	func	assert-unreachable	
+_Z10CDGetErrorv	func	assert-unreachable	
+_Z10CDReadDonev	func	assert-unreachable	
+_Z10JoypadInitv	func	assert-unreachable	
+_Z10JoypadPollv	func	assert-unreachable	
+_Z10ThreadCallP14ThreadCallback	func	assert-unreachable	
+_Z11FileIsLocalPKc	func	assert-unreachable	
+_Z11JoypadResetv	func	assert-unreachable	
+_Z11UsingHolmesi	func	assert-unreachable	
+_Z12KeyboardInitv	func	assert-unreachable	
+_Z12KeyboardPollv	func	assert-unreachable	
+_Z13CacheResourcePKcPN3Hmx6ObjectE	func	assert-unreachable	
+_Z13RndGxDrawDonev	func	assert-unreachable	
+_Z14CDReadExternalRP11DVDFileInfoiy	func	assert-unreachable	
+_Z14GetMapFileNameR6String	func	assert-unreachable	
+_Z14ThreadCallInitv	func	assert-unreachable	
+_Z14ThreadCallPollv	func	assert-unreachable	
+_Z15HolmesResolveIPv	func	assert-unreachable	
+_Z15InitDefaultHeapv	func	assert-unreachable	
+_Z15JoypadTerminatev	func	assert-unreachable	
+_Z16GetWiiJoypadTypei	func	assert-unreachable	
+_Z16HolmesClientInitv	func	assert-unreachable	
+_Z16HolmesClientOpenPKciRjRi	func	assert-unreachable	
+_Z16HolmesClientPollv	func	assert-unreachable	
+_Z16HolmesClientReadiiiPvP4File	func	assert-unreachable	
+_Z17CaptureStackTraceiPj	func	assert-unreachable	
+_Z17GetSystemLanguage6Symbol	func	assert-unreachable	
+_Z17HolmesClientCloseP4Filei	func	assert-unreachable	
+_Z17HolmesClientPrintPKc	func	assert-unreachable	
+_Z17HolmesClientWriteiiiPKv	func	assert-unreachable	
+_Z17KeyboardTerminatev	func	assert-unreachable	
+_Z17ThreadCallPreInitv	func	assert-unreachable	
+_Z18HolmesClientReInitv	func	assert-unreachable	
+_Z18PlatformDebugBreakv	func	assert-unreachable	
+_Z19HolmesClientSysExecPKc	func	assert-unreachable	
+_Z19ThreadCallTerminatev	func	assert-unreachable	
+_Z20HolmesClientReadDoneP4File	func	assert-unreachable	
+_Z20HolmesClientTruncateii	func	assert-unreachable	
+_Z21FileQualifiedFilenamePciPKc	func	assert-unreachable	
+_Z21HolmesClientTerminatev	func	assert-unreachable	
+_Z22HolmesClientStackTracePKcPjiR6String	func	assert-unreachable	
+_Z22SetGPHangDetectEnabledbPKc	func	assert-unreachable	
+_Z23RB3InitNativeNetSessionv	func	assert-unreachable	rb3-dta compiles os/System.cpp (whose native SystemInit now calls RB3InitNativeNetSession) but does not link rb3_netsession_native.cpp; rb3-dta never calls SystemInit, so this weak no-op never executes. rb3-native links the strong def, which wins.
+_Z27RB3MetaPerfIntegrityCheckAtPKc	func	assert-unreachable	discovered W0.2.S4: os/File.cpp (rb3 77304bba, song-end MetaPerformer ctor-miscompile fix) calls this from NewFile(); rb3-dta compiles os/File.cpp but not band3/MetaPerformer.cpp (no MetaPerformer in a DTA-only parser), so the strong def is absent there. rb3-native links the strong def, which wins.
+_Z6CDReadiiiPv	func	assert-unreachable	
+_Z8CacheWavPKcR19CacheResourceResult	func	assert-unreachable	
+_Z9FileIsDLCPKc	func	assert-unreachable	
+_ZN10MemcardWii4InitEv	func	assert-unreachable	
+_ZN10MemcardWii9TerminateEv	func	assert-unreachable	
+_ZN10MidiParser4PollEv	func	assert-unreachable	
+_ZN10MidiParser8sParsersB5cxx11E	func	assert-unreachable	
+_ZN10RndOverlay4FindE6Symbolb	func	assert-unreachable	
+_ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_	func	assert-unreachable	
+_ZN11ByteGrinder10GrindArrayEllPhii	func	assert-unreachable	
+_ZN11CacheMgrWiiC1Ev	func	assert-unreachable	
+_ZN11FakeSongMgr13GetSongConfigE6Symbol	func	assert-unreachable	
+_ZN11PlatformMgr10RegionInitEv	func	assert-unreachable	
+_ZN11PlatformMgr11ContentDoneEv	func	assert-unreachable	
+_ZN11PlatformMgr12SetConnectedEb	func	assert-unreachable	
+_ZN11PlatformMgr12SetDiskErrorE9DiskError	func	assert-unreachable	
+_ZN11PlatformMgr13ClearDWCErrorEv	func	assert-unreachable	
+_ZN11PlatformMgr13ClearNetErrorEv	func	assert-unreachable	
+_ZN11PlatformMgr13OnSignInUsersEPK9DataArray	func	assert-unreachable	
+_ZN11PlatformMgr14ContentStartedEv	func	assert-unreachable	
+_ZN11PlatformMgr14SetScreenSaverEb	func	assert-unreachable	
+_ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE	func	assert-unreachable	
+_ZN11PlatformMgr15EnableProfanityEb	func	assert-unreachable	
+_ZN11PlatformMgr15GetLastDNSErrorEv	func	assert-unreachable	
+_ZN11PlatformMgr15GetLastDWCErrorEv	func	assert-unreachable	
+_ZN11PlatformMgr16ContentCancelledEv	func	assert-unreachable	
+_ZN11PlatformMgr16PrintParentalPinEv	func	assert-unreachable	
+_ZN11PlatformMgr17GetLastNHTTPErrorEv	func	assert-unreachable	
+_ZN11PlatformMgr17GetNetErrorStringEb	func	assert-unreachable	
+_ZN11PlatformMgr18RunNetStartUtilityEv	func	assert-unreachable	
+_ZN11PlatformMgr18SetHomeMenuEnabledEb	func	assert-unreachable	
+_ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation	func	assert-unreachable	
+_ZN11PlatformMgr22InitNintendoConnectionEv	func	assert-unreachable	
+_ZN11PlatformMgr23CloseNintendoConnectionEbb	func	assert-unreachable	
+_ZN11PlatformMgr24IsEthernetCableConnectedEv	func	assert-unreachable	
+_ZN11PlatformMgr25SetPartyMicOptionsShowingEb	func	assert-unreachable	
+_ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb	func	assert-unreachable	
+_ZN11PlatformMgr4InitEv	func	assert-unreachable	
+_ZN11PlatformMgr4PollEv	func	assert-unreachable	
+_ZN11PlatformMgr5OnMsgERK11ButtonUpMsg	func	assert-unreachable	
+_ZN11PlatformMgr5OnMsgERK13ButtonDownMsg	func	assert-unreachable	
+_ZN11PlatformMgr7PreInitEv	func	assert-unreachable	
+_ZN11PlatformMgr7WiiPollEv	func	assert-unreachable	
+_ZN11PlatformMgrC1Ev	func	assert-unreachable	
+_ZN11PlatformMgrD0Ev	func	assert-unreachable	
+_ZN11PlatformMgrD1Ev	func	assert-unreachable	
+_ZN12MidiReceiverC2Ev	func	assert-unreachable	
+_ZN12NetLoaderWiiC1ERK6String	func	assert-unreachable	
+_ZN13CameraManager4PollEv	func	assert-unreachable	
+_ZN13NetworkSocket11GetHostNameEv	func	assert-unreachable	
+_ZN13NetworkSocket6CreateEb	func	assert-unreachable	
+_ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp	func	assert-unreachable	
+_ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE	func	assert-unreachable	
+_ZN13RndAnimatable4LoadER9BinStream	func	assert-unreachable	
+_ZN13RndAnimatable4SaveER9BinStream	func	assert-unreachable	
+_ZN13RndAnimatable6HandleEP9DataArrayb	func	assert-unreachable	
+_ZN13RndAnimatableC2Ev	func	assert-unreachable	
+_ZN14ProfilePicture13FetchUserDataEv	func	assert-unreachable	
+_ZN14ProfilePicture15ReceiveUserDataEv	func	assert-unreachable	
+_ZN14ProfilePicture16FetchUserPictureEv	func	assert-unreachable	
+_ZN14ProfilePicture18ReceiveUserPictureEv	func	assert-unreachable	
+_ZN14WiiCommerceMgr4InitEv	func	assert-unreachable	
+_ZN15VirtualKeyboard12PlatformPollEv	func	assert-unreachable	
+_ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii	func	assert-unreachable	
+_ZN15VirtualKeyboard17PlatformTerminateEv	func	assert-unreachable	
+_ZN16WiiNetworkSocket4InitEv	func	assert-unreachable	
+_ZN18LightPresetManager4PollEv	func	assert-unreachable	
+_ZN18LightPresetManager5EnterEv	func	assert-unreachable	
+_ZN3Hmx6Object7PreLoadER9BinStream	func	assert-unreachable	
+_ZN5Synth10StopAllSfxEb	func	assert-unreachable	
+_ZN5Synth15GetMasterVolumeEv	func	assert-unreachable	
+_ZN5Synth15SetMasterVolumeEf	func	assert-unreachable	
+_ZN7HDCache10WriteAsyncEiiPKv	func	assert-unreachable	
+_ZN7Memcard9TerminateEv	func	assert-unreachable	
+_ZN8KeyChain6getKeyEiPhS0_	func	assert-unreachable	
+_ZN9AsyncFile10WriteAsyncEPKvi	func	assert-unreachable	
+_ZN9AsyncFile16UncompressedSizeEv	func	assert-unreachable	
+_ZN9AsyncFile3EofEv	func	assert-unreachable	
+_ZN9AsyncFile3NewEPKci	func	assert-unreachable	
+_ZN9AsyncFile4FailEv	func	assert-unreachable	
+_ZN9AsyncFile4ReadEPvi	func	assert-unreachable	
+_ZN9AsyncFile4SeekEii	func	assert-unreachable	
+_ZN9AsyncFile4SizeEv	func	assert-unreachable	
+_ZN9AsyncFile4TellEv	func	assert-unreachable	
+_ZN9AsyncFile5FlushEv	func	assert-unreachable	
+_ZN9AsyncFile5WriteEPKvi	func	assert-unreachable	
+_ZN9AsyncFile8ReadDoneERi	func	assert-unreachable	
+_ZN9AsyncFile9ReadAsyncEPvi	func	assert-unreachable	
+_ZN9AsyncFile9TerminateEv	func	assert-unreachable	
+_ZN9AsyncFile9WriteDoneERi	func	assert-unreachable	
+_ZN9AsyncFileC2EPKci	func	assert-unreachable	
+_ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID	func	assert-unreachable	
+_ZNK11PlatformMgr15GetOwnerOfGuestEi	func	assert-unreachable	
+_ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser	func	assert-unreachable	
+_ZNK11PlatformMgr16IsSignedIntoLiveEi	func	assert-unreachable	
+_ZNK11PlatformMgr18HasOnlinePrivilegeEi	func	assert-unreachable	
+_ZNK11PlatformMgr7GetNameEi	func	assert-unreachable	
+_ZNK13WiiProfileMgr12IsIndexValidEi	func	assert-unreachable	
+_ZNK13WiiProfileMgr13GetIdForIndexEi	func	assert-unreachable	
+_ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser	func	assert-unreachable	
+_ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE	func	assert-unreachable	
+_ZTI10WiiContent	func	assert-unreachable	
+_ZTI11RndPollable	func	assert-unreachable	
+_ZTI13RndAnimatable	func	assert-unreachable	
+_ZTI8WorldDir	func	assert-unreachable	
+_ZTI9AsyncFile	func	assert-unreachable	
+_ZTT13RndAnimatable	func	assert-unreachable	
+_ZTV9AsyncFile	func	assert-unreachable	
+_ZThn64_N11PlatformMgr11ContentDoneEv	func	assert-unreachable	
+_ZThn64_N11PlatformMgr14ContentStartedEv	func	assert-unreachable	
+_ZThn64_N11PlatformMgr16ContentCancelledEv	func	assert-unreachable	
+_ZThn64_N11PlatformMgrD0Ev	func	assert-unreachable	
+_ZThn64_N11PlatformMgrD1Ev	func	assert-unreachable	
+_ZTv0_n104_N13RndAnimatable4LoadER9BinStream	func	assert-unreachable	
+_ZTv0_n24_N11PlatformMgrD0Ev	func	assert-unreachable	
+_ZTv0_n24_N11PlatformMgrD1Ev	func	assert-unreachable	
+_ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb	func	assert-unreachable	
+_ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp	func	assert-unreachable	
+_ZTv0_n88_N13RndAnimatable4SaveER9BinStream	func	assert-unreachable	
+_ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE	func	assert-unreachable	

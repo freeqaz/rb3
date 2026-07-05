@@ -1,0 +1,84 @@
+# rndobj_synth_stub_registry.tsv — source of truth for
+# native/src/rndobj_synth_link_stubs.s
+# Generated/consumed by scripts/native/gen_band3_link_stubs.py (--set rndobj_synth).
+# Columns are tab-separated:
+#   symbol<TAB>kind<TAB>class<TAB>note
+#   kind  in {func, data} (this file currently has no genuine `data` rows — see
+#         below)
+#   class in {assert-unreachable, ok-noop, data-blob}
+#     invariant: kind=data => class=data-blob ; kind=func => class in
+#     {assert-unreachable, ok-noop}
+#   note  free text (safety justification for ok-noop rows; boot-hit provenance)
+#
+# Seeding rule (W0.2.S4, behavior-preserving MOVE): unknown => assert-unreachable
+# (conservative), matching band3_stub_registry.tsv's S1 rule. Every row here was
+# seeded assert-unreachable; promotions to ok-noop happen only from measured
+# boot-smoke evidence (mirrors S3's methodology), not from guessing.
+#
+# SHAPE NOTE: gDebugFullQuota is a DATA global (int), but like the typeinfo/
+# vtable symbols above it currently aliases the shared read-only .text no-op
+# stub rather than getting its own .bss reservation. Seeded kind=func to match
+# current shape (behavior-preserving); see the dta registry's SHAPE NOTE for the
+# same caveat. Two prior data hazards of this exact kind (sRawCollide /
+# sLastCollide -- writing through the code-alias SIGSEGV'd) were already fixed by
+# giving them real out-of-line definitions in Mesh.cpp; those symbols are no
+# longer weak stubs and have no row here (history: git log this file).
+#
+# HISTORICAL (symbols once stubbed here, now strongly defined elsewhere, no
+# longer present as rows): RB3TexSharpenPoll / RB3TexSharpenReset (superseded by
+# rb3_texsharpen_native.cpp, research/13 T1); CreateNativeSynth (superseded by
+# rb3_synth_native.cpp).
+BinkClose	func	assert-unreachable	
+BinkCloseTrack	func	assert-unreachable	
+BinkGetError	func	assert-unreachable	
+BinkGetTrackData	func	assert-unreachable	
+BinkGoto	func	assert-unreachable	
+BinkNextFrame	func	assert-unreachable	
+BinkOpen	func	assert-unreachable	
+BinkOpenTrack	func	assert-unreachable	
+BinkSetSoundTrack	func	assert-unreachable	
+BinkSetVideoOnOff	func	assert-unreachable	
+DCZeroRange	func	assert-unreachable	
+Ntsc__6WiiRndFv	func	assert-unreachable	
+TheBandDirector	func	assert-unreachable	
+TheRnd	func	assert-unreachable	
+TheUI	func	assert-unreachable	
+TheWiiRnd	func	assert-unreachable	
+_Z13CleanupGpuTexP6RndTex	func	assert-unreachable	Twin of CleanupGpuMesh. The RB3 backend caches per-texture GPU resources in sTexGpu (Rnd_Wgpu_RB3.cpp:340) and ships a STRONG CleanupGpuTex (:443) that erases the cache slot; that strong def displaces this weak stub when the RB3 backend is linked. RndTex::~RndTex (HX_NATIVE, Tex.cpp) calls it on every texture destruction. This weak no-op survives only for non-RB3-backend links.
+_Z14CleanupGpuMeshP7RndMesh	func	assert-unreachable	The RB3 GPU backend caches per-mesh GPU buffers in sMeshGpu (Rnd_Wgpu_RB3.cpp:419) and ships a STRONG CleanupGpuMesh (:440) that erases the cache slot; that strong def displaces this weak stub whenever the RB3 backend is linked. RndMesh::~RndMesh (HX_NATIVE, Mesh.cpp:353) calls it on every mesh destruction. This stub only survives for non-RB3-backend links (where there is no sMeshGpu to release), so it stays for safety.
+_Z22DrawParticlesBillboardP14RndParticleSys	func	assert-unreachable	
+_Z25HolmesClientCacheResourcePKcS0_	func	assert-unreachable	
+_ZN11SynthSample7NewInstEbii	func	assert-unreachable	
+_ZN12AsyncFileWii14FileExistsOnCDEPKc	func	assert-unreachable	
+_ZN12BandDirector12IsMusicVideoEv	func	assert-unreachable	
+_ZN12WaveFileDataC1ER8WaveFile	func	assert-unreachable	
+_ZN12WaveFileDataD1Ev	func	assert-unreachable	
+_ZN13STRIPERRESULT19AllocLengthsAndRunsEii	func	assert-unreachable	
+_ZN13STRIPERRESULTC1ERKS_	func	assert-unreachable	
+_ZN13STRIPERRESULTC1Ev	func	assert-unreachable	
+_ZN13STRIPERRESULTD1Ev	func	assert-unreachable	
+_ZN13STRIPERRESULTaSERKS_	func	assert-unreachable	
+_ZN14StandardStream23sReportLargeTimerErrorsE	func	assert-unreachable	
+_ZN6RndTex10SyncBitmapEv	func	assert-unreachable	
+_ZN6RndTex13PresyncBitmapEv	func	assert-unreachable	
+_ZN6RndTex14MakeDrawTargetEv	func	assert-unreachable	
+_ZN6RndTex16FinishDrawTargetEv	func	assert-unreachable	
+_ZN6WiiRnd18GetProgressiveScanEv	func	assert-unreachable	
+_ZN7RndMesh11DrawShowingEv	func	assert-unreachable	
+_ZN7RndMesh6OnSyncEi	func	assert-unreachable	
+_ZN7Striper4InitER13STRIPERCREATE	func	assert-unreachable	
+_ZN7Striper7ComputeER13STRIPERRESULT	func	assert-unreachable	
+_ZN8KeyChain10getNumKeysEv	func	assert-unreachable	
+_ZN8KeyChain9getMasherEPh	func	assert-unreachable	
+_ZN8WaveFileC1ER9BinStream	func	assert-unreachable	
+_ZN8WaveFileD1Ev	func	assert-unreachable	
+_ZN9Transform6LookAtERK7Vector3S2_	func	assert-unreachable	
+_ZTV7BufFile	func	assert-unreachable	
+ctr_decrypt	func	assert-unreachable	
+ctr_reinit	func	assert-unreachable	
+ctr_start	func	assert-unreachable	
+gDebugFullQuota	func	assert-unreachable	
+register_cipher	func	assert-unreachable	
+rijndael_desc	func	assert-unreachable	
+rijndael_ecb_decrypt	func	assert-unreachable	
+rijndael_setup	func	assert-unreachable	

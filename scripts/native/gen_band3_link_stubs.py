@@ -1,35 +1,51 @@
 #!/usr/bin/env python3
-"""Generate native/src/band3_link_stubs.s (+ band3_stub_table.inc) from the
-registry native/src/band3_stub_registry.tsv.
+"""Generate the native weak-stub link files (band3_link_stubs.s, dta_link_stubs.s,
+rndobj_synth_link_stubs.s) + their C++ census tables from their registries:
 
-The registry TSV is the source of truth for the weak-symbol link stubs that
-paper over the ~43 band3/system TUs excluded from the rb3-native clang LP64
-build (see native/CMakeLists.txt _NATIVE_FORK_EXCLUDE). Each registry row
-classifies one weak symbol as:
+    native/src/band3_stub_registry.tsv          -> band3_link_stubs.s          (--set band3, DEFAULT)
+    native/src/dta_stub_registry.tsv             -> dta_link_stubs.s           (--set dta)
+    native/src/rndobj_synth_stub_registry.tsv    -> rndobj_synth_link_stubs.s  (--set rndobj_synth)
+
+The registry TSV is the source of truth for the weak-symbol link stubs that paper
+over off-path symbols the native clang LP64 build doesn't define (band3's ~43
+excluded matched-fork TUs, and the DTA-parse / rndobj+synth off-path surfaces).
+Each registry row classifies one weak symbol as:
 
     kind  ∈ func | data
     class ∈ assert-unreachable | ok-noop | data-blob
 
-Two emission modes:
+Two emission modes (apply per --set):
 
-  --mode loud   (W0.2.S2, DEFAULT): each `func` row becomes a per-symbol
-                logging trampoline `__hmx_tramp_<i>` — a cheap already-hit
-                fast path (cmpb/jne/xor/ret) plus a first-hit call to the
-                extern "C" census hook `__hmx_stub_first_hit(name)`. A parallel
-                C++ table `band3_stub_table.inc` (one HmxStubInfo row per
-                symbol + the three count constants) is emitted for the census
-                / gtest to consume. `data` rows keep their own writable `.bss`
-                `.zero <N>` reservation. Returning 0 for every func stub is
-                behavior-identical to the old shared no-op, so a *called* stub
-                cannot regress; the trampoline only ADDS the loud first-hit log.
+  --mode loud   (W0.2.S2/S4, DEFAULT): each `func` row becomes a per-symbol
+                logging trampoline `__hmx_tramp_<set-infix><i>` — a cheap
+                already-hit fast path (cmpb/jne/xor/ret) plus a first-hit call
+                to the extern "C" census hook `__hmx_stub_first_hit(name)`. A
+                parallel C++ table `<set>_stub_table.inc` (one HmxStubInfo-
+                shaped row per symbol + the three count constants, under a
+                set-specific struct/array/constant name so multiple sets' .inc
+                files can be #included in the same TU without an ODR clash) is
+                emitted for the census / gtest to consume. `data` rows keep
+                their own writable `.bss` `.zero <N>` reservation. Returning 0
+                for every func stub is behavior-identical to the old shared
+                no-op, so a *called* stub cannot regress; the trampoline only
+                ADDS the loud first-hit log.
 
-  --mode legacy (W0.2.S1): every `func` row (regardless of class) aliases to a
-                single shared `__hmx_band3_noop_stub` (xorl %eax,%eax; ret); no
+  --mode legacy (W0.2.S1/S4): every `func` row (regardless of class) aliases to
+                a single shared no-op stub (xorl %eax,%eax; ret); no
                 trampolines, no census, no `.inc`. Kept for reference / A-B.
 
+Each set may also carry a fixed SPECIAL_VERBATIM asm block (currently only the
+`dta` set's `_Z12EndianSwapEqIiEvRT_` real byteswap implementation, which is a
+REAL strong definition — not a no-op stub — so it is not registry-driven; it is
+emitted verbatim, unconditionally, right after the file header, in both modes).
+
 Usage:
-    python3 scripts/native/gen_band3_link_stubs.py            # loud (default)
-    python3 scripts/native/gen_band3_link_stubs.py --check    # drift gate (loud)
+    python3 scripts/native/gen_band3_link_stubs.py                  # band3, loud (default)
+    python3 scripts/native/gen_band3_link_stubs.py --check          # band3 drift gate
+    python3 scripts/native/gen_band3_link_stubs.py --set dta         # dta, loud
+    python3 scripts/native/gen_band3_link_stubs.py --set rndobj_synth
+    python3 scripts/native/gen_band3_link_stubs.py --all            # regenerate all 3 sets
+    python3 scripts/native/gen_band3_link_stubs.py --all --check    # drift gate, all 3 sets
     python3 scripts/native/gen_band3_link_stubs.py --mode legacy
 
 Running with no registry change must leave the tree clean (idempotent) — this
@@ -40,17 +56,19 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_REGISTRY = REPO_ROOT / "native/src/band3_stub_registry.tsv"
-DEFAULT_OUTPUT = REPO_ROOT / "native/src/band3_link_stubs.s"
-DEFAULT_TABLE = REPO_ROOT / "native/src/band3_stub_table.inc"
+SRC = REPO_ROOT / "native/src"
 
 VALID_KINDS = {"func", "data"}
 VALID_CLASSES = {"assert-unreachable", "ok-noop", "data-blob"}
 
-# class -> single-char code used in band3_stub_table.inc
+# class -> single-char code used in the <set>_stub_table.inc
 CLS_CODE = {"assert-unreachable": "A", "ok-noop": "N", "data-blob": "D"}
 
-HEADER_COMMON = """\
+# ---------------------------------------------------------------------------
+# band3 header text (UNCHANGED from W0.2.S1/S2 — do not reflow, the committed
+# band3_link_stubs.s must stay byte-identical when --set band3 is regenerated).
+# ---------------------------------------------------------------------------
+BAND3_HEADER_COMMON = """\
 // AUTO-GENERATED by scripts/native/gen_band3_link_stubs.py from
 // native/src/band3_stub_registry.tsv — DO NOT HAND-EDIT. Edit the registry
 // (and re-run the generator) instead.
@@ -73,7 +91,7 @@ HEADER_COMMON = """\
 // this file live in its git history, not here.
 """
 
-HEADER_LEGACY = HEADER_COMMON + """\
+BAND3_HEADER_LEGACY = BAND3_HEADER_COMMON + """\
 //
 // MODE: legacy — every FUNCTION stub aliases the single shared
 // __hmx_band3_noop_stub (xorl %eax,%eax; ret). No census.
@@ -82,7 +100,7 @@ HEADER_LEGACY = HEADER_COMMON + """\
 //   python3 scripts/native/gen_band3_link_stubs.py --mode legacy
 """
 
-HEADER_LOUD = HEADER_COMMON + """\
+BAND3_HEADER_LOUD = BAND3_HEADER_COMMON + """\
 //
 // MODE: loud (default) — each FUNCTION stub is a per-symbol trampoline
 // __hmx_tramp_<i> that logs its FIRST call to stderr (via the extern "C"
@@ -101,7 +119,7 @@ HEADER_LOUD = HEADER_COMMON + """\
 //   python3 scripts/native/gen_band3_link_stubs.py
 """
 
-TABLE_HEADER = """\
+BAND3_TABLE_HEADER = """\
 // AUTO-GENERATED by scripts/native/gen_band3_link_stubs.py from
 // native/src/band3_stub_registry.tsv — DO NOT HAND-EDIT.
 //
@@ -113,6 +131,210 @@ struct HmxStubInfo { const char* name; char kind; char cls; };
 
 static const HmxStubInfo kHmxStubTable[] = {
 """
+
+# ---------------------------------------------------------------------------
+# dta set (W0.2.S4).
+# ---------------------------------------------------------------------------
+DTA_HEADER_COMMON = """\
+// AUTO-GENERATED by scripts/native/gen_band3_link_stubs.py --set dta from
+// native/src/dta_stub_registry.tsv — DO NOT HAND-EDIT. Edit the registry
+// (and re-run the generator) instead.
+//
+// weak no-op stubs for off-path symbols not on the DTA parse path (rendering /
+// audio / Bink / MIDI / RSO / Wii managers / vtables / typeinfo). Each is WEAK
+// so any real definition wins; the rest resolve to a shared no-op (functions
+// return 0; typeinfo/vtable reads yield the stub's own address, a valid
+// non-null pointer). Linked by BOTH rb3-dta and rb3-native (native/CMakeLists.txt
+// NATIVE_SHIMS). See native/src/dta_stub_registry.tsv for the shape caveat on
+// the typeinfo/vtable rows (aliased to the code stub, not a real .bss
+// reservation) and for why _Z12EndianSwapEqIiEvRT_ is NOT a registry row (it is
+// a REAL implementation, emitted verbatim below, unconditionally).
+"""
+
+DTA_HEADER_LEGACY = DTA_HEADER_COMMON + """\
+//
+// MODE: legacy — every FUNCTION stub aliases the single shared
+// __hmx_native_noop_stub (xorl %eax,%eax; ret). No census.
+//
+// Regenerate: edit native/src/dta_stub_registry.tsv, then run
+//   python3 scripts/native/gen_band3_link_stubs.py --set dta --mode legacy
+"""
+
+DTA_HEADER_LOUD = DTA_HEADER_COMMON + """\
+//
+// MODE: loud (default) — each FUNCTION stub is a per-symbol trampoline
+// __hmx_tramp_dta_<i> that logs its FIRST call to stderr (via the extern "C"
+// census hook __hmx_stub_first_hit, shared with the band3/rndobj_synth sets)
+// and records the hit for the startup+atexit census (rb3_stub_census.cpp),
+// then falls through to returning 0 — behavior-identical to the old shared
+// no-op. Because this file is linked into BOTH rb3-dta and rb3-native
+# (native/CMakeLists.txt NATIVE_SHIMS), rb3-dta also links rb3_stub_census.cpp
+// so __hmx_stub_first_hit resolves there too.
+//
+// A parallel C++ table is emitted as dta_stub_table.inc (kept in sync by this
+// generator — do not hand-edit either). Uses its own struct/array/constant
+// names (HmxDtaStubInfo / kHmxDtaStubTable / kHmxDtaStubTotal&Func&Data) so it
+// can be #included alongside band3_stub_table.inc and
+// rndobj_synth_stub_table.inc in the same TU (rb3_stub_census.cpp) without an
+// ODR clash. rb3-native/rb3-dta link PIE, so the trampoline uses RIP-relative
+// addressing + call ...@PLT.
+//
+// Regenerate: edit native/src/dta_stub_registry.tsv, then run
+//   python3 scripts/native/gen_band3_link_stubs.py --set dta
+"""
+
+DTA_TABLE_HEADER = """\
+// AUTO-GENERATED by scripts/native/gen_band3_link_stubs.py --set dta from
+// native/src/dta_stub_registry.tsv — DO NOT HAND-EDIT.
+//
+// C++ census table paired with the __hmx_tramp_dta_<i> trampolines in
+// dta_link_stubs.s (loud mode). Own struct/array names (not the band3 set's
+// HmxStubInfo/kHmxStubTable) so this .inc can be #included in the same TU as
+// band3_stub_table.inc + rndobj_synth_stub_table.inc (rb3_stub_census.cpp)
+// without redefining the same symbol. `kind`: 'F'=func, 'D'=data. `cls`:
+// 'A'=assert-unreachable, 'N'=ok-noop, 'D'=data-blob.
+struct HmxDtaStubInfo { const char* name; char kind; char cls; };
+
+static const HmxDtaStubInfo kHmxDtaStubTable[] = {
+"""
+
+# The one real (non-stub) symbol in dta_link_stubs.s: EndianSwapEq<int>(int&),
+# a faithful in-place 4-byte byteswap (see native/src/dta_stub_registry.tsv's
+# "EXCLUDED FROM THIS REGISTRY" note). Emitted verbatim, unconditionally, in
+# both modes, right after the header and before the registry-driven content.
+DTA_SPECIAL_VERBATIM = """\
+    .text
+    // EndianSwapEq<int>(int&) — a REAL in-place 4-byte byteswap, NOT a no-op.
+    //
+    // The source (os/AsyncFile.cpp) defines this specialization as a plain
+    // delegate to EndianSwapEq<unsigned int>, i.e. an unconditional, host-
+    // endianness-INDEPENDENT byte reversal (the same arithmetic the <unsigned
+    // int> sibling in os/Endian.h emits). AsyncFile.cpp is excluded from the
+    // native build (it drags in the RVL_SDK cnt.h chain), so the strong def is
+    // missing and the symbol used to resolve to the no-op stub above — making
+    // EndianSwapEq<int> behave OPPOSITELY to its <unsigned int> sibling, a
+    // latent port-fidelity hazard (milo-trace W9B: 12/12 real-gameplay inputs
+    // DIVERGENT vs the Bank-8 DOL, which byteswaps). This restores the faithful
+    // primitive: it now matches the DOL + the <unsigned int> sibling exactly.
+    //
+    // SysV x86-64: the int& is in %rdi. bswap the dword in place.
+    // (Weak so any future strong C++ instantiation still wins.)
+    .p2align 4
+__rb3_endian_swap_eq_int:
+    movl  (%rdi), %eax
+    bswap %eax
+    movl  %eax, (%rdi)
+    ret
+    .weak _Z12EndianSwapEqIiEvRT_
+    .set  _Z12EndianSwapEqIiEvRT_, __rb3_endian_swap_eq_int
+"""
+
+# ---------------------------------------------------------------------------
+# rndobj_synth set (W0.2.S4).
+# ---------------------------------------------------------------------------
+RNDSYNTH_HEADER_COMMON = """\
+// AUTO-GENERATED by scripts/native/gen_band3_link_stubs.py --set rndobj_synth
+// from native/src/rndobj_synth_stub_registry.tsv — DO NOT HAND-EDIT. Edit the
+// registry (and re-run the generator) instead.
+//
+// weak no-op stubs for off-path symbols pulled in by the rndobj/ + synth/
+// matched-fork TUs (full object-graph load milestone). Categories: Wii GX
+// render backend (RndMesh/RndTex draw, WiiRnd, TheRnd), Bink video, libogg/
+// vorbis streaming, tomcrypt (mogg decrypt), Striper (mesh stripping), engine
+// GPU hooks (GFX-off), game-layer globals (TheBandDirector). Each is WEAK ->
+// any real definition wins; the rest resolve to a shared no-op (functions
+// return 0; data reads yield the stub's address, a valid non-null pointer).
+// None is on the .milo object-graph LOAD path. Only linked into rb3-native
+// (native/CMakeLists.txt), not rb3-dta.
+//
+// HISTORICAL (symbols once stubbed here, now strongly defined elsewhere, no
+// longer present as rows — see native/src/rndobj_synth_stub_registry.tsv):
+// RB3TexSharpenPoll / RB3TexSharpenReset (superseded by
+// rb3_texsharpen_native.cpp, research/13 T1); CreateNativeSynth (superseded by
+// rb3_synth_native.cpp); sRawCollide / sLastCollide (moved to real out-of-line
+// definitions in Mesh.cpp after aliasing the read-only code stub SIGSEGV'd on
+// write — see native/src/rndobj_synth_stub_registry.tsv's SHAPE NOTE for the
+// analogous still-open gDebugFullQuota caveat).
+"""
+
+RNDSYNTH_HEADER_LEGACY = RNDSYNTH_HEADER_COMMON + """\
+//
+// MODE: legacy — every FUNCTION stub aliases the single shared
+// __hmx_rndsynth_noop_stub (xorl %eax,%eax; ret). No census.
+//
+// Regenerate: edit native/src/rndobj_synth_stub_registry.tsv, then run
+//   python3 scripts/native/gen_band3_link_stubs.py --set rndobj_synth --mode legacy
+"""
+
+RNDSYNTH_HEADER_LOUD = RNDSYNTH_HEADER_COMMON + """\
+//
+// MODE: loud (default) — each FUNCTION stub is a per-symbol trampoline
+// __hmx_tramp_rs_<i> that logs its FIRST call to stderr (via the extern "C"
+// census hook __hmx_stub_first_hit, shared with the band3/dta sets) and
+// records the hit for the startup+atexit census (rb3_stub_census.cpp), then
+// falls through to returning 0 — behavior-identical to the old shared no-op.
+//
+// A parallel C++ table is emitted as rndobj_synth_stub_table.inc (kept in sync
+// by this generator — do not hand-edit either). Uses its own struct/array/
+// constant names (HmxRndSynthStubInfo / kHmxRndSynthStubTable /
+// kHmxRndSynthStubTotal&Func&Data) so it can be #included alongside
+// band3_stub_table.inc and dta_stub_table.inc in the same TU
+// (rb3_stub_census.cpp) without an ODR clash. rb3-native links PIE, so the
+// trampoline uses RIP-relative addressing + call ...@PLT.
+//
+// Regenerate: edit native/src/rndobj_synth_stub_registry.tsv, then run
+//   python3 scripts/native/gen_band3_link_stubs.py --set rndobj_synth
+"""
+
+RNDSYNTH_TABLE_HEADER = """\
+// AUTO-GENERATED by scripts/native/gen_band3_link_stubs.py --set rndobj_synth
+// from native/src/rndobj_synth_stub_registry.tsv — DO NOT HAND-EDIT.
+//
+// C++ census table paired with the __hmx_tramp_rs_<i> trampolines in
+// rndobj_synth_link_stubs.s (loud mode). Own struct/array names (not the
+// band3/dta sets') so this .inc can be #included in the same TU as
+// band3_stub_table.inc + dta_stub_table.inc (rb3_stub_census.cpp) without
+// redefining the same symbol. `kind`: 'F'=func, 'D'=data. `cls`:
+// 'A'=assert-unreachable, 'N'=ok-noop, 'D'=data-blob.
+struct HmxRndSynthStubInfo { const char* name; char kind; char cls; };
+
+static const HmxRndSynthStubInfo kHmxRndSynthStubTable[] = {
+"""
+
+
+class StubSet:
+    def __init__(self, name, noop_symbol, tramp_infix, struct_name, array_name,
+                 header_legacy, header_loud, table_header, special_verbatim=""):
+        self.name = name
+        self.registry = SRC / f"{name}_stub_registry.tsv"
+        self.output = SRC / f"{name}_link_stubs.s"
+        self.table_output = SRC / f"{name}_stub_table.inc"
+        self.noop_symbol = noop_symbol
+        self.tramp_infix = tramp_infix  # e.g. "" | "dta_" | "rs_"
+        self.struct_name = struct_name
+        self.array_name = array_name
+        self.total_name = f"kHmx{self._camel()}StubTotal" if name != "band3" else "kHmxStubTotal"
+        self.func_name = f"kHmx{self._camel()}StubFunc" if name != "band3" else "kHmxStubFunc"
+        self.data_name = f"kHmx{self._camel()}StubData" if name != "band3" else "kHmxStubData"
+        self.header_legacy = header_legacy
+        self.header_loud = header_loud
+        self.table_header = table_header
+        self.special_verbatim = special_verbatim
+
+    def _camel(self):
+        return "".join(p.capitalize() for p in self.name.split("_"))
+
+
+STUB_SETS = {
+    "band3": StubSet("band3", "__hmx_band3_noop_stub", "", "HmxStubInfo", "kHmxStubTable",
+                      BAND3_HEADER_LEGACY, BAND3_HEADER_LOUD, BAND3_TABLE_HEADER),
+    "dta": StubSet("dta", "__hmx_native_noop_stub", "dta_", "HmxDtaStubInfo", "kHmxDtaStubTable",
+                    DTA_HEADER_LEGACY, DTA_HEADER_LOUD, DTA_TABLE_HEADER,
+                    special_verbatim=DTA_SPECIAL_VERBATIM),
+    "rndobj_synth": StubSet("rndobj_synth", "__hmx_rndsynth_noop_stub", "rs_",
+                             "HmxRndSynthStubInfo", "kHmxRndSynthStubTable",
+                             RNDSYNTH_HEADER_LEGACY, RNDSYNTH_HEADER_LOUD, RNDSYNTH_TABLE_HEADER),
+}
 
 
 def parse_registry(path: Path):
@@ -149,14 +371,16 @@ def bss_size(row) -> int:
     sys.exit(f"data row {row['symbol']} is missing a bss=<N> note")
 
 
-def emit_legacy(rows):
+def emit_legacy(rows, cfg: StubSet):
     funcs = sorted((r for r in rows if r["kind"] == "func"), key=lambda r: r["symbol"])
     datas = sorted((r for r in rows if r["kind"] == "data"), key=lambda r: r["symbol"])
 
-    out = [HEADER_LEGACY]
+    out = [cfg.header_legacy]
+    if cfg.special_verbatim:
+        out.append(cfg.special_verbatim)
     out.append("    .text\n")
     out.append("    .p2align 4\n")
-    out.append("__hmx_band3_noop_stub:\n")
+    out.append(f"{cfg.noop_symbol}:\n")
     out.append("    xorl %eax, %eax\n")
     out.append("    ret\n")
     out.append("\n")
@@ -164,7 +388,7 @@ def emit_legacy(rows):
     for r in funcs:
         sym = r["symbol"]
         out.append(f"    .weak {sym}\n")
-        out.append(f"    .set {sym}, __hmx_band3_noop_stub\n")
+        out.append(f"    .set {sym}, {cfg.noop_symbol}\n")
     out.append("\n")
     out.append("    // ---- DATA stubs (each: own writable zero-filled reservation) ----\n")
     out.append("    .bss\n")
@@ -178,21 +402,25 @@ def emit_legacy(rows):
     return "".join(out)
 
 
-def emit_loud(rows):
+def emit_loud(rows, cfg: StubSet):
     """Returns (asm_text, inc_text).
 
     func rows are emitted in a stable order (registry order preserved — the
-    registry itself is alphabetical from S1), each getting a numeric index i so
-    the trampoline/name/latch labels (__hmx_tramp_<i> / __hmx_name_<i> /
-    __hmx_latch_<i>) are always valid + unique regardless of the mangled symbol
-    text. The real symbol name lives only in the .asciz string + the .weak/.set
-    directives.
+    registry itself is alphabetical), each getting a numeric index i so the
+    trampoline/name/latch labels (__hmx_tramp_<infix><i> / __hmx_name_<infix><i>
+    / __hmx_latch_<infix><i>) are always valid + unique regardless of the
+    mangled symbol text. The infix (per StubSet) keeps the labels unique across
+    the three sets, which all link into the same rb3-native binary. The real
+    symbol name lives only in the .asciz string + the .weak/.set directives.
     """
     funcs = sorted((r for r in rows if r["kind"] == "func"), key=lambda r: r["symbol"])
     datas = sorted((r for r in rows if r["kind"] == "data"), key=lambda r: r["symbol"])
+    infix = cfg.tramp_infix
 
     # ---- asm ----
-    a = [HEADER_LOUD]
+    a = [cfg.header_loud]
+    if cfg.special_verbatim:
+        a.append(cfg.special_verbatim)
 
     # Trampolines (.text). Each: already-hit fast path (cmpb/jne/xor/ret) +
     # first-hit call to __hmx_stub_first_hit@PLT (PIE-safe: @PLT + RIP-relative).
@@ -201,22 +429,22 @@ def emit_loud(rows):
     for i, r in enumerate(funcs):
         sym = r["symbol"]
         a.append("    .p2align 4\n")
-        a.append(f"__hmx_tramp_{i}:\n")
-        a.append(f"    cmpb $0, __hmx_latch_{i}(%rip)\n")
+        a.append(f"__hmx_tramp_{infix}{i}:\n")
+        a.append(f"    cmpb $0, __hmx_latch_{infix}{i}(%rip)\n")
         a.append(f"    jne 1f\n")
-        a.append(f"    movb $1, __hmx_latch_{i}(%rip)\n")
-        a.append(f"    leaq __hmx_name_{i}(%rip), %rdi\n")
+        a.append(f"    movb $1, __hmx_latch_{infix}{i}(%rip)\n")
+        a.append(f"    leaq __hmx_name_{infix}{i}(%rip), %rdi\n")
         a.append(f"    call __hmx_stub_first_hit@PLT\n")
         a.append("1:  xorl %eax, %eax\n")
         a.append("    ret\n")
         a.append(f"    .weak {sym}\n")
-        a.append(f"    .set {sym}, __hmx_tramp_{i}\n")
+        a.append(f"    .set {sym}, __hmx_tramp_{infix}{i}\n")
 
     # Name strings (.rodata).
     a.append("\n")
     a.append("    .section .rodata\n")
     for i, r in enumerate(funcs):
-        a.append(f"__hmx_name_{i}:\n")
+        a.append(f"__hmx_name_{infix}{i}:\n")
         a.append(f"    .asciz \"{r['symbol']}\"\n")
 
     # Latches (.bss, 1 byte each).
@@ -224,7 +452,7 @@ def emit_loud(rows):
     a.append("    .bss\n")
     a.append("    // ---- per-symbol first-hit latches (1 byte each) ----\n")
     for i, r in enumerate(funcs):
-        a.append(f"__hmx_latch_{i}:\n")
+        a.append(f"__hmx_latch_{infix}{i}:\n")
         a.append("    .zero 1\n")
 
     # DATA stubs (.bss, own writable reservation — unchanged shape from legacy).
@@ -239,71 +467,93 @@ def emit_loud(rows):
         a.append(f"    .zero {size}\n")
 
     # ---- C++ table (.inc) ----
-    t = [TABLE_HEADER]
+    t = [cfg.table_header]
     for r in funcs:
         t.append(f"    {{ \"{r['symbol']}\", 'F', '{CLS_CODE[r['class']]}' }},\n")
     for r in datas:
         t.append(f"    {{ \"{r['symbol']}\", 'D', 'D' }},\n")
     t.append("};\n")
     t.append("\n")
-    t.append(f"static const int kHmxStubTotal = {len(funcs) + len(datas)};\n")
-    t.append(f"static const int kHmxStubFunc  = {len(funcs)};\n")
-    t.append(f"static const int kHmxStubData  = {len(datas)};\n")
+    t.append(f"static const int {cfg.total_name} = {len(funcs) + len(datas)};\n")
+    t.append(f"static const int {cfg.func_name}  = {len(funcs)};\n")
+    t.append(f"static const int {cfg.data_name}  = {len(datas)};\n")
 
     return "".join(a), "".join(t)
 
 
+def run_one(cfg: StubSet, mode: str, registry_path, output_path, table_output_path, check: bool):
+    rows = parse_registry(registry_path)
+
+    func_rows = [r for r in rows if r["kind"] == "func"]
+    data_rows = [r for r in rows if r["kind"] == "data"]
+    print(f"[{cfg.name}] registry: {len(rows)} symbols ({len(func_rows)} func / {len(data_rows)} data)",
+          file=sys.stderr)
+
+    if mode == "legacy":
+        asm_content = emit_legacy(rows, cfg)
+        table_content = None
+    else:
+        asm_content, table_content = emit_loud(rows, cfg)
+
+    if check:
+        rc = 0
+        if not output_path.exists():
+            print(f"MISSING: {output_path}", file=sys.stderr)
+            rc = 1
+        elif output_path.read_text(encoding="utf-8") != asm_content:
+            print(f"DRIFT: {output_path} does not match registry-generated output", file=sys.stderr)
+            rc = 1
+        if table_content is not None:
+            if not table_output_path.exists():
+                print(f"MISSING: {table_output_path}", file=sys.stderr)
+                rc = 1
+            elif table_output_path.read_text(encoding="utf-8") != table_content:
+                print(f"DRIFT: {table_output_path} does not match registry-generated output", file=sys.stderr)
+                rc = 1
+        if rc == 0:
+            print(f"[{cfg.name}] OK: no drift", file=sys.stderr)
+        return rc
+
+    output_path.write_text(asm_content, encoding="utf-8")
+    print(f"[{cfg.name}] wrote {output_path}", file=sys.stderr)
+    if table_content is not None:
+        table_output_path.write_text(table_content, encoding="utf-8")
+        print(f"[{cfg.name}] wrote {table_output_path}", file=sys.stderr)
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--set", choices=sorted(STUB_SETS), default="band3",
+                     help="which stub set to (re)generate (default: band3)")
+    ap.add_argument("--all", action="store_true",
+                     help="regenerate/check all stub sets (band3, dta, rndobj_synth)")
     ap.add_argument("--mode", choices=["loud", "legacy"], default="loud",
                      help="emission mode: 'loud' (default, per-symbol census trampolines) "
                           "or 'legacy' (single shared no-op, no census)")
-    ap.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
-    ap.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    ap.add_argument("--table-output", type=Path, default=DEFAULT_TABLE,
-                     help="C++ census table path (loud mode only)")
+    ap.add_argument("--registry", type=Path, default=None,
+                     help="override the registry path (single --set only)")
+    ap.add_argument("--output", type=Path, default=None,
+                     help="override the .s output path (single --set only)")
+    ap.add_argument("--table-output", type=Path, default=None,
+                     help="override the C++ census table path, loud mode only (single --set only)")
     ap.add_argument("--check", action="store_true",
                      help="don't write; exit 1 if generated output differs from what's on disk "
                           "(idempotency / drift gate)")
     args = ap.parse_args()
 
-    rows = parse_registry(args.registry)
+    sets = list(STUB_SETS) if args.all else [args.set]
+    if len(sets) > 1 and (args.registry or args.output or args.table_output):
+        sys.exit("--registry/--output/--table-output require a single --set (not --all)")
 
-    func_rows = [r for r in rows if r["kind"] == "func"]
-    data_rows = [r for r in rows if r["kind"] == "data"]
-    print(f"registry: {len(rows)} symbols ({len(func_rows)} func / {len(data_rows)} data)", file=sys.stderr)
-
-    if args.mode == "legacy":
-        asm_content = emit_legacy(rows)
-        table_content = None
-    else:
-        asm_content, table_content = emit_loud(rows)
-
-    if args.check:
-        rc = 0
-        if not args.output.exists():
-            print(f"MISSING: {args.output}", file=sys.stderr)
-            rc = 1
-        elif args.output.read_text(encoding="utf-8") != asm_content:
-            print(f"DRIFT: {args.output} does not match registry-generated output", file=sys.stderr)
-            rc = 1
-        if table_content is not None:
-            if not args.table_output.exists():
-                print(f"MISSING: {args.table_output}", file=sys.stderr)
-                rc = 1
-            elif args.table_output.read_text(encoding="utf-8") != table_content:
-                print(f"DRIFT: {args.table_output} does not match registry-generated output", file=sys.stderr)
-                rc = 1
-        if rc == 0:
-            print("OK: no drift", file=sys.stderr)
-        return rc
-
-    args.output.write_text(asm_content, encoding="utf-8")
-    print(f"wrote {args.output}", file=sys.stderr)
-    if table_content is not None:
-        args.table_output.write_text(table_content, encoding="utf-8")
-        print(f"wrote {args.table_output}", file=sys.stderr)
-    return 0
+    rc = 0
+    for name in sets:
+        cfg = STUB_SETS[name]
+        registry_path = args.registry or cfg.registry
+        output_path = args.output or cfg.output
+        table_output_path = args.table_output or cfg.table_output
+        rc |= run_one(cfg, args.mode, registry_path, output_path, table_output_path, args.check)
+    return rc
 
 
 if __name__ == "__main__":
