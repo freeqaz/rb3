@@ -275,6 +275,21 @@ void UIList::SetSelected(int i, int j) {
 }
 
 bool UIList::SetSelected(Symbol sym, bool b, int i) {
+#ifdef HX_NATIVE
+    // Native: a list can legitimately have a null provider (same reason as the
+    // guard in Refresh above). This path is hit by the song_select details pane
+    // ({instruments.lst set_selected $instrument}): after opening details,
+    // navigating, entering part_difficulty and returning, the reloaded
+    // instruments.lst can resolve here before its set_data installs a provider,
+    // so mListState.Provider() is null and the unconditional DataIndex vcall
+    // below segfaults (tab-killing trap on web). On console every list has a
+    // real provider, so this never fires there. Wii codegen (#else) is unchanged.
+    if (!mListState.Provider()) {
+        if (b)
+            MILO_WARN("Couldn't find %s in UIList (null provider)", sym);
+        return false;
+    }
+#endif
     int index = mListState.Provider()->DataIndex(sym);
     if (index == -1) {
         if (b) {
