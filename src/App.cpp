@@ -173,6 +173,25 @@ App::App(int argc, char **argv) {
     init_time.Start();
     InitMakeString();
     class String s;
+#ifdef HX_NATIVE
+    // `c` must outlive the SystemPreInit/SetSystemArgs calls below, which read
+    // through argv (= &c). A block-scoped `c` (as in the Wii path) leaves argv
+    // dangling to an out-of-scope stack slot once the if exits — benign on Wii
+    // (argc != 0, so the block never runs), but real UB and ASan-fatal on the
+    // native/web argc==0 boot path. Function-scoped here; the Wii branch keeps
+    // the original block-scoped form to preserve the asm match.
+    const char *c = NULL;
+    if (argc == 0) {
+#ifdef MILO_DEBUG
+        s = "band_r_wii.elf";
+#else
+        s = "band_s_wii.elf";
+#endif
+        c = s.c_str();
+        argv = const_cast<char **>(&c);
+        argc = 1;
+    }
+#else
     if (argc == 0) {
 #ifdef MILO_DEBUG
         s = "band_r_wii.elf";
@@ -183,6 +202,7 @@ App::App(int argc, char **argv) {
         argv = const_cast<char **>(&c);
         argc = 1;
     }
+#endif
     RsoAddIniter(CntSdRsoInit, CntSdRsoTerminate);
     EnableKeyCheats(false);
     SetFileChecksumData();
