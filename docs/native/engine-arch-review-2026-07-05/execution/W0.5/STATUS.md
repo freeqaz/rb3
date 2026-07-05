@@ -350,3 +350,94 @@ frames committed as evidence.
 
 **W0.5 item status:** all four subtasks (S1-S4) now done; STATUS.md fully
 covers exit criteria #1-#5 across the sections above.
+
+## VERIFY — complete
+
+Independent re-run of all exit criteria in a fresh build dir
+(`native/build-agent-W0.5`, `CC=clang CXX=clang++`, GPU headroom confirmed via
+`nvidia-smi` ~24 GB free both GPUs before rendering). All commits/artifacts
+S1-S4 claim to have landed were confirmed present and re-executed successfully;
+no fixes were needed (nothing to fix — all four subtasks reproduced clean on
+first try).
+
+**Criterion 1 — segmentation selftest.**
+```
+python3 scripts/analysis/lineup_bbox_metrics.py --selftest
+```
+Exit 0. Compact blob: `n_components=1 n_slivers=0 mean_solidity=0.783`, gate
+PASS on its own golden. Shattered blob: `n_components=19 n_slivers=15
+mean_solidity=0.178`, gate FAILs all 5 numeric checks vs the compact golden.
+`SELFTEST: PASS — compact and shattered separate cleanly`. PASS.
+
+**Criterion 2 — capture harness (fresh build + fresh run).**
+```
+CC=clang CXX=clang++ cmake -B native/build-agent-W0.5 -S native
+cmake --build native/build-agent-W0.5 --target rb3-native -j8   # EXIT=0, clean
+python3 scripts/native/patch-lineup-capture.py --bin native/build-agent-W0.5/rb3-native \
+  --frames 2 --out /tmp/rb3-lineup-verify/base --tag base
+```
+`PATCH_LINEUP out=/tmp/rb3-lineup-verify/base frames=4
+forced_shots=coop_g_n03.shot,coop_g_b.shot max_band_ratio=3.15`, exit 0. 4 WIDE
+PNGs + non-empty `manifest.json` written. PASS.
+
+**Criterion 3 — committed golden + gate PASS x2.**
+```
+python3 scripts/native/lineup-gate.py --bin native/build-agent-W0.5/rb3-native   # run 1
+python3 scripts/native/lineup-gate.py --bin native/build-agent-W0.5/rb3-native   # run 2
+```
+Run 1: `LINEUP_GATE verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS
+pin=PASS` (4/4 frames, sliv/ncomp within bound, e.g.
+`coop_g_b[0] sliv=3 ncomp=34`). Run 2 (independent capture, different
+sliver/component counts due to crowd/particle nondeterminism, still within the
+tuned advisory/gating split): `LINEUP_GATE verdict=PASS img=PASS segA=PASS
+ratioB=PASS countC=PASS pin=PASS`. Two consecutive clean PASSes on the committed
+golden, as required. PASS.
+
+**Criterion 4 — fail-red proof (REFACTOR_PLAN exit-gate #2), re-demonstrated
+independently.**
+```
+bash scripts/native/w0.5-failred.sh --bin native/build-agent-W0.5/rb3-native \
+  --artifacts-dir /tmp/w05-failred-verify
+```
+Fresh run (different anchor pose from the committed session, different
+offending-mesh set — confirms the proof is not a one-off artifact):
+- NEW gate: `LINEUP_GATE verdict=FAIL img=PASS segA=PASS ratioB=FAIL countC=PASS
+  pin=PASS` — 5 ratioB offenders (`male_extras_eyebrows11.mesh` ratio=41.87,
+  `goatee_resource.mesh` ratio=17.04, `female_extra_head.mesh` ratio=12.82,
+  `male_extra_head03.mesh` ratio=11.42, `male_extras_head11.mesh` ratio=11.21;
+  cap=8.0).
+- OLD gate (`band-closeup-capture.py`, same broken env): `verdict=PASS
+  drops_total=0 drops_band=0 max_band_ratio=4.39` — blind, per the documented
+  root cause (offending meshes are `other`-classified, never touch
+  `drops_band`).
+- Image layer (`visual_diff.py --perceptual`, exploded vs committed golden
+  PNG): `score=47.73 min_score=35.0 verdict=PASS` — the perceptual metric stays
+  comfortably above threshold despite the defect.
+- Driver final line: `W0.5_FAILRED_PROOF: HOLDS (OLD=PASS, image=PASS,
+  NEW=FAIL)`, exit 0.
+This independently reproduces the exact exit-gate #2 shape (new gate FAILs a
+number; old gate and image layer both PASS) with a fresh capture, not just a
+re-read of the committed fixtures. PASS.
+
+**Criterion 5 — scope containment.**
+`git log --grep="^W0.5:" --name-only` across all 9 W0.5-prefixed commits
+(`961889c6 0df1d073 2a20c7f7 d8c8e477 79c06406 036d1f93 21ebe4cd a2c6924c` +
+this VERIFY commit) touches only `scripts/analysis/lineup_bbox_metrics.py`,
+`scripts/native/{patch-lineup-capture.py,lineup-gate.py,w0.5-failred.sh}`,
+`scripts/native/goldens/w0.5-lineup/**`, and
+`docs/native/.../execution/W0.5/**`. No `native/src/`, no engine repo, no
+`native/CMakeLists.txt` / `MILO_ENGINE_PIN` edit. (A separate, unrelated W0.6
+commit `6c8a3bbf` mentions "W0.5 S3" in its prose while recovering its own
+lost W0.6 commit — confirmed by inspection that it does not touch any W0.5
+file; not a W0.5 scope violation.) Only `native/build-agent-W0.5` was used for
+building; `native/build-native` / `build-web*` untouched. PASS.
+
+**Scratch cleanup:** verifier used `/tmp/rb3-lineup-verify/`,
+`/tmp/w05-failred-verify/`, and a throwaway `/tmp/rb3-lineup/gate` capture for
+re-runs; all removed after verification (not committed, not needed — the
+committed golden + `failred/` fixtures from S3/S4 remain the evidence of
+record).
+
+**Verdict:** all 5 exit criteria independently re-verified PASS/HOLDS with
+fresh builds and fresh renders (no reliance on reading committed JSON alone).
+No fixes were required. W0.5 is COMPLETE.
