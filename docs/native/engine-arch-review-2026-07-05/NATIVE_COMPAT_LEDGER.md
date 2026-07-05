@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 225  
-**By class:** probe=35, unknown=143, workaround=47  
+**Total flags:** 229  
+**By class:** feature=2, probe=37, unknown=143, workaround=47  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 46
 
 | name | class | default | owner | faithful-status | sites |
@@ -96,9 +96,13 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_CROWD_DIM_OFF` | workaround | on | render/crowd | not-live: crowd-dim heuristic default-ON | 1 |
 | `RB3_CROWD_IMPOSTER_OFF` | workaround | on | render/crowd | not-live: crowd impostor rendering default-ON | 1 |
 | `RB3_DATA` | unknown | unknown | unclassified | n/a | 6 |
+| `RB3_DRAWLOG` | probe | off | render/determinism | n/a: per-draw state-log ring capture (W0.3 draw-log golden harness) | 1 |
+| `RB3_DRAWLOG_DUMP` | probe | off | render/determinism | n/a: draw-log JSON dump path (W0.3 draw-log golden harness) | 1 |
 | `RB3_DRAWRECT_DBG` | unknown | off | unclassified | n/a | 1 |
 | `RB3_DTA_OVERLAY` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_FAKE_ASYNC_OPEN_MS` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_FIXED_CLOCK` | feature | off | session-telemetry/determinism | n/a: headless-determinism harness flag (off in shipping runs) — trace-free fixed sim clock | 1 |
+| `RB3_FIXED_CLOCK_DT_MS` | feature | off | session-telemetry/determinism | n/a: headless-determinism harness value knob (fixed per-frame sim dt in ms; off = built-in 1/60s default) | 1 |
 | `RB3_FRAME_TRACE` | unknown | off | unclassified | n/a | 2 |
 | `RB3_FRET_GLOW_OFF` | workaround | on | render/highway | not-live: fret-held glow workaround default-ON | 1 |
 | `RB3_GAME` | unknown | unknown | unclassified | n/a | 1 |

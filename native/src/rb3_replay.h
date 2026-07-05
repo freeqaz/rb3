@@ -63,6 +63,28 @@ int RB3ReplayLastFrame();
 // RB3ReplayActive() — the seams gate on (RB3ReplayFixedClock() && RB3ReplayActive()).
 bool RB3ReplayFixedClock();
 
+// ── W0.3b — Trace-free fixed sim clock (headless-determinism harness) ─────────
+// A TRACE-FREE cousin of RB3ReplayFixedClock: it engages on a plain boot with NO
+// recorded input trace loaded, so a fresh headless boot can advance its sim clock
+// by a CONSTANT per-frame timestep instead of wall-clock / live audio. This makes
+// the splash/boot scene a deterministic function of the absolute frame index,
+// which is what the draw-log integration golden (W0.3) needs to diff green.
+// Purely a determinism harness — OFF in all shipping runs. When a real replay
+// trace IS active the recorded-clock path takes precedence; this only fills the
+// no-trace gap that RB3ReplayActive() excludes today.
+
+// True iff RB3_FIXED_CLOCK is set (non-empty, non-"0"), parsed once. INDEPENDENT
+// of any trace (unlike RB3ReplayFixedClock, which is only meaningful under
+// RB3ReplayActive()). Web: mirrors the replay pattern via window.__rb3FixedClock.
+bool RB3FixedClockActive();
+
+// The constant per-frame sim dt (SECONDS) to advance the menu/UI clock by when
+// RB3FixedClockActive() and no trace is driving the clock. Default 1/60s so the
+// animation PROGRESSES deterministically to a well-defined frame-N state.
+// Overridable via RB3_FIXED_CLOCK_DT_MS (milliseconds; any finite value >= 0 is
+// honoured, including 0.0 = a true freeze holding animation at t=0). Parsed once.
+float RB3FixedClockDt();
+
 // The recorded sim dt (SECONDS) to advance the menu/UI clock by at `frame` — the
 // `sdt` of the recorded PER-FRAME `clk` sample at frame N (the un-decimated clock
 // stream -> an EXACT per-frame value). Falls back to the decimated `fr` table

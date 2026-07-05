@@ -504,6 +504,64 @@ bool RB3ReplayFixedClock() {
     return gReplay.fixedClock != 0;
 }
 
+// ── W0.3b — Trace-free fixed sim clock (headless-determinism harness) ─────────
+// A file-static cached presence flag + dt, INDEPENDENT of gReplay.fixedClock
+// (which is the trace-gated RB3_REPLAY_FIXED_CLOCK; the semantics differ — this
+// one engages with no trace loaded). Both parse once, mirroring the idiom above.
+namespace {
+int   gFixedClockActive = -1;      // RB3_FIXED_CLOCK: -1 unchecked, 0/1
+float gFixedClockDt      = -1.0f;  // seconds; -1 unchecked, else >= 0
+}  // namespace
+
+bool RB3FixedClockActive() {
+    // Parse RB3_FIXED_CLOCK once. Any non-empty, non-"0" value enables it. Unlike
+    // RB3ReplayFixedClock this is TRACE-FREE: it is meaningful on a plain boot.
+    if (gFixedClockActive < 0) {
+#ifdef __EMSCRIPTEN__
+        // Web: a JS global (browser-deferred, mirrors window.__rb3ReplayFixedClock).
+        // Absent => off.
+        int on = EM_ASM_INT({
+            var v = window.__rb3FixedClock;
+            return (v === true || v === 1 || v === '1') ? 1 : 0;
+        });
+        gFixedClockActive = on ? 1 : 0;
+#else
+        const char *v = std::getenv("RB3_FIXED_CLOCK");
+        gFixedClockActive = (v && *v && std::strcmp(v, "0") != 0) ? 1 : 0;
+#endif
+    }
+    return gFixedClockActive != 0;
+}
+
+float RB3FixedClockDt() {
+    // The constant per-frame sim dt (SECONDS). Default 1/60s (a real fixed
+    // timestep so animation progresses). RB3_FIXED_CLOCK_DT_MS overrides it with a
+    // millisecond value; any finite >= 0 value is honoured (0.0 => a true freeze).
+    // Parsed once.
+    if (gFixedClockDt < 0.0f) {
+        float dt = 1.0f / 60.0f;
+#ifdef __EMSCRIPTEN__
+        // Web: window.__rb3FixedClockDtMs (milliseconds) overrides; absent => default.
+        double ms = EM_ASM_DOUBLE({
+            var v = window.__rb3FixedClockDtMs;
+            return (v === undefined || v === null) ? -1.0 : Number(v);
+        });
+        if (ms >= 0.0 && ms == ms)  // finite (NaN != NaN) and non-negative
+            dt = (float)(ms / 1000.0);
+#else
+        const char *v = std::getenv("RB3_FIXED_CLOCK_DT_MS");
+        if (v && *v) {
+            char *end = nullptr;
+            double ms = std::strtod(v, &end);
+            if (end != v && ms >= 0.0 && ms == ms)  // parsed, finite, non-negative
+                dt = (float)(ms / 1000.0);
+        }
+#endif
+        gFixedClockDt = dt;
+    }
+    return gFixedClockDt;
+}
+
 // Carry-forward lookup over a sorted (frame,sdt,songMs) table: the sample
 // at-or-before `frame`, or nullptr if `frame` precedes the first sample (or the
 // table is empty). For the un-decimated clk table this resolves to the EXACT
