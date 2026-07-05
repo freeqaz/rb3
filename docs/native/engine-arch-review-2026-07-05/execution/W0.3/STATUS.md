@@ -67,3 +67,98 @@ Append-only. One `## <subtask-id> — done|partial|blocked` section per subtask,
   - The comparator's actual regression-catching purpose is unaffected by this: `--fail-red-audit` proves a real co-location/translation divergence is still caught reliably; the count-jitter noise is orthogonal to (and would not mask) a bind-group-collapse or co-location bug on draws that DO exist in both captures.
 
 **Remaining:** none for the mechanical S3 deliverables (endpoint, script, golden all landed and build/run clean). Open follow-up (not S3's scope): an engine-level deterministic/frozen-clock or synchronous-load headless mode would be needed before this integration net can gate CI unattended; until then it is a manual/diagnostic tool.
+
+## VERIFY — partial
+
+Independent re-run of all exit criteria (own build dir `native/build-agent-W0.3`, clang/clang++
+per S1's requirement). Engine HEAD `9561a19` (matches S1's commit; `MILO_ENGINE_PIN` still
+`a8089c3d9` — untouched, per rule 3). No new commits were needed for S1/S2 — both build and pass
+clean. S3's mechanical parts (endpoint/script/comparator) are correct; the literal "diffs green"
+bar in exit criterion 6 is reproducibly NOT met on a fresh headless boot, confirmed independently
+below (not a regression from verification — this matches what W0.3.S3's own entry already
+documented; I re-derived it rather than taking the claim on faith).
+
+**Builds:** `cmake --build native/build-agent-W0.3 --target rb3-native -j8` -> `Built target
+rb3-native`, 0 errors. `--target rb3-tests -j8` -> `Built target rb3-tests`, 0 errors.
+
+1. **Inert when off** — PASS (by code construction, direct read of
+   `milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp`): the emit call at the draw site and the
+   `EndFrame` dump call are each wrapped in `if (DrawLogOn())`; `DrawLogOn()` is a cached-`static
+   int` `getenv` check (or the debug-forced bool). With `RB3_DRAWLOG` unset and no debug override,
+   both branches are skipped entirely — no `.Get()`, no push, no file I/O. The only unconditional
+   add is `mDrawLog.clear()` in `BeginFrame` on a vector that stays empty when off. An
+   OFF-vs-OFF `/api/screenshot` byte-compare (the plan's literal proof) remains unattempted by me
+   for the same reason S1 documented: the only reachable headless scene (splash/intro) is
+   wall-clock-driven and non-deterministic frame-to-frame independent of this change (confirmed
+   independently below in #6's investigation — draw *counts* vary run to run even with the ring
+   permanently off in the S1/S2 builds), so a screenshot diff would be measuring that pre-existing
+   non-determinism, not this item.
+2. **Populates when on** — PASS (re-confirmed): `RB3_DRAWLOG=1 RB3_DRAWLOG_DUMP=/tmp/dl.json
+   RB3_HTTP=1` boot -> valid JSON, `count == draws.length`, plausible per-draw fields.
+3. **Catches co-location (fail-red)** — PASS, freshly re-demonstrated live (not just re-reading the
+   prior claim): inverted `CatchesCoLocation`'s assertion (`EXPECT_FALSE`->`EXPECT_TRUE`), rebuilt,
+   ran -> genuinely failed:
+   ```
+   test_draw_log_golden.cpp:151: Failure
+   Value of: r.passed
+     Actual: false
+   Expected: true
+   [  FAILED  ] DrawLogGolden.CatchesCoLocation
+   ```
+   Reverted (`git diff` on the test file is empty), rebuilt, reran `DrawLogGolden*` -> 9 PASSED, 1
+   SKIPPED (`PopulatesFromRealDrawMesh`, GPU-gated, skips by design on this GPU-having host too —
+   confirmed it still skips, never fails).
+4. **Catches bind-group collapse (fail-red)** — PASS (`CatchesBindGroupCollapse` green in the same
+   run; S2's own fail-red audit of this case, already recorded in STATUS, was not independently
+   re-inverted by me but the comparator code path is shared with #3's freshly-proven mechanism).
+5. **Tolerance is real** — PASS (`MatchesGoldenWithinEps` green in the same run).
+6. **Integration golden green** — **FAIL as literally stated, reproduced independently.** Built the
+   endpoint, ran `python3 scripts/native/drawlog-golden.py --bin native/build-agent-W0.3/rb3-native`
+   twice against the committed `splash_screen.json` golden (888 draws):
+   ```
+   run 1: [capture] captured frame=50 count=886 -> FAIL: count: golden=888 candidate=886
+   run 2: [capture] captured frame=51 count=885 -> FAIL: count: golden=888 candidate=885
+   ```
+   Every live capture on this host diverges from the committed golden before any tolerance
+   comparison even reaches the world/bind-group checks (fails on the EXACT `count` gate). This is
+   the same wall-clock/non-frame-locked jitter S3's own STATUS entry documents (splash_screen was
+   the tightest band found after ruling out gamewarm/tex-prewarm/async-open and settle-window
+   length). The **comparator and script plumbing are independently proven correct** —
+   `python3 scripts/native/drawlog-golden.py --fail-red-audit` -> `FAIL-RED AUDIT OK: perturbed
+   golden correctly compared as FAIL (1 divergence(s)): draw 0 field=world world[12]
+   golden=-6770.67 cand=-6670.67`, golden file confirmed untouched on disk afterward — but the
+   default/unattended "diff green against committed golden" invocation the plan's criterion #6
+   requires does **not** pass on this build, on this host, on any of the scenes already
+   investigated (boot/intro, main_hub, song_select, splash — all documented in S3's STATUS entry).
+7. **Additive commits** — PASS: `git show --stat` on all three commits (`9561a19` engine, `1242531c`,
+   `1dc8d95d` rb3) shows insertions only, no deletions in the touched files besides the expected
+   append lines; `MILO_ENGINE_PIN` in `native/CMakeLists.txt` is still `a8089c3d9...` (unchanged).
+   **Minor git-hygiene note (not a blocker, already self-documented elsewhere):** `1242531c`'s
+   `native/CMakeLists.txt` diff includes one unrelated line (`rb3-dta` linking
+   `rb3_stub_census.cpp`) that belongs to the concurrent W0.2.S4 lane, not W0.3.S2 — a staging
+   overlap similar to the one W0.2.S4's own commit message flags against `e4e80f1b`. It is
+   functionally harmless (both targets build) and does not touch W0.3's own files/behavior, so I
+   did not unwind it — flagging for the coordinator per the "fix-forward, don't revert a sibling's
+   line" mitigation in the plan's Risks section.
+
+**Blockers to full "complete":**
+- Exit criterion #6 cannot be made to pass as literally worded ("diffs green") without an
+  engine-level deterministic/frozen clock for headless boots. The existing
+  `RB3ReplayFixedClock()`/`RB3_REPLAY_FIXED_CLOCK` mechanism (`native/src/rb3_replay.{h,cpp}`) is
+  the closest existing primitive but gates on `RB3ReplayActive()` (a loaded recorded-input trace
+  file) — using it for a plain boot-to-splash capture would need new engine seam work (a
+  trace-free "freeze sim clock at a fixed dt" mode), which is a **substantive engine change**, out
+  of scope for this verifier pass and arguably out of scope for W0.3 itself (S3's own STATUS already
+  scoped it as a follow-up item, no `MILO_ENGINE_PIN` bump attempted).
+- **Next actions for a future resume:** (a) file/track the "deterministic headless clock" need as
+  its own work item (likely a new W-numbered engine item) rather than re-attempting inside W0.3;
+  (b) once available, re-point `drawlog-golden.py` at a frozen-clock boot and re-capture
+  `splash_screen.json`; (c) optionally have the coordinator decide whether S3's non-negotiable
+  bar should be relaxed to "comparator+endpoint plumbing proven correct via --fail-red-audit,
+  live-golden diff is diagnostic-only" (i.e. formally amend the plan's criterion 6) rather than
+  treating it as unmet, since the actual regression-catching value (co-location / bind-group
+  collapse detection) is already covered by S2's GPU/boot-free comparator tests and does not
+  depend on frame-count determinism.
+
+**Commits (all pre-existing, none added by this verify pass):** engine `9561a19`; rb3 `1242531c`,
+`1dc8d95d`, plus STATUS-only commits `e4e80f1b`, `32946b50`, `93b1a9e9`.
