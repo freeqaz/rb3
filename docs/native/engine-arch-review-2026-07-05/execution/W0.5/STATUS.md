@@ -274,3 +274,79 @@ free, VLLM steady-state) and fully free (~24 GB) — wait for a free window.
 
 **Env caveat carried forward:** no software Vulkan ICD installed (nvidia only),
 so there is no CPU render fallback when both GPUs are pinned.
+
+## W0.5.S4 — done
+
+**Commit:** `21ebe4cd` (rb3) — `scripts/native/w0.5-failred.sh` (new driver) +
+`docs/native/engine-arch-review-2026-07-05/execution/W0.5/failred/` (4 exploded
+WIDE PNGs, 3 verdict JSONs, `RESULT.md`).
+
+**Fail-red proof HOLDS (REFACTOR_PLAN exit-gate #2).** Induced shards with
+`RB3_NO_SKEL_REBIND=1 SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1 RB3_NO_SKIN_CLAMP=1`
+(the plan-1 env plus the SKIN_CLAMP fallback — needed: without it the WIDE
+guitarist framings showed no visible defect and `max_band_ratio` stayed well
+under cap). Confirmed GPU headroom first (`nvidia-smi`, ~19-24 GB free both
+GPUs) and verified the captured frames are non-black before trusting them
+(driver checks `any_black_frame` from `lineup-gate.py`'s verdict and aborts
+with exit 2 if set, per S2/S3's documented GPU-OOM caveat).
+
+- **Visual confirmation (step 1, required before trusting numbers):** both wide
+  shots (`coop_g_n03.shot`, `coop_g_b.shot`) show a real defect on inspection —
+  a hugely elongated/misplaced eyebrow mesh stretching across the frame past
+  the character's head, and an oversized dark triangular prop shard bottom-left
+  (matches the numeric offenders below: `male_extras_eyebrows11.mesh`
+  ratio=41.87, `goatee_resource.mesh` ratio=17.04). A separate earlier probe run
+  (not committed, superseded by the final run) additionally showed a grossly
+  exploded giant pink limb/head mass on `coop_g_n03` — same broken-env class,
+  more dramatic instance; the committed frames are the FINAL driver run's
+  output, kept for reproducibility (same script, same env, same anchor).
+- **OLD gate PASS:** `band-closeup-capture.py` (SAME broken env, 5 shots incl.
+  the two WIDE ones, 10/10 pinned) reports `verdict=PASS drops_band=0
+  drops_total=0 max_band_ratio=4.96` — its `drops_band==0` metric is structurally
+  blind because it only counts guard-dropped **band-classified** meshes; the
+  offending meshes here are classified `other` (crowd/extras), never touching
+  that counter. Saved verbatim as `old-gate-verdict.json`.
+- **Image layer PASS:** `visual_diff.py --perceptual` of the exploded WIDE frame
+  (`exploded_cand_coop_g_b_0.png`) vs the committed golden
+  (`scripts/native/goldens/w0.5-lineup/coop_g_b_0.png`) scores **81.24** (min
+  35.0) — comfortably PASS. Saved as `image-layer-verdict.json`.
+- **NEW gate FAIL:** `lineup-gate.py` (same broken env/anchor) returns
+  `verdict=FAIL` — `ratioB` layer fails: 5 meshes exceed
+  `per_mesh_ratio_cap=8.0` (`male_extra_head01.mesh`=9.43,
+  `male_extra_head03.mesh`=11.42, `male_extras_head11.mesh`=11.22,
+  `male_extras_eyebrows11.mesh`=41.87, `goatee_resource.mesh`=17.04);
+  `segA`/`countC`/image stayed PASS on this run (segA is tuned to
+  `n_slivers`/`n_components_abs`, which this particular defect class —
+  large mis-scaled blobs, not scattered thin slivers — does not trip; ratioB
+  is what catches it, exactly per-mesh-extent as designed). Saved as
+  `new-gate-verdict.json`.
+- Full tabulation + reproduce command in
+  `docs/native/.../W0.5/failred/RESULT.md`.
+
+**Driver (`scripts/native/w0.5-failred.sh`):** orchestrates all three
+(new gate / old gate / image layer) against the same broken env + binary,
+copies every captured WIDE PNG into `failred/` prefixed `exploded_`, writes the
+three verdict JSONs + a generated `RESULT.md`, and exits 0 only if the proof
+holds (OLD=PASS, image=PASS, NEW=FAIL) — 1 if it does not, 2 on an environment
+error (missing golden/binary, GPU-OOM black frame). Flags: `--bin`,
+`--artifacts-dir`, `--anchor-ms`, `--work`.
+
+**DEVIATION from PLAN.md (recorded):** none in scope. One tuning finding: the
+plan-1 env alone (`RB3_NO_SKEL_REBIND=1 SHARD_GUARD_OFF=1`, no
+`RB3_NO_SKIN_CLAMP`) did NOT produce a visible defect on the two resolvable WIDE
+shots for this venue (`--song-downs 4`) — ratio offenders stayed under cap and
+frames looked clean. Adding `RB3_NO_SKIN_CLAMP=1` (the planned fallback) was
+required and is baked into the driver by default, matching the "if shards are
+not visually present... add RB3_NO_SKIN_CLAMP=1" instruction verbatim.
+
+**Env note carried forward:** this session, GPU headroom was good throughout
+(no black-frame retries needed); the driver still checks `any_black_frame`
+defensively per S2/S3's caveat since GPU state on this box is known to
+oscillate.
+
+**Exit criteria check (PLAN.md "Exit criteria" #4):** satisfied — `RESULT.md`
+shows OLD=PASS, image=PASS, NEW=FAIL with concrete numbers, exploded WIDE
+frames committed as evidence.
+
+**W0.5 item status:** all four subtasks (S1-S4) now done; STATUS.md fully
+covers exit criteria #1-#5 across the sections above.
