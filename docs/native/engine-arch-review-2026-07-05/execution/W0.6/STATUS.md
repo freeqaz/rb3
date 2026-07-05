@@ -156,3 +156,80 @@ scan/gen/check/--selftest all passing; exactly 5 call sites rewired across 2 rea
 `NATIVE_COMPAT_LEDGER.md` generated + committed with class/default/owner/faithful-status/sites
 + default-ON-workaround count; `check` is green on the committed tree and demonstrably red on
 an injected unregistered flag (transcript above); `MILO_ENGINE_PIN` unchanged throughout.
+
+## VERIFY — complete
+
+**Critical finding (git-history loss, now recovered):** `git reflog show master` revealed
+TWO `reset: moving to d8c8e477` events performed by a concurrent process after S2/S3 were
+authored, which dropped commit `aaf5eec1` ("W0.6: route 5 opt-out flags through
+NativeCompat") — and the W0.6 S2 STATUS-append commit `b50afff9`, W0.5 S3 commit
+`30b26706`, and W1.1 VERIFY commit `1c04422a` — from `master`'s reachable history
+(`git merge-base --is-ancestor aaf5eec1 HEAD` -> NOT an ancestor, confirmed pre-fix). The
+reset was mixed/soft (working tree changes survived as uncommitted diffs — `git diff
+aaf5eec1 -- <the 4 glue files + census.py>` was byte-identical to the working tree), so
+the S2 implementer's own re-verification (run against the live working tree) genuinely
+passed even though the commit object it referenced had gone unreachable. The
+`native/CMakeLists.txt` one-line test-registration was **never actually committed anywhere**
+(S2 STATUS claimed it was "swept into concurrent commit `391fc39b`" — checked: `391fc39b`
+only touches `W0.4/STATUS.md`, no CMakeLists.txt change, and it too is not an ancestor of
+HEAD). Fixed by recommitting the identical, byte-verified content: rb3 `6c8a3bbf`
+("W0.6: fix — recover lost S2 rewire commit"), staged only the 6 W0.6-owned files (4 glue
+`.cpp` + `native/CMakeLists.txt` + `native_compat_census.py`) + the new
+`native/tests/test_native_compat.cpp`, under `flock /tmp/rb3-git.lock`. Engine-side commit
+`21eae3d` is intact and reachable from `milo-native-engine` HEAD (`git merge-base
+--is-ancestor 21eae3d HEAD` -> yes) — no engine-repo action was needed.
+**Flagging for the coordinator:** W0.5's S3 commit and W1.1's VERIFY-status commit were
+wiped by the same two resets and were NOT recovered here (out of this item's scope) —
+their owners/next verifiers should run the same `git merge-base --is-ancestor <sha> HEAD`
+check before trusting their STATUS.md text.
+
+**Per-criterion re-verification (own build dir `native/build-agent-W0.6`, reused):**
+
+1. `NativeCompatFlags.{h,cpp,gen.inc}` compile into `milo-engine` — PASS. Fresh
+   `cmake --build build-agent-W0.6 --target rb3-native rb3-tests -j8` after the recovery
+   commit: both targets built clean, pin-mismatch WARNING only (`milo-native-engine HEAD is
+   7a490f25... but rb3-native pins a8089c3d...`), not an error.
+2. `rb3-native` + `rb3-tests` build clean, gtest green — PASS. Full suite:
+   `[==========] 61 tests from 12 test suites ran. (1164 ms total) [  PASSED  ] 61 tests.`
+   `NativeCompatRegistry.*` 4/4 PASS (TableNonEmptyAndNamesUnique,
+   RewiredFlagsHaveExpectedReadMode, FindUnknownReturnsNull,
+   OptOutActiveUnregisteredFailsSafeEnabled).
+3. Census tool scan/gen/check/--selftest — PASS. `--selftest` -> `selftest: 14/14 PASS`
+   (independently re-run, not just trusted from STATUS text).
+4. Exactly 5 call sites, 2 read modes, no non-listed file touched — PASS (re-confirmed by
+   diffing the recovery commit's file list against PLAN.md's 4-glue-file / 5-flag list;
+   `git diff` after the commit shows 0 residual diff — nothing left uncommitted).
+5. `NATIVE_COMPAT_LEDGER.md` generated, committed (`e553a338`, reachable from HEAD),
+   225 flags / probe=35 / workaround=47 / unknown=143 / default-ON-workaround=46 — PASS,
+   spot-checked file header banner + summary line directly.
+6. `check` GREEN on committed tree AND demonstrably RED — PASS, reproduced independently
+   (not reusing S3's transcript): planted a scratch `getenv("RB3_VERIFY_UNREGISTERED_DEMO")`
+   in a throwaway `_scratch_verify_w06_demo.cpp`, ran `check`:
+   ```
+   check: FAIL — 1 getenv flag(s) not in registry (.../NativeCompatFlags.gen.inc):
+     - RB3_VERIFY_UNREGISTERED_DEMO
+   check: FAIL — .../NativeCompatFlags.gen.inc is stale (regen would differ). Run `gen`.
+   check: FAIL — .../NATIVE_COMPAT_LEDGER.md is stale (regen would differ). Run `gen`.
+   EXIT: 1
+   ```
+   deleted the scratch file, re-ran -> `check: OK — 225 scanned flags all present in
+   registry, regen clean. EXIT: 0`. Also re-ran `check` against the real committed tree
+   before/after the recovery commit -> `0` both times (the recovery commit didn't change
+   the flag set, only restored the missing call-site wiring + CMakeLists line).
+7. `MILO_ENGINE_PIN` unchanged — PASS (`git diff HEAD~1 HEAD -- native/CMakeLists.txt` shows
+   no PIN line touched); MOVES-xor-CHANGES / per-repo flock+staging — the recovery commit
+   is a single CHANGES-type commit (restoring behaviour-preserving rewires that were never
+   actually behaviour-changing at HEAD, since HEAD never had them); staged only the 6 files
+   it touched via `git add <path>...` under `/tmp/rb3-git.lock`, no `-A`/`-a`.
+
+**Headless boot spot-check (independent re-run):** `RB3_HTTP=1 RB3_GAMEWARM_OFF=0
+rb3-native` -> `[NativeCompat] override active: RB3_GAMEWARM_OFF=0 (default on,
+load/perf)`, matching presence-mode semantics.
+
+**Commits this VERIFY pass:**
+- rb3 `6c8a3bbf` — recover the lost S2 rewire (4 glue files + CMakeLists.txt line +
+  census.py routed-read recognition + test_native_compat.cpp), `/tmp/rb3-git.lock`.
+
+**Blockers:** none. All 7 exit criteria hold against a freshly rebuilt, freshly re-run
+verification, with the git-history-loss gap found and closed. No engine-repo change
+needed (21eae3d already correctly on `milo-native-engine` HEAD).
