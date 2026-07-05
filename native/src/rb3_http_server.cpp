@@ -207,6 +207,7 @@ void RB3HttpServer::ProcessCommands() {
         switch (cmd->type) {
             case kCmdDtaEval: HandleDtaEval(*cmd); break;
             case kCmdInput:   HandleInput(*cmd); break;
+            case kCmdDrawLog: HandleDrawLog(*cmd); break;
             case kCmdReplayMemory:
             case kCmdReplayCall:
             case kCmdReplayInfo:
@@ -346,6 +347,25 @@ void RB3HttpServer::RegisterEndpoints() {
         auto result = QueueAndWait(kCmdInput, verb);
         if (result.ok) {
             res.set_content(JsonOk(result.jsonData), "application/json");
+        } else {
+            res.status = result.httpStatus;
+            res.set_content(JsonError(result.error), "application/json");
+        }
+    });
+
+    // GET /api/drawlog — W0.3 per-draw state-log ring (RB3_DRAWLOG regression
+    // net) for the just-completed frame, as the same { frame, count, draws:[...] }
+    // JSON shape the S1 engine dump writes (see RB3DrawLogDebug.h / DumpDrawLog):
+    // dense per-stream (scene/mat/obj/bone) bind-group ids, column-major world
+    // xfm, pipeline/blend/zmode/layout/format/flags, index/tri/vert counts, and
+    // the mesh-name hash. Returned unwrapped (no ok/data envelope) so
+    // drawlog-golden.py's comparator can diff the response body directly
+    // against the committed golden file with no unwrapping step. Empty
+    // ({"draws":[]}) when RB3_DRAWLOG (or the debug override) is not enabled.
+    svr->Get("/api/drawlog", [this](const httplib::Request&, httplib::Response& res) {
+        auto result = QueueAndWait(kCmdDrawLog);
+        if (result.ok) {
+            res.set_content(result.jsonData, "application/json");
         } else {
             res.status = result.httpStatus;
             res.set_content(JsonError(result.error), "application/json");

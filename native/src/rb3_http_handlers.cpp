@@ -30,6 +30,7 @@
 // RB3 GPU backend (graduated into the shared engine). gBandRnd owns the
 // GpuDevice; readback + window size come from gBandRnd.Gpu().
 #include "platform/Rnd_Wgpu_RB3.h"
+#include "platform/RB3DrawLogDebug.h"  // W0.3.S3: RB3DebugGetDrawLog() for /api/drawlog
 #include "gfx/Screenshot.h"
 
 // Native-only diagnosis: walk the synth user's overshell slot so a headless
@@ -57,6 +58,7 @@
 #include "ui/UIPanel.h"             // UIPanel::LoadedDir (world_panel)
 #include "utl/FilePath.h"           // FilePath for the resident world.milo lookups
 #include <set>                       // de-dup objects reachable from multiple roots
+#include <unordered_map>              // W0.3.S3: per-stream dense bind-group ids
 
 #include <cstdio>
 #include <cstring>
@@ -175,6 +177,78 @@ void RB3HttpServer::HandleScreenshot(Command& cmd) {
     }
     cmd.result.ok = true;
     cmd.result.binaryData = std::move(png);
+}
+
+// ---------------------------------------------------------------------------
+// Draw log — serialize the just-completed frame's per-draw state-log ring
+// (W0.3 RB3_DRAWLOG regression net) to the SAME { frame, count, draws:[...] }
+// JSON shape BandRnd::DumpDrawLog() writes to disk (engine repo,
+// Rnd_Wgpu_RB3.cpp), so drawlog-golden.py's comparator can diff a live
+// /api/drawlog response against the committed golden with no reshaping. Reads
+// RB3DebugGetDrawLog() (declared in platform/RB3DrawLogDebug.h) rather than
+// duplicating engine internals; the dense-id assignment (first-seen order per
+// bind-group stream, erasing raw pointers while preserving the sharing
+// pattern) mirrors the engine dumper exactly. Empty ({"draws":[]}) when
+// RB3_DRAWLOG (or the debug override) was not enabled for this frame — that is
+// a normal, non-error response, not a failure.
+//
+// Runs via ProcessCommands (kCmdDrawLog), called from App.cpp right after
+// RunOneFrame(frame) each iteration, so the ring reflects the frame that just
+// finished drawing (DrawMesh populates it; the NEXT frame's BeginFrame clears
+// it) — no extra synchronization needed, this is the main thread.
+void RB3HttpServer::HandleDrawLog(Command& cmd) {
+    const std::vector<RB3DrawRecord>& log = RB3DebugGetDrawLog();
+
+    std::unordered_map<const void*, int> sceneIds, matIds, objIds, boneIds;
+    auto denseId = [](std::unordered_map<const void*, int>& m, const void* p) -> int {
+        auto it = m.find(p);
+        if (it != m.end()) return it->second;
+        int id = (int)m.size();
+        m.emplace(p, id);
+        return id;
+    };
+
+    char buf[640];
+    std::string json;
+    json.reserve(log.size() * 320 + 64);
+    snprintf(buf, sizeof(buf), "{ \"frame\": %d, \"count\": %d,\n  \"draws\": [",
+             gBandRnd.mFrameCount, (int)log.size());
+    json += buf;
+    for (size_t i = 0; i < log.size(); ++i) {
+        const RB3DrawRecord& r = log[i];
+        int sceneId = denseId(sceneIds, r.sceneBG);
+        int matId   = denseId(matIds,   r.matBG);
+        int objId   = denseId(objIds,   r.objBG);
+        int boneId  = denseId(boneIds,  r.boneBG);
+        snprintf(buf, sizeof(buf),
+                 "%s\n    { \"i\":%d, \"name\":\"0x%llx\", \"pipe\":\"0x%llx\", "
+                 "\"blend\":%d, \"zmode\":%d, \"layout\":%d, \"fmt\":%u, "
+                 "\"hasDepth\":%s, \"alphaCut\":%s, \"alphaWrite\":%s, \"skinned\":%s, "
+                 "\"idx\":%u, \"tris\":%u, \"verts\":%u, "
+                 "\"scene\":%d, \"mat\":%d, \"obj\":%d, \"bone\":%d,\n"
+                 "      \"world\":[",
+                 (i == 0 ? "" : ","),
+                 (int)i,
+                 (unsigned long long)r.meshNameHash,
+                 (unsigned long long)r.pipelineHash,
+                 (int)r.blend, (int)r.zMode, (int)r.layout, (unsigned)r.targetFormat,
+                 (r.flags & 1) ? "true" : "false",
+                 (r.flags & 2) ? "true" : "false",
+                 (r.flags & 4) ? "true" : "false",
+                 (r.flags & 8) ? "true" : "false",
+                 (unsigned)r.indexCount, (unsigned)r.triCount, (unsigned)r.vertCount,
+                 sceneId, matId, objId, boneId);
+        json += buf;
+        for (int e = 0; e < 16; ++e) {
+            snprintf(buf, sizeof(buf), "%s%.6g", (e == 0 ? "" : ","), (double)r.world[e]);
+            json += buf;
+        }
+        json += "] }";
+    }
+    json += log.empty() ? "] }\n" : "\n  ] }\n";
+
+    cmd.result.ok = true;
+    cmd.result.jsonData = std::move(json);
 }
 
 // ---------------------------------------------------------------------------

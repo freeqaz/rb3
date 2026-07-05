@@ -40,6 +40,12 @@ public:
         kCmdScreenshot,   // Capture framebuffer as PNG (after EndDrawing)
         kCmdDtaEval,      // Evaluate a DTA expression
         kCmdInput,        // Inject a synthetic-input verb (rb3_game_input.cpp)
+        // W0.3.S3: read back the just-completed frame's per-draw state-log ring
+        // (RB3_DRAWLOG regression net). Processed via ProcessCommands (like
+        // kCmdDtaEval/kCmdInput), which runs right after RunOneFrame each
+        // iteration (App.cpp), so the ring reflects the frame that just finished
+        // drawing (populated in DrawMesh, cleared next BeginFrame).
+        kCmdDrawLog,
         // milo-trace W9 replay API (gated by RB3_REPLAY_API=1; handlers live in
         // rb3_replay_api.cpp). param1 carries the JSON request body.
         kCmdReplayMemory, // /api/memory   — sandboxed arena alloc/read/write/clear
@@ -83,6 +89,7 @@ private:
     void HandleScreenshot(Command& cmd);
     void HandleDtaEval(Command& cmd);
     void HandleInput(Command& cmd);
+    void HandleDrawLog(Command& cmd);
 
     volatile bool mRunning = false;
     int mPort = 0;
