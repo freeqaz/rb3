@@ -511,7 +511,30 @@ bool RB3ReplayFixedClock() {
 namespace {
 int   gFixedClockActive = -1;      // RB3_FIXED_CLOCK: -1 unchecked, 0/1
 float gFixedClockDt      = -1.0f;  // seconds; -1 unchecked, else >= 0
+int   gDrawSortDeterministicOff = -1;  // RB3_DRAWSORT_DETERMINISTIC_OFF: -1 unchecked, 0/1
 }  // namespace
+
+// ── W0.3d-fix — opt-out for the deterministic SortDraws material-name tie-break ─
+// Parse RB3_DRAWSORT_DETERMINISTIC_OFF once (same idiom as RB3FixedClockActive).
+// DEFAULT OFF: the material-name tie-break stays ON under RB3_FIXED_CLOCK. When
+// set (non-empty, non-"0") the tie-break is disabled and SortDraws falls back to
+// the Wii `mat1 < mat2` raw-pointer order — the landed fail-red that re-exposes
+// the async-loader draw-order flake. Web: window.__rb3DrawSortDeterministicOff.
+bool RB3DrawSortDeterministicOff() {
+    if (gDrawSortDeterministicOff < 0) {
+#ifdef __EMSCRIPTEN__
+        int on = EM_ASM_INT({
+            var v = window.__rb3DrawSortDeterministicOff;
+            return (v === true || v === 1 || v === '1') ? 1 : 0;
+        });
+        gDrawSortDeterministicOff = on ? 1 : 0;
+#else
+        const char *v = std::getenv("RB3_DRAWSORT_DETERMINISTIC_OFF");
+        gDrawSortDeterministicOff = (v && *v && std::strcmp(v, "0") != 0) ? 1 : 0;
+#endif
+    }
+    return gDrawSortDeterministicOff != 0;
+}
 
 bool RB3FixedClockActive() {
     // Parse RB3_FIXED_CLOCK once. Any non-empty, non-"0" value enables it. Unlike

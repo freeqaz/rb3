@@ -78,6 +78,13 @@ bool RB3ReplayFixedClock();
 // RB3ReplayActive()). Web: mirrors the replay pattern via window.__rb3FixedClock.
 bool RB3FixedClockActive();
 
+// W0.3d-fix: opt-out for the deterministic SortDraws material-name tie-break.
+// True iff RB3_DRAWSORT_DETERMINISTIC_OFF is set (non-empty, non-"0"), parsed
+// once. DEFAULT OFF (deterministic tie-break ON under RB3_FIXED_CLOCK). Setting
+// it restores the Wii `mat1 < mat2` raw-pointer order — the landed fail-red that
+// re-exposes the async-loader draw-order flake. Web: window.__rb3DrawSortDeterministicOff.
+bool RB3DrawSortDeterministicOff();
+
 // The constant per-frame sim dt (SECONDS) to advance the menu/UI clock by when
 // RB3FixedClockActive() and no trace is driving the clock. Default 1/60s so the
 // animation PROGRESSES deterministically to a well-defined frame-N state.

@@ -1,6 +1,7 @@
 #include "rndobj/Utl.h"
 #ifdef HX_NATIVE
 #include <cstring> // MWCC's MSL_Common/extras.h provides mem*; use libc on native
+#include "rb3_replay.h" // W0.3d-fix: RB3FixedClockActive / RB3DrawSortDeterministicOff — deterministic SortDraws tiebreak
 #else
 #include "MSL_Common/extras.h"
 #endif
@@ -172,6 +173,31 @@ bool SortDraws(RndDrawable *draw1, RndDrawable *draw2) {
         RndMat *mat1 = GetMat(draw1);
         RndMat *mat2 = GetMat(draw2);
         if (mat1 != mat2) {
+#ifdef HX_NATIVE
+            // W0.3d-fix: under the fixed-clock determinism harness, break the
+            // same-order/different-material tie by material NAME instead of raw
+            // pointer. The Wii `mat1 < mat2` pointer compare is deterministic on
+            // hardware (single-threaded, deterministic heap), but on native the
+            // ThreadCall worker pthread parses milo DTA concurrently with the main
+            // thread, so heap-allocation order — and thus material addresses —
+            // varies run-to-run under scheduler load (glibc per-thread arenas; NOT
+            // tamed by `setarch -R`). That makes this pointer compare the address-
+            // dependent consumer that permutes each dir's mDraws (the mechanism-2
+            // draw-order flake). A material-name compare (falling through to the
+            // unique per-dir draw-name compare when names tie) is a total order
+            // independent of address, so the sort is deterministic regardless of
+            // allocation order. Inert unless RB3_FIXED_CLOCK is set (default-OFF,
+            // flag-off byte-identical); RB3_DRAWSORT_DETERMINISTIC_OFF restores the
+            // raw-pointer order as the landed fail-red.
+            if (RB3FixedClockActive() && !RB3DrawSortDeterministicOff()) {
+                const char *mn1 = mat1 ? mat1->Name() : "";
+                const char *mn2 = mat2 ? mat2->Name() : "";
+                int mc = strcmp(mn1, mn2);
+                if (mc != 0)
+                    return mc < 0;
+                return strcmp(draw1->Name(), draw2->Name()) < 0;
+            }
+#endif
             return mat1 < mat2;
         } else
             return strcmp(draw1->Name(), draw2->Name()) < 0;
