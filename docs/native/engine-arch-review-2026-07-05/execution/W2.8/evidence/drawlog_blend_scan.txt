@@ -1,0 +1,25 @@
+# W2.8 drawlog blend-state scan (7 gameplay frames, this run)
+# blend: 1=Src(OPAQUE) 3=SrcAlpha(TRANSPARENT). skinned band/char meshes only.
+
+## ALL skinned non-opaque (blend!=1) draws across frames, name-mapped:
+  fingernails_resource.mesh            blend=3(SrcAlpha(TRANSP)) x39   FINGERNAILS(explodes)
+  logo.mesh                            blend=3(SrcAlpha(TRANSP)) x14   DECAL/LOGO
+  d2010_strings.mesh                   blend=3(SrcAlpha(TRANSP)) x13   STRINGS(legit)
+  precision01_strings.mesh             blend=3(SrcAlpha(TRANSP)) x13   STRINGS(legit)
+  sm57_logo.mesh                       blend=3(SrcAlpha(TRANSP)) x13   DECAL/LOGO
+  greaserjacket_resource.1.mesh        blend=3(SrcAlpha(TRANSP)) x13   JACKET-DETAIL-LAYER
+  malewrist_watchleatherstrap.1.mesh   blend=3(SrcAlpha(TRANSP)) x6    ACCESSORY-DETAIL
+
+## Torso BASE outfit meshes seen (all OPAQUE blend=1):
+  greaserjacket_resource.mesh          blend=1(Src(OPAQUE))
+  greaserjacket_skin.2.mesh            blend=1(Src(OPAQUE))
+  hands_naked.mesh                     blend=1(Src(OPAQUE))
+  head.mesh                            blend=1(Src(OPAQUE))
+  male_crowd_body01.mesh               blend=1(Src(OPAQUE))
+  tightdistressedpants_resource.mesh   blend=1(Src(OPAQUE))
+
+## hands_naked.mesh whole-mesh shard ratio (this run): bindExt~80.3, worldExt 97-109, ratio ~1.2-1.36
+   -> WELL BELOW the 4.0x band-garment guard cap => NOT guard-dropped; drawn every frame.
+   -> Origin-only REBIND_DRAW_SKINPOS clean (hands/gloves/fingernails 47-58u; <65u threshold).
+   -> Yet fingers visibly explode: the smear is SUB-mesh-AABB per-vertex R*sin(theta) rotation,
+      invisible to both the whole-mesh AABB ratio and the bone-origin skinpos metric.
