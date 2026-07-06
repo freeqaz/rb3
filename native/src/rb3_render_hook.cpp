@@ -195,6 +195,35 @@ public:
         // be EXCLUDED from the alpha->RGB text path (else a solid white circle).
         if (matName && matName[0] && std::strstr(matName, "icon"))
             p.isColorIcon = true;
+        // B11: tail chain-select fret colour. Each sustain "tail" material shares
+        // one gem_tails atlas + a WHITE base colour; the per-fret colour is driven
+        // from the MATERIAL NAME (tail_green/red/...). When a known fret matches
+        // (with a trailing '.'), return its colour so the engine writes it into
+        // mu.color[0..2] + drops the atlas tint (useTexture=0). tail_white/bonus/
+        // star/chord/miss have no fret match → engine keeps the material colour.
+        {
+            const char* tc = matName ? std::strstr(matName, "tail_") : nullptr;
+            if (tc) {
+                tc += 5;  // past "tail_"
+                struct { const char* name; float r, g, b; } kFret[] = {
+                    {"green",  0.18f, 0.85f, 0.20f},
+                    {"red",    0.90f, 0.16f, 0.13f},
+                    {"yellow", 0.95f, 0.85f, 0.10f},
+                    {"blue",   0.13f, 0.55f, 0.92f},
+                    {"orange", 0.95f, 0.50f, 0.08f},
+                    {"purple", 0.62f, 0.20f, 0.85f},
+                };
+                for (auto& f : kFret) {
+                    size_t L = std::strlen(f.name);
+                    if (std::strncmp(tc, f.name, L) == 0 && tc[L] == '.') {
+                        p.isTailChain = true;
+                        p.tailForceColor = true;
+                        p.tailColor[0] = f.r; p.tailColor[1] = f.g; p.tailColor[2] = f.b;
+                        break;
+                    }
+                }
+            }
+        }
         return p;
     }
 
