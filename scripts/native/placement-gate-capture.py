@@ -157,6 +157,10 @@ def main():
     log_path = os.path.join(args.out, f"engine-{port}.log")
     logf = open(log_path, "w")
     env = dict(os.environ)
+    if args.expect_red:
+        # Post-flip (Wave 6): the contract is default-ON, so the fail-red audit
+        # ("unchanged build is RED") must explicitly opt the contract OUT.
+        env["RB3_PLACEMENT_CONTRACT_OFF"] = "1"
     env.update({"RB3_GAME": "1", "RB3_HTTP": "1", "RB3_HTTP_PORT": str(port),
                 "MILO_HEADLESS": "1", "RB3_DATA": args.data,
                 "RB3_DTA_OVERLAY": args.overlay,

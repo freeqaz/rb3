@@ -1,6 +1,64 @@
 # Wave 7 — Kickoff Design (coordinator draft, for Fable review before dispatch)
 
-**Author:** coordinator. **Draft status:** DRAFT — under Fable pre-dispatch review, not yet dispatched.
+**Author:** coordinator. **Status:** REVIEWED (Fable, `WAVE7_REVIEW.md`) — **all amendments adopted**;
+dispatched with the corrected shape below.
+
+## COORDINATOR ACCEPTANCE (2026-07-06) — final dispatched shape
+
+Fable review returned **dispatch-with-amendments** (10). Adopted:
+
+- **A1 (blocker) — RESOLVED before dispatch:** the review ran in parallel with the coordinator's
+  flip-cycle commits; pin bump + 792 re-golden + sidecar + harness inversions + docs are all
+  committed (`402b8662`, `85013e52`). Verified: pin `1b045d9`, tracked tree clean.
+- **A2 (stale premise):** the "unlanded W0.3d part-b patch" does not exist — the staged patch WAS
+  the SortDraws tie-break, landed Wave 5 (`76f51077`), order-only and fixed-clock-gated (inert in
+  real-time wash boots). WASH matrix has **no landing dependency**; prior #1 restated as "async
+  residency, **no fix exists** — a residency fix would be new loader/ThreadCall work outside Lane
+  A's declared files."
+- **A3 — W3.3-fix is FLAG-FIRST:** the luma-keyed ceiling changes every hot-channel/sub-knee frame
+  (SP overlay, big rock endings, hot menus) that the 0–25s sweep never samples. Land default-OFF
+  behind a registered flag; the WASH matrix doubles as broad hot-frame coverage; coordinator flips.
+  Note: the "staged patch" is a comment-only proposal (quoted block matches
+  `rb3_postproc.wgsl.inc:186-191` byte-exactly) — implementation is mechanical, not `git apply`.
+- **A4 — WASH matrix gets a 5th control arm:** W3.3-fix-OFF (else default) at the same N≥6, and
+  **contract-default pinned in all configs** (do not inherit wash-measure's OFF/ON arms). "Did
+  W3.3-fix collapse the wash rate" is answered within-protocol, not vs Wave-6 rates.
+- **A5 — Lane B step 0 after the oracle exists:** A/B the EXISTING `RB3_HANDS_BIND_FIX` flag under
+  the new BL-A2 oracle (one boot per arm) before writing any new rebake — it was judged "no
+  benefit" under a rotation-blind gate. Outcome decides BL-A1's shape (extend/flip vs pose-varying
+  basis error that no static rebake can fix, per the C8 doc's `calcOffset=true` drift note).
+- **A6 — BL-A2 spec:** the oracle measures under an **animated pose** through the real rb3 band
+  path (bind pose gives R·sin(0)=0 → structurally GREEN — the Wave-3 DC3-suite trap); fail-red =
+  RED on today's build. `RefSkinVertex` is a `static` in engine `tests/test_skin_golden.cpp:164` —
+  duplicate (~40 lines) into rb3-tests (chosen over an engine test-header export: no engine edit).
+- **A7 — Lane C fence amendments:** `rb3_render_hook.cpp` added to Lane C's fence (focus-plumbing
+  option lands there; unowned this wave otherwise); pin `RB3_HUB_MENU_QUAD_HIDE` **OFF** during
+  W4.2 captures (S3's quad shares the main_hub screen). Disjointness from Lane A verified
+  (header-only coupling, no shared statics).
+- **A8 — two missed flip breaks FIXED PRE-DISPATCH by the coordinator:**
+  `crowd-bone-gate-capture.py --no-placement-contract` now sets `RB3_PLACEMENT_CONTRACT_OFF=1`
+  (was a silent no-op post-flip); `placement-gate-capture.py --expect-red` now runs with the
+  opt-out env (its "unchanged build is RED" contract had inverted); `w21flip-ui-ab.py` docstring
+  updated. `_w32-boxambient-ab.py` Wave-6 scores are NOT comparable post-flip → Lane D re-baselines
+  if it captures.
+- **A9 — Lane D scoped to decision-from-existing-evidence:** no Dolphin-harness building (none
+  exists; ground truth is static shots). Decide from existing shots + W3.2's own venue-probe data
+  (which already calls per-pixel Lambert "defensible"), or file an explicit human capture request.
+- **A10 — model tiers tagged:** Opus for verify/verdict/oracle-design stages; Sonnet for the
+  mechanical shader edit, W4.2 impl, and packaging.
+
+**Final dispatched shape:** **Lane A** (sequential): W3.3-fix flag-first (Sonnet impl → Opus
+verify) → WASH 5-config matrix (Opus); **Lane B** (sequential): BL-A2 animated-pose oracle (Opus)
+→ step-0 `RB3_HANDS_BIND_FIX` A/B (Opus) → BL-A1 per step-0 verdict (Opus) → verify (Opus);
+**Lane C** (sequential): W4.2 floor fix flag-first (Sonnet impl → Opus verify, quad-hide pinned
+OFF) → hub-quad flip package (Sonnet); **Lane D**: W3.2b decision memo (Opus, plan-only).
+Coordinator post-wave: flips (W3.3, W4.2, hub-quad, BL-A1 as earned), regen, pin bump, docs.
+
+---
+
+_(Original draft below, retained for provenance; superseded where the acceptance above differs.)_
+
+**Draft status:** DRAFT — under Fable pre-dispatch review, not yet dispatched.
 Parent: `REFACTOR_PLAN.md`, `execution/README.md` (Wave 1–6 results + hard rules 1–8 + standing
 pre-dispatch review gate + Wave-6 backlog). Engine pin: post-flip HEAD (`1b045d9` lineage; exact pin
 in `native/CMakeLists.txt` after the Wave-6 re-golden commit).

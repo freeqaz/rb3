@@ -82,6 +82,10 @@ def capture_condition(args, label, rebind_off, extra_env):
                 "RB3_FIXED_CLOCK": "1"})
     if not args.no_placement_contract:
         env["RB3_PLACEMENT_CONTRACT"] = "1"
+    else:
+        # Post-flip (Wave 6): the contract is default-ON, so merely omitting the
+        # opt-in is a silent no-op — the opt-out env is required to actually disable.
+        env["RB3_PLACEMENT_CONTRACT_OFF"] = "1"
     if rebind_off:
         env["RB3_NO_CROWD_REBIND"] = "1"
     for kv in extra_env:

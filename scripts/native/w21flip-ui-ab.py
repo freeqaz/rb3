@@ -10,7 +10,7 @@ be byte-similar to flag-OFF on both UI screens, up to ordinary boot
 nondeterminism (the W0.3d eye-flake / boot-random char-preview-panel pose).
 
 This harness captures, for BOTH default-build flag states
-(flag-OFF = no env; flag-ON = `RB3_PLACEMENT_CONTRACT=1`), TWO independent
+(flag-OFF = `RB3_PLACEMENT_CONTRACT_OFF=1` post-flip; flag-ON = `RB3_PLACEMENT_CONTRACT=1`), TWO independent
 boots each (an A/A pair) of:
   - main_hub_screen  (the yellow `highlight_main`/`highlight_pattern` hub bar
     behind the focused menu item — NOT visible in song_select)
