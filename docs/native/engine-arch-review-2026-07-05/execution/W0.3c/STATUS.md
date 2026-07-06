@@ -96,3 +96,64 @@ RB3_TEX_PREWARM_OFF=1 RB3_ASYNC_OPEN_OFF=1` under `setarch -R`, ≥15×; bisect 
 `draws[].name` sequences for order variants + 1-multiset invariance. Add
 `RB3_DRAWORDER_TRACE=1` and grep stderr `RB3_DORDER frame=60 ` for the `(ptr,hash)`
 pointer stream (address-stability check). Artifacts under `/tmp/w03c/`.
+
+## W0.3c.S2 — skipped (Exit-A fix has NO target in the rb3 build; S1 = NO-GO)
+
+**Verdict: SKIPPED — not applicable.** S2 ("Exit-A fix: deterministic transparent
+submission order") is explicitly **CONDITIONAL on S1 = GO** (PLAN.md:139). S1
+returned a definitive **NO-GO** (STATUS §W0.3c.S1): PLAN mechanism 1 — the
+non-stable transparent `std::sort` in `TransparentQueue.cpp` that S2 was to make
+total-ordered — is **structurally absent from the rb3 build**. There is nothing
+for the Exit-A fix to act on. **No code change, no commit** (a MOVE/CHANGE to
+`TransparentQueue.cpp` would be a fake fix — that TU does not compile into
+rb3-native, so it could neither address the observed rb3 flake nor be verified by
+any rb3 gate).
+
+### Independent re-verification of S1's NO-GO (three angles, all confirmed)
+1. **CMake flavor split.** `milo-native-engine/CMakeLists.txt`: `TransparentQueue.cpp`
+   is a member of `MILO_ENGINE_GPU_PLATFORM_SOURCES` (the **DC3** flavor, :305-313)
+   only; it is **absent** from `MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3` (:316-333 =
+   `Rnd_Wgpu_RB3.cpp` + the RB3* TUs). `grep TransparentQueue CMakeLists.txt` → the
+   sole reference is line 312 inside the DC3 set. rb3-native never links it.
+2. **rb3 backend self-documents the absence.** `src/platform/Rnd_Wgpu_RB3.cpp:2079-2082`:
+   "The rb3 BandRnd backend submits in pure scene-graph traversal order (no
+   transparent std::sort — TransparentQueue.cpp is DC3-only and not compiled here)".
+3. **Broad grep of every rb3-compiled GPU source** (`Rnd_Wgpu_RB3.cpp`,
+   `RB3MeshCache.cpp`, `RB3MaterialBinder.cpp`, `RB3HaloPass.cpp`, `RB3PostProc.cpp`,
+   `RB3Quad.cpp`, `RB3TexSharpen.cpp`) for `std::sort|std::stable_sort|distSq|
+   FlushTransparent|DeferredDraw` → **the only hit is S1's documentary comment at
+   `Rnd_Wgpu_RB3.cpp:2080`**; zero actual sort/deferred-queue sites. There is no
+   `DeferredDraw` struct, no insertion-seq to add, no comparator to replace.
+
+### Why this is the correct terminal state (per PLAN, not scope-cut)
+PLAN.md anticipates exactly this branch:
+- PLAN.md:126-129 — "**NO-GO** if opaque allocation-order divergence dominates and
+  needs multi-site engine work beyond the timebox (then **S2 is skipped → Exit B
+  only, and file W0.3d**)." S1 attributed the flake **100% to mechanism 2**
+  (list/iteration-order over stably-addressed objects; async-loader/worker
+  completion-order), **0% to mechanism 1** (structurally absent).
+- PLAN.md:174-176 — "If S1 proves an opaque skin-pose iteration site in
+  `Rnd_Wgpu_RB3.cpp` must change, **STOP and record it as W0.3d** instead of editing
+  the W1.6 hotspot in this lane." Editing the real root-cause site here would collide
+  with W1.6's `WriteSceneUniforms`/`mSceneBindGroup` rewrite region — forbidden.
+
+### Exit status for W0.3c
+- **Exit A (S2) is NOT reachable** in this binary — no transparent sort exists to
+  make deterministic. Recording S2 skip does not block the lane.
+- **Exit B (S3, unconditional)** is the path that unblocks W1.6: the
+  `--canonical-order` multiset comparator in `drawlog-golden.py`. S1 proved the draw
+  SET is a **single invariant multiset** across all 16 runs (order-only divergence),
+  which guarantees Exit B goes green 15/15. **S3 is a separate subtask (owner: sonnet)
+  and remains OPEN** — it is the actual unblock for W1.6, not S2.
+- **W0.3d** (Wave 4): the mechanism-2 traversal/load-order root cause
+  (async-loader/worker completion-order → object-list append order; multi-site,
+  thread-timing-dependent) is to be filed for Wave 4 per PLAN.md:86-90.
+
+### Gate evidence
+- No build/gate run needed: **zero code change** under S2. Engine tree carries only
+  a sibling lane's unrelated uncommitted edit (`FxSendNative.cpp`) — untouched by me.
+- `MILO_ENGINE_PIN` **unchanged** (`41b9e3a`; engine HEAD `5cee522` = S1's probe).
+- No new flag introduced (nothing to register); census unaffected.
+
+**Commits:** none (correct — skip). **Remains:** S3 (Exit B, unblocks W1.6) + W0.3d
+(Wave 4 root-cause). **Blockers:** none — S2's conditional simply evaluated false.
