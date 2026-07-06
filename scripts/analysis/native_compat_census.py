@@ -10,7 +10,7 @@ ANY env value as a trigger, "presence" mode; others require a non-empty non-"0" 
 "truthy" mode). This tool is the read-only front half of collapsing that into one typed
 `NativeCompat` registry (module itself lands in W0.6.S2):
 
-  scan       walk both source trees for literal `getenv("NAME")` call sites, guess each
+  scan       walk all source trees (SCAN_ROOTS) for literal `getenv("NAME")` call sites, guess each
              flag's read-mode (presence / truthy / value / unknown) from local context,
              and emit a deterministic JSON inventory (census.json).
   gen        join the scan against a hand-curated classification sidecar
@@ -52,6 +52,11 @@ ENGINE_ROOT = MILOHAX_ROOT / "milo-native-engine"
 SCAN_ROOTS = [
     ("engine", ENGINE_ROOT / "src"),
     ("glue", RB3_ROOT / "native" / "src"),
+    # "game" = the rb3 decomp game-code tree (BandCharacter, Crowd, etc.). Added by
+    # W2.6.S4 to close the coverage gap flagged by W2.2/W2.6: ~90 native `getenv`
+    # flags live here and were previously invisible to the census (it only scanned
+    # the shared engine + the native/src glue layer).
+    ("game", RB3_ROOT / "src" / "system"),
 ]
 
 CENSUS_JSON_DEFAULT = (
@@ -198,6 +203,7 @@ def run_scan(roots=None):
 
     engine_only = sum(1 for f in result_flags if f["roots"] == ["engine"])
     glue_only = sum(1 for f in result_flags if f["roots"] == ["glue"])
+    game_only = sum(1 for f in result_flags if f["roots"] == ["game"])
     shared = sum(1 for f in result_flags if len(f["roots"]) > 1)
 
     return {
@@ -207,6 +213,7 @@ def run_scan(roots=None):
             "totalSites": sum(f["sites"] for f in result_flags),
             "engineOnly": engine_only,
             "glueOnly": glue_only,
+            "gameOnly": game_only,
             "sharedAcrossRoots": shared,
         },
     }
@@ -220,7 +227,7 @@ def cmd_scan(args):
     s = result["summary"]
     print(f"scan: {s['totalFlags']} distinct flags, {s['totalSites']} call sites "
           f"({s['engineOnly']} engine-only, {s['glueOnly']} glue-only, "
-          f"{s['sharedAcrossRoots']} shared) -> {out_path}")
+          f"{s['gameOnly']} game-only, {s['sharedAcrossRoots']} shared) -> {out_path}")
     return 0
 
 
