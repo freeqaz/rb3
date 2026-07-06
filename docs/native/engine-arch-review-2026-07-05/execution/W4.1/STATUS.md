@@ -262,3 +262,51 @@ revert needed.
 
 Captures: `/tmp/wave6-cs5-verify/`. Harness:
 `W4.1/harness/lane-verify-capture.py`.
+
+## C.S3 — hub-quad flip package (Sonnet) — done — 2026-07-06 (Wave 7)
+
+**Deliverable:** `W4.1/hub-quad-flip/` (README + REVIEWER_CHECKLIST + `capture.py` +
+`captures/`) — the coordinator flip-decision package for `RB3_HUB_MENU_QUAD_HIDE`, per the Wave-7
+kickoff's Lane C S3 brief. Packaging only, no flip performed.
+
+**Build:** fresh `native/build-agent-C-S3-hubquad` (Clang/Debug — RelWithDebInfo+GNU first
+attempt failed link with unrelated undefined refs `MsToTick`/`TickToMs`/`SystemConfig`/
+`SongDB::IsInCoda`, resolved by matching the campaign's standard Debug config used by every other
+`build-agent-*` dir). Engine HEAD at capture time: `7943bfa` (one commit past the pinned
+`1b045d9`, includes W4.2-fix `031461a` + W3.3-fix `7943bfa`, both landed default-OFF this wave).
+rb3 source untouched by this stage.
+
+**Method:** `capture.py` boots `rb3-native` headless to `main_hub_screen` **four times** — OFF,
+OFF, ON, ON (`RB3_HUB_MENU_QUAD_HIDE` unset/unset/`=1`/`=1`) — a genuine two-boot A/A pair per
+state, not one shot per side. W4.2's `RB3_UI_TEXT_FLOOR_RELAXED` and W3.3-fix's postproc ceiling
+flag were both left at their current default (OFF/unset) in every capture, per the kickoff
+amendment A7 (pin the sibling Lane C flag OFF during this screen's captures so the two decisions
+don't confound). ROI crops: quad ROI `x[380,900] y[365,410]`, PLAY-NOW label ROI
+`x[140,700] y[195,330]`.
+
+**Findings (see README for full detail):**
+1. Quad renders per flag state, A/A-stable across 2/2 + 2/2 boots (`montage_2x2_off_vs_on.png`,
+   `quad_roi_off_vs_on.png`).
+2. **PLAY NOW / QUICKPLAY / START A ROAD CHALLENGE label is unaffected by the hide** — the
+   blocker check named in the stage brief. `label_roi_all_4.png` shows the label ROI from all
+   four boots stacked: text present, legible, pixel-similar regardless of flag state.
+   `playnow.lsw` is a sibling to the label object, not its parent/container, so this is expected
+   and confirmed, not a surprise. **No blocker found** — package proceeds as a normal flip
+   recommendation.
+3. Retail ground truth (`images/retail-screenshots/yt_mhKNp9uAT48_menu_hub.png`) has no analog of
+   the capsule anywhere on `main_hub` — matches flag-ON, contradicts flag-OFF
+   (`retail_vs_flagon.png` / `retail_vs_flagoff.png`).
+
+**Recommendation:** clean flip candidate — flag-OFF is native-only render debris with no retail
+counterpart, flag-ON matches retail, and the one named risk (label survival) is proven clean.
+`REVIEWER_CHECKLIST.md` gives the coordinator a 7-point walk (mirrors the Wave-5 W2.1-flip
+checklist format) before executing; also notes the actual flip mechanism is inverting
+`MainHubPanel.cpp:130`'s `getenv("RB3_HUB_MENU_QUAD_HIDE")` opt-in read to an opt-out (matching
+the `RB3_PLACEMENT_CONTRACT_OFF` / `RB3_BLACK_HEAD_FIX_OFF` pattern already used twice this
+campaign), not a bare classification.json default edit.
+
+**Fence — RESPECTED.** Touched only `W4.1/hub-quad-flip/` (this package). No `src/`, no engine
+files, no classification.json edits, no default flipped. Never flip (per brief) — honored.
+
+Captures: `docs/native/engine-arch-review-2026-07-05/execution/W4.1/hub-quad-flip/captures/`
+(committed). Raw working dir (uncommitted, regenerable): `/tmp/w41-hubquad-flip-cs3/`.
