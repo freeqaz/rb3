@@ -1,0 +1,34 @@
+{
+  "OFF_1": {
+    "png": "docs/native/engine-arch-review-2026-07-05/execution/W3.2/captures/cap_OFF_1.png",
+    "mean_luma": 20.729473114013672,
+    "pct_blowout": 0.3452690972222222,
+    "pct_crush": 66.3994140625,
+    "pct_pink": 0.006727430555555556,
+    "songMs": null
+  },
+  "OFF_2": {
+    "png": "docs/native/engine-arch-review-2026-07-05/execution/W3.2/captures/cap_OFF_2.png",
+    "mean_luma": 24.7148494720459,
+    "pct_blowout": 0.34223090277777773,
+    "pct_crush": 50.216037326388886,
+    "pct_pink": 0.4466145833333333,
+    "songMs": null
+  },
+  "ON_1": {
+    "png": "docs/native/engine-arch-review-2026-07-05/execution/W3.2/captures/cap_ON_1.png",
+    "mean_luma": 22.098155975341797,
+    "pct_blowout": 0.3537326388888889,
+    "pct_crush": 64.10677083333334,
+    "pct_pink": 0.06673177083333333,
+    "songMs": null
+  },
+  "ON_2": {
+    "png": "docs/native/engine-arch-review-2026-07-05/execution/W3.2/captures/cap_ON_2.png",
+    "mean_luma": 22.6085147857666,
+    "pct_blowout": 0.3396267361111111,
+    "pct_crush": 66.31814236111111,
+    "pct_pink": 0.0126953125,
+    "songMs": null
+  }
+}
