@@ -197,3 +197,168 @@ No src/ edits (read-only). `classification.json` NOT touched (S4 merges). No `ge
 | UISCREEN_DBG | ui/hub | logs UI transition-state + panel exiting/blocked state |
 | VENUE_DBG | bandobj/venue | logs the native EnterVenue force-load bridge (5 sites) |
 | VOIDCUT_DBG | render/camera | logs the sticky last-good-cam voidcut fallback verdict |
+
+## W0.6b.S4 — done
+Merge: engine commit `1fd2bfc` (`git -C milo-native-engine log --oneline -1`), engine pin advanced
+past `609efb7` (Lane A already appended `RB3_DRAWSORT_DETERMINISTIC_OFF` at `e26d8c2`; this lane
+appended its own block strictly after that, append-only, one flock'd write).
+
+**Merge (step 1).** Loaded `classified-S1.json` (23 rows + `_note`), `classified-S2.json` (24 rows,
+no `_note`), `classified-S3.json` (45 rows incl. `_note` = 44 flags). Stripped `_note`; union =
+91 keys, 0 duplicates, 0 overlap with the then-current `classification.json` (92 keys: 89
+pre-Wave-5 + `RB3_PLACEMENT_CONTRACT`/`RB3_FIXED_CLOCK`/`RB3_FIXED_CLOCK_DT_MS`/`RB3_DRAWLOG`/
+`RB3_DRAWLOG_DUMP`/`RB3_DRAWORDER_TRACE`/`RB3_DRAWSORT_DETERMINISTIC_OFF` already appended by
+Lane A / W3.1a before this lane ran). Inserted all 91 rows **after** the existing last row
+(`RB3_DRAWSORT_DETERMINISTIC_OFF`) under one `_w06b_section` marker key (JSON has no `//` comment
+syntax, so the PLAN's comment-separator instruction was realized as a blank-line-delimited
+`"_w06b_section": "..."` marker key instead — same existing-file convention used by `_comment`/
+`_schema` at the top of the file; **deviation** noted here per instructions). Applied under
+`flock /tmp/milo-engine-classjson.lock` via a single atomic read-modify-write (added a trailing
+comma to the prior last row, appended the 91 rows + section marker, re-closed the object). `git diff`
+confirms exactly one existing line touched (the added comma) plus pure additions — no existing row
+reordered or edited.
+
+**Validate (step 2).** `python3 -c "import json;json.load(open('src/platform/NativeCompatFlags.classification.json'))"` — parses clean. Post-merge key count: 184 (92 prior + 91 new + 1
+`_w06b_section` marker).
+
+**Temp-gen verify (step 3).** `python3 scripts/analysis/native_compat_census.py gen --gen-inc-out
+/tmp/w06b-gen.inc --ledger-out /tmp/w06b-ledger.md` (never touches committed paths) →
+`319 rows (138 unclassified) -> /tmp/w06b-gen.inc`. Cross-checked against a fresh
+`native_compat_census.py scan --json /tmp/w06b-fresh-scan.json` (`319 distinct flags, 435 call
+sites`): fresh scan's game-root set (`'game' in roots`) = **exactly 91 flags**, and it is byte-set-
+identical to the S1∪S2∪S3 classified set (0 symmetric difference). Intersection of that 91-flag
+game-root set with `/tmp/w06b-gen.inc`'s `FlagClass::Unknown` rows (138 total, all engine/glue-only)
+= **∅ (0)** — zero game-root `Unknown` rows remain, the hard exit criterion. The 138 remaining
+`Unknown` rows are engine/glue-scoped and out of W0.6b's scope (not classified here).
+
+**Selftest (step 4).** `python3 scripts/analysis/native_compat_census.py --selftest` →
+**14/14 PASS** (tool logic un-regressed by the sidecar edit, as expected — selftest is hermetic).
+
+**Check (step 5, expected non-zero pre-coordinator-regen).**
+`python3 scripts/analysis/native_compat_census.py check` → **exit 1** (non-zero, expected per D2):
+```
+check: FAIL — 1 getenv flag(s) not in registry (.../NativeCompatFlags.gen.inc):
+  - RB3_DRAWSORT_DETERMINISTIC_OFF
+check: FAIL — .../NativeCompatFlags.gen.inc is stale (regen would differ). Run `gen`.
+check: FAIL — .../NATIVE_COMPAT_LEDGER.md is stale (regen would differ). Run `gen`.
+```
+Reason: `check` diffs the fresh scan against the **committed** `NativeCompatFlags.gen.inc`, which
+this lane deliberately does not regenerate (D2 — three Wave-5 lanes append to `classification.json`;
+only the coordinator runs the single reconciling `gen` at wave end). The one reported missing flag
+(`RB3_DRAWSORT_DETERMINISTIC_OFF`) is Lane A's W0.3d-fix addition, already in the sidecar but not yet
+in the committed `.gen.inc` — orthogonal to this lane's 91 rows. This non-zero exit is the documented
+expected state, not a lane failure; left for the coordinator's wave-end regen.
+
+**Commit (step 6).** Under `flock /tmp/milo-engine-git.lock`: staged only
+`src/platform/NativeCompatFlags.classification.json` (confirmed via `git status --porcelain` before
+add — sibling `FxSendNative.cpp` had unrelated unstaged WIP, left untouched) and committed
+`W0.6b: classify 91 game-root NativeCompat flags (probe/workaround/feature/perf)` → engine commit
+`1fd2bfc`. `git show --stat` / `git diff HEAD~1 HEAD --stat` confirm only the sidecar file changed
+(97 insertions, 1 deletion i.e. the one comma).
+
+**Exit criteria checklist:**
+1. Zero game-root `Unknown` rows in temp gen — **met** (0/91 intersect).
+2. `--selftest` 14/14 — **met**.
+3. `classification.json` parses, 92+91 rows (+1 section marker), append-only — **met**.
+4. This STATUS.md section + 91-row table below — **met**.
+5. No committed `gen.inc`/ledger regen by this lane — **met** (only `/tmp/w06b-gen.inc` +
+   `/tmp/w06b-ledger.md` written).
+
+No scope creep: `src/band3` untouched/unclassified (accepted per PLAN scope boundary); no `src/`
+edits; `Rnd_Wgpu_RB3.cpp` / `src/App.cpp` / `FxSendNative.cpp` untouched.
+
+### W0.6b — 91-row flag → class → owner → reason table (S1 char/skinning, S2 ui/render/audio/loader/synth/world, S3 probes)
+
+| Flag | Class | Owner | Reason (one line) |
+|---|---|---|---|
+| RB3_BOUND_REBAKE | workaround | skinning | not-live: opt-in bound-mesh bind-side rebake, default-OFF (those meshes stay on the engine clamp/V24 guard; C8 pose-pipeline root-cause is the faithful fix) ... |
+| RB3_HANDS_BIND_FIX | workaround | skinning | not-live: experimental hands/fingers rest-basis bind fix, default-OFF (W2.2 measured no benefit, NOT flipped; see char-skinning-deform memory) [BandCharacter... |
+| RB3_INST_STRINGS_MODE | workaround | skinning | not-live: selects instrument-strings native rebind mode (rigid=default / rebake=A/B); the inst-strings rebind itself is a native stand-in [BandCharacter.cpp:... |
+| RB3_MESH_FREE | workaround | render/mesh | not-live: native keeps the mesh CPU copy by default (prevents rigid eyes/teeth vanishing); opt-out RB3_MESH_FREE=1 restores the faithful free for A/B [Mesh.c... |
+| RB3_NO_CLIP | probe | char | n/a: debug bisection disable of CharDriver::Poll (clip driving); default-OFF, Poll runs normally when absent [CharDriver.cpp:341] |
+| RB3_NO_CROWD_REBIND | workaround | render/crowd | not-live: crowd char-bone rebind-to-own-skeleton default-ON (W2.3 retained/load-bearing, ~24x shard-drop when disabled) [Crowd.cpp:932] |
+| RB3_NO_DEFORM | probe | skinning | n/a: debug bisection disable of BandCharacter::SetDeformation; default-OFF, runs when absent [BandCharacter.cpp:2335] |
+| RB3_NO_DEFORM_LOAD | workaround | char/deform | live: native loads gender deforms by default (blocker fixed; converges to original); opt-out RB3_NO_DEFORM_LOAD reverts to the deferred-load hack [BandCharDe... |
+| RB3_NO_FACE | probe | char | n/a: debug bisection disable of CharFaceServo::Poll + CharHair::Poll; default-OFF, both run when absent [CharFaceServo.cpp:60, CharHair.cpp:465] |
+| RB3_NO_HEAD_REBIND | workaround | skinning | not-live: head/hands rest-capture rebind (NativeCaptureRestPoseAfterDeform + RebindHeadHandsAtRest) default-ON (W2.2 net win; rebake-OFF head guard-DROPs 9.5... |
+| RB3_NO_HEAD_SHAPER | workaround | char/headshaper | live: head shapes load by default on native (byte-correct LE serialization, CharLoad5b gtest); opt-out RB3_NO_HEAD_SHAPER=1 reverts to disabled [BandHeadShap... |
+| RB3_NO_IK | probe | char | n/a: debug bisection disable of all Char IK Poll (hand/foot/head/fore-twist/neck/upper-twist/lookat/fingers/midi/slider); default-OFF, IK runs when absent [C... |
+| RB3_NO_INST_REBIND | workaround | skinning | not-live: instrument-strings rest-basis rebind (RebindInstStringsToRestBasis) default-ON [BandCharacter.cpp:1540] |
+| RB3_NO_POSEMESHES | probe | skinning | n/a: Q1 decisive-test disable of CharBonesMeshes::PoseMeshes (channel->LocalXfm writeback); default-OFF [CharBonesMeshes.cpp:103] |
+| RB3_NO_SKEL_REBIND | workaround | skinning | not-live: outfit-bone rebind-to-own-skeleton (RebindOutfitBonesToOwnSkeleton) default-ON (char-skinning-deform fix acd9c19a; W0.5 fail-red control) [BandChar... |
+| RB3_SKEL_REBIND_CALCOFF | workaround | skinning | not-live: A/B variant of the outfit rebind (SetBone calcOffset=true); shipped default is calcOffset=false [BandCharacter.cpp:1110] |
+| RB3_SKEL_REBIND_FULL | workaround | skinning | not-live: KNOWN-BROKEN full-body rebind (shards thin geo), default-OFF study/W0.1 fail-red control; shipped rebind is torso-only [BandCharacter.cpp:1084] |
+| RB3_SKIN_FIX_OFF | workaround | render/c8-faces | not-live: skin RT-recolor compose rebind (only active when RB3_SKIN_RTT is also set); opt-out RB3_SKIN_FIX_OFF=1 (see project_c8_faces memory) [OutfitConfig.... |
+| RB3_SKIN_NOCACHE | perf | skinning | n/a: A/B disable of the per-member skinned-mesh cache (measurement only; default cached path is a perf optimization, see incremental-load-perf memory) [BandC... |
+| RB3_SKIN_RTT | feature | render/c8-faces | not-live: gates the engine skin-RTT composite path (broken on web); default-OFF ships the direct-bind diff x skin-tone bypass (see project_c8_faces memory 26... |
+| RB3_SKIN_TIMING | probe | skinning | n/a: timing print summing skinned-mesh cache rebuild vs cache-hit cost [BandCharacter.cpp:846] |
+| RB3_WALKON_SNAP_OFF | workaround | bandobj/walkon | not-live: walk-on count-in pose snap default-ON (avoids frozen stale-vignette pose; see walkon-countin-pose memory 67e87ae1) [BandCharacter.cpp:59] |
+| SET_SKEL_REBIND | workaround | skinning | not-live: superseded experimental whole-subtree rebind (SetBone), study-only default-OFF; shipped fix is the renderer-side SKEL_REBAKE static-pose offset [Ba... |
+| MILO_HEADLESS | feature | platform/headless | n/a: headless runtime mode (skips window/audio/GPU device init; UI.cpp fakes a fixed 1/30s UI clock). Real port toggle, not a fidelity stand-in. |
+| RB3_APPLY_HANDLER_FIX_OFF | workaround | bandobj/trackpanel | not-live: single-player scoreboard/applause right/left.grp x-translation neutralization (K9 apply-handler fix) default-ON; =1 reverts to raw V22 |
+| RB3_BILLBOARD_OFF | workaround | render/billboard | not-live: native RndMultiMesh::DrawShowing kFastBillboardXYZ branch default-ON; opt-out disables the native billboard branch |
+| RB3_CAM_FALLBACK_OFF | workaround | camera/voidcut | not-live: BandDirector voidcut last-good-cam fallback (avoids dropping to void) default-ON; =1 reverts to raw V22 follow |
+| RB3_LOADER_BUDGET_MS | perf | load/perf | n/a: Loader frame-drain budget in ms (default 8; huge value restores unbudgeted drain-to-completion). See project_incremental_load_perf memory. |
+| RB3_LOADER_MIN_YIELD_MS | perf | load/perf | n/a: min yield interval for synchronous loader/stream drain in ms (default 16; 0 restores per-slice yield). See project_incremental_load_perf memory. |
+| RB3_LOADER_READAHEAD | perf | load/perf | n/a: loader pipeline read-ahead depth (default 6; 0 disables). HX_NATIVE-only. See project_incremental_load_perf memory. |
+| RB3_LOADER_YIELD_MS | perf | load/perf | n/a: loader spin yield interval in ms (default 16, clamped >= budget). Boot-time-neutral tunable. See project_incremental_load_perf memory. |
+| RB3_MENU_VOID_FIX_OFF | workaround | render/menu-void | not-live: menu-void mesh cull fix default-ON; =set reverts to baseline draw |
+| RB3_METAMUSIC_SYNC | workaround | synth/metamusic | not-live: native async MetaMusic PostLoad default; =1 opt-in restores the original eager (blocking) PostLoad+wiring path |
+| RB3_NO_CROWD_INTRO | workaround | audio/crowd | not-live: native crowd_intro/venue_intro BinkClip mogg bridge default-ON; =set disables the intro synth bridge |
+| RB3_PREWARM_NEXT | perf | load/perf | n/a: from:to screen prewarm-pair spec string (default main_hub_screen:song_select_screen). Asset prewarm scheduling, no draw/logic change. See project_increm... |
+| RB3_PREWARM_SCREENS | perf | load/perf | n/a: UI screen/panel asset prewarm+adopt (web default-ON opt-out via '0'; native default-OFF opt-in). No correctness dependency at the adopt site. See projec... |
+| RB3_REFRACTION_FIX_OFF | workaround | render/refraction | not-live: song_select bottom_square_refraction cull fix default-ON; =set restores baseline draw |
+| RB3_RESYNC_YIELD_OFF | workaround | synth/stream | not-live: StandardStream resync yield default-ON; opt-out disables the resync yield |
+| RB3_REVIEW_LIGHTER_FIX_OFF | workaround | ui/review | not-live: ReviewDisplay lighter-slot show fix (hide slots on zero score) default-ON; =1 restores baseline |
+| RB3_SCROLLBAR_FIX_OFF | workaround | ui/scrollbar | not-live: ScrollbarDisplay content-aware draw gate default-ON; =1 restores the exact Wii over-draw gate |
+| RB3_STREAM_BUF_SECS | perf | synth/stream | n/a: StandardStream min buffer depth in seconds (default 4, capped by 16-chunk ~9.1s ring). Anti-underrun value knob. |
+| RB3_STREAM_PREPLAY_CAP_OFF | workaround | synth/stream | not-live: StreamReceiver pre-play write cap (fill ring before Play, clock reads 0) default-ON; =1 opts out |
+| RB3_TV3_PLAY_OFF | workaround | world/transition | not-live: vignette_transition (tv3) WorldDir force-play default-ON (bounds sequencer to authored sub-shot durations); =set escapes |
+| RB3_VENUE_FRUSTUM_CULL | perf | render/cull | n/a: opt-in world.cam venue frustum sphere cull (default-OFF); pure draw-skip optimization, confirmed Draw.cpp:201 |
+| RB3_VENUE_SYNC | workaround | load/venue | not-live: native forces synchronous venue load (correct ordering) default-ON; =0 opts into experimental async (unsafe until Enter() is split into a multi-fra... |
+| RB3_WEB_OFFMAIN_MIX | feature | audio/web | n/a: off-main-thread audio decode/mix mode (web survives main-thread freezes; native uses it to size the decode-ahead ring deeper) default-ON; =0 keeps the p... |
+| VENUE_CAM_LOCK | workaround | camera/venue | not-live: native bridge points the venue WorldDir mCam at the director's active shot cam each frame default-ON; =1 reverts to the static cam |
+| BAND_ANIM_BONE | probe | char/anim | n/a: names the bone BAND_ANIM_PROBE samples (defaults to bone_R-upperArm.mesh); only read when BAND_ANIM_PROBE is active, never alters Poll() [BandCharacter.... |
+| BAND_ANIM_PROBE | probe | char/anim | n/a: per-frame trace of the band animation chain (driver presence, playing clip, named bone worldPos pre/post Character::Poll) to localize why the on-stage s... |
+| BONE_CLEAR_DBG | probe | skinning | n/a: logs any CopyBones(0) that wipes a non-empty bone list off a mesh, to catch post-load bone clears [Mesh.cpp:1156] |
+| BONE_LOAD_DBG | probe | skinning | n/a: reports how many bones a mesh loaded from the file vs. how many resolved null, before RemoveInvalidBones strips them [Mesh.cpp:1000] |
+| CAMDIR_DBG | probe | render/camera | n/a: logs the re-run HarvestDircuts() call once venue+song.anim are both live (propAnim/venueDir pointers); render-inert, aliases VENUE_DBG's same line [Band... |
+| CAM_DBG | probe | render/camera | n/a: dumps game.cam pose (pos/fwd/up/fov/near/far) during highway draw at TrackDir.cpp:280 (game.cam is only current at this scope point); also gates a separ... |
+| CBM_DBG | probe | skinning | n/a: V38 instrumentation — dumps decoded SCALE channel + pre-divide matrix row lengths per scale-bone, localizing the crowd/extras 0.53-det Y-squash [CharBon... |
+| CBM_DBG2 | probe | skinning | n/a: V38 probe — dumps quat magnitude pre-Normalize and post-QUAT/ROT LocalXfm determinant for a substring-matched bone name (or '*') [CharBonesMeshes.cpp:11... |
+| CBS_DBG | probe | skinning | n/a: dumps the cached packed-buffer layout (offsets, sizes, compression) vs bytes actually consumed, to verify against the DC3 Save contiguous layout [CharBo... |
+| CHARDRV_PROBE | probe | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriv... |
+| CHAR_DBG | probe | render/char-material | n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-b... |
+| CLOCK_DBG | probe | ui/hud | n/a: logs TrackDir::DrawShowing's real-time delta and y-per-second scroll multiplier for a track-panel HUD overlay [TrackDir.cpp:302] |
+| CROWD_REBIND_PROBE | probe | render/crowd | n/a: verbose companion to RebindCrowdCharBonesToOwnSkeleton (the default-ON RB3_NO_CROWD_REBIND workaround) — read-only diagnostic flag, does not itself chan... |
+| GAME_DBG | probe | bandobj/flow | n/a: logs BandDirector::OnFileLoaded's sym/dir args and ReadyForMidiParsers' native venue-deferred gate inputs/result; the gate's own cond is computed indepe... |
+| GEM_DBG | probe | render/highway | n/a: dumps GemTrackDir::UpdateSurfaceTexture's mesh/mat/tex name state after the (unconditional) SetDiffuseTex call [GemTrackDir.cpp:393] |
+| HEAD_REBIND_PROBE | probe | skinning | n/a: verbose companion to RebindHeadHandsAtRest (the default-ON RB3_NO_HEAD_REBIND-gated rest-capture rebind); read-only, does not alter the rebind [BandChar... |
+| IK_TGT_DBG | probe | char/ik | n/a: reports IK hand world position + each target's name/pos/distance/parent chain for far (>50u) targets; investigative tool for the residual crowd hand-IK ... |
+| INST_REBIND_PROBE | probe | skinning | n/a: verbose companion to the instrument-strings rebind (RB3_NO_INST_REBIND/RB3_INST_STRINGS_MODE); read-only [BandCharacter.cpp:1551] |
+| K9_APPLY_DBG | probe | ui/hud | n/a: dumps the milo 'apply' handler dispatch state (config object name/class/typedef apply-array, objects/visibles/xfms arrays) on TrackPanelDirBase::SetConf... |
+| MENU_VOID_DBG2 | probe | render/ui | n/a: render-inert one-shot-per-name material dump for hub-backdrop drawables (sky/dome/moon/cloud/star/night/bgbuilding/fog-keyed by default, or every mesh w... |
+| MENU_VOID_SKIP | probe | render/ui | n/a: comma/space-separated substring skip-draw list — an opt-in A/B research tool for isolating which drawable paints a given hub-backdrop screen region (not... |
+| MESH_BONE_DBG | probe | skinning | n/a: dumps each loaded RndBone's bind-offset determinant + row lengths for substring-matched mesh names, checking whether the crowd-body det-0.53 squash is a... |
+| MILO_LOCALE_DBG | probe | utl/locale | n/a: traces Localize() token/format resolution for diagnosing format-string/token leaks [Locale.cpp:296] |
+| MILO_SETTOKEN_DBG | probe | ui/label | n/a: traces UILabel::SetTokenFmtImp — symbol, localized format string, and final SetDisplayText input [UILabel.cpp:805] |
+| PART_INIT_DBG | probe | render/particles | n/a: dumps InitParticle's emit branch, raw direction and mesh state before speed scale for substring-matched particle systems, diagnosing runaway street-fog ... |
+| PART_MOVE_DBG | probe | render/particles | n/a: per-call MoveParticles trace (dt/frameSpan, relative-frame force rows, relative xfm state, first particle velocity) for substring-matched systems, pinpo... |
+| RB3_DUMP_STEMS | probe | audio/stems | n/a: opt-in raw PCM stem dump to disk (one .s16 file per channel under the given directory); purely a side-channel file write, does not alter the audio mix/p... |
+| RB3_HAIR_DBG | probe | char/hair | n/a: reports per-strand collide-hookup counts (points hooked, CharCollides reachable) to quantify free-hanging strands passing through the skull/shoulders un... |
+| RB3_METAMUSIC_DBG | probe | synth/metamusic | n/a: logs completion of the deferred stream-FX wiring (6 eq.send dirs) after RB3_METAMUSIC_SYNC's async PostLoad path drains [MetaMusic.cpp:415] |
+| RB3_NOTIFY_ALL | probe | os/debug | n/a: console-verbosity toggle — restores every repeat of an engine NOTIFY diagnostic instead of the default per-message dedup; affects only diagnostic consol... |
+| RB3_PLACEMENT_PROBE | probe | render/placement | n/a: dumps each crowd instance's spXfm translation used by the W2.1 RB3_PLACEMENT_CONTRACT placement oracle; Wii-compile-inert, no behavior change [Crowd.cpp... |
+| RB3_PP_PROBE | probe | bandobj/patchmesh | n/a: dumps BandPatchMesh::WorkVerts::SetMeshVerts entry state (vert/face counts, max face index, OOB check) added while triaging the C8 head-invisible regres... |
+| RB3_PREWARM_DBG | probe | load/perf | n/a: two independent print sites sharing a name — game UIScreen.cpp logs the song_select-prewarm screen-pair schedule/CheckIsLoaded gate; engine Rnd_Wgpu_RB3... |
+| RB3_READAHEAD_DEBUG | probe | load/perf | n/a: reports loader queueDepth/kicked counts to show whether dependency milos enqueue deep enough for read-ahead to matter; zero cost when off, does not chan... |
+| RB3_SKINFIX_DBG | probe | skinning | n/a: logs every MatSwap touched by the outfit skin-diffuse rebind loop and what it rebinds, added while triaging the C8 head-invisible regression [OutfitConf... |
+| RB3_STATS_DBG | probe | debug/stomp-watch | n/a: two independent stomp-watch bisection sites sharing a name — File.cpp checks MetaPerformer integrity on every file open (web song-end wedge diagnosis); ... |
+| RELOAD_PROBE | probe | bandobj/flow | n/a: answers 'what reloads the band mid-song' by logging every RecomposePatches/MiloReload/start_load-DTA/in_closet-propsync/CharCache/BandWardrobe reload ca... |
+| SERVO_PROBE | probe | char/anim | n/a: confirms CharServoBone::Poll runs and reports a mid-chain bone's LocalXfm before/after PoseMeshes, substring-matched by ClipType (or '*') [CharServoBone... |
+| SKEL_REBIND_PROBE | probe | skinning | n/a: verbose companion to RebindOutfitBonesToOwnSkeleton (RB3_NO_SKEL_REBIND) and the SET_SKEL_REBIND study variant — counts rebound/same/null-own bones; rea... |
+| SKEL_REBIND_SKINPOS | probe | skinning | n/a: post-rebind verification metric — reports the worst \|skinWorld-boneWorld\| bone-relative delta after RebindOutfitBonesToOwnSkeleton, the correctness me... |
+| STRIDE_PROBE | probe | skinning | n/a: dumps mesh name/vert count/per-vert size/version/skinned-flag when reading the platform-compressed vertex blob, verifying the native compressed-vert rea... |
+| UISCREEN_DBG | probe | ui/hub | n/a: logs UI transition-state changes (UI.cpp) and screen/panel Exiting()/CheckIsLoaded() blocked-panel state (UIScreen.cpp, UIPanel.cpp), dedup'd per state/... |
+| VENUE_DBG | probe | bandobj/venue | n/a: logs the native venue force-load bridge in BandDirector::EnterVenue (override symbol, chosen venue, sync/async mode, wardrobe/venueDir/venueName state, ... |
+| VOIDCUT_DBG | probe | render/camera | n/a: logs each shot's void-vs-keep verdict for the RB3_CAM_FALLBACK_OFF-gated sticky last-good-cam fallback (voidcut avoidance); read-only, does not affect t... |
