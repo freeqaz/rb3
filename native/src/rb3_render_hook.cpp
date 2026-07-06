@@ -78,6 +78,22 @@ public:
                 hubBarOff = std::getenv("RB3_NO_HUB_BAR_PLACEMENT_FIX") ? 1 : 0;
             p.hubBarPlacement = !hubBarOff;
         }
+        // B2: scrollbar-thumb placement fix — the skinned red thumb reuses the
+        // scrollbar-bg track's world xfm (the engine caches the bg world and
+        // applies it, guarded by `skinned && have`). Opt-out
+        // RB3_SCROLLBAR_THUMB_FIX_OFF. `scrollbarBg`/`scrollbarThumb` are mutually
+        // exclusive (distinct mesh names).
+        {
+            static int sbarThumbOff = -1;
+            if (sbarThumbOff < 0)
+                sbarThumbOff = std::getenv("RB3_SCROLLBAR_THUMB_FIX_OFF") ? 1 : 0;
+            if (!sbarThumbOff) {
+                if (std::strcmp(nm, "scrollbar_bg.mesh") == 0)
+                    p.scrollbarBg = true;
+                else if (std::strcmp(nm, "scrollbar.mesh") == 0)
+                    p.scrollbarThumb = true;
+            }
+        }
         return p;
     }
 
