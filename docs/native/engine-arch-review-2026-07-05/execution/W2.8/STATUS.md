@@ -449,3 +449,80 @@ harness, reuses step-0 machinery); engine
 `NativeCompatFlags.classification.json` (RB3_HANDS_POSEAWARE row);
 `/tmp/w28-poseaware-ab/ab-result.json` (measurement). Checkpoint
 `/tmp/wave7-checkpoints/B-S3.json`.
+
+---
+
+## B.S4 (W2.8.BL-A1) — LANE VERIFY (Opus, independent) — VERDICT: CONFIRM B.S3 — NOT A NET WIN, DO NOT FLIP
+
+Independent verification of B.S3's staged `RB3_HANDS_POSEAWARE` rigid-anchor hands
+fix on a **fresh from-scratch build** (`native/build-agent-W2.8v`, clang/Debug,
+committed source `585816f5`, engine HEAD `af4a22ac` — Wave-7 default-OFF lanes
+advanced it past pin `1b045d9`; soft pin, byte-identical flag-OFF holds). All four
+verification axes exercised; **B.S3's honest negative reproduces cleanly and, on a
+same-binary A/B (both arms drew players 0-3), even more decisively.**
+
+**Axis 1 — flag-OFF byte-identical: ✅ CONFIRMED.**
+- Splash **drawlog golden = 792 PASS** (`--fixed-clock --canonical-order`, exit 0;
+  188 known eye-jitter residuals within the committed sidecar bound, non-blocking).
+- **Lineup gate PASS all layers** (img/segA/ratioB/countC/pin) on 4 forced-shot
+  frames, `max_band_ratio=5.21`, segA fill ~0.53–0.55.
+- **0 `HANDS_RIGID` probe lines** in the flag-OFF arm (getenv-cached early return is
+  a true no-op). Wii path is `#ifdef HX_NATIVE`, untouched.
+
+**Axis 2 — flag-ON numeric gate: ❌ FAILS (independently reproduced).** Same-binary
+A/B (`_w28_poseaware_ab.py`, IK_SHARD_VERT far-vertex probe, both arms players 0-3):
+
+| metric (worst appendage) | flag-OFF | flag-ON |
+|---|---|---|
+| IK_SHARD_VERT `wext` | **106u** (hands_naked, bone_R-thumb03, R=78.5) | **253u** (hands_naked, bone_L-hand, R=72.4) — in the 200-460u STOP band |
+| appendage drops (ratio > band cap) | **0** | **2** (hands_naked 4.45×, fingernails 6.76×) |
+| appendage FLING (>120u) | **0** | **2** (hands_naked 122.8u, fingernails 125.4u) |
+| worst appendage SKINPOS (origin) | 69.5u | 146.9u |
+| `fingernails_resource.mesh` wext | 78u | **244u** (worse) |
+| `drivinggloves_skin.mesh` wext | (n/a this arm) | **60u** (uniform glove shell — improved) |
+
+Because both arms are the same binary + same nav + same 4 members, the 106→253u
+jump is attributable to the flag (not B.S3's cross-member confound) — a **cleaner,
+stronger** confirmation. The rigid collapse improves the uniformly-authored glove
+shell (60u) but **distorts the per-bone-authored articulated meshes**
+(`hands_naked`/`fingernails` explode to 244-253u) — exactly B.S3's finding.
+Sub-gate checks: **FLING≠0 (2), 253u IS in the 200-460u STOP-TRIPWIRE band, +2
+drops** → the flag flatly fails the Wave-7 numeric gate. **Crowd clamp unchanged**
+(0 crowd/scrollbar guard-drops in both arms; the 2 added drops are hand/fingernail
+appendage-ratio, flag-scoped). The "BL-A2 oracle GREEN flag-ON" expectation is
+**unmeetable by design** — `RealPathFixture` is a SKIP (no `live_pose.txt`; B.S3
+correctly did not fabricate one, since the fix isn't a net win), so the operative
+numeric gate is the IK_SHARD_VERT A/B, which reads WORSE.
+
+**Axis 3 — fail-red intact: ✅ CONFIRMED.** BL-A2 oracle GREEN by default (4 pass +
+1 skip); RED under `RB3_FARVERT_PERTURB=1.645` (exit 1, worst fingertip fling
+**58.6u** == the B.S1 documented baseline). The metric fires on the basis mismatch,
+not animation alone.
+
+**Axis 4 — visual: radiating sheets NOT visibly gone flag-ON.** Montage
+`evidence/BS4_verify_handsON_vs_OFF.png` (flag-OFF vs flag-ON, forced coop_g_n03 +
+coop_g_b shots). The flag-OFF frames clearly show the documented radiating
+shard fans on the arm/hand silhouette. The flag-ON comparison is **confounded by
+random member selection** (the arms framed different members), and the numeric
+metric shows flag-ON is WORSE on articulated hand meshes — so the visual **cannot
+confirm** the "sheets gone/reduced flag-ON" hypothesis, corroborating no-flip.
+Note the lineup gate PASSes flag-ON too (`max_band_ratio` 5.21→**8.00**, segA fill
+0.55→**0.16** — real degradation, but under the coarse whole-body cap): a live
+demonstration that the lineup/origin gates are BLIND to the R·sin(θ) finger shard,
+the exact W2.8 gate-blindness finding — the far-vertex oracle is the only gate that
+sees it.
+
+**VERDICT: independently CONFIRM B.S3.** `RB3_HANDS_POSEAWARE` is a correct, safe,
+default-OFF **staged study flag** (flag-OFF byte-identical) but is **NOT a net win**
+and **MUST NOT be flipped** — worst appendage 253u sits in the 200-460u
+STOP-TRIPWIRE band and it adds 2 drops + 2 flings. The recorded negative is sound:
+**no static rebake, rigid collapse included, fixes the pose-varying multi-bone
+rotation-basis shard for articulated hand meshes.** The real fix is engine-side
+(BL-A1-next per-frame wrist conjugation, or BL-A0 CharBones pose-pipeline basis) —
+out of Lane B's fence. **Recommendation to coordinator: DO NOT FLIP; keep as the
+staged study flag + this recorded independent negative.**
+
+Artifacts (B.S4): fresh build `native/build-agent-W2.8v`;
+`/tmp/w28v-poseaware-ab/ab-result.json`; `/tmp/w28v-golden.log`;
+`/tmp/w28v-lineup-{off,on}/verdict.json`; `evidence/BS4_verify_handsON_vs_OFF.png`.
+Checkpoint `/tmp/wave7-checkpoints/B-S4.json`.
