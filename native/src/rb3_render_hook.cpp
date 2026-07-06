@@ -153,6 +153,19 @@ public:
     // (passed IN so the hook never reaches RndCam::sCurrent — Bucket-C safety); no
     // classification here consumes it (the cam gates for B12/B13 stay inline in the
     // engine), it is accepted for interface fidelity + forward-compat.
+    // B12: crowd/extras name classifiers (engine keeps the owner-bone loop + the
+    // world.cam scene gate). A crowd/extras material path is seeded from a mesh
+    // NAME (crowd/extra) or a bone's owning-dir stored file (char/crowd/ |
+    // char/extras/); band members are excluded via IsBandMemberSkeletonFile.
+    bool IsCrowdExtraMeshName(const char* meshName) override {
+        return meshName &&
+               (std::strstr(meshName, "crowd") || std::strstr(meshName, "extra"));
+    }
+    bool IsCrowdExtraDir(const char* sf) override {
+        return sf &&
+               (std::strstr(sf, "char/crowd/") || std::strstr(sf, "char/extras/"));
+    }
+
     DrawMaterialPolicy QueryDrawMaterialPolicy(RndMesh* mesh,
                                                RndMat* mat,
                                                bool /*skinned*/,
