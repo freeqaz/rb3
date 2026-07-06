@@ -151,6 +151,25 @@ public:
     // own-resource instruments). Called from Poll AFTER mInstDir->Poll(). Opt-out
     // RB3_NO_INST_REBIND=1. No-op on Wii (HX_NATIVE only).
     void RebindInstStringsToRestBasis();
+    // W2.8 BL-A1 (native-only): the hands/fingers "missing hands" fix. The head/hands
+    // rest-rebind (RebindHeadHandsAtRest) binds each finger bone to its own live
+    // per-member skeleton bone with a rest-baked inverse-bind, but the per-member
+    // skeleton's rotation BASIS diverges from the authored magnet by a POSE-VARYING
+    // angle theta, so the distal finger verts (radius R from their bone) fling by
+    // R*sin(theta) into thin radiating sheets — a per-bone static rebake cannot fix a
+    // pose-varying multi-bone divergence (W2.8 step-0, RB3_HANDS_BIND_FIX proven
+    // inert). This collapses that divergence by rigid-anchoring: it repoints every
+    // hand/finger bone (per L/R side) to that side's wrist bone (bone_L-hand /
+    // bone_R-hand) and rebakes offset = meshWorld * inv(wristWorld), so each hand
+    // rides its own wrist as ONE rigid body — no relative multi-bone basis error left
+    // to shard. Exactly the proven RebindInstStringsToRestBasis mechanism, applied to
+    // hand meshes. TRADEOFF: fingers no longer articulate (rigid hand); it trades the
+    // shard for a static-but-coherent hand that tracks the arm. The faithful
+    // finger-articulating fix is the CharBones pose-pipeline basis (engine, out of this
+    // lane's fence) — see STATUS backlog. DEFAULT-OFF, opt-in RB3_HANDS_POSEAWARE=1;
+    // scoped to hand/finger/glove skin meshes; each rebound mesh sets
+    // RndMesh::mNativeBonesRebound. No-op on Wii (HX_NATIVE only).
+    void NativeRepinHandsRigid();
     // render-polish 2026-06-11 (char-render): shared skinned-mesh collector used by
     // both Poll-time rebinds and the SyncObjects rest-pose seeding — hashtable
     // objects + each dir's mDraws + every LOD Group/TransGroup, recursing
@@ -332,6 +351,13 @@ public:
     // Default 0.
     int mNativeInstReboundOnce;
     int mNativeInstReboundQuiet;
+    // W2.8 BL-A1 (native-only): rigid-anchor hands rebind bookkeeping
+    // (NativeRepinHandsRigid, RB3_HANDS_POSEAWARE). Latches once no in-scope hand mesh
+    // remains to rigid-anchor for a quiet window; re-armed on StartLoad/SyncObjects
+    // like the other rebinds. Appended after the matched layout so the Wii image stays
+    // byte-identical. Default 0.
+    int mNativeHandsRigidOnce;
+    int mNativeHandsRigidQuiet;
     // frame-stall 2026-06-20 (TRACK A): per-member skinned-mesh collection cache.
     // NativeCollectSkinnedMeshes used to re-walk the member's ObjectDir hashtable
     // (ObjDirItr RTTI dynamic_cast per entry) + the whole draw tree

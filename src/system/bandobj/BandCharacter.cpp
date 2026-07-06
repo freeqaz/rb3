@@ -133,6 +133,8 @@ BandCharacter::BandCharacter()
     mNativeRestCaptured = false;
     mNativeInstReboundOnce = 0;
     mNativeInstReboundQuiet = 0;
+    mNativeHandsRigidOnce = 0;
+    mNativeHandsRigidQuiet = 0;
     mNativeSkinnedCacheValid = false; // frame-stall 2026-06-20 (TRACK A)
     mNativeWalkonSnapPending = false; // walk-on snap (SCOUT.md fix #1)
 #endif
@@ -568,6 +570,15 @@ void BandCharacter::Poll() {
             // each Poll until the moving instance is reachable. Must come AFTER
             // Character::Poll() (skeleton posed) and BEFORE the outfit meshes draw.
             RebindOutfitBonesToOwnSkeleton();
+
+            // W2.8 BL-A1 (opt-in RB3_HANDS_POSEAWARE=1, default OFF): rigid-anchor the
+            // hand/finger/glove skin meshes to their per-side wrist bone so each hand
+            // rides its wrist as one rigid body, collapsing the pose-varying
+            // multi-bone basis divergence that flings the distal finger verts into
+            // sheets (the "missing hands" shard). Runs AFTER the head/hands rest-rebind
+            // above so it OVERWRITES that mesh's sharding bind; latched per member.
+            // Flag-OFF this is a getenv-cached early return (byte-identical).
+            NativeRepinHandsRigid();
 #endif
 
             // Poll child characters
@@ -1684,6 +1695,201 @@ void BandCharacter::RebindInstStringsToRestBasis() {
         mNativeInstReboundQuiet >= 600)
         mNativeInstReboundOnce = 1;
 }
+
+// W2.8 BL-A1 — rigid-anchor the hand/finger/glove skin meshes (see the header comment
+// for the full mechanism + tradeoff). Mirrors the proven RebindInstStringsToRestBasis
+// rigid path: repoint every bone (per L/R side) to that side's wrist bone and rebake
+// offset = meshWorld * inv(wristWorld) so the hand rides its wrist as one rigid body,
+// world AABB == bind AABB — no relative multi-bone basis error left to shard.
+// DEFAULT-OFF (opt-in RB3_HANDS_POSEAWARE=1); flag-OFF is a getenv-cached early return.
+void BandCharacter::NativeRepinHandsRigid() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) sEnabled = getenv("RB3_HANDS_POSEAWARE") ? 1 : 0;
+    if (!sEnabled) return; // flag-OFF: byte-identical no-op
+    if (mNativeHandsRigidOnce) return;
+    bool probe = getenv("HANDS_RIGID_PROBE") != 0;
+
+    std::vector<RndMesh *> targets;
+    NativeCollectSkinnedMeshes(targets);
+
+    int meshes = 0, reboundMeshes = 0, pending = 0;
+    std::vector<RndMesh *> ownersDone; // dedupe GeomOwner-shared meshes this pass
+    for (std::vector<RndMesh *>::iterator mi = targets.begin();
+         mi != targets.end(); ++mi) {
+        RndMesh *drawn = *mi;
+        const char *dn = drawn->Name();
+        if (!dn) continue;
+        // SCOPE: hand/finger/glove ONLY. "finger" also catches fingernails_*; bare
+        // "nail" is deliberately excluded so footwear (nailboots_*) is never touched.
+        // Head/hair/face are a separate problem (W2.7) — not in scope.
+        std::string lname(dn);
+        for (size_t i = 0; i < lname.size(); i++) {
+            char c = lname[i];
+            if (c >= 'A' && c <= 'Z') lname[i] = (char)(c + 32);
+        }
+        bool inScope = lname.find("hand") != std::string::npos ||
+                       lname.find("finger") != std::string::npos ||
+                       lname.find("glove") != std::string::npos;
+        if (!inScope) continue;
+        // Operate on the GPU palette source (GeomOwner) — writing a shared mesh's own
+        // bone array has no GPU effect; flag the drawn mesh too so the engine skips its
+        // fling-clamp. (Deliberately DO NOT skip mNativeBonesRebound: the head-rebind
+        // above may have already bound this mesh with the sharding per-bone rebake, and
+        // this pass exists to OVERWRITE that with the rigid anchor.)
+        RndMesh *mesh = drawn->GeomOwner() ? drawn->GeomOwner() : drawn;
+        if (std::find(ownersDone.begin(), ownersDone.end(), mesh) != ownersDone.end()) {
+            drawn->mNativeBonesRebound = true; // propagate to the shared draw
+            continue;
+        }
+        int nb = mesh->NumBones();
+        if (nb == 0) continue;
+        meshes++;
+        // Per-side wrist anchor. Names: bone_L-hand / bone_R-hand (wrist), fingers
+        // bone_L-index01 etc. Side = the char after "bone_" ('L'/'R'). Anchor per side =
+        // the "*-hand" wrist bone if present, else the side bone that is TransParent-
+        // ancestor of the most other side bones, else the first side bone.
+        int anchorL = -1, anchorR = -1;      // preferred wrist by name
+        int fallbackL = -1, fallbackR = -1;  // first resolvable bone per side
+        int ancBestL = -1, ancBestR = -1, ancCntL = -1, ancCntR = -1;
+        for (int b = 0; b < nb; b++) {
+            RndTransformable *bt = mesh->BoneTransAt(b);
+            if (!bt || !bt->Name()) continue;
+            const char *bn = bt->Name();
+            int side = 0; // -1 left, +1 right, 0 none
+            const char *u = std::strstr(bn, "bone_");
+            const char *tag = u ? u + 5 : bn;
+            if (tag[0] == 'L' && tag[1] == '-') side = -1;
+            else if (tag[0] == 'R' && tag[1] == '-') side = 1;
+            else if (std::strstr(bn, "_L-") || std::strstr(bn, "-L-")) side = -1;
+            else if (std::strstr(bn, "_R-") || std::strstr(bn, "-R-")) side = 1;
+            if (side == 0) continue; // no clear side — leave untouched
+            bool isWrist = std::strstr(bn, "-hand") != 0;
+            if (side < 0) {
+                if (fallbackL < 0) fallbackL = b;
+                if (isWrist) anchorL = b;
+            } else {
+                if (fallbackR < 0) fallbackR = b;
+                if (isWrist) anchorR = b;
+            }
+            // ancestor count within same side
+            int cnt = 0;
+            for (int c = 0; c < nb; c++) {
+                if (c == b) continue;
+                RndTransformable *ct = mesh->BoneTransAt(c);
+                if (!ct || !ct->Name()) continue;
+                const char *cn = ct->Name();
+                int cside = 0;
+                const char *cu = std::strstr(cn, "bone_");
+                const char *ctag = cu ? cu + 5 : cn;
+                if (ctag[0] == 'L' && ctag[1] == '-') cside = -1;
+                else if (ctag[0] == 'R' && ctag[1] == '-') cside = 1;
+                if (cside != side) continue;
+                int guard = 0;
+                for (RndTransformable *p = ct->TransParent(); p && guard < 64;
+                     p = p->TransParent(), guard++)
+                    if (p == bt) { cnt++; break; }
+            }
+            if (side < 0) { if (cnt > ancCntL) { ancCntL = cnt; ancBestL = b; } }
+            else { if (cnt > ancCntR) { ancCntR = cnt; ancBestR = b; } }
+        }
+        if (anchorL < 0) anchorL = (ancBestL >= 0 ? ancBestL : fallbackL);
+        if (anchorR < 0) anchorR = (ancBestR >= 0 ? ancBestR : fallbackR);
+        if (anchorL < 0 && anchorR < 0) { pending++; continue; }
+        // Resolve, per side, the anchor's CHAR-SPACE REST xfm (mNativeRestPose, seeded
+        // clip-free by the head rebind / post-deform capture) and its LIVE per-member
+        // bone (Find by name — the same instance the head rebind binds to). This is the
+        // EXACT proven RebindHeadHandsAtRest formula (offset = meshWorld * inv(restChar),
+        // bind to live bone), just COLLAPSED so every side bone shares its wrist's
+        // mapping -> the whole hand rides the wrist rigidly with correct placement. Do
+        // NOT use the anchor's CURRENT world (skinned meshWorld is identity, so
+        // meshWorld*inv(worldNow) detaches the verts to bind-local -> a worse shard;
+        // measured 593u). All-or-nothing: if a present side lacks a rest snapshot or a
+        // live bone, defer the whole mesh (leave head-rebind's bind untouched).
+        RndTransformable *ownL = 0, *ownR = 0;
+        Transform invRestL, invRestR;
+        bool needL = anchorL >= 0, needR = anchorR >= 0;
+        bool okL = !needL, okR = !needR;
+        if (needL) {
+            RndTransformable *aL = mesh->BoneTransAt(anchorL);
+            const char *anL = aL ? aL->Name() : 0;
+            if (anL) {
+                std::map<std::string, Transform>::iterator rp =
+                    mNativeRestPose.find(std::string(anL));
+                RndTransformable *own = Find<RndTransformable>(anL, false);
+                if (rp != mNativeRestPose.end() && own) {
+                    Vector3 v = rp->second.v;
+                    if (std::fabs(v.x) < 1e5f && std::fabs(v.y) < 1e5f &&
+                        std::fabs(v.z) < 1e5f) {
+                        Invert(rp->second, invRestL); ownL = own; okL = true;
+                    }
+                }
+            }
+        }
+        if (needR) {
+            RndTransformable *aR = mesh->BoneTransAt(anchorR);
+            const char *anR = aR ? aR->Name() : 0;
+            if (anR) {
+                std::map<std::string, Transform>::iterator rp =
+                    mNativeRestPose.find(std::string(anR));
+                RndTransformable *own = Find<RndTransformable>(anR, false);
+                if (rp != mNativeRestPose.end() && own) {
+                    Vector3 v = rp->second.v;
+                    if (std::fabs(v.x) < 1e5f && std::fabs(v.y) < 1e5f &&
+                        std::fabs(v.z) < 1e5f) {
+                        Invert(rp->second, invRestR); ownR = own; okR = true;
+                    }
+                }
+            }
+        }
+        if (!okL || !okR) { pending++; continue; }
+        // Apply: every side bone -> that side's LIVE wrist bone, offset = meshWorld *
+        // inv(wristRestChar). Bones with no clear side stay as bound (their finger
+        // residual is left to head-rebind/clamp — rare in hand meshes).
+        for (int b = 0; b < nb; b++) {
+            RndTransformable *bt = mesh->BoneTransAt(b);
+            if (!bt || !bt->Name()) continue;
+            const char *bn = bt->Name();
+            int side = 0;
+            const char *u = std::strstr(bn, "bone_");
+            const char *tag = u ? u + 5 : bn;
+            if (tag[0] == 'L' && tag[1] == '-') side = -1;
+            else if (tag[0] == 'R' && tag[1] == '-') side = 1;
+            else if (std::strstr(bn, "_L-") || std::strstr(bn, "-L-")) side = -1;
+            else if (std::strstr(bn, "_R-") || std::strstr(bn, "-R-")) side = 1;
+            RndTransformable *anchorOwn = (side < 0) ? ownL : (side > 0) ? ownR : 0;
+            const Transform *invRest = (side < 0) ? &invRestL : (side > 0) ? &invRestR : 0;
+            if (!anchorOwn || !invRest) continue;
+            if (bt != anchorOwn) mesh->SetBone(b, anchorOwn, false);
+            Multiply(mesh->WorldXfm(), *invRest, mesh->BoneOffsetAt(b));
+        }
+        mesh->mNativeBonesRebound = true;   // engine: skip rebake + fling-clamp
+        drawn->mNativeBonesRebound = true;
+        ownersDone.push_back(mesh);
+        reboundMeshes++;
+        if (probe)
+            fprintf(stderr,
+                "[HANDS_RIGID] member='%s' mesh='%s' bones=%d anchorL[%d]='%s' "
+                "anchorR[%d]='%s'\n",
+                Name() ? Name() : "?", mesh->Name() ? mesh->Name() : "?", nb,
+                anchorL, (ownL && ownL->Name()) ? ownL->Name() : "-",
+                anchorR, (ownR && ownR->Name()) ? ownR->Name() : "-");
+    }
+
+    // Latch like the sibling rebinds: quiet window with nothing left, or a long
+    // give-up fallback; re-armed on StartLoad/SyncObjects.
+    if (reboundMeshes == 0) mNativeHandsRigidQuiet++;
+    else mNativeHandsRigidQuiet = 0;
+    if ((pending == 0 && mNativeHandsRigidQuiet >= 30) ||
+        mNativeHandsRigidQuiet >= 600)
+        mNativeHandsRigidOnce = 1;
+
+    if (probe && (reboundMeshes > 0 || pending > 0))
+        fprintf(stderr,
+            "[HANDS_RIGID] member='%s' meshes=%d reboundMeshes=%d pending=%d "
+            "quiet=%d latched=%d\n",
+            Name() ? Name() : "?", meshes, reboundMeshes, pending,
+            mNativeHandsRigidQuiet, mNativeHandsRigidOnce);
+}
 #endif
 
 #pragma push
@@ -1733,6 +1939,10 @@ void BandCharacter::SyncObjects() {
     // change may have re-stuffed/re-skinned mInstDir's strings mesh).
     mNativeInstReboundOnce = 0;
     mNativeInstReboundQuiet = 0;
+    // W2.8 BL-A1: re-arm the rigid-anchor hands rebind (a merge/deform may have
+    // re-skinned the hand meshes back onto the sharding per-member bind).
+    mNativeHandsRigidOnce = 0;
+    mNativeHandsRigidQuiet = 0;
 #endif
     RndMat *feetmat = Find<RndMat>("feet_socks_skin.mat", false);
     if (feetmat) {
@@ -2182,6 +2392,9 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     // RndMesh::mNativeBonesRebound so the re-scan is idempotent).
     mNativeInstReboundOnce = 0;
     mNativeInstReboundQuiet = 0;
+    // W2.8 BL-A1: re-arm the rigid-anchor hands rebind on StartLoad too.
+    mNativeHandsRigidOnce = 0;
+    mNativeHandsRigidQuiet = 0;
     // render-polish 2026-06-11 (char-render): do NOT blanket-clear the per-member
     // rest-pose snapshot here. StartLoad re-fires repeatedly through the gameplay
     // flow (venue clip/dircut loads, patch recompose, scripts — 5-6x per member,

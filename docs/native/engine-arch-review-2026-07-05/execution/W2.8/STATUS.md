@@ -346,3 +346,106 @@ step-0), not fabricable from the IK_SHARD_VERT far-vert data alone.
 **Artifacts:** `scripts/native/_w28_handsfix_ab.py`,
 `/tmp/w28-handsfix-ab/ab-result.json` (+ raw logs). No engine/BandCharacter edits
 (fence honored; step-0 is measure-only).
+
+---
+
+## B.S3 (W2.8.BL-A1) — IMPLEMENT PER STEP-0 VERDICT — PARTIAL (staged default-OFF; NOT a net win; NOT flipped)
+
+**What step-0 mandated (branch ii):** "BL-A1 must be a per-frame/pose-aware
+correction, NOT a static invBind rebake" — the basis error is POSE-VARYING; the
+distal finger verts fling by R·sin(θ) where θ is a per-frame quantity, and no
+per-bone static rebake (RB3_HANDS_BIND_FIX, RB3_BOUND_REBAKE) can fix it.
+
+**What I built.** `BandCharacter::NativeRepinHandsRigid()` (rb3
+`src/system/bandobj/BandCharacter.cpp`), wired into `Poll()` AFTER
+`Character::Poll()` (skeleton posed) and AFTER `RebindOutfitBonesToOwnSkeleton()`,
+behind a NEW registered **default-OFF** flag **`RB3_HANDS_POSEAWARE`** (opt-in;
+flag-OFF is a getenv-cached early return). It mirrors the **proven, landed
+`RebindInstStringsToRestBasis` rigid-anchor pattern** (same file): scoped to
+hand/finger/glove skin meshes, it repoints every bone — **per L/R side** (step-0
+showed `hands_naked` spans both hands) — to that side's wrist bone
+(`bone_L-hand`/`bone_R-hand`) and rebakes `offset = meshWorld · inv(wristRestChar)`
+using the wrist's **char-space REST** (from `mNativeRestPose`) + its LIVE per-member
+bone (Find), collapsing the multi-bone basis divergence so each hand rides its wrist
+as ONE rigid body. This is NOT the per-bone static rebake step-0 refuted — a rigid
+collapse removes the *relative multi-bone* basis error entirely (the same reason the
+strings rigid path holds ratio ~1.0). Latched per member (`mNativeHandsRigidOnce`),
+re-armed on StartLoad/SyncObjects like the sibling rebinds; each rebound mesh sets
+`RndMesh::mNativeBonesRebound`. Registered in engine
+`NativeCompatFlags.classification.json` (class `feature`, append-only, gen.inc NOT
+regenerated — coordinator does that).
+
+**Gates that PASS.**
+- Build green (rb3-native, clang, `native/build-agent-W2.8`).
+- **flag-OFF byte-identical**: splash **drawlog golden = 792 PASS** (canonical-order)
+  on the agent binary; the A/B flag-OFF arm shows **0 `HANDS_RIGID` lines** and
+  worst appendage `IK_SHARD_VERT wext = 106u` == step-0 baseline (105-107u). Wii
+  path is `#ifdef HX_NATIVE`, literally untouched.
+- flag-ON reaches gameplay (no crash), rigid-anchors fire correctly
+  (`anchorL='bone_L-hand'`, `anchorR='bone_R-hand'` on hands_naked/gloves).
+
+**Gate that FAILS → the honest result (measured, real band path, existing
+`IK_SHARD_VERT` probe, same harness as step-0):** flag-ON is **NOT a net win.**
+
+| metric (worst appendage) | flag-OFF | flag-ON |
+|---|---|---|
+| IK_SHARD_VERT wext | **106u** | **205u** (WORSE) |
+| appendage band DROPs | 0 | 2 |
+| `drivinggloves_resource/skin` wext | 70–84u | **65–67u** (BETTER) |
+| `hands_naked.mesh` wext | 106u | **205u** (worse) |
+| `fingernails_resource.mesh` wext | 86u | **175u** (worse) |
+
+**Root cause of the split (the substantive finding).** The rigid collapse IMPROVES
+**uniformly-authored** meshes (drivinggloves: a glove shell whose verts share a
+near-rigid frame) but **DISTORTS per-bone-authored** meshes (`hands_naked` 38 bones,
+`fingernails`): hand-mesh vertices are authored **per finger bone** (each fingertip
+vert is positioned in its own bone's frame), so forcing every vert through a single
+wrist mapping scrambles them — exactly why the pattern holds for the guitar strings
+(one rigid instrument frame) but not for an articulated hand. An intermediate
+correction (`offset = meshWorld·inv(anchor CURRENT world)`, the literal strings
+formula) was strictly worse (593u — it detaches skinned meshes to bind-local because
+their `meshWorld` is identity); the committed version uses the char-space REST like
+the proven head-rebind, which is why gloves improve — but the per-bone-authoring
+distortion is intrinsic to any static rigid collapse.
+
+**This EMPIRICALLY CONFIRMS step-0**: no static rebake — a rigid collapse included —
+fixes the pose-varying multi-bone shard for **articulated** hand meshes. The
+committed flag is therefore a **staged study flag, default-OFF, and MUST NOT be
+flipped** (it fails the Wave-7 numeric gate: worst 205u is in the 200-460u
+STOP-TRIPWIRE band, and it adds 2 drops). It is kept — like the sibling
+`RB3_HANDS_BIND_FIX`/`RB3_BOUND_REBAKE`/`RB3_SKEL_REBIND_FULL` study flags — as a
+concrete hook + a recorded negative so the next wave does not re-derive it, and it
+is a real partial positive for uniform glove shells.
+
+**The faithful fix (design, for BL-A1-next / engine backlog).** Preserve each bone's
+own rest position but drive only the DELTA by the wrist, i.e. a **per-frame
+conjugation**: bind every side bone to the wrist LIVE bone and set, per frame,
+`offset_b = wristDelta · restSkin_b · inv(wristLiveWorld)` where
+`wristDelta = wristLiveWorld · inv(wristWorldRest)` and `restSkin_b` is bone b's
+CORRECT at-rest skin (`meshWorld·inv(restChar_b)·(rootWorld·restChar_b)`). This
+keeps the authored hand shape (no per-bone distortion) AND rides the wrist rigidly
+(no finger articulation) — a true per-frame correction. It needs (a) per-frame
+recompute (wristLiveWorld changes), (b) the char-root world to reconstruct
+`restSkin_b` (uncertain placement convention — needs the engine skinning path), and
+(c) the **dual-skin engine probe** as its numeric gate (asDrawn-vs-corrected at the
+same vert; the BL-A2 oracle's `RealPathFixture` arm) — all engine-side, **out of
+Lane B's fence** (Lane A owns the engine render TUs). The fully faithful,
+finger-ARTICULATING fix remains the **CharBones pose-pipeline basis** correction
+(make the per-member skeleton carry the authored basis) — a different engine
+subsystem, the long-deferred C8 root cause.
+
+**Backlog filed:**
+- **BL-A1-next (engine):** the per-frame conjugation above + its dual-skin numeric
+  gate. Reuses this lane's rigid-anchor scoping/side-detection; upgrades the static
+  bake to a per-frame `restSkin_b·wristDelta` transport. Owner: engine skinning path
+  (draw-time or Poll-time with the char-root world available).
+- **BL-A0 (faithful):** CharBones per-member-skeleton basis correction (C8
+  pose-pipeline) — finger articulation without shard. Deepest, highest-value.
+- **BL-B1 (low, unchanged):** named-member torso transparency recheck.
+
+**Artifacts:** rb3 `src/system/bandobj/BandCharacter.{h,cpp}` (NativeRepinHandsRigid
++ members + Poll wire + latch re-arms); `scripts/native/_w28_poseaware_ab.py` (A/B
+harness, reuses step-0 machinery); engine
+`NativeCompatFlags.classification.json` (RB3_HANDS_POSEAWARE row);
+`/tmp/w28-poseaware-ab/ab-result.json` (measurement). Checkpoint
+`/tmp/wave7-checkpoints/B-S3.json`.
