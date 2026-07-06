@@ -111,3 +111,89 @@ DEVIATIONS from PLAN name-guidance (all site-verified):
   = probe") — the site is behavior, not a print.
 
 No src/ edits. classification.json NOT touched (S4 merges). No gen regen.
+
+## W0.6b.S3 — done
+Staging: `execution/W0.6b/classified-S3.json` (44 rows). Commit `c081175b`.
+All 44 flags re-scanned (fresh `native_compat_census.py scan --json`), confirmed present + still
+absent from `classification.json` (site-verified read, not name-based). Verify: parses; count==44;
+keys==S3 set exactly; classes all valid (`probe`); required fields (`class`/`owner`/`faithfulStatus`)
+present on every row.
+
+Result: **all 44 classify as `probe`, default-off** — every call site was read and confirmed to only
+print/collect (`fprintf`/`MILO_LOG`) or, in one case, dump raw PCM to disk (`RB3_DUMP_STEMS`, a
+side-channel file write with no effect on the mix path). None gate rendering, physics, load order, or
+any other shipped behavior. No reclassification to `workaround` was needed.
+
+One near-miss checked closely: `MENU_VOID_SKIP` (`Draw.cpp:69`) DOES change what gets drawn (an
+opt-in comma-substring skip-draw list), which looks workaround-shaped. Kept as `probe` per PLAN
+guidance — it is a name-substring A/B research tool for isolating which drawable paints a given
+hub-backdrop region, not a shipped fix; the actual shipped fixes in the same function
+(worldcenter-occluder skip, `bottom_square_refraction` skip) are unconditional and already covered by
+S2's `RB3_MENU_VOID_FIX_OFF`/`RB3_REFRACTION_FIX_OFF` rows. Same category as S1's `RB3_NO_CLIP`-style
+bisection-disable probes.
+
+Five flags are dual-site with independent, unrelated print statements sharing one env-var name
+(coincidental reuse, not shared state): `CAM_DBG` (TrackDir.cpp highway-cam pose dump + engine
+Rnd_Wgpu_RB3.cpp pipeline-prewarm timing), `CHAR_DBG` (engine RB3MaterialBinder.cpp outfit-texture
+report + BandDirector.cpp LoadCharacters re-run log), `RB3_PREWARM_DBG` (game UIScreen.cpp prewarm
+schedule log + engine Rnd_Wgpu_RB3.cpp A5 pipeline-warm timing), `RB3_STATS_DBG` (File.cpp MetaPerformer
+integrity bisect + Mesh.cpp VertVector stomp-ring recorder), `VENUE_DBG` (BandDirector.cpp, 5 sites,
+all logging the same EnterVenue force-load bridge; shares its last two lines with `CAMDIR_DBG` and
+`CHAR_DBG`, which are themselves aliases of the same VENUE_DBG log calls, not separate gates). One
+sidecar row covers all sites/roots for each, as instructed.
+
+`read` mode: 11 flags are `value` (bone/clip-type/system-name substrings or a raw path string:
+`BAND_ANIM_BONE`, `BAND_ANIM_PROBE`, `CBM_DBG2`, `CHARDRV_PROBE`, `MENU_VOID_DBG2`, `MENU_VOID_SKIP`,
+`MESH_BONE_DBG`, `PART_INIT_DBG`, `PART_MOVE_DBG`, `RB3_DUMP_STEMS`, `SERVO_PROBE`); 1 is `truthy`
+(`RB3_READAHEAD_DEBUG`, matches the scanner's own guess); the remaining 32 are `presence`.
+
+No src/ edits (read-only). `classification.json` NOT touched (S4 merges). No `gen` regen run.
+
+### W0.6b.S3 flag to class to one-line reason (44 rows, all class=probe, default=off)
+
+| Flag | Owner | Reason |
+|---|---|---|
+| BAND_ANIM_BONE | char/anim | names the bone BAND_ANIM_PROBE samples |
+| BAND_ANIM_PROBE | char/anim | per-frame band-skeleton animation-chain trace |
+| BONE_CLEAR_DBG | skinning | logs CopyBones(0) wiping a non-empty bone list |
+| BONE_LOAD_DBG | skinning | loaded-vs-null-resolved bone counts pre-strip |
+| CAMDIR_DBG | render/camera | logs HarvestDircuts re-run (aliases VENUE_DBG) |
+| CAM_DBG | render/camera | highway game.cam pose dump + engine pipeline-warm timing (2 unrelated sites) |
+| CBM_DBG | skinning | dumps decoded SCALE channel + row lengths per bone |
+| CBM_DBG2 | skinning | dumps quat magnitude / post-rotate det per bone |
+| CBS_DBG | skinning | dumps cached packed-buffer layout vs bytes consumed |
+| CHARDRV_PROBE | char/anim | confirms CharDriver::Poll runs + clip/apply state |
+| CHAR_DBG | render/char-material | outfit diffuse-tex report + LoadCharacters log (2 unrelated sites) |
+| CLOCK_DBG | ui/hud | logs TrackDir::DrawShowing real-time/scroll state |
+| CROWD_REBIND_PROBE | render/crowd | verbose companion to the default-ON crowd rebind |
+| GAME_DBG | bandobj/flow | logs OnFileLoaded + venue-deferred gate inputs |
+| GEM_DBG | render/highway | dumps GemTrackDir surface mesh/mat/tex names |
+| HEAD_REBIND_PROBE | skinning | verbose companion to the default-ON head/hands rebind |
+| IK_TGT_DBG | char/ik | reports far (over 50u) IK hand-target distances |
+| INST_REBIND_PROBE | skinning | verbose companion to the instrument-strings rebind |
+| K9_APPLY_DBG | ui/hud | dumps milo apply handler dispatch state |
+| MENU_VOID_DBG2 | render/ui | render-inert hub-backdrop material dump |
+| MENU_VOID_SKIP | render/ui | opt-in skip-draw A/B research list (not a shipped fix) |
+| MESH_BONE_DBG | skinning | dumps bind-offset determinant per matched mesh |
+| MILO_LOCALE_DBG | utl/locale | traces Localize() token/format resolution |
+| MILO_SETTOKEN_DBG | ui/label | traces UILabel::SetTokenFmtImp resolution |
+| PART_INIT_DBG | render/particles | dumps InitParticle emit branch + direction |
+| PART_MOVE_DBG | render/particles | per-call MoveParticles force/velocity trace |
+| RB3_DUMP_STEMS | audio/stems | opt-in raw PCM stem dump to disk (side-channel write) |
+| RB3_HAIR_DBG | char/hair | reports per-strand collide-hookup counts |
+| RB3_METAMUSIC_DBG | synth/metamusic | logs deferred stream-FX wiring completion |
+| RB3_NOTIFY_ALL | os/debug | console-verbosity toggle (restores NOTIFY dedup) |
+| RB3_PLACEMENT_PROBE | render/placement | dumps crowd instance spXfm for the placement oracle |
+| RB3_PP_PROBE | bandobj/patchmesh | dumps BandPatchMesh WorkVerts entry state |
+| RB3_PREWARM_DBG | load/perf | prewarm schedule log + pipeline-warm timing (2 unrelated sites) |
+| RB3_READAHEAD_DEBUG | load/perf | reports loader queueDepth/kicked counts |
+| RB3_SKINFIX_DBG | skinning | logs outfit skin-diffuse MatSwap rebinds |
+| RB3_STATS_DBG | debug/stomp-watch | MetaPerformer integrity bisect + VertVector stomp ring (2 unrelated sites) |
+| RELOAD_PROBE | bandobj/flow | logs every mid-song band-reload call site |
+| SERVO_PROBE | char/anim | confirms CharServoBone::Poll + bone LocalXfm change |
+| SKEL_REBIND_PROBE | skinning | verbose companion to the outfit skeleton rebind |
+| SKEL_REBIND_SKINPOS | skinning | worst bone-relative skin-position delta metric |
+| STRIDE_PROBE | skinning | dumps compressed-vertex blob read parameters |
+| UISCREEN_DBG | ui/hub | logs UI transition-state + panel exiting/blocked state |
+| VENUE_DBG | bandobj/venue | logs the native EnterVenue force-load bridge (5 sites) |
+| VOIDCUT_DBG | render/camera | logs the sticky last-good-cam voidcut fallback verdict |
