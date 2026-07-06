@@ -48,8 +48,24 @@ void BandConfiguration::SyncPlayMode() {
         BandCharacter *bchar = TheBandWardrobe->FindTarget(
             curtargxfm.targName, TheBandWardrobe->mVenueNames
         );
-        if (bchar)
+        if (bchar) {
             bchar->Teleport(mXfms[i].mWay);
+        }
+#ifdef HX_NATIVE
+        else if (!curtargxfm.targName.Null()) {
+            MILO_WARN(
+                "BandConfiguration::SyncPlayMode: waypoint slot %d targName '%s' did "
+                "not resolve to a BandCharacter (venue targets: '%s' '%s' '%s' '%s') -- "
+                "this member will not be placed",
+                i,
+                curtargxfm.targName,
+                TheBandWardrobe->mVenueNames.names[0],
+                TheBandWardrobe->mVenueNames.names[1],
+                TheBandWardrobe->mVenueNames.names[2],
+                TheBandWardrobe->mVenueNames.names[3]
+            );
+        }
+#endif
     }
 }
 
