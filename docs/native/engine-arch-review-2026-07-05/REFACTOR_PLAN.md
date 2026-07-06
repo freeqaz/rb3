@@ -17,6 +17,18 @@ behavior-preserving extraction · **KEEP** = faithful/sound, do not touch.
 
 ---
 
+> **STATUS (coordinator, 2026-07-06 after Wave 4):** **SYS-1 placement FIXED** — W2.1 landed the
+> skinned-placement contract (`obj.world = WorldXfm()` + bind-relative palette) behind
+> `RB3_PLACEMENT_CONTRACT`, a **vertex-invariant** reorg (0.0000 diff) proven by a crowd-spread
+> oracle (coordinator reproduced RED-off/GREEN-on), engine `609efb7`, pin bumped. Default-OFF; ships
+> at **W2.1-flip (Wave 5)** after subsuming the name-scoped hacks + drum oracle + Dolphin A/B. W2.3
+> refuted (crowd already self-owned; rebind retained). W0.3d froze CharEyes RNG (per-name eps, N=36).
+> **Three worst mesh bug families now have landed fixes behind flags: hands/fingers (W2.2 partly
+> default-ON), crowd/drum placement (W2.1), state-leak (W1.6 shipped).** Open: W2.1-flip (ship it),
+> W0.6b (flag-registry census gap — still doesn't scan rb3/src/system), W0.3d-fix (staged loader-order
+> patch), and **lighting (SYS-4, barely started) is now the biggest open frontier** → W3.1 (fills,
+> DC3-gated) then W3.2 (BoxMap). Then Phase 4 UI. See `execution/README.md` Wave-4 table.
+>
 > **STATUS (coordinator, 2026-07-06 after Wave 3):** **SYS-3 FIXED** — W1.6 replaced the mutable
 > mid-frame scene bind group with an immutable `RB3SceneBinding` threaded via `RB3DrawContext`
 > (engine `6221a56`, pin bumped, verified byte-identical). **Hands/fingers fix (W2.2) LANDED
