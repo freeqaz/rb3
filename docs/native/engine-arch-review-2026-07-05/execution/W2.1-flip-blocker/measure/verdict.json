@@ -1,0 +1,47 @@
+{
+  "verdict": "A/A-variable",
+  "reason": "wash-class capture(s) present in flag-OFF: OFF_01_21131.png(PINK), OFF_06_21083.png(PINK)",
+  "mannwhitney_U": 24.0,
+  "mannwhitney_p": 1.0,
+  "alpha": 0.05,
+  "n_off": 7,
+  "n_on": 7,
+  "off_mean_luma": [
+    0.09451127797365189,
+    0.22860893607139587,
+    0.09256422519683838,
+    0.09278464317321777,
+    0.09674990922212601,
+    0.10319681465625763,
+    0.5699992775917053
+  ],
+  "on_mean_luma": [
+    0.261732280254364,
+    0.08986198902130127,
+    0.5903738141059875,
+    0.08828497678041458,
+    0.2507578730583191,
+    0.4366283118724823,
+    0.09026896208524704
+  ],
+  "off_wash_classes": [
+    "NEARBLACK",
+    "PINK",
+    "NEARBLACK",
+    "NEARBLACK",
+    "NEARBLACK",
+    "NEARBLACK",
+    "PINK"
+  ],
+  "on_wash_classes": [
+    "PINK",
+    "NEARBLACK",
+    "PINK",
+    "NEARBLACK",
+    "PINK",
+    "PINK",
+    "NEARBLACK"
+  ],
+  "off_wash_count": 2,
+  "on_wash_count": 4
+}
