@@ -140,3 +140,76 @@ invariant and fail-red are unaffected.
 **Remains / handoff:** RealPathFixture is armed but SKIPs until S1a (or a follow-up) dumps
 a `bind_fixture.txt` from the in-game rebake point (format in the goldens README). This is
 the plan's best-effort real-path arm; the numeric core is fully covered. No blockers.
+
+## W2.2.S1c — done (hand-closeup capture harness incl. count-in/walkon window)
+Implementer: Sonnet. Build dir `native/build-agent-W2.2` (Clang, reused from S1a/S1b,
+no rebuild needed — harness is a pure Python HTTP-API driver, no source edits).
+
+**Deliverables (all NEW, no shipped-source edits):**
+- `scripts/native/hand-closeup-capture.py` — boots `rb3-native` headless (`RB3_HTTP=1`),
+  reuses the exact frame-timed `RB3_GAME_INPUT` nav script from S1a/`song-end-test.py`
+  (deterministic: `@N:verb` timestamps, not wall-clock) to reach `game_screen`, then pins
+  a venue camera shot via the native-only DTA accessors from `band-closeup-capture.py`
+  (`{rb3_director_disable 1}` + `{rb3_force_shot "<name>.shot"}` + `{rb3_cur_shot}`
+  readback) so every captured frame is framed on the SAME hand-visible shot instead of
+  whatever the auto-director happens to be showing. Tries `HAND_CLOSEUP_SHOTS` in
+  priority order (guitar/bass hand-fret closeups first, then drums/vocals/keys);
+  `coop_g_cg` -> `coop_g_cg.shot` resolved on every boot tested (club-family quickplay
+  venue, same as `band-closeup-capture.py`'s default). Falls back to the free-running
+  auto-director (manifest `shot_pinned: false`) if no candidate resolves in an
+  unfamiliar venue — never hard-fails the run over camera pinning alone.
+- `docs/.../W2.2/goldens/hand-closeup/` — committed golden reference set: 5 fixed-name
+  PNGs (`handcloseup_countin.png`, `handcloseup_walkon.png`, `handcloseup_play_{00,01,02}.png`)
+  + `manifest.json` (per-frame label/frame/songMs/screen/requested+resolved+readback
+  shot/ok). `countin` = `game_screen` entry at songMs~0 (the window the W0.5 lineup gate
+  does NOT frame — memory: "thin-geo count-in shards = pose-independent skinning
+  residual"); `walkon` = mid-count-in (~2.5s in, clock-gated via `autohit` polling on
+  `songMs`, NOT a wall sleep); `play_*` = 3 steady-play frames past note-start.
+
+**Gate evidence:**
+- Live run: pin held every single frame — `cur_shot` == `coop_g_cg.shot` at all 5
+  captures, confirmed again by an explicit pin-held check after the last frame.
+- **The committed `handcloseup_walkon.png` frame already shows a visible hand/finger
+  shard**: during the count-in window the guitarist's hand/fingers render as detached,
+  stick-like geometry projecting away from the wrist (compare to the clean fret-hand
+  in `handcloseup_play_00.png` a few seconds later, same pinned camera angle). This is
+  exactly the reviewer-judged evidence layer 3 of the W2.2 four-layer exit
+  (WAVE3_REVIEW Amendment B1) needs for S3/S4, and independently corroborates S1a's
+  CHARACTERIZATION.md finding of a marginal head/hand-region residual in the count-in
+  window (this is visual confirmation of a real, camera-visible artifact — worth S2/S3
+  scrutiny even though S1a scored it MARGINAL-GRAZE numerically, not HARD-SHARD).
+- **Determinism check (ran the harness twice):** both runs produced the identical
+  5-label set (`countin`/`walkon`/`play_00`/`play_01`/`play_02`), the same camera pin
+  (`coop_g_cg` -> `coop_g_cg.shot`, held every frame both runs), and closely matched
+  `songMs` windows per label (e.g. walkon 2523.7ms vs 2583ms — within the autohit
+  polling granularity of the `advance_to_songms` clock gate). Per-pixel content is NOT
+  byte-identical run-to-run (`visual_diff.py` shows 86-98% differing pixels) — this
+  traces to quickplay randomizing the band member/outfit lineup on each boot, the
+  SAME run-to-run characteristic S1a's CHARACTERIZATION.md already documented ("quickplay
+  picks different characters/outfits run-to-run ... but the CLASSES are stable"). This
+  is a pre-existing property of the shared nav path, not introduced by this harness;
+  labels/camera-framing/timing are the stable, comparable axis across runs, matching
+  the S1c exit bar ("frame-stable shots (same labels/positions)").
+
+**PLAN deviation (recorded per protocol):** none material. One clarification: the plan's
+step 1 mentions `RB3_WALKON_SNAP_OFF` "to A/B" the walk-on window — the harness does not
+add a dedicated CLI flag for it; like every other native diagnostic toggle in this repo
+(`SHARD_GUARD_OFF`, `RB3_NO_HEAD_REBIND`, etc.) it is read straight from the inherited
+`os.environ` into the subprocess env, so `RB3_WALKON_SNAP_OFF=1 python3
+scripts/native/hand-closeup-capture.py --out <dirB>` vs an unset run gives the A/B pair
+without any script-side plumbing. Not run as part of this subtask (S1c's job is the
+harness + golden set, not the A/B analysis itself — that's available to S2/S3 on demand).
+
+**Verification commands:**
+```
+python3 scripts/native/hand-closeup-capture.py --verbose
+# re-run to a scratch dir to confirm label/camera stability:
+python3 scripts/native/hand-closeup-capture.py --out /tmp/hc-run2
+```
+
+**Remains / handoff:** none blocking. The golden set is ready for S3 (`S3_MEASURE.md`
+reviewer-judged visual layer) and S4 (default-flip sign-off) to reference directly, and
+the `handcloseup_walkon.png` finding should be read alongside S1a's CHARACTERIZATION.md
+head/hand MARGINAL-GRAZE numbers when S2 scopes its targeted fix.
+
+Commits: `8992549c` (rb3) — `git log --grep='W2.2.S1c'`.
