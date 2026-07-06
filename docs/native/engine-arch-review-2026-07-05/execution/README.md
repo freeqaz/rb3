@@ -39,6 +39,17 @@ Each work item `<KEY>` (e.g. `W0.1`) owns `execution/<KEY>/`:
   W1.1 WGSL externalization. Lane chaining: W1.1 → W0.3 (both edit `Rnd_Wgpu_RB3.cpp`).
 - Wave results are appended below by the coordinator after each workflow completes.
 
+## Pre-dispatch review gate (standing rule, from Wave 3 on)
+
+Before dispatching each wave's workflow, the coordinator writes a `WAVE<N>_KICKOFF.md` (lane
+structure, item briefs, exit gates, explicit risk questions) and **kicks off a Fable subagent to
+review it** (`WAVE<N>_REVIEW.md`) — an independent adversarial pass on sequencing, gate validity,
+concurrent-edit collisions, and mis-parallelization, grounded in file:line. The coordinator adopts
+the amendments (recording acceptance on the kickoff) and only then dispatches. Rationale: the Wave-3
+review caught a mechanically-wrong gate premise (skin/effector goldens run in the DC3-context suite
+and never exercise the rb3 band-rebind path), a file collision (W3.1 ⟂ W1.6 at `WriteSceneUniforms`),
+and a refuted fallback (`setarch -R`) — before a ~5-hour fleet ran on the wrong plan.
+
 ## Wave 1 results (2026-07-05, run `wf_386f9206-c04`, 35 agents)
 
 **6/7 complete with gates green + fail-red proven; W0.3 partial.** Engine advanced
