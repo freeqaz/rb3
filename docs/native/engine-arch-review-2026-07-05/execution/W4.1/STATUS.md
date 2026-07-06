@@ -194,3 +194,71 @@ in-fence source paths at both start and end of this stage.
 `rb3_render_hook.cpp`, or engine files. No classification.json changes.
 
 **Commit:** rb3 (docs-only, this stage's own files) — see commit list below.
+
+## C.S5 — lane verify (Opus) — done — 2026-07-06
+
+Independent whole-lane verification. Fresh rb3-native build under
+`flock /tmp/rb3-native-build.lock cmake --build native/build-native --target rb3-native`
+(green, links current engine HEAD). New harness
+`W4.1/harness/lane-verify-capture.py` boots to each of the three lane screens
+(`RB3_FIXED_CLOCK=1`, 3s settle) and captures an A/A OFF vs A/B ON pair keyed on
+`RB3_HUB_MENU_QUAD_HIDE`. Captures: `/tmp/wave6-cs5-verify/{screen}_{off,on}.png`.
+
+**Subitem (a) main_hub grey quad — FIX CONFIRMED PRESENT.**
+- flag-OFF (`main_hub_off.png`): the opaque light-grey rounded-capsule quad is
+  present mid-screen below "START A ROAD CHALLENGE" (matches the pre-wave
+  `/tmp/wave6-current-state/mainhub_default.png`).
+- flag-ON (`main_hub_on.png`): the quad is **gone**; PLAY NOW / QUICKPLAY /
+  START A ROAD CHALLENGE menu text, the "NEXT MESSAGE (1/1)" MOTD ticker, and the
+  bottom overshell bar are all intact.
+- ROI x[380,895] y[365,410] mean luma **144.7 → 73.5** (quad removed; ON value
+  above the earlier-reported 44.1 only because this boot's venue-backdrop
+  parallax phase places brighter venue geometry — the "PALA" sign / doorway — in
+  the ROI rather than dark sky; the capsule itself is verified absent by eye).
+- Cross-checked vs `images/retail-screenshots/yt_mhKNp9uAT48_menu_hub.png`:
+  retail has no such quad. Matches flag-ON.
+
+**Subitem (b) song_select — VERIFIED CLEAN, no regression.**
+`song_select_off.png`: MUSIC LIBRARY list renders with clean non-overlapping
+header/song/count text (SETLISTS / PARTY SHUFFLE / RANDOM SONG highlighted /
+"123  2 SONGS  0/10" / A / B headers), the random-song "?" art panel (no grey
+placeholder quad below album art), and the thin dark-red scrollbar thumb at the
+right edge — consistent with C.S2-b's "legit scrollbar, not a bug" verdict. ROI
+luma OFF==ON (delta 0.0): the hub flag does not touch this screen.
+
+**Subitem (c) part_difficulty — VERIFIED CLEAN, no regression.**
+`part_difficulty_off.png`: song header ("2. 25 OR 6 TO 4  CHICAGO"),
+"SETLIST (2 SONGS)", Chicago album art, "RIGHTY MODE / SONG DIFFICULTY" panel,
+and "CHOOSE INSTRUMENT / GUITAR / BASS" card all render correctly and stably.
+**No black poster quads** — confirms C.S2-c's "mid-zoom venue backdrop, not a
+widget bug" verdict (this capture has no `part:` press, so no camera zoom into
+the poster wall). (The grey-skinned band member on the right is the separate
+char-skinning lane, not a W4.1 artifact.)
+
+**Cross-screen regression check.** The flag is scoped to `MainHubPanel::Poll`
+(`src/band3/meta_band/MainHubPanel.cpp`) and cannot alter song_select or
+part_difficulty rendering. Whole-frame OFF-vs-ON diffs (song_select ~8%,
+part_difficulty ~12%, main_hub ~73%) are **boot-to-boot animation variance**
+(venue-backdrop parallax + character idle at different frame-arrival phases
+across two separate boots) — NOT the flag; the identical song_select ROI luma
+confirms this. No regression.
+
+**File fence — RESPECTED.** `git show --stat` on all five lane commits:
+- `b537d275` (the fix): only `src/band3/meta_band/MainHubPanel.cpp` (+20 lines,
+  `#ifdef HX_NATIVE`).
+- `69fffdac`/`1665e8e5`/`d04b0076`/`3c145299`: docs + harness under
+  `W4.1/` only.
+- Nothing touches `native/src/rb3_render_hook.cpp` or any engine
+  (`../milo-native-engine/**`) render/gfx file. Engine change is the single
+  append-only classification.json row (engine `8e38e74`).
+
+**Flag registration — CONFIRMED.** `RB3_HUB_MENU_QUAD_HIDE` present in the
+engine `NativeCompatFlags.classification.json` (class `workaround`, default
+`off`, owner `ui/hub`).
+
+**Verdict: whole lane PASSES.** Each claimed fix is visibly present, no
+cross-screen regression, fence respected, flag registered. No fix-forward /
+revert needed.
+
+Captures: `/tmp/wave6-cs5-verify/`. Harness:
+`W4.1/harness/lane-verify-capture.py`.
