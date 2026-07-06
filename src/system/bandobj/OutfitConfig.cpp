@@ -539,6 +539,70 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
             headmesh->SetMat(dir1->Find<RndMat>("head_naked.mat", false));
     }
 #ifdef HX_NATIVE
+    // C8 black-head fix (Wave 6, 2026-07-06). The direct-bind default path above
+    // resolves each skin part's source detail texture with
+    // `dir1->Find<RndTex>("<gender>_<part>_diff.tex", false)` — a NON-recursive
+    // lookup (the bool is `parentDirs`, not recurse-into-subdirs). On the matched
+    // Wii build the character milo flat-merges the head textures into `dir1`, so
+    // the Find hits; on native the merge keeps them in a nested subdir
+    // (`char/main/head/<gender>/gen/head.milo` -> `<gender>_head_diff.tex`,
+    // `head_naked.mat`), which dir1->Find cannot reach. The loop above therefore
+    // leaves every skin material on its AUTHORED diffuse: torso_naked -> dummy_torso
+    // .tex, feet_socks_skin -> dummy_feet.tex (valid flesh fallbacks, so those parts
+    // still render), but head_naked's authored diffuse is NULL. The head then
+    // samples no albedo and shades as flat lit material colour — near-black under a
+    // dim venue (the practice-space "flat black head"), pink under a warm one. Only
+    // the head has no dummy fallback, so recover it specifically: locate
+    // `<gender>_head_diff.tex` anywhere in the character's subdir tree (matching the
+    // Wii-flattened reach) and bind it, leaving the authored skin-tone material
+    // colour intact — exactly what torso/feet already get. Head-only + null-diffuse-
+    // only, so the working parts are untouched. Skipped under RB3_SKIN_RTT (the
+    // composite path binds + paints head_skin_diffuse_output instead) and behind the
+    // RB3_BLACK_HEAD_FIX_OFF opt-out. Wii (#else) build byte-identical (all guarded).
+    static int sBlackHeadFixOff = -1;
+    if (sBlackHeadFixOff < 0)
+        sBlackHeadFixOff = getenv("RB3_BLACK_HEAD_FIX_OFF") ? 1 : 0;
+    static int sHeadFixRtt = -1;
+    if (sHeadFixRtt < 0)
+        sHeadFixRtt = getenv("RB3_SKIN_RTT") ? 1 : 0;
+    if (!sBlackHeadFixOff && !sHeadFixRtt) {
+        // Resolve the head detail texture once (recursively — it and head_naked.mat
+        // are both in the nested head subdir). The native milo merge also SPLITS
+        // head_naked.mat into several distinct instances (the mesh the character
+        // draws samples one, dir1->Find returns another), so fix the material each
+        // drawn `head.mesh` actually samples rather than the dir1->Find copy.
+        const char *headDiffName = MakeString("%s_head_diff.tex", gender);
+        RndTex *headDiff = 0;
+        for (ObjDirItr<RndTex> it(dir1, true); it != 0 && !headDiff; ++it) {
+            if (it->Name() && streq(it->Name(), headDiffName))
+                headDiff = it;
+        }
+        if (!headDiff && dir2 != dir1) {
+            for (ObjDirItr<RndTex> it(dir2, true); it != 0 && !headDiff; ++it) {
+                if (it->Name() && streq(it->Name(), headDiffName))
+                    headDiff = it;
+            }
+        }
+        if (headDiff) {
+            // The drawn head.mesh lives in the outfit dir (dir2), not dir1, so scan
+            // both trees for any `head.mesh` whose material still has a null diffuse.
+            ObjectDir *scanDirs[2] = { dir1, dir2 };
+            for (int d = 0; d < (dir1 == dir2 ? 1 : 2); d++) {
+                for (ObjDirItr<RndMesh> it(scanDirs[d], true); it != 0; ++it) {
+                    if (!it->Name() || !streq(it->Name(), "head.mesh"))
+                        continue;
+                    RndMat *hm = it->Mat();
+                    if (hm && !hm->GetDiffuseTex())
+                        hm->SetDiffuseTex(headDiff);
+                }
+            }
+        } else {
+            MILO_WARN(
+                "%s: %s not found in char tree (black-head fix)", PathName(dir1),
+                headDiffName
+            );
+        }
+    }
     // C8 dark-face fix (2026-07-01): the RUNTIME caller (BandCharacter, sym==skin)
     // invokes this 3-arg SetSkinTextures directly. It wires skin.cfg's MatSwap
     // diffuse sources (mTwoColorDiffuse/mTwoColorInterp) and binds head/torso/legs
