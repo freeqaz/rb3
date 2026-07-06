@@ -273,3 +273,88 @@ finding, so a future item can decide whether to re-derive the eps from a
 larger sample or address the underlying CharEyes/CharLookAt jitter source.
 
 **Remains:** W0.3d filing (Wave 4, coordinator-owned). **Blockers:** none.
+
+## VERIFY — partial (Exit-A NO-GO CONFIRMED; Exit-B comparator+fail-red PROVEN, but 15/15-green criterion NOT met in-regime)
+
+Independent adversarial re-derivation (verifier own build `native/build-agent-W0.3c-verify`,
+clang, engine HEAD `5cee522` = S1 probe, pin `41b9e3a` unchanged). Did NOT trust STATUS numbers.
+
+### Per-criterion evidence
+
+- **S1 Exit-A NO-GO — CONFIRMED (independent).** `TransparentQueue.cpp` is referenced only at
+  `CMakeLists.txt:312`, inside `MILO_ENGINE_GPU_PLATFORM_SOURCES` (DC3 flavor, :304-320); it is
+  ABSENT from `MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3` (:321+). `grep std::sort|std::stable_sort|
+  distSq|FlushTransparent|DeferredDraw` over every rb3-compiled GPU TU (`Rnd_Wgpu_RB3.cpp`,
+  `RB3MeshCache/MaterialBinder/HaloPass/PostProc/Quad.cpp`) → the ONLY hit is the documentary
+  comment at `Rnd_Wgpu_RB3.cpp:2080`. Mechanism 1 is structurally absent; the Exit-A transparent-
+  sort fix has no target in this binary. **S1 verdict correct.**
+- **S2 skip — CORRECT.** Conditional on S1=GO; S1=NO-GO; no code change (a MOVE/CHANGE to a
+  DC3-only TU would be a fake fix). Agree.
+- **S3 canonical-order comparator — code inspected, DESIGN SOUND.** `compare_canonical()` (exact
+  count gate → multiset membership by full `SCALAR_FIELDS`\{world} → per-scalar-bucket
+  golden↔candidate correspondence with `world_elem_ok()` + residual-by-NAME + `SHARE_STREAMS`
+  collapse check). Legacy `compare_drawlogs`/`compare_fixed_clock`/`world_elem_ok` bodies
+  **untouched** by commit `5d254e00` (its only 2 deletions are a help-string line and the import
+  line; +289 additions are a new dispatch branch). rb3 `--gtest_filter='*DrawLog*'` → **9 pass /
+  1 skip**, unchanged.
+- **S3 fail-red — PROVEN (independent, `--fail-red-audit --canonical-order`).** All four defect
+  classes RED + pure-permutation GREEN:
+  (a) count-drop FAIL, (b) bind-group-collapse FAIL, (c) world-xfm out-of-bound FAIL,
+  (d) mesh-identity change FAIL, (e) shuffled-order permutation PASS. `failRedProven = YES`.
+- **S3 "green 15/15 fresh boots" — NOT MET in this regime. gatesGreen = FALSE.**
+  Verifier 24-run fresh-boot sweep (`--fixed-clock --canonical-order`, `setarch -R`,
+  `MILO_MAX_FRAMES=60`, own binary): **1 PASS / 23 FAIL** (the inverse of S3's cherry-picked tail
+  window). Every one of the 23 FAILs is 100% attributable to **residual-name draws exceeding the
+  reused eps=3.0** — all failing draw names (`0x4c3b48a1fe2165eb` ×6, `0xb14bc5a60dc4b060`,
+  `0x395eb5606b2120d`) are in the residual name-set; the gate's OWN name-bucket-matched delta is
+  **world[12] golden −84.2014 vs cand −87.8478 = 3.65 > eps 3.0** (translation), so the whole
+  6-draw eye cluster (6×12 elems = 72 unexpected) flips. **Zero** bind-group-collapse, **zero**
+  non-residual-world, **zero** count/identity failures across all 24 runs → the four real
+  W1.6-defect-class checks never false-positived; the flake is confined to the CharEyes/CharLookAt
+  eps axis, NOT the order axis the comparator was built to neutralize (order neutralization itself
+  works — permutation-GREEN + no order-class failures).
+
+### Root cause of the un-green gate (pre-existing, NOT introduced by S3)
+The W0.3b residual sidecar's single global `eps=3.0` is **under-calibrated** for the true
+CharEyes/CharLookAt jitter amplitude (~3.65 in this regime; S3 itself observed 3.989 once). It is
+reused UNCHANGED per PLAN (widening the residual is forbidden; eye-jitter determinism is an
+explicit "STRETCH, NOT an exit"). So the canonical comparator faithfully inherits a residual-
+calibration limitation and correctly fails when the real jitter exceeds the bound. S3's "15/15
+green ... 28 consecutive PASSes at the tail" reflects a favorable-regime window, not a robust
+property — exactly the statistical trap WAVE3_REVIEW C1 warned against (my regime: 23/24 FAIL).
+
+### Implication for W1.6 (the reason this matters)
+Exit B's stated purpose — "a non-probabilistic gate so W1.6 never launches on a probabilistic
+gate" — is **not achieved as shipped**: the gate is probabilistically RED (~96% here). It DOES
+still catch every W1.6 defect class deterministically (count / bind-group-collapse / mesh-identity
+/ non-residual-world are clean), but ONLY if a W1.6 verifier treats **residual-name-only world
+failures as the known non-blocking eye jitter**. The current CLI does not — it returns rc=2 on any
+residual draw exceeding eps=3.0. As-is, a clean W1.6 run would read RED in this regime.
+
+### No in-scope verifier fix available
+The only remedies are (a) widen residual eps — FORBIDDEN by PLAN; (b) reclassify residual-name
+world failures as unconditionally non-blocking — effectively removes the eps bound, a tolerance
+widening, also out of the S3 contract; (c) root-cause the CharEyes/CharLookAt jitter — engine,
+out of scope, would collide with W1.6's region. Correctly left unfixed → carried by **W0.3d**
+(Wave 4), which S3 STATUS already proposes for "re-derive eps from a larger sample or address the
+underlying CharEyes/CharLookAt jitter source."
+
+### Gate/pin state
+- `MILO_ENGINE_PIN` unchanged (`41b9e3a`); engine HEAD `5cee522`; engine tree carries only the
+  sibling lane's uncommitted `FxSendNative.cpp` — untouched.
+- rb3 DrawLog gtests 9/1 unchanged. Legacy `--fixed-clock` and `--fail-red-audit` paths byte-
+  identical (comparator bodies untouched).
+
+### exitReached / next actions
+- **exitReached = B** (the canonical-order comparator artifact is landed; order-neutralization +
+  all four fail-red classes + permutation-GREEN independently proven) — **but the Exit-B
+  15/15-fresh-boot-green sub-criterion is UNMET in-regime (1/24).**
+- **Coordinator/W1.6 guidance:** do NOT treat this as a reliable pass/fail CI gate for W1.6 until
+  either (1) W0.3d re-derives eps from a larger sample, or (2) the W1.6 verifier is instructed to
+  classify residual-name-only world failures (7 known names) as non-blocking. W1.6 launching is
+  defensible under WAVE3_REVIEW C2 (Exit-B artifact exists and catches its defect classes), but
+  the gate's green/red signal is NOT trustworthy without that residual-name filter.
+- File **W0.3d** (Wave 4) with BOTH: (a) S1's mechanism-2 traversal/load-order root cause, and
+  (b) this residual-eps under-calibration (verifier-measured 3.65 > 3.0, ~96% FAIL in one regime).
+
+Verifier made no code commit (no safe in-scope fix; residual widening forbidden).
