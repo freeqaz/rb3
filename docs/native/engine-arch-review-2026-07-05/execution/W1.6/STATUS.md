@@ -203,3 +203,147 @@ perturbation; post-revert direct A/B back to **passed=True, 0 unexpected** (rebu
 commit `6221a56` contains only the reverted (byte-identical) code.
 
 **Remains:** S4 (final consolidated sweep + comment cleanup + STATUS append). **Blockers:** none.
+
+## W1.6.S4 — done
+
+**Model:** sonnet. Engine HEAD at S4 start/end: `6221a56` (S3, unchanged — S4 is verification-only;
+no code edit was needed, see "Comment cleanup" below). Pin `41b9e3a` NOT bumped (coordinator bumps).
+rb3 commit: docs-only, this STATUS append (+ landing the previously-uncommitted `PLAN.md`, see
+"PLAN deviation" below), staged `git add docs/native/engine-arch-review-2026-07-05/execution/W1.6/{PLAN.md,STATUS.md}`
+only, under `flock /tmp/rb3-git.lock`.
+
+**Precondition re-confirmed:** `W0.3c/STATUS.md` shows `exitReached = B` (canonical-order comparator
+landed, all four fail-red defect classes + permutation-GREEN independently proven; the 15/15-fresh-boot
+sub-criterion is unmet in-regime but the guidance is explicit: launch W1.6 under the A/B-differential +
+residual-name-filter protocol, which is exactly what S1/S2/S3/S4 did). Gate precondition satisfied.
+
+### 1. Comment cleanup — NO CHANGE NEEDED (verified, not skipped)
+
+`grep -n "mutable\|mSceneBindGroup\|state.leak\|state-leak" src/platform/Rnd_Wgpu_RB3.{cpp,h}` (engine
+repo) — 9 hits, all in `Rnd_Wgpu_RB3.h:51,54,63,207,313,314` and `Rnd_Wgpu_RB3.cpp:1452,1455,2108`.
+Read every hit in context: all of them **already** describe the current immutable-`RB3SceneBinding`/
+`mActiveScene`/`RB3DrawContext`/`SubmitDraw` design, and only name the *former* `mSceneBindGroup`/
+"mutable member" as historical contrast (e.g. `h:313-314` "Replaces the former mutable
+mSceneBindGroup/mSceneOffset pair", `cpp:2108` "not a mutable member read"). S1/S2/S3 evidently already
+did this rewording incrementally as each landed (S1's `mActiveScene` doc-comment, S2's
+"reworded the mActiveScene doc-comment + the halo-replay/HaloDraw comments", S3's `SubmitDraw` header
+comment) — there is nothing stale left to reword. **No commit made for this step** (would be a no-op
+diff). Also checked the wider surface named in S2's PLAN-deviation note: `Rnd_Wgpu.{cpp,h}` /
+`Part_Wgpu.cpp` (DC3 `WgpuRnd`'s own unrelated `mSceneBindGroup`) and `RB3HaloPass.{cpp,h}` (explicitly
+out-of-scope per brief) still say `mSceneBindGroup` — correctly untouched, different class / different
+file per S2's recorded deviation.
+
+### 2. Consolidated verification sweep (S3 HEAD `6221a56`)
+
+**Build:** `native/build-agent-W1.6` (clang) `rb3-native` + `rb3-tests`, incremental rebuild, rc=0 (no
+source changes since S3 — already at S3 HEAD).
+
+**Baseline for A/B:** built a **pre-W1.6** engine worktree at `5cee522` (the engine HEAD entering the
+W1.6 chain, i.e. before S1's first commit `9df8349`) via a detached worktree
+(`milo-native-engine-worktrees/w16-s4-baseline`) + `cmake -B native/build-baseline-W1.6-s4 -S native
+-DMILO_ENGINE_PATH=<worktree>` (no shared-tree mutation; worktree left for reproducibility, can be
+removed). This is the true "pre-W1.6-behavior" baseline the PLAN's E1/E2 ask for (S1-S3 each diffed
+against the *immediately-prior* subtask's build; S4 diffs the **full S1+S2+S3 delta** against the
+untouched engine state in one shot).
+
+**(a) Direct baseline-bin vs S3(HEAD)-bin canonical drawlog A/B (PRIMARY byte-identical proof, S1-S3
+method, one-off driver script using `compare_canonical()` imported from `drawlog-golden.py`):**
+both **888 draws / frame 60**; **passed=True, 0 unexpected**, 202 residual eye-jitter diffs present in
+BOTH (W0.3d CharEyes/CharLookAt class). **Scene bind-group token partition IDENTICAL**: 20 distinct
+tokens, size-multiset `{335,243,92,67,55,25,19,10,9,8,6,4,3,3,3,2,1,1,1,1}` on BOTH builds — no
+a0f98ad-class collapse across the *entire* S1-S3 delta. This is the strongest single proof: the full
+W1.6 chain (signature-return + mirror-collapse + DrawContext/SubmitDraw) is byte-identical at the
+draw-call level end to end.
+
+**(b) 15-run committed-golden canonical sweep + FAIL-class classification table** (one-off driver,
+`--fixed-clock --canonical-order` semantics via `capture_fixed_clock`/`compare_canonical` against the
+committed `splash_screen` golden, 15 fresh boots per binary):
+
+| build | runs OK | draw-counts | unexpected/run (min-max) | FAIL classes (aggregate) |
+|---|---|---|---|---|
+| candidate (W1.6 HEAD `6221a56`) | 15/15 | all 888 | 72-72 | `world-xfm`: 1080 (=72x15), **zero** count/multiset-key/bind-group-collapse/mesh-identity hits |
+| baseline (pre-W1.6 `5cee522`) | 15/15 | all 888 | 0-72 | `world-xfm`: 936 (14 runs x72 + 1 flake run x0), **zero** count/multiset-key/bind-group-collapse/mesh-identity hits |
+
+Every single unexpected failure on **both** builds classifies as `world-xfm` (a `field=world`
+divergence) — **zero** instances of `count-mismatch`, `multiset-key-mismatch`, `bind-group-collapse`, or
+`mesh-identity` on either build. This is the pre-existing W0.3d CharEyes/CharLookAt residual (the eps=3.0
+under-calibration W0.3c/STATUS documented), not a new W1.6 class — **SAME FAIL-class distribution**
+(E2 met). Baseline run 12 landed the documented order-flake (0 unexpected instead of 72 — residual
+bucket assignment shuffling, not a content change; W0.3c/STATUS already characterizes this as +/-2-3
+order-flake, seen here as a full flip on 1/15 baseline runs, still zero non-residual classes). The
+candidate never flaked to 0 in this 15-run sample (72/72 all runs) — consistent with, not contradicting,
+the "flake is in bucket assignment" model (probabilistic, small-N).
+
+**(c) `rb3-tests DrawLogGolden.*`:** 9/10 pass incl. `CatchesBindGroupCollapse` / `CatchesCoLocation` /
+`CatchesDroppedDraw` / `CatchesPipelineChange`; `PopulatesFromRealDrawMesh` GTEST_SKIP -> teardown
+SIGSEGV — pre-existing, identical to every prior subtask's baseline (not W1.6).
+
+**(d) `lineup-gate.py --bin native/build-agent-W1.6/rb3-native`:** **PASS** — `img=PASS segA=PASS
+ratioB=PASS countC=PASS pin=PASS`, 4 frames (coop_g_n03 x2, coop_g_b x2), 0-1 slivers, max_band_ratio
+3.68 — no shard/ratio regression.
+
+**(e) `milo-engine-tests` (DC3-context invariance net), `build-tests`, `ctest -j1`:** **198 pass / 0
+fail / 2 skip** (200 total; `ExtractBik.ExtractSmallest` + `SkinGolden.CaptureGolden` skipped, by
+design). `SkinGolden.*`/`ClipPoseFixture.*` green — no leak into shared draw/skin code.
+
+**(f) Screenshot-hash re-check (PLAN "PRIMARY"), re-verified empirically this subtask (not just cited
+from S1-S3's prior reasoning):** booted the **same** candidate binary twice under `RB3_HTTP=1`, waited
+30 frames past first `/api/health` response, and md5'd `/api/screenshot` at `splash_screen` both times:
+`da86b800...` (2,178,062 bytes, frame 33) vs `6d60bdf7...` (2,167,063 bytes, frame 32) — **different
+md5, different byte count, same screen/same binary**, confirming the wall-clock-driven boot really does
+make two independent live HTTP boots diverge even with zero code change. This empirically re-confirms
+(rather than just repeats) S1/S2/S3's documented substitution: the fixed-clock drawlog A/B (item (a)
+above) is the correct PRIMARY byte-identical proof for this refactor; a raw PNG md5 pair is not usable
+as a gate for this codebase's boot model. Deviation carried forward from S1/S2/S3, now independently
+re-verified in S4.
+
+### 3. S3 fail-red evidence (E3) — carried forward, re-cited, not re-run
+
+Already recorded in `W1.6.S3` above: mis-threading `ctx.scene` from a stale function-`static`
+`RB3SceneBinding` (collapsing 20 distinct per-write scene bindings into 1) drove the direct canonical
+A/B to **passed=False, 299987 unexpected**, every one classified `field=scene golden=distinct
+cand=shared` (bind-group-collapse, non-residual) — draw count unchanged at 888. Reverted before commit.
+S4 did not re-run this (S3's evidence is the authoritative record per PLAN step 5's "record... before
+committing S3 clean"); re-deriving it here would require re-perturbing and re-reverting live source for
+no new information.
+
+### 4. Optional `/refactor-staff` pass — SKIPPED (recorded, not silently dropped)
+
+PLAN step 4 marks this **optional** ("readability only, must not change emitted bytes (re-gate)").
+Given (a) all gates are green end-to-end on the clean S1-S3 code, (b) the comment-cleanup audit in §1
+found the code already reads cleanly (no stale naming), and (c) a readability pass on `SubmitDraw`/
+`RB3DrawContext` would require a full re-gate for a codebase segment that is deliberately minimal
+(PLAN's own design: `SubmitDraw` is one `SetPipeline`/4x`SetBindGroup`/VB/IB/`DrawIndexed` block moved
+verbatim) — judged not worth the re-verification risk for zero functional or clarity gain. Recorded as
+a deliberate skip, not scope creep in either direction.
+
+### PLAN deviation: landed the previously-uncommitted `PLAN.md`
+
+`git log --oneline -- .../W1.6/PLAN.md` showed **zero commits** — the file existed on disk (read and
+followed throughout S1-S4) but was never `git add`ed/committed by the Opus planner stage. Per the
+per-item artifact protocol ("rb3 repo, docs only: PLAN.md + STATUS.md" is the exact files-touched list
+for every W1.6 subtask), staged and committed it alongside this STATUS append so the execution record
+is complete on disk. Content is unchanged from what every subtask (S1-S4) actually read and followed —
+this is a MOVE (untracked -> tracked), not an edit.
+
+### Exit criteria — final check
+
+- **E1 (byte-identical output):** met via the drawlog fixed-clock A/B (draw-call-level, stronger than a
+  screenshot hash for this refactor per the re-verified wall-clock argument in 2(f)); the literal
+  screenshot-md5 form of E1 is not achievable for this codebase's boot model (empirically shown, not
+  just asserted) — carried as a documented, re-verified deviation across S1-S4.
+- **E2 (no new draw-log defect class):** MET — 2(b) table, identical `world-xfm`-only distribution on
+  both builds, zero count/bind-group-collapse/mesh-identity/multiset-key hits on either.
+- **E3 (gate can still see a regression):** MET — S3's fail-red (section 3), non-residual
+  bind-group-collapse, reverted before commit.
+- **E4 (structural fix landed):** MET — `grep -c mSceneBindGroup Rnd_Wgpu_RB3.{cpp,h}` = 0 (S2);
+  `WriteSceneUniforms` returns `RB3SceneBinding` (S1); `mActiveScene` assigned only at the 3 write
+  sites (S1/S2); every draw consumes its binding via `RB3DrawContext`/`SubmitDraw` (S3).
+- **E5 (nets green throughout):** MET — `rb3-tests DrawLogGolden.*` 9/10 (1 pre-existing unrelated
+  SIGSEGV), `lineup-gate.py` PASS, `milo-engine-tests` 198/0/2, on the S4 consolidated sweep.
+
+**W1.6 COMPLETE (S1-S4 all done).** Engine HEAD `6221a56` (`5cee522`->`9df8349`->`01c2642`->`6221a56`
+across the chain; pin still `41b9e3a`, coordinator bumps). No code changes in S4 (verified clean,
+nothing to reword); one docs commit (STATUS append + landing `PLAN.md`). **Blockers:** none.
+**Remains for the coordinator:** bump `MILO_ENGINE_PIN` to `6221a56` (or later) once Wave 3 closes, per
+hard rule 3 (not this agent's job).
