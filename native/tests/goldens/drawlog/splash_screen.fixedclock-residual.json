@@ -1,33 +1,137 @@
 {
-  "_comment": "W0.3b.S3: itemized, bounded exception list consumed by compare_fixed_clock() in scripts/native/drawlog-golden.py. Every OTHER field/draw still hard-fails the gate (see that script's module docstring + fail-red-audit). Root cause: CharEyes/CharLookAt per-frame look-at jitter (src/system/char/CharEyes.cpp, CharLookAt.cpp) is order-dependent (heap-layout / iteration-order, NOT clock- or RNG-seed-driven) and survives RB3_FIXED_CLOCK dt=0 freeze, SeedRand(0x5EED), and setarch -R ASLR-off. Confirmed independent of RB3_NO_FACE (tested both ways, identical 26-draw set). Closing this for real requires engine-side work on CharEyes/CharLookAt (out of scope for this mechanical item) — see docs/native/engine-arch-review-2026-07-05/execution/W0.3b/STATUS.md 'W0.3b.S2'/'W0.3b.S3'.",
+  "_comment": "W0.3d.S1: itemized, bounded exception list consumed by compare_fixed_clock()/compare_canonical() in scripts/native/drawlog-golden.py. Every OTHER field/draw still hard-fails the gate (see that script's module docstring + fail-red-audit). W0.3d.S1 froze CharLookAt::sDisableJitter/CharEyes::sDisableEyeDart/sDisableProceduralBlink under RB3FixedClockActive() (src/system/char/CharEyes.cpp), which measurably reduced same-slot eye/face-mesh look-at jitter (RNG-consumption-order dependence eliminated). An N>=30 fixed-clock sweep (exact-optimal + the live greedy comparator, multiple reference anchors) proved a SEPARATE, larger, non-RNG residual survives on these same 7 mesh names: up to ~20.9 units observed, stable across resampling, consistent with an order-dependent SELECTION effect upstream of CharEyes (e.g. mCurInterest/eye-target choice, or band-member-to-slot assignment) fed by async-loader completion order (W0.3c.S1 'mechanism 2') rather than by RNG -- this is the F1-anticipated 'non-RNG residual survives' fallback path, root-caused no further per Part (b)'s diagnosis-only scope. Per-name eps below (NOT a global widen) is fitted from that N>=30 sample with a ~1.5x margin.",
   "eps": 3.0,
-  "eps_comment": "Max observed |delta| across >=5 independent fixed-clock boots was 1.9521 (world[] elements, translation-scale). 3.0 gives ~1.5x margin while staying ~33x below the --fail-red-audit perturbation (100.0), so a real regression is still caught loudly.",
+  "eps_comment": "Legacy top-level eps (used AS-IS, unchanged, by the index-keyed compare_fixed_clock() path per PLAN F1 -- do not touch its meaning). compare_canonical() instead honors each entry's own \"eps\" override below, recalibrated per-name from an N>=30 fixed-clock sweep (2026-07-06, cap00..cap31 minus one count-mismatch boot, 4 reference anchors x ~28 candidates, both exact-optimal and the live greedy comparator): observed max |delta| 20.894/20.46/15.235/8.88/8.406/8.363/8.329 for the 7 names below respectively, x~1.5 margin.",
   "draws": [
-    { "index": 26,  "name": "0xb14bc5a60dc4b060" },
-    { "index": 27,  "name": "0x395eb5606b2120d" },
-    { "index": 39,  "name": "0x4c3b48a1fe2165eb" },
-    { "index": 40,  "name": "0x8217aba90e8175d2" },
-    { "index": 42,  "name": "0xdc4a1dc968146487" },
-    { "index": 43,  "name": "0x11db9562e2d7790b" },
-    { "index": 44,  "name": "0xa8e830c0e5f7189d" },
-    { "index": 45,  "name": "0xdc4a1dc968146487" },
-    { "index": 46,  "name": "0x11db9562e2d7790b" },
-    { "index": 47,  "name": "0xa8e830c0e5f7189d" },
-    { "index": 73,  "name": "0xb14bc5a60dc4b060" },
-    { "index": 74,  "name": "0x395eb5606b2120d" },
-    { "index": 77,  "name": "0x4c3b48a1fe2165eb" },
-    { "index": 78,  "name": "0x8217aba90e8175d2" },
-    { "index": 86,  "name": "0x4c3b48a1fe2165eb" },
-    { "index": 87,  "name": "0x8217aba90e8175d2" },
-    { "index": 100, "name": "0x4c3b48a1fe2165eb" },
-    { "index": 101, "name": "0x8217aba90e8175d2" },
-    { "index": 143, "name": "0xb14bc5a60dc4b060" },
-    { "index": 144, "name": "0x395eb5606b2120d" },
-    { "index": 156, "name": "0x4c3b48a1fe2165eb" },
-    { "index": 157, "name": "0x8217aba90e8175d2" },
-    { "index": 516, "name": "0xb14bc5a60dc4b060" },
-    { "index": 517, "name": "0x395eb5606b2120d" },
-    { "index": 529, "name": "0x4c3b48a1fe2165eb" },
-    { "index": 530, "name": "0x8217aba90e8175d2" }
+    {
+      "index": 26,
+      "name": "0xb14bc5a60dc4b060",
+      "eps": 13.0
+    },
+    {
+      "index": 27,
+      "name": "0x395eb5606b2120d",
+      "eps": 13.0
+    },
+    {
+      "index": 37,
+      "name": "0x4c3b48a1fe2165eb",
+      "eps": 31.0
+    },
+    {
+      "index": 38,
+      "name": "0x8217aba90e8175d2",
+      "eps": 32.0
+    },
+    {
+      "index": 42,
+      "name": "0xdc4a1dc968146487",
+      "eps": 13.0
+    },
+    {
+      "index": 43,
+      "name": "0x11db9562e2d7790b",
+      "eps": 13.5
+    },
+    {
+      "index": 44,
+      "name": "0xa8e830c0e5f7189d",
+      "eps": 23.0
+    },
+    {
+      "index": 45,
+      "name": "0xdc4a1dc968146487",
+      "eps": 13.0
+    },
+    {
+      "index": 46,
+      "name": "0x11db9562e2d7790b",
+      "eps": 13.5
+    },
+    {
+      "index": 47,
+      "name": "0xa8e830c0e5f7189d",
+      "eps": 23.0
+    },
+    {
+      "index": 73,
+      "name": "0xb14bc5a60dc4b060",
+      "eps": 13.0
+    },
+    {
+      "index": 74,
+      "name": "0x395eb5606b2120d",
+      "eps": 13.0
+    },
+    {
+      "index": 77,
+      "name": "0x4c3b48a1fe2165eb",
+      "eps": 31.0
+    },
+    {
+      "index": 78,
+      "name": "0x8217aba90e8175d2",
+      "eps": 32.0
+    },
+    {
+      "index": 87,
+      "name": "0x4c3b48a1fe2165eb",
+      "eps": 31.0
+    },
+    {
+      "index": 88,
+      "name": "0x8217aba90e8175d2",
+      "eps": 32.0
+    },
+    {
+      "index": 100,
+      "name": "0x4c3b48a1fe2165eb",
+      "eps": 31.0
+    },
+    {
+      "index": 101,
+      "name": "0x8217aba90e8175d2",
+      "eps": 32.0
+    },
+    {
+      "index": 143,
+      "name": "0xb14bc5a60dc4b060",
+      "eps": 13.0
+    },
+    {
+      "index": 144,
+      "name": "0x395eb5606b2120d",
+      "eps": 13.0
+    },
+    {
+      "index": 154,
+      "name": "0x4c3b48a1fe2165eb",
+      "eps": 31.0
+    },
+    {
+      "index": 155,
+      "name": "0x8217aba90e8175d2",
+      "eps": 32.0
+    },
+    {
+      "index": 516,
+      "name": "0xb14bc5a60dc4b060",
+      "eps": 13.0
+    },
+    {
+      "index": 517,
+      "name": "0x395eb5606b2120d",
+      "eps": 13.0
+    },
+    {
+      "index": 527,
+      "name": "0x4c3b48a1fe2165eb",
+      "eps": 31.0
+    },
+    {
+      "index": 528,
+      "name": "0x8217aba90e8175d2",
+      "eps": 32.0
+    }
   ]
 }

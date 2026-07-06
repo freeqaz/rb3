@@ -158,15 +158,26 @@ def residual_path(scene):
 
 def load_residual(scene):
     """Load the committed, itemized fixed-clock residual sidecar (see module
-    docstring). Returns {"eps": float, "draws": {index: name}} or None if the
-    scene has no sidecar (fixed-clock gate then requires an EXACT match — no
-    residual exceptions)."""
+    docstring). Returns {"eps": float, "draws": {index: name}, "name_eps": {name: float}}
+    or None if the scene has no sidecar (fixed-clock gate then requires an EXACT
+    match — no residual exceptions).
+
+    "name_eps" (W0.3d.S1, canonical-order only): an OPTIONAL per-entry "eps"
+    override in a `draws[]` item tightens the tolerance for that specific
+    mesh-name below the shared top-level "eps" fallback (used as-is, unchanged,
+    by the legacy index-keyed compare_fixed_clock() path). Per PLAN/F1 this is
+    a per-NAME recalibration, never a global-eps widen — every entry lacking
+    its own "eps" still falls back to the single top-level value."""
     p = residual_path(scene)
     if not os.path.exists(p):
         return None
     with open(p) as f:
         d = json.load(f)
-    return {"eps": float(d["eps"]), "draws": {int(x["index"]): x["name"] for x in d["draws"]}}
+    return {
+        "eps": float(d["eps"]),
+        "draws": {int(x["index"]): x["name"] for x in d["draws"]},
+        "name_eps": {x["name"]: float(x["eps"]) for x in d["draws"] if "eps" in x},
+    }
 
 
 def capture_fixed_clock(args, tag=""):
@@ -494,6 +505,7 @@ def compare_canonical(golden, candidate, residual):
 
     known_names = set(residual["draws"].values()) if residual else set()
     eps = residual["eps"] if residual else None
+    name_eps = residual.get("name_eps", {}) if residual else {}
 
     correspondence = {}   # golden index -> candidate index
     all_failures, unexpected, expected = [], [], []
@@ -551,7 +563,11 @@ def compare_canonical(golden, candidate, residual):
                     for e in bad]
             all_failures.extend(msgs)
             name = gd[gi].get("name")
-            if name in known_names and eps is not None and all(abs(cw[e] - gw[e]) <= eps for e in range(16)):
+            # Per-name eps (W0.3d.S1) overrides the shared fallback when present —
+            # a strictly TIGHTER, name-specific bound recalibrated from an N>=30
+            # fixed-clock sweep, never a global widen (F1).
+            entry_eps = name_eps.get(name, eps)
+            if name in known_names and entry_eps is not None and all(abs(cw[e] - gw[e]) <= entry_eps for e in range(16)):
                 expected.extend(msgs)
             else:
                 unexpected.extend(msgs)

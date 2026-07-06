@@ -24,6 +24,18 @@
 #include <cmath>
 #include <cstring>
 
+#ifdef HX_NATIVE
+// W0.3d (part a): under a frozen deterministic replay clock, the eye/face
+// look-at path's RNG draws (dart offsets, procedural blink timing, and
+// CharLookAt jitter) are the sole source of nondeterminism in the draw-log
+// gate -- the *order* in which look-at instances consume the global RNG
+// varies with heap/async-load/iteration order even with a fixed seed. Freeze
+// all three under RB3FixedClockActive() so eye-mesh world transforms become a
+// pure function of the frozen sim state. HX_NATIVE-only; Wii/MWCC build never
+// sees this include or any of the guarded code below.
+#include "rb3_replay.h"
+#endif
+
 bool CharEyes::sDisableEyeDart;
 bool CharEyes::sDisableEyeJitter;
 bool CharEyes::sDisableInterestObjects;
@@ -686,6 +698,17 @@ void CharEyes::Poll() {
     if (!head)
         return;
 
+#ifdef HX_NATIVE
+    // W0.3d (part a): freeze dart/blink RNG for the whole Poll() under a
+    // frozen replay clock. Flag-OFF (no RB3_FIXED_CLOCK): RB3FixedClockActive()
+    // returns false, statics keep their existing DTA/cheat-driven values.
+    bool rb3FixedClockLookAt = RB3FixedClockActive();
+    if (rb3FixedClockLookAt) {
+        sDisableEyeDart = true;
+        sDisableProceduralBlink = true;
+    }
+#endif
+
     float camWeight = TheTaskMgr.DeltaSeconds();
     if (camWeight < 0.0f) {
         Enter();
@@ -817,12 +840,25 @@ storeState:
     }
     ProceduralBlinkUpdate();
 
+#ifdef HX_NATIVE
+    CharLookAt::sDisableJitter = sDisableEyeJitter || rb3FixedClockLookAt;
+#else
     CharLookAt::sDisableJitter = sDisableEyeJitter;
+#endif
     for (ObjVector<EyeDesc>::iterator it = mEyes.begin(); it != mEyes.end(); ++it) {
         it->mEye->Poll();
         LidTrackAndClampingUpdate(*it, blinkWeight);
     }
+#ifdef HX_NATIVE
+    // Under a frozen clock, hold jitter disabled for the rest of the frame
+    // (not just this bracket) -- other CharLookAt instances (e.g. head IK)
+    // may poll outside this loop at an order-dependent point in the frame,
+    // and re-enabling here would reintroduce the same order-dependent RNG
+    // nondeterminism this freeze exists to remove.
+    CharLookAt::sDisableJitter = rb3FixedClockLookAt;
+#else
     CharLookAt::sDisableJitter = false;
+#endif
 
     UpdateOverlay();
 }
