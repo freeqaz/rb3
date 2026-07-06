@@ -277,6 +277,55 @@ public:
         }
         return p;
     }
+
+    // ------------------------------------------------------------------------
+    // Debug-probe name classifiers (W1.7.S4, Bucket A). Each answers a single
+    // asset-name question for a stderr-only diagnostic probe; the engine keeps
+    // the probe's env-flag gate, throttling, and all fprintf computation. See
+    // GameRenderHook.h for the per-method rationale.
+    // ------------------------------------------------------------------------
+
+    // CAM_DBG: highway "key" meshes (prism_gem / gem_smasher / surface).
+    bool IsCamDbgHighwayMesh(const char* meshName) override {
+        return meshName && (std::strstr(meshName, "prism_gem") ||
+                            std::strstr(meshName, "gem_smasher") ||
+                            std::strstr(meshName, "surface"));
+    }
+
+    // HUB_BAR_PROBE: focused-menu highlight-bar mesh names.
+    bool IsHubBarMesh(const char* meshName) override {
+        return meshName && (std::strstr(meshName, "highlight_main") ||
+                            std::strstr(meshName, "highlight_pattern"));
+    }
+
+    // RB3_HEADMAT_DBG: the band-member head mesh.
+    bool IsHeadMesh(const char* meshName) override {
+        return meshName && std::strcmp(meshName, "head.mesh") == 0;
+    }
+
+    // RB3_HEADMAT_DBG: the composited skin RTT diffuse output texture.
+    bool IsSkinDiffuseOutputTex(const char* texName) override {
+        return texName && std::strstr(texName, "skin_diffuse_output") != nullptr;
+    }
+
+    // GEM_VTX / GEM_FORCE: gem prism mesh.
+    bool IsGemMesh(const char* meshName) override {
+        return meshName && std::strstr(meshName, "prism_gem") != nullptr;
+    }
+
+    // BONE_PROBE: default outfit-mesh name set (when BONE_PROBE_NAME unset).
+    bool IsBoneProbeDefaultMesh(const char* meshName) override {
+        return meshName && (std::strstr(meshName, "plaidshirt") ||
+                            std::strstr(meshName, "trackjacket") ||
+                            std::strstr(meshName, "shirt") ||
+                            std::strstr(meshName, "jacket") ||
+                            std::strstr(meshName, "vestdenim"));
+    }
+
+    // XBONE_TRACK: fixed trackjacket mesh filter.
+    bool IsTrackjacketMesh(const char* meshName) override {
+        return meshName && std::strstr(meshName, "trackjacket") != nullptr;
+    }
 };
 
 BandRenderHook gBandHook;
