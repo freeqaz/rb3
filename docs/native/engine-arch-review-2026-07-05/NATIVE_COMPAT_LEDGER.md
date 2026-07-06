@@ -5,25 +5,36 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 230  
-**By class:** feature=2, probe=38, unknown=143, workaround=47  
+**Total flags:** 317  
+**By class:** feature=3, probe=38, unknown=229, workaround=47  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 46
 
 | name | class | default | owner | faithful-status | sites |
 |---|---|---|---|---|---|
+| `BAND_ANIM_BONE` | unknown | unknown | unclassified | n/a | 1 |
+| `BAND_ANIM_PROBE` | unknown | off | unclassified | n/a | 1 |
+| `BONE_CLEAR_DBG` | unknown | off | unclassified | n/a | 1 |
+| `BONE_LOAD_DBG` | unknown | off | unclassified | n/a | 1 |
 | `BONE_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
 | `BONE_PROBE_MINFRAME` | probe | off | skinning | n/a: archaeological debug probe (cadence knob for BONE_PROBE) | 1 |
 | `BONE_PROBE_NAME` | probe | off | skinning | n/a: archaeological debug probe | 1 |
 | `C8_EVERY` | probe | unknown | render/c8-faces | n/a: archaeological debug probe cadence knob | 1 |
 | `C8_PROBE` | probe | off | render/c8-faces | n/a: archaeological debug probe (see project_c8_faces memory) | 1 |
-| `CAM_DBG` | unknown | off | unclassified | n/a | 1 |
+| `CAMDIR_DBG` | unknown | off | unclassified | n/a | 1 |
+| `CAM_DBG` | unknown | off | unclassified | n/a | 2 |
+| `CBM_DBG` | unknown | off | unclassified | n/a | 1 |
+| `CBM_DBG2` | unknown | off | unclassified | n/a | 4 |
+| `CBS_DBG` | unknown | off | unclassified | n/a | 1 |
 | `CHAIN_COMPOSE` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHAIN_FORCE` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHAIN_MTX` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHAIN_PROBE` | probe | off | skinning/chain | n/a: archaeological debug probe (chain sim investigation) | 1 |
 | `CHAIN_PROPTEST` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
-| `CHAR_DBG` | unknown | off | unclassified | n/a | 1 |
+| `CHARDRV_PROBE` | unknown | off | unclassified | n/a | 2 |
+| `CHAR_DBG` | unknown | off | unclassified | n/a | 2 |
 | `CHAR_PROBE_DUMP` | unknown | off | unclassified | n/a | 1 |
+| `CLOCK_DBG` | unknown | off | unclassified | n/a | 1 |
+| `CROWD_REBIND_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `DC3_AUDIO_GAIN` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_DUMP_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_DUMP_SECONDS` | unknown | unknown | unclassified | n/a | 1 |
@@ -31,11 +42,20 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `DC3_HTTP_PORT` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_NO_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
 | `DISPLAY` | unknown | unknown | unclassified | n/a | 5 |
+| `GAME_DBG` | unknown | off | unclassified | n/a | 2 |
+| `GEM_DBG` | unknown | off | unclassified | n/a | 1 |
 | `GEM_FORCE` | probe | unknown | render/highway | n/a: archaeological debug probe | 1 |
 | `GEM_VTX` | probe | unknown | render/highway | n/a: archaeological debug probe | 1 |
+| `HEAD_REBIND_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `HOME` | unknown | unknown | unclassified | n/a | 1 |
 | `HUB_BAR_PROBE` | probe | off | ui/hub | n/a: archaeological debug probe | 2 |
 | `IK_SHARD_VERT` | probe | unknown | skinning | n/a: archaeological debug probe | 2 |
+| `IK_TGT_DBG` | unknown | off | unclassified | n/a | 1 |
+| `INST_REBIND_PROBE` | unknown | off | unclassified | n/a | 1 |
+| `K9_APPLY_DBG` | unknown | off | unclassified | n/a | 4 |
+| `MENU_VOID_DBG2` | unknown | off | unclassified | n/a | 2 |
+| `MENU_VOID_SKIP` | unknown | unknown | unclassified | n/a | 1 |
+| `MESH_BONE_DBG` | unknown | off | unclassified | n/a | 1 |
 | `MESH_DUMP` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_AUDIO` | unknown | unknown | unclassified | n/a | 2 |
 | `MILO_AUDIO_BACKEND` | unknown | unknown | unclassified | n/a | 1 |
@@ -52,9 +72,10 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_DEBUG_ARM_CHAIN_DIR` | probe | off | skinning/chain | n/a: archaeological debug probe | 1 |
 | `MILO_DEBUG_ARM_CHAIN_FRAME` | probe | off | skinning/chain | n/a: archaeological debug probe | 1 |
 | `MILO_DEBUG_PIPELINES` | unknown | off | unclassified | n/a | 3 |
-| `MILO_HEADLESS` | unknown | unknown | unclassified | n/a | 8 |
+| `MILO_HEADLESS` | unknown | unknown | unclassified | n/a | 9 |
 | `MILO_HEIGHT` | unknown | unknown | unclassified | n/a | 10 |
 | `MILO_INPUT_SCRIPT` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_LOCALE_DBG` | unknown | off | unclassified | n/a | 1 |
 | `MILO_NORENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_NO_TRANSPARENT_DEFER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_PERF` | unknown | unknown | unclassified | n/a | 1 |
@@ -62,13 +83,17 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_SCREENSHOT_DIR` | unknown | unknown | unclassified | n/a | 2 |
 | `MILO_SCREENSHOT_FRAMES` | unknown | unknown | unclassified | n/a | 2 |
 | `MILO_SCREENSHOT_NAMES` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_SETTOKEN_DBG` | unknown | off | unclassified | n/a | 1 |
 | `MILO_SIMPLE_RENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_VIDEO` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_VIDEO_FPS` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_WIDTH` | unknown | unknown | unclassified | n/a | 10 |
 | `PART_DBG` | unknown | off | unclassified | n/a | 1 |
+| `PART_INIT_DBG` | unknown | off | unclassified | n/a | 1 |
+| `PART_MOVE_DBG` | unknown | off | unclassified | n/a | 1 |
 | `PART_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `POS_DUMP_VERBOSE` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_APPLY_HANDLER_FIX_OFF` | unknown | on | unclassified | n/a | 2 |
 | `RB3_ASYNC_OPEN_OFF` | workaround | on | load/io | not-live: async file-open default-ON | 2 |
 | `RB3_AUDIO_LATENCY_MS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_AUDIO_LAT_MAX_MS` | unknown | unknown | unclassified | n/a | 2 |
@@ -78,6 +103,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_BAND_SHARD_WORLDCAP` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BAND_SHARD_WORLDFLOOR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BC_TEX_OFF` | workaround | on | render/texture | not-live: block-compressed texture path default-ON | 1 |
+| `RB3_BILLBOARD_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_BLOOM_BLEND` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BLOOM_OFF` | workaround | on | render/bloom | not-live: synthetic bloom pass default-ON | 1 |
 | `RB3_BLOOM_SCALE` | unknown | unknown | unclassified | n/a | 1 |
@@ -87,8 +113,10 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_BOOT_BUNDLE_OFF` | workaround | on | load/perf | not-live: boot asset bundle default-ON (see project_web_loadperf_findings memory) | 2 |
 | `RB3_BOOT_IO_STATS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BOOT_NO_RESIDENCY_SKIP` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_BOUND_REBAKE` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BUILD_SHA` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_CAM_DIR` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_CAM_FALLBACK_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_CHAR_REAL_LIGHT_OFF` | workaround | on | render/lighting | not-live: real-key character lighting approximation default-ON (see project_c8_faces memory) | 1 |
 | `RB3_CLEAR_COLOR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_COMPOSE_MULT_OFF` | workaround | on | render/compose | not-live: composite-blend multiply-fallback default-ON (see project_c8_faces memory) | 1 |
@@ -101,6 +129,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_DRAWORDER_TRACE` | probe | off | render/determinism | n/a: transparent/text queue pre/post-sort submission-order trace (W0.3c.S1 order-flake attribution) | 2 |
 | `RB3_DRAWRECT_DBG` | unknown | off | unclassified | n/a | 1 |
 | `RB3_DTA_OVERLAY` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_DUMP_STEMS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_FAKE_ASYNC_OPEN_MS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_FIXED_CLOCK` | feature | off | session-telemetry/determinism | n/a: headless-determinism harness flag (off in shipping runs) — trace-free fixed sim clock | 1 |
 | `RB3_FIXED_CLOCK_DT_MS` | feature | off | session-telemetry/determinism | n/a: headless-determinism harness value knob (fixed per-frame sim dt in ms; off = built-in 1/60s default) | 1 |
@@ -118,6 +147,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_GPU_SMOKE` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_GPU_SMOKE_PNG` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_GUARD_EXEMPT_REBOUND` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_HAIR_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_HANDS_BIND_FIX` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_HEADMAT_DBG` | unknown | off | unclassified | n/a | 5 |
 | `RB3_HEAP_TRIM_FRAMES` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_HEAP_TRIM_OFF` | workaround | on | load/perf | not-live: periodic heap trim default-ON | 1 |
@@ -131,6 +162,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_HTTP_PORT` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_INPUT_DEBUG` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_INPUT_VERB_TIMEOUT` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_INST_STRINGS_MODE` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_INTRO_SECS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_ISOLATE_MESH` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_JOYPAD_SEQ` | unknown | unknown | unclassified | n/a | 1 |
@@ -139,7 +171,15 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_LIM_ATTACK_MS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_LIM_BYPASS` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_LIVE_LOAD` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_LOADER_BUDGET_MS` | unknown | unknown | unclassified | n/a | 2 |
+| `RB3_LOADER_MIN_YIELD_MS` | unknown | unknown | unclassified | n/a | 2 |
+| `RB3_LOADER_READAHEAD` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_LOADER_YIELD_MS` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_MENU_VOID_FIX_OFF` | unknown | on | unclassified | n/a | 1 |
+| `RB3_MESH_FREE` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_MESH_VERBOSE` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_METAMUSIC_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_METAMUSIC_SYNC` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_MOGG_CACHE_DBG` | unknown | off | unclassified | n/a | 1 |
 | `RB3_MOGG_CACHE_MB` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_MOGG_RANGE_OFF` | workaround | on | load/audio | not-live: Range-backed mogg streaming default-ON (see project_incremental_load_perf memory) | 2 |
@@ -147,16 +187,29 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_MTRACE_WRAP` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_MTRACE_WRAP_OUT` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_NOISE_OFF` | workaround | on | render/post | not-live: post-process noise approximation default-ON | 1 |
+| `RB3_NOTIFY_ALL` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_NO_AV_CALIBRATION` | workaround | on | av/calibration | not-live: A/V calibration bypass default-ON | 1 |
+| `RB3_NO_CLIP` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_NO_CROWD_INTRO` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_NO_CROWD_REBIND` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_NO_DEFORM` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_NO_DEFORM_LOAD` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_NO_FACE` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_NO_GUEST_PROFILE` | workaround | on | profile | not-live: guest profile workaround default-ON | 1 |
+| `RB3_NO_HEAD_REBIND` | unknown | unknown | unclassified | n/a | 2 |
+| `RB3_NO_HEAD_SHAPER` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_NO_HUB_BAR_PLACEMENT_FIX` | workaround | on | ui/hub | not-live: hub bar placement fix default-ON (see project_walkon_countin_pose family) | 1 |
 | `RB3_NO_HUB_BAR_SHARD_EXEMPT` | workaround | on | ui/hub | not-live: hub bar shard-guard exemption default-ON | 1 |
 | `RB3_NO_HUB_HIGHLIGHT_FIX` | workaround | on | ui/hub | not-live: hub highlight fix default-ON | 1 |
+| `RB3_NO_IK` | unknown | unknown | unclassified | n/a | 10 |
+| `RB3_NO_INST_REBIND` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_NO_MESH_CACHE` | workaround | on | render/mesh-cache | not-live: mesh cache default-ON (see project_songlib_web_crash_charpreview memory) | 1 |
+| `RB3_NO_POSEMESHES` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_NO_PRECLEAR` | workaround | on | render/mesh-cache | not-live: pre-clear-before-draw workaround default-ON | 1 |
 | `RB3_NO_SETLIST_FIX` | workaround | on | ui/setlist | not-live: setlist fix default-ON (opt-out name) | 1 |
 | `RB3_NO_SFX` | workaround | off | audio | not-live: retail-disabled-SFX-payload compat default-OFF (truthy opt-in disables SFX; see PLAN.md Key-facts-4) | 1 |
 | `RB3_NO_SKEL_REBAKE` | workaround | on | skinning | not-live: skeleton rebake workaround default-ON (opt-out name; ON means workaround active) | 1 |
+| `RB3_NO_SKEL_REBIND` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_NO_SKEL_WORLDFIX` | workaround | on | skinning | not-live: skeleton world-xfm fix default-ON | 1 |
 | `RB3_NO_SKIN_CLAMP` | workaround | on | skinning | not-live: skin-position clamp default-ON | 1 |
 | `RB3_NO_STEM_ANCHOR` | workaround | on | skinning | not-live: stem-anchor workaround default-ON | 1 |
@@ -169,11 +222,18 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PIPELINE_PREWARM_NOCHUNK` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_PIPELINE_PREWARM_OFF` | workaround | on | load/perf | not-live: GPU pipeline prewarm default-ON (see project_incremental_load_perf memory) | 1 |
 | `RB3_PIPELINE_PREWARM_PER_FRAME` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_PLACEMENT_CONTRACT` | feature | off | render/placement | not-live: SYS-1 skinned-placement contract (obj.world=meshWorld + bind-relative palette), default-OFF pending coordinator flip | 1 |
+| `RB3_PLACEMENT_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `RB3_PP_OFF` | workaround | on | render/post | not-live: post-process stack default-ON | 1 |
+| `RB3_PP_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `RB3_PREVIEW_PREFETCH_OFF` | workaround | on | load/perf | not-live: song-preview prefetch default-ON | 1 |
-| `RB3_PREWARM_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_PREWARM_DBG` | unknown | off | unclassified | n/a | 3 |
+| `RB3_PREWARM_NEXT` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_PREWARM_SCREENS` | unknown | unknown | unclassified | n/a | 4 |
 | `RB3_PROGRESSIVE_SHARPEN` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_READAHEAD_DEBUG` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_RECOMPUTE_OFFSETS` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_REFRACTION_FIX_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_RENDER_DBG` | unknown | off | unclassified | n/a | 9 |
 | `RB3_RENDER_MESH` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_RENDER_MESH_PNG` | unknown | unknown | unclassified | n/a | 1 |
@@ -184,6 +244,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_REPLAY_ARENA_BYTES` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_REPLAY_CAPTURE` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_REPLAY_FIXED_CLOCK` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_RESYNC_YIELD_OFF` | unknown | on | unclassified | n/a | 1 |
+| `RB3_REVIEW_LIGHTER_FIX_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_RTT_OFF` | workaround | on | render/rtt | not-live: render-to-texture (e.g. skin composite) workaround default-ON (see project_c8_faces memory) | 1 |
 | `RB3_SAVE_DIR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SCREENMASK_DBG` | unknown | off | unclassified | n/a | 1 |
@@ -191,6 +253,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_SCREEN_BUNDLES_OFF` | workaround | on | load/perf | not-live: per-screen asset bundling default-ON (see project_incremental_load_perf memory) | 1 |
 | `RB3_SCREEN_BUNDLE_NEXT` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SCREEN_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_SCROLLBAR_FIX_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_SCROLLBAR_THUMB_FIX_OFF` | workaround | on | ui/scrollbar | not-live: scrollbar thumb-position fix default-ON | 1 |
 | `RB3_SESSION_TRACE` | unknown | off | unclassified | n/a | 1 |
 | `RB3_SETLIST_DBG` | unknown | off | unclassified | n/a | 1 |
@@ -200,10 +263,20 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_SHARPEN_CHUNK_KB` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SHARPEN_DBG` | unknown | off | unclassified | n/a | 2 |
 | `RB3_SHARPEN_PER_FRAME` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_SKEL_REBIND_CALCOFF` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_SKEL_REBIND_FULL` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_SKINFIX_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_SKIN_FIX_OFF` | unknown | on | unclassified | n/a | 1 |
+| `RB3_SKIN_NOCACHE` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_SKIN_RTT` | unknown | unknown | unclassified | n/a | 2 |
+| `RB3_SKIN_TIMING` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SKIP_SKINNED` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SKIP_STATIC` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SMASHER_HALO` | probe | unknown | render/particles | n/a: archaeological debug probe | 1 |
+| `RB3_STATS_DBG` | unknown | off | unclassified | n/a | 2 |
 | `RB3_STREAM_AUDIO_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_STREAM_BUF_SECS` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_STREAM_PREPLAY_CAP_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_STUB_QUIET` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SYNC_XHR_LEGACY` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SYSCFG` | unknown | unknown | unclassified | n/a | 1 |
@@ -212,32 +285,46 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_TIER2_DBG` | unknown | off | unclassified | n/a | 5 |
 | `RB3_TRACE_CHK_EVERY` | unknown | off | unclassified | n/a | 1 |
 | `RB3_TRACK_LIGHT_OFF` | workaround | on | render/lighting | not-live: gameplay-highway synthetic re-lit stack default-ON (see project_a234_emissive_glow memory) | 1 |
+| `RB3_TV3_PLAY_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_UNPACK_CACHE_OFF` | workaround | on | load/perf | not-live: asset-unpack cache default-ON (see project_incremental_load_perf memory) | 1 |
 | `RB3_USE_SCENE_CAM` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_VENUE_FRUSTUM_CULL` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_VENUE_LIGHT_OFF` | workaround | on | render/lighting | not-live: per-environ synthetic venue lighting default-ON (see project_a4_scene_lighting_env_empty memory) | 1 |
 | `RB3_VENUE_POINT_FALLOFF_LEGACY` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_VENUE_PROBE` | probe | off | render/lighting | n/a: archaeological debug probe | 1 |
+| `RB3_VENUE_SYNC` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_VIEWER` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_WALKON_SNAP_OFF` | unknown | on | unclassified | n/a | 1 |
 | `RB3_WEB_OFFMAIN_DBG` | unknown | off | unclassified | n/a | 2 |
 | `RB3_WEB_OFFMAIN_FLOOR_MS` | unknown | unknown | unclassified | n/a | 1 |
-| `RB3_WEB_OFFMAIN_MIX` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_WEB_OFFMAIN_MIX` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_XMA_PREFETCH_OFF` | workaround | on | load/audio | not-live: XMA prefetch default-ON | 1 |
 | `RB3_XMA_VALIDATE` | unknown | unknown | unclassified | n/a | 1 |
 | `REBIND_DRAW_FLING` | probe | unknown | skinning | n/a: archaeological debug probe | 1 |
 | `REBIND_DRAW_SKINPOS` | probe | unknown | skinning | n/a: archaeological debug probe | 1 |
+| `RELOAD_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `RENDER_DBG` | unknown | off | unclassified | n/a | 1 |
+| `SERVO_PROBE` | unknown | off | unclassified | n/a | 1 |
+| `SET_SKEL_REBIND` | unknown | unknown | unclassified | n/a | 1 |
 | `SHARD_BONE_DBG` | probe | off | skinning | n/a: archaeological debug probe (mesh-shard investigation) | 1 |
 | `SHARD_CATCH` | probe | unknown | skinning | n/a: archaeological debug probe | 1 |
 | `SHARD_DBG` | probe | off | skinning | n/a: archaeological debug probe (mesh-shard investigation) | 1 |
 | `SHARD_GUARD_OFF` | workaround | on | skinning | not-live: mesh-shard guard/clamp default-ON | 2 |
 | `SHARD_RATIO_DBG` | probe | off | skinning | n/a: archaeological debug probe | 2 |
 | `SKEL_REBAKE_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
+| `SKEL_REBIND_PROBE` | unknown | off | unclassified | n/a | 2 |
+| `SKEL_REBIND_SKINPOS` | unknown | unknown | unclassified | n/a | 1 |
 | `SKEW_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
 | `SKIN_CLAMP_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
 | `SKIN_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
 | `SLOT_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
 | `SMASH_DBG` | probe | off | render/particles | n/a: archaeological debug probe | 1 |
+| `STRIDE_PROBE` | unknown | off | unclassified | n/a | 1 |
+| `UISCREEN_DBG` | unknown | off | unclassified | n/a | 4 |
+| `VENUE_CAM_LOCK` | unknown | unknown | unclassified | n/a | 1 |
+| `VENUE_DBG` | unknown | off | unclassified | n/a | 5 |
 | `VERT_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
+| `VOIDCUT_DBG` | unknown | off | unclassified | n/a | 1 |
 | `XBONE` | probe | unknown | skinning | n/a: archaeological debug probe | 1 |
 | `XBONE_TRACK` | probe | off | skinning | n/a: archaeological debug probe | 1 |
 | `XDG_STATE_HOME` | unknown | unknown | unclassified | n/a | 1 |

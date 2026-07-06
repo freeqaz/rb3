@@ -84,5 +84,81 @@ was built to catch. **Gate proven RED on the current build.**
   identity), so it is covered by the same span/collocation RED; a drum-specific bone/waypoint
   correlation is deferred to S2's contract work.
 
-## W2.1.S2 — pending
+## W2.1.S2 — done
+
+Landed the coupled placement contract behind ONE engine-registered default-OFF flag
+`RB3_PLACEMENT_CONTRACT`. flag-OFF byte-identical; flag-ON turns the S1 oracle GREEN with the
+band/hands invariance nets green and the wide gameplay shots visually equivalent to flag-OFF.
+
+**Commit (engine `milo-native-engine`, pin NOT bumped — still `6221a56`):**
+- `6852caa` — `src/platform/Rnd_Wgpu_RB3.cpp` (Half A + Half B + shard-guard world-extent fix +
+  cached meshWorld) + `NativeCompatFlags.classification.json` (flag registered, class:feature /
+  read:presence / default:off) + `NativeCompatFlags.gen.inc` (regenerated). `FxSendNative.cpp` left
+  untouched (sibling lane).
+
+**What the contract actually is (empirically determined, per PLAN):** a PROVABLY VERTEX-INVARIANT
+reorganization, NOT a vertex-moving fix. `obj.world = mesh->WorldXfm()` (Half A) + bind-relative
+palette `skin * inverse(meshWorld)` (Half B) gives, for EVERY bone,
+`worldPos = obj.world*(skin*meshWorld^-1)*v = skin*v` — byte-for-byte the flag-OFF result — while
+`obj.world` now records the mesh's real placement. Verified numerically with an in-loop self-check
+(worst element diff **0.0000** across all meshes; ≤1e-4 for the far crowd props at ±1816).
+
+**Key empirical findings (the PLAN's premises were partly wrong; measured with a one-shot
+mesh-world dump + a cancellation self-check, both removed before commit):**
+1. **Character meshes have meshWorld == IDENTITY** (band `head/hands/outfit`, `*_crowd_body*`,
+   `*_extra_*`): their placement lives in world-space BONES, not the mesh world. So the reorg is an
+   exact no-op for them (gated on a non-identity meshWorld) → bit-for-bit identical. Only real
+   non-identity mesh worlds take the reorg: bone-attached PROPS (`fist.mesh` v=(-110,-203,3.6),
+   `bonesandspikes`) and the per-instance CROWD draws that `Draw3DChars` placed via
+   `SetWorldXfm(spXfm)` (`clap`/`lighter` at ±1816, z=-1016).
+2. **The palette's identity FALLBACK bones must also cancel** — the null/runaway/V24/skin-clamp
+   `continue` paths that leave a bone at identity are initialized to `inverse(meshWorld)` (not I)
+   under the flag, else clamped crowd bones fly to `meshWorld*v` while survivors stay at `skin*v`
+   → torn shards whose flung emissive geometry feeds the bloom pass into a **full-screen wash**
+   (observed, then fixed). This was the coupled-half trap the PLAN warned about.
+3. **meshWorld MUST be read ONCE and cached** for both obj.world and its inverse: a later
+   same-draw pass (SKEL_WORLDFIX) re-dirties `WorldXfm()`, so two separate reads don't cancel →
+   reintroduces the shards+wash. Caching the copy was the decisive fix (clean wide shot after).
+4. **The V24 shard guard reads the palette to compute a world bbox** — under the reorg the palette
+   is mesh-relative, so the guard must apply `obj.world` to its blended vertex to measure the TRUE
+   world extent. Gated on the contract arm; flag-OFF path is literally unchanged.
+5. `worldInvTranspose` stays identity for the contract arm (matches the flag-OFF skinned path;
+   for the pure-translation meshWorlds that dominate, normals are byte-identical anyway).
+
+**Gate evidence:**
+- **flag-OFF byte-identical:** `drawlog-golden.py --fixed-clock --canonical-order` → **888 PASS**
+  (canonical multiset match; the ~240-300 divergences are the pre-existing W0.3d CharEyes eye-jitter
+  residual, within bound). `lineup-gate.py` → **PASS all layers** (img/segA/ratioB/countC/pin).
+- **rb3-tests:** `PlacementOracle.*`/`HandsBindOracle.*`/`DrawLogGolden.*` → 18 passed / 3 skipped
+  (live-capture gates).
+- **engine invariance suite:** `milo-engine-tests` (context build `build-agent-W2.1-tests`,
+  `DC3_DATA`+`MILO_LIB`, `ctest -j1`) → **198 pass / 0 fail / 2 skip** (bar met). SkinGolden +
+  ClipPoseFixture green.
+- **census:** `native_compat_census.py check` → **exit 0** (flag registered; regen clean).
+- **flag-ON oracle:** `RB3_PLACEMENT_CONTRACT=1 placement-gate-capture.py` →
+  `PlacementOracle.RealCaptureSpansBowl` **GREEN** — crowd drawn `obj.world` translations == the
+  posed `spXfm` (spans the bowl, distinct clusters). Fail-red proven on the pre-change build in S1.
+- **flag-ON wides clean:** `coop_all_n00` + `coop_dir_crowd` gameplay shots, flag-OFF vs flag-ON,
+  **visually equivalent** — band correctly placed/posed, venue + visible crowd correct, no
+  shards / no wash / no holes. (`/tmp/w21-ab/{off,on}_*.png`.)
+
+**Deviations / notes (no scope creep):**
+- **flag-ON splash canonical is EXPECTED to diverge (888→792 draws).** The records show the SYS-1
+  signature directly: flag-OFF the crowd mesh `0xc57f…` draws 211× ALL at `obj.world=identity`
+  (the co-location); flag-ON it draws 115× **spread** across the bowl (`obj.world = spXfm`,
+  z=-1016). The vertices are invariant (proven), but obj.world now carries real placement, so the
+  far off-screen audience instances flag-OFF wastefully drew at the origin are handled differently
+  (impostor/instance bookkeeping keyed on the now-varying obj.world — NOT the shard guard nor the
+  venue frustum cull, both ruled out). Zero visible impact (the audience is off-screen behind the
+  venue in these pub shots; the wide A/B is identical). This is exactly the exit note's
+  "world axis saturates by design — use the other axes." NOT a hard gate for S2.
+- **gen.inc / ledger regen also refreshed 86 PRE-EXISTING stale `rb3/src` getenv rows** (char-skin
+  probes, loader flags, etc.) from prior lanes that were never regenerated — HEAD's gen.inc/ledger
+  were already census-stale before this change. `SCAN_ROOTS` canonically includes `rb3/src/system`,
+  so the current generated output is 317 rows; committing it is required for `check` exit 0.
+- Name-scoped scrollbar-thumb / hub-bar arms kept structurally intact (flag only rewrites the
+  general `else if (skinned)` arm + its palette); their opt-out-no-op proof is S3's job.
+- Removed all temp diagnostics (`RB3_MESHWORLD_PROBE`, `RB3_NOSTRIP`, `RB3_CANCEL_PROBE`) before
+  commit; no census leakage.
+
 ## W2.1.S3 — pending
