@@ -161,4 +161,98 @@ mesh-world dump + a cancellation self-check, both removed before commit):**
 - Removed all temp diagnostics (`RB3_MESHWORLD_PROBE`, `RB3_NOSTRIP`, `RB3_CANCEL_PROBE`) before
   commit; no census leakage.
 
-## W2.1.S3 — pending
+## W2.1.S3 — done
+
+Full flag-ON exit-evidence package produced with the **B2 A/A verify protocol** (NOT the W1.6-era
+"residual-name world failure = non-blocking" rule). Read-only verify: **no engine source edits**,
+pin NOT bumped (still `6221a56`; build consumed engine HEAD `6852caa` = the S2 contract via the soft
+SHA-pin add_subdirectory). Build: `native/build-agent-W2.1` clean, `rb3-native` + `rb3-tests`.
+
+### flag-OFF (`RB3_PLACEMENT_CONTRACT` unset) — byte-identical, all green
+- **census** `native_compat_census.py check` → **exit 0** (317 flags, regen clean).
+- **splash canonical** `drawlog-golden.py --fixed-clock --canonical-order` → **PASS (888 draws)**,
+  162 known eye-residual divergences within bound (non-blocking).
+- **lineup-gate** → **PASS all layers** (img/segA/ratioB/countC/pin).
+- **rb3-tests** `PlacementOracle.*:HandsBindOracle.*:DrawLogGolden.*` → **18 passed / 3 skipped**
+  (the 3 skips are the live-capture gates).
+- **engine invariance** `milo-engine-tests` (`build-agent-W2.1-tests`, `DC3_DATA`+`MILO_LIB`,
+  `ctest -j1`) → **198 pass / 0 fail / 2 skip** out of 200 (the 2 by-design skips =
+  `SkinGolden.CaptureGolden` + `ExtractBik.ExtractSmallest`). `SkinGolden.*`/`ClipPoseFixture.*` green.
+
+### flag-ON (`RB3_PLACEMENT_CONTRACT=1`) — placement correct
+- **S1 placement oracle** `RB3_PLACEMENT_CONTRACT=1 placement-gate-capture.py` →
+  `PlacementOracle.RealCaptureSpansBowl` **GREEN** — crowd drawn `obj.world` translations == the
+  posed `spXfm`, spans the bowl, distinct clusters (381 draws / 222 skinned, 2610 probe lines).
+- **lineup-gate flag-ON** → **PASS all layers** (band meshes are meshWorld≈I → vertex-invariant).
+- **HandsBindOracle** synthetic green (RealPathFixture is a live-skip).
+
+### B2 A/A discipline — genuine eye-flake re-separated from W2.1 effects (the key deliverable)
+- **A/A determinism, flag-OFF** (3 boots, `--determinism-check 3 --fixed-clock --canonical-order`):
+  counts **888/888/888**, 0 name-set drift.
+- **A/A determinism, flag-ON** (3 boots): counts **792/792/792**, 0 name-set drift — flag-ON is as
+  deterministic as flag-OFF; the 888→792 is the S2-documented off-screen crowd-impostor bookkeeping.
+- **Raw-drawlog per-mesh `obj.world` classification with an A/A control** (splash, fixed-clock, three
+  raw dumps OFF/OFF2/ON):
+  - **A/A (OFF vs OFF2):** exactly **7 meshes** diverge in world, **all non-skinned** — the W0.3d
+    CharEyes/CharLookAt eye-flake residual; 0 name-set diff.
+  - **A/B (OFF vs ON):** **8 meshes** diverge = the same 7 non-skinned eye-flake + **exactly 1 NEW,
+    skinned** = the crowd mesh `0xc57f0ca822`: `obj.world` translation moves `(0,0,0)` → bowl-spread
+    `(-1456.16, 1313.55, -1016.31)`, draw count `211 → 115` — which accounts for the **entire**
+    888→792 delta (211-115=96). **No new world divergence on any non-crowd/non-drum mesh.**
+  - Conclusion: the eye residual is **A/A-invariant** (present OFF-vs-OFF2 and OFF-vs-ON alike) — it
+    is pre-existing eye-flake, NOT a W2.1 effect; W2.1's only draw-stream effect is the crowd mesh.
+    **B2 satisfied without the W1.6 non-blocking rule.**
+
+### song_select hub-bar / scrollbar A/B (mandatory — those injections live in the edited block)
+- Pixel A/B flag-OFF vs flag-ON (depths 0/8/16) is **within boot-nondeterminism**: A/B changed-px
+  16.9/12.5/9.7% vs the A/A(OFF-vs-OFF2) control 15.8/11.9/11.2%, identical maxdelta ≈72; the churn
+  is the animated 3D char-preview panel, not UI.
+- **Visual**: the yellow hub highlight bar sits behind **RANDOM SONG** and the red scrollbar thumb is
+  on the right-edge track — **identical in both flag states**; only the char-preview pose differs
+  (boot phase). **Retail parity, no skew / origin-collapse.**
+  Artifacts: `s3-artifacts/songselect_flag{OFF,ON}_depth00.png`.
+
+### Name-scoped placement-hack opt-outs — the "contract subsumes them ⇒ no-ops" premise is REFUTED
+The S2 implementation gates the contract arm as `sPlacementContract && skinned && !scrollbarThumb &&
+!hubBarPlacement` (engine `Rnd_Wgpu_RB3.cpp:2878-2879`) — the name-scoped UI arms are **excluded**
+from the contract arm and kept structurally intact (R5). Because the contract is **provably
+vertex-invariant** (it reproduces the flag-OFF vertex positions, only recording `obj.world=meshWorld`)
+and the hub-bar/scrollbar meshes are **broken flag-OFF** (that is *why* they need the name-scoped
+translation-inject / bg-world-reuse fix — a genuine vertex **move**), the contract **cannot** subsume
+those UI fixes. Empirically:
+- **`RB3_SCROLLBAR_THUMB_FIX_OFF=1` under flag-ON is NOT a no-op.** Disabling it routes
+  `scrollbar.mesh` into the vertex-invariant contract arm → the flag-OFF broken position. Region diff:
+  scrollbar-thumb area changes **11.14% (max delta 87)** vs **2.12% (max 5)** A/A noise; **visually**
+  the red thumb relocates from the right-edge track to **screen-center (~x=640)**. Artifact:
+  `s3-artifacts/songselect_flagON_SCROLLBAR_OFF_depth00.png`.
+- **`RB3_NO_HUB_BAR_PLACEMENT_FIX`** has the identical code structure (`!hubBarPlacement` exclusion);
+  it is **not observable in song_select** (`highlight_main`/`highlight_pattern` are main_hub meshes —
+  the song_select hub-bar region was A/A-stable, 0.37% ≤ 0.99% A/A). By code symmetry with the
+  empirically-proven scrollbar case it is **NOT a no-op** on main_hub where the bar is drawn.
+- **`RB3_NO_CROWD_REBIND=1` under flag-ON**: the placement **oracle stays GREEN** (obj.world==spXfm is
+  rebind-independent — placement comes from the crowd dir's `SetWorldXfm`), so it is a no-op *for
+  placement*; but it still governs crowd **bone-rebind skinning** (orthogonal to the draw-path
+  contract), so it is **not a full no-op**.
+
+**Conclusion / coordinator directive:** the name-scoped hub-bar / scrollbar arms and the crowd rebind
+**must be RETAINED** (not deleted) at the eventual default-ON flip — the R5 "delete only after proven
+no-op" gate is **not** satisfied for them. This is the safe outcome and **does not block S2's
+default-OFF landing** (flag-OFF byte-identical + flag-ON crowd-correct both proven above). It corrects
+the PLAN/kickoff optimism that flag-ON would make the three opt-outs no-ops.
+
+### Crowd SKIN_CLAMP negative control — unchanged
+`SKIN_CLAMP_PROBE` characterizer (`hands_bind_characterize.py --single default`), flag-ON vs a
+same-build flag-OFF A/A control: the **crowd/extras clamp population is identical** — all 10 crowd
+body meshes + `clap.mesh` + `lighter.mesh` present in both flag states with **equal clamp counts**;
+crowd `skinpos` worst max-delta **2.255u** (boot-phase). The broader clamp-set variation (2 vs 5
+unique `*_resource` hair/outfit meshes, event totals 2819 vs 3794) is **boot-random band-character
+generation** — it appears flag-OFF-vs-flag-ON on the *same* build, so it is not a W2.1 effect. vs the
+committed `W2.2/char/parsed-default.json` baseline the shared-mesh clamp counts are `count-differs=0`.
+
+### Deviations / notes (no scope creep)
+- **Opt-out no-op exit criterion REFUTED** (documented above). Safe R5 outcome; name-scoped arms +
+  crowd rebind retained. This is the one exit-criterion item that did not land as the PLAN premised.
+- Read-only verify: **no engine/rb3-src edits**; only `STATUS.md` + `s3-artifacts/` PNGs added.
+  **Default-ON flip left for a separate coordinator-gated one-line commit (NOT done here)** — and per
+  the directive above, that flip must NOT also delete the name-scoped arms/rebind.
+- All captures used `native/build-agent-W2.1` (never `build-native`/`build-web*`).
