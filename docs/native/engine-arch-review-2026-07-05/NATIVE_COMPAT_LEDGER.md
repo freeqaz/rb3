@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 317  
-**By class:** feature=3, probe=38, unknown=229, workaround=47  
+**Total flags:** 318  
+**By class:** feature=3, probe=39, unknown=229, workaround=47  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 46
 
 | name | class | default | owner | faithful-status | sites |
@@ -120,6 +120,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_CHAR_REAL_LIGHT_OFF` | workaround | on | render/lighting | not-live: real-key character lighting approximation default-ON (see project_c8_faces memory) | 1 |
 | `RB3_CLEAR_COLOR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_COMPOSE_MULT_OFF` | workaround | on | render/compose | not-live: composite-blend multiply-fallback default-ON (see project_c8_faces memory) | 1 |
+| `RB3_CROWD_BONE_PROBE` | probe | off | render/crowd | n/a: W2.3.S1 crowd bone-source seam characterization (owner vs own-bone SKIN_CLAMP extent; SHARED/SELF+POISON decision) | 1 |
 | `RB3_CROWD_DIM` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_CROWD_DIM_OFF` | workaround | on | render/crowd | not-live: crowd-dim heuristic default-ON | 1 |
 | `RB3_CROWD_IMPOSTER_OFF` | workaround | on | render/crowd | not-live: crowd impostor rendering default-ON | 1 |
