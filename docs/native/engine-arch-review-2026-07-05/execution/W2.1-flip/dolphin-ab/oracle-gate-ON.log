@@ -1,0 +1,29 @@
+[placement-gate] launching rb3-native (port 38627); engine log -> /home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/W2.1-flip/dolphin-ab/oracle-capture/engine-38627.log
+[placement-gate] HTTP up
+[placement-gate] game_screen reached
+[placement-gate] is_playing songMs=21222
+[placement-gate] pinned wide shot 'coop_all_n00.shot' (cur_shot='coop_all_n00.shot')
+[placement-gate] drawlog: 385 draws (226 skinned) -> /home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/W2.1-flip/dolphin-ab/oracle-capture/gameplay_crowd.drawlog.json
+[placement-gate] probe: 2640 crowd-instance lines (window) + 4 drum-ref lines (whole log, deduped) -> /home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/W2.1-flip/dolphin-ab/oracle-capture/gameplay_crowd.probe.log
+[placement-gate] running oracle(s): PlacementOracle.RealCaptureSpansBowl:PlacementOracle.RealCaptureDrumPlaced
+Running main() from /usr/src/debug/gtest/googletest-1.17.0/googletest/src/gtest_main.cc
+Note: Google Test filter = PlacementOracle.RealCaptureSpansBowl:PlacementOracle.RealCaptureDrumPlaced
+[==========] Running 2 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 2 tests from PlacementOracle
+[ RUN      ] PlacementOracle.RealCaptureSpansBowl
+[       OK ] PlacementOracle.RealCaptureSpansBowl (15 ms)
+[ RUN      ] PlacementOracle.RealCaptureDrumPlaced
+[       OK ] PlacementOracle.RealCaptureDrumPlaced (12 ms)
+[----------] 2 tests from PlacementOracle (28 ms total)
+
+[----------] Global test environment tear-down
+[==========] 2 tests from 1 test suite ran. (28 ms total)
+[  PASSED  ] 2 tests.
+[placement-gate] CROWD ORACLE GREEN — crowd spread matches spXfm.
+[placement-gate] DRUM ORACLE GREEN — drum kit / band drawn near its band waypoint.
+
+--- stderr ---
+[STUB] first call to _ZN11PlatformMgr13ClearNetErrorEv
+[STUB] first call to _ZN14DataResultListC1Ev
+[STUB] first call to _ZN14DataResultListD1Ev
