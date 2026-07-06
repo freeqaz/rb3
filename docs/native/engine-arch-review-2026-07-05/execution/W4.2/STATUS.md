@@ -196,3 +196,59 @@ full trace.
 Coordinator flips `RB3_UI_TEXT_FLOOR_RELAXED` next once satisfied; no default changed by
 this stage. `RB3_HUB_MENU_QUAD_HIDE` hub-quad flip package is a separate Lane C stage
 (S3), not part of this one.
+
+---
+
+## C-S2 (W4.2-fix) — INDEPENDENT VERIFY — done
+
+**Agent:** Opus, Wave 7 Lane C independent verification. **Date:** 2026-07-06.
+**Engine HEAD built:** `031461a` (the C-S1 fix; pin still `1b045d9`, not bumped —
+soft-pin WARNING only, build links engine HEAD). **Binary:** fresh from-scratch clang
+build `native/build-agent-CS2/rb3-native` (contains `RB3_UI_TEXT_FLOOR_RELAXED`, verified
+via `strings`). **Verdict: FLIP** (recommend coordinator flip `RB3_UI_TEXT_FLOOR_RELAXED`
+default-ON).
+
+### Reproduced all three C.S1 gates (fresh build, flag unset ⇒ OFF)
+
+1. **Flag-OFF byte-identical:** `drawlog-golden.py --bin native/build-agent-CS2/rb3-native
+   --fixed-clock --canonical-order --scene splash_screen` → **PASS, 792/792** (canonical
+   multiset), matching the committed post-flip golden. Confirms the flag-OFF code path is
+   inert (it is textually the prior unconditional `std::max(0.6f, c)` clamp).
+2. **Main-hub selection sweep vs retail** (`_w42-hub-text-capture.py`, down×5, both arms):
+   quantified the focused-item glyph over the gold bar (crop x80-345, y205-262, darkest-
+   quartile mean luma = glyph fill): **flag-ON = 83.4 (dark-on-gold), flag-OFF = 136.0
+   (washed pale)** — a ~53-luma darkening that restores the retail dark-on-gold focused
+   convention (`yt_mhKNp9uAT48_menu_hub.png`: PLAY NOW = black-on-gold). Unselected
+   siblings render bright white in both arms = retail's actual unselected convention
+   (CAREER/TRAINING/etc. are bright white), so the flag-ON result is correct, not a residual.
+3. **Three originally-rescued labels:** news ticker legible both arms (unaffected, already
+   bright pre-floor); **CHOOSE INSTRUMENT re-verified this stage** — reached
+   `part_difficulty_screen` headless both arms (see cross-screen gate below), focused GUITAR
+   improved (dark-on-gold flag-ON), header/song-title all legible; FRIEND RANKINGS still not
+   headless-reachable (network/friends data — same documented limitation, not a new gap).
+
+### Cross-screen A/A (C.S2-specific mandate — text draws everywhere)
+
+- **song_select:** raw A/B ON-vs-OFF depth-0 = 45.6% changed px / meanabs 2.44. **A/A
+  control (two OFF boots) = 44.97% / 2.53** — i.e. the A/B is *within* (indeed below) the
+  boot-to-boot nondeterminism envelope (documented async-loader/eye-jitter order noise), so
+  the difference is boot noise, **not the flag**. Visual: all list text legible flag-ON,
+  focused RANDOM SONG reads dark-on-yellow (correct).
+- **part_difficulty:** A/B ON-vs-OFF = 66.9% / meanabs 8.55; A/A OFF-vs-OFFb = 63.6% / 7.0.
+  The screen's ~63% baseline noise is the **animated character/venue preview**, not the UI:
+  the two OFF boots are **byte-identical in the GUITAR UI-card crop** (bar mean 124.7 both).
+  Flag-ON darkens that same card's focused GUITAR fill (bar mean 114.6) — the intended
+  dark-on-gold effect, localized to the focused label. All other text (CHOOSE INSTRUMENT,
+  RIGHTY MODE, SONG DIFFICULTY, song title, BASS) unchanged and legible. **No text
+  regression.**
+
+### Recommendation
+
+**FLIP.** On every headless-reachable screen the flag-ON path (a) restores retail's
+dark-on-gold focused-item contrast, (b) leaves unselected and non-focus text unchanged, and
+(c) is provably inert when OFF (byte-identical draw pipeline + textually-identical clamp).
+The only un-exercised case (FRIEND RANKINGS, colour possibly in the <0.06 dead-zone) is
+guarded by the same conservative all-channels-<0.06 predicate and cannot regress a
+colour ≥0.06 on any channel. No default flipped by this stage (coordinator-only). Pin not
+bumped. Evidence: `cs2_hub_off_vs_on.png`, `cs2_partdiff_off_vs_on.png`,
+`cs2_songselect_off_vs_on.png` (this dir).
