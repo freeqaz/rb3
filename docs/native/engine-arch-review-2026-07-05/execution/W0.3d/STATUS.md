@@ -220,3 +220,53 @@ per-name eps residual. Flagging for the pin-bump cross-diff.
   stable addresses.
 - `PLAN.md` in this dir is untracked (S1's commit landed only `STATUS.md`); committing it here
   alongside my artifacts so the item's plan is not lost. Not a sibling lane's file.
+
+## VERIFY — GREEN (S1 confirmed; S2 confirmed staged-only)
+
+Independent re-derivation in a fresh own build dir (`native/build-agent-W0.3d-verify`, clang,
+`rb3-native`+`rb3-tests`), adversarial per the Wave-4 mandate (re-derive, don't trust STATUS).
+
+**S1 (part a — RNG freeze), re-verified:**
+- `git show c6b961da --numstat` on `src/system/char/CharEyes.cpp`: **36/0**, confirms
+  additions-only inside `#ifdef HX_NATIVE` with `#else` branches preserving the original two
+  lines verbatim (read the full diff — every guarded line is new, no existing line touched
+  outside the guard).
+- `rb3-tests --gtest_filter='*DrawLog*'`: **9 pass / 1 skip** (`PopulatesFromRealDrawMesh`,
+  pre-existing, unrelated) — matches claim exactly.
+- `--fixed-clock --canonical-order --fail-red-audit`: all **4 fail-red classes RED**
+  (count-drop, bind-group-collapse, out-of-bound world, mesh-identity) + pure permutation
+  **GREEN** — matches claim.
+- **N=36 fresh-boot sweep** (own binary, `setarch -R` default-on via the script, exceeds both
+  the PLAN's N≥30 and the assignment's N≥15 bar): **36/36 PASS**, 0 unexpected divergences,
+  draw count invariant at 888 every run (no reproduction of S1's noted rare 883-draw anomaly
+  in this sample). Per-name known-residual divergence counts varied 137-278 per run (greedy
+  correspondence-matcher artifact, expected) but never exceeded a per-name eps bound or
+  produced an unexpected/non-residual FAIL.
+- Confirmed the residual sidecar (`splash_screen.fixedclock-residual.json`) matches S1's
+  claimed table exactly (7 unique names, eps 13.0/13.0/31.0/32.0/13.0/13.5/23.0, 26 indexed
+  occurrences) and that `compare_canonical()`'s residual lookup is **name-hash-scoped** (not a
+  blanket loosen) — read `load_residual`/`compare_canonical` in
+  `scripts/native/drawlog-golden.py` directly, not just STATUS's description.
+- Flag-off: no new getenv/flag added (grepped `CharEyes.cpp` — confirmed); a plain
+  `MILO_HEADLESS=1 MILO_MAX_FRAMES=3` boot exits clean; `native_compat_census.py check`
+  passes (N/A to this item's exit bar since no flag was introduced, but ran it anyway — not
+  a regression from this item either way).
+
+**S2 (part b — diagnosis), re-verified:**
+- `git apply --check docs/.../W0.3d/W0.3d-fix.patch` from the current tree: **applies
+  cleanly**, confirming the fix is genuinely staged-only, not silently landed anywhere.
+- Confirmed the patch touches only `src/system/rndobj/Utl.cpp` (`SortDraws`'s material
+  pointer-tiebreak) — disjoint from Lane A's engine `Rnd_Wgpu_RB3.cpp`/object-list path, as
+  claimed; Lane A (W2.1) has only landed a gate/probe (S1) so far this wave, no DrawMesh
+  edit yet, so there is no live collision to check against.
+- Root-cause chain (ThreadCall worker → glibc per-thread arena → address-dependent
+  `mat1 < mat2` pointer tiebreak in `SortDraws`, `Utl.cpp:174`) re-read against the live file
+  — line numbers and the raw pointer compare match what's in the tree today.
+
+**Verdict:** both subtasks' claims hold up under independent re-derivation with a larger
+sample than required. No corrections needed; nothing was fixed (none needed). Cross-lane
+note for the coordinator: engine working tree currently carries Lane A's (W2.1) uncommitted
+`RB3_PLACEMENT_CONTRACT` registry WIP + a W2.6-verify finding of 86 unregistered "game"-root
+flags in `native_compat_census.py check` (a Wave-4-wide flag-hygiene gap, not a W0.3d
+regression — W0.3d introduced no flag) — left untouched per hard rule 8, flagging only for
+visibility.
