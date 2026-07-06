@@ -80,12 +80,20 @@ struct OracleOptions {
     double minPosedSpan = 5.0;  // posed bbox max-axis extent must exceed this to judge
     double spanFrac     = 0.5;  // drawn extent must be >= spanFrac * posed extent
     int    minMatched   = 2;    // >= this many far-posed positions must be drawn
+    // Drum-kind (S2): a bone-attached kit prop sits offset in front of the
+    // drummer's waypoint, so the drawn kit translation is near — not exactly at —
+    // the band-member reference. Generous enough to admit that offset; the RED
+    // discriminator does not depend on it (flag-OFF has ZERO non-origin skinned
+    // draws, so any reasonable value goes RED).
+    double drumEps      = 12.0;
 };
 
 enum FailureKind {
     kPosedNotDrawn,   // (B) far-posed positions have no matching drawn translation
     kDrawnCollapsed,  // (C) drawn skinned translations do not span the bowl
     kDrawnColocated,  // (D) drawn skinned translations form < 2 distinct clusters
+    kDrumAtOrigin,    // (S2) no non-origin skinned draw near any band waypoint
+    kDrumRefAtOrigin, // (S2) INCONCLUSIVE: no non-origin drum reference in the probe
 };
 
 struct OracleFailure {
@@ -276,6 +284,105 @@ inline OracleResult RunPlacementOracle(const drawlog::DrawLogFrame& frame,
                  "drawn-colocated: drawn skinned translations form only %d cluster(s) "
                  "at eps %.3f — instances co-located", r.drawnClusters, opt.matchEps);
         r.failures.push_back({kDrawnColocated, buf});
+    }
+    r.passed = r.failures.empty();
+    return r;
+}
+
+// ---------------------------------------------------------------------------
+// Drum-kind oracle (W2.1-flip.S2). Distinct from the crowd spread test: a single
+// band/kit placement is not a spread bowl. It correlates the "drum" probe
+// references (band-member waypoint worlds emitted by BandConfiguration::
+// SyncPlayMode after Teleport — the faithful placement the drum kit and other
+// bone-attached instrument props hang off) with the drawn skinned set:
+//
+//   (a) reference non-origin — >= 1 drum reference with Radius > originRadius.
+//       Else INCONCLUSIVE (kDrumRefAtOrigin): this venue placed the band at the
+//       origin (or SyncPlayMode never resolved a member) — neither pass nor bug.
+//   (b) drawn consistency — >= 1 SKINNED draw whose obj.world translation is
+//       non-origin (Radius > originRadius) AND within drumEps of a drum
+//       reference. On the current default-OFF build every skinned obj.world is
+//       forced to identity (DrawMesh, Rnd_Wgpu_RB3.cpp) -> zero non-origin
+//       skinned draws -> RED (kDrumAtOrigin). Flag-ON the bone-attached kit prop
+//       (or the drummer body, if the prop is not itself flagged skinned in the
+//       drawlog) carries meshWorld near the drummer -> GREEN.
+//
+// The RED/GREEN discriminator is build-independent and does NOT depend on tight
+// eps tuning: the flag-OFF build has ZERO non-origin skinned draws, so any
+// reasonable drumEps goes RED; drumEps only needs to be generous enough to admit
+// the offset kit prop flag-ON.
+// ---------------------------------------------------------------------------
+inline OracleResult RunDrumOracle(const drawlog::DrawLogFrame& frame,
+                                  const std::vector<PosedInstance>& posedAll,
+                                  const OracleOptions& opt = OracleOptions()) {
+    OracleResult r;
+    char buf[256];
+
+    // drum-kind posed instances only (crowd handled by RunPlacementOracle).
+    std::vector<PosedInstance> posed;
+    for (const auto& p : posedAll)
+        if (p.kind == "drum") posed.push_back(p);
+    r.posedCount = (int)posed.size();
+
+    // (a) reference non-origin.
+    if (posed.empty()) {
+        r.inconclusive = true;
+        r.failures.push_back({kDrumRefAtOrigin,
+            "INCONCLUSIVE: no drum references in the probe log (SyncPlayMode did "
+            "not resolve a band member during the capture)"});
+        return r;
+    }
+    std::vector<PosedInstance> farRefs;
+    for (const auto& p : posed)
+        if (Radius(p.x, p.y, p.z) > opt.originRadius) farRefs.push_back(p);
+    r.farPosedCount = (int)farRefs.size();
+    if (farRefs.empty()) {
+        r.inconclusive = true;
+        snprintf(buf, sizeof(buf),
+                 "INCONCLUSIVE: all %d drum reference(s) within originRadius %.3f "
+                 "of origin (this venue placed the band at origin) — neither pass "
+                 "nor bug", r.posedCount, opt.originRadius);
+        r.failures.push_back({kDrumRefAtOrigin, buf});
+        return r;
+    }
+
+    // Drawn skinned translations.
+    std::vector<std::array<double,3>> drawn;
+    for (const auto& d : frame.draws) {
+        if (!d.skinned) continue;
+        drawn.push_back({(double)d.world[12], (double)d.world[13], (double)d.world[14]});
+    }
+    r.skinnedDrawCount = (int)drawn.size();
+    if (drawn.empty()) {
+        r.inconclusive = true;
+        r.failures.push_back({kDrumAtOrigin,
+            "INCONCLUSIVE: no skinned draws in the draw-log frame"});
+        return r;
+    }
+
+    // (b) drawn consistency: >= 1 non-origin skinned draw within drumEps of a far
+    // drum reference. On the flag-OFF build every skinned obj.world is identity,
+    // so the Radius filter drops them all -> matched == 0 -> RED.
+    int matched = 0;
+    double bestDist = 1e30;
+    for (const auto& t : drawn) {
+        if (Radius(t[0], t[1], t[2]) <= opt.originRadius) continue;  // identity/origin draw
+        for (const auto& p : farRefs) {
+            double dx=t[0]-p.x, dy=t[1]-p.y, dz=t[2]-p.z;
+            double dist = std::sqrt(dx*dx+dy*dy+dz*dz);
+            if (dist < bestDist) bestDist = dist;
+            if (dist <= opt.drumEps) { matched++; break; }
+        }
+    }
+    r.matchedCount = matched;
+
+    if (matched < 1) {
+        snprintf(buf, sizeof(buf),
+                 "drum-at-origin: no non-origin skinned draw within drumEps %.3f "
+                 "of any band waypoint (nearest %.3f) — the kit/band collapsed to "
+                 "identity (obj.world forced to origin)", opt.drumEps,
+                 bestDist == 1e30 ? -1.0 : bestDist);
+        r.failures.push_back({kDrumAtOrigin, buf});
     }
     r.passed = r.failures.empty();
     return r;

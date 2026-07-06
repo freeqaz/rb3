@@ -3,6 +3,10 @@
 #include "bandobj/BandWardrobe.h"
 #include "obj/DataUtl.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstdio>  // fprintf — W2.1-flip.S2 drum placement probe
+#include <cstdlib> // getenv
+#endif
 
 INIT_REVS(BandConfiguration)
 int BandConfiguration::TargTransforms::sNumPlayModes;
@@ -50,6 +54,32 @@ void BandConfiguration::SyncPlayMode() {
         );
         if (bchar) {
             bchar->Teleport(mXfms[i].mWay);
+#ifdef HX_NATIVE
+            // W2.1-flip.S2 drum placement-gate probe (diagnosis-only, default-OFF).
+            // mWay->WorldXfm().v is the FAITHFUL band-member placement the decomp
+            // resolved for this play-mode slot -- the waypoint the drum kit (and
+            // other bone-attached instrument props) hang off. The renderer must
+            // draw this member's skinned meshes (incl. the kit prop) with an
+            // obj.world translation near THIS waypoint. On the current (unfixed)
+            // build DrawMesh forces obj.world = identity for every skinned draw
+            // (Rnd_Wgpu_RB3.cpp), so the kit co-locates at the origin -- the drum
+            // branch of the placement oracle (native/tests/placement_oracle.h)
+            // reads these lines + the drawlog and goes RED; flag-ON they carry the
+            // waypoint world and it goes GREEN. Reuses the existing
+            // RB3_PLACEMENT_PROBE flag (no new flag / classification edit);
+            // Wii-compile-inert (HX_NATIVE undefined under MWCC). No behavior change.
+            {
+                static int sPlacementProbe = -1;
+                if (sPlacementProbe < 0)
+                    sPlacementProbe = getenv("RB3_PLACEMENT_PROBE") ? 1 : 0;
+                if (sPlacementProbe) {
+                    Transform &wxfm = mXfms[i].mWay->WorldXfm();
+                    fprintf(stderr,
+                            "RB3_PLACEMENT_PROBE drum inst=%d x=%.4f y=%.4f z=%.4f\n",
+                            i, wxfm.v.x, wxfm.v.y, wxfm.v.z);
+                }
+            }
+#endif
         }
 #ifdef HX_NATIVE
         else if (!curtargxfm.targName.Null()) {

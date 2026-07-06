@@ -139,7 +139,11 @@ def main():
     ap.add_argument("--update-red-golden", action="store_true",
                     help="copy the captured drawlog to the committed RED-reference golden")
     ap.add_argument("--expect-red", action="store_true",
-                    help="invert exit: 0 iff the gate went RED (fail-red audit)")
+                    help="invert exit: 0 iff the selected gate(s) went RED (fail-red audit)")
+    ap.add_argument("--gate", default="crowd", choices=["crowd", "drum", "both"],
+                    help="which placement oracle to gate the exit on: crowd "
+                         "(RealCaptureSpansBowl, default), drum (RealCaptureDrumPlaced, "
+                         "W2.1-flip.S2), or both. The other verdict is always reported.")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
 
@@ -232,20 +236,41 @@ def main():
     if rc != 0:
         return rc
 
-    # Extract the RB3_PLACEMENT_PROBE lines written during the capture window
-    # (from probe_offset onward) into the probe file.
-    nprobe = 0
-    with open(log_path, "r", errors="replace") as lf, open(probe_path, "w") as pf:
+    # Extract the RB3_PLACEMENT_PROBE lines into the probe file.
+    #  * crowd lines: only from the capture window (from probe_offset onward). The
+    #    crowd probe fires every frame for every instance (100k+ lines / session),
+    #    so window-scoping keeps the frame we captured.
+    #  * drum lines: from the WHOLE log, deduped. The drum probe fires from
+    #    BandConfiguration::SyncPlayMode at band/venue setup — typically BEFORE the
+    #    window opens — and is rare (one per resolved slot per SyncPlayMode call),
+    #    so whole-log dedupe is both correct and cheap.
+    ncrowd = ndrum = 0
+    crowd_lines, drum_lines, drum_seen = [], [], set()
+    with open(log_path, "r", errors="replace") as lf:
+        for line in lf:
+            if "RB3_PLACEMENT_PROBE" not in line: continue
+            if " drum inst=" in line:
+                key = line.strip()
+                if key not in drum_seen:
+                    drum_seen.add(key)
+                    drum_lines.append(line if line.endswith("\n") else line + "\n")
+                    ndrum += 1
+    with open(log_path, "r", errors="replace") as lf:
         try: lf.seek(probe_offset)
         except Exception: pass
         for line in lf:
-            if "RB3_PLACEMENT_PROBE" in line:
-                pf.write(line if line.endswith("\n") else line + "\n")
-                nprobe += 1
-    log(f"probe: {nprobe} crowd-instance lines -> {probe_path}")
-    if nprobe == 0:
-        log("FAIL: no RB3_PLACEMENT_PROBE lines captured — did gameplay load a crowd? "
-            "(the venue may have an empty crowd, or RB3_PLACEMENT_PROBE was not honored)")
+            if "RB3_PLACEMENT_PROBE" in line and " crowd inst=" in line:
+                crowd_lines.append(line if line.endswith("\n") else line + "\n")
+                ncrowd += 1
+    with open(probe_path, "w") as pf:
+        pf.writelines(crowd_lines)
+        pf.writelines(drum_lines)
+    log(f"probe: {ncrowd} crowd-instance lines (window) + {ndrum} drum-ref lines "
+        f"(whole log, deduped) -> {probe_path}")
+    if ncrowd == 0 and ndrum == 0:
+        log("FAIL: no RB3_PLACEMENT_PROBE lines captured — did gameplay load a crowd/"
+            "band? (the venue may have an empty crowd, or RB3_PLACEMENT_PROBE was not "
+            "honored)")
         return 2
 
     if args.update_red_golden:
@@ -255,33 +280,59 @@ def main():
             d.write(s.read())
         log(f"wrote RED-reference golden -> {dst}")
 
-    # Run the live oracle via rb3-tests RealCaptureSpansBowl.
+    # Run the live oracle(s) via rb3-tests. Crowd = RealCaptureSpansBowl,
+    # drum (W2.1-flip.S2) = RealCaptureDrumPlaced. Both are always run+reported;
+    # --gate selects which drives the exit code.
+    GATE_TESTS = {"crowd": "RealCaptureSpansBowl", "drum": "RealCaptureDrumPlaced"}
     if not os.path.exists(args.tests):
         log(f"NOTE: rb3-tests not found at {args.tests}; artifacts written, oracle not run.")
         log(f"  run: RB3_PLACEMENT_DRAWLOG={drawlog_path} RB3_PLACEMENT_PROBE_LOG={probe_path} \\")
-        log(f"       {args.tests} --gtest_filter=PlacementOracle.RealCaptureSpansBowl")
+        log(f"       {args.tests} --gtest_filter='PlacementOracle.RealCaptureSpansBowl:"
+            f"PlacementOracle.RealCaptureDrumPlaced'")
         return 0
     tenv = dict(os.environ)
     tenv.update({"RB3_PLACEMENT_DRAWLOG": drawlog_path, "RB3_PLACEMENT_PROBE_LOG": probe_path})
-    log("running oracle: PlacementOracle.RealCaptureSpansBowl")
-    tp = subprocess.run([args.tests, "--gtest_filter=PlacementOracle.RealCaptureSpansBowl"],
+    gfilter = ":".join(f"PlacementOracle.{t}" for t in GATE_TESTS.values())
+    log(f"running oracle(s): {gfilter}")
+    tp = subprocess.run([args.tests, f"--gtest_filter={gfilter}"],
                         env=tenv, capture_output=True, text=True)
     sys.stdout.write(tp.stdout)
     if tp.stderr: sys.stderr.write(tp.stderr)
-    passed = tp.returncode == 0 and "[  PASSED  ]" in tp.stdout and "SKIPPED" not in tp.stdout.split("RealCaptureSpansBowl")[-1][:80]
-    went_red = tp.returncode != 0
-    if went_red:
-        log("ORACLE RED — crowd instances are NOT drawn at their faithful spXfm "
-            "positions (the current-build fail-red).")
-    elif "SKIPPED" in tp.stdout:
-        log("ORACLE INCONCLUSIVE (capture did not reach a spread crowd frame).")
-        return 2
-    else:
-        log("ORACLE GREEN — crowd spread matches spXfm.")
 
+    def verdict(name):
+        # 'green' | 'red' | 'skip' | 'missing' from the per-test gtest status line.
+        if f"[       OK ] PlacementOracle.{name}" in tp.stdout: return "green"
+        if f"[  FAILED  ] PlacementOracle.{name}" in tp.stdout: return "red"
+        if f"[  SKIPPED ] PlacementOracle.{name}" in tp.stdout: return "skip"
+        return "missing"
+
+    verdicts = {g: verdict(t) for g, t in GATE_TESTS.items()}
+    _label = {"crowd": ("crowd instances are NOT drawn at their faithful spXfm positions",
+                        "crowd spread matches spXfm",
+                        "capture did not reach a spread crowd frame"),
+              "drum":  ("drum kit / band is NOT drawn near its band waypoint (kit at origin)",
+                        "drum kit / band drawn near its band waypoint",
+                        "no non-origin band waypoint reference (SyncPlayMode did not place)")}
+    for g in ("crowd", "drum"):
+        v = verdicts[g]
+        red_msg, green_msg, skip_msg = _label[g]
+        if v == "red":
+            log(f"{g.upper()} ORACLE RED — {red_msg} (fail-red).")
+        elif v == "green":
+            log(f"{g.upper()} ORACLE GREEN — {green_msg}.")
+        elif v == "skip":
+            log(f"{g.upper()} ORACLE INCONCLUSIVE — {skip_msg}.")
+        else:
+            log(f"{g.upper()} ORACLE MISSING (test did not run — check filter/build).")
+
+    want = ["crowd", "drum"] if args.gate == "both" else [args.gate]
+    sel = [verdicts[g] for g in want]
     if args.expect_red:
-        return 0 if went_red else 1
-    return 1 if went_red else 0
+        # fail-red audit: every selected gate must be RED.
+        return 0 if all(v == "red" for v in sel) else 1
+    if any(v in ("skip", "missing") for v in sel):
+        return 2
+    return 0 if all(v == "green" for v in sel) else 1
 
 
 if __name__ == "__main__":

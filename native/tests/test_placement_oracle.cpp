@@ -62,6 +62,26 @@ std::vector<PosedInstance> BowlPosed(int n) {
     return v;
 }
 
+// Band-member waypoint references spread across the stage, labeled "drum" (the
+// oracle's reserved band/kit-placement kind — what BandConfiguration::
+// SyncPlayMode emits per resolved slot). All but vocals sit clearly beyond
+// originRadius; the drummer is back-center.
+std::vector<PosedInstance> DrumRefsSpread() {
+    std::vector<PosedInstance> v;
+    const double pts[4][3] = {
+        { 10.0, 0.0,  -6.0},   // guitarist (radius > 5)
+        {-10.0, 0.0,  -6.0},   // bassist
+        {  0.0, 2.0, -14.0},   // drummer, back-center
+        {  0.0, 0.0,   4.0},   // vocalist (radius 4 < originRadius — excluded)
+    };
+    for (int i = 0; i < 4; ++i) {
+        PosedInstance p; p.kind = "drum"; p.index = i;
+        p.x = pts[i][0]; p.y = pts[i][1]; p.z = pts[i][2];
+        v.push_back(p);
+    }
+    return v;
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -161,6 +181,100 @@ TEST(PlacementOracle, CatchesSharedNonOriginWorld) {
     EXPECT_TRUE(r.Has(kDrawnCollapsed) || r.Has(kDrawnColocated)) << r.Describe();
 }
 
+// ===========================================================================
+// Drum-kind oracle (W2.1-flip.S2). The crowd oracle only reads kind=="crowd";
+// the drum branch reads the band-member waypoint references (kind=="drum") and
+// asserts >= 1 non-origin skinned draw is drawn near them. The RED/GREEN
+// discriminator is build-independent: flag-OFF has ZERO non-origin skinned
+// draws (all identity) -> RED; flag-ON the bone-attached kit/band carries the
+// waypoint world -> GREEN.
+// ===========================================================================
+
+// Probe format extends to the drum kind without touching the parser.
+TEST(PlacementOracle, ParsesDrumProbeLog) {
+    std::string log =
+        "RB3_PLACEMENT_PROBE crowd inst=0 x=20.0000 y=3.0000 z=-10.0000\n"
+        "RB3_PLACEMENT_PROBE drum inst=2 x=0.0000 y=2.0000 z=-14.0000\n";
+    auto posed = ParsePlacementProbeText(log);
+    ASSERT_EQ(posed.size(), 2u);
+    EXPECT_EQ(posed[0].kind, "crowd");
+    EXPECT_EQ(posed[1].kind, "drum");
+    EXPECT_EQ(posed[1].index, 2);
+    EXPECT_NEAR(posed[1].z, -14.0, 1e-6);
+}
+
+// (fail-red demo) The CURRENT default-OFF build draws every skinned instance at
+// identity. With real (non-origin) drum references, the drum oracle must go RED
+// (kDrumAtOrigin): no non-origin skinned draw sits near any band waypoint.
+TEST(PlacementOracle, DrumAtOriginIsRed) {
+    auto refs = DrumRefsSpread();
+    DrawLogFrame frame; frame.valid = true;
+    for (int i = 0; i < 8; ++i) frame.draws.push_back(SkinnedAt(0, 0, 0));  // identity
+
+    OracleResult r = RunDrumOracle(frame, refs);
+    EXPECT_FALSE(r.passed) << r.Describe();
+    EXPECT_FALSE(r.inconclusive) << r.Describe();
+    EXPECT_TRUE(r.Has(kDrumAtOrigin)) << r.Describe();
+    EXPECT_EQ(r.matchedCount, 0) << r.Describe();
+}
+
+// (GREEN) The fixed contract draws the kit / band member near the drummer's
+// waypoint. A single non-origin skinned draw within drumEps of a far reference
+// is enough to pass. Not tautological RED.
+TEST(PlacementOracle, DrumDrawnAtDrummerIsGreen) {
+    auto refs = DrumRefsSpread();
+    DrawLogFrame frame; frame.valid = true;
+    // Kit prop bone-attached ~offset in front of the drummer waypoint (within
+    // drumEps), plus other band bodies at their waypoints. Origin draws (e.g.
+    // non-band skinned UI) must NOT be required and must NOT trip it.
+    frame.draws.push_back(SkinnedAt(1.5, 2.0, -12.0));   // kit prop, near drummer (0,2,-14)
+    frame.draws.push_back(SkinnedAt(10.0, 0.0, -6.0));   // guitarist body
+    frame.draws.push_back(SkinnedAt(0, 0, 0));           // some origin skinned draw
+    OracleResult r = RunDrumOracle(frame, refs);
+    EXPECT_TRUE(r.passed) << r.Describe();
+    EXPECT_GE(r.matchedCount, 1) << r.Describe();
+}
+
+// (INCONCLUSIVE, not GREEN) When every band waypoint is at the origin (venue
+// placed the band at origin, or SyncPlayMode did not resolve), the drum oracle
+// cannot tell pass from bug -> INCONCLUSIVE (kDrumRefAtOrigin), never a pass.
+TEST(PlacementOracle, DrumRefAtOriginIsInconclusive) {
+    std::vector<PosedInstance> refs;
+    for (int i = 0; i < 4; ++i) {
+        PosedInstance p; p.kind = "drum"; p.index = i; p.x = p.y = p.z = 0.0;
+        refs.push_back(p);
+    }
+    DrawLogFrame frame; frame.valid = true;
+    frame.draws.push_back(SkinnedAt(0, 0, 0));
+    OracleResult r = RunDrumOracle(frame, refs);
+    EXPECT_FALSE(r.passed) << r.Describe();
+    EXPECT_TRUE(r.inconclusive) << r.Describe();
+    EXPECT_TRUE(r.Has(kDrumRefAtOrigin)) << r.Describe();
+}
+
+// (INCONCLUSIVE) No drum references at all (only crowd lines) -> INCONCLUSIVE,
+// not a false pass. Proves the drum branch does not read crowd references.
+TEST(PlacementOracle, DrumNoRefsInconclusive) {
+    auto crowdOnly = BowlPosed(6);   // all kind=="crowd"
+    DrawLogFrame frame; frame.valid = true;
+    frame.draws.push_back(SkinnedAt(20, 3, -10));   // a non-origin skinned draw
+    OracleResult r = RunDrumOracle(frame, crowdOnly);
+    EXPECT_FALSE(r.passed) << r.Describe();
+    EXPECT_TRUE(r.inconclusive) << r.Describe();
+    EXPECT_TRUE(r.Has(kDrumRefAtOrigin)) << r.Describe();
+}
+
+// Tolerance: a kit prop offset just under drumEps from the drummer still PASSES,
+// so a real bone-attach offset does not false-fail the fixed build.
+TEST(PlacementOracle, DrumToleratesPropOffset) {
+    auto refs = DrumRefsSpread();
+    DrawLogFrame frame; frame.valid = true;
+    // drummer waypoint (0,2,-14); prop offset ~ (11.0 units) < drumEps 12.0.
+    frame.draws.push_back(SkinnedAt(7.0, 2.0, -22.0));
+    OracleResult r = RunDrumOracle(frame, refs);
+    EXPECT_TRUE(r.passed) << r.Describe();
+}
+
 // ---------------------------------------------------------------------------
 // LIVE gate. RB3_PLACEMENT_DRAWLOG (JSON draw-log) + RB3_PLACEMENT_PROBE_LOG
 // (engine log with RB3_PLACEMENT_PROBE lines) point at a real capture from
@@ -189,4 +303,34 @@ TEST(PlacementOracle, RealCaptureSpansBowl) {
     EXPECT_TRUE(r.passed)
         << "PLACEMENT GATE RED — crowd instances are not drawn at their faithful "
            "spXfm positions:\n" << r.Describe();
+}
+
+// ---------------------------------------------------------------------------
+// LIVE drum gate (W2.1-flip.S2). Same live artifacts as RealCaptureSpansBowl,
+// but runs the drum branch: the drum kit / band must draw a non-origin skinned
+// obj.world near a band waypoint. RED on the current default-OFF build (kit at
+// origin — the free fail-red), GREEN under flag-ON. SKIP when the env is unset.
+// ---------------------------------------------------------------------------
+TEST(PlacementOracle, RealCaptureDrumPlaced) {
+    const char* drawlogPath = getenv("RB3_PLACEMENT_DRAWLOG");
+    const char* probePath   = getenv("RB3_PLACEMENT_PROBE_LOG");
+    if (!drawlogPath || !probePath) {
+        GTEST_SKIP() << "set RB3_PLACEMENT_DRAWLOG + RB3_PLACEMENT_PROBE_LOG "
+                        "(see scripts/native/placement-gate-capture.py) to run the "
+                        "live drum placement gate";
+    }
+    DrawLogFrame frame = drawlog::LoadDrawLogFile(drawlogPath);
+    ASSERT_TRUE(frame.valid) << "draw-log parse error: " << frame.error
+                             << " (" << drawlogPath << ")";
+    auto posed = ParsePlacementProbeFile(probePath);
+
+    OracleResult r = RunDrumOracle(frame, posed);
+    if (r.inconclusive) {
+        GTEST_SKIP() << "drum capture inconclusive (no non-origin band waypoint "
+                        "reference — SyncPlayMode did not place the band):\n"
+                     << r.Describe();
+    }
+    EXPECT_TRUE(r.passed)
+        << "DRUM PLACEMENT GATE RED — the drum kit / band is not drawn near its "
+           "faithful band waypoint (collapsed to identity):\n" << r.Describe();
 }
