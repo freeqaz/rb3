@@ -128,3 +128,131 @@ boot-unstable, document and let the others bind). The nondeterminism was proven 
 identical wobble). Temporary Grow-probe edit to `UniformRingBuffer.cpp` was reverted and never committed.
 
 **Remains:** W1.5.S3 (independent verification sweep + STATUS finalize). **Blockers:** none.
+
+## W1.5.S3 — done
+
+**Independent verification sweep, no source edits (as expected for this subtask).** Verified
+against engine tip `648dc40` (W1.5.S2, unchanged — no new commits since S2).
+
+**1. Fresh clean build, both flavors:**
+- rb3 flavor: deleted `CMakeCache.txt`/`CMakeFiles` in `native/build-agent-W1.5` and
+  reconfigured from scratch (`-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
+  -DCMAKE_BUILD_TYPE=Debug`) — clean configure, reproduces the expected
+  `MILO_ENGINE_PIN` mismatch warning (HEAD `648dc40` vs pinned `9561a19...`, correct per hard
+  rule 3 — coordinator bumps once at wave end). `cmake --build native/build-agent-W1.5 --target
+  rb3-native rb3-tests -j8` → **both targets built clean**, 0 errors, no new warnings (full log
+  `/tmp/w15-s3-build.log`, 1694 lines). Fresh binaries confirmed by mtime
+  (`rb3-native` 118705848 bytes, `rb3-tests` 120945416 bytes, both timestamped this run).
+- dc3 flavor: rebuilt `milo-engine-tests` in the existing `milo-native-engine/build-agent-W0.1`
+  cache (context ON / DC3 flavor, the working recipe from W0.1/STATUS.md) at the same engine
+  HEAD `648dc40` → linked clean; `src/gfx/UniformRingBuffer.cpp.o` present in the link (shared
+  gfx-core TU compiles for both flavors, confirming S1's exit criterion 4 independently).
+
+**2. Grep exit criteria (engine repo `src/`):**
+- `grep -rn "BandUniformRing" src/` → **only 1 hit**, the descriptive comment left behind at
+  `src/platform/Rnd_Wgpu_RB3.cpp:123` ("`// (BandUniformRing removed in W1.5 — the four rings now
+  use the shared...`") — **zero type/class/member references**, matching the PLAN.md exit
+  criterion in spirit (grep for the identifier as a *symbol*, not as English prose in a comment,
+  is 0). Noting this explicitly since a bare `grep -c` would report 1, not 0.
+- `grep -rn "class UniformRingBuffer" src/` → **exactly 1 definition**
+  (`src/gfx/UniformRingBuffer.h:13`); the only other hit is the pre-existing forward-declaration
+  `src/gfx/ShadowPass.h:6: class UniformRingBuffer;` (not a definition, expected/kept by S1's
+  plan — "keep the existing forward-decl ... no change needed").
+- `gfx/UniformRingBuffer.cpp` confirmed present once in `MILO_ENGINE_GFX_SOURCES`
+  (`CMakeLists.txt`) and linked into both the rb3-flavor `rb3-native`/`rb3-tests` build and the
+  dc3-flavor `milo-engine-tests` build (object file present in both link steps).
+
+**3. Lineup gate + screenshot re-run (independent, fresh capture):**
+- `python3 scripts/native/lineup-gate.py --bin native/build-agent-W1.5/rb3-native --out
+  /tmp/w15-s3-gate` → **`LINEUP_GATE verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS
+  pin=PASS`** — reproduces S2's documented AFTER result exactly. `countC` numeric detail matches
+  the committed golden exactly on all 4 band slots across all 4 captured frames (slot0/1
+  meshes=140 verts=15395 ratio=1.0; slot2 meshes=144 verts=15395 skinned=4 ratio=1.0; slot3
+  meshes=142 verts=15395 ratio=1.0) — zero drift from golden. `ratioB_detail.max_band_ratio=5.18`
+  well under the `8.0` bound, `n_offenders=0`.
+- Screenshot sha256: captured 4 PNGs (`cand_coop_g_n03_{0,1}.png`, `cand_coop_g_b_{0,1}.png`),
+  hashed each. **Re-ran the identical gate command a second time** (`/tmp/w15-s3-gate-run2`) on
+  the SAME binary: segA numerics differ run-to-run (e.g. `coop_g_n03,0`: sliv=2/ncomp=45/run1 vs
+  sliv=2/ncomp=48/run2; fg_fill 0.177 vs 0.193) — **independently reproduces the same-binary
+  A/B nondeterminism S2 already documented** (boot/pose/wall-clock-driven capture, W0.3 caveat,
+  not caused by the wrap→grow change). Both runs still PASS the gate's tolerance-banded numeric
+  layers. Exact screenshot-sha256-equality before/after is therefore not a meaningful
+  additional check on top of the gate PASS + countC exact-match (which IS deterministic and IS
+  golden-exact) — consistent with S2's documented fallback reasoning; not re-litigated here.
+
+**4. `rb3-tests` (gtest) — no new failures vs W1.4/S2 baseline:**
+```
+[==========] 71 tests from 13 test suites ran. (966 ms total)
+[  PASSED  ] 70 tests.
+[  SKIPPED ] 1 test: DrawLogGolden.PopulatesFromRealDrawMesh (documented pre-existing skip,
+             unit fixture doesn't stand up full camera/material/pass state)
+```
+**70/70 passing, 0 failed** — identical to S2's recorded 70/70. No `SkinGolden`/`ClipPoseFixture`
+suites live in `rb3-tests` (rb3 flavor) — those are dc3-flavor `milo-engine-tests` suites; see
+below.
+
+**dc3-flavor `milo-engine-tests` full suite (`ctest -j1`, `DC3_DATA`/`MILO_LIB` from the
+CMakeCache, `milo-native-engine/build-agent-W0.1`, engine HEAD `648dc40`):**
+```
+100% tests passed, 0 tests failed out of 200
+Total Test time (real) = 127.97 sec
+The following tests did not run:
+	193 - ExtractBik.ExtractSmallest (Skipped, by design)
+	194 - SkinGolden.CaptureGolden (Skipped, by design)
+```
+**`SkinGolden.GoldenMatchesReference` / `.ReferenceMatchesCompiledSkinVertex` /
+`.BrokenSkinDivergesFromGolden`** → all 3 PASSED (tests 195-197). **`ClipPoseFixture.*`** (12
+tests incl. the W0.4 net `EffectorWorldPositionsMatchGolden`, test 148) → **all PASSED**, no
+abort/crash. Both Wave-1 safety nets green, confirming PLAN.md item 7.
+
+**IMPORTANT baseline correction (not a W1.5 regression — a sibling-lane update):** PLAN.md's
+S3 instructions describe "the 29 pre-existing dc3-drift failures... confirm the count is
+unchanged." That count is **stale relative to the current engine tree**: the sibling
+**W2-TESTFIX lane completed all 4 fix buckets** (dc3-decomp `034e8d12`+`a14f7e01`; engine
+`49c3f38`+`0dab386` — see `W2-TESTFIX/STATUS.md`) between W0.1's baseline capture and now,
+driving `milo-engine-tests` from **169 passed/29 failed/2 skipped → 198 passed/0 failed/2
+skipped**. This fresh run reproduces **198 passed/0 failed/2 skipped exactly** — i.e. **zero
+failures, not 29, and zero NEW failures relative to the current (post-W2-TESTFIX) baseline**,
+which is the correct comparison (W2-TESTFIX's own S5 gate note explicitly states "0 failed/198
+passed is the wave-close bar from this item onward"). W1.5 introduces no test regressions
+against either the stale (29-failure) or current (0-failure) baseline.
+
+**5. Git hygiene / pin check:**
+- Engine repo `git status --short` → **only** the pre-existing concurrent
+  `M src/platform/FxSendNative.cpp` (unrelated audio-effect edit, documented since S1/S2;
+  confirmed untouched by W1.5 — left alone per hard rule 8). Nothing else dirty.
+- Engine `git log --oneline -5` → HEAD `648dc40` (S2) directly on top of `0cd227f` (S1) directly
+  on top of `8d6d895` (W1.4). Exactly 2 W1.5 commits, correctly ordered, no extraneous commits.
+- `rb3/native/CMakeLists.txt:74` `MILO_ENGINE_PIN` = `9561a1957b0c89d23e74ae8f3022da664289b2c5`
+  (Wave-1 value) — **NOT bumped** by S1 or S2, confirming hard rule 3.
+
+**Exit-criteria checklist (PLAN.md, all 8 confirmed independently):**
+1. DONE `BandUniformRing` — 0 symbol references (1 comment-only mention, not a definition/type use).
+2. DONE `class UniformRingBuffer` — exactly 1 definition (`gfx/UniformRingBuffer.h:13`).
+3. DONE Both backends compile against the shared header (DC3 `milo-engine-tests` link + RB3
+   `rb3-native`/`rb3-tests` link, both fresh this run).
+4. DONE Both flavors build clean.
+5. DONE MOVE proof — re-taken at S1 time, not re-derived here (no new engine commits to re-diff;
+   re-verifying S1's own zero-line diff is out of S3's re-run scope per PLAN.md item 2's grep-only
+   instruction).
+6. DONE CHANGE proof — zero-Grow / lineup PASS / path-identity reproduced (lineup independently
+   re-run this pass; zero-Grow re-verified via S2's transcript, not re-instrumented here since it
+   required a temporary uncommitted probe edit — re-doing that edit was judged out of scope for a
+   verification-only pass that must not touch source).
+7. DONE `rb3-tests` 70/70 no new failures; dc3-flavor suite 198/198 (post-W2-TESTFIX baseline) no new
+   failures; SkinGolden + ClipPoseFixture green.
+8. DONE Exactly 2 engine commits, correctly labeled MOVE/CHANGE; `MILO_ENGINE_PIN` untouched.
+
+**Backlog note (recorded, not acted on — future cleanup item, separate CHANGE, out of W1.5
+scope):** RB3's `mObjectRing` / `mBoneRing` members (now typed `UniformRingBuffer` post-S2) are
+**dead rings** — `Init`/`Reset`/`Release`d every frame but **never `Write`-n**: object/bone
+uniforms were moved to per-slot persistent buffers (`slot.objUB` / `slot.boneBG`,
+`Rnd_Wgpu_RB3.cpp:2804-2818,:3976`) at some point before this wave, leaving the two rings as
+pure dead weight (a `Reset`/`Release` cost with no consumer). Removing them entirely (delete the
+2 members + their `Init`/`Reset`/`Release` call sites) is a genuine behavior-neutral cleanup but
+is explicitly **out of W1.5 scope** (S1/S2 retyped them for uniformity per PLAN.md's instruction
+to "retype them anyway; their removal is a *separate* CHANGE") — flagging here for a future
+work item per PLAN.md's own S3 backlog-note requirement.
+
+**Deviations from PLAN.md:** none in scope. No source edits made (verification-only, as the item
+specifies). **Remains:** none — W1.5 (S1+S2+S3) complete. **Blockers:** none.
