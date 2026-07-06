@@ -1,0 +1,749 @@
+{
+  "skinpos": {
+    "clap.mesh": {
+      "max": 52.489,
+      "bone": "bone_L-forearm.mesh"
+    },
+    "female_crowd_body03.mesh": {
+      "max": 58.689,
+      "bone": "bone_head.mesh"
+    },
+    "lighter.mesh": {
+      "max": 52.488,
+      "bone": "bone_L-forearm.mesh"
+    },
+    "male_crowd_body04.mesh": {
+      "max": 64.322,
+      "bone": "bone_head.mesh"
+    },
+    "male_crowd_body03.mesh": {
+      "max": 64.322,
+      "bone": "bone_head.mesh"
+    },
+    "male_crowd_body01.mesh": {
+      "max": 63.795,
+      "bone": "bone_head.mesh"
+    },
+    "male_crowd_body02.mesh": {
+      "max": 64.006,
+      "bone": "bone_head.mesh"
+    },
+    "female_crowd_body01_lod02.mesh": {
+      "max": 63.638,
+      "bone": "bone_head.mesh"
+    },
+    "female_crowd_body02.mesh": {
+      "max": 63.638,
+      "bone": "bone_head.mesh"
+    },
+    "female_crowd_body04.mesh": {
+      "max": 62.518,
+      "bone": "bone_head.mesh"
+    },
+    "fist.mesh": {
+      "max": 52.489,
+      "bone": "bone_L-forearm.mesh"
+    },
+    "horns.mesh": {
+      "max": 49.422,
+      "bone": "bone_L-forearm.mesh"
+    }
+  },
+  "fling": {},
+  "ratio": {
+    "female_extras_hair01.mesh": {
+      "max_ratio": 1.07,
+      "band": false,
+      "drop": false,
+      "bindExt": 15.62,
+      "worldExt": 16.72
+    },
+    "female_extras_skin01.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 55.64,
+      "worldExt": 55.58
+    },
+    "female_extra_head.mesh": {
+      "max_ratio": 1.81,
+      "band": false,
+      "drop": false,
+      "bindExt": 15.8,
+      "worldExt": 28.62
+    },
+    "female_extra_body01.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 70.66,
+      "worldExt": 70.62
+    },
+    "male_extra_head01.mesh": {
+      "max_ratio": 1.59,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.92,
+      "worldExt": 30.15
+    },
+    "male_extras_skin01_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 51.41,
+      "worldExt": 51.4
+    },
+    "male_extras_body01_medium.mesh": {
+      "max_ratio": 0.97,
+      "band": false,
+      "drop": false,
+      "bindExt": 79.77,
+      "worldExt": 77.69
+    },
+    "male_extra_hair01.mesh": {
+      "max_ratio": 1.08,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.13,
+      "worldExt": 19.5
+    },
+    "lighter.mesh": {
+      "max_ratio": 1.1,
+      "band": false,
+      "drop": false,
+      "bindExt": 34.95,
+      "worldExt": 38.47
+    },
+    "female_crowd_body01_lod02.mesh": {
+      "max_ratio": 1.24,
+      "band": false,
+      "drop": false,
+      "bindExt": 79.62,
+      "worldExt": 98.38
+    },
+    "clap.mesh": {
+      "max_ratio": 2.18,
+      "band": false,
+      "drop": true,
+      "bindExt": 51.28,
+      "worldExt": 111.56
+    },
+    "female_crowd_body02.mesh": {
+      "max_ratio": 1.23,
+      "band": false,
+      "drop": false,
+      "bindExt": 80.13,
+      "worldExt": 98.55
+    },
+    "female_crowd_body03.mesh": {
+      "max_ratio": 1.34,
+      "band": false,
+      "drop": false,
+      "bindExt": 79.0,
+      "worldExt": 105.51
+    },
+    "female_crowd_body04.mesh": {
+      "max_ratio": 1.12,
+      "band": false,
+      "drop": false,
+      "bindExt": 80.06,
+      "worldExt": 89.44
+    },
+    "male_crowd_body01.mesh": {
+      "max_ratio": 1.17,
+      "band": false,
+      "drop": false,
+      "bindExt": 87.35,
+      "worldExt": 102.21
+    },
+    "male_crowd_body02.mesh": {
+      "max_ratio": 1.06,
+      "band": false,
+      "drop": false,
+      "bindExt": 88.17,
+      "worldExt": 93.85
+    },
+    "male_crowd_body03.mesh": {
+      "max_ratio": 1.31,
+      "band": false,
+      "drop": false,
+      "bindExt": 85.83,
+      "worldExt": 112.68
+    },
+    "male_crowd_body04.mesh": {
+      "max_ratio": 1.18,
+      "band": false,
+      "drop": false,
+      "bindExt": 87.98,
+      "worldExt": 104.22
+    },
+    "female_extra_hair02.mesh": {
+      "max_ratio": 1.22,
+      "band": false,
+      "drop": false,
+      "bindExt": 28.1,
+      "worldExt": 34.24
+    },
+    "female_extras_skin02.1.mesh": {
+      "max_ratio": 1.02,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.36,
+      "worldExt": 18.8
+    },
+    "female_extras_skin02.mesh": {
+      "max_ratio": 1.04,
+      "band": false,
+      "drop": false,
+      "bindExt": 44.66,
+      "worldExt": 46.59
+    },
+    "female_extra_body02.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 71.95,
+      "worldExt": 71.93
+    },
+    "male_extras_hair02.mesh": {
+      "max_ratio": 2.49,
+      "band": false,
+      "drop": true,
+      "bindExt": 14.62,
+      "worldExt": 36.44
+    },
+    "male_extras_body02_medium.mesh": {
+      "max_ratio": 0.99,
+      "band": false,
+      "drop": false,
+      "bindExt": 78.01,
+      "worldExt": 76.91
+    },
+    "male_extras_skin02_medium.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 50.61,
+      "worldExt": 50.61
+    },
+    "male_extras_skin02_medium.mesh": {
+      "max_ratio": 1.01,
+      "band": false,
+      "drop": false,
+      "bindExt": 56.26,
+      "worldExt": 56.97
+    },
+    "male_extra_head03.mesh": {
+      "max_ratio": 1.56,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.89,
+      "worldExt": 29.51
+    },
+    "male_extras_skin03_medium.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 57.21,
+      "worldExt": 57.21
+    },
+    "male_extras_skin03_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 56.66,
+      "worldExt": 56.43
+    },
+    "male_extras_body03_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 66.36,
+      "worldExt": 66.15
+    },
+    "male_extras_head11.mesh": {
+      "max_ratio": 1.63,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.64,
+      "worldExt": 30.3
+    },
+    "goatee_resource.mesh": {
+      "max_ratio": 2.15,
+      "band": false,
+      "drop": false,
+      "bindExt": 5.73,
+      "worldExt": 12.33
+    },
+    "male_extras_body11_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 69.62,
+      "worldExt": 69.5
+    },
+    "male_extras_eyebrows11.mesh": {
+      "max_ratio": 4.7,
+      "band": false,
+      "drop": true,
+      "bindExt": 4.94,
+      "worldExt": 23.23
+    },
+    "male_extras_skin11_medium.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 50.93,
+      "worldExt": 50.92
+    },
+    "male_extras_skin11_medium.mesh": {
+      "max_ratio": 1.01,
+      "band": false,
+      "drop": false,
+      "bindExt": 56.45,
+      "worldExt": 57.09
+    },
+    "male_extras_hair11.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.8,
+      "worldExt": 18.78
+    },
+    "sleevelesstee_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 29.65,
+      "worldExt": 29.64
+    },
+    "eightholedocs_resource.mesh": {
+      "max_ratio": 0.99,
+      "band": true,
+      "drop": false,
+      "bindExt": 22.37,
+      "worldExt": 22.21
+    },
+    "bondagepants_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 40.89,
+      "worldExt": 40.89
+    },
+    "bondagepants_resource.1.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 19.45,
+      "worldExt": 19.45
+    },
+    "dreadpony_resource.mesh": {
+      "max_ratio": 1.42,
+      "band": true,
+      "drop": false,
+      "bindExt": 22.33,
+      "worldExt": 31.61
+    },
+    "malewrist_hercules_right.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 9.41,
+      "worldExt": 9.41
+    },
+    "sleevelesstee_skin.1.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 50.03,
+      "worldExt": 50.03
+    },
+    "head.mesh": {
+      "max_ratio": 9.59,
+      "band": true,
+      "drop": true,
+      "bindExt": 15.64,
+      "worldExt": 150.0
+    },
+    "hands_naked.mesh": {
+      "max_ratio": 3.11,
+      "band": true,
+      "drop": true,
+      "bindExt": 56.14,
+      "worldExt": 174.55
+    },
+    "furbikini_fur_resource.mesh": {
+      "max_ratio": 1.03,
+      "band": true,
+      "drop": false,
+      "bindExt": 11.52,
+      "worldExt": 11.89
+    },
+    "furbikini_resource.mesh": {
+      "max_ratio": 1.04,
+      "band": true,
+      "drop": false,
+      "bindExt": 15.31,
+      "worldExt": 15.95
+    },
+    "miniskirt_resource.1.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 20.74,
+      "worldExt": 20.79
+    },
+    "miniskirt_resource.mesh": {
+      "max_ratio": 0.99,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.85,
+      "worldExt": 18.75
+    },
+    "miniskirt_belt.mesh": {
+      "max_ratio": 1.01,
+      "band": true,
+      "drop": false,
+      "bindExt": 21.16,
+      "worldExt": 21.27
+    },
+    "femaledestroyedchucks_resource.mesh": {
+      "max_ratio": 1.05,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.45,
+      "worldExt": 19.34
+    },
+    "shortdress_resource.1.mesh": {
+      "max_ratio": 0.81,
+      "band": true,
+      "drop": false,
+      "bindExt": 20.66,
+      "worldExt": 16.71
+    },
+    "cutepigtails_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 17.15,
+      "worldExt": 17.15
+    },
+    "femaleglasses_catseye.mesh": {
+      "max_ratio": 0.99,
+      "band": true,
+      "drop": false,
+      "bindExt": 9.54,
+      "worldExt": 9.48
+    },
+    "femalewrist_sweatbandcharmscombo.mesh": {
+      "max_ratio": 1.24,
+      "band": true,
+      "drop": false,
+      "bindExt": 43.9,
+      "worldExt": 54.22
+    },
+    "femalewrist_sweatbandcharmscombo.1.mesh": {
+      "max_ratio": 1.22,
+      "band": true,
+      "drop": false,
+      "bindExt": 40.57,
+      "worldExt": 49.54
+    },
+    "furbikini_skin.1.mesh": {
+      "max_ratio": 1.07,
+      "band": true,
+      "drop": false,
+      "bindExt": 36.7,
+      "worldExt": 39.27
+    },
+    "miniskirt_skin.2.mesh": {
+      "max_ratio": 1.03,
+      "band": true,
+      "drop": false,
+      "bindExt": 23.57,
+      "worldExt": 24.24
+    },
+    "flannelcoat_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 52.97,
+      "worldExt": 52.97
+    },
+    "timberlandboots_resource.mesh": {
+      "max_ratio": 0.99,
+      "band": true,
+      "drop": false,
+      "bindExt": 21.34,
+      "worldExt": 21.19
+    },
+    "rolledjeans_resource.1.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 35.03,
+      "worldExt": 35.03
+    },
+    "rolledjeans_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 23.32,
+      "worldExt": 23.32
+    },
+    "ziggymullet_resource.mesh": {
+      "max_ratio": 1.81,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.17,
+      "worldExt": 32.82
+    },
+    "male_facehair_dwarvenbeard.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 12.93,
+      "worldExt": 12.93
+    },
+    "flannelcoat_skin.2.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 27.29,
+      "worldExt": 27.29
+    },
+    "rolledjeans_skin.2.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 12.52,
+      "worldExt": 12.52
+    },
+    "femrockboots_resource.mesh": {
+      "max_ratio": 1.03,
+      "band": true,
+      "drop": false,
+      "bindExt": 25.94,
+      "worldExt": 26.75
+    },
+    "skinnyjeans_resource.mesh": {
+      "max_ratio": 0.93,
+      "band": true,
+      "drop": false,
+      "bindExt": 43.75,
+      "worldExt": 40.81
+    },
+    "leatherplaid_resource.mesh": {
+      "max_ratio": 1.06,
+      "band": true,
+      "drop": false,
+      "bindExt": 38.58,
+      "worldExt": 41.03
+    },
+    "messyshort_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.93,
+      "worldExt": 18.89
+    },
+    "leatherplaid_skin.2.mesh": {
+      "max_ratio": 1.18,
+      "band": true,
+      "drop": false,
+      "bindExt": 22.61,
+      "worldExt": 26.58
+    },
+    "fingernails_resource.mesh": {
+      "max_ratio": 1.41,
+      "band": true,
+      "drop": false,
+      "bindExt": 35.93,
+      "worldExt": 50.62
+    },
+    "highlight_main.mesh": {
+      "max_ratio": 1.69,
+      "band": false,
+      "drop": false,
+      "bindExt": 131.94,
+      "worldExt": 223.43
+    },
+    "highlight_refraction.mesh": {
+      "max_ratio": 1.18,
+      "band": false,
+      "drop": false,
+      "bindExt": 293.73,
+      "worldExt": 345.84
+    },
+    "highlight_pattern.mesh": {
+      "max_ratio": 1.18,
+      "band": false,
+      "drop": false,
+      "bindExt": 293.73,
+      "worldExt": 345.84
+    },
+    "scrollbar_bg.mesh": {
+      "max_ratio": 4.01,
+      "band": false,
+      "drop": true,
+      "bindExt": 80.8,
+      "worldExt": 324.08
+    },
+    "scrollbar.mesh": {
+      "max_ratio": 0.45,
+      "band": false,
+      "drop": false,
+      "bindExt": 80.62,
+      "worldExt": 36.39
+    },
+    "precision01_strings.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 42.28,
+      "worldExt": 42.28
+    },
+    "precision01_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 47.51,
+      "worldExt": 47.51
+    },
+    "ludclassic_small_club_resource.4.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 11.11,
+      "worldExt": 11.08
+    },
+    "ludclassic_small_club_resource.5.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 70.11,
+      "worldExt": 70.11
+    },
+    "ludclassic_small_club_resource.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 106.06,
+      "worldExt": 106.06
+    },
+    "ludclassic_small_club_resource.2.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 72.98,
+      "worldExt": 72.98
+    },
+    "ludclassic_small_club_resource.3.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 113.75,
+      "worldExt": 113.75
+    },
+    "ludclassic_small_club_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 74.55,
+      "worldExt": 74.55
+    },
+    "logo.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 33.36,
+      "worldExt": 33.36
+    },
+    "jaguar03_strings.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 37.76,
+      "worldExt": 37.76
+    },
+    "jaguar03_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 44.16,
+      "worldExt": 44.16
+    },
+    "brokenmic_resource.mesh": {
+      "max_ratio": 1.03,
+      "band": true,
+      "drop": false,
+      "bindExt": 12.8,
+      "worldExt": 13.13
+    },
+    "mic_stand.mesh": {
+      "max_ratio": 1.06,
+      "band": true,
+      "drop": false,
+      "bindExt": 62.94,
+      "worldExt": 66.45
+    },
+    "fist.mesh": {
+      "max_ratio": 1.71,
+      "band": false,
+      "drop": false,
+      "bindExt": 35.76,
+      "worldExt": 61.08
+    },
+    "horns.mesh": {
+      "max_ratio": 0.94,
+      "band": false,
+      "drop": false,
+      "bindExt": 49.99,
+      "worldExt": 46.97
+    }
+  },
+  "clamp": {
+    "female_extras_skin01.mesh": 31,
+    "female_extra_head.mesh": 35,
+    "female_extra_body01.mesh": 20,
+    "male_extra_head01.mesh": 40,
+    "male_extras_skin01_medium.mesh": 30,
+    "male_extras_body01_medium.mesh": 25,
+    "lighter.mesh": 10,
+    "female_crowd_body01_lod02.mesh": 1,
+    "clap.mesh": 1,
+    "female_crowd_body02.mesh": 1,
+    "female_crowd_body03.mesh": 1,
+    "female_crowd_body04.mesh": 5,
+    "male_crowd_body01.mesh": 1,
+    "male_crowd_body02.mesh": 1,
+    "male_crowd_body03.mesh": 1,
+    "male_crowd_body04.mesh": 1,
+    "female_extra_hair02.mesh": 4,
+    "female_extras_skin02.mesh": 11,
+    "female_extra_body02.mesh": 7,
+    "male_extras_body02_medium.mesh": 7,
+    "male_extras_skin02_medium.1.mesh": 3,
+    "male_extras_skin02_medium.mesh": 11,
+    "male_extra_head03.mesh": 10,
+    "male_extras_skin03_medium.1.mesh": 6,
+    "male_extras_skin03_medium.mesh": 11,
+    "male_extras_body03_medium.mesh": 5,
+    "male_extras_head11.mesh": 10,
+    "goatee_resource.mesh": 3,
+    "male_extras_body11_medium.mesh": 5,
+    "male_extras_eyebrows11.mesh": 4,
+    "male_extras_skin11_medium.1.mesh": 4,
+    "male_extras_skin11_medium.mesh": 11,
+    "hands_naked.mesh": 5758,
+    "fingernails_resource.mesh": 701,
+    "head.mesh": 4485,
+    "messyshort_resource.mesh": 1199,
+    "ziggymullet_resource.mesh": 559,
+    "male_facehair_dwarvenbeard.mesh": 774
+  },
+  "charmesh": {},
+  "anchor": {},
+  "pending": {}
+}
