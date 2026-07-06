@@ -189,6 +189,12 @@ public:
             if (hubFixOff < 0) hubFixOff = std::getenv("RB3_NO_HUB_HIGHLIGHT_FIX") ? 1 : 0;
             if (!hubFixOff) p.isHubHighlight = true;
         }
+        // B10: colour-icon glyph font (material name contains "icon", e.g.
+        // instrument_icons_small*). These are unnamed RndText glyph submeshes whose
+        // atlas holds real RGB artwork with alpha as a circular MASK, so they must
+        // be EXCLUDED from the alpha->RGB text path (else a solid white circle).
+        if (matName && matName[0] && std::strstr(matName, "icon"))
+            p.isColorIcon = true;
         return p;
     }
 
