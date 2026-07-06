@@ -138,3 +138,55 @@ pure OFFSET-rebake problem, fixed today by `RebindCrowdCharBonesToOwnSkeleton`
 for crowd/extras, cf. W2.6 `RebindOutfitBonesToOwnSkeleton`) is a **separate future item**,
 NOT a DrawMesh bone-source change. S3 (flag-ON verification package) is consequently N/A —
 there is no flag to verify.
+
+## VERIFY — complete (SELF+POISON refutation independently re-derived; all applicable gates green)
+
+Adversarial verifier (own build `native/build-agent-W2.3-verify`, engine tests
+`build-tests` @ HEAD `609efb7`). Re-ran everything; did NOT trust STATUS. **The
+honest-refutation exit is confirmed sound: DECISION = SELF+POISON, no engine
+behavior change landed, fail-red intact, invariance nets green.**
+
+**Independently re-derived (fresh capture, `crowd-bone-gate-capture.py` on the
+verify build):**
+- **DECISION = SELF+POISON reproduced categorically.** Candidate (rebind-OFF raw
+  seam): `probeMeshes=29 shared=0 self=29 ownFix=0 ownPoison=29` → every crowd/
+  extras mesh is `owner==mesh` (self-owned) AND own-bone extent == owner extent
+  (e.g. `male_extras_skin03_medium` 807.7u==807.7u, all >> 12u SKIN_CLAMP). `boneSrc
+  = mesh` is pointer-identical to `owner` → "read own bones" is a literal no-op.
+  The header-comment SHARED thesis is refuted; the inline OFFSET-poison thesis
+  confirmed — matches S1 STATUS. (Crowd mesh COUNT differed 29 vs S1's 40 = benign
+  boot-nondeterministic crowd population; the verdict is categorical, 0/29 shared
+  & 0/29 own-fix, robust to count jitter.)
+- **Fail-red RED intact.** Baseline (rebind ON) SKIN_CLAMP crowd events **332** →
+  candidate (rebind OFF) **8024** (24.2x) > threshold `332*2.0+500=1164` →
+  `CrowdBoneOracle.RealCaptureNotElevated` **RED**. Same regime as STATUS (330→7719).
+  Gate is non-tautological: synthetic `PassesWhenNotElevated` GREEN, and the RED is
+  driven uniquely by the rebind-OFF candidate (baseline clusters 330–332 << 1164).
+- **Rebind is load-bearing (A1/R5 justified):** disabling it multiplies crowd
+  shard-drop ~24x — genuinely fixes broken meshes via offset rebake → RETAIN.
+
+**Gates re-run for real:**
+- `git grep RB3_CROWD_OWN_BONES` (engine + rb3 source) = **0 hits** (only docs +
+  the forward-looking capture harness). S2 flag NOT landed — no placebo. ✓
+- Engine HEAD = `609efb7` (S1 probe only). Probe diff re-inspected: env-gated
+  `getenv("RB3_CROWD_BONE_PROBE")`, local vars + `fprintf(stderr,...)` only, no
+  palette/bone/obj.world mutation → render-inert reads-only. ✓
+- Census `native_compat_census.py check` → **exit 0** (318 flags, regen clean);
+  `RB3_CROWD_BONE_PROBE` registered class:probe. ✓
+- `rb3-tests`: full suite **88 passed / 4 live-skip / 0 failed**; `CrowdBoneOracle.*`
+  **9 passed / 1 live-skip**; `HandsBindOracle.*` **3 passed / 1 live-skip** (green). ✓
+- `milo-engine-tests` (build-tests @ `609efb7`, DC3 env, ctest -j1): **198 passed /
+  0 failed / 2 by-design skip** — the bar. `SkinGolden.{GoldenMatchesReference,
+  ReferenceMatchesCompiledSkinVertex,BrokenSkinDivergesFromGolden}` + all 10
+  `ClipPoseFixture.*` (incl. `EffectorWorldPositionsMatchGolden`) **GREEN** →
+  band/hands invariance intact (the probe cannot alter them; default-off reads-only). ✓
+- Forbidden files: `src/system/world/Crowd.cpp`, `src/App.cpp` **never touched** by
+  any W2.3 commit; sibling `FxSendNative.cpp` left as the untouched uncommitted `M`. ✓
+
+**Exit-criteria adjudication:** the one criterion NOT met — "flag-ON gate GREEN with
+rebind OFF" — is correctly N/A: it is contingent on `S1 DECISION != SELF+POISON`, and
+the DECISION IS SELF+POISON. PLAN's "Honest-refutation branch is a valid exit" governs.
+All applicable criteria (fail-red intact, invariance green, census 0, rebind retained
++ load-bearing, escalation recorded) are satisfied. **No fixes required; no blockers.**
+Escalation stands: faithful crowd offset-rebake generalization is a separate future
+item (NOT a DrawMesh bone-source change); `RebindCrowdCharBonesToOwnSkeleton` retained.
