@@ -715,6 +715,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_native_compat.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_stub_census.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_hands_bind_oracle.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)
