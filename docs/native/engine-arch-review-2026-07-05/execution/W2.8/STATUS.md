@@ -263,3 +263,86 @@ that closes the shard is `offset' = meshWorld * inverse(perMemberBoneBindWorld)`
 using the per-member bone's OWN bind basis (not the magnet's) — this oracle is
 the numeric gate that a naive rest-capture (W2.2's `RB3_HANDS_BIND_FIX`, judged
 "no benefit" under the blind origin gate) provably fails.
+
+---
+
+## B.S2 (W2.8.BL-A2 step-0) — A/B THE EXISTING `RB3_HANDS_BIND_FIX` UNDER THE ORACLE — VERDICT: (ii) NO IMPROVEMENT, POSE-VARYING
+
+**What ran.** One boot per arm through the REAL rb3 band path (boot→song-select→
+gameplay→count-in→30s steady play), flag OFF (default) vs `RB3_HANDS_BIND_FIX=1`,
+with the full in-tree read-only skinning probe suite INCLUDING the far-vertex
+non-blind `IK_SHARD_VERT=*` probe (the same R·sin(θ) far-vertex statistic BL-A2
+formalizes). Driver: `scripts/native/_w28_handsfix_ab.py` (reuses
+`hands_bind_characterize.py` boot/nav/probe machinery). Raw logs + reduced result:
+`/tmp/w28-handsfix-ab/{raw-fixOFF.log,raw-fixON.log,ab-result.json}`.
+
+**Far-vertex metric per arm (appendage meshes, IK_SHARD_VERT wext / vertDev; oracle
+kShardThreshold = 20u):**
+
+| metric | fixOFF | fixON |
+|---|---|---|
+| worst appendage far-vert `wext` | **105u** (`hands_naked.mesh`, bone_R-thumb03, R=78.5) | **107u** (`hands_naked.mesh`, bone_L-index02, R=64.3) |
+| worst appendage `vertDevFromCentroid` | 46u | 154u |
+| `fingernails_resource.mesh` wext | 79u | 83u |
+| `drivinggloves_skin.mesh` wext | 85u | (n/a this char) |
+| REBIND_DRAW_FLING (>120u) count | **0** | **0** |
+| band appendage SHARD_RATIO DROPs | 0 | 0 |
+| worst appendage origin-metric (SKINPOS) | 69.5u | 69.5u |
+
+The hand/finger far verts shard well past the 20u oracle threshold in BOTH arms
+(wext 79–107u; `hands_naked`/`fingernails`/`drivinggloves` on the distal finger
+bones bone_*-index02/03, -thumb03, -middlefinger03 — exactly the R·sin(θ) finger
+shard the oracle exists to catch). **The flag does not reduce it.** The wext is
+flat (105→107, 79→83 = pose/char noise); the dev difference (46→154) is NOT the
+flag (see next) but the two boots drawing DIFFERENT randomly-selected band members
+(fixOFF: greaser/flarejeans/dreadpony/messyshort; fixON: ziggymullet/flarejeans/
+crazyhawk/messyshort) at different sampled poses.
+
+**Root cause the A/B exposes — the flag is INERT on the real band path.**
+`RB3_HANDS_BIND_FIX` (BandCharacter.cpp:1360-1393) fires ONLY inside the
+`mDriver->FirstPlaying()` branch, i.e. only for an appendage bone whose FIRST
+distinct resolve lands mid-clip (`missWhy="clipPlaying"`). **`why=clipPlaying`
+occurs ZERO times across BOTH boots** — bones resolve clip-free at load, before
+count-in, so the branch never executes. The band meshes that ARE pending
+(HEAD_REBIND_PENDING) are pending for reasons the flag does not address:
+`why=unresolvable` (hair/leg-sash bones whose per-member names `Find` returns null:
+`bone_hair-R-02`, `bone_legs_sash04`, `bone_hair_b1top03`) and `why=boundRebakeOff`
+(instrument props cowbell/tamborine on `bone_mic`/`bone_L-stick`). None are the
+mid-clip capture gap. So the flag has nothing to act on here and is a no-op — which
+is why the "no benefit" W2.2 judgement holds even now that the gate can SEE the
+shard.
+
+**VERDICT = branch (ii): the basis error is POSE-VARYING; no static rebake — the
+flag included — can fix it.** Two independent lines of evidence:
+1. Empirical: the finger shard (wext 79–107u, dev up to 154u) persists through
+   30s of animated play in both arms, worst on the DISTAL finger joints that
+   rotate FARTHEST from any rest capture; the origin metric (69.5u) and
+   REBIND_DRAW_FLING (0) are flat — i.e. the bone ORIGINS are fine and only the
+   far verts fling, the R·sin(θ) signature.
+2. Documentary: `CHAR_SKINNING_DEFORM_INVESTIGATION.md:149-158,183+` states the
+   head/hands rebake bakes offset at a REST pose and `calcOffset=true` "shards
+   too … it drifts as the bone moves away from the rebind pose," and lists "to
+   animate head/hands cleanly, capture the animated per-member [skeleton]" as
+   OPEN future work. A rest-basis invBind flings by R·sin(θ) where θ = angle
+   between the rest capture and the live animated bone basis — a per-frame
+   quantity. `RB3_HANDS_BIND_FIX` only changes WHICH clip-free rest seed is used;
+   it does not remove the rest-vs-animated basis gap.
+
+**Consequence for BL-A1 (explicit, per the kickoff instruction).** BL-A1 must NOT
+be an adopt/extend of `RB3_HANDS_BIND_FIX` nor any static invBind rebake (rest-seed
+reuse, `calcOffset=true`, or a smarter rest capture) — all are provably defeated by
+a pose-varying basis error. BL-A1 must be a **per-frame / pose-aware correction**:
+recompute the appendage skinning basis each frame against the LIVE animated
+per-member bone (e.g. per-frame offset' = meshWorld · inverse(liveBoneWorld) with
+the bone's current rotation basis, or an equivalent per-frame skin-space fixup),
+so the far verts track the bone instead of flinging by R·sin(θ). This is a heavier,
+per-frame change (Poll-time or draw-time), not a load-path static bake, and it will
+need its own gate. The BL-A2 oracle's RealPathFixture arm remains the numeric gate;
+a true asDrawn-vs-coherent-ref `live_pose.txt` requires a dual-skin engine probe
+(compute both the drawn skin and the pose-aware-corrected skin at the same vert) —
+that probe is a BL-A1 deliverable (engine edit, out of scope for this read-only
+step-0), not fabricable from the IK_SHARD_VERT far-vert data alone.
+
+**Artifacts:** `scripts/native/_w28_handsfix_ab.py`,
+`/tmp/w28-handsfix-ab/ab-result.json` (+ raw logs). No engine/BandCharacter edits
+(fence honored; step-0 is measure-only).
