@@ -299,3 +299,33 @@ pin bump follows.
 - **RB3_HUB_MENU_QUAD_HIDE flip decision:** default-OFF; coordinator visual A/B then flip.
 - **Venue black poster quads** (part_difficulty backdrop, out of W4.1 fence) — SYS-5 family.
 - Carried: 4→8 light arrays (DC3 gates), W2.6 foot/shoe lower body, W2.4 BandPatchMesh decision.
+
+## Wave 7 results (2026-07-06, run `wf_5527e4f1-ad7`, 11 agents)
+
+**TWO MORE FLIPS SHIPPED (UI-text color floor + hub grey-quad hide, both coordinator-signed); the
+grayscale fix was REFUTED by its own verifier; the hands fix was proven to need a per-frame
+correction (two static approaches empirically killed); BoxMap = DROP.** Engine → `a94762f`
+(pin bumped after 792 golden + lineup PASS on the flipped defaults). Kickoff+review `7fddb7da`.
+
+| Item | Status | Highlights |
+|---|---|---|
+| W3.3-fix grayscale | ❌ **refuted [kept default-OFF]** | A.S1 landed the luminance-preserving highlight ceiling (`RB3_PP_LUMA_CEILING`, engine `7943bfa`) with all its gates green — and A.S2's independent per-tonal-band verify **refuted the premise**: the grey wash is a **sub-knee MID/LOW-tone desaturation** (default mid-tone sat 0.026 vs pp_off control 0.389) and both ceiling branches are identity below the knee (L<0.82) — the fix architecturally cannot touch it; its single-crop positive read did not survive a determinism-controlled analysis. Flag-OFF byte-identical + flag-ON regression-free (beyond-sweep hot frames checked), so it stays landed as a documented no-op-on-target. **W3.3 reopened → Wave 8: the composite exposure/tonemap/grade stage (sub-knee desat), quantified by the pp_off control.** |
+| WASH matrix | ⚠️ **partial [run in flight]** | Driver landed (`wash_matrix.py`, rb3 `a67d0d2c`): 5 configs (W3.3-ON baseline / highway_bloom_off / bloom_off / venue_light_off — each with W3.3 ON — / W3.3-OFF control), contract-default pinned in all arms, songMs-pinned round-robin, N=8/config. The full ~40-boot run executes detached; verdict appended on completion. Round-1 directional signal (unconfirmed): PINK survives highway_bloom_off + venue_light_off; `bloom_off` arm NEARBLACK. |
+| W2.8 hands (BL-A2→BL-A1) | ✅ **oracle landed / fix path REDEFINED** | BL-A2 far-vertex oracle: RED on today's build (hand far-verts shard **79-107u** vs 20u threshold) — the gate that W2.2's oracle provably lacked. Step-0 (WAVE7_REVIEW A5) killed the dormant flag: `RB3_HANDS_BIND_FIX` is **INERT on the real band path** (its `clipPlaying` trigger fires 0×). B.S3 then empirically killed the rigid-anchor pattern too: `RB3_HANDS_POSEAWARE` (default-OFF, landed) helps uniformly-authored gloves (70-84→65u) but **DISTORTS per-bone-authored hands (106→205u)** — a static rigid collapse scrambles per-bone-authored verts. B.S4 confirms DO NOT FLIP. **Net: the finger shard requires a true per-frame pose-aware basis correction (Wave 8); two whole classes of static fix are now proven dead ends with numbers.** |
+| W4.2-fix text floor | ✅ **complete → FLIPPED default-ON** | Relaxed floor landed: authored colors pass through unchanged; only true-invisible (<0.06 all channels) text lifts to 0.25 (the three labels the 0.6 floor originally rescued). C.S2 independent verify: focused-item contrast toward retail on **every reachable screen**, flag-OFF provably inert. **Coordinator flip (engine `a94762f`): default-ON, opt-out `RB3_UI_TEXT_FLOOR_STRICT`; verified live (QUICKPLAY dark-on-gold, PLAY NOW dimmed).** |
+| W4.1 hub-quad | ✅ **package → FLIPPED default-ON** | C.S3 package: quad gone in both flag-ON boots, QUICKPLAY/ROAD CHALLENGE label ROIs byte-unchanged across all 4 captures. **Coordinator flip (rb3 `cda3b326`): default-ON, opt-out `RB3_HUB_MENU_QUAD_OFF`; verified live on the default build.** |
+| W3.2b point-light | ✅ **complete [DROP]** | Recommendation accepted: keep per-pixel Lambert (strictly higher fidelity than a per-object ambient cube); do NOT land box-ambient (near-no-op: venues have 0 directional approx lights), do NOT grow `SceneUniforms` 656→752 (DC3 blast stays zero). Prototype + flag shelved on `wave6-boxmap-proto`. Reopen only on a human-captured point-spot-dominant venue that measurably beats Lambert. |
+
+**Coordinator actions:** flip decisions per table (2 flips, 2 no-flips); classification regen
+(330 flags, check clean); drawlog 792 green + lineup PASS on the flipped defaults; pin bumped
+`1b045d9` → `a94762f`.
+
+### Wave 8 menu (from Wave 7)
+
+- **W3.3b (reopened):** the sub-knee mid/low-tone desaturation in the composite
+  exposure/tonemap/grade stage — the pp_off control quantifies the target (mid sat 0.026→0.389).
+- **W2.8c:** per-frame pose-aware basis correction for per-bone-authored appendage meshes (the only
+  remaining fix class; BL-A2 oracle is the gate, 79-107u RED baseline).
+- **WASH verdict** (when the matrix lands) → mechanism item or fix.
+- Carried: venue black poster quads (SYS-5), 4→8 lights (DC3 gates), W2.6 foot/shoe, W2.4
+  BandPatchMesh, song_select minor residuals.
