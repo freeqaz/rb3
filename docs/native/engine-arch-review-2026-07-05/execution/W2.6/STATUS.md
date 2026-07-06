@@ -47,3 +47,36 @@ path). **S4 should NOT introduce `RB3_FOOT_REST_CAPTURE`** (never implemented) �
 **Deviation vs plan:** the shard is BELOW the rotation-basis tripwire (2-frame guard-hidden transient,
 not >92u/200-460u); STOP holds because the targeted mechanism (clipPlaying missing-seed) is absent.
 Memo: `W2.6/char/S1_DIAGNOSIS.md`. Files touched: `W2.6/char/*` artifacts only (no source).
+
+## W2.6.S2 — done (NO-OP per S1 STOP / diagnosis-only)
+
+**Decision:** S2 is explicitly gated "(only if S1 = FIX-VIABLE)" in PLAN.md section W2.6.S2. S1
+branched to **STOP / diagnosis-only** (`W2.6/char/S1_DIAGNOSIS.md`, commit `0f3388c0`). Therefore S2
+lands **no source change**: `RB3_FOOT_REST_CAPTURE` is **NOT introduced**.
+
+**Verified before deciding (S2 implementer, Opus):**
+- `git log --grep=W2.6` -> only `0f3388c0` (S1 diagnosis, artifacts-only). No prior S2 work.
+- `grep -rn RB3_FOOT_REST_CAPTURE|sFootRestCapture src/` -> 0 hits (flag never added anywhere).
+- `git status src/system/bandobj/` -> clean (no partial/uncommitted S2 edits to reconcile).
+
+**Why implementing S2 would be wrong, not merely unnecessary:**
+1. The PLAN's targeted mechanism (`missWhy="clipPlaying"` mid-clip first-resolve -> V24 drop) is
+   REFUTED — **0 `clipPlaying` pendings** on HEAD *and* in the W2.2 baseline log. The S2 completion
+   branch mirrors `RB3_HANDS_BIND_FIX`, gated on `mDriver->FirstPlaying()`; that predicate never fires
+   for the shoe bones, so the branch would be **dead code**.
+2. The S2 load-time pre-seed is already effectively present: `[REST_SEED] poll=0` seeds 105–109
+   bones/member clip-free at the gender-bind deform pose (`added=0` on later attempts), so `rp != end`
+   already; seeding "by name earlier" changes nothing about when the mesh is processed.
+3. The residual DROP is a benign 2-frame guard-hidden count-in transient (2 DROP / 155 samples; max
+   SKINPOS 69.5u, 0 fling, nothing >=92u or 200-460u). The only remaining bind-side lever is
+   `own==bound` rebake = the proven 200-460u rotation-basis **STOP-TRIPWIRE**. Engine READ-ONLY scope
+   forbids the real fix (defer-draw / lineup-aware guard).
+
+Introducing the flag anyway would add dead, flag-guarded code the diagnosis says not to ship — scope
+creep against the S1 decision gate. **Exit criteria 1 (flag-OFF byte-identical) and 5 (`HandsBindOracle`
+green) hold trivially: no new flag, no new code path.**
+
+**Handoff to S4 (PART 2):** do NOT register `RB3_FOOT_REST_CAPTURE` (never implemented). Register only
+`RB3_HANDS_BIND_FIX` + `RB3_SKEL_REBIND_FULL` + the 90 `rb3/src/system` scan-root flags, per S1 memo.
+
+**Files touched by W2.6.S2:** STATUS.md only (this section). No source, no commits beyond docs.
