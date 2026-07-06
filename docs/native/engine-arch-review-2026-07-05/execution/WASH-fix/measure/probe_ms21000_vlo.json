@@ -1,0 +1,122 @@
+[
+ {
+  "arm": "venue_light_off",
+  "songms_target": 21000.0,
+  "songms_actual": 21141.0,
+  "png": "/tmp/washfix-h1vlo/ms21000_vlo_venue_light_off_01_t1.png",
+  "class": "PINK",
+  "is_wash": true,
+  "mean_luma": 0.5083819627761841,
+  "pink_frac": 24.56499565972222,
+  "n_scene": 140,
+  "tail_engaged": 0,
+  "tail_missed": 40,
+  "tail_miss_reasons": {
+   "venue_off": 40
+  },
+  "tail_envs": {
+   "rooftop_foreground.env": 20,
+   "theater.env": 19,
+   "chars.env": 1
+  },
+  "tail_greykey": 0,
+  "final_env": "chars.env",
+  "final_engaged": 0,
+  "final_miss": "venue_off",
+  "pp": {
+   "fmt": "RGBA8Unorm",
+   "unorm": 1
+  },
+  "stale_env_rewrites": {}
+ },
+ {
+  "arm": "venue_light_off",
+  "songms_target": 21000.0,
+  "songms_actual": 20881.8,
+  "png": "/tmp/washfix-h1vlo/ms21000_vlo_venue_light_off_02_t2.png",
+  "class": "PINK",
+  "is_wash": true,
+  "mean_luma": 0.6048480868339539,
+  "pink_frac": 20.563802083333332,
+  "n_scene": 126,
+  "tail_engaged": 0,
+  "tail_missed": 40,
+  "tail_miss_reasons": {
+   "venue_off": 40
+  },
+  "tail_envs": {
+   "rooftop_foreground.env": 20,
+   "theater.env": 19,
+   "chars.env": 1
+  },
+  "tail_greykey": 0,
+  "final_env": "chars.env",
+  "final_engaged": 0,
+  "final_miss": "venue_off",
+  "pp": {
+   "fmt": "RGBA8Unorm",
+   "unorm": 1
+  },
+  "stale_env_rewrites": {}
+ },
+ {
+  "arm": "venue_light_off",
+  "songms_target": 21000.0,
+  "songms_actual": 20885.6,
+  "png": "/tmp/washfix-h1vlo/ms21000_vlo_venue_light_off_03_t3.png",
+  "class": "PINK",
+  "is_wash": true,
+  "mean_luma": 0.5160843133926392,
+  "pink_frac": 24.646158854166668,
+  "n_scene": 126,
+  "tail_engaged": 0,
+  "tail_missed": 40,
+  "tail_miss_reasons": {
+   "venue_off": 40
+  },
+  "tail_envs": {
+   "rooftop_foreground.env": 20,
+   "theater.env": 19,
+   "chars.env": 1
+  },
+  "tail_greykey": 0,
+  "final_env": "chars.env",
+  "final_engaged": 0,
+  "final_miss": "venue_off",
+  "pp": {
+   "fmt": "RGBA8Unorm",
+   "unorm": 1
+  },
+  "stale_env_rewrites": {}
+ },
+ {
+  "arm": "venue_light_off",
+  "songms_target": 21000.0,
+  "songms_actual": 21062.6,
+  "png": "/tmp/washfix-h1vlo/ms21000_vlo_venue_light_off_04_t4.png",
+  "class": "PINK",
+  "is_wash": true,
+  "mean_luma": 0.6164044141769409,
+  "pink_frac": 20.610677083333336,
+  "n_scene": 126,
+  "tail_engaged": 0,
+  "tail_missed": 40,
+  "tail_miss_reasons": {
+   "venue_off": 40
+  },
+  "tail_envs": {
+   "rooftop_foreground.env": 20,
+   "theater.env": 19,
+   "chars.env": 1
+  },
+  "tail_greykey": 0,
+  "final_env": "chars.env",
+  "final_engaged": 0,
+  "final_miss": "venue_off",
+  "pp": {
+   "fmt": "RGBA8Unorm",
+   "unorm": 1
+  },
+  "stale_env_rewrites": {}
+ }
+]
