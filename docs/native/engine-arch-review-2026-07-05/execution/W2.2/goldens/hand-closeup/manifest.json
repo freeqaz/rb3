@@ -1,0 +1,82 @@
+{
+  "shots_tried": [
+    "coop_g_cg",
+    "coop_g_cg01",
+    "coop_g_n01",
+    "coop_g_n03",
+    "coop_b_cg",
+    "coop_b_cg01",
+    "coop_b_n01",
+    "coop_d_n01",
+    "coop_d_n02",
+    "coop_v_n01",
+    "coop_front_n01",
+    "coop_front_n00",
+    "coop_k_n01"
+  ],
+  "shot_requested": "coop_g_cg",
+  "shot_resolved": "coop_g_cg.shot",
+  "shot_pinned": true,
+  "frames": [
+    {
+      "label": "countin",
+      "file": "handcloseup_countin.png",
+      "frame": 2813,
+      "songMs": 0.0,
+      "screen": "game_screen",
+      "shot_requested": "coop_g_cg",
+      "shot_resolved": "coop_g_cg.shot",
+      "cur_shot": "coop_g_cg.shot",
+      "shot_pinned": true,
+      "ok": true
+    },
+    {
+      "label": "walkon",
+      "file": "handcloseup_walkon.png",
+      "frame": 4269,
+      "songMs": 2523.7,
+      "screen": "game_screen",
+      "shot_requested": "coop_g_cg",
+      "shot_resolved": "coop_g_cg.shot",
+      "cur_shot": "coop_g_cg.shot",
+      "shot_pinned": true,
+      "ok": true
+    },
+    {
+      "label": "play_00",
+      "file": "handcloseup_play_00.png",
+      "frame": 4455,
+      "songMs": 4065.5,
+      "screen": "game_screen",
+      "shot_requested": "coop_g_cg",
+      "shot_resolved": "coop_g_cg.shot",
+      "cur_shot": "coop_g_cg.shot",
+      "shot_pinned": true,
+      "ok": true
+    },
+    {
+      "label": "play_01",
+      "file": "handcloseup_play_01.png",
+      "frame": 4641,
+      "songMs": 5592.2,
+      "screen": "game_screen",
+      "shot_requested": "coop_g_cg",
+      "shot_resolved": "coop_g_cg.shot",
+      "cur_shot": "coop_g_cg.shot",
+      "shot_pinned": true,
+      "ok": true
+    },
+    {
+      "label": "play_02",
+      "file": "handcloseup_play_02.png",
+      "frame": 4812,
+      "songMs": 7015.6,
+      "screen": "game_screen",
+      "shot_requested": "coop_g_cg",
+      "shot_resolved": "coop_g_cg.shot",
+      "cur_shot": "coop_g_cg.shot",
+      "shot_pinned": true,
+      "ok": true
+    }
+  ]
+}
