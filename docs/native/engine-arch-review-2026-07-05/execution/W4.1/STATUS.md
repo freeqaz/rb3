@@ -89,3 +89,67 @@ render/gfx files, no `rb3_render_hook.cpp`.
 subitem (b) song_select sliver investigation, subitem (c) part_difficulty
 backlog handoff documentation — these are separate checkpoint IDs per the
 plan's C.S2 breakdown.
+
+## C.S2-b — impl (Sonnet) — done (no-fix / verify+document) — 2026-07-06
+
+Implemented subitem (b) per PLAN.md exactly: verified the two already-fixed
+song_select issues are still resolved on current HEAD, then identified the
+remaining "red vertical sliver" residual. **Verdict: legitimate scrollbar
+thumb, matches retail pixel-for-pixel behavior — no bug, no fix, no flag.**
+
+**Text overlap — reconfirmed fixed.** Re-read
+`src/band3/meta_band/MusicLibrary.cpp:1094-1160` on current HEAD: the
+`#ifdef HX_NATIVE` override in `MusicLibrary::Text()` is present and
+unchanged (clears `label->SetTextToken(gNullStr)` before type-specific
+writes, plus the `AppLabel`-cast-null `UILabel` fallback). Fresh captures
+(`/tmp/wave6-ss-sliver-check/`, `/tmp/wave6-ss-header-check/`,
+`RB3_FIXED_CLOCK=1`, native rb3-native, depths 0/6/10/13/20/30/50/70) at
+both song rows and header rows show clean non-overlapping text throughout —
+no stale group-letter / song-count residue.
+
+**Grey placeholder quad below album art — reconfirmed fixed.** Explicitly
+tested a *header row* highlighted (not just song rows, since the plan flagged
+this as the trigger condition): `native_depth_06.png` (`B` header, 6 SONGS
+0/30, highlighted) shows the venue backdrop below the album-art panel, not a
+grey backing quad. Matches the visdiff-documented fix.
+
+**Red sliver — root-caused, NOT a bug.** Investigated with a new harness
+(`W4.1/harness/songsel-sliver-probe.py`) built on
+`scripts/native/song-select-capture.py`:
+- Captured 6 scroll depths (0/10/20/30/50/70) and scanned screen column
+  x=893 for the dark-red pixels (`~(123,26,2)`) vs. the yellow highlight-bar
+  column (x=50).
+- **The sliver moves ~2.0-2.1px per scroll step** (21px/10 steps, 42px/20,
+  84px/40) — a small, linear, *whole-list-proportional* rate, categorically
+  different from the ~22-26px-per-row list scroll and independent of the
+  highlighted row's on-screen position (which jumps once then holds fixed at
+  y=400-442 across depths 10-70 while the sliver keeps sliding). This is
+  scrollbar-thumb kinematics, not a mesh/label artifact tied to one slot.
+- **Cross-checked against retail** (`images/retail-screenshots/`):
+  `yt_qRagnZCIMzk_song_select_album_art.png` (list near the top, letters
+  A/B) shows the identical dark-red mark near the *top* of the same track
+  position; `yt_qRagnZCIMzk_song_select_diff_ratings.png` (list scrolled to
+  the *end*, letters V-Y) shows the same mark near the *bottom* of the
+  track. Retail has the exact same element, moving the same way. It is an
+  authored scrollbar-thumb decoration for the song list, correctly rendered
+  by the native port — the "overlap family" visdiff note flagged an
+  intentional design element as a possible bug, which this investigation
+  refutes.
+- No `RB3_SONGSEL_SLIVER_HIDE` flag registered (per the plan: "if it is a
+  legitimate scrollbar, document as no-fix and close" — nothing to hide).
+
+**Gate:** no code changed in this stage (`src/band3/`, `src/system/ui/`,
+`src/system/bandobj/` all untouched — `git status` clean for those paths at
+both start and end of this stage), so the plan's "confirm the OTHER two
+screens unchanged" A/A requirement is trivially satisfied — main_hub and
+part_difficulty could not have regressed since nothing built differently.
+No rebuild was performed; captures reused the existing `rb3-native` binary
+built by C.S2-a.
+
+**Fence adherence:** touched only documentation/harness files under
+`docs/native/engine-arch-review-2026-07-05/execution/W4.1/` (this STATUS.md
++ new `harness/songsel-sliver-probe.py`). No `src/band3/`, `src/system/`,
+`rb3_render_hook.cpp`, or engine files. No classification.json changes (no
+new flag needed).
+
+**Commit:** rb3 (docs-only, this stage's own files) — see commit list below.
