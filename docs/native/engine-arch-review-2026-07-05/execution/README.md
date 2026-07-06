@@ -62,3 +62,47 @@ Each work item `<KEY>` (e.g. `W0.1`) owns `execution/<KEY>/`:
   documented, not unwound (rule 8).
 - Engine working tree has an unrelated concurrent agent's uncommitted `FxSendNative.cpp` audio
   edit — left untouched.
+
+## Wave 2 results (2026-07-06, run `wf_ffcf5a20-bb5`, 41 agents)
+
+**6/7 complete with gates green; W0.3b partial; W1.6 auto-deferred (precondition unmet).** Engine
+advanced `9561a19` → `41b9e3a` (pin bumped after coordinator build + lineup-gate PASS against the
+fully-decomposed engine). **`Rnd_Wgpu_RB3.cpp`: 7,017 → 4,747 lines** with six extracted TUs.
+
+| Item | Status | Highlights |
+|---|---|---|
+| W1.2 mesh cache | ✅ complete | `RB3MeshCache.{h,cpp}` (engine `daa0286`/`daf0ed1`/`6f9d340`): entry cache + Xbox-cvert unpack extracted, MOVE byte-identical (source-textual). **S4 convergence analysis: NOT provably identical to `gfx/MeshGpuCache`, kept verbatim** — correct conservative call. |
+| W1.3 material binder | ✅ complete | `RB3MaterialBinder.{h,cpp}` (engine `c43b6fd`/`b206d44`): `RB3BuildMaterialUniforms` extracted; asset-name branches moved along unchanged for W1.7 to relocate. |
+| W1.4 postproc/halo/quad | ✅ complete | `RB3HaloPass`+`RB3PostProc`+`RB3Quad` TUs (engine `3c59dc4`…`8d6d895`): gem-bloom capture/replay semantics preserved; diff-hunk equivalence re-derived by verifier. |
+| W1.5 ring dedupe | ✅ complete | Shared `gfx/UniformRingBuffer` adopted by both backends (engine `0cd227f`/`648dc40`). One CHANGE (overflow wrap→grow) proven inert: **zero-Grow probe** shows the divergent path never executes at real scenes + path-identity for the rest. |
+| W1.7 GameRenderHook | ✅ complete | Seam wired + **all 13 asset-name behavior branches (B1–B13) + Bucket-A probes relocated** to `rb3_render_hook.cpp`, one MOVE per commit behind existing flags (engine+rb3, `9083833`…`41b9e3a`). Engine `strcmp` survivors are only Bucket-C cam/environ selectors (Phase-3-owned, coordinator-signed-off) + generic env-driven. **SYS-2 structurally addressed.** |
+| W2-TESTFIX drift | ✅ complete | `milo-engine-tests` **169/29-failed → 198/0-failed**. 4 buckets fixed at their owning repo (dc3 `034e8d12`/`a14f7e01`, engine `49c3f38`/`0dab386`). Two test-oracle corrections audited legit (float-cast serializer bug proven; Dir-merge oracle corrected against faithful `Utl.cpp:247`, one assertion *strengthened*). Suite is now a wave gate: **198 pass / 0 fail / 2 by-design skip** (requires `DC3_DATA`+`MILO_LIB`, `ctest -j1`). |
+| W0.3b clock seam | ⚠️ **partial** | Frozen-clock seam landed (`RB3_FIXED_CLOCK`, rb3 `352d19ef`/`0026bee0`); **draw COUNT determinism exact (888×) — count-jitter root cause = wall-clock boot RNG seed, fixed.** But the lane verifier's **15-run sweep found ~33% flake** on the world-transform gate: run-to-run **draw-submission ORDER nondeterminism** (mesh-identity swaps, up to 354-draw divergence; byte-identical binaries disagree run-to-run). NOT a residual-sidecar candidate. → **new engine item W0.3c in Wave 3.** `--fixed-clock` gate is diagnostic-only until fixed, NOT a hard CI blocker. |
+| W1.6 DrawContext | ⏸️ **deferred** | Workflow barrier correctly skipped it: precondition (W0.3b green) unmet. The riskiest item must not land on a probabilistic gate. → Wave 3 Lane A, after W0.3c. |
+
+**Coordinator actions:** clean rb3-native build + lineup-gate PASS against decomposed engine HEAD
+`41b9e3a`; pin bumped; W1.7 Bucket-C scoping signed off in `W1.7/STATUS.md`.
+
+**Key finding for the campaign:** the W0.3b draw-order nondeterminism is not just a test-gate
+annoyance — it is *evidence of the SYS-3 order-dependent-state fault the review predicted*, surfacing
+under the microscope of a deterministic harness. Fixing it (W0.3c) both unblocks W1.6 and removes a
+real source of render instability. The lane verifier's refusal to paper it into the residual sidecar
+(it's mesh-identity swaps, a different and real bug class) is exactly the discipline the safety nets
+were built to enforce.
+
+## Wave 3 (2026-07-06, run `<pending>`)
+
+- **Lane A (DrawMesh chain, sequential):** W0.3c (root-cause + fix draw-submission-order
+  nondeterminism → W0.3b golden green) → W1.6 (DrawContext state-leak fix, now gated by the green
+  golden). Both engine-backend, both edit `Rnd_Wgpu_RB3.cpp`.
+- **Lane B (skinning bind — the hands/fingers headline fix, load path, parallel):** W2.2 (rebind
+  outfit+appendage meshes to the per-member animated skeleton **and rebake `invBind` against the
+  per-member bind pose**). Gated by the *deterministic* W0.1 skin golden + W0.4 effector golden —
+  does NOT depend on the flaky draw-log. Lives in the char/skeleton load path, so no DrawMesh
+  collision with Lane A. **Ground-truth requirement:** must establish independent correctness
+  (Dolphin/retail) — the skin golden proves faithful-to-reference, not that a changed bind is *right*.
+- **Lane C (cheap independent wins, parallel):** W3.1 (lighting fills: fog from `RndEnviron` +
+  directional/point arrays 4→8, additive) + W2.5 (band-waypoint resolution assert, game-side).
+
+Deferred to Wave 4: W2.1 placement contract + W2.3 GeomOwner aliasing (need W1.6's DrawContext),
+W3.2 BoxMapLighting, W2.4 BandPatchMesh decision, Phase 4 UI.

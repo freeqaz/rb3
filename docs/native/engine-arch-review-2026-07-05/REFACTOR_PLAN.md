@@ -17,11 +17,15 @@ behavior-preserving extraction · **KEEP** = faithful/sound, do not touch.
 
 ---
 
-> **STATUS (coordinator, 2026-07-05 after Wave 1):** Phase 0 is **6/7 DONE with fail-red
-> proven** — W0.1 ✅ W0.2 ✅ W0.4 ✅ W0.5 ✅ W0.6 ✅ W1.1 ✅ (Phase 1) · W0.3 ⚠️ partial
-> (infra + fail-red landed; integration golden blocked on a frozen-sim-clock seam → W0.3b,
-> Wave 2). See `execution/README.md` Wave-1 table for commits and evidence. **The Phase-2
-> preconditions W0.1/W0.4/W0.5 are green; W1.6 remains gated on W0.3b.**
+> **STATUS (coordinator, 2026-07-06 after Wave 2):** Phase 0 nets green (W0.1/W0.2/W0.4/W0.5/W0.6);
+> **Phase 1 monolith decomposition DONE** — `Rnd_Wgpu_RB3.cpp` 7,017→4,747 lines, six TUs extracted
+> (W1.1–W1.5 ✅), and **W1.7 relocated all 13 asset-name branches to the game hook (SYS-2 structurally
+> addressed) ✅.** Engine pin `41b9e3a`. Engine-test drift cleared (W2-TESTFIX: 198/0). **Open:**
+> W0.3b ⚠️ partial — draw-COUNT determinism achieved but a **draw-submission-ORDER nondeterminism**
+> (~33% flake, mesh-identity swaps) surfaced = live instance of SYS-3; new item **W0.3c** (Wave 3)
+> root-causes+fixes it, which also unblocks **W1.6** (deferred, the SYS-3 DrawContext fix). See
+> `execution/README.md` Wave-2 table. **Phase-2 skinning-bind work (W2.2, hands/fingers) can proceed
+> now** on the deterministic skin/effector goldens; placement work (W2.1/W2.3) waits for W1.6.
 
 ## Phase 0 — Safety nets first (BLOCKS everything structural)
 
