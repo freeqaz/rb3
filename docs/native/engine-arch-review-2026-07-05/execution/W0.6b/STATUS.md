@@ -46,3 +46,68 @@ study/variant knobs (each selects a rebind behavior when set); `RB3_MESH_FREE`=w
 read=value (rigid/rebake mode); `RB3_SKIN_FIX_OFF`=workaround default-ON (coupled to RB3_SKIN_RTT).
 
 No src/ edits. classification.json NOT touched (S4 merges). No gen regen.
+
+## W0.6b.S2 — done
+Staging: `execution/W0.6b/classified-S2.json` (24 rows). Commit `969b78f8`.
+All 24 flags re-scanned (fresh `native_compat_census.py scan`), confirmed present + `Unknown`,
+classified by reading each call site (READ-ONLY on src/). Verify: parses; count==24; keys==S2 set;
+classes all valid; required fields present. Histogram: 14 workaround / 8 perf / 2 feature (0 probe).
+
+Per-flag (class — call site — reason):
+- `MILO_HEADLESS` = **feature** default-off (UI.cpp:519 + engine AudioDevice.cpp:175/Rnd_Wgpu.cpp:253
+  + main_native): headless runtime mode; skips window/audio/GPU device, fakes 1/30s UI clock. Shared
+  root (engine/game/glue) — one row covers all.
+- `RB3_APPLY_HANDLER_FIX_OFF` = **workaround** default-ON (TrackPanelDir.cpp:294): single-player
+  scoreboard right/left.grp x-translation neutralization; `if(!getenv)` → opt-out.
+- `RB3_BILLBOARD_OFF` = **workaround** default-ON (MultiMesh.cpp:30, truthy): native DrawShowing
+  billboard branch active by default; flag disables it.
+- `RB3_CAM_FALLBACK_OFF` = **workaround** default-ON (BandDirector.cpp:386): voidcut last-good-cam
+  fallback; `!=0` opt-out.
+- `RB3_LOADER_BUDGET_MS` / `_MIN_YIELD_MS` / `_READAHEAD` / `_YIELD_MS` = **perf** default-off (value):
+  Loader/StandardStream numeric budget/yield/read-ahead knobs (defaults 8ms/16ms/6/16ms).
+- `RB3_MENU_VOID_FIX_OFF` = **workaround** default-ON (Draw.cpp:70): menu-void mesh cull fix; opt-out.
+- `RB3_METAMUSIC_SYNC` = **workaround** default-OFF opt-in (MetaMusic.cpp:381, truthy): restores the
+  original eager blocking PostLoad path (native default = async).
+- `RB3_NO_CROWD_INTRO` = **workaround** default-ON (CrowdAudio.cpp:39): native crowd/venue_intro mogg
+  bridge; `if(getenv)return nullptr` opt-out.
+- `RB3_PREWARM_NEXT` = **perf** default-off (UIScreen.cpp:275, value): prewarm from:to screen-pair
+  spec string; asset-prewarm scheduling only.
+- `RB3_PREWARM_SCREENS` = **perf** default-off native / on web (UIScreen/UIPanel, truthy): UI screen
+  asset prewarm+adopt; adopt site has no correctness dependency.
+- `RB3_REFRACTION_FIX_OFF` = **workaround** default-ON (Draw.cpp:101): song_select
+  bottom_square_refraction cull fix; opt-out.
+- `RB3_RESYNC_YIELD_OFF` = **workaround** default-ON (StandardStream.cpp:568, truthy): stream resync
+  yield; opt-out disables.
+- `RB3_REVIEW_LIGHTER_FIX_OFF` = **workaround** default-ON (ReviewDisplay.cpp:84): lighter-slot show
+  fix (hide on zero score); opt-out.
+- `RB3_SCROLLBAR_FIX_OFF` = **workaround** default-ON (ScrollbarDisplay.cpp:210): content-aware draw
+  gate; =1 restores exact Wii over-draw gate.
+- `RB3_STREAM_BUF_SECS` = **perf** default-off (StandardStream.cpp:165, value): min buffer depth in
+  seconds (default 4, capped by ~9.1s ring). Anti-underrun value knob.
+- `RB3_STREAM_PREPLAY_CAP_OFF` = **workaround** default-ON (StreamReceiver.cpp:79, truthy): pre-play
+  ring-fill write cap; opt-out.
+- `RB3_TV3_PLAY_OFF` = **workaround** default-ON (Dir.cpp:151): vignette_transition (tv3) WorldDir
+  force-play; `if(!sOff)b=true` opt-out.
+- `RB3_VENUE_FRUSTUM_CULL` = **perf** default-OFF opt-in (Draw.cpp:201, truthy): world.cam venue
+  sphere frustum cull; pure draw-skip.
+- `RB3_VENUE_SYNC` = **workaround** default-ON (BandDirector.cpp:36, truthy '0'): native forces
+  synchronous venue load (correct ordering); =0 opts into experimental async (unsafe).
+- `RB3_WEB_OFFMAIN_MIX` = **feature** default-ON (engine AudioDevice_Web.cpp:673 + StreamReceiver.cpp:46,
+  truthy '0'): off-main-thread audio decode/mix mode (web survives freezes; native sizes ring deeper).
+  Port audio-architecture toggle, not a fidelity stand-in. Shared root (engine/game).
+- `VENUE_CAM_LOCK` = **workaround** default-ON (BandDirector.cpp:351): native bridge points venue
+  WorldDir mCam at director's active shot cam each frame; =1 reverts to static cam. Gates real
+  behavior (not a probe despite the plain name).
+
+DEVIATIONS from PLAN name-guidance (all site-verified):
+- `RB3_PREWARM_NEXT` classified **perf** (value spec string), not workaround — PLAN allowed
+  "workaround if correctness dependency"; the adopt/prewarm sites only schedule assets, no draw/logic
+  change, so perf per definition.
+- `RB3_WEB_OFFMAIN_MIX` classified **feature** (not workaround): off-main-thread audio mixing is an
+  intended port architecture toggle, not a stand-in for a Wii-faithful path (default-ON, improves
+  robustness). PLAN said "feature or workaround" — chose feature.
+- `VENUE_CAM_LOCK` classified **workaround** (not probe): despite the non-`_OFF` name it gates a real
+  camera-bridge behavior default-ON; opt-out=1. PLAN flagged this ambiguity ("debug camera lock print
+  = probe") — the site is behavior, not a print.
+
+No src/ edits. classification.json NOT touched (S4 merges). No gen regen.
