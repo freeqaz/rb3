@@ -104,6 +104,6 @@ introduced, `git diff HEAD -- src/system/bandobj/BandCharacter.{cpp,h}` EMPTY. S
   touches the non-rebound crowd/extras path.
 - **Gate 5 W0.5 lineup (flag-ON path) — PASS:** reduces to flag-OFF=HEAD; lineup gate verdict=PASS.
 
-**Commits:** `<S3_SHA>` (S3_MEASURE.md + this STATUS section). No source, no flag, no flip.
+**Commits:** `8df42648` (S3_MEASURE.md + this STATUS section). No source, no flag, no flip.
 **Exit criteria:** 1 (flag-OFF byte-identical) + 5 (`HandsBindOracle` green + fail-red) hold; criteria
 2/3/4 covered N/A or inherited-green per above. Default flip is NOT created (coordinator-gated; N/A).
