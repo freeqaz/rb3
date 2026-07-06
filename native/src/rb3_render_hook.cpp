@@ -10,13 +10,15 @@
 //
 // State today
 // -----------
-// RB3 is built with MILO_ENGINE_BUILD_GFX OFF (its 2010-era rndobj/ cannot
-// compile against the DC3-wired WebGPU layer — see native/CMakeLists.txt). So
-// the engine's Rnd_Wgpu.cpp is NOT linked into rb3-native and these methods are
-// never actually called yet. We keep the implementation anyway so the seam
-// exists for the day RB3 gets its own renderer: the file self-registers
-// gBandHook at C++ static-init time (harmless — SetGameRenderHook just stores a
-// pointer), and the symbol is benign on the GFX-off link line.
+// RB3 builds with MILO_ENGINE_BUILD_GFX=ON and the `rb3` GPU-backend flavor
+// (native/CMakeLists.txt FORCEs it): the engine's DC3-shaped Rnd_Wgpu.cpp is
+// NOT linked, but RB3's own backend Rnd_Wgpu_RB3.cpp (BandRnd : Rnd) IS
+// compiled and linked into rb3-native. That renderer does not yet dispatch the
+// two frame-pass stages (W1.7 wires them at the RB3 frame seams — both stay
+// no-ops here because RB3 has no native overlay/impostor pass yet), and the
+// per-draw policy methods below are inert until W1.7.S2–S4 relocate the engine
+// renderer's inline asset-name branches into them. The file self-registers
+// gBandHook at C++ static-init time (SetGameRenderHook just stores a pointer).
 //
 // Linkage
 // -------
@@ -41,6 +43,30 @@ public:
     // no impostor RTT loop wired on native yet; no-op today.
     void RenderCharacterImpostors(void* /*renderCtx*/) override {
         // No-op today. See comment above.
+    }
+
+    // ------------------------------------------------------------------------
+    // Per-draw policy (W1.7). No-op today: each method returns the default
+    // "no override" POD so the engine renderer keeps running its inline asset-
+    // name branches unchanged (byte-identical output). W1.7.S2–S4 move the
+    // actual name matches + `RB3_*` env-flag reads INTO these methods, one
+    // behavior per commit; until then the seam exists but is inert.
+    // ------------------------------------------------------------------------
+    DrawGeomPolicy QueryDrawGeomPolicy(RndMesh* /*mesh*/,
+                                       float* /*outWorld16*/) override {
+        return DrawGeomPolicy();
+    }
+
+    DrawMaterialPolicy QueryDrawMaterialPolicy(RndMesh* /*mesh*/,
+                                               RndMat* /*mat*/,
+                                               bool /*skinned*/,
+                                               RndMesh* /*owner*/,
+                                               const char* /*camName*/) override {
+        return DrawMaterialPolicy();
+    }
+
+    HaloPolicy QueryHaloPolicy(RndMat* /*mat*/) override {
+        return HaloPolicy();
     }
 };
 
