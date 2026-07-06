@@ -132,3 +132,42 @@ in-fence fix — there is no texture to recover.
 
 C.S1 changed **no source** (probe-only). Only `W5.1/**` docs + `census/**` artifacts written.
 No engine files, no forbidden files, no flags, no default flips.
+
+## 2026-07-06 — C.S2 closure (Sonnet) — done (no-code-needed)
+
+**Per the C.S2 dispatch instructions:** if C.S1's verdict is anything other than a confirmed
+W2.7-family null-diffuse bug with an in-fence fix design, do not force a fix — write the
+documentation/staged-patch outcome C.S1 specified and mark status honestly. C.S1's verdict was
+**authored-dark + authored-solid-color, NOT W2.7-family, NO in-fence fix** — that is exactly the
+"anything else" branch, so this stage does no source work.
+
+**Action taken:**
+1. Confirmed C.S1's census is internally consistent and its "no in-fence fix" conclusion holds
+   (re-read the full census table + discriminator argument above; the poster's `hasTex=1` +
+   visible embossed text through the dark field is the load-bearing piece of evidence and it's
+   sound — a bind failure cannot produce readable-through-black text).
+2. Filed the one optional Wave-9 follow-up C.S1 recommended:
+   `W5.1/BACKLOG-tv3a-poster-groundtruth-spotcheck.md` — a Wii/Dolphin ground-truth spot-check of
+   the `tv3_a` cork-board poster's brightness, explicitly scoped as low-priority/optional, with no
+   presumption a bug exists (the census already rules out every fixable cause; this is a pure
+   authored-vs-lighting-fidelity tiebreak, and only escalates to a fresh staged patch — outside
+   every current lane's fence — if retail is shown to be materially brighter).
+3. Superseded the ancestor `W4.1/BACKLOG-partdiff-venue-poster.md` handoff (which had routed this
+   to "the Lane D venue family" for further diagnosis): that diagnosis is now complete via C.S1's
+   census, so no further routing is needed. Left `W4.1`'s file untouched (historical record,
+   another lane's directory) — this STATUS.md entry + the new backlog file are the terminal
+   record for the trail SYS-5 → W4.1 → W5.1.
+
+**No code changed. No flags added. No gates run** (the C.S2 gate list in `WAVE8_KICKOFF.md`
+— census A/B, visual A/B, lineup, fail-red — applies to a fix under test; there is no fix here,
+so those gates are inapplicable, not skipped-and-failing).
+
+**Outcome: no-code-needed.** Recommend the coordinator CLOSE W5.1/SYS-5 for Wave 8, carrying only
+the optional Wave-9 backlog item forward (see task #27 close-out list: "W5.1 quads" resolves to
+"closed, no fix; optional ground-truth spot-check filed").
+
+### Fence — RESPECTED (C.S2)
+
+No source touched. Files written this stage: this STATUS.md section,
+`W5.1/BACKLOG-tv3a-poster-groundtruth-spotcheck.md`. No engine files, no forbidden files
+(`BandCharacter.cpp`, `RB3MaterialBinder.cpp` untouched by this lane), no flags, no default flips.
