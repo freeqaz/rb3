@@ -197,6 +197,13 @@ def main():
             else:
                 log(f"rb3_director_disable echoed {dz!r} — capturing without a pin")
 
+        # Frame-scope the probe: record the engine-log size NOW so we extract only
+        # the RB3_PLACEMENT_PROBE lines from the settle+capture window (the probe
+        # fires every frame for every instance; over a whole session that is 100k+
+        # lines). The probe writes to UNBUFFERED stderr merged into this log, so
+        # the byte offset tracks it promptly.
+        logf.flush()
+        probe_offset = os.path.getsize(log_path)
         # settle a few frames so the crowd is fully posed + drawn, then capture.
         for _ in range(4):
             k.verb(port, "autohit"); time.sleep(0.2)
@@ -225,9 +232,12 @@ def main():
     if rc != 0:
         return rc
 
-    # Extract the RB3_PLACEMENT_PROBE lines from the engine log into the probe file.
+    # Extract the RB3_PLACEMENT_PROBE lines written during the capture window
+    # (from probe_offset onward) into the probe file.
     nprobe = 0
     with open(log_path, "r", errors="replace") as lf, open(probe_path, "w") as pf:
+        try: lf.seek(probe_offset)
+        except Exception: pass
         for line in lf:
             if "RB3_PLACEMENT_PROBE" in line:
                 pf.write(line if line.endswith("\n") else line + "\n")
