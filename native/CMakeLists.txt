@@ -716,6 +716,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_stub_census.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_hands_bind_oracle.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_farvert_rotation_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_placement_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_crowd_bone_oracle.cpp
         ${_RB3_NATIVE_SRCS}

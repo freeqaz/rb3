@@ -196,3 +196,70 @@ this needs the user to name the member/outfit → a targeted re-capture.
 - The `blend=3` fingernail/logo/string/jacket-emblem/watch layers are **faithful**
   alpha authoring; leave them. The crowd-extras + `scrollbar_bg` guard-drops are a
   separate (crowd/UI) population, out of W2.8 scope.
+
+---
+
+## B.S1 (W2.8.BL-A2) — FAR-VERTEX ROTATION-BASIS ORACLE — LANDED
+
+**Deliverable:** `native/tests/test_farvert_rotation_oracle.cpp` (rb3-tests),
+registered in `native/CMakeLists.txt`. The falsifiable far-vertex metric that the
+W2.2 origin oracle + REBIND_DRAW_SKINPOS + whole-mesh AABB ratio were all blind
+to. FENCE honored: no engine files edited, BandCharacter.cpp read-only; the
+RefSkinVertex skinner is DUPLICATED (not exported) per WAVE7_REVIEW A6.
+
+**Metric.** `max` over hand/finger far verts of
+`|RefSkinVertex(v, asDrawnInvBind) - RefSkinVertex(v, coherentInvBind)|` under an
+ANIMATED bone pose. `RefSkinVertex` is the RB3 `RndMesh::SkinVertex`
+(Mesh.cpp:1367-1410) semantics — SKIP-not-clamp, no weight normalization,
+`skinMat = invBind*boneWorld` — duplicated from engine
+`tests/test_skin_golden.cpp:164` and parameterized over an explicit bone palette
+(runs without an RndMesh). The basis break is modeled FAITHFULLY as a bone-local
+rotation `invBind * RotZ(theta) * boneWorld`, so a vert at bone-local radius R
+flings by exactly `2*R*sin(theta/2)` about the BONE origin (a vert AT the bone
+origin does not move — the exact reason the origin metric is blind). NB: the
+engine test's left-multiply `breakBasis` rotates about the MESH origin and does
+NOT scale with bone radius — corrected here (documented in the TU header).
+
+**EXIT — RED on today's build (fail-red demo):**
+`RB3_FARVERT_PERTURB=1.645 rb3-tests --gtest_filter=FarVertRotationOracle.CoherentUnderAnimation_FailsRedOnPerturb`
+=> RED, worst far fingertip **fling = 58.6u** at the documented ~94deg
+(1.645 rad) magnet-vs-per-member divergence
+(CHAR_SKINNING_DEFORM_INVESTIGATION.md:104-156; the two documented worldRot
+vectors dot to -0.077 => theta ~= 94.4deg). Recorded magnitudes:
+`shard_fling_90deg_u=57`, `shard_fling_documented_u=59`. This is the shard the
+game shows now; the coherent (theta=0) skin under the SAME animated pose is
+GREEN (metric < 1e-2u) — so the oracle fires on the basis mismatch, never on
+animation alone (the A6 bind-pose-green trap is avoided by measuring post-anim).
+
+**EXIT — synthetic-perturbation control (R*sin(theta) scaling):**
+`MetricScalesWithRSinTheta` sweeps the break angle on the R=40u fingertip and
+asserts `metric == 2*R*sin(theta/2)` (~R*sin(theta) small-angle), monotone on
+(0,pi], zero at theta=0. MEASURED vs predicted (u):
+| theta | 0.1 | 0.3 | 0.6 | 1.0 | 1.5708 | 2.5 | pi |
+|---|---|---|---|---|---|---|---|
+| metric | 4.00 | 11.96 | 23.64 | 38.35 | 56.57 | 75.92 | 80.0 |
+| 2R·sin(θ/2) | 4.00 | 11.96 | 23.64 | 38.35 | 56.57 | 75.92 | 80.0 |
+Exact match — the metric is a genuine rotation-sensitive far-vertex statistic.
+
+**EXIT — blindness contrast (why BL-A2 had to exist):**
+`OriginAndWholeMeshMetricsAreBlind` — under the same ~90deg break the bone-ORIGIN
+(R~0) skinpos delta stays < 0.1u and the whole-mesh AABB ratio reads ~clean,
+while the far-vertex metric is 51-59u (far > origin*50). Directly demonstrates
+that W2.2's origin oracle / REBIND_DRAW_SKINPOS (47-58u "clean") and the ~1.3x
+whole-mesh ratio cannot see the R*sin(theta) finger shard.
+
+**Committed tests (4 GREEN + 1 SKIP):** CoherentUnderAnimation_FailsRedOnPerturb
+(GREEN default, RED under env — the fail-red), FarVertShardIsDetected (RED-
+capability lock), OriginAndWholeMeshMetricsAreBlind, MetricScalesWithRSinTheta,
+RealPathFixture (SKIP — the A6-sanctioned real-band-path hook: BL-A1/S2 dumps a
+captured live gameplay pose to `native/tests/goldens/w2.8-farvert/live_pose.txt`
+or `RB3_FARVERT_FIXTURE=<path>`, format = `asDrawnXYZ refXYZ R` per far vert;
+the metric runs unchanged and EXPECT_LT(worst, 20u) is the real-data fail-red the
+S2 fix must turn GREEN).
+
+**Handoff to BL-A1 (S2/S3):** the fix must (a) turn the RealPathFixture arm GREEN
+on a real capture, and (b) keep the three math/control tiers GREEN. The rebake
+that closes the shard is `offset' = meshWorld * inverse(perMemberBoneBindWorld)`
+using the per-member bone's OWN bind basis (not the magnet's) — this oracle is
+the numeric gate that a naive rest-capture (W2.2's `RB3_HANDS_BIND_FIX`, judged
+"no benefit" under the blind origin gate) provably fails.
