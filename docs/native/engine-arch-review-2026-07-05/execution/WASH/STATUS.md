@@ -90,3 +90,35 @@ final composite / a scene-wide uniform rather than a per-pass lighting term.
    or bloomColor — all from boot-varying `RndPostProc::Current()`) from "async
    residency" (out-of-lane). This is the one discriminator the 4-flag matrix cannot
    make on its own, because none of the 4 flags disable the grade itself.
+
+## Coordinator verdict — full N=8/config matrix complete (2026-07-06)
+
+| config (all contract-default) | wash rate | classes |
+|---|---|---|
+| luma_on (W3.3 ceiling ON) | 4/8 | PINK 4, NEARBLACK 4 |
+| highway_bloom_off (+luma ON) | 4/8 | PINK 4, NEARBLACK 4 |
+| bloom_off (+luma ON) | 3/8 | PINK 3, NEARBLACK 5 |
+| **venue_light_off (+luma ON)** | **8/8** | **PINK 8** |
+| control_w33_off (pure default) | 1/8 | PINK 1, NEARBLACK 7 |
+
+**MECHANISM NAMED: the P4 per-environ venue-light rewrite.** Disabling it (`RB3_VENUE_LIGHT_OFF`)
+makes the PINK cast render on EVERY boot (8/8 vs the default's 1/8, Fisher p≈0.001) — i.e. the
+PINK wash IS the underlying broken/unlit-env base appearance, and the default-ON venue-light
+rewrite masks it *stochastically*: on boots where the rewrite fails to engage for the pinned shot
+(boot-varying `RndEnviron::sCurrent` selection/timing), the pink base shows through. The bloom
+passes are exonerated (rates ≈ baseline within noise; ranked prior #2 dead). The async-residency
+prior (#1) is subsumed/reframed: any residual boot-nondeterminism acts *through* which environ is
+current at the shot, not through texture residency per se. NEARBLACK is the venue's normal dark
+appearance at this songMs, not a wash.
+
+**→ Wave 8 fix direction (WASH-fix):** make the venue-light rewrite's engagement deterministic
+for the active shot's environ, AND/OR fix the unlit-env fallback so the base is not pink. Gate:
+wash rate → 0/8 at this pinned shot under the matrix protocol; no lighting regression (lineup +
+venue A/B). Cross-link: W3.3b (song-start sub-knee desat) should be re-checked against the same
+engagement mechanism before assuming a separate composite-grade cause (Wave-6 D.S2 measured
+`RB3_VENUE_LIGHT_OFF=color` at ms3000 — the two items may be one engagement-timing bug seen from
+opposite sides).
+
+Note (disclosed): configs 1-4 all carry `RB3_PP_LUMA_CEILING=1`; luma_on's 4/8 vs control's 1/8 is
+NOT significant at n=8 (boot-stochastic) and the ceiling is sub-knee-identity (A.S2) — treated as
+noise, but Wave 8's fix verification must use the pure-default arm as its baseline.
