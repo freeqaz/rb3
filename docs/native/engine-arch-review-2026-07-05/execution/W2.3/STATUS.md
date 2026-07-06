@@ -104,3 +104,37 @@ Q1/Q2 DECISION.
   work) is a separate future item — NOT a DrawMesh bone-source change.
 - **NOT touched (BINDING honored):** `src/system/world/Crowd.cpp` (toggled only via its
   existing `RB3_NO_CROWD_REBIND` env), `src/App.cpp`, the sibling `FxSendNative.cpp` edit.
+
+## W2.3.S2 — gated-out / NO CHANGE (S1 DECISION = SELF+POISON; bone-source thesis refuted)
+
+**Status: blocked-by-design (accepted honest-refutation exit).** S2 is explicitly gated on
+`S1 DECISION != SELF+POISON`. S1 landed DECISION = **SELF+POISON** (engine `609efb7`, rb3
+`007d49d8`/`a4d076e4`/`ffed6b18`), so S2 lands **NO engine behavior change** and escalates,
+exactly per PLAN.md `## Design` ("S2 STOPS and escalates on the SELF+POISON verdict rather
+than land a placebo flag") and the Exit criteria "Honest-refutation branch is a valid exit."
+
+**Why the flag would be a placebo (verified this pass):** S1 MEASURED all 40 crowd/extras
+skinned meshes are `owner == mesh` (self-owned, `ownerEqMesh=1`, `diffInstance=0`). The S2
+selection `boneSrc = (sCrowdOwnBones && mesh->NumBones()>0) ? mesh : owner` therefore yields
+`boneSrc == mesh == owner` — pointer-identical to today's behavior — for every drawn crowd
+mesh. `RB3_CROWD_OWN_BONES` would be inert-ON as well as inert-OFF for crowd; it cannot turn
+S1's fail-red gate GREEN (the sharding is offset-poison, not a bone-source alias). Landing it
+would violate the "no placebo flag" discipline.
+
+**No change committed. No new flag introduced:**
+- `git grep RB3_CROWD_OWN_BONES` (engine + rb3) -> 0 hits. Flag NOT registered (correct — a
+  census entry for an unused flag would itself be dead weight; introduce only when S2 acts).
+- Engine working-tree HEAD unchanged at `609efb7` (S1 probe); no `Rnd_Wgpu_RB3.cpp` boneSrc
+  reroute, no `classification.json`/`gen.inc` edit.
+- `Crowd.cpp` / `App.cpp` / sibling `FxSendNative.cpp` untouched (BINDING honored).
+
+**Byte-identical / gate evidence:** none required — no code delta to gate. flag-OFF ==
+current build == `609efb7` by construction (nothing added). S1's CrowdBoneOracle stays RED
+under `RB3_NO_CROWD_REBIND=1` (fail-red intact); the rebind is RETAINED as load-bearing.
+
+**Escalation to coordinator (re-affirming S1 handoff):** the residual crowd sharding is a
+pure OFFSET-rebake problem, fixed today by `RebindCrowdCharBonesToOwnSkeleton`
+(`SetBone(b, own, calcOffset=true)`). A faithful generalization (load-time rest-offset rebake
+for crowd/extras, cf. W2.6 `RebindOutfitBonesToOwnSkeleton`) is a **separate future item**,
+NOT a DrawMesh bone-source change. S3 (flag-ON verification package) is consequently N/A —
+there is no flag to verify.
