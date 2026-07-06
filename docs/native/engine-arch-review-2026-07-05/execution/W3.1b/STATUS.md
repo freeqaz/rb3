@@ -110,3 +110,74 @@ Engine commit `0f3d7ef`; rb3 docs/harness commit (this STATUS + `venue-ab/` +
 asset+shader-blocked, documented honestly). Fog visual verification COMPLETE
 (exit #2 closed with a reproducible 151-vs-19 screenshot + AND-gate fail-red).
 Out of scope confirmed untouched: 4→8 light growth, W3.2 BoxMap, decomp source.
+
+## A.S7 — VERIFY (Opus, independent, 2026-07-06)
+
+Independent re-verification of W3.1b against its PLAN.md exits, on a **fresh clang
+build dir** (`native/build-agent-A-S7-verify`, engine HEAD `0f3d7ef`, pin still
+`8e7eddd` — WARNING-only, coordinator bumps). Did NOT trust S1/S2/S3 STATUS;
+re-ran every gate and re-derived the DC3-zero-blast and file-disjointness proofs.
+
+**Exit 1 — projLight landed default-OFF + flag-OFF byte-identical: PASS.**
+- Code re-read in `0f3d7ef` diff: `RB3EnvProjLightEnabled()` + `RB3EnvProjLightForce()`
+  file-local latches; `RB3MakeShadowBias()` + `RB3RndLightProjection()` file-local
+  statics (DC3 `Lit.cpp:84-139` port); fill loop over `venv->mLightsReal` replacing
+  `s.numProjLights=0`; slot-3 bind `e[3].textureView = projView` (function-local,
+  defaults `mWhiteView`). No header/member/decomp-source edit.
+- **flag-OFF byte-identical CONFIRMED:** drawlog-golden `--fixed-clock
+  --canonical-order` PASS 888/888 (225 known-residual, within bound); lineup-gate
+  PASS all layers (img/segA/ratioB/countC/pin).
+
+**Exit 2 — fog visibly renders + AND-gate fail-red: PASS (independently reproduced).**
+- Fresh A/B (`RB3_ENV_FOG=1 RB3_ENV_FOG_FORCE=1` vs neither), frame-locked
+  songMs≈12665, shot coop_g_n03: **mean|Δ| = 160.4, 99.6% pixels changed**, fog_off
+  mean-luma 34.8 → fog_on 193.3 (committed fog_on 185.0 — corroborates). Far above
+  the documented ~19.4 A/A noise floor. `/tmp/a-s7-vis/fog_on.png` = the whole bar
+  interior washed grey-blue with depth-graded falloff (fog_off = normal magenta bar).
+- **Value-driven / live-path proof (fail-red, exit 5):** same binary, only the env
+  var differs → 160-delta ⟹ the fog code path executes (dead code = no env effect).
+  Delta is **depth-graded** (distant bg 156.6 > near fg 124.5, ratio 1.26, keyed to
+  fogStart=8/fogEnd=80) and **grey-blue tinted** (washed-region RGB 179/182/188, B
+  highest, matches authored fogColor 0.55/0.60/0.72) — proving the written source
+  values flow to output, not a constant. S2's scene∧material AND-gate progression
+  (scene-only→~22 ≈ noise vs scene∧material→151) documented in venue-ab/README.
+
+**Exit 3 — DC3 zero-blast: PASS.**
+- `git diff 0f3d7ef^..0f3d7ef -- src/gfx/UniformStructs.h src/gfx/standard_wgsl.inc`
+  = **EMPTY**. `static_assert(sizeof(SceneUniforms)==656)` intact.
+- **File-disjointness proven structurally:** `Rnd_Wgpu_RB3.cpp` + `RB3MaterialBinder.cpp`
+  compile ONLY under `MILO_ENGINE_GPU_BACKEND=rb3` (engine CMakeLists.txt:322-326,
+  gated at :373); `milo-engine-tests` builds under `=dc3` → the W3.1b-changed files
+  are NOT in the test compile path. `RB3MaterialBinder.h`'s only change is a
+  `RB3EnvFogForce()` declaration (RB3-only header). So the suite is structurally
+  immune to W3.1b; the empty contract diff closes the shared-struct surface.
+- **milo-engine-tests EMPIRICAL:** fresh dc3-flavor build (`build-agent-A-S7-vtests`,
+  engine HEAD `0f3d7ef`), `ctest -j1`: **200 tests, 100% passed, 0 failed, 2 skipped (ExtractBik.ExtractSmallest, SkinGolden.CaptureGolden) = the documented 198/0/2**. Isolated per-test via ctest (a whole-binary direct run deadlocks on a gtest death-test-with-7-threads fork — harness artifact, not W3.1b).
+
+**Exit 4 — default-OFF + flags registered append-only: PASS.**
+- classification.json valid JSON; 3 W3.1b rows all `"default":"off"`: `RB3_ENV_PROJLIGHT`
+  (feature), `RB3_ENV_PROJLIGHT_FORCE` (probe), `RB3_ENV_FOG_FORCE` (probe). No
+  `gen.inc` regen (coordinator, wave end).
+
+**Exit 5 — package present + coherent: PASS.** `venue-ab/` has 6 PNGs + numeric
+table + honest README. My independent numbers corroborate it (fog 160 vs their 151;
+projLight 15.5 vs their 20.3 — both ≈ noise).
+
+### The one honest caveat (NOT a regression, NOT a PLAN gate)
+The task's paraphrased exit-3 asks projLight flag-ON for "a measurable, plausible
+lighting change." **It has NONE that is visually measurable** — independently
+reproduced: `RB3_ENV_PROJLIGHT=1 RB3_ENV_PROJLIGHT_FORCE=1` vs OFF = mean|Δ| 15.55
+(≈ the 19.4 noise floor). Root cause verified in WGSL (`standard_wgsl.inc:817-833`):
+`projContrib` adds to `totalLighting.diffuse` only for LIT surfaces inside the
+projection cone facing the light; the bar venue is overwhelmingly unlit/prelit, so a
+white stand-in gobo lands nowhere visible. This is S1's documented asset+shader block,
+consistent with the PLAN's projLight exit (which is **fill-landed + byte-identical**,
+both MET — the PLAN required a *visible* render for FOG only). The projLight fill's
+**runtime liveness is not independently observable** (no visible effect, no
+instrumentation) — it rests on code-reachability + the verbatim-DC3 field mapping
+re-read in the diff. Flagged for the coordinator: projLight cannot be visually
+validated with current in-repo assets; a compelling screenshot needs a real
+gobo-authoring venue (backlog).
+
+**Verdict: all PLAN.md hard exits GREEN, independently reverified.** projLight
+visible-effect asset+shader-blocked (documented, not a defect). No gate failed.
