@@ -1,0 +1,54 @@
+[
+  {
+    "mean_luma": 0.3730953335762024,
+    "mean_luma_255": 95.13931274414062,
+    "hi_frac": 2.4712456597222223,
+    "lo_frac": 30.847764756944446,
+    "pink_frac": 41.42686631944444,
+    "p05": 0.02110588364303112,
+    "p50": 0.31190982460975647,
+    "p95": 0.8382745385169983,
+    "wash_class": "PINK",
+    "is_wash": true,
+    "path": "docs/native/engine-arch-review-2026-07-05/execution/W2.1-flip/dolphin-ab/cap_OFF_1.png"
+  },
+  {
+    "mean_luma": 0.09288276731967926,
+    "mean_luma_255": 23.68510627746582,
+    "hi_frac": 1.0054253472222223,
+    "lo_frac": 77.46365017361111,
+    "pink_frac": 0.4931640625,
+    "p05": 0.012898039072751999,
+    "p50": 0.04690195992588997,
+    "p95": 0.3797333240509033,
+    "wash_class": "NEARBLACK",
+    "is_wash": false,
+    "path": "docs/native/engine-arch-review-2026-07-05/execution/W2.1-flip/dolphin-ab/cap_OFF_2.png"
+  },
+  {
+    "mean_luma": 0.7943398952484131,
+    "mean_luma_255": 202.55667114257812,
+    "hi_frac": 77.14420572916667,
+    "lo_frac": 3.4098307291666665,
+    "pink_frac": 1.787868923611111,
+    "p05": 0.11647451668977737,
+    "p50": 0.9303490519523621,
+    "p95": 0.9384274482727051,
+    "wash_class": "WHITE",
+    "is_wash": true,
+    "path": "docs/native/engine-arch-review-2026-07-05/execution/W2.1-flip/dolphin-ab/cap_ON_1.png"
+  },
+  {
+    "mean_luma": 0.4807823598384857,
+    "mean_luma_255": 122.59950256347656,
+    "hi_frac": 1.096245659722222,
+    "lo_frac": 3.819552951388889,
+    "pink_frac": 75.48687065972223,
+    "p05": 0.11210588365793228,
+    "p50": 0.49713727831840515,
+    "p95": 0.7501999735832214,
+    "wash_class": "PINK",
+    "is_wash": true,
+    "path": "docs/native/engine-arch-review-2026-07-05/execution/W2.1-flip/dolphin-ab/cap_ON_2.png"
+  }
+]
