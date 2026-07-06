@@ -362,3 +362,55 @@ edits; `Rnd_Wgpu_RB3.cpp` / `src/App.cpp` / `FxSendNative.cpp` untouched.
 | UISCREEN_DBG | probe | ui/hub | n/a: logs UI transition-state changes (UI.cpp) and screen/panel Exiting()/CheckIsLoaded() blocked-panel state (UIScreen.cpp, UIPanel.cpp), dedup'd per state/... |
 | VENUE_DBG | probe | bandobj/venue | n/a: logs the native venue force-load bridge in BandDirector::EnterVenue (override symbol, chosen venue, sync/async mode, wardrobe/venueDir/venueName state, ... |
 | VOIDCUT_DBG | probe | render/camera | n/a: logs each shot's void-vs-keep verdict for the RB3_CAM_FALLBACK_OFF-gated sticky last-good-cam fallback (voidcut avoidance); read-only, does not affect t... |
+## VERIFY — complete
+
+Adversarial re-derivation (own scan, own gen, own diffs — not trusting the S4 STATUS numbers).
+No build dir needed (classification.json is a pure Python/JSON artifact; no rb3-native rebuild
+required for this item). Engine HEAD at verify time: `1fd2bfc` (W0.6b) on `e26d8c2`
+(W0.3d-fix) on `609efb7` (pin, unchanged — confirmed `rb3/native/CMakeLists.txt:74` still pins
+`609efb77b15cf92de1138698404b6eb1a6438309`, not bumped).
+
+**Checks re-run independently, all green:**
+1. `classification.json` parses; diff `e26d8c2..1fd2bfc` touches exactly one existing line (adds
+   a trailing comma to the prior last row) plus pure additions — **append-only confirmed**
+   (`git show 1fd2bfc -- .../classification.json | grep '^-'` -> 1 line, the re-added comma-row).
+2. Fresh `native_compat_census.py scan` (not the committed snapshot) -> **91 flags with 'game' in
+   roots**, exact-set-equal (0 symmetric difference) to the 91 keys the W0.6b commit actually added
+   (diffed `e26d8c2` vs `1fd2bfc` key sets). No wrong-flag / off-by-N records.
+3. Fresh temp `gen` (`/tmp/w06b-verify-gen.inc`, not the committed path) -> 319 rows, 138
+   `FlagClass::Unknown`. Correctly parsing "flag name on the same source line as the Unknown
+   marker" (my first pass used a `grep -B2` heuristic that mis-attributed neighboring rows and
+   falsely found 41 game-root Unknowns — a script bug on my side, not S4's; a per-line regex parse
+   gives the true answer): **intersection of the 138 Unknown flags with the 91 game-root set = empty set.
+   Exit criterion independently confirmed.**
+4. `native_compat_census.py --selftest` -> **14/14 PASS**, re-run fresh.
+5. `native_compat_census.py check` -> exit 1, single cause: `RB3_DRAWSORT_DETERMINISTIC_OFF`
+   missing from the *committed* `gen.inc` + staleness — this is Lane A's (W0.3d-fix) row, not
+   W0.6b's; reproduced identically, confirms no committed gen.inc/ledger regen was run by this lane
+   (hard requirement D2 held).
+6. Required-field/class-enum audit over all 91 new rows (`class`/`owner`/`faithfulStatus`
+   present; `class` in {probe,workaround,feature,perf}) — **0 violations**.
+7. Spot call-site re-derivation (read source directly, did not trust the STATUS prose): confirmed
+   `VENUE_CAM_LOCK` (BandDirector.cpp:351, gates real per-frame cam bridge, correctly NOT a probe
+   despite its plain name), `RB3_WEB_OFFMAIN_MIX` (audio architecture toggle across engine+rb3,
+   correctly `feature`), `RB3_VENUE_SYNC` (BandDirector.cpp:32-41, default sync=1, `=0` opts into
+   experimental async — correctly `workaround` default-on), `RB3_HANDS_BIND_FIX`
+   (BandCharacter.cpp:1385, default-off presence read, matches W2.2 memory), `SET_SKEL_REBIND`
+   (BandCharacter.cpp:1788-1810 — comment literally calls it "purely a probe" but the code path
+   under `sRebind` calls `mesh->SetBone(b, own, false)`, a real (if currently no-op-by-topology)
+   behavior change — S1's `workaround` call is the source-verified answer; the in-file comment
+   would have misled a name/comment-only classifier), `RB3_NOTIFY_ALL` and `RB3_STATS_DBG`
+   (os/Debug.cpp:66, Mesh.cpp:408, File.cpp:168 — pure console/ring-buffer diagnostics, no
+   allocation or draw-path change, correctly `probe`). No misclassifications found in the sample.
+8. Scope boundary re-confirmed in the scanner source (`native_compat_census.py:52-59`):
+   `SCAN_ROOTS` "game" = `rb3/src/system` only — `src/band3` is genuinely not scanned, matching
+   the documented accepted-scope note.
+9. No source edits by this lane (only `classification.json` in both commits' `--stat`); no
+   `src/App.cpp`/`FxSendNative.cpp` touch; `Rnd_Wgpu_RB3.cpp` untouched by this lane.
+
+**Verdict:** W0.6b's stated exit criterion ("every game-root flag has a non-Unknown class
+authored") is **independently reproduced and TRUE**: 91/91 game-root flags classified, 0 remain
+`Unknown` in a from-scratch scan+gen, append-only sidecar edit, no scope creep, no premature
+`gen.inc`/ledger regen (left for the coordinator's single wave-end reconciliation per D2), and a
+targeted 6-flag call-site spot-check across all three subtasks (S1/S2/S3) found zero
+misclassifications. **No fixes needed; nothing to hand back.**
