@@ -1,0 +1,311 @@
+{
+    "_note": "W0.6b.S3 staging — 44 pure probe/debug-only flags. Every site was read (not just the name); all 44 confirmed print/collect-only — none gate rendering, physics, load-order, or any other shipped behavior. class=probe, default=off for all. MENU_VOID_SKIP is the one apparent exception (it DOES change what's drawn, via a skip-list) but per PLAN guidance it stays probe: it's a name-substring A/B research tool for isolating which drawable paints a screen region, not a shipped fix (same category as S1's RB3_NO_CLIP/RB3_NO_DEFORM/etc. bisection disables). No reclassifications to workaround were needed. Merged by S4.",
+    "BAND_ANIM_BONE": {
+        "class": "probe",
+        "owner": "char/anim",
+        "faithfulStatus": "n/a: names the bone BAND_ANIM_PROBE samples (defaults to bone_R-upperArm.mesh); only read when BAND_ANIM_PROBE is active, never alters Poll() [BandCharacter.cpp:507]",
+        "default": "off",
+        "read": "value"
+    },
+    "BAND_ANIM_PROBE": {
+        "class": "probe",
+        "owner": "char/anim",
+        "faithfulStatus": "n/a: per-frame trace of the band animation chain (driver presence, playing clip, named bone worldPos pre/post Character::Poll) to localize why the on-stage skeleton fails to move; substring-matches a member's dir name or '*' [BandCharacter.cpp:497]",
+        "default": "off",
+        "read": "value"
+    },
+    "BONE_CLEAR_DBG": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: logs any CopyBones(0) that wipes a non-empty bone list off a mesh, to catch post-load bone clears [Mesh.cpp:1156]",
+        "default": "off",
+        "read": "presence"
+    },
+    "BONE_LOAD_DBG": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: reports how many bones a mesh loaded from the file vs. how many resolved null, before RemoveInvalidBones strips them [Mesh.cpp:1000]",
+        "default": "off",
+        "read": "presence"
+    },
+    "CAMDIR_DBG": {
+        "class": "probe",
+        "owner": "render/camera",
+        "faithfulStatus": "n/a: logs the re-run HarvestDircuts() call once venue+song.anim are both live (propAnim/venueDir pointers); render-inert, aliases VENUE_DBG's same line [BandDirector.cpp:744]",
+        "default": "off",
+        "read": "presence"
+    },
+    "CAM_DBG": {
+        "class": "probe",
+        "owner": "render/camera",
+        "faithfulStatus": "n/a: dumps game.cam pose (pos/fwd/up/fov/near/far) during highway draw at TrackDir.cpp:280 (game.cam is only current at this scope point); also gates a separate pipeline-prewarm timing print at engine Rnd_Wgpu_RB3.cpp:2146 (no shared state, coincidental name reuse) [TrackDir.cpp:280; Rnd_Wgpu_RB3.cpp:2146]",
+        "default": "off",
+        "read": "presence"
+    },
+    "CBM_DBG": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: V38 instrumentation — dumps decoded SCALE channel + pre-divide matrix row lengths per scale-bone, localizing the crowd/extras 0.53-det Y-squash [CharBonesMeshes.cpp:176]",
+        "default": "off",
+        "read": "presence"
+    },
+    "CBM_DBG2": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: V38 probe — dumps quat magnitude pre-Normalize and post-QUAT/ROT LocalXfm determinant for a substring-matched bone name (or '*') [CharBonesMeshes.cpp:117,119,146,147]",
+        "default": "off",
+        "read": "value"
+    },
+    "CBS_DBG": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: dumps the cached packed-buffer layout (offsets, sizes, compression) vs bytes actually consumed, to verify against the DC3 Save contiguous layout [CharBonesSamples.cpp:591]",
+        "default": "off",
+        "read": "presence"
+    },
+    "CHARDRV_PROBE": {
+        "class": "probe",
+        "owner": "char/anim",
+        "faithfulStatus": "n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424]",
+        "default": "off",
+        "read": "value"
+    },
+    "CHAR_DBG": {
+        "class": "probe",
+        "owner": "render/char-material",
+        "faithfulStatus": "n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-because-unbound vs RTT-composite-never-painted); game BandDirector.cpp logs the re-run LoadCharacters() call (aliases VENUE_DBG) [RB3MaterialBinder.cpp:292; BandDirector.cpp:713]",
+        "default": "off",
+        "read": "presence"
+    },
+    "CLOCK_DBG": {
+        "class": "probe",
+        "owner": "ui/hud",
+        "faithfulStatus": "n/a: logs TrackDir::DrawShowing's real-time delta and y-per-second scroll multiplier for a track-panel HUD overlay [TrackDir.cpp:302]",
+        "default": "off",
+        "read": "presence"
+    },
+    "CROWD_REBIND_PROBE": {
+        "class": "probe",
+        "owner": "render/crowd",
+        "faithfulStatus": "n/a: verbose companion to RebindCrowdCharBonesToOwnSkeleton (the default-ON RB3_NO_CROWD_REBIND workaround) — read-only diagnostic flag, does not itself change the rebind [Crowd.cpp:936]",
+        "default": "off",
+        "read": "presence"
+    },
+    "GAME_DBG": {
+        "class": "probe",
+        "owner": "bandobj/flow",
+        "faithfulStatus": "n/a: logs BandDirector::OnFileLoaded's sym/dir args and ReadyForMidiParsers' native venue-deferred gate inputs/result; the gate's own cond is computed independent of the getenv call [BandDirector.cpp:1265,834]",
+        "default": "off",
+        "read": "presence"
+    },
+    "GEM_DBG": {
+        "class": "probe",
+        "owner": "render/highway",
+        "faithfulStatus": "n/a: dumps GemTrackDir::UpdateSurfaceTexture's mesh/mat/tex name state after the (unconditional) SetDiffuseTex call [GemTrackDir.cpp:393]",
+        "default": "off",
+        "read": "presence"
+    },
+    "HEAD_REBIND_PROBE": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: verbose companion to RebindHeadHandsAtRest (the default-ON RB3_NO_HEAD_REBIND-gated rest-capture rebind); read-only, does not alter the rebind [BandCharacter.cpp:1219]",
+        "default": "off",
+        "read": "presence"
+    },
+    "IK_TGT_DBG": {
+        "class": "probe",
+        "owner": "char/ik",
+        "faithfulStatus": "n/a: reports IK hand world position + each target's name/pos/distance/parent chain for far (>50u) targets; investigative tool for the residual crowd hand-IK pose error, render-inert [CharIKHand.cpp:45]",
+        "default": "off",
+        "read": "presence"
+    },
+    "INST_REBIND_PROBE": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: verbose companion to the instrument-strings rebind (RB3_NO_INST_REBIND/RB3_INST_STRINGS_MODE); read-only [BandCharacter.cpp:1551]",
+        "default": "off",
+        "read": "presence"
+    },
+    "K9_APPLY_DBG": {
+        "class": "probe",
+        "owner": "ui/hud",
+        "faithfulStatus": "n/a: dumps the milo 'apply' handler dispatch state (config object name/class/typedef apply-array, objects/visibles/xfms arrays) on TrackPanelDirBase::SetConfiguration/ReapplyConfiguration, plus a compact scoreboard-anchor world-pos trace in TrackPanelDir [TrackPanelDirBase.cpp:95,163,185; TrackPanelDir.cpp:334]",
+        "default": "off",
+        "read": "presence"
+    },
+    "MENU_VOID_DBG2": {
+        "class": "probe",
+        "owner": "render/ui",
+        "faithfulStatus": "n/a: render-inert one-shot-per-name material dump for hub-backdrop drawables (sky/dome/moon/cloud/star/night/bgbuilding/fog-keyed by default, or every mesh when =2); reports showing/mat/color/blend/zmode/diffuse-tex/vert-extent, always returns false (never skips a draw) [Draw.cpp:68,124]",
+        "default": "off",
+        "read": "value"
+    },
+    "MENU_VOID_SKIP": {
+        "class": "probe",
+        "owner": "render/ui",
+        "faithfulStatus": "n/a: comma/space-separated substring skip-draw list — an opt-in A/B research tool for isolating which drawable paints a given hub-backdrop screen region (not a shipped fix; distinct from the always-on worldcenter-occluder/refraction fixes in the same function, which are unconditional) [Draw.cpp:69]",
+        "default": "off",
+        "read": "value"
+    },
+    "MESH_BONE_DBG": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: dumps each loaded RndBone's bind-offset determinant + row lengths for substring-matched mesh names, checking whether the crowd-body det-0.53 squash is an authored bind offset or a mis-read [Mesh.cpp:1066]",
+        "default": "off",
+        "read": "value"
+    },
+    "MILO_LOCALE_DBG": {
+        "class": "probe",
+        "owner": "utl/locale",
+        "faithfulStatus": "n/a: traces Localize() token/format resolution for diagnosing format-string/token leaks [Locale.cpp:296]",
+        "default": "off",
+        "read": "presence"
+    },
+    "MILO_SETTOKEN_DBG": {
+        "class": "probe",
+        "owner": "ui/label",
+        "faithfulStatus": "n/a: traces UILabel::SetTokenFmtImp — symbol, localized format string, and final SetDisplayText input [UILabel.cpp:805]",
+        "default": "off",
+        "read": "presence"
+    },
+    "PART_INIT_DBG": {
+        "class": "probe",
+        "owner": "render/particles",
+        "faithfulStatus": "n/a: dumps InitParticle's emit branch, raw direction and mesh state before speed scale for substring-matched particle systems, diagnosing runaway street-fog particles [Part.cpp:670]",
+        "default": "off",
+        "read": "value"
+    },
+    "PART_MOVE_DBG": {
+        "class": "probe",
+        "owner": "render/particles",
+        "faithfulStatus": "n/a: per-call MoveParticles trace (dt/frameSpan, relative-frame force rows, relative xfm state, first particle velocity) for substring-matched systems, pinpointing runaway fog velocity origin [Part.cpp:1338]",
+        "default": "off",
+        "read": "value"
+    },
+    "RB3_DUMP_STEMS": {
+        "class": "probe",
+        "owner": "audio/stems",
+        "faithfulStatus": "n/a: opt-in raw PCM stem dump to disk (one .s16 file per channel under the given directory); purely a side-channel file write, does not alter the audio mix/playback path [StandardStream.cpp:68]",
+        "default": "off",
+        "read": "value"
+    },
+    "RB3_HAIR_DBG": {
+        "class": "probe",
+        "owner": "char/hair",
+        "faithfulStatus": "n/a: reports per-strand collide-hookup counts (points hooked, CharCollides reachable) to quantify free-hanging strands passing through the skull/shoulders under motion [CharHair.cpp:833]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RB3_METAMUSIC_DBG": {
+        "class": "probe",
+        "owner": "synth/metamusic",
+        "faithfulStatus": "n/a: logs completion of the deferred stream-FX wiring (6 eq.send dirs) after RB3_METAMUSIC_SYNC's async PostLoad path drains [MetaMusic.cpp:415]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RB3_NOTIFY_ALL": {
+        "class": "probe",
+        "owner": "os/debug",
+        "faithfulStatus": "n/a: console-verbosity toggle — restores every repeat of an engine NOTIFY diagnostic instead of the default per-message dedup; affects only diagnostic console output, not app logic/rendering [Debug.cpp:66]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RB3_PLACEMENT_PROBE": {
+        "class": "probe",
+        "owner": "render/placement",
+        "faithfulStatus": "n/a: dumps each crowd instance's spXfm translation used by the W2.1 RB3_PLACEMENT_CONTRACT placement oracle; Wii-compile-inert, no behavior change [Crowd.cpp:421]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RB3_PP_PROBE": {
+        "class": "probe",
+        "owner": "bandobj/patchmesh",
+        "faithfulStatus": "n/a: dumps BandPatchMesh::WorkVerts::SetMeshVerts entry state (vert/face counts, max face index, OOB check) added while triaging the C8 head-invisible regression [BandPatchMesh.cpp:324]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RB3_PREWARM_DBG": {
+        "class": "probe",
+        "owner": "load/perf",
+        "faithfulStatus": "n/a: two independent print sites sharing a name — game UIScreen.cpp logs the song_select-prewarm screen-pair schedule/CheckIsLoaded gate; engine Rnd_Wgpu_RB3.cpp times the A5 GPU pipeline pre-warm compile. Neither changes whether prewarm/pipeline-warm runs, only whether it's logged [UIScreen.cpp:298,392; Rnd_Wgpu_RB3.cpp:1472]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RB3_READAHEAD_DEBUG": {
+        "class": "probe",
+        "owner": "load/perf",
+        "faithfulStatus": "n/a: reports loader queueDepth/kicked counts to show whether dependency milos enqueue deep enough for read-ahead to matter; zero cost when off, does not change scheduling [Loader.cpp:540]",
+        "default": "off",
+        "read": "truthy"
+    },
+    "RB3_SKINFIX_DBG": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: logs every MatSwap touched by the outfit skin-diffuse rebind loop and what it rebinds, added while triaging the C8 head-invisible regression [OutfitConfig.cpp:600]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RB3_STATS_DBG": {
+        "class": "probe",
+        "owner": "debug/stomp-watch",
+        "faithfulStatus": "n/a: two independent stomp-watch bisection sites sharing a name — File.cpp checks MetaPerformer integrity on every file open (web song-end wedge diagnosis); Mesh.cpp records a ring of VertVector alloc/free events for stomp tracing. Both are read-only integrity checks/recorders, no behavior change [File.cpp:168; Mesh.cpp:408]",
+        "default": "off",
+        "read": "presence"
+    },
+    "RELOAD_PROBE": {
+        "class": "probe",
+        "owner": "bandobj/flow",
+        "faithfulStatus": "n/a: answers 'what reloads the band mid-song' by logging every RecomposePatches/MiloReload/start_load-DTA/in_closet-propsync/CharCache/BandWardrobe reload call site, correlated by a monotonic Poll serial [BandCharacter.cpp:50]",
+        "default": "off",
+        "read": "presence"
+    },
+    "SERVO_PROBE": {
+        "class": "probe",
+        "owner": "char/anim",
+        "faithfulStatus": "n/a: confirms CharServoBone::Poll runs and reports a mid-chain bone's LocalXfm before/after PoseMeshes, substring-matched by ClipType (or '*') [CharServoBone.cpp:45]",
+        "default": "off",
+        "read": "value"
+    },
+    "SKEL_REBIND_PROBE": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: verbose companion to RebindOutfitBonesToOwnSkeleton (RB3_NO_SKEL_REBIND) and the SET_SKEL_REBIND study variant — counts rebound/same/null-own bones; read-only, gates only its own print block alongside sRebind [BandCharacter.cpp:1068,1789]",
+        "default": "off",
+        "read": "presence"
+    },
+    "SKEL_REBIND_SKINPOS": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: post-rebind verification metric — reports the worst |skinWorld-boneWorld| bone-relative delta after RebindOutfitBonesToOwnSkeleton, the correctness measure used throughout the W2.2/skel-rebind investigation [BandCharacter.cpp:1140]",
+        "default": "off",
+        "read": "presence"
+    },
+    "STRIDE_PROBE": {
+        "class": "probe",
+        "owner": "skinning",
+        "faithfulStatus": "n/a: dumps mesh name/vert count/per-vert size/version/skinned-flag when reading the platform-compressed vertex blob, verifying the native compressed-vert read against the loaded stride [Mesh.cpp:678]",
+        "default": "off",
+        "read": "presence"
+    },
+    "UISCREEN_DBG": {
+        "class": "probe",
+        "owner": "ui/hub",
+        "faithfulStatus": "n/a: logs UI transition-state changes (UI.cpp) and screen/panel Exiting()/CheckIsLoaded() blocked-panel state (UIScreen.cpp, UIPanel.cpp), dedup'd per state/panel change [UI.cpp:537; UIPanel.cpp:273; UIScreen.cpp:116,582]",
+        "default": "off",
+        "read": "presence"
+    },
+    "VENUE_DBG": {
+        "class": "probe",
+        "owner": "bandobj/venue",
+        "faithfulStatus": "n/a: logs the native venue force-load bridge in BandDirector::EnterVenue (override symbol, chosen venue, sync/async mode, wardrobe/venueDir/venueName state, HarvestDircuts re-run — shares its last two log lines with CAMDIR_DBG/CHAR_DBG); the force-load itself (LoadVenue, RB3_VENUE_SYNC-gated sync mode) runs independent of this flag [BandDirector.cpp:654,666,690,713,744]",
+        "default": "off",
+        "read": "presence"
+    },
+    "VOIDCUT_DBG": {
+        "class": "probe",
+        "owner": "render/camera",
+        "faithfulStatus": "n/a: logs each shot's void-vs-keep verdict for the RB3_CAM_FALLBACK_OFF-gated sticky last-good-cam fallback (voidcut avoidance); read-only, does not affect the fallback decision [BandDirector.cpp:387]",
+        "default": "off",
+        "read": "presence"
+    }
+}
