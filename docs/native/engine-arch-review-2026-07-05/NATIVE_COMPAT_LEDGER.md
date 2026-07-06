@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 229  
-**By class:** feature=2, probe=37, unknown=143, workaround=47  
+**Total flags:** 230  
+**By class:** feature=2, probe=38, unknown=143, workaround=47  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 46
 
 | name | class | default | owner | faithful-status | sites |
@@ -98,6 +98,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_DATA` | unknown | unknown | unclassified | n/a | 6 |
 | `RB3_DRAWLOG` | probe | off | render/determinism | n/a: per-draw state-log ring capture (W0.3 draw-log golden harness) | 1 |
 | `RB3_DRAWLOG_DUMP` | probe | off | render/determinism | n/a: draw-log JSON dump path (W0.3 draw-log golden harness) | 1 |
+| `RB3_DRAWORDER_TRACE` | probe | off | render/determinism | n/a: transparent/text queue pre/post-sort submission-order trace (W0.3c.S1 order-flake attribution) | 2 |
 | `RB3_DRAWRECT_DBG` | unknown | off | unclassified | n/a | 1 |
 | `RB3_DTA_OVERLAY` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_FAKE_ASYNC_OPEN_MS` | unknown | unknown | unclassified | n/a | 1 |
