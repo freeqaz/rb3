@@ -85,6 +85,11 @@ CONFIG_ENV = {
     "default":         {"RB3_RENDER_DBG": "1"},
     "pp_off":          {"RB3_RENDER_DBG": "1", "RB3_PP_OFF": "1"},
     "venue_light_off": {"RB3_RENDER_DBG": "1", "RB3_VENUE_LIGHT_OFF": "1"},
+    # W3.3-fix (S1 impl): luminance-preserving highlight ceiling. If the
+    # per-channel ceiling desaturation is really the root cause of the grey
+    # window, this should read colored like pp_off/venue_light_off do, while
+    # (unlike pp_off) keeping the composite's exposure ramp active.
+    "luma_ceiling":    {"RB3_RENDER_DBG": "1", "RB3_PP_LUMA_CEILING": "1"},
 }
 
 
