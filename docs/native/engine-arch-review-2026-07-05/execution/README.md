@@ -117,3 +117,38 @@ were built to enforce.
 
 Deferred to Wave 4: W2.1 placement contract + W2.3 GeomOwner aliasing (need W1.6's DrawContext),
 W3.2 BoxMapLighting, W2.4 BandPatchMesh decision, Phase 4 UI.
+
+## Wave 3 results (2026-07-06, run `wf_e0e4d32e-e39`, 22 agents)
+
+**W1.6 + W2.2 + W2.5 complete; W0.3c partial (Exit-B comparator delivered, "15/15 green" bar blocked
+by pre-existing eye-jitter eps, not the order axis).** Engine `41b9e3a` → `6221a56` (pin bumped
+after fresh from-scratch build + lineup-gate PASS + canonical fail-red confirmed).
+
+| Item | Status | Highlights |
+|---|---|---|
+| W0.3c determinism | ⚠️ **partial [Exit B]** | S1 diagnosis reshaped the item: the planned transparent-sort fix (Exit A) is **structurally absent from the rb3 binary** (`TransparentQueue.cpp` is DC3-only; `BandRnd::DrawMesh` submits in traversal order) → Exit A NO-GO, S2 correctly skipped. **Root cause = async-loader/worker COMPLETION-order feeding object-list insertion order** (16-run sweep: single invariant draw *multiset*, order-only divergence, 282/282 meshes keep stable heap addresses → not allocation nondeterminism). Exit-B **canonical-order (multiset) comparator** landed in `drawlog-golden.py` (rb3 `5d254e00`) — all 4 fail-red classes RED + permutation GREEN. **But** the "15/15 fresh-boot green" bar is blocked by the pre-existing **W0.3b CharEyes/CharLookAt eps=3.0 residual** occasionally grazing (max 3.99): the verifier's 24-run sweep was 1 PASS/23 FAIL, all on residual-name world-xfm, none on count/bind-group/mesh-identity. → **new item W0.3d (Wave 4).** |
+| W1.6 DrawContext | ✅ **complete** | **The SYS-3 state-leak fix.** `WriteSceneUniforms` now returns an immutable `RB3SceneBinding`; `mSceneBindGroup`/`mSceneOffset` mutable mirrors collapsed into `mActiveScene`; `RB3DrawContext` + `SubmitDraw` thread the scene binding explicitly per draw (engine `9df8349`/`01c2642`/`6221a56`). Verifier built a **fresh pre-W1.6 baseline worktree** and did a 15-run A/B: **888/888 draws every run, scene bind-group-token partition identical (20 distinct), count + bind-group-collapse + multiset-key all identical.** The only A/B divergences are field=world on eye-jitter meshes — which W1.6 *mechanically cannot alter* (proven by A/A controls) = the W0.3d residual, not W1.6. Byte-identical modulo pre-existing nondeterminism. |
+| W2.2 hands/fingers | ✅ **complete [default-OFF]** | **The hands/fingers bind fix, staged so a blind revert is impossible.** New `rb3-tests` bind-pose identity oracle (`test_hands_bind_oracle.cpp`): at bind pose `offset′·perMemberBoneBindWorld ≈ identity` + skinned≈authored verts, **fail-red proven** (perturb 0.15 → 28.87u fingertip smear ≈ 200·sin0.15, matching the R·sin θ signature). Bind-pose-captured rebind+rebake landed **default-OFF** behind `RB3_SKEL_REBIND_FULL` (one file, +34 lines, torso-only path retained as opt-back). Numeric draw-time: **FLING(>120u)=0, max SKINPOS 68.2u (< 92u STOP-tripwire), no 200-460u smear** — the failed-experiment signature is NOT reproduced. **Not flipped:** the literal ≤65u bar is grazed by a ~69u **structural head-region** value + an out-of-scope foot/shoe path → flip deferred to Wave 4 pending head-graze adjudication + reviewer-judged Dolphin A/B. |
+| W2.5 waypoint assert | ✅ complete | `HX_NATIVE`-guarded diagnostic in `BandConfiguration::SyncPlayMode` (rb3 `082f933d`): `MILO_WARN` on any unresolved non-empty waypoint `targName`. Fail-red proven (injected bogus targName → warns); Wii compile provably untouched (`HX_NATIVE` undefined in the MWCC build). Surfaces "only some members placed." |
+
+**Coordinator actions:** fresh from-scratch rb3-native build against post-W1.6 engine HEAD `6221a56`
+(23 `RB3DrawContext`/`RB3SceneBinding` refs confirm W1.6 linked) + lineup-gate PASS all layers +
+canonical comparator fail-red confirmed; pin bumped.
+
+**Two headline structural wins this wave:** (1) **SYS-3 is fixed** — the mutable mid-frame scene
+bind group that made rendering order-dependent global state is gone; draws now carry their scene
+binding explicitly. (2) **The hands/fingers fix exists, is numerically gated, and is one
+coordinator-signed flag-flip away from shipping** — with the exact bind-pose-identity oracle whose
+absence caused the two BandPatchMesh reverts. Neither could have landed safely without Waves 0–2.
+
+### New backlog items filed from Wave 3
+
+- **W0.3d (Wave 4):** make the draw-log gate a clean non-probabilistic pass. Two parts: (a)
+  recalibrate the CharEyes/CharLookAt residual eps from a large sample OR root-cause the eye-jitter
+  (freeze/zero look-at state under `RB3_FIXED_CLOCK`) so the residual sidecar shrinks toward empty;
+  (b) root-cause the mechanism-2 async-loader/worker completion-order nondeterminism (the actual
+  draw-order flake). Until then the canonical comparator is usable **for changes that cannot alter a
+  mesh world-xfm** (as W1.6's verifier correctly applied it) but is not yet a universal hard gate.
+- **W2.2-flip (Wave 4):** adjudicate the ~69u structural head-region graze (compare to torso-only
+  baseline + Dolphin), resolve/scope the foot-shoe path, get reviewer-judged wide+hand-closeup A/B
+  vs fresh Dolphin captures, then flip `RB3_SKEL_REBIND_FULL` default-ON in a one-line gated commit.

@@ -17,6 +17,18 @@ behavior-preserving extraction · **KEEP** = faithful/sound, do not touch.
 
 ---
 
+> **STATUS (coordinator, 2026-07-06 after Wave 3):** **SYS-3 FIXED** — W1.6 replaced the mutable
+> mid-frame scene bind group with an immutable `RB3SceneBinding` threaded via `RB3DrawContext`
+> (engine `6221a56`, pin bumped, verified byte-identical). **Hands/fingers fix (W2.2) LANDED
+> default-OFF** behind `RB3_SKEL_REBIND_FULL` with a fail-red bind-pose-identity oracle (the invariant
+> BandPatchMesh lacked); one coordinator-signed flag-flip from shipping pending head-graze
+> adjudication + Dolphin A/B (→ W2.2-flip, Wave 4). W2.5 waypoint diagnostic landed. **W0.3c partial:**
+> Exit-A structurally impossible (no transparent sort in rb3 binary), Exit-B canonical-multiset
+> comparator delivered but its "15/15 green" bar is blocked by the pre-existing CharEyes eps residual
+> (→ W0.3d, Wave 4); W1.6 used it correctly for world-xfm-invariant changes. **Next (Wave 4):** Phase-2
+> placement (W2.1 skinned-placement contract + W2.3 GeomOwner) now unblocked on the DrawContext'd
+> `DrawMesh`; W0.3d; W2.2-flip; W3.1 lighting fills. See `execution/README.md` Wave-3 table.
+>
 > **STATUS (coordinator, 2026-07-06 after Wave 2):** Phase 0 nets green (W0.1/W0.2/W0.4/W0.5/W0.6);
 > **Phase 1 monolith decomposition DONE** — `Rnd_Wgpu_RB3.cpp` 7,017→4,747 lines, six TUs extracted
 > (W1.1–W1.5 ✅), and **W1.7 relocated all 13 asset-name branches to the game hook (SYS-2 structurally
