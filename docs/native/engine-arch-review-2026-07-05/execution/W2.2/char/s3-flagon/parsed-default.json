@@ -1,0 +1,1432 @@
+{
+  "skinpos": {
+    "clap.mesh": {
+      "max": 56.259,
+      "bone": "bone_L-index02.mesh"
+    },
+    "female_crowd_body03.mesh": {
+      "max": 58.689,
+      "bone": "bone_head.mesh"
+    },
+    "lighter.mesh": {
+      "max": 56.255,
+      "bone": "bone_L-index02.mesh"
+    },
+    "male_crowd_body04.mesh": {
+      "max": 64.322,
+      "bone": "bone_head.mesh"
+    },
+    "male_crowd_body03.mesh": {
+      "max": 64.322,
+      "bone": "bone_head.mesh"
+    },
+    "male_crowd_body01.mesh": {
+      "max": 63.795,
+      "bone": "bone_head.mesh"
+    },
+    "male_crowd_body02.mesh": {
+      "max": 64.006,
+      "bone": "bone_head.mesh"
+    },
+    "female_crowd_body01_lod02.mesh": {
+      "max": 63.638,
+      "bone": "bone_head.mesh"
+    },
+    "female_crowd_body02.mesh": {
+      "max": 63.638,
+      "bone": "bone_head.mesh"
+    },
+    "flannelcoat_resource.mesh": {
+      "max": 65.408,
+      "bone": "bone_head.mesh"
+    },
+    "flannelcoat_skin.2.mesh": {
+      "max": 61.7,
+      "bone": "bone_neck.mesh"
+    },
+    "head.mesh": {
+      "max": 69.501,
+      "bone": "bone_L-brow2.mesh"
+    },
+    "hands_naked.mesh": {
+      "max": 53.112,
+      "bone": "bone_R-foreTwist1.mesh"
+    },
+    "flarejeans_resource.1.mesh": {
+      "max": 43.527,
+      "bone": "bone_spine2.mesh"
+    },
+    "bikinichain_resource.mesh": {
+      "max": 59.508,
+      "bone": "bone_head.mesh"
+    },
+    "bikinichain_skin.1.mesh": {
+      "max": 59.508,
+      "bone": "bone_head.mesh"
+    },
+    "codpiecepants_resource.mesh": {
+      "max": 41.767,
+      "bone": "bone_spine1.mesh"
+    },
+    "strapjacket_resource.mesh": {
+      "max": 65.408,
+      "bone": "bone_head.mesh"
+    },
+    "male_facehair_chops.mesh": {
+      "max": 69.501,
+      "bone": "bone_L-brow2.mesh"
+    },
+    "fingernails_resource.mesh": {
+      "max": 47.209,
+      "bone": "bone_R-ringfinger03.mesh"
+    },
+    "drivinggloves_resource.mesh": {
+      "max": 53.003,
+      "bone": "bone_R-foreTwist1.mesh"
+    },
+    "denimjacket_resource.mesh": {
+      "max": 65.408,
+      "bone": "bone_head.mesh"
+    },
+    "denimjacket_skin.2.mesh": {
+      "max": 61.7,
+      "bone": "bone_neck.mesh"
+    },
+    "drivinggloves_skin.mesh": {
+      "max": 53.003,
+      "bone": "bone_R-foreTwist1.mesh"
+    },
+    "female_crowd_body04.mesh": {
+      "max": 64.17,
+      "bone": "bone_head.mesh"
+    },
+    "fist.mesh": {
+      "max": 56.259,
+      "bone": "bone_L-index02.mesh"
+    },
+    "horns.mesh": {
+      "max": 50.127,
+      "bone": "bone_L-forearm.mesh"
+    }
+  },
+  "fling": {},
+  "ratio": {
+    "female_extras_hair01.mesh": {
+      "max_ratio": 1.07,
+      "band": false,
+      "drop": false,
+      "bindExt": 15.62,
+      "worldExt": 16.72
+    },
+    "female_extras_skin01.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 55.64,
+      "worldExt": 55.58
+    },
+    "female_extra_head.mesh": {
+      "max_ratio": 1.81,
+      "band": false,
+      "drop": false,
+      "bindExt": 15.8,
+      "worldExt": 28.62
+    },
+    "female_extra_body01.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 70.66,
+      "worldExt": 70.62
+    },
+    "male_extra_head01.mesh": {
+      "max_ratio": 1.59,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.92,
+      "worldExt": 30.15
+    },
+    "male_extras_skin01_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 51.41,
+      "worldExt": 51.4
+    },
+    "male_extras_body01_medium.mesh": {
+      "max_ratio": 0.97,
+      "band": false,
+      "drop": false,
+      "bindExt": 79.77,
+      "worldExt": 77.69
+    },
+    "male_extra_hair01.mesh": {
+      "max_ratio": 1.08,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.13,
+      "worldExt": 19.53
+    },
+    "lighter.mesh": {
+      "max_ratio": 1.1,
+      "band": false,
+      "drop": false,
+      "bindExt": 34.95,
+      "worldExt": 38.47
+    },
+    "female_crowd_body01_lod02.mesh": {
+      "max_ratio": 1.24,
+      "band": false,
+      "drop": false,
+      "bindExt": 79.62,
+      "worldExt": 98.49
+    },
+    "clap.mesh": {
+      "max_ratio": 1.71,
+      "band": false,
+      "drop": false,
+      "bindExt": 51.08,
+      "worldExt": 87.09
+    },
+    "female_crowd_body02.mesh": {
+      "max_ratio": 1.21,
+      "band": false,
+      "drop": false,
+      "bindExt": 80.13,
+      "worldExt": 96.99
+    },
+    "female_crowd_body03.mesh": {
+      "max_ratio": 1.24,
+      "band": false,
+      "drop": false,
+      "bindExt": 79.0,
+      "worldExt": 97.65
+    },
+    "female_crowd_body04.mesh": {
+      "max_ratio": 1.23,
+      "band": false,
+      "drop": false,
+      "bindExt": 80.06,
+      "worldExt": 98.71
+    },
+    "male_crowd_body01.mesh": {
+      "max_ratio": 1.18,
+      "band": false,
+      "drop": false,
+      "bindExt": 87.35,
+      "worldExt": 102.66
+    },
+    "male_crowd_body02.mesh": {
+      "max_ratio": 1.06,
+      "band": false,
+      "drop": false,
+      "bindExt": 88.17,
+      "worldExt": 93.39
+    },
+    "male_crowd_body03.mesh": {
+      "max_ratio": 1.21,
+      "band": false,
+      "drop": false,
+      "bindExt": 85.83,
+      "worldExt": 104.18
+    },
+    "male_crowd_body04.mesh": {
+      "max_ratio": 1.29,
+      "band": false,
+      "drop": false,
+      "bindExt": 87.98,
+      "worldExt": 113.5
+    },
+    "female_extras_skin02.1.mesh": {
+      "max_ratio": 1.02,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.36,
+      "worldExt": 18.8
+    },
+    "female_extras_skin02.mesh": {
+      "max_ratio": 1.04,
+      "band": false,
+      "drop": false,
+      "bindExt": 44.66,
+      "worldExt": 46.59
+    },
+    "female_extra_body02.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 71.95,
+      "worldExt": 71.93
+    },
+    "female_extra_hair02.mesh": {
+      "max_ratio": 1.22,
+      "band": false,
+      "drop": false,
+      "bindExt": 28.1,
+      "worldExt": 34.24
+    },
+    "male_extras_skin02_medium.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 50.61,
+      "worldExt": 50.61
+    },
+    "male_extras_skin02_medium.mesh": {
+      "max_ratio": 1.01,
+      "band": false,
+      "drop": false,
+      "bindExt": 56.26,
+      "worldExt": 56.97
+    },
+    "male_extras_body02_medium.mesh": {
+      "max_ratio": 0.99,
+      "band": false,
+      "drop": false,
+      "bindExt": 78.01,
+      "worldExt": 76.91
+    },
+    "male_extras_hair02.mesh": {
+      "max_ratio": 2.53,
+      "band": false,
+      "drop": true,
+      "bindExt": 14.62,
+      "worldExt": 37.04
+    },
+    "male_extras_body03_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 66.36,
+      "worldExt": 66.15
+    },
+    "male_extra_head03.mesh": {
+      "max_ratio": 1.56,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.89,
+      "worldExt": 29.51
+    },
+    "male_extras_skin03_medium.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 57.21,
+      "worldExt": 57.21
+    },
+    "male_extras_skin03_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 56.66,
+      "worldExt": 56.43
+    },
+    "male_extras_eyebrows11.mesh": {
+      "max_ratio": 4.7,
+      "band": false,
+      "drop": true,
+      "bindExt": 4.94,
+      "worldExt": 23.23
+    },
+    "male_extras_hair11.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.8,
+      "worldExt": 18.74
+    },
+    "male_extras_skin11_medium.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 50.93,
+      "worldExt": 50.92
+    },
+    "male_extras_skin11_medium.mesh": {
+      "max_ratio": 1.01,
+      "band": false,
+      "drop": false,
+      "bindExt": 56.45,
+      "worldExt": 57.09
+    },
+    "male_extras_head11.mesh": {
+      "max_ratio": 1.63,
+      "band": false,
+      "drop": false,
+      "bindExt": 18.64,
+      "worldExt": 30.3
+    },
+    "male_extras_body11_medium.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 69.62,
+      "worldExt": 69.5
+    },
+    "goatee_resource.mesh": {
+      "max_ratio": 2.15,
+      "band": false,
+      "drop": false,
+      "bindExt": 5.73,
+      "worldExt": 12.33
+    },
+    "rolledjeans_resource.1.mesh": {
+      "max_ratio": 1.44,
+      "band": true,
+      "drop": false,
+      "bindExt": 35.03,
+      "worldExt": 50.29
+    },
+    "rolledjeans_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 23.32,
+      "worldExt": 23.32
+    },
+    "timberlandboots_resource.mesh": {
+      "max_ratio": 2.69,
+      "band": true,
+      "drop": false,
+      "bindExt": 21.34,
+      "worldExt": 57.43
+    },
+    "flannelcoat_resource.mesh": {
+      "max_ratio": 0.99,
+      "band": true,
+      "drop": false,
+      "bindExt": 52.97,
+      "worldExt": 52.51
+    },
+    "ziggymullet_resource.mesh": {
+      "max_ratio": 1.81,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.17,
+      "worldExt": 32.82
+    },
+    "male_facehair_dwarvenbeard.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 12.93,
+      "worldExt": 12.93
+    },
+    "flannelcoat_skin.2.mesh": {
+      "max_ratio": 1.08,
+      "band": true,
+      "drop": false,
+      "bindExt": 27.29,
+      "worldExt": 29.47
+    },
+    "head.mesh": {
+      "max_ratio": 1.34,
+      "band": true,
+      "drop": false,
+      "bindExt": 15.55,
+      "worldExt": 20.78
+    },
+    "rolledjeans_skin.2.mesh": {
+      "max_ratio": 3.31,
+      "band": true,
+      "drop": false,
+      "bindExt": 12.52,
+      "worldExt": 41.48
+    },
+    "hands_naked.mesh": {
+      "max_ratio": 1.35,
+      "band": true,
+      "drop": false,
+      "bindExt": 56.14,
+      "worldExt": 75.52
+    },
+    "bikinichain_resource_accessories.mesh": {
+      "max_ratio": 1.44,
+      "band": true,
+      "drop": false,
+      "bindExt": 10.69,
+      "worldExt": 15.42
+    },
+    "flarejeans_resource.1.mesh": {
+      "max_ratio": 1.58,
+      "band": true,
+      "drop": false,
+      "bindExt": 45.59,
+      "worldExt": 72.21
+    },
+    "flarejeans_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 17.73,
+      "worldExt": 17.67
+    },
+    "lowtopsneaks_resource.mesh": {
+      "max_ratio": 3.26,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.41,
+      "worldExt": 60.06
+    },
+    "bikinichain_resource.mesh": {
+      "max_ratio": 1.26,
+      "band": true,
+      "drop": false,
+      "bindExt": 16.75,
+      "worldExt": 21.1
+    },
+    "tam_resource.mesh": {
+      "max_ratio": 1.05,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.0,
+      "worldExt": 18.88
+    },
+    "dreadpony_resource.1.mesh": {
+      "max_ratio": 1.06,
+      "band": true,
+      "drop": false,
+      "bindExt": 19.37,
+      "worldExt": 20.44
+    },
+    "femalewrist_sweatband.mesh": {
+      "max_ratio": 1.03,
+      "band": true,
+      "drop": false,
+      "bindExt": 40.64,
+      "worldExt": 41.68
+    },
+    "bikinichain_skin.1.mesh": {
+      "max_ratio": 1.11,
+      "band": true,
+      "drop": false,
+      "bindExt": 36.51,
+      "worldExt": 40.51
+    },
+    "flarejeans_skin.2.mesh": {
+      "max_ratio": 1.22,
+      "band": true,
+      "drop": false,
+      "bindExt": 9.89,
+      "worldExt": 12.11
+    },
+    "lowtopsneaks_skin.2.mesh": {
+      "max_ratio": 5.09,
+      "band": true,
+      "drop": true,
+      "bindExt": 11.2,
+      "worldExt": 57.01
+    },
+    "femalerings_rubberbands.mesh": {
+      "max_ratio": 1.25,
+      "band": true,
+      "drop": false,
+      "bindExt": 48.52,
+      "worldExt": 60.83
+    },
+    "codpiecepants_resource.mesh": {
+      "max_ratio": 1.5,
+      "band": true,
+      "drop": false,
+      "bindExt": 41.47,
+      "worldExt": 62.01
+    },
+    "strapjacket_resource.mesh": {
+      "max_ratio": 0.98,
+      "band": true,
+      "drop": false,
+      "bindExt": 52.42,
+      "worldExt": 51.39
+    },
+    "crazyhawk_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 23.55,
+      "worldExt": 23.49
+    },
+    "crazyhawk_buzz_resource.mesh": {
+      "max_ratio": 1.11,
+      "band": true,
+      "drop": false,
+      "bindExt": 12.91,
+      "worldExt": 14.36
+    },
+    "maleglasses_goggles.1.mesh": {
+      "max_ratio": 1.1,
+      "band": true,
+      "drop": false,
+      "bindExt": 11.09,
+      "worldExt": 12.15
+    },
+    "male_facehair_chops.mesh": {
+      "max_ratio": 1.14,
+      "band": true,
+      "drop": false,
+      "bindExt": 10.38,
+      "worldExt": 11.88
+    },
+    "strapjacket_skin.2.mesh": {
+      "max_ratio": 1.04,
+      "band": true,
+      "drop": false,
+      "bindExt": 11.44,
+      "worldExt": 11.86
+    },
+    "feet_naked.2.mesh": {
+      "max_ratio": 2.11,
+      "band": true,
+      "drop": false,
+      "bindExt": 25.35,
+      "worldExt": 53.47
+    },
+    "fingernails_resource.mesh": {
+      "max_ratio": 2.15,
+      "band": true,
+      "drop": false,
+      "bindExt": 35.93,
+      "worldExt": 77.38
+    },
+    "drivinggloves_resource.mesh": {
+      "max_ratio": 1.76,
+      "band": true,
+      "drop": false,
+      "bindExt": 36.18,
+      "worldExt": 63.64
+    },
+    "denimjacket_resource.mesh": {
+      "max_ratio": 1.29,
+      "band": true,
+      "drop": false,
+      "bindExt": 40.56,
+      "worldExt": 52.18
+    },
+    "talldocsfolded_resource.mesh": {
+      "max_ratio": 2.02,
+      "band": true,
+      "drop": false,
+      "bindExt": 27.41,
+      "worldExt": 55.5
+    },
+    "cleanminiskirt_resource.1.mesh": {
+      "max_ratio": 1.21,
+      "band": true,
+      "drop": false,
+      "bindExt": 21.21,
+      "worldExt": 25.61
+    },
+    "cleanminiskirt_resource.mesh": {
+      "max_ratio": 1.42,
+      "band": true,
+      "drop": false,
+      "bindExt": 35.65,
+      "worldExt": 50.64
+    },
+    "messyshort_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": true,
+      "drop": false,
+      "bindExt": 18.93,
+      "worldExt": 18.89
+    },
+    "denimjacket_skin.2.mesh": {
+      "max_ratio": 1.05,
+      "band": true,
+      "drop": false,
+      "bindExt": 22.77,
+      "worldExt": 23.96
+    },
+    "cleanminiskirt_skin.2.mesh": {
+      "max_ratio": 1.35,
+      "band": true,
+      "drop": false,
+      "bindExt": 40.35,
+      "worldExt": 54.46
+    },
+    "drivinggloves_skin.mesh": {
+      "max_ratio": 2.12,
+      "band": true,
+      "drop": false,
+      "bindExt": 36.84,
+      "worldExt": 78.26
+    },
+    "highlight_main.mesh": {
+      "max_ratio": 1.69,
+      "band": false,
+      "drop": false,
+      "bindExt": 131.94,
+      "worldExt": 223.43
+    },
+    "highlight_refraction.mesh": {
+      "max_ratio": 1.18,
+      "band": false,
+      "drop": false,
+      "bindExt": 293.73,
+      "worldExt": 345.84
+    },
+    "highlight_pattern.mesh": {
+      "max_ratio": 1.18,
+      "band": false,
+      "drop": false,
+      "bindExt": 293.73,
+      "worldExt": 345.84
+    },
+    "scrollbar_bg.mesh": {
+      "max_ratio": 4.01,
+      "band": false,
+      "drop": true,
+      "bindExt": 80.8,
+      "worldExt": 324.08
+    },
+    "scrollbar.mesh": {
+      "max_ratio": 0.45,
+      "band": false,
+      "drop": false,
+      "bindExt": 80.62,
+      "worldExt": 36.39
+    },
+    "g6128b_strings.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 42.75,
+      "worldExt": 42.75
+    },
+    "g6128b_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 51.55,
+      "worldExt": 51.55
+    },
+    "ludclassic_small_club_resource.3.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 113.75,
+      "worldExt": 113.75
+    },
+    "ludclassic_small_club_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 74.55,
+      "worldExt": 74.55
+    },
+    "ludclassic_small_club_resource.4.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 11.11,
+      "worldExt": 11.08
+    },
+    "ludclassic_small_club_resource.5.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 70.11,
+      "worldExt": 70.11
+    },
+    "ludclassic_small_club_resource.1.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 106.06,
+      "worldExt": 106.06
+    },
+    "ludclassic_small_club_resource.2.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 72.98,
+      "worldExt": 72.98
+    },
+    "logo.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 33.36,
+      "worldExt": 33.36
+    },
+    "d2010_strings.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 32.44,
+      "worldExt": 32.44
+    },
+    "d2010_resource.mesh": {
+      "max_ratio": 1.0,
+      "band": false,
+      "drop": false,
+      "bindExt": 44.24,
+      "worldExt": 44.24
+    },
+    "beta87_resource.mesh": {
+      "max_ratio": 1.04,
+      "band": true,
+      "drop": false,
+      "bindExt": 10.93,
+      "worldExt": 11.39
+    },
+    "mic_stand.mesh": {
+      "max_ratio": 1.04,
+      "band": true,
+      "drop": false,
+      "bindExt": 63.08,
+      "worldExt": 65.37
+    },
+    "fist.mesh": {
+      "max_ratio": 1.75,
+      "band": false,
+      "drop": false,
+      "bindExt": 34.67,
+      "worldExt": 60.65
+    },
+    "horns.mesh": {
+      "max_ratio": 0.95,
+      "band": false,
+      "drop": false,
+      "bindExt": 49.99,
+      "worldExt": 47.56
+    }
+  },
+  "clamp": {
+    "female_extras_skin01.mesh": 31,
+    "female_extra_head.mesh": 35,
+    "female_extra_body01.mesh": 20,
+    "male_extra_head01.mesh": 40,
+    "male_extras_skin01_medium.mesh": 30,
+    "male_extras_body01_medium.mesh": 25,
+    "lighter.mesh": 10,
+    "female_crowd_body01_lod02.mesh": 1,
+    "clap.mesh": 1,
+    "female_crowd_body02.mesh": 1,
+    "female_crowd_body03.mesh": 1,
+    "female_crowd_body04.mesh": 5,
+    "male_crowd_body01.mesh": 1,
+    "male_crowd_body02.mesh": 1,
+    "male_crowd_body03.mesh": 1,
+    "male_crowd_body04.mesh": 1,
+    "female_extras_skin02.mesh": 11,
+    "female_extra_body02.mesh": 7,
+    "female_extra_hair02.mesh": 4,
+    "male_extras_skin02_medium.1.mesh": 3,
+    "male_extras_skin02_medium.mesh": 11,
+    "male_extras_body02_medium.mesh": 7,
+    "male_extras_body03_medium.mesh": 5,
+    "male_extra_head03.mesh": 10,
+    "male_extras_skin03_medium.1.mesh": 6,
+    "male_extras_skin03_medium.mesh": 11,
+    "male_extras_eyebrows11.mesh": 4,
+    "male_extras_skin11_medium.1.mesh": 4,
+    "male_extras_skin11_medium.mesh": 11,
+    "male_extras_head11.mesh": 10,
+    "male_extras_body11_medium.mesh": 5,
+    "goatee_resource.mesh": 3,
+    "ziggymullet_resource.mesh": 497,
+    "male_facehair_dwarvenbeard.mesh": 688,
+    "messyshort_resource.mesh": 1017,
+    "crazyhawk_resource.mesh": 741
+  },
+  "charmesh": {
+    "player0|fingernails_resource.mesh": {
+      "bones": 10,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|tongue.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|head.mesh": {
+      "bones": 33,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|upperteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|eyebrows1_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|youngozzie_resource.mesh": {
+      "bones": 17,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|hands_naked.mesh": {
+      "bones": 38,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|eyes.mesh": {
+      "bones": 2,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|male_facehair_lemmy.mesh": {
+      "bones": 33,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|lowerteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|vestdenim_resource.mesh": {
+      "bones": 18,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|vestdenim_skin.1.mesh": {
+      "bones": 27,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|tightdistressedpants_skin.3.mesh": {
+      "bones": 4,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|tightdistressedpants_resource.1.mesh": {
+      "bones": 4,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|tightdistressedpants_resource.mesh": {
+      "bones": 9,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|tightdistressedpants_skin.2.mesh": {
+      "bones": 4,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|cowboyboots_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|fingernails_resource.mesh": {
+      "bones": 10,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|tongue.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|head.mesh": {
+      "bones": 39,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|upperteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|hands_naked.mesh": {
+      "bones": 40,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|blownback_resource.mesh": {
+      "bones": 17,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|eyes.mesh": {
+      "bones": 2,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|female_eyebrows_09_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|lowerteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|trackjacket_resource.mesh": {
+      "bones": 24,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|trackjacket_skin.2.mesh": {
+      "bones": 11,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|buttflappants_skin.2.mesh": {
+      "bones": 4,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|buttflappants_belts.mesh": {
+      "bones": 11,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|buttflappants_saftypin.mesh": {
+      "bones": 2,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|buttflappants_resource.1.mesh": {
+      "bones": 9,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|buttflappants_resource.mesh": {
+      "bones": 12,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|saddleshoe_resource.mesh": {
+      "bones": 4,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|saddleshoe_skin.2.mesh": {
+      "bones": 4,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|fingernails_resource.mesh": {
+      "bones": 10,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|tongue.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|head.mesh": {
+      "bones": 33,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|upperteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|malewrist_barbedwire_right.mesh": {
+      "bones": 3,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|maleearrings_plug.mesh": {
+      "bones": 2,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|eyebrows8_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|mohawk_resource.mesh": {
+      "bones": 5,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|hands_naked.mesh": {
+      "bones": 38,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|eyes.mesh": {
+      "bones": 2,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|lowerteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|shred_skin.1.mesh": {
+      "bones": 27,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|shred_resource.mesh": {
+      "bones": 19,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|grungepants_skin.2.mesh": {
+      "bones": 2,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|grungepants_resource.mesh": {
+      "bones": 8,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|nailboots_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|fingernails_resource.mesh": {
+      "bones": 10,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|tongue.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|head.mesh": {
+      "bones": 39,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|eyebrows5_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|upperteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|malewrist_hercules_right.mesh": {
+      "bones": 3,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|hands_naked.mesh": {
+      "bones": 38,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|bedhead_resource.mesh": {
+      "bones": 10,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|eyes.mesh": {
+      "bones": 2,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|lowerteeth.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|plaidshirt_skin.1.mesh": {
+      "bones": 21,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|plaidshirt_resource.mesh": {
+      "bones": 24,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|tightjeans_resource.mesh": {
+      "bones": 10,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|dressshoes_resource.1.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|dressshoes_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|dressshoes_skin.2.mesh": {
+      "bones": 5,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|malebarefeet_socks.2.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|male_facehair_chops.mesh": {
+      "bones": 33,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|maleglasses_goggles.1.mesh": {
+      "bones": 3,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|eyebrows4_resource.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|crazyhawk_resource.mesh": {
+      "bones": 20,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|feet_naked.2.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|crazyhawk_buzz_resource.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|maleglasses_goggles.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|strapjacket_resource.mesh": {
+      "bones": 30,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|strapjacket_skin.2.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|codpiecepants_resource.mesh": {
+      "bones": 8,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|male_facehair_dwarvenbeard.mesh": {
+      "bones": 18,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|malewrist_watchleatherstrap.1.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|eyebrows4_resource.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|ziggymullet_resource.mesh": {
+      "bones": 13,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|malewrist_watchleatherstrap.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|flannelcoat_skin.2.mesh": {
+      "bones": 11,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|flannelcoat_resource.mesh": {
+      "bones": 30,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|rolledjeans_resource.mesh": {
+      "bones": 6,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player0|rolledjeans_skin.2.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|rolledjeans_resource.1.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player0|timberlandboots_resource.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|messyshort_resource.mesh": {
+      "bones": 26,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player3|female_eyebrows_02_resource.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|denimjacket_skin.2.mesh": {
+      "bones": 13,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|denimjacket_resource.mesh": {
+      "bones": 30,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|cleanminiskirt_resource.mesh": {
+      "bones": 7,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|cleanminiskirt_resource.1.mesh": {
+      "bones": 5,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|cleanminiskirt_skin.2.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|talldocsfolded_resource.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|drivinggloves_skin.mesh": {
+      "bones": 40,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player3|drivinggloves_resource.mesh": {
+      "bones": 31,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|femalerings_rubberbands.mesh": {
+      "bones": 2,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|femalewrist_sweatband.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|female_eyebrows_03_resource.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|femaleearrings_tribal.mesh": {
+      "bones": 2,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|dreadpony_resource.1.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|tam_resource.mesh": {
+      "bones": 1,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|bikinichain_skin.1.mesh": {
+      "bones": 24,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|bikinichain_resource.mesh": {
+      "bones": 10,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|bikinichain_resource_accessories.mesh": {
+      "bones": 7,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|flarejeans_resource.1.mesh": {
+      "bones": 11,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|flarejeans_resource.mesh": {
+      "bones": 8,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player1|flarejeans_skin.2.mesh": {
+      "bones": 2,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|lowtopsneaks_skin.2.mesh": {
+      "bones": 4,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player1|lowtopsneaks_resource.mesh": {
+      "bones": 6,
+      "rebound": 1,
+      "shared": 0
+    },
+    "player2|cowbell_stick.mesh": {
+      "bones": 1,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|tamborine_cymbals.mesh": {
+      "bones": 1,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|cowbell.mesh": {
+      "bones": 1,
+      "rebound": 0,
+      "shared": 0
+    },
+    "player2|tamborine_body.mesh": {
+      "bones": 1,
+      "rebound": 0,
+      "shared": 0
+    }
+  },
+  "anchor": {},
+  "pending": {
+    "player0|male_facehair_dwarvenbeard.mesh": 2,
+    "player0|ziggymullet_resource.mesh": 12,
+    "player0|rolledjeans_resource.mesh": 2,
+    "player1|flarejeans_resource.mesh": 6,
+    "player2|crazyhawk_resource.mesh": 19,
+    "player3|messyshort_resource.mesh": 25,
+    "player2|cowbell_stick.mesh": 1,
+    "player2|tamborine_cymbals.mesh": 1,
+    "player2|cowbell.mesh": 1,
+    "player2|tamborine_body.mesh": 1
+  }
+}
