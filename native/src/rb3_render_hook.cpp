@@ -178,6 +178,17 @@ public:
             if (std::strstr(matName, "font") || std::strstr(matName, "label"))
                 p.isUiText = true;
         }
+        // B8: hub focused-menu highlight-bar colour override — the SPECIFIC
+        // highlight-bar mesh names (highlight_main/highlight_pattern), routed
+        // through the register-colour (prelit) path so the yellow bar isn't lit to
+        // black. Opt-out RB3_NO_HUB_HIGHLIGHT_FIX (statically cached once).
+        if (meshName &&
+            (std::strncmp(meshName, "highlight_main", 14) == 0 ||
+             std::strncmp(meshName, "highlight_pattern", 17) == 0)) {
+            static int hubFixOff = -1;
+            if (hubFixOff < 0) hubFixOff = std::getenv("RB3_NO_HUB_HIGHLIGHT_FIX") ? 1 : 0;
+            if (!hubFixOff) p.isHubHighlight = true;
+        }
         return p;
     }
 
