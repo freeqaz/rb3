@@ -175,3 +175,82 @@ Checkpoint: `/tmp/wave7-checkpoints/A-S1.json`.
 - `grayscale-sweep.py` — songMs-sweep + flag-isolation harness (now includes `luma_ceiling`).
 - `staged-luma-preserving-ceiling.patch` — staged fix proposal (implemented 2026-07-06).
 - `evidence/` — 3 contact sheets, 4 keyframes (A/B/C/D), postproc timeline.
+
+## 2026-07-06 — Wave 7 A.S2 (W3.3-fix) — INDEPENDENT VERIFY (Opus) — REFUTED-EFFECTIVENESS / SAFE / DO-NOT-FLIP
+
+Fresh from-scratch build in `native/build-agent-A-S2` (clang/Debug) against engine HEAD
+`7943bfa` (fix symbol `RB3PPLumaCeilingActive` linked; pin still `1b045d9`, coordinator's
+to bump). Verdict differs from A.S1: **flag-OFF is byte-identical and the change is SAFE, but
+flag-ON does NOT fix the grey song-start wash on the deterministic default-song venue.**
+Recommend **DO NOT FLIP**; keep landed default-OFF; reopen the mechanism.
+
+### (1) Flag-OFF byte-identical — CONFIRMED
+- `drawlog-golden.py --fixed-clock --canonical-order`: **792 PASS 3/3** (211-272 known
+  `field=world` eye-jitter residuals, within bound — reproduce on the reference binary, not
+  introduced here). Postproc is post-scene so draw count is untouched, as expected.
+- WGSL flag-OFF branch (`pp.lumaCeilingActive <= 0.5`) is textually the pre-flag code; struct
+  grew 160→176B, every consumer sizes off `sizeof(PostProcUniforms)` dynamically (no RB3Quad
+  edit). **DC3 zero-blast holds by construction:** the 3 changed files are RB3-only platform
+  TUs (`RB3PostProc.h` included only by `RB3Quad.cpp`/`Rnd_Wgpu_RB3.cpp`/`RB3PostProc.cpp`);
+  no `UniformStructs.h` / shared-shader edit.
+
+### (2) Flag-ON grey window — **REFUTED on the deterministic default venue**
+Used the deterministic frame-pin harness (`_framepin_capture.py` scripted nav +
+`RB3_FIXED_CLOCK`) so all configs render the SAME song/venue/pose — stronger than A.S1's
+single-crop read. **A/A/A determinism control first** (default, frame 2315, 3 boots): venue is
+deterministic (high-luma-pop sat 0.096/0.095/0.098, hue 79) — so a single-boot A/B is valid here.
+
+Frame 2315 (songMs ~3029, peak grey window), per-tonal-band saturation of the venue (highway/HUD
+masked out):
+
+| tonal band | default (OFF) | luma_ceiling (ON) | pp_off (composite-OFF ctrl) |
+|---|---|---|---|
+| high-luma L>0.82 | sat 0.096 | 0.095 | **0.100** (grey in ALL — genuine white smoke/lights, not the bug) |
+| mid  L[0.2,0.82) | sat 0.026 | 0.044 | **0.389** (colored) |
+| low  L[0.05,0.2) | sat 0.010 | 0.034 | **0.779** (richly colored) |
+
+The grey wash is a **MID/LOW-tone desaturation** (default 0.026/0.010 vs the composite-OFF
+control's 0.389/0.779 — the composite is what removes the color). **`luma_ceiling` barely moves
+it (0.044/0.034), nowhere near restoring pp_off's color.** Root cause of ineffectiveness: BOTH
+ceiling branches (per-channel and luma-preserving) are **identity below the knee (L<0.82)**; the
+wash lives entirely in the sub-knee mid/low tones the highlight-ceiling fix architecturally
+cannot touch. The only pixels the fix engages (L>0.82) are near-white in *every* config
+including pp_off — they are real white smoke/stage-lights, not the desaturation source.
+Visual proof: `evidence/as2-verify/frame2315_default-vs-luma-vs-ppoff.png` — luma_ceiling
+(middle) is grey, visually identical to default (left); only pp_off (right) shows the colored
+(magenta-lit, warm-skin) venue.
+
+**Cross-checked against A.S1's own `build-agent-W3.3-fix` binary** (same engine HEAD): same
+result (mid-tone sat off 0.027 / on 0.030). Not a build artifact.
+
+Reconciling with A.S1's positive read (luma sat 0.232 / hue 324.5 at frame 2351): a
+comprehensive per-tonal-band analysis with an A/A/A determinism control does not reproduce a
+meaningful colorization on this venue (nor on A.S1's binary). A.S1's single "venue-wall crop"
+likely landed on the small high-luma-with-residual-chroma population; the campaign-relevant
+truth is the whole-frame mid/low-tone desaturation, which the fix does not address.
+
+### (3) Fail-red
+A.S1's fail-red (reintroduce per-channel inside the flag-ON path → grey) only proves the flag-ON
+branch executes a distinct codepath — NOT that the branch fixes the artifact. Given (2), it is
+not a valid fix-validity gate here.
+
+### (4) BEYOND-SWEEP hot-exposure coverage (per WAVE7_REVIEW A3) — NO REGRESSION
+Captured flag-ON vs flag-OFF on frames the 0-25s sweep never samples: bright main_hub (neon
+signage), song_select (MUSIC LIBRARY), and settled gameplay (~songMs 9.5s). All look identical
+OFF vs ON — `evidence/as2-verify/beyond-sweep_hot-frames_off-vs-on.png`. The only cleanly
+frame-matched pair (song_select 310/310) shows +0.002 val on high-luma pixels; the larger
+main_hub/game numeric deltas were frame-mismatch/animation artifacts, confirmed benign visually.
+The luma path structurally *dims* (never brightens) bright pixels, so the review A3 "uncompressed
+brighter clamp" worry does not manifest as a blow-out. **Fix is SAFE.**
+
+### (5) milo-engine-tests / DC3
+Not independently re-run this stage (the change is 3 RB3-only TUs outside the engine-test-covered
+set; flag-OFF byte-identical; DC3 zero-blast holds structurally; prior A.S7 baseline 198/0/2).
+
+### Recommendation
+**DO NOT FLIP.** Keep `RB3_PP_LUMA_CEILING` landed default-OFF (safe, byte-identical OFF) but
+mark W3.3-fix **not resolved**: the highlight-ceiling luma-preserving change does not fix the
+song-start grey wash, because the wash is a sub-knee mid/low-tone desaturation from the
+composite's exposure/tonemap/grade stage — upstream of the ceiling guard A.S1 modified. Reopen
+W3.3 targeting that stage (the pp_off control quantifies the gap: mid-tone sat 0.39 / low-tone
+0.78 vs default 0.03/0.01). Evidence: `evidence/as2-verify/`.
