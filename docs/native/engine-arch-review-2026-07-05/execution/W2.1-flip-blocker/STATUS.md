@@ -130,3 +130,143 @@ flag-OFF byte-identical; nothing about the wash is caused by it.
   the deliver contract). Run logs: `/tmp/wave6-flipblocker-measure.log` (+ `-pair1.log`).
 
 **Commit:** see `git log --grep=W2.1-flip-blocker` (A.S2).
+
+---
+
+## A.S3 — A/A-variable branch: wash note + backlog + A5 pre-flip checks — DONE (2026-07-06 19:00 UTC, Opus fixer)
+
+### Branch decision: **A/A-variable → NO CODE FIX.**
+
+S2's verdict is **A/A-variable** (§A.S2): the pink/near-black/white wash is a run-to-run,
+flag-independent render-state variable, NOT caused by `RB3_PLACEMENT_CONTRACT`. Per WAVE6_REVIEW A4
+and the coordinator dispatch, the A/A-variable arm takes **no engine/code fix** — the S3 isolation
+matrix + emissive-feeds-bloom fix belong to the *flag-ON-specific* arm, which S2 refuted. This stage
+therefore delivers: (1) the wash-rate note (below), (2) a standalone backlog wash item carrying the
+attribution data (`## Backlog proposal`), and (3) the WAVE6_REVIEW A5 pre-flip checks.
+
+### Wash-rate note (attribution summary for the backlog owner)
+
+- **Rate:** flag-OFF wash 2/7, flag-ON wash 4/7 (Fisher exact p≈0.59, NS); luma distributions
+  indistinguishable (Mann-Whitney U=24.0, **p=1.0**, n=7/7). Both flag states produce the wash.
+- **Class:** three stochastic render states — **PINK** broken-env cast (33–70% pink px), **NEARBLACK**
+  frame, and (Wave-5/batch-0) **WHITE** blow-out. PINK is the dominant wash class under time-pinned
+  capture; WHITE (the Wave-5-hold trigger) appeared once in an un-pinned batch.
+- **Airtight controls (from S2):** time-pinned to songMs 20877–21163; at ~equal songMs (≈21131) the
+  class flips PINK↔NEARBLACK across boots → not songMs-determined; full-frame env cast covering the
+  note highway + venue backdrop → not crowd-localized (the contract is a crowd-only transform). Two
+  flag-OFF PINK captures in different cache regimes (cold 21131 + warm 21083) → not a cold-cache
+  artifact.
+- **Demoted suspect (WAVE6_REVIEW A3, source-verified):** crowd-emissive→bloom is mechanically
+  excluded — the halo capture is `game.cam`-gated (`Rnd_Wgpu_RB3.cpp:4403`) and these are venue-cam
+  shots. Not re-tested here; confirmed irrelevant in S2.
+- **Isolation matrix (`RB3_HIGHWAY_BLOOM_OFF`/`RB3_BLOOM_OFF`/`RB3_VENUE_LIGHT_OFF`/`RB3_TRACK_LIGHT_OFF`)
+  NOT run this stage:** the A/A-variable arm is explicitly no-code, and — more decisively — the wash
+  reproduces stochastically (2–4/7), so a single boot per config cannot reliably reproduce it; a
+  meaningful matrix needs N boots per config (or a forced-reproduce seam), which is characterization
+  work for the backlog item, not a flip gate. Ranked prior handed to the backlog owner below.
+
+### Consequence for E1/flip
+**A/A-variable unblocks the flip** (WAVE6_REVIEW A4) under its two conditions, both already delegated
+to S4: E1 judged on detector-selected wash-free (NEUTRAL/NEARBLACK) captures per flag state (≥3 each
+exist in the S2 dataset), and the wash carried as its own backlog item (filed below). The placement
+fix stays numerically proven (crowd+drum oracle GREEN) and flag-OFF byte-identical.
+
+---
+
+## Backlog proposal — WASH (venue-cam full-frame stochastic env/postproc wash) — flip-independent
+
+**Title:** Stochastic full-frame venue-cam wash (PINK broken-env / NEARBLACK / WHITE blow-out),
+flag-independent, boot-nondeterministic.
+
+**Status:** open; **NOT a flip blocker** (proven A/A-variable, §A.S2). Pre-existing; visible with the
+placement contract both OFF and ON.
+
+**Attribution data carried (from §A.S2, this campaign's dataset):**
+- 14 songMs-pinned captures (7 OFF / 7 ON), window 20877–21163; per-capture mean-luma / hi% / lo% /
+  pink% table + classes in §A.S2. Raw PNGs + per-boot engine logs: `/tmp/wave6-flipblocker-captures/`
+  (ephemeral, not committed). Scored artifacts: `measure/verdict.json`, `measure/batch_log.json`,
+  `measure/montage.png`. Detector: `scripts/native/wash_score.py` (`--selftest` green).
+- Statistics: OFF 2/7, ON 4/7 (Fisher p≈0.59); luma Mann-Whitney U=24.0 p=1.0.
+
+**Ranked mechanism prior (WAVE6_REVIEW A3, for the investigation to confirm/refute):**
+1. **Async asset/texture residency at capture** (top prior) — pink broken-env placeholder class
+   (W0.5 precedent). The W0.3d part-(b) async-loader completion-order patch is **still unlanded**, so
+   this nondeterminism source is live even under `RB3_FIXED_CLOCK` + the SortDraws tie-break. This is
+   the most likely root and connects directly to the coordinator-sequenced W0.3d-fix backlog item.
+2. **`RB3PostProc` venue grade/bloom** — `bloomIntensity` from `RndPostProc::Current()`
+   (`RB3PostProc.cpp:210-256`), per-shot/venue-event postproc state, boot-varying.
+3. **P4 per-environ venue-light SceneUniforms rewrite** — `RndEnviron::sCurrent`-driven (default-ON);
+   which environ is current at the pinned shot can vary with timing.
+
+**Recommended method for the owner:** run the 4-flag isolation matrix
+(`RB3_HIGHWAY_BLOOM_OFF`/`RB3_BLOOM_OFF`/`RB3_VENUE_LIGHT_OFF`/`RB3_TRACK_LIGHT_OFF`) with **N≥6 boots
+per config** (or add a deterministic asset-residency/RNG seam so the wash reproduces per boot), scored
+by `wash_score.py`. Whichever flag drives the wash rate to ~0 names the mechanism. Cross-check against
+the current-state grayscale-venue finding W3.3 (Lane D) — likely the same env/postproc mechanism space.
+
+---
+
+## A5 pre-flip checks (WAVE6_REVIEW A5 — recorded for the coordinator's flip cycle)
+
+### (1) Flag-ON canonical drawlog count — re-measured, NOT assumed: **792**
+
+Ran `drawlog-golden.py --fixed-clock --canonical-order` against the lane's own clean binary
+(`native/build-agent-W2.1-flip-blocker/rb3-native`) under the current deterministic order (post
+W0.3d-fix):
+
+| flag state | env | measured `count` | runs |
+|---|---|---|---|
+| flag-ON | `RB3_PLACEMENT_CONTRACT=1` | **792** | 3/3 identical |
+| flag-OFF (control) | (no env) | 888 | 1/1 (== committed golden) |
+
+**The expected post-flip re-golden count is 792** — confirmed under the current deterministic order,
+not inherited from the pre-W0.3d-fix Wave-4 measurement. The 888→792 delta is the crowd mesh
+`0xc57f…` draw-count change (211→115, a count/multiset effect); W0.3d-fix is a comparator-only
+ordering tie-break and cannot alter the count, as WAVE6_REVIEW A5 predicted. Coordinator re-golden
+target: `splash_screen.json` 888 → **792** + fresh per-name-eps residual sidecar.
+
+### (2) Semantics-inversion sweep — files whose OFF arm is "no env" (invert post-flip)
+
+Post-flip, "no env" = contract-**ON**; the legacy opt-in `RB3_PLACEMENT_CONTRACT=1` becomes a no-op,
+and the OFF arm must become `RB3_PLACEMENT_CONTRACT_OFF=1`. Files that will silently compare ON-vs-ON
+unless updated **in the same review cycle as the flip commit**:
+
+| File | OFF-arm site | Action needed post-flip |
+|---|---|---|
+| `scripts/native/w21flip-dolphin-ab.py` | `("OFF", 1/2, {})` :186-187; README table :309 "flag-OFF (no env…)" | OFF arm → `{"RB3_PLACEMENT_CONTRACT_OFF":"1"}` |
+| `scripts/native/w21flip-ui-ab.py` | `("OFF", 1/2, {})` :170-171; docstring :13 "flag-OFF = no env" | OFF arm → `{"RB3_PLACEMENT_CONTRACT_OFF":"1"}` |
+| `scripts/native/wash-measure.py` | `STATES = [("OFF", {}), ("ON", {…CONTRACT:1})]` :259 (this lane's own harness) | OFF arm → `{"RB3_PLACEMENT_CONTRACT_OFF":"1"}` |
+
+**Non-inverting but note:**
+- `scripts/native/crowd-bone-gate-capture.py:84` **forces** `RB3_PLACEMENT_CONTRACT=1` (default on
+  unless `--no-placement-contract`) — stays ON post-flip; the explicit set becomes redundant, no
+  inversion, harmless.
+- `scripts/native/_w32-boxambient-ab.py:68` uses `("OFF",…,{})` as its baseline, but its ON arm sets
+  `RB3_BOX_AMBIENT` (a *different* flag), not the contract. Post-flip its baseline silently gains
+  contract-ON on both arms — fine for its own A/A but its "OFF" is no longer contract-OFF; sibling
+  W3.2 lane should be aware.
+- Fail-red / A-B demo commands quoted throughout the STATUS files use no-env as the OFF arm; these are
+  documentation, not executable gates — flag them if re-run verbatim post-flip.
+
+Recommended durable fix (A5.2): give the two `w21flip-*.py` scripts an explicit
+`--flag-state {on,off}` mapped to the post-flip envs so they can't silently invert again.
+
+### (3) classification.json row updates the flip needs (DRAFTED, not applied — coordinator-owned)
+
+`../milo-native-engine/src/platform/NativeCompatFlags.classification.json` rows :91-92. The single
+wave-end regen covers `gen.inc`, not the row content, so the flip commit must edit these text/default
+fields (append-only rule does not apply to correcting a flipped default — coordinator judgment):
+
+- **`RB3_PLACEMENT_CONTRACT`** (:91): `"default": "off"` → **`"default": "on"`**; faithfulStatus
+  `"not-live: SYS-1 skinned-placement contract (obj.world=meshWorld + bind-relative palette),
+  default-OFF pending coordinator flip"` → **`"live: SYS-1 skinned-placement contract
+  (obj.world=meshWorld + bind-relative palette), default-ON as of Wave 6 flip; opt out via
+  RB3_PLACEMENT_CONTRACT_OFF"`**.
+- **`RB3_PLACEMENT_CONTRACT_OFF`** (:92): `"default"` **stays `"off"`** (the opt-out is off by
+  default); faithfulStatus `"…Effective default-OFF this wave."` → **`"…Now the live opt-out: the
+  contract is default-ON as of the Wave 6 flip; setting this disables it (takes precedence over the
+  opt-in)."`**.
+- Also update the burn-down ledger `docs/native/engine-arch-review-2026-07-05/NATIVE_COMPAT_LEDGER.md`
+  :228-229 to match (regenerated by the census, but the source rows above drive it).
+
+**Commit:** see `git log --grep=W2.1-flip-blocker` (A.S3).
