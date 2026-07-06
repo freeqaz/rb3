@@ -114,3 +114,125 @@ See append to `docs/native/engine-arch-review-2026-07-05/execution/W0.3/STATUS.m
 ### Remains / blockers
 - Recommend a follow-up engine W-item to make `CharEyes`/`CharLookAt` look-at jitter deterministic under `RB3_FIXED_CLOCK` (freeze/zero state), at which point `splash_screen.fixedclock-residual.json` can be deleted and the gate re-verified as a literal `compare_drawlogs()`-clean pass.
 - No `MILO_ENGINE_PIN` bump. No engine-repo commit (this item is entirely rb3 `scripts/`+`native/tests/`+docs).
+
+## VERIFY — partial
+
+**Verifier build:** own dirs `native/build-agent-W0.3b-verify` (fresh configure+build at
+current tree HEAD) + two isolated engine-repo `git worktree`s (`/tmp/engine-at-daf0ed1`,
+`/tmp/engine-at-6f9d340`, `/tmp/engine-at-daa0286`, read-only, never touched the shared
+`milo-native-engine` working tree) used only to bisect a finding below; both discarded after
+use, no shared-tree mutation, no `git reset/rebase/checkout--/restore` run anywhere.
+
+### Criteria independently re-derived GREEN
+
+1. **Registry complete + regen-clean** — `python3 scripts/analysis/native_compat_census.py
+   --selftest` → 14/14 PASS. `check` → **exit 0**, `229 scanned flags all present in registry,
+   regen clean.` Confirmed live, not just trusted from STATUS.
+2. **S1 inertness by construction** — `git show --numstat 352d19ef`: `58 0
+   native/src/rb3_replay.cpp` + `22 0 native/src/rb3_replay.h`, zero deletions; `git show` diff
+   confirms pure insertion (two new functions appended after `RB3ReplayFixedClock()`), no existing
+   function body touched. Matches STATUS claim exactly.
+3. **S2 off-path byte-identical by construction** — `git show --numstat 0026bee0` (+7/-0 App.cpp,
+   +11/-2 Task.cpp, +10/-0 System.cpp, +13/-2 Loader.cpp) inspected line-by-line: Task.cpp's two
+   deleted lines are the dt-source refactor (`RB3ReplayActive() ? RB3ReplayDtForFrame(...) :
+   RB3FixedClockDt()`), which reduces to the old unconditional `RB3ReplayDtForFrame(...)` when
+   `RB3FixedClockActive()` is false (since `RB3TaskReplayFixedClock()`'s widened gate only lets
+   this branch run when the pre-existing `RB3ReplayFixedClock() && RB3ReplayActive()` term is true
+   in that case, matching pre-W0.3b exactly). App.cpp's new frame-advance is a clean `else if`
+   off the existing `gRB3TraceActive` fast path. Confirmed, not just trusted.
+4. **Build** — fresh `cmake -B native/build-agent-W0.3b-verify` (own dir, clang/clang++,
+   never touched `build-native`/`build-web*`) → configures (expected engine
+   HEAD≠PIN warning, correct per Hard Rule 3) and builds `rb3-native` + `rb3-tests` clean,
+   `Built target` both, exit 0.
+5. **`rb3-tests --gtest_filter='*DrawLog*'`** → **9 PASSED / 1 SKIPPED**
+   (`PopulatesFromRealDrawMesh`, GPU-fixture-gated by design) — matches STATUS exactly, no
+   regression.
+6. **`MILO_ENGINE_PIN` unchanged** — still `9561a19...` in `native/CMakeLists.txt`; engine repo
+   HEAD has moved on (W1.2/W2-TESTFIX commits, expected/correct per Hard Rule 3 — coordinator
+   bumps once per wave). No pin bump by W0.3b, confirmed.
+7. **`--fixed-clock --fail-red-audit`** still red on a perturbed golden (`draw 0 field=world
+   world[12] golden=-6770.67 cand=-6670.67`), golden `git status --porcelain` clean afterward —
+   confirms the comparator + residual-exception layer still hard-fails on a genuine, non-residual
+   divergence. Matches STATUS claim.
+
+### Criterion FALSIFIED by a larger re-derived sample — exit criteria #3/#4 NOT reliably met
+
+PLAN exit #3 ("three independent boot-pairs... count-EXACT + **tolerance-clean-identical**") and
+#4 ("`--fixed-clock` diffs green... repeatably (>=3 runs)") were verified by S2/S3 on exactly
+3 runs each. Per this role's instruction to re-derive rather than trust, I ran the **exact
+already-built** `native/build-agent-W0.3b/rb3-native` binary (the one the committed golden itself
+was captured from) through `scripts/native/drawlog-golden.py --fixed-clock` **15 times** (well
+past the 3-sample bar):
+
+```
+PASS PASS PASS PASS PASS FAIL FAIL FAIL FAIL FAIL PASS PASS PASS PASS PASS
+```
+(exact order across 4 invocation batches; draw **count is 888/888 every single time** — exit
+criterion #3's count-exact half is solid — but the world-transform "tolerance-clean" half fails
+**5 of 15 times (~33%)**, with FAIL runs reporting 336/354 **unexpected** (non-residual)
+divergences, an order of magnitude beyond the committed 26-draw/eps=3.0
+`splash_screen.fixedclock-residual.json` sidecar.) A 3-sample check has a real chance of landing
+all-green purely by luck at this failure rate — which is what happened in S3's own verification.
+
+I additionally rebuilt at the **identical engine commit** that was actually linked into
+`build-agent-W0.3b/rb3-native` (object/binary timestamps show it was last linked 22:40:51, which
+falls between engine commits `daf0ed1` @ 22:36:57 and `6f9d340` @ 22:43:08 — i.e. engine HEAD was
+`daf0ed1` at link time) via an isolated `git worktree` (`MILO_ENGINE_PATH` override, no shared-tree
+edits) and a from-scratch `cmake -B .../build-verify-daf0ed1`. Two independent from-scratch builds
+at that same commit produced **byte-identical binaries** (`cmp` clean) yet **every run of either
+FAILED** the gate (112–260 unexpected divergences, itself non-deterministic run-to-run on the
+identical binary: 260,260,260 / then 112,244,112 across two build copies) — i.e. this is
+**run-to-run process nondeterminism that `setarch -R` + the frozen clock + the fixed RNG seed +
+forced loader drain do NOT fully pin**, not a source-drift artifact from concurrent W1.2 commits
+(confirmed by testing the exact matching commit) and not simply "my rebuild is stale/wrong" (byte-
+identical binaries still disagree with each other's own reruns).
+
+**Root-cause lead for a follow-up item (not fixed here — scope, see below):** grepped
+`milo-native-engine/src/platform/RB3MeshCache.h` — `std::unordered_map<RndMesh*, RB3MeshEntry>
+sMeshGpu` (+ `sGeomSyncGen`) is keyed on raw `RndMesh*` pointers. I confirmed by grep that this
+specific map is only ever point-queried (`sMeshGpu[mesh]`, `.find`) in `Rnd_Wgpu_RB3.cpp`/
+`RB3MeshCache.cpp` — never iterated for draw submission — so it is **not itself** the direct
+draw-order source, but it is suggestive of a broader pattern in this codebase (pointer-keyed
+unordered containers whose iteration/allocation-dependent behavior isn't stabilized by disabling
+ASLR alone, since heap object addresses still vary run-to-run independent of the process's own
+load-address randomization). The actual draw-submission ordering source was not pinned down
+further — that is genuine root-cause engineering work, not a "small fix."
+
+### Why this is not a small fix (marking partial, not attempting a fix)
+
+Per this role's brief ("small fixes in scope... substantive redesign is NOT — mark partial with
+precise blockers"): finding and stabilizing whatever produces a ~33%-flaky, up-to-354-draw
+non-residual divergence (mesh identity swaps — `skinned`/`pipe`/`idx`/`tris`/`verts` all differing,
+not just `world` jitter) is a genuine engine determinism investigation (likely more than one
+call site), not a bounded diff. I did not attempt it.
+
+### Net assessment vs the 7 PLAN exit criteria
+
+| # | Criterion | Verdict |
+|---|---|---|
+| 1 | registry/census exit 0 | **GREEN** (re-derived) |
+| 2 | off-path byte-identical by construction | **GREEN** (re-derived) |
+| 3 | 3 boot-pairs count-exact + tolerance-clean | **PARTIAL**: count-exact holds (15/15); tolerance-clean does NOT (10/15, ~67%) |
+| 4 | golden diffs green repeatably (>=3) + fail-red-audit red | **PARTIAL**: same flakiness as #3; fail-red-audit itself is solid |
+| 5 | W0.3 exit #6 flipped + STATUS carries entries | flip is recorded, but the underlying "reliable gate" claim it rests on is **not substantiated** at the sample size that would show the ~33% flake |
+| 6 | `DrawLogGolden*` gtests green | **GREEN** (re-derived, 9/1skip) |
+| 7 | `MILO_ENGINE_PIN` unchanged | **GREEN** (re-derived) |
+
+### Recommendation (next actions)
+
+- Do not treat W0.3b as closing W0.3 exit #6 in the strong sense ("reliable unattended gate").
+  As implemented, `--fixed-clock` is a probabilistic gate (~2/3 green) — usable as a diagnostic /
+  early-warning signal, not a hard CI blocker gate yet.
+- File a new, explicitly-scoped engine work item: "stabilize draw-submission ordering under
+  `RB3_FIXED_CLOCK`" — start from the `sMeshGpu`/`sGeomSyncGen` pointer-keyed containers as a
+  known-suspicious pattern (ruled out as the *direct* cause here, but indicative of the class of
+  bug), and bisect with the harness already built by this item (`--fixed-clock`,
+  `RB3_FIXED_CLOCK_DT_MS=0`, `setarch -R`) plus a larger (>=15) repeat-run sample, since 3 runs is
+  not enough to see the failure mode.
+- Do not expand the residual sidecar to paper over the newly-observed divergence class — it is
+  qualitatively different (mesh-identity swaps, not `world`-transform jitter) and swallowing it
+  into the same eps/index mechanism would hide a real bug rather than bound a cosmetic one.
+- No commits made by this verify pass (read-only verification + two throwaway engine
+  `git worktree` builds outside the shared tree, both left in `/tmp`, not registered anywhere
+  the coordinator needs to clean up — they don't touch `milo-native-engine`'s or `rb3`'s tracked
+  state).

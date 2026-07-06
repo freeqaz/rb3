@@ -141,6 +141,42 @@ binding explicitly. (2) **The hands/fingers fix exists, is numerically gated, an
 coordinator-signed flag-flip away from shipping** — with the exact bind-pose-identity oracle whose
 absence caused the two BandPatchMesh reverts. Neither could have landed safely without Waves 0–2.
 
+## Wave 4 results (2026-07-06, run `wf_c7f69c01-0ea`, 19 agents)
+
+**W2.1 placement contract LANDED default-OFF (the crowd/drum fix); W2.3 refuted (no-op); W0.3d gate
+cleaned; W2.6 PART 1 diagnosed, PART 2 flag-registry incomplete (API overload).** Engine `6221a56`
+→ `609efb7` (pin bumped after lineup PASS + independent oracle A/B). One W2.6 subtask died on API
+overload.
+
+| Item | Status | Highlights |
+|---|---|---|
+| W2.1 placement contract | ✅ **complete [default-OFF]** | **The crowd/drum-kit-at-one-point fix — SYS-1 placement half.** Landed behind `RB3_PLACEMENT_CONTRACT` (engine `6852caa`) as a **provably vertex-invariant reorganization**: `obj.world = mesh->WorldXfm()` AND bind-relative palette (`skin·inverse(meshWorld)`), so `obj.world·(skin·meshWorld⁻¹)·v = skin·v` byte-for-byte (worst element diff **0.0000**) while `obj.world` now records real placement. **Gate-first (S1):** placement oracle asserting each crowd instance's drawn `obj.world` == the faithful `spXfm` it's posed with (`Crowd.cpp:403`) — **fail-red free** (RED on default build: all 231 skinned draws at origin). flag-OFF byte-identical (canonical 888, lineup PASS, 198/0/2, census 0). flag-ON: oracle GREEN (29 distinct crowd worlds spanning 316.6 ≈ posed 319). **Coordinator independently reproduced both:** flag-OFF oracle RED, flag-ON oracle GREEN. B2 A/A discipline correctly applied (A/A = 7 eye-flake meshes; flag-ON adds exactly 1 new skinned = crowd `0xc57f` spreading). **NOT flipped** (correct): the name-scoped placement hacks (`RB3_NO_HUB_BAR_PLACEMENT_FIX` etc.) are **not yet proven no-ops** under the contract, so flipping would double-run them → **W2.1-flip (Wave 5)** resolves subsumption + drum oracle + Dolphin A/B. |
+| W2.3 GeomOwner aliasing | ✅ **complete [honest-refutation]** | The hypothesis was **refuted by measurement**: crowd meshes are ALREADY self-owned (owner==mesh, own-extent==owner-extent, all ≫12u), so "read the drawn mesh's own bones" is a **no-op**. `RebindCrowdCharBonesToOwnSkeleton` is **retained** (A1/R5) and proven load-bearing (~24× shard-drop when disabled — fail-red confirmed). No behavior change, no flag. Crowd placement is fully handled by W2.1's contract + the existing rebind. Negative controls green (imposter path byte-identical, SKIN_CLAMP unchanged). |
+| W0.3d gate cleanup | ✅ **complete** | Froze CharEyes/CharLookAt RNG under `RB3_FIXED_CLOCK` (rb3 `c6b961da`, additions-only, HX_NATIVE-guarded). Exit met via the plan's **sanctioned per-name-eps fallback** (not the empty-sidecar ideal — a disclosed ~20u non-RNG residual survives on the same 7 eye/face meshes after the RNG freeze; per-name eps recalibrated from an **N=36** boot sweep, no global widening). fail-red intact. **Part (b)** async-loader/worker completion-order = **diagnosis-only, staged not landed** (F1 — its fix touches Lane-A files) → **W0.3d-fix (coordinator-sequenced).** |
+| W2.6 foot/shoe + registry | ⚠️ **partial** | **PART 1 (foot/shoe):** diagnosed — `saddleshoe_skin.2` guard-DROP is **lineup-dependent (0.8×–3.99×)**, max SKINPOS 69.5u, 0 fling, nothing in the 200-460u tripwire band; **no source fix landed** (characterization shows it's within the structural envelope, not a clean rest-capture target). **PART 2 (flag-registry) NOT DONE** — S4 died on API overload. **The census coverage gap is STILL OPEN**: `census check` passes *falsely* (318 flags) because the scanner still does **not** include `rb3/src/system/`, so `RB3_HANDS_BIND_FIX`/`RB3_SKEL_REBIND_FULL` remain unregistered+undetected. → **W0.6b (Wave 5).** |
+
+**Coordinator actions:** lineup PASS + independent placement-oracle A/B (RED off / GREEN on) against
+engine HEAD `609efb7`; pin bumped; committed the accumulated planner `PLAN.md` + `STATUS.md`
+artifacts that had never been git-tracked across all waves (docs-durability hygiene).
+
+**Headline:** the **crowd-at-one-point / drum-kit-at-one-point root cause (SYS-1 placement) is
+fixed** — as a vertex-invariant change proven correct by an oracle, sitting one deliberate flag-flip
+from shipping. Combined with W2.2 (hands/fingers) and W1.6 (SYS-3), the three worst mesh bug families
+from the original review now have landed fixes behind flags.
+
+### New backlog items filed from Wave 4
+
+- **W2.1-flip (Wave 5):** prove the name-scoped placement hacks (`RB3_NO_HUB_BAR_PLACEMENT_FIX`,
+  `RB3_SCROLLBAR_THUMB_FIX_OFF`, `RB3_NO_CROWD_REBIND`) are subsumed by the contract (or reconcile
+  them), add the drum-specific bone/waypoint oracle assertion, capture reviewer-judged Dolphin
+  gameplay A/B, then flip `RB3_PLACEMENT_CONTRACT` default-ON in a one-line commit. **This ships the
+  crowd/drum fix.**
+- **W0.6b (Wave 5):** finish the flag-registry cleanup W2.6 PART 2 dropped — extend the census
+  scanner to `rb3/src/system/`, register `RB3_HANDS_BIND_FIX`/`RB3_SKEL_REBIND_FULL` + the ~86
+  game-code flags it surfaces (census check exit 0), regen the ledger. Closes the coverage gap.
+- **W0.3d-fix (coordinator-sequenced):** the staged async-loader/worker completion-order determinism
+  patch from W0.3d part (b) — apply after Lane-A DrawMesh work settles (it touches the same path).
+
 ### New backlog items filed from Wave 3
 
 - **W0.3d (Wave 4):** make the draw-log gate a clean non-probabilistic pass. Two parts: (a)

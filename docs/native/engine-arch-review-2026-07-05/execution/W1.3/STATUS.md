@@ -216,3 +216,56 @@ All PLAN.md exit criteria (1-7) confirmed independently. W1.3 (S1+S2+S3) is **do
 
 **Commits:** none (verification-only; this STATUS.md append is the only artifact).
 **Remains:** nothing for W1.3. **Blockers:** none.
+
+## VERIFY — complete
+
+**Second-pass independent verifier** (fresh session; re-derives S3s own claims from
+scratch rather than trusting them). Engine HEAD unchanged at `b206d44` (S2 tip);
+working tree dirty only with the pre-existing, documented `FxSendNative.cpp`
+(concurrent agent, untouched, rule 8). `git reflog` shows a clean linear history,
+no `reset`/`rebase` events since W1.2.
+
+### Re-derived evidence (own build dir `native/build-agent-W1.3`, reused)
+1. **Clean builds:** `cmake --build . --target rb3-native -j8` and
+   `--target rb3-tests -j8` both exit 0 at engine HEAD `b206d44`.
+2. **Exit criterion 2:** `grep -c "MaterialUniforms mu{}" src/platform/Rnd_Wgpu_RB3.cpp`
+   -> `0`. `CMakeLists.txt:323` lists `src/platform/RB3MaterialBinder.cpp` in
+   `MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3`. `RB3MaterialBinder.{h,cpp}` exist
+   (538-line .cpp).
+3. **Byte-identical MOVE re-derived independently (own extraction, not S3s):**
+   pulled `Rnd_Wgpu_RB3.cpp` from parent-of-S1 (`6f9d340`) lines 5225-5719 (495
+   lines, region between `MaterialUniforms mu{};` and the
+   `// Per-(mesh,instance) persistent...` end comment), applied the sole
+   documented `mGpu`->`gpu` substitution, and diffed against
+   `b206d44:src/platform/RB3MaterialBinder.cpp` lines 40-534 (the function body
+   between the `mu` alias and the `r.isTextMeshHeur = ...` unpack): **0 diffs.**
+4. **Lineup gate re-run (own invocation):**
+   `scripts/native/lineup-gate.py --bin native/build-agent-W1.3/rb3-native` ->
+   `LINEUP_GATE verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS pin=PASS`
+   (4/4 frames, all layers PASS against the committed
+   `scripts/native/goldens/w0.5-lineup/` golden).
+5. **milo-engine-tests re-run (own invocation, `build-agent-W0.1`, reconfigured/
+   rebuilt at current HEAD):**
+   - Targeted `SkinGolden.*:ClipPoseFixture.*` -> 16 ran, 15 passed, 1 skipped by
+     design (`SkinGolden.CaptureGolden`, gated on `MILO_SKIN_GOLDEN_CAPTURE=1`).
+     Includes `ClipPoseFixture.EffectorWorldPositionsMatchGolden` (W0.4) green.
+   - Full suite `ctest -j1`: **200 total, 100% passed, 0 failed**, 2 intentionally
+     skipped (`ExtractBik.ExtractSmallest`, `SkinGolden.CaptureGolden`). Matches
+     S3s claim exactly (no new failures; the 29 pre-existing dc3-drift failures
+     documented in W0.1/STATUS.md are gone, attributed to the unrelated
+     `W2-TESTFIX` commits already on HEAD, not to W1.3).
+
+### Exit criteria (PLAN.md, re-checked 1-7)
+All 7 confirmed. Every W1.3 commit (`c43b6fd`, `b206d44`) is a pure MOVE, prefixed
+`W1.3:`, staged only W1.3-owned files, made under the engine git lock;
+`MILO_ENGINE_PIN` in `rb3/native/CMakeLists.txt` untouched by this lane (bumping
+it is the coordinators job at wave close).
+
+### Scope note
+No fixes were needed — S1/S2/S3s work was already correct and complete. No
+"W1.3: fix ..." commits were made. Nothing to flag re: sibling-lane lines
+(`FxSendNative.cpp` left untouched, per rule 8).
+
+**Verdict:** W1.3 (S1+S2+S3+VERIFY) is **done**, gates green, MOVE proven
+byte-identical by two independent re-derivations. Ready for the coordinator to
+bump `MILO_ENGINE_PIN` at wave close.

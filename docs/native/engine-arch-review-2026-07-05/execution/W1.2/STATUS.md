@@ -368,3 +368,114 @@ staged under `flock /tmp/rb3-git.lock`).
 S4 verdict closes the item.
 
 **Blockers:** none.
+
+---
+
+## VERIFY — complete (all exit criteria met; one documented deviation independently corroborated)
+
+Verifier: independent re-derivation in own reused build dir (`native/build-agent-W1.2`,
+clang-pinned, RB3 backend), engine repo confirmed at implementer HEAD `6f9d340` with only the
+pre-existing unrelated `FxSendNative.cpp` edit uncommitted (git status clean otherwise — hard
+rule 8 respected, no W1.2 file touched by me).
+
+**Exit criterion 1 (files + CMake wiring) — MET.** `src/platform/RB3MeshCache.{h,cpp}` exist;
+`grep -n` on `CMakeLists.txt` confirms `RB3MeshCache.cpp` is in
+`MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3` (line ~322) and NOT in the DC3
+`MILO_ENGINE_GPU_PLATFORM_SOURCES` list (which still only has `MeshGpuCache.cpp` etc.) — verified
+by reading both list bodies directly, not just grep-counting.
+
+**Exit criterion 2 (0 defs remain in Rnd_Wgpu_RB3.cpp) — MET.** `grep -n` for
+`struct RB3MeshEntry`, `RB3UnpackMeshVerts(RndMesh`, `RB3EnsureMeshGpu(BandRnd`,
+`RndMesh::OnSync`, `LookupGeomSyncGen(`, `CleanupGpuMesh(` as DEFINITIONS in
+`Rnd_Wgpu_RB3.cpp` -> 0; only call sites / extern uses remain (`sMeshGpu[mesh]` at the DrawMesh
+inline block, `LookupGeomSyncGen(...)` calls, one `RB3EnsureMeshGpu` call site in
+`WarmGpuForDir`) — all expected per PLAN.md.
+
+**Exit criterion 3 (single definition, no ODR) — MET.** Re-ran the grep sweep myself across
+`src/`: `RB3MeshEntry`/`sMeshGpu`/`sGeomSyncGen`/`RB3UnpackMeshVerts`/`RB3EnsureMeshGpu` each have
+exactly one definition (`RB3MeshCache.{h,cpp}`). `CleanupGpuMesh`/`RndMesh::OnSync` bodies exist
+in both `RB3MeshCache.cpp` (RB3 set) and `MeshGpuCache.cpp` (DC3 set) — confirmed genuinely
+mutually exclusive by reading `CMakeLists.txt`'s two source-list bodies directly (not just
+trusting the comment): `MILO_ENGINE_GPU_PLATFORM_SOURCES` (DC3) lists `MeshGpuCache.cpp` at
+line 305; `MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3` lists `RB3MeshCache.cpp` at line 322 — disjoint
+lists, `MILO_ENGINE_GPU_BACKEND` selects one at configure time. No ODR risk.
+
+**Exit criterion 4 (builds + tests green) — MET, re-derived independently.**
+- `rb3-native` + `rb3-tests` rebuilt clean in `build-agent-W1.2` (own dir, clang-pinned); a
+  `touch` + rebuild of `RB3MeshCache.cpp` produced zero warnings/errors.
+- `rb3-tests` full run (not just the STATUS.md filter): **70 passed, 1 skipped
+  (`DrawLogGolden.PopulatesFromRealDrawMesh`, intentional), 0 failed** — 71 tests / 13 suites,
+  matches STATUS.md exactly.
+- **Correction to STATUS.md's wording:** S1/S2/S3 each say rb3-tests "Includes SkinGolden,
+  ClipPose, DrawLogGolden, stub-census suites" — this is NOT accurate; `SkinGolden.*` and
+  `ClipPoseFixture.*` live ONLY in `milo-engine-tests` (`milo-native-engine/tests/`), not in
+  `rb3-tests` (confirmed via `grep -rl` + `--gtest_list_tests`, 71 tests, no SkinGolden/ClipPose
+  suite present). Harmless — the underlying claim ("milo-engine-tests stays green, invariant to
+  this RB3-only change because it builds the dc3 backend") is correct and I independently
+  reproduced it: rebuilt `milo-engine-tests` in `build-agent-W0.4`
+  (`MILO_ENGINE_GPU_BACKEND=dc3`, confirmed via CMakeCache), and ran
+  `DC3_DATA=.../dc3-decomp/orig-assets MILO_LIB=.../orig-assets/extracted
+  ./tests/milo-engine-tests --gtest_filter='SkinGolden.*:ClipPoseFixture.*'` ->
+  **15 passed, 1 skipped (`SkinGolden.CaptureGolden`, intentional), 0 failed** — exact match to
+  the claimed pass/skip counts. (First attempt without `DC3_DATA`/`MILO_LIB` set crashed
+  SIGFPE/exit 136 on a `gen/main_xbox.hdr` archive-open failure — an environment-setup trap, not
+  a code defect; documented here so the next verifier doesn't re-hit it blind.)
+
+**Exit criterion 5 (byte-identical MOVE gate) — PARTIALLY MET AS SPECIFIED, but the documented
+deviation is sound and I independently corroborated it.** Reproduced the PLAN's determinism
+negative-control myself: ran `lineup-gate.py` twice back-to-back against the SAME
+`build-agent-W1.2/rb3-native` binary (no rebuild between runs) -> both runs `verdict=PASS` on all
+four layers, but the four WIDE-PNG SHA256 hashes differed completely between the two runs
+(e.g. `861a0c9c...` -> `8f474326...` for `coop_g_n03_0`). This confirms boot is genuinely
+wall-clock-nondeterministic pre-W0.3b (frozen-clock seam not yet landed in the render TU —
+confirmed via `grep -rn RB3_FIXED_CLOCK src/`, only NativeCompat registry entries exist, no seam
+in `Rnd_Wgpu_RB3.cpp`), so the PLAN's literal "WIDE-PNG SHA256 unchanged vs S0 baseline" gate is
+provably unachievable here, exactly as S1's DEVIATION note says — not corner-cutting.
+Independently re-derived the substituted proof (source-textual byte-identity) for ALL THREE
+commits myself (`git show <parent>` vs `git show <commit>`, diffed the exact moved regions):
+- **S1** (`daa0286`): `struct RB3MeshEntry` body, `LookupGeomSyncGen`, `CleanupGpuMesh`,
+  `RndMesh::OnSync` — all byte-identical (diff exit 0). Only change anywhere in
+  `Rnd_Wgpu_RB3.cpp` across S1-S3 combined: 1 `#include` line added + 2 counter defs losing
+  `static` (verified via `git diff daa0286^ 6f9d340 -- Rnd_Wgpu_RB3.cpp`, filtering out
+  comment/blank lines — exactly 3 net additions, zero unexplained logic changes).
+- **S2** (`daf0ed1`): `RB3UnpackMeshVerts` + `XboxCVert`/`Be*` helpers — diff shows exactly the
+  claimed changes (`static` removal, `GpuVertexRB3`->`GpuVertex` alias substitution x3 sites),
+  every other line (both uncompressed and compressed-vert branches) byte-identical.
+- **S3** (`6f9d340`): `RB3EnsureMeshGpu` — diff shows exactly one hunk (`static` removal), full
+  103-line body otherwise byte-identical.
+- Reproduced the lineup-gate PASS independently on the current HEAD binary (fresh run, not
+  reusing implementer's capture): `verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS
+  pin=PASS`, all four frames, `coop_g_n03`x2 + `coop_g_b`x2.
+- **Verdict: this is a legitimate, well-justified deviation** — the substituted source-textual
+  proof is strictly stronger than a sampled PNG hash for a pure-relocation MOVE, and I confirmed
+  the "hash gate is broken pre-W0.3b" premise myself rather than taking it on faith.
+
+**Exit criterion 6 (DrawMesh inline block untouched) — MET.** Confirmed via the same
+`git diff daa0286^ 6f9d340` sweep: the inline upload block (`sMeshGpu[mesh]` at
+`Rnd_Wgpu_RB3.cpp:3490`, `LookupGeomSyncGen` calls at 3499/3875) shows zero diff lines in that
+region; only deletions elsewhere (moved-out code) and the 3 additions noted above.
+
+**Exit criterion 7 (header surface minimal) — MET.** Read `RB3MeshCache.h` in full: exports
+exactly `RB3MeshEntry`, `sMeshGpu`, `sGeomSyncGen`, `LookupGeomSyncGen`, `CleanupGpuMesh`,
+`RB3UnpackMeshVerts`, `RB3EnsureMeshGpu`, and the two counter externs. No incidental exports.
+
+**Exit criterion 8 (S4 convergence verdict) — MET.** `evidence/convergence-notes.md` read in
+full: both axes (`RB3UnpackMeshVerts` vs `VertexFormats::Unpack*`, `RB3MeshEntry` vs
+`GpuMeshData`) verdicted NOT provably identical, with a real behavioral divergence flagged
+(compressed-vertex colour channel R/B swap) — correctly kept out of MOVE scope.
+
+**Scope check:** no substantive redesign was needed; this VERIFY found zero defects requiring a
+`W1.2: fix ...` commit. The one inaccuracy found (STATUS.md's "rb3-tests includes SkinGolden/
+ClipPose" wording) is corrected above rather than patched in STATUS.md's prior sections (append-
+only per protocol).
+
+**Blockers:** none. **Gates: GREEN.** Fail-red is proven by construction for this item (MOVE-only
+gate = the byte/source-identity diff itself failing would BE the fail-red signal; no separate
+fail-red demo is meaningful for a pure relocation, and PLAN.md does not ask for one beyond the
+per-commit identity check, which is what was independently re-derived above).
+
+**Next actions for the coordinator:** W1.2 is ready to close. W1.3 (next lane-A item) can proceed
+against engine HEAD `6f9d340`. Recommend the coordinator note in the Wave-2 results table that a
+hash re-baseline for W1.2's evidence dir can be added retroactively once W0.3b's frozen-clock
+seam actually lands in `Rnd_Wgpu_RB3.cpp` (registry entries exist but the seam itself does not
+yet, per the grep above) — this affects every subsequent Phase-1 lane-A item too, not just W1.2.

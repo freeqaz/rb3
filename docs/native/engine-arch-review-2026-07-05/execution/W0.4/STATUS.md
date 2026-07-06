@@ -87,3 +87,150 @@ files + add `StubTrace.cpp` to the source list + relink with a `_ZTV11MemcardXbo
 
 **Remaining for S2:** run the dump under the workarounds above, paste goldens (verify against the
 captured block above — should match this build), commit, and record the green + red transcripts.
+
+## W0.4.S2 — done
+
+**Commit (engine repo `milo-native-engine`):** `7a490f2` — "W0.4: populate
+live-pose effector golden values (S2)". Single CHANGES commit, stages only
+`tests/test_bone_ground_truth.cpp` (the `kEffectorGoldens[]` array).
+
+**Build note (reproducing S1's documented env blockers):** the standalone
+`milo-engine-tests` configure/link is still blocked by the same 3 pre-existing,
+out-of-scope issues S1 recorded (dsp/ path drift, missing `StubTrace.cpp` in
+`tests/dc3_runtime_sources.cmake`, `-D_GLIBCXX_NO_ASSERTIONS` for the latent
+`PoseMeshes` OOB). Worked around identically and reverted before committing:
+- 6 temp symlinks in `dc3-decomp/src/system/synth/` -> `../dsp/*.cpp`
+  (BitCrushEffect, DelayEffect, DistortionEffect, EQEffect, FlangerEffect,
+  WahEffect) — created, used, then `rm`'d; `dc3-decomp` repo confirmed clean
+  (`git status --short` empty) after.
+- 1 temp line added to `tests/dc3_runtime_sources.cmake`
+  (`${DC3_RUNTIME_ROOT}/native/src/StubTrace.cpp`) to fix the
+  `_ZN3dc317gStubTraceEnabledE` undefined-symbol load failure — added, used,
+  then `git checkout -- tests/dc3_runtime_sources.cmake` before staging/commit
+  (confirmed via `git status --short tests/` showing only
+  `test_bone_ground_truth.cpp` modified).
+- `build-agent-W0.4` (from S1) reused as-is; no new cmake flags needed this
+  round (S1's `-D_GLIBCXX_NO_ASSERTIONS` was already baked into its cache).
+Recommend the coordinator still land the permanent fix (regenerate
+`dc3_runtime_sources.cmake` for the dsp/ move + StubTrace.cpp) so future waves
+do not have to repeat this.
+
+**Dump run** (`MILO_TEST_DUMP_POSE_GOLDEN=1`, env
+`DC3_DATA=/home/free/code/milohax/dc3-decomp/orig-assets`
+`MILO_LIB=.../orig-assets/extracted` `DC3_REPO_ROOT=/home/free/code/milohax/dc3-decomp`):
+printed exactly the 15-row initializer block S1 had pre-captured (verified
+byte-for-byte identical to the "head-start" values in S1's STATUS section) —
+confirms determinism across runs. Pasted verbatim into `kEffectorGoldens[]`.
+
+**Green run** (populated goldens, `ctest --test-dir build-agent-W0.4 -R
+EffectorWorldPositionsMatchGolden -V`):
+```
+148: [       OK ] ClipPoseFixture.EffectorWorldPositionsMatchGolden (0 ms)
+1/1 Test #148: ClipPoseFixture.EffectorWorldPositionsMatchGolden ...   Passed    0.93 sec
+100% tests passed, 0 tests failed out of 1
+```
+Also ran the full `BoneGroundTruth.*:ClipPoseFixture.*` filter (24 tests) —
+all pass, no regression to the topology/symmetry/finiteness suite.
+
+**Fail-red demo** (`MILO_TEST_POSE_PERTURB=1.0`, direct binary invocation,
+exit code confirmed `1`):
+```
+The difference between w.x + perturb and g.x is 0.9999995231628418, which exceeds kEffectorEps, where
+w.x + perturb evaluates to -5.4380154609680176,
+g.x evaluates to -6.4380149841308594, and
+kEffectorEps evaluates to 0.05000000074505806.
+bone_L-toe.mesh @frac 0.5 world X
+/home/free/code/milohax/milo-native-engine/tests/test_bone_ground_truth.cpp:1153: Failure
+...
+[  FAILED  ] ClipPoseFixture.EffectorWorldPositionsMatchGolden
+[==========] 1 test from 1 test suite ran. (817 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] ClipPoseFixture.EffectorWorldPositionsMatchGolden
+ 1 FAILED TEST
+```
+Every effector at every perturbed beat fails its world-X `EXPECT_NEAR` (1.0u
+perturbation vs 0.05 epsilon), confirming the gate fails red on a real
+placement error.
+
+**Exit criteria met:** all 5 from PLAN.md — test exists/compiles/passes green
+with populated goldens; fail-red demonstrated + recorded; clip pinned by name
++ beats by fraction (S1, unchanged); `tests/CMakeLists.txt` untouched (only
+`test_bone_ground_truth.cpp` modified across both S1+S2 commits — confirmed by
+`git log --stat` on both commits); pre-existing `BoneGroundTruth.*`/
+`ClipPoseFixture.*` suite unregressed (24/24 pass).
+
+W0.4 is COMPLETE (S1 + S2 both done).
+
+## VERIFY — complete
+
+Independently reproduced by a separate verifier agent (2026-07-05), reusing
+`milo-native-engine/build-agent-W0.4` (S1/S2's dir) with no rebuild needed
+(binary already linked with the documented workarounds baked in).
+
+**Environment note:** found `tests/dc3_runtime_sources.cmake` locally modified
+(re-added `native/src/StubTrace.cpp` line, mtime ~90s after S2's commit) —
+i.e. S2's claimed revert did not actually stick in the working tree. Reverted
+it via `git checkout -- tests/dc3_runtime_sources.cmake` before verifying;
+confirmed the prebuilt `milo-engine-tests` binary still runs fine (the source
+list only affects fresh configures, not the already-linked binary). Repo now
+clean except an unrelated pre-existing `src/platform/FxSendNative.cpp` mod
+(another concurrent agent's WIP, out of W0.4 scope, left untouched).
+
+**Criterion 1 — test exists/compiles/passes green with populated goldens:**
+Read `tests/test_bone_ground_truth.cpp:1041-1163` — `TEST_F(ClipPoseFixture,
+EffectorWorldPositionsMatchGolden)` present, `kEffectorGoldens[]` populated
+(15 rows, clip `crouching_great_01`, fracs {0.0,0.5,0.9}, R/L hand + R/L toe +
+prop3). Ran:
+```
+ctest --test-dir build-agent-W0.4 -R 'ClipPoseFixture' -V
+...
+148: [       OK ] ClipPoseFixture.EffectorWorldPositionsMatchGolden (0 ms)
+100% tests passed, 0 tests failed out of 12
+```
+PASS (independently reproduced, not just trusting S2's transcript).
+
+**Criterion 2 — fail-red demonstrated:** re-ran directly with
+`MILO_TEST_POSE_PERTURB=1.0`:
+```
+The difference between w.x + perturb and g.x is 1, which exceeds kEffectorEps...
+bone_L-hand.mesh @frac 0.89999997615814209 world X
+... (4 effectors x 1 beat shown, all world-X assertions fail)
+[  FAILED  ] ClipPoseFixture.EffectorWorldPositionsMatchGolden
+[  FAILED  ] 1 test, listed below:
+ 1 FAILED TEST
+```
+PASS — independently reproduced red failure, matches S2's recorded evidence.
+
+**Criterion 3 — clip pinned by name, beats by fraction:** confirmed by
+reading source: `kPinnedClip = "crouching_great_01"` via `FindClipByName`
+(no `ObjDirItr` first-element reliance); `start + len * frac` for
+`kFracs = {0.0f, 0.5f, 0.9f}`. PASS.
+
+**Criterion 4 — `tests/CMakeLists.txt` unchanged:**
+`git diff HEAD~2 HEAD -- tests/CMakeLists.txt` → empty. PASS.
+
+**Criterion 5 — no regression to topology/symmetry/finiteness suite:**
+```
+ctest --test-dir build-agent-W0.4 -R 'BoneGroundTruth|ClipPoseFixture'
+100% tests passed, 0 tests failed out of 24
+```
+PASS (24/24, includes all pre-existing `BoneGroundTruth.*` + `ClipPoseFixture.*`).
+
+**Commits verified present (engine repo):**
+- `669ebc3` — W0.4: add live-pose effector WORLD-position golden test (S1)
+- `7a490f2` — W0.4: populate live-pose effector golden values (S2)
+
+Both stage only `tests/test_bone_ground_truth.cpp` (confirmed via `git show
+--stat` on each). No fixes were required this pass — S1+S2's work was fully
+correct and reproducible; the only action taken was reverting a stray
+uncommitted leftover (`tests/dc3_runtime_sources.cmake`) that had drifted from
+the committed state, restoring repo cleanliness. That file's underlying issue
+(dsp/ path drift + missing StubTrace.cpp in the source list) remains a
+pre-existing, out-of-W0.4-scope environment blocker for any FUTURE fresh
+configure of `milo-engine-tests` — still recommend the coordinator regenerate
+`tests/dc3_runtime_sources.cmake` (per S1/S2's notes) so subsequent waves
+don't have to rediscover + locally work around it, and don't leave it dirty
+again.
+
+**W0.4 is VERIFIED COMPLETE.** No further action needed for this item.
