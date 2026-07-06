@@ -310,3 +310,69 @@ NOT touch the drawlog goldens or `classification.json`.** Coordinator E1 sign-of
 remain the coordinator's next action.
 
 **Commit:** see `git log --grep=W2.1-flip-blocker` (A.S4).
+
+---
+
+## Coordinator flip cycle — re-golden (executor) — DONE (2026-07-06)
+
+Post-flip re-golden after `RB3_PLACEMENT_CONTRACT` was flipped default-ON (engine, crowd/drum
+placement contract; engine HEAD `1b045d9`, built into `native/build-native`). Same procedure as
+W0.3d.S1 (per-name eps only, NO global widen). Binary: `native/build-native/rb3-native` (the
+coordinator's freshly-linked default build); no rebuild needed.
+
+### A/B confirmation (before goldening)
+- Default (contract ON): drawlog canonical **count=792**, stable 3/3, name-sets identical.
+- Control (`RB3_PLACEMENT_CONTRACT_OFF=1`): count=888 (== the pre-flip committed golden). The
+  888→792 delta is the crowd mesh draw-count change, exactly as A5.1 predicted.
+
+### Task 1 — golden regenerated: **count = 792** ✅
+`drawlog-golden.py --fixed-clock --update` under the default → `splash_screen.json` rewritten,
+`count`=792, `len(draws)`=792. Matches the A5.1 expected post-flip count (NOT goldened blind).
+
+### Task 2 — per-name-eps residual sidecar refit from a FRESH N=36 fixed-clock sweep
+36 `--fixed-clock` boots (`setarch -R`, default build = contract ON), each compared to the new
+792 golden via `drawlog-golden.py`'s own `compare_canonical()` correspondence (residual=None to
+surface every world divergence), per-name max |Δworld| taken over the whole sweep, eps =
+ceil(1.5×max to nearest 0.5). **36/36 boots count=792, zero anomalies** (no rare count-anomaly
+this sweep). Same 7 skinned eye/face mesh names as W0.3d; the fresh maxes are **smaller** than the
+pre-flip sweep, so every per-name eps **tightened** (this is a per-name recalibration, never a
+widen; top-level legacy `eps:3.0` untouched):
+
+| name | observed max \|Δworld\| (N=36) | eps landed |
+|---|---|---|
+| `0x8217aba90e8175d2` | 11.502 | 17.5 |
+| `0x4c3b48a1fe2165eb` | 11.150 | 17.0 |
+| `0xb14bc5a60dc4b060` | 5.680 | 9.0 |
+| `0x395eb5606b2120d` | 5.668 | 9.0 |
+| `0x11db9562e2d7790b` | 5.224 | 8.0 |
+| `0xdc4a1dc968146487` | 4.632 | 7.0 |
+| `0xa8e830c0e5f7189d` | 3.646 | 5.5 |
+
+Sidecar rebuilt against the new golden: **26 indexed occurrences** (every occurrence of each of
+the 7 names in the 792 golden — validated: 0 index/name mismatches, complete per-name coverage
+for `compare_canonical()`'s name-hash matching). Indices updated for the 792 golden (e.g. final
+occurrences now 468/469/481/482 vs the old 516/517/527/528).
+
+### Task 3 — verification sweep: **15/15 GREEN** ✅
+`drawlog-golden.py --fixed-clock --canonical-order` × 15 fresh boots → **15/15 PASS**, every run
+count=792, **0 unexpected divergences**. Per-run "known-residual divergence" counts 204–253 are
+the expected greedy-correspondence artifact within per-name eps (same pattern as W0.3d.S1 verify's
+137–278), non-blocking. Fail-red intact: `--canonical-order --fail-red-audit` = all 4 defect
+classes RED (count-drop, bind-group-collapse, out-of-bound world, mesh-identity) + pure
+permutation GREEN, against the new golden+sidecar.
+
+### Task 4 — non-blind lineup gate on the default build: **PASS** ✅
+`lineup-gate.py --bin native/build-native/rb3-native` (GPU headroom confirmed, 24 GB free):
+`LINEUP_GATE verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS pin=PASS`, no black frames,
+4/4 WIDE frames within bound, `max_band_ratio=3.15`. The vertex-invariant contract leaves band
+shard ratios / char counts unchanged, as designed.
+
+### Task 5 — byte-hygiene ✅
+`git -C ../milo-native-engine status --porcelain` shows only the pre-existing, unrelated
+`src/platform/FxSendNative.cpp` (a concurrent audio-agent's WIP, Wave-1 debris — NOT mine; left
+untouched per hard rule 8). Engine HEAD unchanged (`1b045d9`); no engine source edited. `MILO_ENGINE_PIN`
+untouched. My only writes are the two golden JSONs + this STATUS append.
+
+**Files committed:** `native/tests/goldens/drawlog/splash_screen.json` (888→792),
+`native/tests/goldens/drawlog/splash_screen.fixedclock-residual.json` (fresh N=36 per-name eps),
+and this STATUS append.
