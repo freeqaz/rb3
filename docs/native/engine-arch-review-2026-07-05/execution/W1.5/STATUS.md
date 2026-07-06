@@ -256,3 +256,91 @@ work item per PLAN.md's own S3 backlog-note requirement.
 
 **Deviations from PLAN.md:** none in scope. No source edits made (verification-only, as the item
 specifies). **Remains:** none — W1.5 (S1+S2+S3) complete. **Blockers:** none.
+
+
+## VERIFY — complete
+
+Independent re-verification (fresh build dir `native/build-agent-W1.5-verify`, not reused from
+S1/S2/S3), engine tip unchanged at `648dc40` (2 commits: `0cd227f` S1 MOVE, `648dc40` S2 CHANGE).
+
+**1. Source-level exit criteria (re-grepped independently):**
+- `grep -rn "BandUniformRing" src/` -> 1 hit, comment-only at `Rnd_Wgpu_RB3.cpp:123` (no
+  symbol/type reference). Confirmed.
+- `grep -rn "class UniformRingBuffer" src/` -> exactly 1 definition
+  (`src/gfx/UniformRingBuffer.h:13`) + 1 pre-existing forward-decl (`ShadowPass.h:6`). Confirmed.
+- `gfx/UniformRingBuffer.cpp` present once in `MILO_ENGINE_GFX_SOURCES` (CMakeLists.txt:269).
+
+**2. MOVE proof (S1), re-derived from scratch (not trusted from STATUS):**
+- `diff <(git show 8d6d895:src/platform/Rnd_Wgpu.h | sed -n '/class UniformRingBuffer/,/^};/p') \
+       <(sed -n '/class UniformRingBuffer/,/^};/p' src/gfx/UniformRingBuffer.h)` -> empty (exit 0).
+- Method bodies (`Init`/`Grow`/`Write`) manually diffed line-by-line against
+  `git show 8d6d895:src/platform/Rnd_Wgpu.cpp` (lines 165-202) -> byte-identical (only additions
+  are the file banner comment + `#include <cstdio>`, no logic changes). Confirmed independently.
+
+**3. Fresh clean build, both flavors:**
+- rb3 flavor: `native/build-agent-W1.5-verify`, fresh configure (clang/clang++, Debug) from
+  scratch -> expected `MILO_ENGINE_PIN` mismatch warning (HEAD `648dc40` vs pinned Wave-1
+  `9561a19...`; correct, not bumped, hard rule 3). `cmake --build --target rb3-native rb3-tests
+  -j8` -> both link clean, 0 errors. `find build-agent-W1.5-verify -name "*UniformRingBuffer*"`
+  confirms `milo-engine.dir/.../src/gfx/UniformRingBuffer.cpp.o` present in the RB3-flavor build.
+- dc3 flavor: rebuilt `milo-engine-tests` fresh in the existing `build-agent-W1.5` engine cache
+  (`cmake --build . --target milo-engine-tests -j8`) -> `UniformRingBuffer.cpp.o` recompiled
+  (confirms tracking current tree, not a stale artifact) and links clean.
+
+**4. rb3-tests (gtest), fresh binary:** `70/70 PASSED`, 1 documented skip
+  (`DrawLogGolden.PopulatesFromRealDrawMesh`) -> matches S2/S3 exactly, reproduced independently.
+
+**5. dc3-flavor `milo-engine-tests` full suite, fresh run (`ctest -j4`, DC3_DATA/MILO_LIB set):**
+  `100% tests passed, 0 tests failed out of 200` (198 passed / 0 failed / 2 skipped-by-design:
+  `ExtractBik.ExtractSmallest`, `SkinGolden.CaptureGolden`). Matches S3's post-W2-TESTFIX
+  baseline claim exactly. Cross-checked W2-TESTFIX/STATUS.md independently (dc3-decomp
+  `034e8d12`+`a14f7e01`, engine `49c3f38`+`0dab386` all present in `git log`) -> the "29 failures
+  -> 0" baseline-correction narrative in S3 is corroborated by W2-TESTFIX's own status doc, not
+  fabricated.
+- `ClipPoseFixture.*` (12 tests, incl. `EffectorWorldPositionsMatchGolden`) and `SkinGolden.*`
+  (3 run + 1 by-design-skip) re-run standalone (`ctest -R "ClipPoseFixture|SkinGolden"`) ->
+  16/16 pass (1 skip). Both Wave-1 safety nets independently confirmed green.
+
+**6. Zero-Grow proof, RE-DERIVED FRESH (not just trusting S2's reverted-probe transcript):**
+  Built `rb3-native` in `build-agent-W1.5-verify` with `-DCMAKE_CXX_FLAGS=-DDEBUG_LOGS` (the
+  PLAN.md-sanctioned alternative to an uncommitted probe edit — avoids touching the shared
+  engine tree at all). Ran the deterministic lineup scene headless via
+  `lineup-gate.py --bin native/build-agent-W1.5-verify/rb3-native`. Engine log
+  (`/tmp/rb3-lineup-cand-42361.log`, 25757 lines): `grep -c "UniformRingBuffer: growing"` -> **0**.
+  Lineup gate itself still PASSED with the DEBUG_LOGS build (verdict=PASS, all layers PASS).
+
+**7. Non-blind lineup gate, re-run independently on BOTH AFTER and the still-extant BEFORE binary:**
+- AFTER (`native/build-agent-W1.5-verify/rb3-native`, no DEBUG_LOGS): `LINEUP_GATE verdict=PASS
+  img=PASS segA=PASS ratioB=PASS countC=PASS pin=PASS`. `ratioB_detail.max_band_ratio=4.26`
+  (< 8.0 bound), `n_offenders=0`.
+- BEFORE (`native/build-agent-W1.5-before/rb3-native`, S1-tip binary still on disk from the
+  implementer's run): re-run independently -> also `verdict=PASS` all layers,
+  `max_band_ratio=4.48`.
+- **countC cross-check (the deterministic layer): BEFORE vs AFTER are byte-identical** across
+  all 16 slot x frame combinations (meshes: 140/140/144/142, verts: 15395 uniformly, ratio=1.0
+  on every slot) -> independently confirms the wrap->grow change is a provable no-op at this
+  scene, corroborating the zero-Grow proof from a second angle.
+- segA/image numeric layers vary run-to-run on the SAME binary (reproduced the documented W0.3
+  boot/pose nondeterminism) -> confirms this is harness-side, not introduced by the S2 change
+  (BEFORE, code untouched by W1.5.S2, shows the same run-to-run wobble pattern).
+
+**8. Git hygiene / pin, re-checked:**
+- Engine `git status --short` -> only pre-existing `M src/platform/FxSendNative.cpp` (untouched,
+  hard rule 8 respected). `git log --oneline --grep=W1.5` -> exactly 2 commits (`0cd227f` MOVE,
+  `648dc40` CHANGE), correctly labeled and ordered directly on `8d6d895` (W1.4 tip).
+- `rb3/native/CMakeLists.txt:74` `MILO_ENGINE_PIN` still `9561a1957b0c89d23e74ae8f3022da664289b2c5`
+  (Wave-1 value) -> NOT bumped, hard rule 3 respected.
+- rb3 repo: exactly 2 W1.5-prefixed commits (`202875c4` S2, `c0eba431` S3), both docs-only under
+  `execution/W1.5/`, consistent with the plan's "rb3 = STATUS.md + captures only" scope.
+
+**Verdict: all 8 PLAN.md exit criteria independently reproduced. No discrepancies found between
+STATUS.md's claims and re-derived evidence.** Minor non-blocking note: the on-disk STATUS.md has
+an "S1 — done" section but `git log --grep=W1.5` shows only 2 rb3-side status commits (S2, S3) —
+the S1 section text is present in the file (verified by reading it) but its own commit wasn't
+isolated in history; this is a docs-commit-granularity nit, not a gate failure, and does not
+affect any of the 8 measurable exit criteria (all of which are source/build/test facts I
+re-derived directly, not sourced from that section's prose).
+
+**No source edits made.** Verification-only, as the role specifies. Build dir used:
+`native/build-agent-W1.5-verify` (new, mine); reused engine `build-agent-W1.5` (dc3 flavor,
+pre-existing, rebuilt fresh) for the dc3-side suite.
