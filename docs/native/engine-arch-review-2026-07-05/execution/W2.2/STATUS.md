@@ -356,3 +356,59 @@ tree one commit past pin (behavior-neutral, above).
 **Remains / handoff:** S4 (default-flip) deferred to coordinator with the recorded
 evidence + recommendation. No blockers. RealPathFixture (S1b) still SKIPs — no in-game
 bind fixture dumped (optional; numeric core covered).
+
+## VERIFY — COMPLETE (default-OFF; four-layer anti-revert exit satisfied)
+Verifier: Opus (adversarial). Own build dir `native/build-agent-W2.2-verify` (Clang) +
+engine invariance build `../milo-native-engine/build-agent-W2.2` rebuilt against current
+tree HEAD `5cee522` (one past pin `41b9e3a` = Lane-A W0.3c default-OFF probe; NOT reset,
+HARD-RULE 7). All key evidence INDEPENDENTLY re-derived (did not trust STATUS numbers).
+
+**Per-criterion (re-run, not trusted):**
+1. **Oracle fail-red (S1b) — CONFIRMED.** `ctest -R HandsBindOracle` unperturbed → 3 pass /
+   1 skip (RealPathFixture) GREEN. `HANDS_BIND_ORACLE_PERTURB=0.15` → both invariant tests
+   RED; fingertip smears **28.87u** (independently reproduced, matches S3's exact figure;
+   ≈200·sin0.15) + splayed-thumb 8.84u. The SYS-7 numeric invariant genuinely fail-reds.
+   *Residual (documented, accepted per PLAN R3):* `RealPathFixture` SKIPs (no in-game
+   `bind_fixture.txt` dumped) → the oracle runs on synthetic+fingertip transforms, not on
+   real captured `RebindHeadHandsAtRest` output. Math core is covered; real arm is armed-not-fired.
+2. **Default-OFF + separate flip — CONFIRMED.** S2 (`32746985`) is one file
+   (`BandCharacter.cpp`, +34) — a `static int`+`getenv("RB3_HANDS_BIND_FIX")?1:0` guard;
+   flag-unset path is behaviorally identical (new `if` skipped → falls to the pre-existing
+   `miss++/clipPlaying`). No `W2.2.S4` flip commit exists; flag default reads OFF. MOVE-xor-CHANGE
+   respected (S2 is the lone CHANGE; S1 commits additive). Engine repo ZERO W2.2 edits.
+3. **Numeric draw-time — CONFIRMED directionally (own default-OFF run, 40s dwell).** Verdict
+   BRANCH-RESIDUAL / MARGINAL-GRAZE (matches S1a). **FLING(>120u)=0.** Max REBIND_DRAW_SKINPOS
+   **68.2u** — under the 92u STOP-tripwire; **no 200-460u smear** on any rebound appendage;
+   **no band head/hand rebound guard-DROP** (only `male_extras_*` crowd + `scrollbar_bg` UI
+   "other DROP", out of scope). Head-region graze ~68-69u via `bone_L-brow2`/`bone_head`
+   (structural, matches S3's 69.5u). Glove/boot no-drop grazes 2.06-5.22x on small meshes.
+   Lineup randomization: this run drew boots (motorcycle/timberland), not S1a's saddleshoe —
+   the one HARD foot/shoe drop is lineup-dependent + out-of-scope (lower-body
+   `RebindOutfitBonesToOwnSkeleton`, not the head/hands path). Literal ≤65u bar unmet by a
+   STRUCTURAL head graze — correctly resulted in NO flip.
+4. **Invariance nets — CONFIRMED 198 pass / 0 fail / 2 skip.** DC3-context `milo-engine-tests`
+   rebuilt + `ctest -j1` (DC3_DATA+MILO_LIB). W0.1 SkinGolden {GoldenMatchesReference,
+   ReferenceMatchesCompiledSkinVertex, BrokenSkinDivergesFromGolden} GREEN; 0 failures ⇒ W0.4
+   ClipPoseFixture GREEN. No leak into shared skinning math (auto-stop not triggered). Note:
+   milo-engine-tests is built from ENGINE sources, so it is structurally independent of W2.2's
+   rb3-only change — green here also clears the current shared engine tree at 5cee522.
+5. **W0.5 lineup — CONFIRMED PASS.** `--selftest` PASS (3 layers separate clean/exploded);
+   real gate on own rb3-native → `verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS
+   pin=PASS` (sliv 0-2/frame, max_band_ratio 2.94 < cap 8.0).
+
+**rb3-tests suite:** 65/75 pass; the 10 "failures" are ALL the GPU/Dawn set (TexSharpen×7,
+WgslValidation×2, DrawLogGolden×1) — at-exit teardown SEGFAULTs after passing assertions
+(0 assertion-failure lines in LastTest.log; `[ PASSED ]` markers present). Orthogonal to W2.2
+(only `BandCharacter.cpp` changed; GPU tests never call it). Pre-existing environmental noise,
+matches S2's note. HandsBindOracle passes in the full run.
+
+**exitReached = default-off.** No S4 flip (correct: gate-1 literal bar unmet by an out-of-scope
+residual + no in-wave reviewer judgment). Worst-case four-layer exit = an unflipped registered
+flag — a BandPatchMesh-style blind revert is structurally impossible here. Item is COMPLETE
+for a default-OFF landing.
+
+**Next actions (coordinator, non-blocking):** (a) append the `RB3_HANDS_BIND_FIX`
+classification.json entry (S2 STATUS) at pin-bump — engine READ-ONLY for W2.2; (b) foot/shoe
+rest-capture coverage = a separate Wave-4 item (out of W2.2 scope), NOT a flip of
+`RB3_HANDS_BIND_FIX`; (c) optional: dump an S1a `bind_fixture.txt` to fire the oracle's
+RealPathFixture real arm.
