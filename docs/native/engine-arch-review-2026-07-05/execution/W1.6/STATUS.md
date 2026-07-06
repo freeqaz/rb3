@@ -347,3 +347,53 @@ across the chain; pin still `41b9e3a`, coordinator bumps). No code changes in S4
 nothing to reword); one docs commit (STATUS append + landing `PLAN.md`). **Blockers:** none.
 **Remains for the coordinator:** bump `MILO_ENGINE_PIN` to `6221a56` (or later) once Wave 3 closes, per
 hard rule 3 (not this agent's job).
+
+## VERIFY — complete (gates green, byte-identical independently re-derived)
+
+Independent verifier (own build dir `native/build-agent-W1.6-verify` @ clang; own pre-W1.6 baseline
+`native/build-w16-verify-baseline` built from a FRESH engine worktree at `5cee522` — did not trust the
+pre-existing baseline binaries). Engine HEAD `6221a56`; pin still `41b9e3a` (correctly not bumped).
+W1.6 commits present: `9df8349`(S1) `01c2642`(S2) `6221a56`(S3) + rb3 S4 docs commit. Sibling
+`FxSendNative.cpp` untouched.
+
+**Build:** `rb3-native` + `rb3-tests` clean, rc=0.
+
+**MOVE-class audit (adversarial diff read):** S1 (+26/-5) / S2 (5 files, +39/-37) / S3 (+58/-16) are all
+small repackaging diffs. `SubmitDraw` is the verbatim `SetPipeline`/4×`SetBindGroup(0..3)`/VB/IB/
+`DrawIndexed` block; DrawParticles emits an identical GPU-call sequence reading `ctx.scene.group`
+(==`mActiveScene.group`). No hidden behavior change found.
+
+- **E1 (byte-identical) — MET.** 15-run fixed-clock drawlog A/B, **pre-W1.6 `5cee522` vs W1.6-HEAD
+  `6221a56`**: draw count **888/888 every run**; **scene bind-group-token partition IDENTICAL** (20
+  distinct, size-multiset `{335,243,92,67,55,25,19,10,9,8,6,4,3,3,3,2,1,1,1,1}`); **14/15 runs 0
+  unexpected**. The one divergent run = 24 `field=world` diffs on a single non-residual mesh (deltas
+  ~0.05–0.34) — the W0.3d CharEyes/CharLookAt eye-jitter residual, boot-nondeterministic. Controls:
+  8× baseline-only A/A + 3× cand-only A/A = 0 unexpected (probabilistic residual). W1.6 touches only
+  scene-binding plumbing and does NOT compute/alter any mesh `obj.world`, so a world-xfm divergence is
+  mechanically not W1.6-introduced. DEVIATION carried from S1-S4 (screenshot-md5 not achievable for the
+  wall-clock boot model; the draw-call-level A/B is a strictly stronger proof) — accepted.
+- **E2 (no new draw-log defect class) — MET.** Across all 15 A/B runs: **zero** count-mismatch, **zero**
+  bind-group-collapse (`field=scene/mat/obj/bone`), **zero** multiset-key mismatch; the only class ever
+  observed is the pre-existing `field=world` eye-jitter residual, at the same rate as baseline A/A.
+- **E3 (gate can still see a W1.6 regression) — MET, independently.** Built-in `--canonical-order
+  --fail-red-audit` on the verify binary: **4 classes RED** (count-drop, **bind-group-collapse**,
+  world-out-of-bound, mesh-identity) + **permutation GREEN**. `rb3-tests DrawLogGolden.
+  CatchesBindGroupCollapse` PASS. (S3's source-perturbation record — 299987 `field=scene distinct→shared`
+  RED — corroborated, not re-run.)
+- **E4 (structural fix landed) — MET.** `WriteSceneUniforms` returns `RB3SceneBinding` (:1160);
+  `mActiveScene` value member assigned only at the 3 write sites (:1559/:2208/:2224) + `{}` reset (:970);
+  every group-0 read is `mActiveScene.group`; `RB3DrawContext`+`SubmitDraw` threaded (:2110/:4154/:4177).
+  Legacy members deleted: `grep -c mSceneBindGroup` = **0 in .cpp, 1 in .h (a historical-reference
+  comment only)** — the literal E4 "=0" reads 1 due to that comment, allowed by PLAN S2 step 5 ("only
+  comments may remain"); the member is genuinely gone. NOT-A-BLOCKER.
+- **E5 (nets green) — MET.** `rb3-tests DrawLogGolden.*` **9/10** (all 9 real tests incl.
+  CatchesBindGroupCollapse/CoLocation/DroppedDraw/PipelineChange; #71 = pre-existing GPU-teardown
+  SegFault on the GTEST_SKIPPED `PopulatesFromRealDrawMesh`, not W1.6). `lineup-gate.py` **PASS**
+  (img/segA/ratioB/countC/pin, 4 gameplay frames — a distinct 2nd scene). `milo-engine-tests`
+  **198 pass / 0 fail / 2 skip** (SkinGolden.*/ClipPoseFixture.* green — no leak into shared draw/skin).
+
+**Minor notes (non-blocking):** (1) E4 grep reads 1 comment-only hit as above. (2) The fixed-clock
+drawlog A/B covers `splash_screen` at draw-call level; `song_select` is not independently drawlog-A/B'd
+(harness golden is splash-only), but the lineup gate provides a second-scene (gameplay) byte-behavior
+PASS. **Verdict: W1.6 COMPLETE — SYS-3 mutable-scene-binding state-leak eliminated, byte-identical
+end-to-end.** Coordinator action outstanding: bump `MILO_ENGINE_PIN` to `6221a56` when Wave 3 closes.
