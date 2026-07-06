@@ -146,12 +146,39 @@ public:
                       std::strstr(bn, "thumb") || std::strstr(bn, "finger"));
     }
 
-    DrawMaterialPolicy QueryDrawMaterialPolicy(RndMesh* /*mesh*/,
-                                               RndMat* /*mat*/,
+    // Per-draw material-classification policy (W1.7 B7–B13). Each field is a
+    // relocated RB3 asset-name classification from RB3BuildMaterialUniforms; the
+    // engine keeps the uniform math and only applies WHICH class the hook returns,
+    // so uniforms stay bit-identical. `camName` is the active scene camera name
+    // (passed IN so the hook never reaches RndCam::sCurrent — Bucket-C safety); no
+    // classification here consumes it (the cam gates for B12/B13 stay inline in the
+    // engine), it is accepted for interface fidelity + forward-compat.
+    DrawMaterialPolicy QueryDrawMaterialPolicy(RndMesh* mesh,
+                                               RndMat* mat,
                                                bool /*skinned*/,
                                                RndMesh* /*owner*/,
                                                const char* /*camName*/) override {
-        return DrawMaterialPolicy();
+        DrawMaterialPolicy p;
+        const char* meshName = mesh ? mesh->Name() : nullptr;
+        const char* matName = (mat && mat->Name()) ? mat->Name() : nullptr;
+        // B7: NAMED-mesh + font/label material-name half of the "looks like UI
+        // text" heuristic. The engine keeps the empty-name RndText discriminator
+        // (isTextMeshHeur, a direct '\0' compare — not an asset-name string) and
+        // ORs it with this. Order-independent: the result is (named-mesh match) ||
+        // (font/label mat-name match), matching the engine's prior inline booleans.
+        if (meshName && meshName[0]) {
+            if ((meshName[0] == 'n' && std::strncmp(meshName, "num", 3) == 0) ||
+                std::strstr(meshName, "_source.mesh") ||
+                std::strstr(meshName, "_comma.mesh") ||
+                std::strstr(meshName, ".lbl")) {
+                p.isUiText = true;
+            }
+        }
+        if (!p.isUiText && matName && matName[0]) {
+            if (std::strstr(matName, "font") || std::strstr(matName, "label"))
+                p.isUiText = true;
+        }
+        return p;
     }
 
     // B6: halo-source NAME exclusions (RB3HaloPass::IsHaloSourceMat). The engine
