@@ -1,0 +1,56 @@
+{
+  "regions": {
+    "mainhub": [
+      68,
+      208,
+      336,
+      247
+    ],
+    "songselect": [
+      880,
+      95,
+      912,
+      175
+    ]
+  },
+  "thresholds": {
+    "broken_signature_pct": 11.0,
+    "hard_ceiling_pct": 6.0,
+    "noise_margin_pct": 3.0
+  },
+  "results": {
+    "mainhub": {
+      "region": [
+        68,
+        208,
+        336,
+        247
+      ],
+      "aa_off": 0.0,
+      "aa_on": 0.0,
+      "ab_1": 0.0,
+      "ab_2": 0.0,
+      "aa_noise": 0.0,
+      "ab_diff": 0.0
+    },
+    "songselect": {
+      "region": [
+        880,
+        95,
+        912,
+        175
+      ],
+      "aa_off": 0.0,
+      "aa_on": 0.0,
+      "ab_1": 0.0,
+      "ab_2": 0.0,
+      "aa_noise": 0.0,
+      "ab_diff": 0.0
+    }
+  },
+  "verdicts": {
+    "mainhub": true,
+    "songselect": true
+  },
+  "overall": "PASS"
+}

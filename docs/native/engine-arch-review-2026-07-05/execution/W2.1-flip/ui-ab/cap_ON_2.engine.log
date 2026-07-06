@@ -1,0 +1,1744 @@
+[STUB] first call to _ZN11PlatformMgr13ClearNetErrorEv
+[STUB] first call to _ZN14DataResultListC1Ev
+[STUB CENSUS] linked=832 (func=771 data=61)
+[STUB CENSUS]   band3=582 dta=196 rndobj_synth=54
+RB3 AV-cal: locked track to audio (mInGameExtraVideoLatency=50.0 -> GetSongToTaskMgrMs(kGame)=0)
+GpuDevice: GPU = NVIDIA GeForce RTX 3090 (NVIDIA: 610.43.02 610.43.2.0)
+GpuDevice: BC texture compression supported
+GpuDevice: initialized (1280x720, headless)
+PipelineManager: initialized with 4 bind group layouts
+BandRnd: GPU ready (1280x720, fmt=22, headless)
+rb3-native: RB3_GAME — GpuDevice up (1280x720, headless)
+rb3-native: RB3_GAME — data dir '/home/free/code/milohax/rb3/orig-assets/extracted'
+rb3-native: RB3_GAME — constructing App...
+[STUB] first call to _Z16HolmesClientInitv
+[STUB] first call to _Z11FileIsLocalPKc
+RB3 native: DTA overlay dir = /home/free/code/milohax/rb3/orig-assets/extracted/../../native/dta
+RB3 native: DTA overlay HIT: 'config/joypad.dta' -> /home/free/code/milohax/rb3/orig-assets/extracted/../../native/dta/config/joypad.dta
+[STUB] first call to _Z18HolmesClientReInitv
+[STUB] first call to _Z17GetSystemLanguage6Symbol
+[STUB] first call to _Z12KeyboardInitv
+[STUB] first call to _Z17ThreadCallPreInitv
+[STUB] first call to _Z22SetGPHangDetectEnabledbPKc
+[STUB] first call to _Z17HolmesClientPrintPKc
+NOTIFY: Could not load: ../../system/run/rndobj/gen/sphere.milo_xbox
+AudioDevice: skipped (DC3_NO_AUDIO or MILO_HEADLESS set)
+[STUB] first call to BinkSetMemory
+[STUB] first call to _ZN5Movie4Impl12PlatformInitEv
+[STUB] first call to _Z14ThreadCallInitv
+NOTIFY: Locale symbol 'token_redemption_wrong_platform' redefined
+NOTIFY: Locale symbol 'cal_video_desc_calbert' redefined
+NOTIFY: Locale symbol 'error_find_players_with_auto_vocals' redefined
+NOTIFY: Locale symbol 'error_setlist_description_profane' redefined
+NOTIFY: Locale symbol 'error_setlist_title_profane' redefined
+NOTIFY: Locale symbol 'invite_body' redefined
+NOTIFY: Locale symbol 'mc_auto_load_newer_version_fmt' redefined
+NOTIFY: Locale symbol 'mc_auto_load_no_save_found_fmt' redefined
+NOTIFY: Locale symbol 'mc_auto_load_obsolete_version_fmt' redefined
+NOTIFY: Locale symbol 'message_motd_noconnection' redefined
+NOTIFY: Locale symbol 'message_motd_signin' redefined
+NOTIFY: Locale symbol 'net_setlists_connect' redefined
+NOTIFY: Locale symbol 'accomplishment_launch_wrong_instrument' redefined
+NOTIFY: Locale symbol 'accomplishments_wrong_user' redefined
+NOTIFY: Locale symbol 'accomplishment_no_launch_when_online' redefined
+NOTIFY: Locale symbol 'no_trainers_when_online' redefined
+NOTIFY: Locale symbol 'manage_band_no_profile' redefined
+NOTIFY: Locale symbol 'overshell_char_creator_denial_remote_players' redefined
+NOTIFY: Locale symbol 'overshell_online_options' redefined
+NOTIFY: Locale symbol 'overshell_register_online' redefined
+NOTIFY: Locale symbol 'overshell_confirm_disconnect' redefined
+NOTIFY: Locale symbol 'overshell_confirm_remove_user' redefined
+NOTIFY: Locale symbol 'linking_code_signin_error' redefined
+NOTIFY: Locale symbol 'overshell_register_online_denial_auto_vocals' redefined
+NOTIFY: Locale symbol 'overshell_credits_denial_remote_players' redefined
+NOTIFY: Locale symbol 'charcreator_full_profile_fmt' redefined
+NOTIFY: Locale symbol 'overshell_calibration_denial_remote_players' redefined
+NOTIFY: Locale symbol 'ml_store_signin' redefined
+NOTIFY: Locale symbol 'content_restricted' redefined
+NOTIFY: Locale symbol 'setlist_content_restricted' redefined
+NOTIFY: Locale symbol 'delete_song_no_online' redefined
+NOTIFY: Locale symbol 'cannot_launch_when_online' redefined
+NOTIFY: Locale symbol 'error_zero_players' redefined
+NOTIFY: Locale symbol 'overshell_auto_vocals_confirm' redefined
+NOTIFY: Locale symbol 'error_tourprogress_owner_signed_out' redefined
+NOTIFY: Locale symbol 'error_career_nobody_signedin' redefined
+NOTIFY: Locale symbol 'accomplishments_no_launch_when_online' redefined
+NOTIFY: Locale symbol 'acc_accountlink_desc' redefined
+NOTIFY: Locale symbol 'autosave_warning_msg' redefined
+NOTIFY: Locale symbol 'bandinfo_members_online' redefined
+NOTIFY: Locale symbol 'band_chooser_find' redefined
+NOTIFY: Locale symbol 'band_chooser_join' redefined
+NOTIFY: Locale symbol 'band_info_stats_online_only' redefined
+NOTIFY: Locale symbol 'cal_audio_manual_instructions' redefined
+NOTIFY: Locale symbol 'cal_video_manual_instructions' redefined
+NOTIFY: Locale symbol 'fmp_tip' redefined
+NOTIFY: Locale symbol 'global_options_saving_long' redefined
+NOTIFY: Locale symbol 'main_menu_finding' redefined
+NOTIFY: Locale symbol 'main_menu_waiting' redefined
+NOTIFY: Locale symbol 'movie_pause_hint' redefined
+NOTIFY: Locale symbol 'overshell_registering_online' redefined
+NOTIFY: Locale symbol 'perf_name' redefined
+NOTIFY: Locale symbol 'tour_choose_band_online_no_connection' redefined
+NOTIFY: Locale symbol 'tour_choose_band_online_status_1' redefined
+NOTIFY: Locale symbol 'tour_choose_band_online_status_2' redefined
+NOTIFY: Locale symbol 'trainer_progtr_morenotebasics_8_info' redefined
+NOTIFY: Locale symbol 'vocals_pad_lost' redefined
+NOTIFY: Locale symbol 'waiting_for_remote_players' redefined
+[STUB] first call to _ZN15SaveLoadManager4InitEv
+NOTIFY: eyelense.mat (char/main/shared/colorpalettes.milo) couldn't find eyes.cube in palettes (char/main/shared/colorpalettes.milo)
+NOTIFY: eyes.cube: more than 0 mip levels
+NOTIFY: instruments.cube: more than 0 mip levels
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/main/head/male/head.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: head.mesh (char/main/head/male/head.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/main/head/male/head.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/main/head/female/head.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: head.mesh (char/main/head/female/head.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/main/head/female/head.milo)
+[STUB] first call to _ZN11PlatformMgr25RegisterSignInserCallbackEPFbP4UsermE
+[STUB] first call to _ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE
+[STUB] first call to _ZN10MemcardMgr4InitEv
+[STUB] first call to _ZNK7Profile9GetPadNumEv
+[STUB] first call to _ZN14ProfilePictureC1EiPN3Hmx6ObjectE
+rb3-native: injected objects config entry (AppLabel) cloned from (BandLabel)
+rb3-native: injected objects config entry (AppInlineHelp) cloned from (InlineHelp)
+rb3-native: remapped milo factories BandLabel->AppLabel, InlineHelp->AppInlineHelp (disc base-class labels now handle set_* dynamic text)
+rb3-native: persist loading global options (expected 91 bytes)
+rb3-native: persist loaded 91 bytes from /home/free/.local/share/rb3/saves/globaloptions.bin
+[STUB] first call to _ZN12WiiFriendMgr17UseConsoleFriendsEb
+rb3-native: persist loaded 9 bytes from /home/free/.local/share/rb3/saves/gameplayopts_0.bin
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body01_lod02.mesh (char/crowd/crowd_female01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.1.mesh (char/crowd/crowd_female01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body02.mesh (char/crowd/crowd_female02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.1.mesh (char/crowd/crowd_female02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body03.mesh (char/crowd/crowd_female03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_female04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_crowd_body04.mesh (char/crowd/crowd_female04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_female04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_female04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_female04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body01.mesh (char/crowd/crowd_male01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body02.mesh (char/crowd/crowd_male02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body03.mesh (char/crowd/crowd_male03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clap.mesh (char/crowd/crowd_male04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fist.mesh (char/crowd/crowd_male04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: horns.mesh (char/crowd/crowd_male04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: lighter.mesh (char/crowd/crowd_male04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_crowd_body04.mesh (char/crowd/crowd_male04.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: vestdenim_resource.mesh (char/main/torso/male/vestdenim/vestdenim_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: vestdenim_skin.1.mesh (char/main/torso/male/vestdenim/vestdenim_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_resource.1.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_resource.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_skin.2.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightdistressedpants_skin.3.mesh (char/main/legs/male/tightdistressedpants/tightdistressedpants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: cowboyboots_resource.mesh (char/main/feet/male/cowboyboots/cowboyboots_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: youngozzie_resource.mesh (char/main/hair/male/male_hair_youngozzy_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_facehair_lemmy.mesh (char/main/facehair/male/male_facehair_lemmy.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fingernails_resource.mesh (char/main/hands/male/male_hands_naked.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hands_naked.mesh (char/main/hands/male/male_hands_naked.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows1_resource.mesh (char/main/eyebrows/male/male_eyebrows_01_resource.milo)
+NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once
+NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once
+NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once
+NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: trackjacket_resource.mesh (char/main/torso/female/trackjacket/trackjacket_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: trackjacket_skin.2.mesh (char/main/torso/female/trackjacket/trackjacket_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_belts.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_resource.1.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_resource.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_saftypin.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: buttflappants_skin.2.mesh (char/main/legs/female/buttflappants/buttflappants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: saddleshoe_resource.mesh (char/main/feet/female/saddleshoes/saddleshoes_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: saddleshoe_skin.2.mesh (char/main/feet/female/saddleshoes/saddleshoes_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: blownback_resource.mesh (char/main/hair/female/female_hair_blownback_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fingernails_resource.mesh (char/main/hands/female/female_hands_naked.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hands_naked.mesh (char/main/hands/female/female_hands_naked.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_eyebrows_09_resource.mesh (char/main/eyebrows/female/female_eyebrows_09_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: shred_resource.mesh (char/main/torso/male/shred/shred_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: shred_skin.1.mesh (char/main/torso/male/shred/shred_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: grungepants_resource.mesh (char/main/legs/male/grungepants/grungepants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: grungepants_skin.2.mesh (char/main/legs/male/grungepants/grungepants_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: nailboots_resource.mesh (char/main/feet/male/nailboots/nailboots_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: mohawk_resource.mesh (char/main/hair/male/male_hair_mohawk_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: malewrist_barbedwire_right.mesh (char/main/wrist/male/malewrist_barbedwire_right.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows8_resource.mesh (char/main/eyebrows/male/male_eyebrows_08_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: maleearrings_plug.mesh (char/main/earrings/male/maleearrings_plug.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: plaidshirt_resource.mesh (char/main/torso/male/plaid/plaidshirt_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: plaidshirt_skin.1.mesh (char/main/torso/male/plaid/plaidshirt_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tightjeans_resource.mesh (char/main/legs/male/tightjeans/tightjeans_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: dressshoes_resource.1.mesh (char/main/feet/male/dressshoes/dressshoes_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: dressshoes_resource.mesh (char/main/feet/male/dressshoes/dressshoes_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: dressshoes_skin.2.mesh (char/main/feet/male/dressshoes/dressshoes_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: bedhead_resource.mesh (char/main/hair/male/male_hair_bedhead_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: malewrist_hercules_right.mesh (char/main/wrist/male/malewrist_hercules_right.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows5_resource.mesh (char/main/eyebrows/male/male_eyebrows_05_resource.milo)
+C13_PROBE: player0 char=0x55869088be40 FileMerger.fm=0x55868fe90940
+C13_PROBE: player1 char=0x55868f13bb20 FileMerger.fm=0x558691174780
+C13_PROBE: player2 char=0x55868f0fcbc0 FileMerger.fm=0x558691243fe0
+C13_PROBE: player3 char=0x55868f130d80 FileMerger.fm=0x558691a05040
+[STUB] first call to FileEnumerate
+NOTIFY: Could not load: patchcreator/og/gen/patch_warpmesh.milo_xbox
+PatchLayer: art-maker patch_layer milo absent (360-ARK extract has no og/ variant) — skipping
+NOTIFY: main/platform_mgr: removing global to  for event invite_received, all other events will be wiped out
+[STUB] first call to _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_main.mesh (ui/resource/fonts/pentatonic_display.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_pattern.mesh (ui/resource/fonts/pentatonic_display.milo)
+NOTIFY: Can't share unloaded dir ui/resource/fonts/default.milo
+NOTIFY: review_display (ui/resource/review_display.milo): unreviewed.lbl is preloaded, but doesn't have fixed length
+NOTIFY: review_display (ui/resource/review_display.milo): unreviewed.lbl is preloaded, but doesn't have reserve lines
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: kick_smasher_leftFoot.mesh (ui/track/kick_smasher.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: kick_smasher_rightFoot.mesh (ui/track/kick_smasher.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: _rg_string.mesh (ui/track/gem_smasher_real_guitar_meshes.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: _rg_string_shadow.mesh (ui/track/gem_smasher_real_guitar_meshes.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: rg_string.mesh (ui/track/gem_smasher_real_guitar.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: rg_string_shadow.mesh (ui/track/gem_smasher_real_guitar.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: outline_string1.mesh (ui/track/chord_shape_outline.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: outline_string2.mesh (ui/track/chord_shape_outline.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: outline_string3.mesh (ui/track/chord_shape_outline.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: outline_string4.mesh (ui/track/chord_shape_outline.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: outline_string5.mesh (ui/track/chord_shape_outline.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: outline_string6.mesh (ui/track/chord_shape_outline.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: drum_mash1.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: drum_mash2.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: drum_mash3.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: drum_mash4.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gem_mash0.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gem_mash1.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gem_mash2.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gem_mash3.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gem_mash4.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gem_mash5.mesh (ui/track/tracksystem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: keys_bre_mash.mesh (ui/track/tracksystem.milo)
+NOTIFY: vocals (ui/track/vocals.milo) couldn't find endgame_feedback_vox in vocals (ui/track/vocals.milo)
+NOTIFY: meter_display (ui/resource/campaign_widget.milo): meter_progress.lbl is preloaded, but doesn't have fixed length
+NOTIFY: meter_display (ui/resource/campaign_widget.milo): meter_progress.lbl is preloaded, but doesn't have reserve lines
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: scrollbar.mesh (ui/resource/scrollbar_display.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: scrollbar_bg.mesh (ui/resource/scrollbar_display.milo)
+[STUB] first call to _ZN11UIListState8ProviderEv
+NOTIFY: net_cache_mgr not function or object (file ui/ui.dta, line 37)
+[rb3-intro] native skip (set RB3_INTRO_SECS to play): videos/rb3_intro_cinematic.bik
+RB3 native: registered manager stub 'saveload_mgr'
+RB3 native: registered manager stub 'net_cache_mgr'
+RB3 native: registered manager stub 'rock_central'
+NativeContentMgr: StartRefresh loaded songs/songs.dta — TheSongMgr now has 83 ranked songs
+rb3-native: RB3_GAME — App constructed; calling Run()...
+rb3-native: persist loading global options (expected 91 bytes)
+rb3-native: persist loaded 91 bytes from /home/free/.local/share/rb3/saves/globaloptions.bin
+rb3-native: persist loaded 9 bytes from /home/free/.local/share/rb3/saves/gameplayopts_0.bin
+RB3_HTTP_PORT=36503
+[RB3HttpServer] Listening on 127.0.0.1:36503
+RB3 Native: entering frame loop — unbounded (RB3_HTTP keep-alive)
+[STUB] first call to _Z12KeyboardPollv
+[STUB] first call to _Z14ThreadCallPollv
+[STUB] first call to _Z16HolmesClientPollv
+NOTIFY: /home/free/code/milohax/rb3/src/system/os/PlatformMgr.cpp(442): main/platform_mgr unhandled msg: disable_xmp
+[STUB] first call to _ZN15DiscErrorMgrWii16RegisterCallbackEPNS_8CallbackE
+[STUB] first call to _ZN11PlatformMgr18SetHomeMenuEnabledEb
+[STUB] first call to _ZN11PlatformMgr14SetScreenSaverEb
+[STUB] first call to _ZN15WaitingUserGate4PollEv
+RB3 screen: frame 0  currentScreen = 'intro_movie_screen'
+NOTIFY: Data kMiddleCenter is not Int
+[STUB] first call to _ZN5Movie4Impl4DrawEv
+RB3 Native: frame 0 complete
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: cast_resource.mesh (char/main/wrist/male/cast_graffiti.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: escapeartist_resource.mesh (char/main/torso/male/escapeartist/escapeartist_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: escapeartist_skin.1.mesh (char/main/torso/male/escapeartist/escapeartist_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: greaserjacket_resource.1.mesh (char/main/torso/male/greaserjacket/greaserjacket_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: greaserjacket_resource.mesh (char/main/torso/male/greaserjacket/greaserjacket_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: greaserjacket_skin.2.mesh (char/main/torso/male/greaserjacket/greaserjacket_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: jeansripped_resource.1.mesh (char/main/legs/male/jeansripped/jeansripped_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: jeansripped_resource.mesh (char/main/legs/male/jeansripped/jeansripped_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: jeansripped_skin.2.mesh (char/main/legs/male/jeansripped/jeansripped_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: motorcycleboots_resource.mesh (char/main/feet/male/motorcycleboots/motorcycleboots_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: fauxhawk_resource.mesh (char/main/hair/male/male_hair_fauxhawk_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: powermullet_resource.1.mesh (char/main/hair/male/male_hair_powermullet_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: powermullet_resource.mesh (char/main/hair/male/male_hair_powermullet_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows15_resource.mesh (char/main/eyebrows/male/male_eyebrows_15_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_piercings_combo07.mesh (char/main/piercings/male/male_piercings_combo07.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: femalerings_jem.mesh (char/main/rings/female/femalerings_jem.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: femaleearrings_peacock.mesh (char/main/earrings/female/femaleearrings_peacock.milo)
+NOTIFY: torso_clearcoat.mat (char/main/torso/female/clearcoat/clearcoat_resource.milo) couldn't find clearcoat.cube in uniq1 (char/main/torso/female/clearcoat/clearcoat_resource.milo)
+NOTIFY: clearcoat.cube: more than 0 mip levels
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clearcoat_resource.1.mesh (char/main/torso/female/clearcoat/clearcoat_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clearcoat_resource.2.mesh (char/main/torso/female/clearcoat/clearcoat_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clearcoat_resource.mesh (char/main/torso/female/clearcoat/clearcoat_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clearcoat_shirt.mesh (char/main/torso/female/clearcoat/clearcoat_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: clearcoat_skin.1.mesh (char/main/torso/female/clearcoat/clearcoat_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hippyfringe_resource.1.mesh (char/main/torso/female/hippyfringe/hippyfringe_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hippyfringe_resource.2.mesh (char/main/torso/female/hippyfringe/hippyfringe_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hippyfringe_resource.mesh (char/main/torso/female/hippyfringe/hippyfringe_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: hippyfringe_skin.2.mesh (char/main/torso/female/hippyfringe/hippyfringe_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: bikinistockings_resource.mesh (char/main/legs/female/bikinistockings/bikinistockings_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: bikinistockings_skin.2.mesh (char/main/legs/female/bikinistockings/bikinistockings_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: jumpsuitshorts_resource.mesh (char/main/legs/female/jumpsuitshorts/jumpsuitshorts_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: jumpsuitshorts_skin.2.mesh (char/main/legs/female/jumpsuitshorts/jumpsuitshorts_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: modavengerboots_resource.mesh (char/main/feet/female/modavengerboots/modavengerboots_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: thighboots_resource.mesh (char/main/feet/female/thighboots/thighboots_resource.milo)
+NOTIFY: hair_ladyfro_shell.mat (char/main/hair/female/female_hair_ladyfro_resource.milo) couldn't find hair_fur.fur in female_hair_ladyfro_resource (char/main/hair/female/female_hair_ladyfro_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: visor_resource.mesh (char/main/hair/female/female_hair_visor_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gloves_resource.1.mesh (char/main/hands/female/glove/glove_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gloves_resource.mesh (char/main/hands/female/glove/glove_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: gloves_skin.2.mesh (char/main/hands/female/glove/glove_resource.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_eyebrows_06_resource.mesh (char/main/eyebrows/female/female_eyebrows_06_resource.milo)
+[STUB] first call to _ZN15DiscErrorMgrWii18UnregisterCallbackEPNS_8CallbackE
+RB3 Native: frame 1 complete
+NOTIFY: mDoNotCompress extra1 (char/extras/clips/male/male.milo)
+
+NOTIFY: mDoNotCompress extra2 (char/extras/clips/male/male.milo)
+
+NOTIFY: mDoNotCompress extra3 (char/extras/clips/male/male.milo)
+
+NOTIFY: mDoNotCompress extra4 (char/extras/clips/male/male.milo)
+
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows.mesh (char/extras/male_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/extras/male_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extra_head01.mesh (char/extras/male_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_body01_medium.mesh (char/extras/male_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_skin01_medium.mesh (char/extras/male_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/extras/male_extras01.milo)
+NOTIFY: mDoNotCompress extra1 (char/extras/clips/female/female.milo)
+
+NOTIFY: mDoNotCompress extra2 (char/extras/clips/female/female.milo)
+
+NOTIFY: mDoNotCompress extra3 (char/extras/clips/female/female.milo)
+
+NOTIFY: mDoNotCompress extra4 (char/extras/clips/female/female.milo)
+
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_body01.mesh (char/extras/female_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_eyebrows.mesh (char/extras/female_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_head.mesh (char/extras/female_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_tongue.mesh (char/extras/female_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extras_eyes.mesh (char/extras/female_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extras_skin01.1.mesh (char/extras/female_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extras_skin01.mesh (char/extras/female_extras01.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extra_head01.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_body02_medium.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_hair02.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_skin02_medium.1.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_skin02_medium.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/extras/male_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyebrows.mesh (char/extras/male_extras03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/extras/male_extras03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extra_head03.mesh (char/extras/male_extras03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_body03_medium.mesh (char/extras/male_extras03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_skin03_medium.1.mesh (char/extras/male_extras03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_skin03_medium.mesh (char/extras/male_extras03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/extras/male_extras03.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: eyes.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: goatee_resource.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_body11_medium.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_eyebrows11.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_hair11.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_head11.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_skin11_medium.1.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: male_extras_skin11_medium.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: tongue.mesh (char/extras/male_extras11.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_body02.mesh (char/extras/female_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_eyebrows.mesh (char/extras/female_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_hair02.mesh (char/extras/female_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_head.mesh (char/extras/female_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extra_tongue.mesh (char/extras/female_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extras_eyes.mesh (char/extras/female_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extras_skin02.1.mesh (char/extras/female_extras02.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: female_extras_skin02.mesh (char/extras/female_extras02.milo)
+NOTIFY: mDoNotCompress extra3.clp (world/vignette/shell/sv8/a/cityscape/cityscape_clips.milo)
+
+NOTIFY: mDoNotCompress extra4.clp (world/vignette/shell/sv8/a/cityscape/cityscape_clips.milo)
+
+NOTIFY: mDoNotCompress extra5.clp (world/vignette/shell/sv8/a/cityscape/cityscape_clips.milo)
+
+NOTIFY: mDoNotCompress extra6.clp (world/vignette/shell/sv8/a/cityscape/cityscape_clips.milo)
+
+NOTIFY: mDoNotCompress player0_f (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: mDoNotCompress player0_m (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: mDoNotCompress player1_f (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: mDoNotCompress player1_m (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: mDoNotCompress player2_f (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: mDoNotCompress player2_m (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: mDoNotCompress player3_f (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: mDoNotCompress player3_m (world/vignette/shell/sv3/a/streetslomo/streetslomo_clips.milo)
+
+NOTIFY: trying to add null fader
+[STUB] first call to _ZN6WiiRnd20SetTriFrameRenderingEb
+rb3 SFX: playing PCM one-shot (171307 samples @ 28000 Hz, big-endian)
+[STUB] first call to _ZN15VirtualKeyboard17IsKeyboardShowingEv
+RB3 screen: frame 2  currentScreen = 'splash_screen'
+NOTIFY: Data kSeqStop is not Int
+RB3 Native: frame 2 complete
+RB3 Native: frame 3 complete
+RB3 Native: frame 4 complete
+RB3 Native: frame 5 complete
+rb3 SFX: playing XMA->PCM sidecar (43365 samples @ 44100 Hz)
+NOTIFY: memcardmgr not function or object (file ui/overshell/overshell.dta, line 219)
+NOTIFY: /home/free/code/milohax/rb3/src/system/obj/Object.cpp(742): main/saveload_mgr unhandled msg: add_sink
+[STUB] first call to _ZN11PlatformMgr15SetUserSignedInEi
+[STUB] first call to _ZN10NetSession14UpdateUserDataEP4Userj
+[STUB] first call to _ZNK11PlatformMgr7GetNameEi
+[STUB] first call to _ZNK11PlatformMgr18HasOnlinePrivilegeEi
+RB3 Native: frame 6 complete
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_main.mesh (ui/resource/label_shrink_wrapper_main.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_pattern.mesh (ui/resource/label_shrink_wrapper_main.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_refraction.mesh (ui/resource/label_shrink_wrapper_main.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_main.mesh (ui/resource/label_shrink_wrapper_main2.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_pattern.mesh (ui/resource/label_shrink_wrapper_main2.milo)
+NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: highlight_refraction.mesh (ui/resource/label_shrink_wrapper_main2.milo)
+NOTIFY: Could not load: test/ui/gen/guides_glass_usage.milo_xbox
+NOTIFY: brass_01.mat (world/vignette/transition/tv11/a/enterstore/enterstore.milo) couldn't find glass_02.cube in uniq1 (world/vignette/transition/tv11/a/enterstore/enterstore.milo)
+NOTIFY: brickwall_outside_01.mat (world/vignette/transition/tv11/a/enterstore/enterstore.milo) couldn't find glass_02.cube in uniq1 (world/vignette/transition/tv11/a/enterstore/enterstore.milo)
+NOTIFY: glass_01.mat (world/vignette/transition/tv11/a/enterstore/enterstore.milo) couldn't find glass_01.cube in uniq1 (world/vignette/transition/tv11/a/enterstore/enterstore.milo)
+NOTIFY: glass_02.mat (world/vignette/transition/tv11/a/enterstore/enterstore.milo) couldn't find glass_02.cube in uniq1 (world/vignette/transition/tv11/a/enterstore/enterstore.milo)
+NOTIFY: glass_01.cube: more than 0 mip levels
+NOTIFY: glass_02.cube: more than 0 mip levels
+NOTIFY: sidewalk_01.mat (world/vignette/transition/tv11/a/getincab/getincab.milo) couldn't find wet_reflec_01.cube in uniq0 (world/vignette/transition/tv11/a/getincab/getincab.milo)
+NOTIFY: taxi_diffuse_01.mat (world/vignette/transition/tv11/a/getincab/getincab.milo) couldn't find refelections.cube in uniq0 (world/vignette/transition/tv11/a/getincab/getincab.milo)
+NOTIFY: tokyo_police_car_window.mat (world/vignette/transition/tv11/a/getincab/getincab.milo) couldn't find refelections.cube in uniq0 (world/vignette/transition/tv11/a/getincab/getincab.milo)
+NOTIFY: refelections.cube: more than 0 mip levels
+NOTIFY: wet_reflec_01.cube: more than 0 mip levels
+NOTIFY: sidewalk_01.mat (world/vignette/transition/tv11/a/leavecab/leavecab.milo) couldn't find wet_reflec_01.cube in uniq0 (world/vignette/transition/tv11/a/leavecab/leavecab.milo)
+NOTIFY: taxi_diffuse_01.mat (world/vignette/transition/tv11/a/leavecab/leavecab.milo) couldn't find refelections.cube in uniq0 (world/vignette/transition/tv11/a/leavecab/leavecab.milo)
+NOTIFY: tokyo_police_car_window.mat (world/vignette/transition/tv11/a/leavecab/leavecab.milo) couldn't find refelections.cube in uniq0 (world/vignette/transition/tv11/a/leavecab/leavecab.milo)
+NOTIFY: window.mat (world/vignette/transition/tv11/a/leavecab/leavecab.milo) couldn't find wet_reflec_01.cube in uniq0 (world/vignette/transition/tv11/a/leavecab/leavecab.milo)
+NOTIFY: tokyo_police_car_window.mat (world/vignette/transition/tv11/a/ridingincab/ridingincab.milo) couldn't find reflection.cube in uniq0 (world/vignette/transition/tv11/a/ridingincab/ridingincab.milo)
+NOTIFY: reflection.cube: more than 0 mip levels
+RB3 Native: frame 7 complete
+RB3 Native: frame 8 complete
+RB3 Native: frame 9 complete
+RB3 Native: frame 10 complete
+RB3 Native: frame 11 complete
+RB3 Native: frame 12 complete
+RB3 Native: frame 13 complete
+RB3 Native: frame 14 complete
+RB3 Native: frame 15 complete
+RB3 Native: frame 16 complete
+RB3 Native: frame 17 complete
+RB3 Native: frame 18 complete
+RB3 Native: frame 19 complete
+RB3 Native: frame 20 complete
+RB3 Native: frame 21 complete
+RB3 Native: frame 22 complete
+RB3 Native: frame 23 complete
+RB3 Native: frame 24 complete
+RB3 Native: frame 25 complete
+RB3 Native: frame 26 complete
+RB3 Native: frame 27 complete
+RB3 Native: frame 28 complete
+RB3 Native: frame 29 complete
+RB3 Native: frame 30 complete
+RB3 Native: frame 31 complete
+RB3 Native: frame 32 complete
+RB3 Native: frame 33 complete
+RB3 Native: frame 34 complete
+RB3 Native: frame 35 complete
+RB3 Native: frame 36 complete
+RB3 Native: frame 37 complete
+RB3 Native: frame 38 complete
+RB3 Native: frame 39 complete
+RB3 Native: frame 40 complete
+RB3 Native: frame 41 complete
+RB3 Native: frame 42 complete
+RB3 Native: frame 43 complete
+RB3 Native: frame 44 complete
+RB3 Native: frame 45 complete
+RB3 Native: frame 46 complete
+RB3 Native: frame 47 complete
+RB3 Native: frame 48 complete
+RB3 Native: frame 49 complete
+RB3 Native: frame 50 complete
+RB3 Native: frame 51 complete
+RB3 Native: frame 52 complete
+RB3 Native: frame 53 complete
+RB3 Native: frame 54 complete
+RB3 Native: frame 55 complete
+RB3 Native: frame 56 complete
+RB3 Native: frame 57 complete
+RB3 Native: frame 58 complete
+RB3 Native: frame 59 complete
+RB3 Native: frame 60 complete
+RB3 Native: frame 61 complete
+RB3 Native: frame 62 complete
+RB3 Native: frame 63 complete
+RB3 Native: frame 64 complete
+RB3 Native: frame 65 complete
+RB3 Native: frame 66 complete
+[STUB] first call to _ZN11PlatformMgr24IsEthernetCableConnectedEv
+[STUB] first call to _ZNK10NetSession12GetLocalHostEv
+RB3 screen: frame 67  currentScreen = 'main_hub_screen'
+NOTIFY: "Profile" needs localization
+RB3 native HACK: installed pad-0 guest profile (signinMask|=1, WiiProfileMgr idx0 valid, BandProfile[0]=Loaded, prefab customizable)
+[STUB] first call to _Z13RndGxDrawDonev
+RB3 Native: frame 67 complete
+RB3 Native: frame 68 complete
+NOTIFY: Data kSeqStart is not Int
+RB3 Native: frame 69 complete
+RB3 Native: frame 70 complete
+RB3 Native: frame 71 complete
+RB3 Native: frame 72 complete
+RB3 Native: frame 73 complete
+RB3 Native: frame 74 complete
+RB3 Native: frame 75 complete
+RB3 Native: frame 76 complete
+RB3 Native: frame 77 complete
+RB3 Native: frame 78 complete
+RB3 Native: frame 79 complete
+RB3 Native: frame 80 complete
+RB3 Native: frame 81 complete
+RB3 Native: frame 82 complete
+RB3 Native: frame 83 complete
+RB3 Native: frame 84 complete
+RB3 Native: frame 85 complete
+RB3 Native: frame 86 complete
+RB3 Native: frame 87 complete
+RB3 Native: frame 88 complete
+RB3 Native: frame 89 complete
+RB3 Native: frame 90 complete
+RB3 Native: frame 91 complete
+RB3 Native: frame 92 complete
+RB3 Native: frame 93 complete
+RB3 Native: frame 94 complete
+RB3 Native: frame 95 complete
+RB3 Native: frame 96 complete
+RB3 Native: frame 97 complete
+RB3 Native: frame 98 complete
+RB3 Native: frame 99 complete
+RB3 Native: frame 100 complete
+RB3 Native: frame 101 complete
+RB3 Native: frame 102 complete
+RB3 Native: frame 103 complete
+RB3 Native: frame 104 complete
+RB3 Native: frame 105 complete
+RB3 Native: frame 106 complete
+RB3 Native: frame 107 complete
+RB3 Native: frame 108 complete
+RB3 Native: frame 109 complete
+RB3 Native: frame 110 complete
+RB3 Native: frame 111 complete
+RB3 Native: frame 112 complete
+RB3 Native: frame 113 complete
+RB3 Native: frame 114 complete
+RB3 Native: frame 115 complete
+RB3 Native: frame 116 complete
+RB3 Native: frame 117 complete
+RB3 Native: frame 118 complete
+RB3 Native: frame 119 complete
+RB3 Native: frame 120 complete
+RB3 Native: frame 121 complete
+RB3 Native: frame 122 complete
+RB3 Native: frame 123 complete
+RB3 Native: frame 124 complete
+RB3 Native: frame 125 complete
+RB3 Native: frame 126 complete
+RB3 Native: frame 127 complete
+RB3 Native: frame 128 complete
+RB3 Native: frame 129 complete
+RB3 Native: frame 130 complete
+RB3 Native: frame 131 complete
+RB3 Native: frame 132 complete
+RB3 Native: frame 133 complete
+RB3 Native: frame 134 complete
+RB3 Native: frame 135 complete
+RB3 Native: frame 136 complete
+RB3 Native: frame 137 complete
+RB3 Native: frame 138 complete
+RB3 Native: frame 139 complete
+RB3 Native: frame 140 complete
+RB3 Native: frame 141 complete
+RB3 Native: frame 142 complete
+RB3 Native: frame 143 complete
+RB3 Native: frame 144 complete
+RB3 Native: frame 145 complete
+RB3 Native: frame 146 complete
+RB3 Native: frame 147 complete
+RB3 Native: frame 148 complete
+RB3 Native: frame 149 complete
+RB3 Native: frame 150 complete
+RB3 Native: frame 151 complete
+RB3 Native: frame 152 complete
+RB3 Native: frame 153 complete
+RB3 Native: frame 154 complete
+RB3 Native: frame 155 complete
+RB3 Native: frame 156 complete
+RB3 Native: frame 157 complete
+RB3 Native: frame 158 complete
+RB3 Native: frame 159 complete
+RB3 Native: frame 160 complete
+RB3 Native: frame 161 complete
+RB3 Native: frame 162 complete
+RB3 Native: frame 163 complete
+RB3 Native: frame 164 complete
+RB3 Native: frame 165 complete
+RB3 Native: frame 166 complete
+RB3 Native: frame 167 complete
+RB3 Native: frame 168 complete
+RB3 Native: frame 169 complete
+RB3 Native: frame 170 complete
+RB3 Native: frame 171 complete
+RB3 Native: frame 172 complete
+RB3 Native: frame 173 complete
+RB3 Native: frame 174 complete
+RB3 Native: frame 175 complete
+RB3 Native: frame 176 complete
+RB3 Native: frame 177 complete
+RB3 Native: frame 178 complete
+RB3 Native: frame 179 complete
+RB3 Native: frame 180 complete
+RB3 Native: frame 181 complete
+RB3 Native: frame 182 complete
+RB3 Native: frame 183 complete
+RB3 Native: frame 184 complete
+RB3 Native: frame 185 complete
+RB3 Native: frame 186 complete
+RB3 Native: frame 187 complete
+RB3 Native: frame 188 complete
+RB3 Native: frame 189 complete
+RB3 Native: frame 190 complete
+RB3 Native: frame 191 complete
+RB3 Native: frame 192 complete
+RB3 Native: frame 193 complete
+RB3 Native: frame 194 complete
+RB3 Native: frame 195 complete
+RB3 Native: frame 196 complete
+RB3 Native: frame 197 complete
+RB3 Native: frame 198 complete
+RB3 Native: frame 199 complete
+RB3 Native: frame 200 complete
+RB3 Native: frame 201 complete
+RB3 Native: frame 202 complete
+RB3 Native: frame 203 complete
+RB3 Native: frame 204 complete
+RB3 Native: frame 205 complete
+RB3 Native: frame 206 complete
+RB3 Native: frame 207 complete
+RB3 Native: frame 208 complete
+RB3 Native: frame 209 complete
+RB3 Native: frame 210 complete
+RB3 Native: frame 211 complete
+RB3 Native: frame 212 complete
+RB3 Native: frame 213 complete
+RB3 Native: frame 214 complete
+RB3 Native: frame 215 complete
+RB3 Native: frame 216 complete
+RB3 Native: frame 217 complete
+RB3 Native: frame 218 complete
+RB3 Native: frame 219 complete
+RB3 Native: frame 220 complete
+RB3 Native: frame 221 complete
+RB3 Native: frame 222 complete
+RB3 Native: frame 223 complete
+RB3 Native: frame 224 complete
+RB3 Native: frame 225 complete
+RB3 Native: frame 226 complete
+RB3 Native: frame 227 complete
+RB3 Native: frame 228 complete
+RB3 Native: frame 229 complete
+RB3 Native: frame 230 complete
+RB3 Native: frame 231 complete
+RB3 Native: frame 232 complete
+RB3 Native: frame 233 complete
+RB3 Native: frame 234 complete
+RB3 Native: frame 235 complete
+RB3 Native: frame 236 complete
+RB3 Native: frame 237 complete
+RB3 Native: frame 238 complete
+RB3 Native: frame 239 complete
+RB3 Native: frame 240 complete
+RB3 Native: frame 241 complete
+RB3 Native: frame 242 complete
+RB3 Native: frame 243 complete
+RB3 Native: frame 244 complete
+RB3 Native: frame 245 complete
+RB3 Native: frame 246 complete
+RB3 Native: frame 247 complete
+RB3 Native: frame 248 complete
+RB3 Native: frame 249 complete
+RB3 Native: frame 250 complete
+RB3 Native: frame 251 complete
+RB3 Native: frame 252 complete
+RB3 Native: frame 253 complete
+RB3 Native: frame 254 complete
+RB3 Native: frame 255 complete
+RB3 Native: frame 256 complete
+RB3 Native: frame 257 complete
+RB3 Native: frame 258 complete
+RB3 Native: frame 259 complete
+RB3 Native: frame 260 complete
+RB3 Native: frame 261 complete
+RB3 Native: frame 262 complete
+RB3 Native: frame 263 complete
+RB3 Native: frame 264 complete
+RB3 Native: frame 265 complete
+RB3 Native: frame 266 complete
+RB3 Native: frame 267 complete
+RB3 Native: frame 268 complete
+RB3 Native: frame 269 complete
+RB3 Native: frame 270 complete
+RB3 Native: frame 271 complete
+RB3 Native: frame 272 complete
+RB3 Native: frame 273 complete
+RB3 Native: frame 274 complete
+RB3 Native: frame 275 complete
+RB3 Native: frame 276 complete
+RB3 Native: frame 277 complete
+RB3 Native: frame 278 complete
+RB3 Native: frame 279 complete
+RB3 Native: frame 280 complete
+RB3 Native: frame 281 complete
+RB3 Native: frame 282 complete
+RB3 Native: frame 283 complete
+RB3 Native: frame 284 complete
+RB3 Native: frame 285 complete
+RB3 Native: frame 286 complete
+RB3 Native: frame 287 complete
+RB3 Native: frame 288 complete
+RB3 Native: frame 289 complete
+RB3 Native: frame 290 complete
+RB3 Native: frame 291 complete
+RB3 Native: frame 292 complete
+RB3 Native: frame 293 complete
+RB3 Native: frame 294 complete
+RB3 Native: frame 295 complete
+RB3 Native: frame 296 complete
+RB3 Native: frame 297 complete
+RB3 Native: frame 298 complete
+RB3 Native: frame 299 complete
+RB3 Native: frame 300 complete
+RB3 Native: frame 301 complete
+RB3 Native: frame 302 complete
+RB3 Native: frame 303 complete
+RB3 Native: frame 304 complete
+RB3 Native: frame 305 complete
+RB3 Native: frame 306 complete
+RB3 Native: frame 307 complete
+RB3 Native: frame 308 complete
+RB3 Native: frame 309 complete
+RB3 Native: frame 310 complete
+RB3 Native: frame 311 complete
+RB3 Native: frame 312 complete
+RB3 Native: frame 313 complete
+RB3 Native: frame 314 complete
+RB3 Native: frame 315 complete
+RB3 Native: frame 316 complete
+RB3 Native: frame 317 complete
+RB3 Native: frame 318 complete
+RB3 Native: frame 319 complete
+RB3 Native: frame 320 complete
+RB3 Native: frame 321 complete
+RB3 Native: frame 322 complete
+RB3 Native: frame 323 complete
+RB3 Native: frame 324 complete
+RB3 Native: frame 325 complete
+RB3 Native: frame 326 complete
+RB3 Native: frame 327 complete
+RB3 Native: frame 328 complete
+RB3 Native: frame 329 complete
+RB3 Native: frame 330 complete
+RB3 Native: frame 331 complete
+RB3 Native: frame 332 complete
+RB3 Native: frame 333 complete
+RB3 Native: frame 334 complete
+RB3 Native: frame 335 complete
+RB3 Native: frame 336 complete
+RB3 Native: frame 337 complete
+RB3 Native: frame 338 complete
+RB3 Native: frame 339 complete
+RB3 Native: frame 340 complete
+RB3 Native: frame 341 complete
+RB3 Native: frame 342 complete
+RB3 Native: frame 343 complete
+RB3 Native: frame 344 complete
+RB3 Native: frame 345 complete
+RB3 Native: frame 346 complete
+RB3 Native: frame 347 complete
+RB3 Native: frame 348 complete
+RB3 Native: frame 349 complete
+RB3 Native: frame 350 complete
+RB3 Native: frame 351 complete
+RB3 Native: frame 352 complete
+RB3 Native: frame 353 complete
+RB3 Native: frame 354 complete
+RB3 Native: frame 355 complete
+RB3 Native: frame 356 complete
+RB3 Native: frame 357 complete
+RB3 Native: frame 358 complete
+RB3 Native: frame 359 complete
+RB3 Native: frame 360 complete
+RB3 Native: frame 361 complete
+RB3 Native: frame 362 complete
+RB3 Native: frame 363 complete
+RB3 Native: frame 364 complete
+RB3 Native: frame 365 complete
+RB3 Native: frame 366 complete
+RB3 Native: frame 367 complete
+RB3 Native: frame 368 complete
+RB3 Native: frame 369 complete
+RB3 Native: frame 370 complete
+RB3 Native: frame 371 complete
+RB3 Native: frame 372 complete
+RB3 Native: frame 373 complete
+RB3 Native: frame 374 complete
+RB3 Native: frame 375 complete
+RB3 Native: frame 376 complete
+RB3 Native: frame 377 complete
+RB3 Native: frame 378 complete
+RB3 Native: frame 379 complete
+RB3 Native: frame 380 complete
+RB3 Native: frame 381 complete
+RB3 Native: frame 382 complete
+RB3 Native: frame 383 complete
+RB3 Native: frame 384 complete
+RB3 Native: frame 385 complete
+RB3 Native: frame 386 complete
+RB3 Native: frame 387 complete
+RB3 Native: frame 388 complete
+RB3 Native: frame 389 complete
+RB3 Native: frame 390 complete
+RB3 Native: frame 391 complete
+RB3 Native: frame 392 complete
+RB3 Native: frame 393 complete
+RB3 Native: frame 394 complete
+RB3 Native: frame 395 complete
+RB3 Native: frame 396 complete
+RB3 Native: frame 397 complete
+RB3 Native: frame 398 complete
+RB3 Native: frame 399 complete
+RB3 Native: frame 400 complete
+RB3 Native: frame 401 complete
+RB3 Native: frame 402 complete
+RB3 Native: frame 403 complete
+RB3 Native: frame 404 complete
+RB3 Native: frame 405 complete
+RB3 Native: frame 406 complete
+RB3 Native: frame 407 complete
+RB3 Native: frame 408 complete
+RB3 Native: frame 409 complete
+RB3 Native: frame 410 complete
+RB3 Native: frame 411 complete
+RB3 Native: frame 412 complete
+RB3 Native: frame 413 complete
+RB3 Native: frame 414 complete
+RB3 Native: frame 415 complete
+RB3 Native: frame 416 complete
+RB3 Native: frame 417 complete
+RB3 Native: frame 418 complete
+RB3 Native: frame 419 complete
+RB3 Native: frame 420 complete
+RB3 Native: frame 421 complete
+RB3 Native: frame 422 complete
+RB3 Native: frame 423 complete
+RB3 Native: frame 424 complete
+RB3 Native: frame 425 complete
+RB3 Native: frame 426 complete
+RB3 Native: frame 427 complete
+RB3 Native: frame 428 complete
+RB3 Native: frame 429 complete
+RB3 Native: frame 430 complete
+RB3 Native: frame 431 complete
+RB3 Native: frame 432 complete
+RB3 Native: frame 433 complete
+RB3 Native: frame 434 complete
+RB3 Native: frame 435 complete
+RB3 Native: frame 436 complete
+RB3 Native: frame 437 complete
+RB3 Native: frame 438 complete
+RB3 Native: frame 439 complete
+RB3 Native: frame 440 complete
+RB3 Native: frame 441 complete
+RB3 Native: frame 442 complete
+RB3 Native: frame 443 complete
+RB3 Native: frame 444 complete
+RB3 Native: frame 445 complete
+RB3 Native: frame 446 complete
+RB3 Native: frame 447 complete
+RB3 Native: frame 448 complete
+RB3 Native: frame 449 complete
+RB3 Native: frame 450 complete
+RB3 Native: frame 451 complete
+RB3 Native: frame 452 complete
+RB3 Native: frame 453 complete
+RB3 Native: frame 454 complete
+RB3 Native: frame 455 complete
+RB3 Native: frame 456 complete
+RB3 Native: frame 457 complete
+RB3 Native: frame 458 complete
+RB3 Native: frame 459 complete
+RB3 Native: frame 460 complete
+RB3 Native: frame 461 complete
+RB3 Native: frame 462 complete
+RB3 Native: frame 463 complete
+RB3 Native: frame 464 complete
+RB3 Native: frame 465 complete
+RB3 Native: frame 466 complete
+RB3 Native: frame 467 complete
+RB3 Native: frame 468 complete
+RB3 Native: frame 469 complete
+RB3 Native: frame 470 complete
+RB3 Native: frame 471 complete
+RB3 Native: frame 472 complete
+RB3 Native: frame 473 complete
+RB3 Native: frame 474 complete
+RB3 Native: frame 475 complete
+RB3 Native: frame 476 complete
+RB3 Native: frame 477 complete
+RB3 Native: frame 478 complete
+RB3 Native: frame 479 complete
+RB3 Native: frame 480 complete
+RB3 Native: frame 481 complete
+RB3 Native: frame 482 complete
+RB3 Native: frame 483 complete
+RB3 Native: frame 484 complete
+RB3 Native: frame 485 complete
+RB3 Native: frame 486 complete
+RB3 Native: frame 487 complete
+RB3 Native: frame 488 complete
+RB3 Native: frame 489 complete
+RB3 Native: frame 490 complete
+RB3 Native: frame 491 complete
+RB3 Native: frame 492 complete
+RB3 Native: frame 493 complete
+RB3 Native: frame 494 complete
+RB3 Native: frame 495 complete
+RB3 Native: frame 496 complete
+RB3 Native: frame 497 complete
+RB3 Native: frame 498 complete
+RB3 Native: frame 499 complete
+RB3 Native: frame 500 complete
+RB3 Native: frame 501 complete
+RB3 Native: frame 502 complete
+RB3 Native: frame 503 complete
+RB3 Native: frame 504 complete
+RB3 Native: frame 505 complete
+RB3 Native: frame 506 complete
+RB3 Native: frame 507 complete
+RB3 Native: frame 508 complete
+RB3 Native: frame 509 complete
+RB3 Native: frame 510 complete
+RB3 Native: frame 511 complete
+RB3 Native: frame 512 complete
+RB3 Native: frame 513 complete
+RB3 Native: frame 514 complete
+RB3 Native: frame 515 complete
+RB3 Native: frame 516 complete
+RB3 Native: frame 517 complete
+RB3 Native: frame 518 complete
+RB3 Native: frame 519 complete
+RB3 Native: frame 520 complete
+RB3 Native: frame 521 complete
+RB3 Native: frame 522 complete
+RB3 Native: frame 523 complete
+RB3 Native: frame 524 complete
+RB3 Native: frame 525 complete
+RB3 Native: frame 526 complete
+RB3 Native: frame 527 complete
+RB3 Native: frame 528 complete
+RB3 Native: frame 529 complete
+RB3 Native: frame 530 complete
+RB3 Native: frame 531 complete
+RB3 Native: frame 532 complete
+RB3 Native: frame 533 complete
+RB3 Native: frame 534 complete
+RB3 Native: frame 535 complete
+RB3 Native: frame 536 complete
+RB3 Native: frame 537 complete
+RB3 Native: frame 538 complete
+RB3 Native: frame 539 complete
+RB3 Native: frame 540 complete
+RB3 Native: frame 541 complete
+RB3 Native: frame 542 complete
+RB3 Native: frame 543 complete
+RB3 Native: frame 544 complete
+RB3 Native: frame 545 complete
+RB3 Native: frame 546 complete
+RB3 Native: frame 547 complete
+RB3 Native: frame 548 complete
+RB3 Native: frame 549 complete
+RB3 Native: frame 550 complete
+RB3 Native: frame 551 complete
+RB3 Native: frame 552 complete
+RB3 Native: frame 553 complete
+RB3 Native: frame 554 complete
+RB3 Native: frame 555 complete
+RB3 Native: frame 556 complete
+RB3 Native: frame 557 complete
+RB3 Native: frame 558 complete
+RB3 Native: frame 559 complete
+RB3 Native: frame 560 complete
+RB3 Native: frame 561 complete
+RB3 Native: frame 562 complete
+RB3 Native: frame 563 complete
+RB3 Native: frame 564 complete
+RB3 Native: frame 565 complete
+RB3 Native: frame 566 complete
+RB3 Native: frame 567 complete
+RB3 Native: frame 568 complete
+RB3 Native: frame 569 complete
+RB3 Native: frame 570 complete
+RB3 Native: frame 571 complete
+RB3 Native: frame 572 complete
+RB3 Native: frame 573 complete
+RB3 Native: frame 574 complete
+RB3 Native: frame 575 complete
+RB3 Native: frame 576 complete
+RB3 Native: frame 577 complete
+RB3 Native: frame 578 complete
+RB3 Native: frame 579 complete
+RB3 Native: frame 580 complete
+RB3 Native: frame 581 complete
+RB3 Native: frame 582 complete
+RB3 Native: frame 583 complete
+RB3 Native: frame 584 complete
+RB3 Native: frame 585 complete
+RB3 Native: frame 586 complete
+RB3 Native: frame 587 complete
+RB3 Native: frame 588 complete
+RB3 Native: frame 589 complete
+RB3 Native: frame 590 complete
+RB3 Native: frame 591 complete
+RB3 Native: frame 592 complete
+RB3 Native: frame 593 complete
+RB3 Native: frame 594 complete
+RB3 Native: frame 595 complete
+RB3 Native: frame 596 complete
+RB3 Native: frame 597 complete
+RB3 Native: frame 598 complete
+RB3 Native: frame 599 complete
+RB3 Native: frame 600 complete
+RB3 Native: frame 601 complete
+RB3 Native: frame 602 complete
+RB3 Native: frame 603 complete
+RB3 Native: frame 604 complete
+RB3 Native: frame 605 complete
+RB3 Native: frame 606 complete
+RB3 Native: frame 607 complete
+RB3 Native: frame 608 complete
+RB3 Native: frame 609 complete
+RB3 Native: frame 610 complete
+RB3 Native: frame 611 complete
+RB3 Native: frame 612 complete
+RB3 Native: frame 613 complete
+RB3 Native: frame 614 complete
+RB3 Native: frame 615 complete
+RB3 Native: frame 616 complete
+RB3 Native: frame 617 complete
+RB3 Native: frame 618 complete
+RB3 Native: frame 619 complete
+RB3 Native: frame 620 complete
+RB3 Native: frame 621 complete
+RB3 Native: frame 622 complete
+RB3 Native: frame 623 complete
+RB3 Native: frame 624 complete
+RB3 Native: frame 625 complete
+RB3 Native: frame 626 complete
+RB3 Native: frame 627 complete
+RB3 Native: frame 628 complete
+RB3 Native: frame 629 complete
+RB3 Native: frame 630 complete
+RB3 Native: frame 631 complete
+RB3 Native: frame 632 complete
+RB3 Native: frame 633 complete
+RB3 Native: frame 634 complete
+RB3 Native: frame 635 complete
+RB3 Native: frame 636 complete
+RB3 Native: frame 637 complete
+RB3 Native: frame 638 complete
+RB3 Native: frame 639 complete
+RB3 Native: frame 640 complete
+RB3 Native: frame 641 complete
+RB3 Native: frame 642 complete
+RB3 Native: frame 643 complete
+RB3 Native: frame 644 complete
+RB3 Native: frame 645 complete
+RB3 Native: frame 646 complete
+RB3 Native: frame 647 complete
+RB3 Native: frame 648 complete
+RB3 Native: frame 649 complete
+RB3 Native: frame 650 complete
+RB3 Native: frame 651 complete
+RB3 Native: frame 652 complete
+RB3 Native: frame 653 complete
+RB3 Native: frame 654 complete
+RB3 Native: frame 655 complete
+RB3 Native: frame 656 complete
+RB3 Native: frame 657 complete
+RB3 Native: frame 658 complete
+RB3 Native: frame 659 complete
+RB3 Native: frame 660 complete
+RB3 Native: frame 661 complete
+RB3 Native: frame 662 complete
+RB3 Native: frame 663 complete
+RB3 Native: frame 664 complete
+RB3 Native: frame 665 complete
+RB3 Native: frame 666 complete
+RB3 Native: frame 667 complete
+RB3 Native: frame 668 complete
+RB3 Native: frame 669 complete
+RB3 Native: frame 670 complete
+RB3 Native: frame 671 complete
+RB3 Native: frame 672 complete
+RB3 Native: frame 673 complete
+RB3 Native: frame 674 complete
+RB3 Native: frame 675 complete
+RB3 Native: frame 676 complete
+RB3 Native: frame 677 complete
+RB3 Native: frame 678 complete
+RB3 Native: frame 679 complete
+RB3 Native: frame 680 complete
+RB3 Native: frame 681 complete
+RB3 Native: frame 682 complete
+RB3 Native: frame 683 complete
+RB3 Native: frame 684 complete
+RB3 Native: frame 685 complete
+RB3 Native: frame 686 complete
+RB3 Native: frame 687 complete
+RB3 Native: frame 688 complete
+RB3 Native: frame 689 complete
+RB3 Native: frame 690 complete
+RB3 Native: frame 691 complete
+RB3 Native: frame 692 complete
+RB3 Native: frame 693 complete
+RB3 Native: frame 694 complete
+RB3 Native: frame 695 complete
+RB3 Native: frame 696 complete
+RB3 Native: frame 697 complete
+RB3 Native: frame 698 complete
+RB3 Native: frame 699 complete
+RB3 Native: frame 700 complete
+RB3 Native: frame 701 complete
+RB3 Native: frame 702 complete
+RB3 Native: frame 703 complete
+RB3 Native: frame 704 complete
+RB3 Native: frame 705 complete
+RB3 Native: frame 706 complete
+RB3 Native: frame 707 complete
+RB3 Native: frame 708 complete
+RB3 Native: frame 709 complete
+RB3 Native: frame 710 complete
+RB3 Native: frame 711 complete
+RB3 Native: frame 712 complete
+RB3 Native: frame 713 complete
+RB3 Native: frame 714 complete
+RB3 Native: frame 715 complete
+RB3 Native: frame 716 complete
+RB3 Native: frame 717 complete
+RB3 Native: frame 718 complete
+RB3 Native: frame 719 complete
+RB3 Native: frame 720 complete
+RB3 Native: frame 721 complete
+RB3 Native: frame 722 complete
+RB3 Native: frame 723 complete
+RB3 Native: frame 724 complete
+RB3 Native: frame 725 complete
+RB3 Native: frame 726 complete
+RB3 Native: frame 727 complete
+RB3 Native: frame 728 complete
+RB3 Native: frame 729 complete
+RB3 Native: frame 730 complete
+RB3 Native: frame 731 complete
+RB3 Native: frame 732 complete
+RB3 Native: frame 733 complete
+RB3 Native: frame 734 complete
+RB3 Native: frame 735 complete
+RB3 Native: frame 736 complete
+RB3 Native: frame 737 complete
+RB3 Native: frame 738 complete
+RB3 Native: frame 739 complete
+RB3 Native: frame 740 complete
+RB3 Native: frame 741 complete
+RB3 Native: frame 742 complete
+RB3 Native: frame 743 complete
+RB3 Native: frame 744 complete
+RB3 Native: frame 745 complete
+RB3 Native: frame 746 complete
+RB3 Native: frame 747 complete
+RB3 Native: frame 748 complete
+RB3 Native: frame 749 complete
+RB3 Native: frame 750 complete
+RB3 Native: frame 751 complete
+RB3 Native: frame 752 complete
+RB3 Native: frame 753 complete
+RB3 Native: frame 754 complete
+RB3 Native: frame 755 complete
+RB3 Native: frame 756 complete
+RB3 Native: frame 757 complete
+RB3 Native: frame 758 complete
+RB3 Native: frame 759 complete
+RB3 Native: frame 760 complete
+RB3 Native: frame 761 complete
+RB3 Native: frame 762 complete
+RB3 Native: frame 763 complete
+RB3 Native: frame 764 complete
+RB3 Native: frame 765 complete
+RB3 Native: frame 766 complete
+RB3 Native: frame 767 complete
+RB3 Native: frame 768 complete
+RB3 Native: frame 769 complete
+RB3 Native: frame 770 complete
+RB3 Native: frame 771 complete
+RB3 Native: frame 772 complete
+RB3 Native: frame 773 complete
+RB3 Native: frame 774 complete
+RB3 Native: frame 775 complete
+RB3 Native: frame 776 complete
+RB3 Native: frame 777 complete
+RB3 Native: frame 778 complete
+RB3 Native: frame 779 complete
+RB3 Native: frame 780 complete
+RB3 Native: frame 781 complete
+RB3 Native: frame 782 complete
+RB3 Native: frame 783 complete
+RB3 Native: frame 784 complete
+RB3 Native: frame 785 complete
+RB3 Native: frame 786 complete
+RB3 Native: frame 787 complete
+RB3 Native: frame 788 complete
+RB3 Native: frame 789 complete
+RB3 Native: frame 790 complete
+RB3 Native: frame 791 complete
+RB3 Native: frame 792 complete
+RB3 Native: frame 793 complete
+RB3 Native: frame 794 complete
+RB3 Native: frame 795 complete
+RB3 Native: frame 796 complete
+RB3 Native: frame 797 complete
+RB3 Native: frame 798 complete
+RB3 Native: frame 799 complete
+RB3 Native: frame 800 complete
+RB3 Native: frame 801 complete
+RB3 Native: frame 802 complete
+RB3 Native: frame 803 complete
+RB3 Native: frame 804 complete
+RB3 Native: frame 805 complete
+RB3 Native: frame 806 complete
+RB3 Native: frame 807 complete
+RB3 Native: frame 808 complete
+RB3 Native: frame 809 complete
+RB3 Native: frame 810 complete
+RB3 Native: frame 811 complete
+RB3 Native: frame 812 complete
+RB3 Native: frame 813 complete
+RB3 Native: frame 814 complete
+RB3 Native: frame 815 complete
+RB3 Native: frame 816 complete
+RB3 Native: frame 817 complete
+RB3 Native: frame 818 complete
+RB3 Native: frame 819 complete
+RB3 Native: frame 820 complete
+RB3 Native: frame 821 complete
+RB3 Native: frame 822 complete
+RB3 Native: frame 823 complete
+RB3 Native: frame 824 complete
+RB3 Native: frame 825 complete
+RB3 Native: frame 826 complete
+[STUB] first call to _ZN12AsyncFileWii14FileExistsOnCDEPKc
+[STUB] first call to _Z21FileQualifiedFilenamePciPKc
+[STUB] first call to _Z25HolmesClientCacheResourcePKcS0_
+[STUB] first call to _ZN10NetSession12SendMsgToAllER10NetMessage10PacketType
+[STUB] first call to _ZN9SyncStore4PollEv
+NOTIFY: mDoNotCompress player0_f (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+NOTIFY: mDoNotCompress player0_m (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+NOTIFY: mDoNotCompress player1_f (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+NOTIFY: mDoNotCompress player1_m (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+NOTIFY: mDoNotCompress player2_f (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+NOTIFY: mDoNotCompress player2_m (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+NOTIFY: mDoNotCompress player3_f (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+NOTIFY: mDoNotCompress player3_m (world/vignette/shell/sv4/d/subwayhangout/subwayhangout_clips.milo)
+
+RB3 Native: frame 827 complete
+RB3 Native: frame 828 complete
+RB3 Native: frame 829 complete
+RB3 Native: frame 830 complete
+RB3 Native: frame 831 complete
+RB3 Native: frame 832 complete
+RB3 Native: frame 833 complete
+RB3 Native: frame 834 complete
+RB3 Native: frame 835 complete
+RB3 Native: frame 836 complete
+RB3 Native: frame 837 complete
+RB3 Native: frame 838 complete
+RB3 Native: frame 839 complete
+RB3 Native: frame 840 complete
+RB3 Native: frame 841 complete
+RB3 Native: frame 842 complete
+RB3 Native: frame 843 complete
+RB3 Native: frame 844 complete
+RB3 Native: frame 845 complete
+RB3 Native: frame 846 complete
+RB3 Native: frame 847 complete
+RB3 screen: frame 848  currentScreen = 'song_select_enter_screen'  (in transition)
+RB3 Native: frame 848 complete
+RB3 Native: frame 849 complete
+NOTIFY: Data 123 is not Symbol (file config/song_select.dta, line 1)
+RB3 screen: frame 850  currentScreen = 'song_select_screen'  (in transition)
+NOTIFY: Data kBlendMultiply is not Int
+RB3 Native: frame 850 complete
+RB3 Native: frame 851 complete
+RB3 Native: frame 852 complete
+RB3 Native: frame 853 complete
+RB3 Native: frame 854 complete
+NOTIFY: Data kBlendSrcAlpha is not Int
+RB3 Native: frame 855 complete
+RB3 Native: frame 856 complete
+RB3 Native: frame 857 complete
+RB3 Native: frame 858 complete
+RB3 Native: frame 859 complete
+RB3 Native: frame 860 complete
+RB3 Native: frame 861 complete
+RB3 Native: frame 862 complete
+RB3 Native: frame 863 complete
+RB3 Native: frame 864 complete
+RB3 Native: frame 865 complete
+RB3 Native: frame 866 complete
+RB3 Native: frame 867 complete
+RB3 Native: frame 868 complete
+RB3 Native: frame 869 complete
+RB3 Native: frame 870 complete
+RB3 Native: frame 871 complete
+RB3 Native: frame 872 complete
+RB3 Native: frame 873 complete
+RB3 Native: frame 874 complete
+RB3 Native: frame 875 complete
+RB3 Native: frame 876 complete
+RB3 Native: frame 877 complete
+RB3 Native: frame 878 complete
+RB3 Native: frame 879 complete
+RB3 Native: frame 880 complete
+RB3 Native: frame 881 complete
+RB3 Native: frame 882 complete
+RB3 Native: frame 883 complete
+RB3 Native: frame 884 complete
+RB3 Native: frame 885 complete
+RB3 Native: frame 886 complete
+RB3 Native: frame 887 complete
+RB3 Native: frame 888 complete
+RB3 Native: frame 889 complete
+RB3 Native: frame 890 complete
+RB3 Native: frame 891 complete
+RB3 Native: frame 892 complete
+RB3 Native: frame 893 complete
+RB3 Native: frame 894 complete
+RB3 Native: frame 895 complete
+RB3 Native: frame 896 complete
+RB3 Native: frame 897 complete
+RB3 Native: frame 898 complete
+RB3 Native: frame 899 complete
+RB3 Native: frame 900 complete
+RB3 Native: frame 901 complete
+RB3 Native: frame 902 complete
+RB3 Native: frame 903 complete
+RB3 Native: frame 904 complete
+RB3 Native: frame 905 complete
+RB3 Native: frame 906 complete
+RB3 Native: frame 907 complete
+RB3 Native: frame 908 complete
+RB3 Native: frame 909 complete
+RB3 Native: frame 910 complete
+RB3 Native: frame 911 complete
+RB3 Native: frame 912 complete
+RB3 Native: frame 913 complete
+RB3 Native: frame 914 complete
+RB3 Native: frame 915 complete
+RB3 Native: frame 916 complete
+RB3 Native: frame 917 complete
+RB3 Native: frame 918 complete
+RB3 Native: frame 919 complete
+RB3 Native: frame 920 complete
+RB3 Native: frame 921 complete
+RB3 Native: frame 922 complete
+RB3 Native: frame 923 complete
+RB3 Native: frame 924 complete
+RB3 Native: frame 925 complete
+RB3 Native: frame 926 complete
+RB3 Native: frame 927 complete
+RB3 Native: frame 928 complete
+RB3 Native: frame 929 complete
+RB3 Native: frame 930 complete
+RB3 Native: frame 931 complete
+RB3 Native: frame 932 complete
+RB3 Native: frame 933 complete
+RB3 Native: frame 934 complete
+RB3 Native: frame 935 complete
+RB3 Native: frame 936 complete
+RB3 Native: frame 937 complete
+RB3 Native: frame 938 complete
+RB3 Native: frame 939 complete
+RB3 Native: frame 940 complete
+RB3 Native: frame 941 complete
+RB3 Native: frame 942 complete
+RB3 Native: frame 943 complete
+RB3 Native: frame 944 complete
+RB3 Native: frame 945 complete
+RB3 Native: frame 946 complete
+RB3 Native: frame 947 complete
+RB3 Native: frame 948 complete
+RB3 Native: frame 949 complete
+RB3 Native: frame 950 complete
+RB3 Native: frame 951 complete
+RB3 Native: frame 952 complete
+RB3 Native: frame 953 complete
+RB3 Native: frame 954 complete
+RB3 Native: frame 955 complete
+RB3 Native: frame 956 complete
+RB3 Native: frame 957 complete
+RB3 Native: frame 958 complete
+RB3 Native: frame 959 complete
+RB3 Native: frame 960 complete
+RB3 Native: frame 961 complete
+RB3 Native: frame 962 complete
+RB3 Native: frame 963 complete
+RB3 Native: frame 964 complete
+RB3 Native: frame 965 complete
+RB3 Native: frame 966 complete
+RB3 Native: frame 967 complete
+RB3 Native: frame 968 complete
+RB3 Native: frame 969 complete
+RB3 Native: frame 970 complete
+RB3 Native: frame 971 complete
+RB3 Native: frame 972 complete
+RB3 Native: frame 973 complete
+RB3 Native: frame 974 complete
+RB3 Native: frame 975 complete
+RB3 Native: frame 976 complete
+RB3 Native: frame 977 complete
+RB3 Native: frame 978 complete
+RB3 Native: frame 979 complete
+RB3 Native: frame 980 complete
+RB3 Native: frame 981 complete
+RB3 Native: frame 982 complete
+RB3 Native: frame 983 complete
+RB3 Native: frame 984 complete
+RB3 Native: frame 985 complete
+RB3 Native: frame 986 complete
+RB3 Native: frame 987 complete
+RB3 Native: frame 988 complete
+RB3 Native: frame 989 complete
+RB3 Native: frame 990 complete
+RB3 Native: frame 991 complete
+RB3 Native: frame 992 complete
+RB3 Native: frame 993 complete
+RB3 Native: frame 994 complete
+RB3 Native: frame 995 complete
+RB3 Native: frame 996 complete
+RB3 Native: frame 997 complete
+RB3 Native: frame 998 complete
+RB3 Native: frame 999 complete
+RB3 Native: frame 1000 complete
+RB3 Native: frame 1001 complete
+RB3 Native: frame 1002 complete
+RB3 Native: frame 1003 complete
+RB3 Native: frame 1004 complete
+RB3 Native: frame 1005 complete
+RB3 Native: frame 1006 complete
+RB3 Native: frame 1007 complete
+RB3 Native: frame 1008 complete
+RB3 Native: frame 1009 complete
+RB3 Native: frame 1010 complete
+RB3 Native: frame 1011 complete
+RB3 Native: frame 1012 complete
+RB3 Native: frame 1013 complete
+RB3 Native: frame 1014 complete
+RB3 Native: frame 1015 complete
+RB3 Native: frame 1016 complete
+RB3 Native: frame 1017 complete
+RB3 Native: frame 1018 complete
+RB3 Native: frame 1019 complete
+RB3 Native: frame 1020 complete
+RB3 Native: frame 1021 complete
+RB3 Native: frame 1022 complete
+RB3 Native: frame 1023 complete
+RB3 Native: frame 1024 complete
+RB3 Native: frame 1025 complete
+RB3 Native: frame 1026 complete
+RB3 Native: frame 1027 complete
+RB3 Native: frame 1028 complete
+RB3 Native: frame 1029 complete
+RB3 Native: frame 1030 complete
+RB3 Native: frame 1031 complete
+RB3 Native: frame 1032 complete
+RB3 Native: frame 1033 complete
+RB3 Native: frame 1034 complete
+RB3 Native: frame 1035 complete
+RB3 Native: frame 1036 complete
+RB3 Native: frame 1037 complete
+RB3 Native: frame 1038 complete
+RB3 Native: frame 1039 complete
+RB3 Native: frame 1040 complete
+RB3 Native: frame 1041 complete
+RB3 Native: frame 1042 complete
+RB3 Native: frame 1043 complete
+RB3 Native: frame 1044 complete
+RB3 Native: frame 1045 complete
+RB3 Native: frame 1046 complete
+RB3 Native: frame 1047 complete
+RB3 Native: frame 1048 complete
+RB3 Native: frame 1049 complete
+RB3 Native: frame 1050 complete
+RB3 Native: frame 1051 complete
+RB3 Native: frame 1052 complete
+RB3 Native: frame 1053 complete
+RB3 Native: frame 1054 complete
+RB3 Native: frame 1055 complete
+RB3 Native: frame 1056 complete
+RB3 Native: frame 1057 complete
+RB3 Native: frame 1058 complete
+RB3 Native: frame 1059 complete
+RB3 Native: frame 1060 complete
+RB3 Native: frame 1061 complete
+RB3 Native: frame 1062 complete
+RB3 Native: frame 1063 complete
+RB3 Native: frame 1064 complete
+RB3 Native: frame 1065 complete
+RB3 Native: frame 1066 complete
+RB3 Native: frame 1067 complete
+RB3 Native: frame 1068 complete
+RB3 Native: frame 1069 complete
+RB3 Native: frame 1070 complete
+RB3 Native: frame 1071 complete
+RB3 Native: frame 1072 complete
+RB3 Native: frame 1073 complete
+RB3 Native: frame 1074 complete
+RB3 Native: frame 1075 complete
+RB3 Native: frame 1076 complete
+RB3 Native: frame 1077 complete
+RB3 Native: frame 1078 complete
+RB3 Native: frame 1079 complete
+RB3 Native: frame 1080 complete
+RB3 Native: frame 1081 complete
+RB3 Native: frame 1082 complete
+RB3 Native: frame 1083 complete
+RB3 Native: frame 1084 complete
+RB3 Native: frame 1085 complete
+RB3 Native: frame 1086 complete
+RB3 Native: frame 1087 complete
+RB3 Native: frame 1088 complete
+RB3 Native: frame 1089 complete
+RB3 Native: frame 1090 complete
+RB3 Native: frame 1091 complete
+RB3 Native: frame 1092 complete
+RB3 Native: frame 1093 complete
+RB3 Native: frame 1094 complete
+RB3 Native: frame 1095 complete
+RB3 Native: frame 1096 complete
+RB3 Native: frame 1097 complete
+RB3 Native: frame 1098 complete
+RB3 Native: frame 1099 complete
+RB3 Native: frame 1100 complete
+RB3 Native: frame 1101 complete
+RB3 Native: frame 1102 complete
+RB3 Native: frame 1103 complete
+RB3 Native: frame 1104 complete
+RB3 Native: frame 1105 complete
+RB3 Native: frame 1106 complete
+RB3 Native: frame 1107 complete
+RB3 Native: frame 1108 complete
+RB3 Native: frame 1109 complete
+RB3 Native: frame 1110 complete
+RB3 Native: frame 1111 complete
+RB3 Native: frame 1112 complete
+RB3 Native: frame 1113 complete
+RB3 Native: frame 1114 complete
+RB3 Native: frame 1115 complete
+RB3 Native: frame 1116 complete
+RB3 Native: frame 1117 complete
+RB3 Native: frame 1118 complete
+RB3 Native: frame 1119 complete
+RB3 Native: frame 1120 complete
+RB3 Native: frame 1121 complete
+RB3 Native: frame 1122 complete
+RB3 Native: frame 1123 complete
+RB3 Native: frame 1124 complete
+RB3 Native: frame 1125 complete
+RB3 Native: frame 1126 complete
+RB3 Native: frame 1127 complete
+RB3 Native: frame 1128 complete
+RB3 Native: frame 1129 complete
+RB3 Native: frame 1130 complete
+RB3 Native: frame 1131 complete
+RB3 Native: frame 1132 complete
+RB3 Native: frame 1133 complete
+RB3 Native: frame 1134 complete
+RB3 Native: frame 1135 complete
+RB3 Native: frame 1136 complete
+RB3 Native: frame 1137 complete
+RB3 Native: frame 1138 complete
+RB3 Native: frame 1139 complete
+RB3 Native: frame 1140 complete
+RB3 Native: frame 1141 complete
+RB3 Native: frame 1142 complete
+RB3 Native: frame 1143 complete
+RB3 Native: frame 1144 complete
+RB3 Native: frame 1145 complete
+RB3 Native: frame 1146 complete
+RB3 Native: frame 1147 complete
+RB3 Native: frame 1148 complete
+RB3 Native: frame 1149 complete
+RB3 Native: frame 1150 complete
+RB3 Native: frame 1151 complete
+RB3 Native: frame 1152 complete
+RB3 Native: frame 1153 complete
+RB3 Native: frame 1154 complete
+RB3 Native: frame 1155 complete
+RB3 Native: frame 1156 complete
+RB3 Native: frame 1157 complete
+RB3 Native: frame 1158 complete
+RB3 Native: frame 1159 complete
+RB3 Native: frame 1160 complete
+RB3 Native: frame 1161 complete
+RB3 Native: frame 1162 complete
+RB3 Native: frame 1163 complete
+RB3 Native: frame 1164 complete
+RB3 Native: frame 1165 complete
+RB3 Native: frame 1166 complete
+RB3 Native: frame 1167 complete
+RB3 Native: frame 1168 complete
+RB3 Native: frame 1169 complete
+RB3 Native: frame 1170 complete
+RB3 Native: frame 1171 complete
+RB3 Native: frame 1172 complete
+RB3 Native: frame 1173 complete
+RB3 Native: frame 1174 complete
+RB3 Native: frame 1175 complete
+RB3 Native: frame 1176 complete
+RB3 Native: frame 1177 complete
+RB3 Native: frame 1178 complete
+RB3 Native: frame 1179 complete
+RB3 Native: frame 1180 complete
+RB3 Native: frame 1181 complete
+RB3 Native: frame 1182 complete
+RB3 Native: frame 1183 complete
+RB3 Native: frame 1184 complete
+RB3 Native: frame 1185 complete
+RB3 Native: frame 1186 complete
+RB3 Native: frame 1187 complete
+RB3 Native: frame 1188 complete
+RB3 Native: frame 1189 complete
+RB3 Native: frame 1190 complete
+RB3 Native: frame 1191 complete
+RB3 Native: frame 1192 complete
+RB3 Native: frame 1193 complete
+RB3 Native: frame 1194 complete
+RB3 Native: frame 1195 complete
+RB3 Native: frame 1196 complete
+RB3 Native: frame 1197 complete
+RB3 Native: frame 1198 complete
+RB3 Native: frame 1199 complete
+RB3 Native: frame 1200 complete
+RB3 Native: frame 1201 complete
+RB3 Native: frame 1202 complete
+RB3 Native: frame 1203 complete
+RB3 Native: frame 1204 complete
+RB3 Native: frame 1205 complete
+RB3 Native: frame 1206 complete
+RB3 Native: frame 1207 complete
+RB3 Native: frame 1208 complete
+RB3 Native: frame 1209 complete
+RB3 Native: frame 1210 complete
+RB3 Native: frame 1211 complete
+RB3 Native: frame 1212 complete
+RB3 Native: frame 1213 complete
+RB3 Native: frame 1214 complete
+RB3 Native: frame 1215 complete
+RB3 Native: frame 1216 complete
+RB3 Native: frame 1217 complete
+RB3 Native: frame 1218 complete
+RB3 Native: frame 1219 complete
+RB3 Native: frame 1220 complete
+RB3 Native: frame 1221 complete
+RB3 Native: frame 1222 complete
+RB3 Native: frame 1223 complete
+RB3 Native: frame 1224 complete
+RB3 Native: frame 1225 complete
+RB3 Native: frame 1226 complete
+RB3 Native: frame 1227 complete
+RB3 Native: frame 1228 complete
+RB3 Native: frame 1229 complete
+RB3 Native: frame 1230 complete
+RB3 Native: frame 1231 complete
+RB3 Native: frame 1232 complete
+RB3 Native: frame 1233 complete
+RB3 Native: frame 1234 complete
+RB3 Native: frame 1235 complete
+RB3 Native: frame 1236 complete
+RB3 Native: frame 1237 complete
+RB3 Native: frame 1238 complete
+RB3 Native: frame 1239 complete
+RB3 Native: frame 1240 complete
+RB3 Native: frame 1241 complete
+RB3 Native: frame 1242 complete
+RB3 Native: frame 1243 complete
+RB3 Native: frame 1244 complete
+RB3 Native: frame 1245 complete
+RB3 Native: frame 1246 complete
+RB3 Native: frame 1247 complete
+RB3 Native: frame 1248 complete
+RB3 Native: frame 1249 complete
+RB3 Native: frame 1250 complete
+RB3 Native: frame 1251 complete
+RB3 Native: frame 1252 complete
+RB3 Native: frame 1253 complete
+RB3 Native: frame 1254 complete
+RB3 Native: frame 1255 complete
+RB3 Native: frame 1256 complete
+RB3 Native: frame 1257 complete
+RB3 Native: frame 1258 complete
+RB3 Native: frame 1259 complete
+RB3 Native: frame 1260 complete
+RB3 Native: frame 1261 complete
+RB3 Native: frame 1262 complete
+RB3 Native: frame 1263 complete
+RB3 Native: frame 1264 complete
+RB3 Native: frame 1265 complete
+RB3 Native: frame 1266 complete
+RB3 Native: frame 1267 complete
+RB3 Native: frame 1268 complete
+RB3 Native: frame 1269 complete
+RB3 Native: frame 1270 complete
+RB3 Native: frame 1271 complete
+RB3 Native: frame 1272 complete
+RB3 Native: frame 1273 complete
+RB3 Native: frame 1274 complete
+RB3 Native: frame 1275 complete
+RB3 Native: frame 1276 complete
+RB3 Native: frame 1277 complete
+RB3 Native: frame 1278 complete
+RB3 Native: frame 1279 complete
+RB3 Native: frame 1280 complete
+RB3 Native: frame 1281 complete
+RB3 Native: frame 1282 complete
+RB3 Native: frame 1283 complete
