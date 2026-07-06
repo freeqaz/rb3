@@ -402,6 +402,30 @@ void WorldCrowd::Draw3DChars() {
                 }
                 curChar->SetWorldXfm(spXfm);
 #ifdef HX_NATIVE
+                // W2.1.S1 placement-gate probe (diagnosis-only, default-OFF).
+                // spXfm is the FAITHFUL per-instance bowl placement the decomp
+                // computed above (charXfm.v + height/rotate/focus billboard
+                // math). It is the "right, not just different" oracle: the
+                // renderer must draw THIS instance's skinned meshes with an
+                // obj.world whose translation == this spXfm.v. On the current
+                // (unfixed) build DrawMesh forces obj.world = identity for every
+                // skinned draw (Rnd_Wgpu_RB3.cpp:2847-2848), so all instances
+                // co-locate at the origin — the placement-gate oracle
+                // (native/tests/test_placement_oracle.cpp) reads these lines +
+                // the drawlog and goes RED. Env-gated (RB3_PLACEMENT_PROBE),
+                // Wii-compile-inert (HX_NATIVE undefined under MWCC). No
+                // behavior change.
+                {
+                    static int sPlacementProbe = -1;
+                    if (sPlacementProbe < 0)
+                        sPlacementProbe = getenv("RB3_PLACEMENT_PROBE") ? 1 : 0;
+                    if (sPlacementProbe) {
+                        fprintf(stderr,
+                                "RB3_PLACEMENT_PROBE crowd inst=%u x=%.4f y=%.4f "
+                                "z=%.4f\n",
+                                i, spXfm.v.x, spXfm.v.y, spXfm.v.z);
+                    }
+                }
                 // DRAW-TIME crowd skeleton rebind: right before each 3D-char
                 // instance draws, ensure this archetype's skinned meshes bind
                 // THIS archetype's own bones (not a same-named instance from a
