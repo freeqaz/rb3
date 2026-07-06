@@ -66,13 +66,11 @@ public:
                                        float* /*outWorld16*/) override {
         DrawGeomPolicy p;
         const char* nm = mesh ? mesh->Name() : nullptr;
-        if (!nm)
-            return p;
         // B1: hub focused-menu highlight-bar placement fix (skinned UI bar whose
         // label translation must be injected). Opt-out RB3_NO_HUB_BAR_PLACEMENT_FIX.
         // The engine ANDs this with `skinned`, matching the prior inline guard.
-        if (std::strncmp(nm, "highlight_main", 14) == 0 ||
-            std::strncmp(nm, "highlight_pattern", 17) == 0) {
+        if (nm && (std::strncmp(nm, "highlight_main", 14) == 0 ||
+                   std::strncmp(nm, "highlight_pattern", 17) == 0)) {
             static int hubBarOff = -1;
             if (hubBarOff < 0)
                 hubBarOff = std::getenv("RB3_NO_HUB_BAR_PLACEMENT_FIX") ? 1 : 0;
@@ -82,8 +80,9 @@ public:
         // scrollbar-bg track's world xfm (the engine caches the bg world and
         // applies it, guarded by `skinned && have`). Opt-out
         // RB3_SCROLLBAR_THUMB_FIX_OFF. `scrollbarBg`/`scrollbarThumb` are mutually
-        // exclusive (distinct mesh names).
-        {
+        // exclusive (distinct mesh names). Mirrors the prior `if (mesh->Name())`
+        // guard.
+        if (nm) {
             static int sbarThumbOff = -1;
             if (sbarThumbOff < 0)
                 sbarThumbOff = std::getenv("RB3_SCROLLBAR_THUMB_FIX_OFF") ? 1 : 0;
@@ -94,7 +93,44 @@ public:
                     p.scrollbarThumb = true;
             }
         }
+        // B3: skel-rebake mesh-level gate. rebake enabled (default-on; opt-out
+        // RB3_NO_SKEL_REBAKE) AND this is NOT a per-frame-driven dynamic (face /
+        // hair / fingernail) outfit mesh. The engine ANDs this with the numBones /
+        // rebound / worst-bone-static conditions and keeps all rebake math. Mirrors
+        // the prior `dynamicMesh = mn0 && (...)` (a null name is NOT dynamic).
+        {
+            static int rebakeOff = -1;
+            if (rebakeOff < 0)
+                rebakeOff = std::getenv("RB3_NO_SKEL_REBAKE") ? 1 : 0;
+            bool dynamicMesh = nm &&
+                (std::strstr(nm, "facehair") || std::strstr(nm, "goatee") ||
+                 std::strstr(nm, "hair") || std::strstr(nm, "bedhead") ||
+                 std::strstr(nm, "blownback") || std::strstr(nm, "mohawk") ||
+                 std::strstr(nm, "fingernails") || std::strstr(nm, "eyebrow") ||
+                 std::strstr(nm, "tongue") || std::strstr(nm, "facial"));
+            p.skelRebakeMesh = !rebakeOff && !dynamicMesh;
+        }
         return p;
+    }
+
+    // B3/B5: STATIC shared band skeleton dir name (skeleton_unshared.milo).
+    bool IsBandMemberSkeletonFile(const char* storedFile) override {
+        return storedFile &&
+               std::strstr(storedFile, "skeleton_unshared.milo") != nullptr;
+    }
+
+    // B3: per-frame-driven dynamic-chain bone (hair / facial / finger) excluded
+    // from the one-time static rebake.
+    bool IsRebakeDynamicBone(const char* bn) override {
+        return bn && (std::strstr(bn, "hair") || std::strstr(bn, "-lid") ||
+                      std::strstr(bn, "_lid") || std::strstr(bn, "jaw") ||
+                      std::strstr(bn, "lip") || std::strstr(bn, "brow") ||
+                      std::strstr(bn, "eye") || std::strstr(bn, "mouth") ||
+                      std::strstr(bn, "cheek") || std::strstr(bn, "nose") ||
+                      std::strstr(bn, "tongue") || std::strstr(bn, "goatee") ||
+                      std::strstr(bn, "index") || std::strstr(bn, "middle") ||
+                      std::strstr(bn, "pinky") || std::strstr(bn, "ring") ||
+                      std::strstr(bn, "thumb") || std::strstr(bn, "finger"));
     }
 
     DrawMaterialPolicy QueryDrawMaterialPolicy(RndMesh* /*mesh*/,
