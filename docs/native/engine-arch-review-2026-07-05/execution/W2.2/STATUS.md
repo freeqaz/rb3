@@ -290,3 +290,69 @@ is registry hygiene per PLAN R4, a coordinator/pin-bump data edit.)
 scripts/native/hands_bind_characterize.py …`) and record the five S3 gates in `char/S3_MEASURE.md`,
 including the negative-control diff vs `parsed-default.json`. S4 default-flip stays deferred to
 coordinator + reviewer-judged frames (no flip in-wave). No blockers.
+
+## W2.2.S3 — done (measure all gates; default stays OFF; S4 flip deferred to coordinator)
+Implementer: Opus. Build dir `native/build-agent-W2.2` (Clang). Commit `95339eea`
+(measurement artifacts; no source edits — S3 is measure-only). Full report:
+`char/S3_MEASURE.md`.
+
+**Environment note (HARD-RULE 7):** engine working tree observed at `5cee522`, ONE
+commit past the pin `41b9e3a` (sibling Lane A W0.3c `RB3_DRAWORDER_TRACE`, default-OFF
+probe + one TU — behavior-neutral for skinning with the flag unset). Pin check is a
+WARNING (`native/CMakeLists.txt:80`), build proceeds; measurements valid. Did NOT
+reset/rebase the engine tree. A concurrent agent's uncommitted `FxSendNative.cpp`
+(audio) left untouched.
+
+**Five gates (all recorded with exact numbers/commands in S3_MEASURE.md):**
+1. **Numeric draw-time A/B (flag-ON vs OFF):** FLING(>120u)=**0** both passes; no
+   STOP-tripwire (>92u / 200-460u) either. Head/hands/hair SCOPE = a proven NET WIN
+   (rebake-OFF head guard-DROPs 9.59x → rebake-ON renders clean 1.34x @ 69.5u graze);
+   hands ≤53u SKINPOS / ≤2.35x ratio no-drop. **Literal `≤65u/≤2x on ALL rebound` bar
+   NOT met** by (a) a STRUCTURAL 69.5u head brow-bone graze (identical flag-OFF/ON;
+   crowd bodies show the same 63-64u) and (b) a **HARD guard-DROP on a FOOT/SHOE mesh**
+   (`saddleshoe_skin.2` 4.73x OFF / `lowtopsneaks_skin.2` 5.09x ON — SAME lower-body
+   class, lineup-randomized name). Foot/shoe go through `RebindOutfitBonesToOwnSkeleton`
+   (lower-body), **NOT** `RebindHeadHandsAtRest` → OUT of W2.2 scope; the flag cannot
+   and does not clear it. **`RB3_HANDS_BIND_FIX`=ON yields NO measured improvement**
+   on the head/hands scope (69.5u↔69.5u, hands identical). Torso not regressed (≤65.4u
+   collars both). ⇒ scope net-win, literal bar unmet by an out-of-scope residual.
+2. **Negative control:** all **29 true venue crowd/extra `[SKIN_CLAMP]` meshes
+   BYTE-IDENTICAL** flag-OFF vs flag-ON (zero diffs, zero set diffs). Of the 33-mesh
+   overlap, 32 identical; the 1 diff (`messyshort_resource` 1218→1017) is a
+   band-assigned HAIR resource (S1a HEAD_REBIND PENDING), lineup-randomized, not a
+   venue extra. Code proof: flag gated strictly inside `RebindHeadHandsAtRest`
+   (`BandCharacter.cpp:1383-1394`); crowd/extras are non-rebound (SKIN_CLAMP path),
+   never enter it ⇒ band-scoped by construction. **PASS.**
+3. **Oracle:** `ctest -R HandsBindOracle` GREEN unperturbed (3 pass / 1 skip); `PERTURB=0.15`
+   RED (fingertip 28.87u ≈ 200·sin θ; identity residual 0.897 vs 1e-3). **PASS.**
+4. **Invariance nets:** own DC3-context engine build (`build-agent-W2.2`, decomp
+   context + Dawn) → `milo-engine-tests` **198 pass / 0 fail / 2 skip**. W0.1 SkinGolden
+   (3 green) + W0.4 ClipPoseFixture.EffectorWorldPositionsMatchGolden green ⇒ no leak
+   into shared skinning/effector math (auto-stop not triggered). **PASS.**
+5. **W0.5 lineup:** `--selftest` PASS + real gate on `build-agent-W2.2/rb3-native`
+   (default-OFF) → `verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS pin=PASS`
+   (sliv=0 all frames). **PASS.**
+
+**S4 decision — NO FLIP; default stays OFF; deferred to coordinator.** Flip gate
+(PLAN §S4 / brief B1) requires a flag that clears the residual + all layers green +
+reviewer-judged Dolphin/retail frames. (a) flag shows no measured benefit + doesn't
+clear the out-of-scope foot/shoe drop; (b) gates 2-5 PASS, gate-1 literal bar unmet;
+(c) no in-wave reviewer judgment. ⇒ land default-OFF (worst-case four-layer exit =
+unflipped flag, never a blind revert). **Recommendation to coordinator:** the
+head/hands/hair rebake is already a proven net-win default-ON via `RebindHeadHandsAtRest`
+and needs no flip; the remaining HARD residual is a lower-body foot/shoe path — treat
+foot/shoe rest-capture coverage as a separate Wave-4 item, not a flip of
+`RB3_HANDS_BIND_FIX`. Hand this + S1c `handcloseup_walkon.png` to S4.
+
+**PLAN deviations (recorded per protocol):** (i) Gate-1's literal "≤65u on ALL rebound
+incl hands/fingers/hair + ≤2x" target NOT proven — head brow-bone graze is structural
+(matches non-rebound crowd) and the one HARD drop is out-of-scope lower-body; the flag
+provides no measured benefit. This is the honest measured outcome, not a pass. (ii)
+Negative control satisfied on the venue-extra subset (byte-identical) rather than the
+full clamp map — a strict full-map byte-identity is not physically achievable across
+two boots while quickplay randomizes the band lineup (S1a-documented). (iii) Engine
+tree one commit past pin (behavior-neutral, above).
+
+**Remains / handoff:** S4 (default-flip) deferred to coordinator with the recorded
+evidence + recommendation. No blockers. RealPathFixture (S1b) still SKIPs — no in-game
+bind fixture dumped (optional; numeric core covered).
