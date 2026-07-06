@@ -76,6 +76,18 @@ public:
                 hubBarOff = std::getenv("RB3_NO_HUB_BAR_PLACEMENT_FIX") ? 1 : 0;
             p.hubBarPlacement = !hubBarOff;
         }
+        // B4: hub focused-menu highlight-bar shard-guard exemption (same named
+        // meshes as B1, independent flag). The skinned highlight quad legitimately
+        // stretches many times its bind AABB to shrink-wrap a wide label, which the
+        // scene-crossing shard guard would false-drop. Opt-out
+        // RB3_NO_HUB_BAR_SHARD_EXEMPT.
+        if (nm && (std::strncmp(nm, "highlight_main", 14) == 0 ||
+                   std::strncmp(nm, "highlight_pattern", 17) == 0)) {
+            static int shardExemptOff = -1;
+            if (shardExemptOff < 0)
+                shardExemptOff = std::getenv("RB3_NO_HUB_BAR_SHARD_EXEMPT") ? 1 : 0;
+            p.shardExemptHubBar = !shardExemptOff;
+        }
         // B2: scrollbar-thumb placement fix — the skinned red thumb reuses the
         // scrollbar-bg track's world xfm (the engine caches the bg world and
         // applies it, guarded by `skinned && have`). Opt-out
