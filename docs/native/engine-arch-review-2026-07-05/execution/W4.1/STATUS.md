@@ -29,3 +29,63 @@ and committed. Diagnostic harnesses preserved under `W4.1/harness/`.
 enumeration — the six named guesses already failed), verify (b) + optional sliver, file (c) backlog.
 
 **Fence adherence:** no engine files, no `rb3_render_hook.cpp` touched (planning only).
+
+## C.S2-a — impl (Sonnet) — done — 2026-07-06
+
+Implemented subitem (a) per PLAN.md exactly (found the code + flag already
+present in the working tree from an earlier interrupted run of this stage;
+no checkpoint existed, so re-verified from scratch rather than trusting it
+blind).
+
+**Fix:** `MainHubPanel::Poll()` (rb3 `src/band3/meta_band/MainHubPanel.cpp`)
+persistently hides `playnow.lsw` (a LabelShrinkWrapper child of
+`mb_playnow.grp`/`menu_buttons.grp` in `ui/main/main_hub.milo`) under
+`#ifdef HX_NATIVE`, gated by opt-in env flag `RB3_HUB_MENU_QUAD_HIDE`
+(default-OFF). Re-asserted every Poll since the object's own `showing` is
+re-driven by its owning group each frame (one-shot Enter()-only hides do not
+stick, per the plan's finding from the six failed named-mesh probes).
+
+**Verify (fresh build + before/after gate, this stage):**
+- Built via `flock /tmp/rb3-native-build.lock cmake --build native/build-native
+  --target rb3-native` (clean build against current engine + rb3 tree).
+- Before/after capture (`RB3_FIXED_CLOCK=1`, nav `@10:start,@30:confirm`,
+  ~2s settle at main_hub_screen): ROI x[380,895] y[365,410] mean luma
+  **143.1 -> 44.1** (backdrop level) with the flag on. Screenshots
+  `/tmp/wave6-w41a-gate/{before_off,after_on}.png` visually confirm the grey
+  capsule quad is fully gone flag-ON; menu text (PLAY NOW / QUICKPLAY / START
+  A ROAD CHALLENGE), MOTD ticker ("NEXT MESSAGE" text), and the bottom
+  overshell bar are pixel-identical otherwise (A/A).
+- Cross-checked against `images/retail-screenshots/yt_mhKNp9uAT48_menu_hub.png`:
+  retail has no such quad below the menu list — matches the flag-ON render.
+- **A/A on the other screen:** song_select (`ss_off.png`/`ss_on.png`,
+  nav `@10:start,@30:confirm,@140:select:pn_quickplay.btn,
+  @220:select:qp_quickplay.btn`) is unaffected by the flag (expected — the
+  fix is scoped to `MainHubPanel` only).
+
+**Flag registration:** `RB3_HUB_MENU_QUAD_HIDE` was already present in the
+engine's `NativeCompatFlags.classification.json` working tree (uncommitted,
+from the same earlier interrupted run) alongside three unrelated in-flight
+rows from the W3.1b lane (`RB3_ENV_PROJLIGHT`, `RB3_ENV_PROJLIGHT_FORCE`,
+`RB3_ENV_FOG_FORCE`). To commit only my own row without sweeping in the
+other lanes uncommitted work (hard rule: stage only your own files), I
+staged an isolated git blob (HEAD content + my one row only, via
+`git hash-object` + `git update-index --cacheinfo`) under
+`flock /tmp/milo-engine-classjson.lock` rather than `git add`-ing the
+whole file. Verified post-commit: the other three rows remain as an
+uncommitted working-tree diff against the new HEAD, untouched, for their
+owner to commit separately. class=`workaround`, default=`off`.
+
+**Commits:**
+- rb3 `b537d275` — `W4.1: hide spurious main_hub grey menu quad
+  (RB3_HUB_MENU_QUAD_HIDE)`
+- engine `8e38e74` — `W4.1: register RB3_HUB_MENU_QUAD_HIDE (main_hub
+  grey menu-quad hide, default-OFF)`
+
+**Fence adherence:** touched only `src/band3/meta_band/MainHubPanel.cpp`
+(rb3) and the classification.json row (engine, append-only). No engine
+render/gfx files, no `rb3_render_hook.cpp`.
+
+**Not done in this stage (belongs to other C.S2 subitems / other agents):**
+subitem (b) song_select sliver investigation, subitem (c) part_difficulty
+backlog handoff documentation — these are separate checkpoint IDs per the
+plan's C.S2 breakdown.
