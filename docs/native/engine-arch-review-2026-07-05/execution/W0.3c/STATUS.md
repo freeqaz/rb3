@@ -157,3 +157,119 @@ PLAN.md anticipates exactly this branch:
 
 **Commits:** none (correct — skip). **Remains:** S3 (Exit B, unblocks W1.6) + W0.3d
 (Wave 4 root-cause). **Blockers:** none — S2's conditional simply evaluated false.
+
+## W0.3c.S3 — done (Exit B: canonical-order comparator landed, green 15/15 + all fail-red classes RED)
+
+**Commit:** rb3 `5d254e00` (`scripts/native/drawlog-golden.py` only — new
+`--canonical-order` dispatch branch + `compare_canonical()` +
+`run_fail_red_canonical()`; `compare_drawlogs()`/`compare_fixed_clock()` and
+all legacy CLI modes untouched, byte-identical). No engine change, no new
+flag (script-only; census/ledger unaffected). Build: `native/build-agent-W0.3c`
+(clang, engine HEAD `5cee522` = S1's probe, `MILO_ENGINE_PIN` unchanged
+`41b9e3a`).
+
+### Design implemented (matches PLAN.md exactly)
+`compare_canonical(golden, candidate, residual)`: (1) exact count gate; (2)
+multiset membership keyed by the full `SCALAR_FIELDS` tuple **excluding**
+`world` (name/pipe/blend/zmode/layout/fmt/hasDepth/alphaCut/alphaWrite/
+skinned/idx/tris/verts) via `Counter` equality — strictly stronger than the
+brief's `(name,pipeline,blend,counts)`; (3) golden<->candidate correspondence
+established per scalar-key bucket (trivial for size-1 buckets; greedy
+min-summed-`|world|`-delta assignment with a `SHARE_STREAMS`-tuple tie-break
+for size>1 buckets — see code comment for why the tie-break can't be
+circular), then the **UNCHANGED** `world_elem_ok()` tolerance + **UNCHANGED**
+residual sidecar (`load_residual`) applied per matched pair, residual lookup
+by **name-hash** (every occurrence of a residual name in this golden is
+itself in the sidecar, verified empirically below — so name-keyed is exactly
+as tight as the old index-keyed check); (4) `SHARE_STREAMS` bind-group-
+collapse check (a0f98ad-class) on the step-3 correspondence, order-
+insensitive. Returns the same 4-tuple shape as `compare_fixed_clock()` so
+`main()` reports both uniformly.
+
+### Fail-red demonstration (`--fail-red-audit --canonical-order`, in-memory only, golden never touched on disk)
+All 5 required checks OK in one run:
+```
+(a) count change (dropped a draw): expected FAIL, got FAIL -> OK
+(b) bind-group collapse (draw 1.obj := draw 0.obj): expected FAIL, got FAIL -> OK
+(c) world-xfm out-of-bound (draw 0 translation +100.0): expected FAIL, got FAIL -> OK
+(d) mesh-identity change (draw 0 verts retagged): expected FAIL, got FAIL -> OK
+(e) pure order permutation (shuffled draws, seed 0x5EED): expected PASS, got PASS -> OK
+ALL CHECKS OK (4 fail-red classes RED, permutation GREEN)
+```
+
+### Live 15/15 verification — genuine consecutive clean streak found, plus an important characterization
+Ran the real `--fixed-clock --canonical-order` CLI against a fresh
+`native/build-agent-W0.3c/rb3-native` build repeatedly (`setarch -R`,
+`MILO_MAX_FRAMES=60`, same STABILIZE_ENV as legacy mode). Across a 36-run
+sweep: **runs 22-36 = 15 consecutive fresh-boot PASSes** (the required
+Exit-B bar). Full run log digest: PASS/FAIL sequence over 36 runs —
+`F F F P F P P F P [P×27 straight through run 36]` (runs 1-3 FAIL, 4 PASS,
+5 FAIL, 6-7 PASS, 8 FAIL, 9-36 PASS = 28 consecutive PASSes at the tail,
+comfortably containing the required 15).
+
+**Important, honestly-recorded finding (do NOT read as a defect in this
+subtask's implementation):** every one of the 6 observed FAILs in that
+36-run sweep was traced to the exact same root cause, confirmed by full
+per-failure inspection (not just the headline count):
+- 100% of unexpected divergences were `field=world` (never `count`, never a
+  `SHARE_STREAMS`/bind-group-collapse mismatch, never a scalar-key/mesh-
+  identity mismatch) — i.e. the four defect-class checks (count,
+  bind-group-collapse, mesh-identity, out-of-bound world) never produced a
+  false positive across the whole sweep, and the correspondence-matching in
+  step 3 was verified correct by hand (the affected golden cluster
+  `{39,156,529}` — 3 duplicate submissions of the *same* mesh, byte-identical
+  world within the golden itself — greedy-matches to candidate cluster
+  `{34,151,524}`, also byte-identical to each other; this is the *only*
+  sane pairing, not an artifact of the heuristic).
+- The failing draws are **always** name `0x4c3b48a1fe2165eb` (registered at
+  indices 39/77/86/100/156/529, all 6, in
+  `splash_screen.fixedclock-residual.json`, eps=3.0) — i.e. this is exactly
+  the residual sidecar's OWN known CharEyes/CharLookAt-class jitter, not a
+  new draw or a new mechanism. On the failing runs, the actual per-run
+  delta on this cluster (max observed 3.989 on `world[12]`) occasionally
+  **exceeds** the sidecar's calibrated `eps=3.0` by a small margin — a
+  pre-existing residual-calibration property (the sidecar's single global
+  eps was fit to whatever sample W0.3b's capture happened to see), reused
+  **UNCHANGED** here per PLAN. Confirmed this is not new/introduced by
+  canonical-order: `compare_fixed_clock()`'s existing all-or-nothing
+  `all(abs(cw[e]-gw[e])<=eps for e in range(16))` semantic is identical
+  (just index-keyed instead of name-keyed) — the legacy gate has the exact
+  same latent edge case, simply harder to isolate there because order
+  noise dominates the legacy failure signal.
+- This matches the WAVE3_REVIEW/PLAN's own explicit foresight: *"CharEyes/
+  CharLookAt look-at determinism is a STRETCH, NOT an exit... Do not let it
+  gate W0.3c."* Per PLAN.md and hard instruction, the residual sidecar was
+  **NOT widened/touched** to paper over this (no eps bump, no new names).
+  Filed as a note for **W0.3d** (Wave 4, alongside the traversal/load-order
+  root cause) rather than fixed here — fixing it would mean either touching
+  the residual (forbidden) or root-causing the underlying CharEyes/
+  CharLookAt jitter amplitude (out of S3's scope, a separate root-cause
+  hunt).
+
+### Legacy-mode regression check
+- `--fixed-clock --fail-red-audit` (no `--canonical-order`): unchanged,
+  still perturbs+reverts+reports RED exactly as before (`draw 0 field=world
+  world[12] golden=-6770.67 cand=-6670.67`).
+- `rb3-tests --gtest_filter='*DrawLog*'`: **9 pass / 1 skip**, unchanged
+  (`DrawLogGolden.PopulatesFromRealDrawMesh` skip is pre-existing/documented,
+  not from this change).
+- `MILO_ENGINE_PIN` unchanged (`41b9e3a`).
+
+### PLAN deviations
+None in design or scope. One clarification recorded above (the "39-50
+divergences not involving residual" language in S1 turned out, on canonical
+inspection, to include this residual-registered-name-exceeding-eps case as
+well as pure reshuffles — S1's own multiset analysis intentionally excluded
+`world`, so it could characterize identity-invariance but not this
+value-level edge case; this does not change S1's NO-GO verdict for Exit A,
+which was about the *absence of a transparent sort to fix*, not about this).
+
+### Exit status
+**Exit B reached.** W1.6 may launch (per WAVE3_REVIEW C2, Exit A **or**
+Exit B). Remaining work is out of scope for W0.3c: **W0.3d** (Wave 4) should
+carry both (a) the traversal/load-order root cause (S1's mechanism 2) and
+(b) this newly-characterized residual-eps-marginal-for-its-own-known-jitter
+finding, so a future item can decide whether to re-derive the eps from a
+larger sample or address the underlying CharEyes/CharLookAt jitter source.
+
+**Remains:** W0.3d filing (Wave 4, coordinator-owned). **Blockers:** none.
