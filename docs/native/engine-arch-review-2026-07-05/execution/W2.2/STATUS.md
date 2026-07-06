@@ -213,3 +213,80 @@ the `handcloseup_walkon.png` finding should be read alongside S1a's CHARACTERIZA
 head/hand MARGINAL-GRAZE numbers when S2 scopes its targeted fix.
 
 Commits: `8992549c` (rb3) — `git log --grep='W2.2.S1c'`.
+
+## W2.2.S2 — done (net-new fix behind default-OFF RB3_HANDS_BIND_FIX)
+Implementer: Opus. Build dir `native/build-agent-W2.2` (Clang). Commit `32746985`.
+Mode selected by S1a verdict = **BRANCH-RESIDUAL** (HARD-SHARD) → S2 IS triggered (not the
+no-op documentation branch).
+
+**Change (one file, CHANGE commit, separate from S1's additive commits):**
+- `src/system/bandobj/BandCharacter.cpp` — in `RebindHeadHandsAtRest`, the FIRST-distinct-resolve
+  branch. Root cause of the residual = the **count-in/walkon clip-free capture gap**: a bone whose
+  first distinct resolve lands mid-clip (the count-in/walk-on window always plays a clip, so a
+  per-member skeleton that streams in there first-resolves poisoned) hits the `clipPlaying` miss →
+  the whole mesh stays pending → the V24 ratio guard drops it (S1a measured: `saddleshoe_skin.2`
+  4.73x DROP + `head.mesh` 69.5u / hand 2.3x grazes, all count-in-window). But
+  `NativeCaptureRestPoseAfterDeform` (poison-guarded to the clip-free deform rest) has usually
+  ALREADY seeded that bone's own==bound magnet rest into `mNativeRestPose`, and a NON-distinct
+  entry there is **clip-free by construction** (the load seed + the RB3_BOUND_REBAKE Poll capture
+  are the only writers, both clip-free). When the NEW default-OFF `RB3_HANDS_BIND_FIX`
+  (class:feature) is set, that seed is reused as the rest basis (`rest = rp->second`) and promoted
+  to distinct instead of poisoning on the mid-clip pose. Magnet and per-member bone hold the SAME
+  weighted gender-bind rest at load; char-space divides out placement ⇒ the seed is a valid
+  clip-free basis for the now-distinct bone.
+
+**Staging (binding, brief B1) — satisfied:**
+- **DEFAULT-OFF.** Flag-off path is **byte-identical** (only a `static int`+`getenv` added; when
+  0 the new `if` is skipped and control falls to the identical `miss++`/`clipPlaying` code).
+- Existing head-rebind (`RB3_NO_HEAD_REBIND`) + torso-only (`RB3_NO_SKEL_REBIND` /
+  `RB3_SKEL_REBIND_FULL`) BOTH retained as opt-backs — nothing removed or superseded this wave.
+- Engine repo **untouched** (READ-ONLY): uses only the existing `mNativeBonesRebound` +
+  `RB3_GUARD_EXEMPT_REBOUND` seams. No `DrawMesh` / `App.cpp` edits.
+- MOVE-xor-CHANGE: this is a CHANGE commit; the S1 test/script/doc commits are additive-only.
+
+**Gate evidence:**
+- Build: `rb3-native` + `rb3-tests` compile clean (Clang, `native/build-agent-W2.2`).
+- **Fail-red (reuses the S1b oracle, per brief):** `ctest -R HandsBindOracle` → GREEN unperturbed
+  (3 pass / 1 skip=RealPathFixture); `HANDS_BIND_ORACLE_PERTURB=0.15 ctest -R HandsBindOracle` →
+  RED (`ComposeIdentityAtBindPose` + `SkinnedVertsMatchAuthored` fail). The oracle gates the exact
+  `offset'=meshWorld·inv(rest)` compose this fix feeds (`:1388-1390`), so a wrong reused basis
+  fail-reds — the SYS-7 hole is closed for this path too.
+- **No suite regression from the edit:** all non-GPU rb3-tests pass. The 10 ctest "failures" are
+  Dawn/GPU **at-exit teardown SEGFAULTs** in the render tests (TexSharpen*/WgslValidation*/
+  DrawLogGolden) whose own assertions all PASS (`[ PASSED ] 1 test`, shaders all OK) — environmental,
+  do not include/exercise BandCharacter or skinning, present independent of this change.
+- **Flag-ON boot smoke (non-rigorous, S3 owns the real A/B):**
+  `RB3_HANDS_BIND_FIX=1 hands_bind_characterize.py --single default --dwell 8` boots clean through
+  splash→hub→song_select→part_difficulty→game_screen (frame 1458, songMs 0 = count-in window),
+  no crash/abort/segfault, verdict stayed **MARGINAL-GRAZE** (no 200-460u tripwire, not worse than
+  default). NOT a controlled measurement (8s dwell, quickplay randomizes lineup) — the S3 gate must
+  run the full A/B (SKINPOS ≤65u incl. hands, FLING=0, ratio ≤2×/no-tripwire, crowd SKIN_CLAMP
+  byte-identical vs `parsed-default.json`) to decide whether the flag actually clears
+  `saddleshoe_skin.2` and the head/hand grazes without regressing.
+- **Census:** `native_compat_census.py check` → exit 0 (230 flags, regen clean). BandCharacter.cpp
+  is under `rb3/src`, NOT a scan root, so the new getenv does not trip the census (as PLAN R4
+  predicted).
+
+**FOR THE COORDINATOR — classification.json entry to append at pin-bump (engine READ-ONLY for
+W2.2, so I do not edit it). Append to
+`milo-native-engine/src/platform/NativeCompatFlags.classification.json`:**
+```json
+"RB3_HANDS_BIND_FIX": {
+  "class": "feature",
+  "owner": "skinning/bandobj",
+  "faithfulStatus": "not-live: net-new default-OFF hands/fingers bind fix (W2.2.S2) — reuses the clip-free load-time rest seed for a bone whose first distinct resolve lands mid-clip (count-in/walkon), closing the V24 guard-drop gap; flip deferred to S4/coordinator",
+  "default": "off",
+  "read": "presence"
+}
+```
+(rb3/src is not a census root, so census `check` stays exit 0 with or without this entry; the entry
+is registry hygiene per PLAN R4, a coordinator/pin-bump data edit.)
+
+**PLAN deviation:** none material. PLAN listed `BandCharacter.h` as a conditional file — not needed
+(the fix is a static-local getenv in the .cpp, no new member/decl). `.cpp`-only.
+
+**Remains / handoff to S3:** run the full flag-ON-vs-default A/B via `hands_bind_characterize.py`
+(the flag reads straight from inherited env — `RB3_HANDS_BIND_FIX=1 python3
+scripts/native/hands_bind_characterize.py …`) and record the five S3 gates in `char/S3_MEASURE.md`,
+including the negative-control diff vs `parsed-default.json`. S4 default-flip stays deferred to
+coordinator + reviewer-judged frames (no flip in-wave). No blockers.
