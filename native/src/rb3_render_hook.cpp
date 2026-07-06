@@ -28,6 +28,11 @@
 
 #include "platform/GameRenderHook.h"
 
+#include <cstdlib>
+#include <cstring>
+
+#include "rndobj/Mesh.h"  // RndMesh::Name() for the relocated per-draw name matches
+
 namespace {
 
 class BandRenderHook : public GameRenderHook {
@@ -52,9 +57,28 @@ public:
     // actual name matches + `RB3_*` env-flag reads INTO these methods, one
     // behavior per commit; until then the seam exists but is inert.
     // ------------------------------------------------------------------------
-    DrawGeomPolicy QueryDrawGeomPolicy(RndMesh* /*mesh*/,
+    // Per-draw geometric / draw-guard policy (W1.7 B1–B5). Each branch here was
+    // an inline RB3 asset-name match in the engine renderer's DrawMesh; relocated
+    // so the shared engine no longer names RB3 content. The engine keeps the
+    // matrix/palette math and applies these DECISIONS; each RB3_* opt-out flag is
+    // read (and statically cached once) HERE, preserving the prior semantics.
+    DrawGeomPolicy QueryDrawGeomPolicy(RndMesh* mesh,
                                        float* /*outWorld16*/) override {
-        return DrawGeomPolicy();
+        DrawGeomPolicy p;
+        const char* nm = mesh ? mesh->Name() : nullptr;
+        if (!nm)
+            return p;
+        // B1: hub focused-menu highlight-bar placement fix (skinned UI bar whose
+        // label translation must be injected). Opt-out RB3_NO_HUB_BAR_PLACEMENT_FIX.
+        // The engine ANDs this with `skinned`, matching the prior inline guard.
+        if (std::strncmp(nm, "highlight_main", 14) == 0 ||
+            std::strncmp(nm, "highlight_pattern", 17) == 0) {
+            static int hubBarOff = -1;
+            if (hubBarOff < 0)
+                hubBarOff = std::getenv("RB3_NO_HUB_BAR_PLACEMENT_FIX") ? 1 : 0;
+            p.hubBarPlacement = !hubBarOff;
+        }
+        return p;
     }
 
     DrawMaterialPolicy QueryDrawMaterialPolicy(RndMesh* /*mesh*/,
