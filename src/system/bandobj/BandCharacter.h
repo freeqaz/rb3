@@ -170,6 +170,27 @@ public:
     // scoped to hand/finger/glove skin meshes; each rebound mesh sets
     // RndMesh::mNativeBonesRebound. No-op on Wii (HX_NATIVE only).
     void NativeRepinHandsRigid();
+    // W2.8c (native-only): per-frame pose-aware appendage (hands/fingers) basis
+    // correction — the ONE remaining fix class after the two static approaches
+    // (RB3_HANDS_BIND_FIX seed, RB3_HANDS_POSEAWARE rigid wrist-collapse) were
+    // empirically killed. Keeps every hand/finger bone bound to its OWN live
+    // per-member bone (preserving articulation — the anti-rigid-collapse property),
+    // and each Poll rewrites that bone's palette offset so the live bone's rotation is
+    // applied ABOUT the authored (magnet) rest frame, cancelling the growing R*sin(theta)
+    // basis twist per bone instead of collapsing the hand to one rigid body. Per bone:
+    //   offset_b(t) = inv(A_b) * inv(L_b(t0)) * L_b(t) * A_b * inv(L_b(t))
+    // where A_b = authored magnet bone world (= inv of the pristine authored invBind),
+    // L_b(t0) = live bone world snapshotted at latch, L_b(t) = current live bone world.
+    // A_b and L_b(t0) are captured ONCE per claimed mesh at latch; only L_b(t) is
+    // re-sampled each Poll, so the hand animates without re-baking its bind (no unlatched
+    // drift). Unlike the sibling rebinds this pass is NOT one-shot — the offset is
+    // recomputed every Poll from fixed anchors. Mutually exclusive with
+    // NativeRepinHandsRigid (only one runs, gated by RB3_HANDS_PERFRAME_CONJ) and with
+    // RebindHeadHandsAtRest (which skips hand/finger/glove meshes when this flag is ON so
+    // the offset it would read stays pristine). DEFAULT-OFF, opt-in
+    // RB3_HANDS_PERFRAME_CONJ=1 (flag-OFF = getenv-cached early return, byte-identical).
+    // No-op on Wii (HX_NATIVE only).
+    void NativeConjHandsPerFrame();
     // render-polish 2026-06-11 (char-render): shared skinned-mesh collector used by
     // both Poll-time rebinds and the SyncObjects rest-pose seeding — hashtable
     // objects + each dir's mDraws + every LOD Group/TransGroup, recursing
@@ -358,6 +379,25 @@ public:
     // byte-identical. Default 0.
     int mNativeHandsRigidOnce;
     int mNativeHandsRigidQuiet;
+    // W2.8c (native-only): per-frame conjugation state (NativeConjHandsPerFrame,
+    // RB3_HANDS_PERFRAME_CONJ). One entry per CLAIMED hand/finger/glove owner mesh,
+    // captured once at latch. Per bone slot: `ownBone` = the live per-member bone (bound
+    // via SetBone at claim), `A` = A_b (authored magnet bone world), `pre` = the constant
+    // product offA*inv(L_b(t0)) with offA = the pristine authored invBind, so the
+    // per-frame offset is pre*L_b(t)*A*inv(L_b(t)). `valid` marks participating slots
+    // (empty/unresolved slots left identity). Keyed by the palette-source (GeomOwner)
+    // mesh. Cleared + latch reset at SyncObjects (mesh set re-stuffed -> pointers stale).
+    // Appended after the matched layout so the Wii image stays byte-identical. Default
+    // empty/0.
+    struct NativeHandsConjEntry {
+        std::vector<RndTransformable *> ownBone;
+        std::vector<Transform> A;
+        std::vector<Transform> pre;
+        std::vector<unsigned char> valid;
+    };
+    std::map<RndMesh *, NativeHandsConjEntry> mNativeHandsConj;
+    int mNativeHandsConjOnce;
+    int mNativeHandsConjQuiet;
     // frame-stall 2026-06-20 (TRACK A): per-member skinned-mesh collection cache.
     // NativeCollectSkinnedMeshes used to re-walk the member's ObjectDir hashtable
     // (ObjDirItr RTTI dynamic_cast per entry) + the whole draw tree

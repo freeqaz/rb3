@@ -32,3 +32,69 @@ RebindOutfitBonesToOwnSkeleton :572); NativeRepinHandsRigid owner/ownersDone :17
 RB3_HANDS_POSEAWARE classification row engine json:207.
 
 Handoff: W2.8c.S2 (impl, Opus) → W2.8c.S3 (verify, Opus, B.S4 protocol).
+
+## B.S2 — done (impl, Opus) — code landed default-OFF; flag-ON smoke = MEASURED NEGATIVE (STOP condition hit)
+
+**Implementation landed exactly per PLAN §1–§3** (rb3 `BandCharacter.{cpp,h}`, engine
+classification append-only). Builds green (clang, `native/build-agent-W2.8c`).
+
+- New `BandCharacter::NativeConjHandsPerFrame()` — UNLATCHED per-Poll pass at the `:581` seam,
+  selected INSTEAD of `NativeRepinHandsRigid()` when `RB3_HANDS_PERFRAME_CONJ` is set (mutually
+  exclusive, A5). Phase A (pre-latch) claims hand/finger/glove owner meshes, capturing per bone
+  `A_b = inv(pristine authored invBind)` and `L_b(t0)` once; binds each bone to its OWN live
+  per-member bone (SetBone, per-bone — NOT wrist-collapsed). Phase B (every Poll) recomputes
+  `offset_b(t) = pre·L_b(t)·A_b·inv(L_b(t))` (pre = offA·inv(L0)) and writes the owner palette.
+- **Hazard 2a (owner palette):** operate on `drawn->GeomOwner()`, `ownersDone` dedupe, propagate
+  `mNativeBonesRebound` to shared draws; pristine `A_b` via mutual exclusion — `RebindHeadHandsAtRest`
+  now skips hand/finger/glove meshes when the flag is ON (mitigation i). Confirmed at runtime: CLAIM
+  probe shows `owner==mesh` for all claimed meshes (no owner/name mismatch), offsets pristine.
+- **Hazard 2b (draw-time world recompute):** `NativeForceBoneChain` forces each live bone's
+  TransParent chain root→leaf (`WorldXfm_Force`, deduped) before sampling `L_b(t)` and `L_b(t0)`.
+- **Flag `RB3_HANDS_PERFRAME_CONJ`** default-OFF getenv-cached; `HANDS_CONJ_PROBE` print-only. Both
+  registered append-only in engine `NativeCompatFlags.classification.json` (no gen.inc regen).
+- Re-arm + map clear at SyncObjects and StartLoad (stale mesh/bone pointers).
+
+**flag-OFF byte-identical — CONFIRMED:** drawlog golden `--fixed-clock --canonical-order` PASS
+**792** (bin build-agent-W2.8c); conjOFF arm emits **0** `HANDS_CONJ` probe lines; conjOFF
+IK_SHARD_VERT worst appendage = **106.0u** (baseline unchanged, matches documented ~106u on pin
+`a94762f`). Wii untouched (`#ifdef HX_NATIVE`).
+
+**flag-ON smoke (the S2 direction gate) — MOVED UP, NOT DOWN → STOP per kickoff directive.**
+`_w28c_smoke.py` (RB3_HANDS_POSEAWARE + RB3_PP_LUMA_CEILING unset in BOTH arms, A5/A7):
+
+| arm | worst appendage IK_SHARD_VERT wext |
+|---|---|
+| conjOFF (baseline) | **106.0u** (hands_naked, bone_L-index02) |
+| conjON | **2609.0u** (gloves_resource, bone_L-pinky03; hands_naked 2117u) |
+
+Per-bone binding VERIFIED correct (CLAIM: `perBoneSlots==bones`, 38/38, 40/40, 10/10 — articulation
+preserved, NOT wrist-collapsed). The internal skin-*translation* APPLY probe reads a healthy
+40–54u (hand origin tracks the wrist), but the engine far-vertex probe explodes → the composed
+offset's **rotation basis is wrong while its translation is correct**. Time signature: hands_naked
+wext is **~80u at t0** (≈ baseline, consistent with the proven `skin(t0)=I`) and **grows to
+500–2600u as the pose animates** — i.e. the conjugation **amplifies** the R·sin(θ) twist under
+motion instead of cancelling it.
+
+**Verdict:** the PLAN §1.5 falsifiable assumption (magnet frame `A_b` and live world frame `L`
+reconcilable by the constant `A_b·inv(L0)` bridge) is **REFUTED by measurement** at the S2 smoke —
+the game-side conjugation as specified does not cancel the twist; it worsens it monotonically with
+pose deviation from t0. This is the honest-negative outcome PLAN §6/§8 pre-authorized. Per the
+kickoff STOP directive ("if it moves up like the rigid-anchor did, STOP and report rather than tune
+blindly"), no formula variants were tried — that is S3/replan territory.
+
+**Landed anyway (correct):** the flag is default-OFF and byte-identical when off, so the code is a
+safe no-op that S3 uses as the instrument for the rigorous B.S4 A/B and the BL-A0 staged-engine-patch
+decision. **Do NOT flip** (coordinator-only; and the smoke says it must not be flipped).
+
+**Lead for S3 (not acted on):** early-frame wext (~80u) is marginally BELOW the 106u baseline, so
+the similarity is exact at t0 but has the WRONG SIGN of cancellation. Two hypotheses worth a
+controlled S3 test (each a principled variant, not blind tuning): (1) the conjugation should use the
+LIVE rest basis `L_b(t0)` as the bridge target rather than the magnet `A_b` (the shipped
+`RebindHeadHandsAtRest` deliberately bakes against a CHAR-SPACE, placement-divided rest —
+`NativeCharSpaceRestXfm`, `BandCharacter.cpp:901-915` — whereas §1.2 mixes magnet-space `A_b` with
+world-space `L`); (2) the inner/outer inversion (`A_b`↔`inv(A_b)`) or bridge composition order in the
+§1.2 formula is transposed. If neither game-side variant reaches <20u, the recorded negative escalates
+to the staged BL-A0 per-member-skeleton basis engine patch (Wave 9), per §6.
+
+Commits: rb3 `<pending>` (BandCharacter.{cpp,h} + this STATUS), engine `<pending>` (classification).
+Build dir: `native/build-agent-W2.8c` (clang). Smoke artifacts: `/tmp/w28c-smoke/`.

@@ -135,6 +135,8 @@ BandCharacter::BandCharacter()
     mNativeInstReboundQuiet = 0;
     mNativeHandsRigidOnce = 0;
     mNativeHandsRigidQuiet = 0;
+    mNativeHandsConjOnce = 0; // W2.8c per-frame conjugation
+    mNativeHandsConjQuiet = 0;
     mNativeSkinnedCacheValid = false; // frame-stall 2026-06-20 (TRACK A)
     mNativeWalkonSnapPending = false; // walk-on snap (SCOUT.md fix #1)
 #endif
@@ -578,7 +580,21 @@ void BandCharacter::Poll() {
             // sheets (the "missing hands" shard). Runs AFTER the head/hands rest-rebind
             // above so it OVERWRITES that mesh's sharding bind; latched per member.
             // Flag-OFF this is a getenv-cached early return (byte-identical).
-            NativeRepinHandsRigid();
+            //
+            // W2.8c: RB3_HANDS_PERFRAME_CONJ selects the per-frame pose-aware
+            // conjugation pass INSTEAD of the rigid-anchor collapse (mutually
+            // exclusive — only one touches the hand meshes). Both default-OFF; when
+            // both flags are unset this is exactly the pre-W2.8c NativeRepinHandsRigid
+            // early-return (byte-identical). See NativeConjHandsPerFrame.
+            {
+                static int sPerframeConj = -1;
+                if (sPerframeConj < 0)
+                    sPerframeConj = getenv("RB3_HANDS_PERFRAME_CONJ") ? 1 : 0;
+                if (sPerframeConj)
+                    NativeConjHandsPerFrame();
+                else
+                    NativeRepinHandsRigid();
+            }
 #endif
 
             // Poll child characters
@@ -1239,6 +1255,29 @@ void BandCharacter::RebindHeadHandsAtRest() {
          mi != targets.end(); ++mi) {
         RndMesh *mesh = *mi;
         if (mesh->mNativeBonesRebound) continue; // owned by torso rebind or already done
+        // W2.8c mutual exclusion (plan Section 2a-i): when the per-frame conjugation pass
+        // owns the hand/finger/glove meshes (RB3_HANDS_PERFRAME_CONJ), leave their
+        // offsets PRISTINE here so it can capture the authored invBind (A_b) unmutated.
+        // Flag-OFF (default) this is inert — no in-scope mesh is skipped, byte-identical.
+        {
+            static int sConjOwnsHands = -1;
+            if (sConjOwnsHands < 0)
+                sConjOwnsHands = getenv("RB3_HANDS_PERFRAME_CONJ") ? 1 : 0;
+            if (sConjOwnsHands) {
+                const char *hn = mesh->Name();
+                if (hn) {
+                    std::string ln(hn);
+                    for (size_t i = 0; i < ln.size(); i++) {
+                        char c = ln[i];
+                        if (c >= 'A' && c <= 'Z') ln[i] = (char)(c + 32);
+                    }
+                    if (ln.find("hand") != std::string::npos ||
+                        ln.find("finger") != std::string::npos ||
+                        ln.find("glove") != std::string::npos)
+                        continue; // property of NativeConjHandsPerFrame
+                }
+            }
+        }
         // render-polish 2026-06-11 (char-render): own==bound rest-rebake is
         // OPT-IN (RB3_BOUND_REBAKE=1), default OFF. EXPERIMENT OUTCOME (measured,
         // this wave): rebaking the never-rebound own==bound garments anchors their
@@ -1890,6 +1929,219 @@ void BandCharacter::NativeRepinHandsRigid() {
             Name() ? Name() : "?", meshes, reboundMeshes, pending,
             mNativeHandsRigidQuiet, mNativeHandsRigidOnce);
 }
+
+// W2.8c helper (plan Section 2b): force a bone's whole TransParent chain root->leaf so
+// the world we sample in Poll matches the palette's post-force world (the default-ON
+// RB3_NO_SKEL_WORLDFIX draw pass recomputes bone worlds AFTER Poll; a stale Poll-time
+// read would make the conjugation cancel against the wrong world and re-introduce a
+// residual). WorldXfm_Force recomputes mWorldXfm from mParent->WorldXfm() unconditionally,
+// so forcing root->leaf leaves every link finite-and-current. Dedupe via `forced` (as the
+// engine pass does with sForced) to keep cost bounded across the mesh's bones.
+static void NativeForceBoneChain(RndTransformable *bone,
+                                 std::set<RndTransformable *> &forced) {
+    if (!bone) return;
+    RndTransformable *chain[64];
+    int n = 0;
+    for (RndTransformable *p = bone; p && n < 64; p = p->TransParent()) chain[n++] = p;
+    // chain[0]=leaf .. chain[n-1]=root; force root->leaf
+    for (int i = n - 1; i >= 0; i--)
+        if (forced.insert(chain[i]).second) chain[i]->WorldXfm_Force();
+}
+
+// W2.8c — per-frame pose-aware appendage (hands/fingers) basis correction. See the
+// header comment for the full mechanism + the math derivation. Unlike the sibling
+// rebinds this pass is UNLATCHED: it runs every Poll, re-sampling each claimed bone's
+// live world L_b(t) and rewriting its palette offset so the live motion is conjugated
+// into the authored magnet frame — cancelling the growing R*sin(theta) twist while each
+// finger still rides its OWN bone (articulation preserved). Anchors A_b and L_b(t0) are
+// captured ONCE per mesh at claim (mNativeHandsConj), so there is no per-frame drift.
+// DEFAULT-OFF (opt-in RB3_HANDS_PERFRAME_CONJ=1); flag-OFF is a getenv-cached early
+// return (byte-identical no-op). Mutually exclusive with NativeRepinHandsRigid.
+void BandCharacter::NativeConjHandsPerFrame() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) sEnabled = getenv("RB3_HANDS_PERFRAME_CONJ") ? 1 : 0;
+    if (!sEnabled) return; // flag-OFF: byte-identical no-op
+    bool probe = getenv("HANDS_CONJ_PROBE") != 0;
+
+    // ---- Phase A (pre-latch): claim newly-reachable hand/finger/glove meshes. ----
+    // Capture the pristine authored invBind (A_b) + live rest world (L_b(t0)) once,
+    // bind each bone to its OWN live per-member bone (SetBone, per bone — NOT collapsed
+    // to a wrist), then hand the mesh to the per-frame apply below. All-or-nothing per
+    // mesh (like RebindHeadHandsAtRest): if any in-scope slot can't resolve a finite
+    // live world, defer the whole mesh and retry next Poll.
+    int claimed = 0, pending = 0;
+    if (!mNativeHandsConjOnce) {
+        std::vector<RndMesh *> targets;
+        NativeCollectSkinnedMeshes(targets);
+        std::vector<RndMesh *> ownersDone; // dedupe GeomOwner-shared draws this pass
+        for (std::vector<RndMesh *>::iterator mi = targets.begin();
+             mi != targets.end(); ++mi) {
+            RndMesh *drawn = *mi;
+            const char *dn = drawn->Name();
+            if (!dn) continue;
+            // SCOPE: hand/finger/glove ONLY (same scope as NativeRepinHandsRigid;
+            // "finger" catches fingernails_*, "nail" is deliberately NOT matched so
+            // footwear is never touched). Head/hair/face are W2.7's problem.
+            std::string lname(dn);
+            for (size_t i = 0; i < lname.size(); i++) {
+                char c = lname[i];
+                if (c >= 'A' && c <= 'Z') lname[i] = (char)(c + 32);
+            }
+            bool inScope = lname.find("hand") != std::string::npos ||
+                           lname.find("finger") != std::string::npos ||
+                           lname.find("glove") != std::string::npos;
+            if (!inScope) continue;
+            // Hazard 2a: the draw reads owner->BoneOffsetAt(b); write the palette source.
+            RndMesh *owner = drawn->GeomOwner() ? drawn->GeomOwner() : drawn;
+            if (mNativeHandsConj.find(owner) != mNativeHandsConj.end()) {
+                drawn->mNativeBonesRebound = true; // shared draw of an already-claimed owner
+                continue;
+            }
+            if (std::find(ownersDone.begin(), ownersDone.end(), owner) !=
+                ownersDone.end()) {
+                drawn->mNativeBonesRebound = true;
+                continue;
+            }
+            ownersDone.push_back(owner);
+            int nb = owner->NumBones();
+            if (nb == 0) continue;
+            // Hazard 2b: force every referenced bone's chain BEFORE sampling worlds.
+            std::set<RndTransformable *> forced;
+            for (int b = 0; b < nb; b++) {
+                RndTransformable *bound = owner->BoneTransAt(b);
+                if (!bound || !bound->Name()) continue;
+                RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
+                if (own) NativeForceBoneChain(own, forced);
+            }
+            // Pass 1: resolve + validate every slot; anchors captured but NOT applied.
+            NativeHandsConjEntry e;
+            e.ownBone.assign((size_t)nb, (RndTransformable *)0);
+            e.A.resize((size_t)nb);
+            e.pre.resize((size_t)nb);
+            e.valid.assign((size_t)nb, 0);
+            bool ok = true;
+            int slots = 0;
+            for (int b = 0; b < nb; b++) {
+                RndTransformable *bound = owner->BoneTransAt(b);
+                if (!bound || !bound->Name()) continue; // empty slot: engine uses identity
+                slots++;
+                RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
+                if (!own) { ok = false; break; } // can't resolve live bone: defer mesh
+                Transform L0 = own->WorldXfm(); // forced above
+                if (!(std::fabs(L0.v.x) < 1e5f && std::fabs(L0.v.y) < 1e5f &&
+                      std::fabs(L0.v.z) < 1e5f)) {
+                    ok = false; break; // non-finite live rest world: defer
+                }
+                // offA = pristine authored invBind (RebindHeadHandsAtRest skipped this
+                // mesh under the flag, so BoneOffsetAt is unmutated). A_b = inv(offA).
+                Transform offA = owner->BoneOffsetAt(b);
+                Transform A;
+                Invert(offA, A);
+                Transform invL0;
+                Invert(L0, invL0);
+                Transform pre;
+                Multiply(offA, invL0, pre); // pre = offA * inv(L0)   (offA == inv(A_b))
+                e.ownBone[b] = own;
+                e.A[b] = A;
+                e.pre[b] = pre;
+                e.valid[b] = 1;
+            }
+            if (!ok || slots == 0) { pending++; continue; } // untouched; retry next Poll
+            // Pass 2 commit: bind each valid bone to its own live bone (per bone). The
+            // per-frame offset is written by Phase B below (this same Poll).
+            for (int b = 0; b < nb; b++) {
+                if (!e.valid[b]) continue;
+                if (owner->BoneTransAt(b) != e.ownBone[b])
+                    owner->SetBone(b, e.ownBone[b], false);
+            }
+            mNativeHandsConj[owner] = e;
+            owner->mNativeBonesRebound = true; // engine: skip rebake + fling-clamp
+            drawn->mNativeBonesRebound = true;
+            claimed++;
+            if (probe) {
+                int nvalid = 0;
+                for (int b = 0; b < nb; b++) nvalid += e.valid[b];
+                fprintf(stderr,
+                        "[HANDS_CONJ] CLAIM member='%s' mesh='%s' owner='%s' bones=%d "
+                        "perBoneSlots=%d (per-bone, NOT wrist-collapsed)\n",
+                        Name() ? Name() : "?", dn,
+                        owner->Name() ? owner->Name() : "?", nb, nvalid);
+            }
+        }
+        // Latch the CLAIM scan (not the per-frame apply): once nothing new is claimable
+        // for a quiet window, stop re-walking. Re-armed at SyncObjects.
+        if (claimed == 0) mNativeHandsConjQuiet++;
+        else mNativeHandsConjQuiet = 0;
+        if ((pending == 0 && mNativeHandsConjQuiet >= 30) ||
+            mNativeHandsConjQuiet >= 600)
+            mNativeHandsConjOnce = 1;
+    }
+
+    // ---- Phase B (EVERY Poll): re-apply the per-frame conjugated offset. ----
+    // For each claimed owner, re-sample L_b(t) (forced) and recompute
+    //   offset_b(t) = pre * L_b(t) * A * inv(L_b(t))   ( = inv(A_b)*inv(L0)*L(t)*A_b*inv(L(t)) )
+    // so skin_b = offset*L(t) = inv(A_b)*inv(L0)*L(t)*A_b : the live motion since t0
+    // rebased onto the authored joint axis (no R*sin(theta) twist), fingers articulating.
+    for (std::map<RndMesh *, NativeHandsConjEntry>::iterator it =
+             mNativeHandsConj.begin();
+         it != mNativeHandsConj.end(); ++it) {
+        RndMesh *owner = it->first;
+        NativeHandsConjEntry &e = it->second;
+        int nb = owner->NumBones();
+        if (nb > (int)e.valid.size()) nb = (int)e.valid.size();
+        std::set<RndTransformable *> forced;
+        for (int b = 0; b < nb; b++)
+            if (e.valid[b] && e.ownBone[b]) NativeForceBoneChain(e.ownBone[b], forced);
+        float worst = 0.0f;
+        const char *worstBone = "?";
+        for (int b = 0; b < nb; b++) {
+            if (!e.valid[b] || !e.ownBone[b]) continue;
+            Transform Lt = e.ownBone[b]->WorldXfm(); // forced above
+            if (!(std::fabs(Lt.v.x) < 1e5f && std::fabs(Lt.v.y) < 1e5f &&
+                  std::fabs(Lt.v.z) < 1e5f))
+                continue; // non-finite this frame: keep last good offset
+            Transform invLt;
+            Invert(Lt, invLt);
+            Transform tmp1, tmp2;
+            Multiply(e.pre[b], Lt, tmp1);   // pre * L(t)
+            Multiply(tmp1, e.A[b], tmp2);   // * A_b
+            Multiply(tmp2, invLt, owner->BoneOffsetAt(b)); // * inv(L(t)) -> offset_b(t)
+            if (probe) {
+                // wext-style read: composed skin translation vs the bone itself. For a
+                // correct conjugation this stays bounded by the appendage extent; the
+                // rigid-anchor dead end blew it to 200-460u.
+                Transform skin;
+                Multiply(owner->BoneOffsetAt(b), Lt, skin);
+                Vector3 d;
+                Subtract(skin.v, Lt.v, d);
+                float dd = Length(d);
+                if (dd > worst) {
+                    worst = dd;
+                    RndTransformable *bt = owner->BoneTransAt(b);
+                    worstBone = (bt && bt->Name()) ? bt->Name() : "?";
+                }
+            }
+        }
+        if (probe) {
+            static std::map<std::string, int> sSeen; // throttle per member/mesh
+            std::string key = std::string(Name() ? Name() : "?") + "/" +
+                              (owner->Name() ? owner->Name() : "?");
+            if (sSeen[key]++ % 120 == 0)
+                fprintf(stderr,
+                        "[HANDS_CONJ] APPLY member='%s' mesh='%s' worstBone='%s' "
+                        "skinToBone=%.2fu (rigid-anchor dead end was 200-460u)\n",
+                        Name() ? Name() : "?", owner->Name() ? owner->Name() : "?",
+                        worstBone, worst);
+        }
+    }
+
+    if (probe && (claimed > 0 || pending > 0))
+        fprintf(stderr,
+                "[HANDS_CONJ] member='%s' claimed=%d pending=%d tracked=%d quiet=%d "
+                "latched=%d\n",
+                Name() ? Name() : "?", claimed, pending, (int)mNativeHandsConj.size(),
+                mNativeHandsConjQuiet, mNativeHandsConjOnce);
+}
 #endif
 
 #pragma push
@@ -1943,6 +2195,13 @@ void BandCharacter::SyncObjects() {
     // re-skinned the hand meshes back onto the sharding per-member bind).
     mNativeHandsRigidOnce = 0;
     mNativeHandsRigidQuiet = 0;
+    // W2.8c: drop the per-frame conjugation state (its RndMesh*/RndTransformable*
+    // anchors become stale when the mesh set is re-stuffed) and re-arm the claim scan.
+    // SetDeformation() just posed the per-member skeleton at the weighted gender-bind
+    // REST pose, so the next claim captures L_b(t0) at true rest (the ideal anchor).
+    mNativeHandsConj.clear();
+    mNativeHandsConjOnce = 0;
+    mNativeHandsConjQuiet = 0;
 #endif
     RndMat *feetmat = Find<RndMat>("feet_socks_skin.mat", false);
     if (feetmat) {
@@ -2395,6 +2654,14 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     // W2.8 BL-A1: re-arm the rigid-anchor hands rebind on StartLoad too.
     mNativeHandsRigidOnce = 0;
     mNativeHandsRigidQuiet = 0;
+    // W2.8c: drop the per-frame conjugation anchors on StartLoad too — a reload can
+    // re-stuff/destroy the hand meshes, so the cached mesh/bone pointers must not
+    // outlive them. Re-armed; re-claim recaptures. (A mid-song StartLoad recaptures
+    // L_b(t0) at the then-current pose rather than true rest — a second-order residual
+    // per plan Section 1.5, not the dominant growing twist, which is still cancelled.)
+    mNativeHandsConj.clear();
+    mNativeHandsConjOnce = 0;
+    mNativeHandsConjQuiet = 0;
     // render-polish 2026-06-11 (char-render): do NOT blanket-clear the per-member
     // rest-pose snapshot here. StartLoad re-fires repeatedly through the gameplay
     // flow (venue clip/dircut loads, patch recompose, scripts — 5-6x per member,
