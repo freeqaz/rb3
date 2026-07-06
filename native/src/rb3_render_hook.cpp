@@ -32,6 +32,7 @@
 #include <cstring>
 
 #include "rndobj/Mesh.h"  // RndMesh::Name() for the relocated per-draw name matches
+#include "rndobj/Mat.h"   // RndMat::Name() for the relocated material/halo name matches
 
 namespace {
 
@@ -153,8 +154,28 @@ public:
         return DrawMaterialPolicy();
     }
 
-    HaloPolicy QueryHaloPolicy(RndMat* /*mat*/) override {
-        return HaloPolicy();
+    // B6: halo-source NAME exclusions (RB3HaloPass::IsHaloSourceMat). The engine
+    // keeps the emissive-map/multiplier DATA test; this answers ONLY the name-based
+    // exclusion + the RB3_SMASHER_HALO opt-in flag (statically cached once, prior
+    // semantics preserved):
+    //   - "surface" (full-quad track plane): blooming it washes the whole track ->
+    //     always excluded.
+    //   - "gem_smasher_glow" (now-bar plate): excluded UNLESS RB3_SMASHER_HALO=1
+    //     (opt back in for A/B); default-off avoids the giant-white-sphere blowout.
+    HaloPolicy QueryHaloPolicy(RndMat* mat) override {
+        HaloPolicy p;
+        if (!mat) return p;
+        const char* mn = mat->Name();
+        if (mn && std::strstr(mn, "surface")) { p.forceExclude = true; return p; }
+        if (mn && std::strstr(mn, "gem_smasher_glow")) {
+            static int sSmasherHalo = -1;
+            if (sSmasherHalo < 0) {
+                const char* e = std::getenv("RB3_SMASHER_HALO");
+                sSmasherHalo = (e && e[0] && e[0] != '0') ? 1 : 0;
+            }
+            if (!sSmasherHalo) p.forceExclude = true;
+        }
+        return p;
     }
 };
 
