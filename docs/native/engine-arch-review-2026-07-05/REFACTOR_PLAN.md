@@ -17,6 +17,17 @@ behavior-preserving extraction · **KEEP** = faithful/sound, do not touch.
 
 ---
 
+> **STATUS (coordinator, 2026-07-06 after Wave 5):** Draw order made deterministic (W0.3d-fix);
+> **the crowd/drum placement fix is ready-to-ship** (W2.1-flip staged as a one-line default toggle +
+> opt-out + drum oracle + Dolphin A/B). **Coordinator HELD the flip on visual sign-off** — the
+> flag-ON Dolphin captures show an asymmetric bloom blow-out (one frame washes white in flag-ON but
+> not flag-OFF), consistent with W2.1.S2's noted crowd-emissive→bloom failure mode; flipping waits on
+> characterizing/fixing it (→ W2.1-flip-blocker, Wave 6). Fog fill landed default-OFF but
+> asset-blocked from visual verification (no shipped venue authors fog → W3.1b). 91 game flags
+> classified (census clean, 321). Engine `8e7eddd`, pin bumped. **The bloom/exposure blow-out is now
+> the gating issue for the visible payoff of the placement fix AND squarely in the SYS-4 lighting
+> frontier — Wave 6 leads with it.** See `execution/README.md` Wave-5 table + FLIP DECISION.
+>
 > **STATUS (coordinator, 2026-07-06 after Wave 4):** **SYS-1 placement FIXED** — W2.1 landed the
 > skinned-placement contract (`obj.world = WorldXfm()` + bind-relative palette) behind
 > `RB3_PLACEMENT_CONTRACT`, a **vertex-invariant** reorg (0.0000 diff) proven by a crowd-spread

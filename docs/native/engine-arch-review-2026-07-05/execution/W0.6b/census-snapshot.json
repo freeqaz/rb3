@@ -1,0 +1,3941 @@
+{
+  "flags": [
+    {
+      "name": "BAND_ANIM_BONE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:507"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "BAND_ANIM_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:497"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "BONE_CLEAR_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Mesh.cpp:1156"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "BONE_LOAD_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Mesh.cpp:1000"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "BONE_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3047"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "BONE_PROBE_MINFRAME",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3045"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "BONE_PROBE_NAME",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3039"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "C8_EVERY",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3656"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "C8_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3653"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "CAMDIR_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandDirector.cpp:744"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "CAM_DBG",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2146",
+        "rb3/src/system/track/TrackDir.cpp:280"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine",
+        "game"
+      ]
+    },
+    {
+      "name": "CBM_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/char/CharBonesMeshes.cpp:176"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "CBM_DBG2",
+      "sites": 4,
+      "files": [
+        "rb3/src/system/char/CharBonesMeshes.cpp:117",
+        "rb3/src/system/char/CharBonesMeshes.cpp:119",
+        "rb3/src/system/char/CharBonesMeshes.cpp:146",
+        "rb3/src/system/char/CharBonesMeshes.cpp:147"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "CBS_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/char/CharBonesSamples.cpp:591"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "CHAIN_COMPOSE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3816"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "CHAIN_FORCE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3756"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "CHAIN_MTX",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3806"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "CHAIN_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3749"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "CHAIN_PROPTEST",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3770"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "CHARDRV_PROBE",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/char/CharDriver.cpp:346",
+        "rb3/src/system/char/CharDriver.cpp:424"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "CHAR_DBG",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:292",
+        "rb3/src/system/bandobj/BandDirector.cpp:713"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine",
+        "game"
+      ]
+    },
+    {
+      "name": "CHAR_PROBE_DUMP",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_http_handlers.cpp:562"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "CLOCK_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/track/TrackDir.cpp:302"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "CROWD_REBIND_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/world/Crowd.cpp:936"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "DC3_AUDIO_GAIN",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:282"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "DC3_DUMP_AUDIO",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:293"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "DC3_DUMP_SECONDS",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:295"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "DC3_HTTP",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/HttpServer.cpp:1179"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "DC3_HTTP_PORT",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/HttpServer.cpp:1183"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "DC3_NO_AUDIO",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:175"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "DISPLAY",
+      "sites": 5,
+      "files": [
+        "rb3/native/src/main_native.cpp:401",
+        "rb3/native/src/main_native.cpp:672",
+        "rb3/native/src/rb3_render_mesh.cpp:549",
+        "rb3/native/src/rb3_render_tri.cpp:55",
+        "rb3/native/src/rb3_viewer.cpp:532"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "GAME_DBG",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/bandobj/BandDirector.cpp:1265",
+        "rb3/src/system/bandobj/BandDirector.cpp:834"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "GEM_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/GemTrackDir.cpp:393"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "GEM_FORCE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:516"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "GEM_VTX",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2583"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "HEAD_REBIND_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1219"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "HOME",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_save_native.cpp:67"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "HUB_BAR_PROBE",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2262",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3341"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "IK_SHARD_VERT",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4042",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4043"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "IK_TGT_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/char/CharIKHand.cpp:45"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "INST_REBIND_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1551"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "K9_APPLY_DBG",
+      "sites": 4,
+      "files": [
+        "rb3/src/system/bandobj/TrackPanelDir.cpp:334",
+        "rb3/src/system/bandobj/TrackPanelDirBase.cpp:163",
+        "rb3/src/system/bandobj/TrackPanelDirBase.cpp:185",
+        "rb3/src/system/bandobj/TrackPanelDirBase.cpp:95"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "MENU_VOID_DBG2",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/rndobj/Draw.cpp:124",
+        "rb3/src/system/rndobj/Draw.cpp:68"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "MENU_VOID_SKIP",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Draw.cpp:69"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "MESH_BONE_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Mesh.cpp:1066"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "MESH_DUMP",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2447"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_AUDIO",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:173",
+        "milo-native-engine/src/audio/AudioDevice.cpp:174"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_AUDIO_BACKEND",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:211"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_ASPECT",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:57"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_DEBUG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:65"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_FAR",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:55"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_FORWARD",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:59"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_FOV_SCALE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:51"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_HEIGHT",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:61"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_LATERAL",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:63"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAM_NEAR",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/NativeSettings.h:53"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CAPTURE_FRAME",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:313",
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:803"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_CLEAR_COLOR",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:225"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_DEBUG_ARM_CHAIN_DIR",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/BoneSetup.cpp:37"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_DEBUG_ARM_CHAIN_FRAME",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/BoneSetup.cpp:26"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_DEBUG_PIPELINES",
+      "sites": 3,
+      "files": [
+        "milo-native-engine/src/gfx/PipelineManager.cpp:490",
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:660",
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:734"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_HEADLESS",
+      "sites": 9,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:175",
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:253",
+        "rb3/native/src/main_native.cpp:401",
+        "rb3/native/src/main_native.cpp:672",
+        "rb3/native/src/rb3_render_mesh.cpp:549",
+        "rb3/native/src/rb3_render_tri.cpp:55",
+        "rb3/native/src/rb3_viewer.cpp:532",
+        "rb3/native/src/rb3_viewer.cpp:533",
+        "rb3/src/system/ui/UI.cpp:519"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine",
+        "game",
+        "glue"
+      ]
+    },
+    {
+      "name": "MILO_HEIGHT",
+      "sites": 10,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:255",
+        "rb3/native/src/main_native.cpp:406",
+        "rb3/native/src/main_native.cpp:674",
+        "rb3/native/src/rb3_render_mesh.cpp:551",
+        "rb3/native/src/rb3_render_tri.cpp:60"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine",
+        "glue"
+      ]
+    },
+    {
+      "name": "MILO_INPUT_SCRIPT",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Joypad_Native.cpp:219"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_LOCALE_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/utl/Locale.cpp:296"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "MILO_NORENDER",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:250"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_NO_TRANSPARENT_DEFER",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/TransparentQueue.cpp:51"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_PERF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:273"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_RENDER",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:251"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_SCREENSHOT_DIR",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:323",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:165"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_SCREENSHOT_FRAMES",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:326",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:169"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_SCREENSHOT_NAMES",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:180"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_SETTOKEN_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/ui/UILabel.cpp:805"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "MILO_SIMPLE_RENDER",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/MaterialSetup.cpp:37"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_VIDEO",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:344"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_VIDEO_FPS",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:349"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "MILO_WIDTH",
+      "sites": 10,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu.cpp:254",
+        "rb3/native/src/main_native.cpp:405",
+        "rb3/native/src/main_native.cpp:673",
+        "rb3/native/src/rb3_render_mesh.cpp:550",
+        "rb3/native/src/rb3_render_tri.cpp:59"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine",
+        "glue"
+      ]
+    },
+    {
+      "name": "PART_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:1644"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "PART_INIT_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Part.cpp:670"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "PART_MOVE_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Part.cpp:1338"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "PART_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4819"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "POS_DUMP_VERBOSE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_http_handlers.cpp:652"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_APPLY_HANDLER_FIX_OFF",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/bandobj/TrackPanelDir.cpp:294",
+        "rb3/src/system/bandobj/TrackPanelDir.cpp:345"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_ASYNC_OPEN_OFF",
+      "sites": 2,
+      "files": [
+        "rb3/native/src/native_file.cpp:189",
+        "rb3/native/src/rb3_prefetch_native.cpp:50"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_AUDIO_LATENCY_MS",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:1115"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_AUDIO_LAT_MAX_MS",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:1128"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_AUDIO_LAT_MIN_MS",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:1127"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_AUDIO_UNDERRUN_LOG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_stream_receiver_native.cpp:163"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_BAND_SHARD_RATIOCAP",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4159"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BAND_SHARD_WORLDCAP",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4158"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BAND_SHARD_WORLDFLOOR",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4160"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BC_TEX_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:557"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BILLBOARD_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/MultiMesh.cpp:30"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_BLOOM_BLEND",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3PostProc.cpp:271"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BLOOM_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3PostProc.cpp:243"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BLOOM_SCALE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3PostProc.cpp:250"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BLOOM_THRESH",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3PostProc.cpp:248"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BONES_IDENTITY",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3198"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_BOOT",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:832"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_BOOT_BUNDLE_OFF",
+      "sites": 2,
+      "files": [
+        "rb3/native/src/main_web.cpp:774",
+        "rb3/native/src/main_web.cpp:782"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_BOOT_IO_STATS",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/native_file.cpp:249"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_BOOT_NO_RESIDENCY_SKIP",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/native_file.cpp:83"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_BOUND_REBAKE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1245"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_BUILD_SHA",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_session_trace.cpp:877"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_CAM_DIR",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_mesh.cpp:218"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_CAM_FALLBACK_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandDirector.cpp:386"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_CHAR_REAL_LIGHT_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1108"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_CLEAR_COLOR",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:681"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_COMPOSE_MULT_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3Quad.cpp:366"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_CROWD_BONE_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2972"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_CROWD_DIM",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:375"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_CROWD_DIM_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:335"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_CROWD_IMPOSTER_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_crowd_imposter_native.cpp:58"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_DATA",
+      "sites": 6,
+      "files": [
+        "rb3/native/src/main_native.cpp:518",
+        "rb3/native/src/main_native.cpp:706",
+        "rb3/native/src/native_file.cpp:1273",
+        "rb3/native/src/rb3_platform_native.cpp:141",
+        "rb3/native/src/rb3_render_mesh.cpp:523",
+        "rb3/native/src/rb3_viewer.cpp:520"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_DRAWLOG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4421"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_DRAWLOG_DUMP",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4459"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_DRAWORDER_TRACE",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2096",
+        "milo-native-engine/src/platform/TransparentQueue.cpp:81"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_DRAWRECT_DBG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3Quad.cpp:538"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_DTA_OVERLAY",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/native_file.cpp:1261"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_DUMP_STEMS",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/synth/StandardStream.cpp:68"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_FAKE_ASYNC_OPEN_MS",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/native_file.cpp:1151"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_FIXED_CLOCK",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_replay.cpp:529"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_FIXED_CLOCK_DT_MS",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_replay.cpp:552"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_FRAME_TRACE",
+      "sites": 2,
+      "files": [
+        "rb3/native/src/main_web.cpp:961",
+        "rb3/native/src/rb3_session_trace.cpp:834"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_FRET_GLOW_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:495"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_GAME",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:784"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAMEWARM_BUDGET_MS",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:301"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAMEWARM_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:91"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAMEWARM_HOLD",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:352"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAMEWARM_IDLE_FRAMES",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:332"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAMEWARM_MAXHOLD_MS",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:314"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAMEWARM_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:87"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAMEWARM_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:467"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GAME_INPUT",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:397"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GPU_SMOKE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:791"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GPU_SMOKE_PNG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:481"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_GUARD_EXEMPT_REBOUND",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3961"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_HAIR_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/char/CharHair.cpp:833"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_HANDS_BIND_FIX",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1385"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_HEADMAT_DBG",
+      "sites": 5,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:166",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2236",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2388",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2710",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4233"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_HEAP_TRIM_FRAMES",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_heap_maint_native.cpp:54"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_HEAP_TRIM_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_heap_maint_native.cpp:51"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_HIDE_MESH",
+      "sites": 2,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:1573",
+        "rb3/native/src/rb3_game_input.cpp:1578"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_HIGHWAY_BLOOM_BLEND",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3HaloPass.cpp:213"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_HIGHWAY_BLOOM_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3HaloPass.cpp:44"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_HIGHWAY_BLOOM_THRESH",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3HaloPass.cpp:211"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_HIGHWAY_WATERMARK_DIM",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:454"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_HIGHWAY_WATERMARK_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:449"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_HTTP",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_http_server.cpp:414"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_HTTP_PORT",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_http_server.cpp:418"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_INPUT_DEBUG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:1659"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_INPUT_VERB_TIMEOUT",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:365"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_INST_STRINGS_MODE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1548"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_INTRO_SECS",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_movie_native.cpp:188"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_ISOLATE_MESH",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2281"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_JOYPAD_SEQ",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_joypad_native.cpp:490"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_JOYPAD_TEST_BTN",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_joypad_native.cpp:466"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_LIGHT_PROBE",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:387",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1167"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_LIM_ATTACK_MS",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:286"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_LIM_BYPASS",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice.cpp:285"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_LIVE_LOAD",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:869"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_LOADER_BUDGET_MS",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/utl/Loader.cpp:589",
+        "rb3/src/system/utl/Loader.cpp:712"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_LOADER_MIN_YIELD_MS",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/synth/StandardStream.cpp:574",
+        "rb3/src/system/utl/Loader.cpp:251"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_LOADER_READAHEAD",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/utl/Loader.cpp:442"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_LOADER_YIELD_MS",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/utl/Loader.cpp:610"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_MENU_VOID_FIX_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Draw.cpp:70"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_MESH_FREE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Mesh.cpp:1449"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_MESH_VERBOSE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_mesh.cpp:114"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_METAMUSIC_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/synth/MetaMusic.cpp:415"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_METAMUSIC_SYNC",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/synth/MetaMusic.cpp:381"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_MOGG_CACHE_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/native_file.cpp:641"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_MOGG_CACHE_MB",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/native_file.cpp:227"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_MOGG_RANGE_OFF",
+      "sites": 2,
+      "files": [
+        "rb3/native/src/native_file.cpp:200",
+        "rb3/native/src/rb3_prefetch_native.cpp:51"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_MOGG_READAHEAD_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/native_file.cpp:213"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_MTRACE_WRAP",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/mtrace_wrap.h:42"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_MTRACE_WRAP_OUT",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/mtrace_wrap.h:54"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NOISE_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3PostProc.cpp:307"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_NOTIFY_ALL",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/os/Debug.cpp:66"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_AV_CALIBRATION",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_synth_native.cpp:66"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_CLIP",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/char/CharDriver.cpp:341"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_CROWD_INTRO",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/CrowdAudio.cpp:39"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_CROWD_REBIND",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/world/Crowd.cpp:932"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_DEFORM",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:2335"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_DEFORM_LOAD",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharDesc.cpp:112"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_FACE",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/char/CharFaceServo.cpp:60",
+        "rb3/src/system/char/CharHair.cpp:465"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_GUEST_PROFILE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_guestprofile_native.cpp:60"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_HEAD_REBIND",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1216",
+        "rb3/src/system/bandobj/BandCharacter.cpp:936"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_HEAD_SHAPER",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/bandobj/BandHeadShaper.cpp:136",
+        "rb3/src/system/bandobj/BandHeadShaper.cpp:156"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_HUB_BAR_PLACEMENT_FIX",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_hook.cpp:77"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_HUB_BAR_SHARD_EXEMPT",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_hook.cpp:89"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_HUB_HIGHLIGHT_FIX",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_hook.cpp:202"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_IK",
+      "sites": 10,
+      "files": [
+        "rb3/src/system/char/CharForeTwist.cpp:145",
+        "rb3/src/system/char/CharIKFingers.cpp:190",
+        "rb3/src/system/char/CharIKFoot.cpp:88",
+        "rb3/src/system/char/CharIKHand.cpp:27",
+        "rb3/src/system/char/CharIKHead.cpp:30",
+        "rb3/src/system/char/CharIKMidi.cpp:53",
+        "rb3/src/system/char/CharIKSliderMidi.cpp:56",
+        "rb3/src/system/char/CharLookAt.cpp:73",
+        "rb3/src/system/char/CharNeckTwist.cpp:13",
+        "rb3/src/system/char/CharUpperTwist.cpp:17"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_INST_REBIND",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1540"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_MESH_CACHE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2302"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_NO_POSEMESHES",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/char/CharBonesMeshes.cpp:103"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_PRECLEAR",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1615"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_NO_SETLIST_FIX",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:1496"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_SFX",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_platform_native.cpp:82"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_SKEL_REBAKE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_hook.cpp:117"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_NO_SKEL_REBIND",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1064"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_NO_SKEL_WORLDFIX",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3228"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_NO_SKIN_CLAMP",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3403"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_NO_STEM_ANCHOR",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:890"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_ONLY_SHOWING",
+      "sites": 2,
+      "files": [
+        "rb3/native/src/rb3_render_mesh.cpp:138",
+        "rb3/native/src/rb3_render_mesh.cpp:448"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_PANEL_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:1614"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_PART_HAZE_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4728"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PART_HAZE_SCALE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4730"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PART_MATCOLOR_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4716"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PART_NEARFADE_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4748"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PIPELINE_PREWARM_NOCHUNK",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2068"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PIPELINE_PREWARM_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2049"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PIPELINE_PREWARM_PER_FRAME",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2076"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PLACEMENT_CONTRACT",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2875"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PLACEMENT_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/world/Crowd.cpp:421"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_PP_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3PostProc.cpp:174"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_PP_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandPatchMesh.cpp:324"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_PREVIEW_PREFETCH_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_prefetch_native.cpp:35"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_PREWARM_DBG",
+      "sites": 3,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1472",
+        "rb3/src/system/ui/UIScreen.cpp:298",
+        "rb3/src/system/ui/UIScreen.cpp:392"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine",
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_PREWARM_NEXT",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/ui/UIScreen.cpp:275"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_PREWARM_SCREENS",
+      "sites": 4,
+      "files": [
+        "rb3/src/system/ui/UIPanel.cpp:161",
+        "rb3/src/system/ui/UIScreen.cpp:170",
+        "rb3/src/system/ui/UIScreen.cpp:234",
+        "rb3/src/system/ui/UIScreen.cpp:323"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_PROGRESSIVE_SHARPEN",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3TexSharpen.cpp:35"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_READAHEAD_DEBUG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/utl/Loader.cpp:540"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_RECOMPUTE_OFFSETS",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3074"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_REFRACTION_FIX_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Draw.cpp:101"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_RENDER_DBG",
+      "sites": 9,
+      "files": [
+        "milo-native-engine/src/platform/RB3HaloPass.cpp:217",
+        "milo-native-engine/src/platform/RB3HaloPass.cpp:321",
+        "milo-native-engine/src/platform/RB3PostProc.cpp:373",
+        "milo-native-engine/src/platform/RB3PostProc.cpp:84",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1166",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1690",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1886",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2139",
+        "rb3/native/src/rb3_crowd_imposter_native.cpp:81"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine",
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_RENDER_MESH",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:816"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_RENDER_MESH_PNG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_mesh.cpp:497"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_RENDER_TRI",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:810"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_RENDER_TRI_PNG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_tri.cpp:356"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_REPLAY",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_replay.cpp:407"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_REPLAY_API",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_replay_api.cpp:57"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_REPLAY_ARENA_BYTES",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_replay_api.cpp:79"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_REPLAY_CAPTURE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_replay_capture.cpp:73"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_REPLAY_FIXED_CLOCK",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_replay.cpp:500"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_RESYNC_YIELD_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/synth/StandardStream.cpp:568"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_REVIEW_LIGHTER_FIX_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/ReviewDisplay.cpp:84"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_RTT_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1854"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_SAVE_DIR",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_save_native.cpp:61"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SCREENMASK_DBG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3Quad.cpp:329"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_SCREENMASK_FALLBACK_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3Quad.cpp:327"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_SCREEN_BUNDLES_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_web.cpp:566"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SCREEN_BUNDLE_NEXT",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_web.cpp:580"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SCREEN_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:1594"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SCROLLBAR_FIX_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/ScrollbarDisplay.cpp:210"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SCROLLBAR_THUMB_FIX_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_hook.cpp:101"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SESSION_TRACE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_session_trace.cpp:833"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SETLIST_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_game_input.cpp:1501"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SFX_CACHE_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_xma_sidecar.h:480"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SFX_OGG_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_xma_sidecar.h:100"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SFX_PCM_DIR",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_xma_sidecar.h:110"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SHARPEN_CHUNK_KB",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_texsharpen_native.cpp:89"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SHARPEN_DBG",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/RB3TexSharpen.cpp:56",
+        "rb3/native/src/rb3_texsharpen_native.cpp:73"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine",
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SHARPEN_PER_FRAME",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3TexSharpen.cpp:46"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_SKEL_REBIND_CALCOFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1110"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SKEL_REBIND_FULL",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1084"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SKINFIX_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/OutfitConfig.cpp:600"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SKIN_FIX_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/OutfitConfig.cpp:566"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SKIN_NOCACHE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:851"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SKIN_RTT",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/bandobj/OutfitConfig.cpp:508",
+        "rb3/src/system/bandobj/OutfitConfig.cpp:572"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SKIN_TIMING",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:846"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_SKIP_SKINNED",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2275"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_SKIP_STATIC",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2276"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_SMASHER_HALO",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_hook.cpp:273"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_STATS_DBG",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/os/File.cpp:168",
+        "rb3/src/system/rndobj/Mesh.cpp:408"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_STREAM_AUDIO_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_stream_receiver_native.cpp:160"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_STREAM_BUF_SECS",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/synth/StandardStream.cpp:165"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_STREAM_PREPLAY_CAP_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/synth/StreamReceiver.cpp:79"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_STUB_QUIET",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_stub_census.cpp:57"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_SYNC_XHR_LEGACY",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/WebAssets.cpp:433"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_SYSCFG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:276"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_TEX_PREWARM_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:138"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_TEX_PREWARM_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_gamewarm_native.cpp:134"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_TIER2_DBG",
+      "sites": 5,
+      "files": [
+        "milo-native-engine/src/platform/RB3HaloPass.cpp:217",
+        "milo-native-engine/src/platform/RB3HaloPass.cpp:321",
+        "milo-native-engine/src/platform/RB3PostProc.cpp:84",
+        "milo-native-engine/src/platform/RB3PostProc.cpp:96",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1969"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_TRACE_CHK_EVERY",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_trace_taps.cpp:140"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "off",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_TRACK_LIGHT_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/RB3MaterialBinder.cpp:422"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_TV3_PLAY_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/world/Dir.cpp:151"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_UNPACK_CACHE_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:67"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_USE_SCENE_CAM",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_render_mesh.cpp:420"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_VENUE_FRUSTUM_CULL",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Draw.cpp:201"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_VENUE_LIGHT_OFF",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1059"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_VENUE_POINT_FALLOFF_LEGACY",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1156"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_VENUE_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1315"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_VENUE_SYNC",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandDirector.cpp:36"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_VIEWER",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:824"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_WALKON_SNAP_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:59"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "on",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_WEB_OFFMAIN_DBG",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:688",
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:968"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_WEB_OFFMAIN_FLOOR_MS",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:675"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RB3_WEB_OFFMAIN_MIX",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/audio/AudioDevice_Web.cpp:673",
+        "rb3/src/system/synth/StreamReceiver.cpp:46"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine",
+        "game"
+      ]
+    },
+    {
+      "name": "RB3_XMA_PREFETCH_OFF",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_xma_sidecar.h:161"
+      ],
+      "readModeGuess": "truthy",
+      "defaultGuess": "on",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "RB3_XMA_VALIDATE",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/main_native.cpp:798"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    },
+    {
+      "name": "REBIND_DRAW_FLING",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3437"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "REBIND_DRAW_SKINPOS",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3422"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "RELOAD_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:50"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "RENDER_DBG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:1689"
+      ],
+      "readModeGuess": "value",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SERVO_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/char/CharServoBone.cpp:45"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "SET_SKEL_REBIND",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1788"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "SHARD_BONE_DBG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3591"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SHARD_CATCH",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3476"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SHARD_DBG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4181"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SHARD_GUARD_OFF",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3946",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3947"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "on",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SHARD_RATIO_DBG",
+      "sites": 2,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3946",
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:4172"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SKEL_REBAKE_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3186"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SKEL_REBIND_PROBE",
+      "sites": 2,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1068",
+        "rb3/src/system/bandobj/BandCharacter.cpp:1789"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "SKEL_REBIND_SKINPOS",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandCharacter.cpp:1140"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "SKEW_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3563"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SKIN_CLAMP_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3461"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SKIN_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2330"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SLOT_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2752"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "SMASH_DBG",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3618"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "STRIDE_PROBE",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/rndobj/Mesh.cpp:678"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "UISCREEN_DBG",
+      "sites": 4,
+      "files": [
+        "rb3/src/system/ui/UI.cpp:537",
+        "rb3/src/system/ui/UIPanel.cpp:273",
+        "rb3/src/system/ui/UIScreen.cpp:116",
+        "rb3/src/system/ui/UIScreen.cpp:582"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "VENUE_CAM_LOCK",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandDirector.cpp:351"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "VENUE_DBG",
+      "sites": 5,
+      "files": [
+        "rb3/src/system/bandobj/BandDirector.cpp:654",
+        "rb3/src/system/bandobj/BandDirector.cpp:666",
+        "rb3/src/system/bandobj/BandDirector.cpp:690",
+        "rb3/src/system/bandobj/BandDirector.cpp:713",
+        "rb3/src/system/bandobj/BandDirector.cpp:744"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "VERT_PROBE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:2401"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "VOIDCUT_DBG",
+      "sites": 1,
+      "files": [
+        "rb3/src/system/bandobj/BandDirector.cpp:387"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "game"
+      ]
+    },
+    {
+      "name": "XBONE",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3524"
+      ],
+      "readModeGuess": "presence",
+      "defaultGuess": "unknown",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "XBONE_TRACK",
+      "sites": 1,
+      "files": [
+        "milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp:3506"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "off",
+      "roots": [
+        "engine"
+      ]
+    },
+    {
+      "name": "XDG_STATE_HOME",
+      "sites": 1,
+      "files": [
+        "rb3/native/src/rb3_save_native.cpp:64"
+      ],
+      "readModeGuess": "unknown",
+      "defaultGuess": "unknown",
+      "roots": [
+        "glue"
+      ]
+    }
+  ],
+  "summary": {
+    "totalFlags": 318,
+    "totalSites": 434,
+    "engineOnly": 130,
+    "glueOnly": 93,
+    "gameOnly": 86,
+    "sharedAcrossRoots": 9
+  }
+}

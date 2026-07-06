@@ -164,6 +164,56 @@ fixed** — as a vertex-invariant change proven correct by an oracle, sitting on
 from shipping. Combined with W2.2 (hands/fingers) and W1.6 (SYS-3), the three worst mesh bug families
 from the original review now have landed fixes behind flags.
 
+## Wave 5 results (2026-07-06, run `wt2tbkfja`, 20 agents)
+
+**W0.3d-fix + W0.6b complete; W2.1-flip ready-for-flip; W3.1a partial. Flip HELD by coordinator on
+visual sign-off (see below).** Engine `609efb7` → `a4bde9f` (pin bumped after lineup PASS +
+default-OFF confirmed + single classification regen). One W3.1a subtask died on API overload.
+
+| Item | Status | Highlights |
+|---|---|---|
+| W0.3d-fix determinism | ✅ **complete** | Deterministic material-name tie-break in `SortDraws` (rb3 `Utl.cpp`, `76f51077`), gated `RB3FixedClockActive() && !RB3DrawSortDeterministicOff()`, additions-only under HX_NATIVE (Wii byte-identical). **Fail-red proven under max-entropy (async+ASLR on): default = 12/12 identical submission order, opt-out = 12/12 distinct** (pre-fix pointer flake restored). Draw order is now deterministic — the re-golden prerequisite. Minor caveat: not 100% airtight under literal 32-core zero-idle contention. |
+| W2.1-flip readiness | ✅ **complete [ready-for-flip]** | Flip staged as a one-line `kPlacementContractDefaultOn 0→1` (`Rnd_Wgpu_RB3.cpp:2909`) with opt-out-first `RB3_PLACEMENT_CONTRACT_OFF` (`dbf2758`); drum oracle implemented (`kind=="drum"`, fail-red); UI A/B (main_hub + song_select); **Dolphin A/B package produced** (`W2.1-flip/dolphin-ab/`, A/A pairs). Default still OFF; oracle GREEN companion (crowd + drum). **→ coordinator sign-off gate (E1).** |
+| W3.1a fog fill | ⚠️ **partial** | Fog fill from `RndEnviron` into the existing `SceneUniforms` fog fields (engine `a4bde9f`, default-OFF `RB3_ENV_FOG`). **DC3 zero-blast confirmed** (`UniformStructs.h`+`standard_wgsl.inc` diff EMPTY, `static_assert 656` untouched), flag-OFF byte-identical, `milo-engine-tests` 198/0/2. **But Exit-#2 unverifiable — asset-blocked:** all 34 boot-reachable venue environs have `FogEnable()==false`, so fog can't be shown rendering. `projLight` (S2) not landed. → **W3.1b (Wave 6):** projLight + a fog-authoring venue (or synthetic env) to verify render. |
+| W0.6b flag classify | ✅ **complete** | **91 game-root flags classified** (probe/workaround/feature/perf, engine `1fd2bfc`), append-only, verified zero game-root Unknown rows remain. Coordinator ran the **single deferred regen** (census now clean at 321 flags). Coverage gap closed. |
+
+### ⚠️ COORDINATOR FLIP DECISION: HELD (2026-07-06)
+
+**I reviewed the Dolphin A/B package and did NOT flip `RB3_PLACEMENT_CONTRACT`.** The placement fix
+is *numerically* proven correct (crowd + drum oracle GREEN) and safe (flag-OFF byte-identical), but
+the **visual E1 gate did not cleanly pass**:
+
+- In both comparison montages (`layout_crowd_vs_dolphin.png`, `layout_drum_vs_retail.png`), the
+  flag-ON A/A pair is **inconsistent**: `cap_ON_1` blows out nearly **fully white** while `cap_ON_2`,
+  `cap_OFF_1`, `cap_OFF_2` all render normally (band members + venue visible). In this sample the
+  severe blow-out appears **only in flag-ON** (1/2), never in flag-OFF (0/2).
+- The package's **own reviewer checklist (item 3)** says an exposure wash appearing in only one flag
+  state is "a new finding, not expected" → do not sign off.
+- W2.1.S2's own STATUS notes the exact failure mode: *"clamped crowd bones fly to meshWorld·v …
+  whose emissive geometry feeds the bloom pass into a full-screen wash."* The asymmetric blow-out is
+  consistent with a **residual of that crowd-emissive→bloom interaction under flag-ON** — i.e. the
+  flip may not be exposure-neutral even though it is vertex-invariant (vertex positions don't change,
+  but *where* emissive crowd geometry draws does, which can feed the bloom pass differently).
+
+Holding the flip is the disciplined call — this campaign's safety rests on the visual gate catching
+what "looks fine" misses. **The flip is deferred until the flag-ON bloom blow-out is characterized
+and resolved (→ W2.1-flip-blocker, Wave 6).** The fix stays landed + proven behind the flag; nothing
+is lost.
+
+**Coordinator actions:** single classification regen (census clean, 321); build + lineup PASS +
+default-OFF oracle-RED confirmed against `a4bde9f`; pin bumped; flip HELD.
+
+### New backlog items filed from Wave 5
+
+- **W2.1-flip-blocker (Wave 6, gates the flip):** characterize the flag-ON bloom blow-out — capture
+  N≥8 samples per flag state to establish whether it is A/A-variable (pre-existing, flip-independent)
+  or flag-ON-specific (crowd-emissive→bloom, per W2.1.S2). If flag-ON-specific, fix the
+  emissive-feeds-bloom path (likely the same `IsHaloSourceMat`/bloom-capture path from the
+  A2/A3/A4 glow work). Then re-capture a clean Dolphin A/B → coordinator flip + re-golden (888→792).
+- **W3.1b (Wave 6):** land `projLight` from environ fakespots; add a fog-authoring venue (or synthetic
+  RndEnviron) to visually verify `RB3_ENV_FOG` renders. Then the 4→8 light-array change (the Wave-6
+  DC3-blast-radius lighting item) + W3.2 BoxMapLighting.
+
 ### New backlog items filed from Wave 4
 
 - **W2.1-flip (Wave 5):** prove the name-scoped placement hacks (`RB3_NO_HUB_BAR_PLACEMENT_FIX`,
