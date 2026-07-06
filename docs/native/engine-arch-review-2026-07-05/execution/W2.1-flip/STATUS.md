@@ -173,3 +173,53 @@ Re-runs read this + `git log --grep=W2.1-flip` and skip done work.
   S2 drum oracle, S3 UI gate, S4 Dolphin A/B) are now done** — item exit `ready-for-flip` reached.
   Coordinator reviews `dolphin-ab/README.md` + layouts, then flips `kPlacementContractDefaultOn`
   0->1 (S1's one line) and re-goldens the drawlog goldens per WAVE5_REVIEW A4.
+
+## VERIFY — ready-for-flip (all 4 deliverables GREEN, default STILL OFF)
+
+Adversarial re-derivation by the W2.1-flip verifier (own build dir
+`native/build-agent-W2.1-flip-verify`, clang, `rb3-native`+`rb3-tests` built clean).
+Every claim below was RE-RUN, not trusted from STATUS. Engine HEAD `dbf2758` (S1),
+rb3 HEAD carries S2/S3/S4 commits. Pin NOT bumped.
+
+**S1 flag mechanism — GREEN.** Committed source `Rnd_Wgpu_RB3.cpp:2880` has
+`kPlacementContractDefaultOn = 0` (effective default STILL OFF; grep-confirmed). Read shape
+(`:2882-2885`) is opt-out-first: `RB3_PLACEMENT_CONTRACT_OFF`→0 (wins) → legacy
+`RB3_PLACEMENT_CONTRACT`→1 → else `kDefault`. Downstream sites unchanged (all read
+`placementContractArm`). classification.json has the appended `RB3_PLACEMENT_CONTRACT_OFF` row
+(valid JSON, 1 occurrence).
+- **Flag-OFF byte-identity:** `drawlog-golden.py --canonical-order --fixed-clock` → **888 draws,
+  PASS 3/3** (would be 792 if flipped ON — proves default OFF); `lineup-gate.py` → **PASS** all
+  layers (img/segA/ratioB/countC/pin).
+- **Legacy opt-in preserved:** `RB3_PLACEMENT_CONTRACT=1 placement-gate-capture.py --gate both` →
+  crowd+drum **GREEN**, exit 0.
+- **Opt-out fail-red / precedence:** `RB3_PLACEMENT_CONTRACT=1 RB3_PLACEMENT_CONTRACT_OFF=1
+  --gate both --expect-red` → both oracles **RED**, exit 0 (`_OFF` beats opt-in). The final `else`
+  branch (which the flip changes 0→1) is never reached when `_OFF` is set, so the post-flip opt-out
+  fail-red is proven by this test + construction — no risky scratch-flip of the shared engine tree
+  needed. Coordinator's flip = one line (`kPlacementContractDefaultOn 0→1`).
+- **census exit 1 — NON-BLOCKING, documented no-regen deviation.** FAILs only on gen.inc/ledger
+  staleness (`RB3_PLACEMENT_CONTRACT_OFF` + prior-lane `RB3_DRAWSORT_DETERMINISTIC_OFF` not yet in
+  `gen.inc`). Both rows ARE in classification.json (source of truth). Coordinator regens once at
+  wave end (HARD RULE). Not a real regression.
+
+**S2 drum oracle — GREEN.** Drum oracle **RED** on committed default-OFF build (`--gate drum
+--expect-red` → exit 0; `posed=4 matched=0 skinnedDraws=231`, all skinned obj.world at origin),
+**GREEN** flag-ON. 6 synthetic drum tests pass + 1 live-skip. Probe in `BandConfiguration.cpp:57-83`
+is fully `#ifdef HX_NATIVE`-guarded (body+includes+W2.5 warn), reuses `RB3_PLACEMENT_PROBE`
+(default-OFF, stderr-only, behavior-neutral), Wii-compile-inert.
+
+**S3 UI regression gate — GREEN (independently re-run).** `w21flip-ui-ab.py --bin <my build>`:
+mainhub + songselect **byte-identical 0.00%** A/A and A/B, **OVERALL PASS** — not trusting the
+committed summary.json, re-captured on my own build. Contract arm excludes these meshes
+(`:2889-2890 !scrollbarThumb && !hubBarPlacement`) so flag-ON cannot touch UI-placement pixels.
+Negative controls: `HandsBindOracle` 3/3 pass (1 pre-existing skip), `lineup-gate` PASS both flag
+states.
+
+**S4 Dolphin package — present.** `dolphin-ab/` has cap_{OFF,ON}_{1,2}.png (A/A pairs per flag
+state) + engine logs, layout_crowd_vs_dolphin.png + layout_drum_vs_retail.png, oracle-gate-ON.log
+(crowd+drum GREEN companion), README.md (package-only, coordinator human-eyes sign-off = flip
+trigger). Ground truth gp_00.png + fandom_gameplay_drums.png staged in-package.
+
+**Exit `ready-for-flip` REACHED.** Default STILL OFF; no re-golden; flag-OFF path byte-identical.
+Coordinator flips `kPlacementContractDefaultOn 0→1` (one line) + re-goldens (888→792) after E1
+human-eyes sign-off. No source changes made by the verifier.
