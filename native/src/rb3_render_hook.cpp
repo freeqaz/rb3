@@ -237,6 +237,20 @@ public:
                 }
             }
         }
+        // B13: highway per-material shading class. Exact material-name match →
+        // shading bucket (mutually exclusive). The engine applies the shading math
+        // ONLY inside its own sTrackLight + game.cam gate (Bucket C stays inline in
+        // the engine), so this classification is content-only and cam-agnostic.
+        if (matName && matName[0]) {
+            if (std::strcmp(matName, "surface.mat") == 0)
+                p.highwayClass = kHighwaySurface;
+            else if (std::strcmp(matName, "rails.mat") == 0)
+                p.highwayClass = kHighwayRails;
+            else if (std::strcmp(matName, "gem_smasher_glow.mat") == 0)
+                p.highwayClass = kHighwaySmasher;
+            else if (std::strstr(matName, "peakstate"))
+                p.highwayClass = kHighwayPeakstate;
+        }
         return p;
     }
 
