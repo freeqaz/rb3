@@ -127,7 +127,12 @@ void MainHubPanel::Poll() {
     // is the SYS-5 family (360 asset backing the Wii build never showed). The
     // component's own `showing` flag is re-driven every Poll by its owning group,
     // so the hide is re-asserted here each frame rather than once in Enter().
-    static bool sHideHubMenuQuad = !!getenv("RB3_HUB_MENU_QUAD_HIDE");
+    // FLIPPED default-ON (Wave 7 coordinator sign-off: quad gone both boots,
+    // labels byte-unchanged in the ROI strip). Opt out via RB3_HUB_MENU_QUAD_OFF;
+    // the legacy opt-in name stays valid.
+    static bool sHideHubMenuQuad = getenv("RB3_HUB_MENU_QUAD_OFF")
+                                       ? false
+                                       : true;
     if (sHideHubMenuQuad) {
         RndDrawable *quad = mDir ? mDir->Find<RndDrawable>("playnow.lsw", false) : NULL;
         if (quad)

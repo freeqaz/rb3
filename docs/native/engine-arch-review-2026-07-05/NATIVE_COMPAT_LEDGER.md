@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 325  
-**By class:** feature=10, perf=9, probe=91, unknown=138, workaround=77  
+**Total flags:** 330  
+**By class:** feature=11, perf=9, probe=91, unknown=140, workaround=79  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 69
 
 | name | class | default | owner | faithful-status | sites |
@@ -46,6 +46,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `GEM_DBG` | probe | off | render/highway | n/a: dumps GemTrackDir::UpdateSurfaceTexture's mesh/mat/tex name state after the (unconditional) SetDiffuseTex call [GemTrackDir.cpp:393] | 1 |
 | `GEM_FORCE` | probe | unknown | render/highway | n/a: archaeological debug probe | 1 |
 | `GEM_VTX` | probe | unknown | render/highway | n/a: archaeological debug probe | 1 |
+| `HANDS_RIGID_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `HEAD_REBIND_PROBE` | probe | off | skinning | n/a: verbose companion to RebindHeadHandsAtRest (the default-ON RB3_NO_HEAD_REBIND-gated rest-capture rebind); read-only, does not alter the rebind [BandCharacter.cpp:1219] | 1 |
 | `HOME` | unknown | unknown | unclassified | n/a | 1 |
 | `HUB_BAR_PROBE` | probe | off | ui/hub | n/a: archaeological debug probe | 2 |
@@ -156,6 +157,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_GUARD_EXEMPT_REBOUND` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_HAIR_DBG` | probe | off | char/hair | n/a: reports per-strand collide-hookup counts (points hooked, CharCollides reachable) to quantify free-hanging strands passing through the skull/shoulders under motion [CharHair.cpp:833] | 1 |
 | `RB3_HANDS_BIND_FIX` | workaround | off | skinning | not-live: experimental hands/fingers rest-basis bind fix, default-OFF (W2.2 measured no benefit, NOT flipped; see char-skinning-deform memory) [BandCharacter.cpp:1385] | 1 |
+| `RB3_HANDS_POSEAWARE` | feature | off | skinning | not-live: W2.8 BL-A1 rigid-anchor hands/fingers fix — collapses the pose-varying multi-bone rotation-basis divergence that flings distal finger verts into sheets (the 'missing hands' shard) by repointing every hand/finger/glove bone per L/R side to that side's wrist bone (bone_L-hand/bone_R-hand) and rebaking offset=meshWorld*inv(wristWorld) so each hand rides its wrist as one rigid body (mirrors the proven RebindInstStringsToRestBasis rigid path). TRADEOFF: fingers no longer articulate (rigid hand) — trades shard for a static-but-coherent hand; the faithful finger-articulating fix is the CharBones pose-pipeline basis (engine, out of lane fence). flag-OFF byte-identical (getenv-cached early return in BandCharacter::NativeRepinHandsRigid) [BandCharacter.cpp] | 1 |
 | `RB3_HEADMAT_DBG` | unknown | off | unclassified | n/a | 5 |
 | `RB3_HEAP_TRIM_FRAMES` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_HEAP_TRIM_OFF` | workaround | on | load/perf | not-live: periodic heap trim default-ON | 1 |
@@ -232,6 +234,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PLACEMENT_CONTRACT` | feature | on | render/placement | live: SYS-1 skinned-placement contract (obj.world=meshWorld + bind-relative palette), default-ON as of Wave 6 flip (2026-07-06); opt out via RB3_PLACEMENT_CONTRACT_OFF | 1 |
 | `RB3_PLACEMENT_CONTRACT_OFF` | feature | off | render/placement | now the live opt-out: the SYS-1 placement contract is default-ON as of the Wave 6 flip; setting this disables it (takes precedence over the opt-in) | 1 |
 | `RB3_PLACEMENT_PROBE` | probe | off | render/placement | n/a: dumps each crowd instance's spXfm translation used by the W2.1 RB3_PLACEMENT_CONTRACT placement oracle; Wii-compile-inert, no behavior change [Crowd.cpp:421] | 2 |
+| `RB3_PP_LUMA_CEILING` | workaround | off | render/post | not-live: switches the postproc composite highlight-ceiling guard (rb3_postproc.wgsl.inc fs_postproc) from a per-channel Reinhard rolloff to a luminance-preserving one, so a hot saturated moment (the song-start stage-light reveal, songMs ~2000-6000) reads bright-but-colored instead of desaturating to grey; identity below the ceiling knee either way, default-OFF (W3.3-fix) | 1 |
 | `RB3_PP_OFF` | workaround | on | render/post | not-live: post-process stack default-ON | 1 |
 | `RB3_PP_PROBE` | probe | off | bandobj/patchmesh | n/a: dumps BandPatchMesh::WorkVerts::SetMeshVerts entry state (vert/face counts, max face index, OOB check) added while triaging the C8 head-invisible regression [BandPatchMesh.cpp:324] | 1 |
 | `RB3_PREVIEW_PREFETCH_OFF` | workaround | on | load/perf | not-live: song-preview prefetch default-ON | 1 |
@@ -294,6 +297,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_TRACE_CHK_EVERY` | unknown | off | unclassified | n/a | 1 |
 | `RB3_TRACK_LIGHT_OFF` | workaround | on | render/lighting | not-live: gameplay-highway synthetic re-lit stack default-ON (see project_a234_emissive_glow memory) | 1 |
 | `RB3_TV3_PLAY_OFF` | workaround | on | world/transition | not-live: vignette_transition (tv3) WorldDir force-play default-ON (bounds sequencer to authored sub-shot durations); =set escapes | 1 |
+| `RB3_UI_FLOOR_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_UI_TEXT_FLOOR_STRICT` | workaround | off | ui/text | live opt-out for the relaxed UI-text colour floor (RB3_UI_TEXT_FLOOR_RELAXED, default-ON as of Wave 7); setting this restores the legacy unconditional 0.6 floor | 1 |
 | `RB3_UNPACK_CACHE_OFF` | workaround | on | load/perf | not-live: asset-unpack cache default-ON (see project_incremental_load_perf memory) | 1 |
 | `RB3_USE_SCENE_CAM` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_VENUE_FRUSTUM_CULL` | perf | off | render/cull | n/a: opt-in world.cam venue frustum sphere cull (default-OFF); pure draw-skip optimization, confirmed Draw.cpp:201 | 1 |
