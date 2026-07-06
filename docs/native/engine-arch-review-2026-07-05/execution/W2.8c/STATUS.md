@@ -98,3 +98,70 @@ to the staged BL-A0 per-member-skeleton basis engine patch (Wave 9), per §6.
 
 Commits: rb3 `<pending>` (BandCharacter.{cpp,h} + this STATUS), engine `<pending>` (classification).
 Build dir: `native/build-agent-W2.8c` (clang). Smoke artifacts: `/tmp/w28c-smoke/`.
+
+## B.S3 — done (verify, Opus) — HARD EXIT: REFUTED · DO NOT FLIP
+
+Independent hard-exit verify on a **fresh from-scratch build** (`native/build-agent-W2.8c-verify`,
+clang, 875/875, `BUILD_EXIT=0`, pin `a94762f`), source committed clean at B.S2 `0bf2ba39` (no
+uncommitted edits to `BandCharacter.{cpp,h}`). New driver `scripts/native/_w28c_verify_ab.py`
+(mirrors `_w28_handsfix_ab.run_arm`; **both arms pop `RB3_HANDS_POSEAWARE` + `RB3_PP_LUMA_CEILING`**
+per A5/A7, contract default-ON). Confirms the B.S2 measured negative decisively.
+
+### IK_SHARD_VERT wext A/B (the A5 hard exit, same-binary / same-member)
+
+| metric (worst appendage) | conjOFF (baseline) | conjON | bar | verdict |
+|---|---|---|---|---|
+| `IK_SHARD_VERT` wext | **105.0u** (`hands_naked`, `bone_R-thumb03`) | **2852.0u** (`drivinggloves_skin`, `bone_R-thumb03`) | < 20u | **FAIL** — 27× WORSE than baseline, 140× over the bar |
+| appendage FLING (>120u) | 0 | **1** (`hands_naked`, 60 verts, max 311.9u) | 0 | **FAIL** |
+| worst in 200–460u STOP band | none | 311.9u fling **in band** (wext far beyond) | none | **FAIL** |
+| added appendage guard-DROPs | 0 | **+4** (`hands_naked`/`fingernails`/`drivinggloves`×2) | 0 | **FAIL** |
+| uniform glove not regressed | 60–78u | **2204–2852u** | ≤84u | **FAIL** |
+
+conjON `hands_naked` 2311u / `drivinggloves_resource` 2204u / `fingernails` 1203u — every hand mesh
+explodes into the thousands. A7 baseline **re-established on the current pin**: conjOFF 105u ≈
+documented ~106u.
+
+### Supporting gates
+
+- **flag-OFF byte-identical (layer 1):** drawlog golden `--fixed-clock --canonical-order` **PASS 792**
+  (fresh binary); **0** `HANDS_CONJ` probe lines in the conjOFF arm. Wii untouched (`#ifdef HX_NATIVE`).
+- **lineup gate:** flag-OFF **PASS** all layers (img/segA/ratioB/countC/pin, max_band 4.96);
+  flag-ON **FAIL ratioB** (`fingernails_resource` ratio 11.95 > cap 8.0, max_band 39.68) — the
+  non-blind numeric layer catches the shard even where segA/image stay green (the documented W2.8
+  blindness).
+- **crowd/scrollbar clamp:** byte-identical flag-OFF (flag-scoped; drawlog 792); untouched flag-ON
+  (conj scope = hand/finger/glove only).
+- **fail-red (layer 4):** the `IK_SHARD_VERT` metric is live — RED 105u on the baseline (fires on the
+  basis mismatch, not on animation). Intact.
+- **RealPathFixture gtest:** remains a **SKIP** (dual-skin population needs a Lane-A-owned engine
+  probe; **no engine code added** per fence — A5).
+
+### Saddleshoe (W2.6 bonus — measure, don't assume)
+
+**W2.6 does NOT close for free.** `saddleshoe_*` is OUT of the hand/finger/glove scope, so the conj
+pass never claims it (0 CLAIM/APPLY lines, absent from the conjON drop list). Expected negative per
+the PLAN bonus note — the shoe residual stays W2.6's own (different rest-capture path).
+
+### Root cause + verdict
+
+**PLAN §1.5 falsifiable assumption is REFUTED by measurement.** The game-side conjugation
+`offset_b(t) = inv(A_b)·inv(L_b(t0))·L_b(t)·A_b·inv(L_b(t))` mixes magnet-space `A_b` with
+world-space `L`: the composed offset's **translation is correct** (hand origin tracks the wrist) but
+its **rotation basis is wrong**, so it **amplifies** the growing R·sin(θ) twist under animation
+(~80u@t0 → thousands) instead of cancelling it. Three fix classes are now empirically dead with
+numbers: `RB3_HANDS_BIND_FIX` (seed), `RB3_HANDS_POSEAWARE` (rigid wrist-collapse), and this
+per-frame game-side conjugation. The independent 2852u vs the B.S2 smoke 2609u agree qualitatively;
+the ~250u spread + worst-mesh identity swap = documented async-loader completion-order
+nondeterminism, immaterial to the verdict.
+
+**Recommendation → DO NOT FLIP (coordinator-only).** Keep `RB3_HANDS_PERFRAME_CONJ` landed
+default-OFF as the S3 instrument (byte-identical no-op). The finger shard's remaining fix escalates
+to the **staged BL-A0 per-member-skeleton basis ENGINE patch (Wave 9)** per §6/§8 — the correct
+rotation basis is unreachable inside Lane B's game-side fence (it needs the per-member CharBones pose
+pipeline to carry the authored basis). The B.S2 leads (live-rest bridge; inner/outer inversion) are
+principled variants, but the kickoff STOP directive + §6 pre-authorize this honest-negative
+escalation over blind formula tuning.
+
+Artifacts: `/tmp/w28c-verify-ab/ab-result.json`, `raw-conj{OFF,ON}.log`;
+`/tmp/w28c-lineup-{off,on}/verdict.json`. Checkpoint `/tmp/wave8-checkpoints/B-S3.json`.
+Commit: rb3 `<pending>` (`_w28c_verify_ab.py` + this STATUS).
