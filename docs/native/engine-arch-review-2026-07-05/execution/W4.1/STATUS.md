@@ -153,3 +153,44 @@ built by C.S2-a.
 new flag needed).
 
 **Commit:** rb3 (docs-only, this stage's own files) — see commit list below.
+
+## C.S2-c — impl (Sonnet) — done (no-fix / backlog handoff) — 2026-07-06
+
+Implemented subitem (c) per PLAN.md exactly: the plan's verdict is **NOT A BUG** (mid-transition
+frame), so per this stage's own instructions the action is documentation, not a code change.
+
+**Re-verified the C.S1 diagnosis against current HEAD** (post subitem-(a) commit `b537d275`,
+freshly built `native/build-native/rb3-native`) by re-running the unchanged
+`W4.1/harness/partdiff-settle-recap.py` harness (`RB3_FIXED_CLOCK=1`, nav to
+`part_difficulty_screen` with **no** `part:`/`diff:` press, +0/+30/.../+360-frame settle
+sequence, `/tmp/wave6-partdiff-recap/`):
+
+- Widgets (song header, album art, "RIGHTY MODE / SONG DIFFICULTY" panel, "CHOOSE INSTRUMENT /
+  GUITAR / BASS" card) render correctly and stably across the **entire** 360-frame window. **No
+  black poster quads in any frame.**
+- Confirms `/tmp/wave6-current-state/partdiff_default.png` (frame 390) is a **mid-transition
+  frame** — its nav pressed `@380:part:guitar` only 10 frames earlier, landing inside the
+  part-confirm camera **zoom into the venue poster wall** ("Restaurant Bar & Grille" menu-board
+  backdrop). The black patches are that backdrop's own poster/menu-board meshes seen in close-up
+  during the zoom, not missing/broken UI widgets. Reproducible, not a one-off capture artifact.
+
+**Verdict confirmed: NOT a UI/widget bug.** No code changed this stage (`src/band3/`,
+`src/system/ui/`, `src/system/bandobj/` all untouched — the finding's root cause is venue backdrop
+rendering, which is out of the band3/UI fence). No flag registered (nothing to gate).
+
+**Documentation action (this stage's deliverable):** filed
+`W4.1/BACKLOG-partdiff-venue-poster.md` — the backlog handoff for the black poster/menu-board
+quads, cross-referencing the two Lane D venue-family characterizations landed this same wave
+(`W2.7` black head, `W3.3` grayscale venue) as plausible-but-unproven shared-mechanism candidates,
+with a concrete Wave-7 repro + flag-isolation recipe and an explicit file-fence note (fix territory
+is engine render files / `rb3_render_hook.cpp`, out of Lane C's scope).
+
+**A/A on the other two screens:** trivially satisfied — no source changed in this stage, so
+main_hub (subitem a) and song_select (subitem b) cannot have regressed. `git status` clean for all
+in-fence source paths at both start and end of this stage.
+
+**Fence adherence:** touched only `docs/native/engine-arch-review-2026-07-05/execution/W4.1/`
+(this STATUS.md + new `BACKLOG-partdiff-venue-poster.md`). No `src/band3/`, `src/system/`,
+`rb3_render_hook.cpp`, or engine files. No classification.json changes.
+
+**Commit:** rb3 (docs-only, this stage's own files) — see commit list below.
