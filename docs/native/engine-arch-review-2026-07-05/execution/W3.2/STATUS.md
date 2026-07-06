@@ -123,3 +123,45 @@ the DC3 owner.** (If Wave-7 decision (b) wins, the struct never grows and DC3 bl
 - `docs/native/engine-arch-review-2026-07-05/execution/W3.2/captures/` (4 PNGs + montage + `scores.json`)
 - `RB3_BOX_AMBIENT` row in mainline `NativeCompatFlags.classification.json` (uncommitted → coordinator regen)
 - checkpoint `/tmp/wave6-checkpoints/B-S2.json`
+
+## D.S1 (W3.2b point-light escalate-or-drop DECISION MEMO, Opus, plan-only) — 2026-07-06 — done
+
+**Deliverable:** `DECISION.md` (this dir) — decision from EXISTING evidence only (WAVE7_REVIEW A9;
+no Dolphin harness built).
+
+**RECOMMENDATION: (iii) DROP.** Do not land `RB3_BOX_AMBIENT` (option i), do not redesign around a
+per-object point-light cube (option ii). Keep per-pixel Lambert as the native model; preserve the
+`wave6-boxmap-proto` branch + registered flag on the shelf; do NOT grow `SceneUniforms` 656→752
+(DC3 blast stays zero). Re-open only on a human-captured, point-spot-dominant venue that measurably
+beats Lambert.
+
+**Evidence chain (all pre-existing):**
+- E1 — 23-environ probe: 27 point + 1 fakespot + ZERO directional → the prototype's directional cube
+  collects near-zero energy (near-no-op). SYS-4 "flat-grey ambient" premise refuted.
+- E2 — A/B montage: ON = warm base-fill over-brightening (1.0–1.73×), a deviation not a fidelity
+  gain; luma inside OFF A/A band but chroma warms.
+- E3 — Dolphin gp_00/gp_b07: RB3 venue art is deliberately dim/high-contrast silhouette; per-pixel
+  Lambert (montage OFF) already matches it; the cube's base-fill would wash *away* from ground truth.
+- E4 — band members lit by their OWN char rig (mLightsReal), not venue mLightsApprox → cube barely
+  touches the user-visible characters.
+- E5 — mechanism: Wii point→cube is a per-object single-sample ambient approximation; per-pixel
+  Lambert is strictly higher spatial fidelity → per-pixel Lambert is arguably *more* accurate.
+- E6 — struct growth 656→752 crosses the shared `UniformStructs.h` DC3 `static_assert` → option (i)
+  is NOT harmless plumbing (non-zero DC3 blast + the E2 behavior change).
+
+**Option (ii) blast radius (documented for the record, if ever escalated):** per-draw box eval in
+`DrawMesh` (obj.world via W1.6 RB3DrawContext) + struct/WGSL growth + DC3 lockstep + unvalidated
+per-vertex sample weighting (R1, no Dolphin harness). Large multi-repo change to replace a
+higher-fidelity path — NO-GO now.
+
+**Human-capture request filed in DECISION.md §5** (only if escalating): 3 matched-frame Dolphin
+venue captures (warm-spot theater / cool-spot arena / mixed club) at band-visible framing + matched
+native Lambert frame + RB3_VENUE_PROBE dump each. Existing shots (one venue family, char-contact
+framing) are insufficient.
+
+**Constraints honored:** plan-only, no engine edits, no flag flips, no pin bump. Re-baseline note
+(WAVE7_REVIEW A8) acknowledged but no new captures taken (decision made from existing evidence).
+
+**Artifacts:**
+- `docs/native/engine-arch-review-2026-07-05/execution/W3.2/DECISION.md`
+- checkpoint `/tmp/wave7-checkpoints/D-S1.json`
