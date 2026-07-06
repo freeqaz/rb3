@@ -133,3 +133,43 @@ Re-runs read this + `git log --grep=W2.1-flip` and skip done work.
 - **Exit:** S3 `ready-for-flip` half complete — no UI-placement regression from flag-ON,
   demonstrated on both screens with A/A discipline. Coordinator can rely on this as one of the
   four flip-readiness deliverables (S1 mechanism + S2 drum oracle + S3 UI gate + S4 Dolphin A/B).
+
+## W2.1-flip.S4 — done
+- **Commit (rb3):** `a8f36b39` — "W2.1-flip: Dolphin gameplay A/B package for coordinator
+  sign-off (S4)". Staged ONLY my 2 items (new `scripts/native/w21flip-dolphin-ab.py` +
+  `W2.1-flip/dolphin-ab/**` artifacts). No source edit; package-only, per PLAN. Pin NOT bumped.
+- **Harness (`scripts/native/w21flip-dolphin-ab.py`):** boots the committed default build
+  (`native/build-agent-W2.1-flip/rb3-native`) 4x under `RB3_FIXED_CLOCK`, navigating to gameplay
+  (reusing `placement-gate-capture.py`'s proven nav verbatim), `rb3_director_disable 1` then
+  `rb3_force_shot` a wide venue/establishing shot candidate, screenshot via `/api/screenshot`:
+  2x flag-OFF (no env) + 2x flag-ON (`RB3_PLACEMENT_CONTRACT=1`). Then runs the numeric companion
+  (`placement-gate-capture.py --gate both` under flag-ON, reusing the already-tested S1/S2 harness
+  verbatim) and composes two side-by-side layout PNGs (ground truth + all 4 captures) via PIL.
+- **Numeric companion: GREEN.** `oracle-gate-ON.log` — `PlacementOracle.RealCaptureSpansBowl` (crowd)
+  AND `PlacementOracle.RealCaptureDrumPlaced` (drum) both `[ OK ]`, harness exit 0 ("CROWD ORACLE
+  GREEN" + "DRUM ORACLE GREEN"). Raw drawlog (385 draws, 226 skinned)+probe (2640 crowd-instance +
+  4 drum-ref lines) artifacts in `oracle-capture/`.
+- **Captures:** `cap_OFF_{1,2}.png` + `cap_ON_{1,2}.png` (1280x720), each with a paired
+  `.engine.log`. Verified non-degenerate (checked pixel-luma stats, not black/blank frames):
+  mean luma OFF_1=95.2, OFF_2=23.7, ON_1=202.5, ON_2=122.6 — i.e. the pre-existing pink-bloom/
+  exposure wash (W2.1/STATUS.md deviation #3) swings from near-black (OFF_2) to near-white-blown-
+  out (ON_1) **across boots regardless of flag state** (both extremes are NOT confined to one
+  flag), which is exactly the flag-independent confound the A/A protocol exists to surface for the
+  reviewer, not a flip-induced regression — consistent with the prior W2.1 verifier finding that
+  2xOFF+2xON A/A dissolved an initially-alarming single-frame diff.
+- **Layouts:** `layout_crowd_vs_dolphin.png` (ground truth `gp_00.png` + all 4 captures) and
+  `layout_drum_vs_retail.png` (ground truth `fandom_gameplay_drums.png` + all 4 captures) — visual
+  spot-check confirms crowd is spread (not piled at one point) and the drum kit/band sit at a
+  plausible venue position flag-ON, vs flag-OFF collapsed-to-origin framing, modulo the wash noted
+  above obscuring ON_1's detail (ON_2 shows the scene clearly; this is why 2 captures per state are
+  mandated — a single ON capture could have been mistakenly read as "broken").
+- **README.md:** states package-only exit, reviewer checklist (crowd spread / drum position / wash
+  presence in both flag states), and that coordinator human-eyes sign-off + the S1 one-line flip +
+  re-golden (888->792, expected) come after this package, not from it.
+- **DEVIATION (none material):** none beyond the disclosed wash-brightness spread across boots
+  (expected per W2.1 precedent, not new). No default change, no re-golden, no classification.json
+  edit (S4 needs neither).
+- **Exit:** S4 `ready-for-flip` half complete. **All four W2.1-flip deliverables (S1 mechanism,
+  S2 drum oracle, S3 UI gate, S4 Dolphin A/B) are now done** — item exit `ready-for-flip` reached.
+  Coordinator reviews `dolphin-ab/README.md` + layouts, then flips `kPlacementContractDefaultOn`
+  0->1 (S1's one line) and re-goldens the drawlog goldens per WAVE5_REVIEW A4.
