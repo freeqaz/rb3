@@ -482,3 +482,88 @@ carry zero compiled-in RB3 asset knowledge.
 - The item-level exit criteria (per PLAN.md) should now be re-checked in full by a
   verifier/coordinator pass over S1-S4 collectively; S4 did not re-verify S1-S3's own
   claims beyond the grep census and a full rebuild.
+
+## VERIFY — complete (all exit criteria MET, gates green)
+
+Verifier (Opus), 2026-07-06. Ran the PLAN exit criteria for real in own build dir
+`native/build-agent-W1.7-verify` (clang configure) + re-derived byte-identical
+evidence for a sample of MOVE commits myself (did not just trust S1–S4 claims).
+Engine HEAD `41b9e3a`, rb3 HEAD `5a85c7e1`. All 16 W1.7 engine commits + all rb3
+hook commits present in git log.
+
+### Per-criterion evidence
+1. **Frame-pass seam live — MET.** `Rnd_Wgpu_RB3.cpp` dispatches both existing
+   methods via `GetGameRenderHook()`: `RenderCharacterImpostors(this)` at BeginFrame
+   (L1621–1622, after DrawPreClear) and `DrawGameOverlay(this)` at EndFrame
+   (L1669–1670, before Finish). INERT: `BandRenderHook` overrides both as no-ops
+   (`native/src/rb3_render_hook.cpp` L44–52) → byte-identical.
+2. **Asset-name grep-zero — MET.** `grep -cE 'strcmp|strstr|strncmp'`:
+   RB3HaloPass.cpp=0, RB3MaterialBinder.cpp=2, Rnd_Wgpu_RB3.cpp=14. Inspected ALL 16
+   survivors: ZERO hardcoded RB3 asset (mesh/material/dir) name literals. Survivors =
+   (a) 7 Bucket-C camera/environ scene-scope names (`world.cam`×3, `game.cam`×2,
+   `strstr(envNm,"char")`×2) — Phase-3-deferred, coordinator-signed-off in S1; (b) 9
+   generic env-var-driven selectors whose compared token is a runtime `getenv()`
+   string, not baked-in RB3 content (verified L3435 C8_PROBE tok = getenv token list,
+   L3802 IK_SHARD_VERT sSel = getenv, L2235 RB3_ISOLATE_MESH, L2402/2454 MESH_DUMP,
+   L2847 BONE_PROBE_NAME, L3276/3293 XBONE_TRACK, L3517 CHAIN_PROBE).
+3. **Every relocated behavior byte-identical — MET (sampled + re-derived by verifier).**
+   Re-derived TWO MOVE commits from the diffs myself:
+   - **B6 halo** (engine `6ede0d3` + rb3 `c5e6daf2`): engine keeps the emissive-map/
+     multiplier DATA test + the `if(!mat)return false` guard; hook `QueryHaloPolicy`
+     reproduces the exact `surface`→exclude and `gem_smasher_glow`→exclude-unless-
+     RB3_SMASHER_HALO logic with the identical `static int sSmasherHalo=-1` cache-once
+     idiom. Truth-table equivalent on all 4 name/flag cases. Byte-identical.
+   - **B1 hub-bar** (engine `c31b387` + rb3 `c18841dd`): engine keeps the `skinned &&`
+     gate and ALL matrix math; hook returns `hubBarPlacement = name!=null &&
+     (strncmp highlight_main==14||highlight_pattern==17) && !RB3_NO_HUB_BAR_PLACEMENT_FIX`.
+     Combined `skinned && policy` == prior inline expression exactly. Same strncmp
+     lengths, same getenv, same cache-once. Byte-identical.
+   - **Lineup gate (real skinning/shard path, B3–B5/B12) PASS on the fresh build**:
+     `scripts/native/lineup-gate.py --bin build-agent-W1.7-verify/rb3-native` →
+     `verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS pin=PASS` (max_band_ratio
+     3.53, in golden envelope). countC PASS = no draw added/dropped/re-tessellated.
+   - Screenshot-hash A/B not re-attempted: menu/hub wall-clock non-determinism is the
+     S1/S2-documented gate gap; structural re-derivation + lineup gate are the correct
+     substitute (same conclusion the implementers reached).
+4. **Flags preserved — MET.** All relocated RB3_* flags (RB3_NO_HUB_BAR_PLACEMENT_FIX,
+   RB3_SCROLLBAR_THUMB_FIX_OFF, RB3_NO_SKEL_REBAKE, RB3_NO_HUB_BAR_SHARD_EXEMPT,
+   RB3_SMASHER_HALO, RB3_NO_HUB_HIGHLIGHT_FIX, RB3_TRACK_LIGHT*, RB3_CROWD_DIM*) now
+   read INSIDE `rb3_render_hook.cpp` with prior semantics. ZERO net-new env flags →
+   NativeCompatFlags ledger untouched (correct — relocation, not creation).
+5. **DC3 not broken — MET.** `GameRenderHook.h` is forward-decl-only, game-agnostic;
+   all 15 W1.7 methods are NON-pure with base `return {}`/`false` defaults. DC3's
+   `HamRenderHook` overrides ONLY the 2 original pure virtuals (dc3_render_hook.cpp
+   L57,L68) → stays concrete. Verifier compiled a DC3-shape hook (overrides only the 2
+   pure virtuals) `clang++ -std=c++17 -fsyntax-only` against the CURRENT header →
+   clean + instantiable. No dc3-decomp source touched.
+6. **gtests green — MET.** `rb3-tests` (own build): 70 passed / 1 skipped
+   (`DrawLogGolden.PopulatesFromRealDrawMesh`, skip-by-design). StubCensus.* +
+   DrawLogGolden.* green. Engine skin/bone safety nets (SkinGolden.* / ClipPoseFixture.*)
+   run from a current engine-tests build (from dc3 orig-assets root): 15 passed / 1
+   skip-by-design (`SkinGolden.CaptureGolden`); ALL of ClipPoseFixture (incl.
+   `EffectorWorldPositionsMatchGolden`) green, and the fail-red control
+   `SkinGolden.BrokenSkinDivergesFromGolden` PASS = the golden provably discriminates a
+   broken skin. (Engine suite NOT rebuilt at W1.7 HEAD — accepted per S2 Deviation 3:
+   the suite is dc3-flavored/doesn't compile Rnd_Wgpu_RB3.cpp, GameRenderHook.h's
+   additive change is proven to compile in the DC3 shape, and SkinVertex/CharBones math
+   is not in W1.7's edit set, so the tests are structurally immune; the real rb3
+   skinning path is directly gated by the lineup gate above.)
+
+### Build/config used
+`cmake -B native/build-agent-W1.7-verify -S native -DCMAKE_CXX_COMPILER=/usr/bin/clang++
+-DCMAKE_C_COMPILER=/usr/bin/clang` then `cmake --build … --target rb3-native rb3-tests
+-j8` → both green.
+
+### Fail-red posture (MOVE-only item)
+W1.7 is a pure behavior-preserving relocation, so there is no NEW behavior to prove
+fails-red. The GATES used to verify it are proven-discriminating: SkinGolden's
+`BrokenSkinDivergesFromGolden` control is green, DrawLogGolden's `CatchesPipelineChange`
+is green, and the lineup gate's broken-skin FAIL was proven in W0.5. The gate machinery
+can fail red; the good build passes it.
+
+### Verdict
+**W1.7 COMPLETE. All 6 exit criteria MET, all gates green.** No blockers. No small
+fixes needed (no in-scope defects found). Non-blocking follow-up (owned elsewhere): the
+7 Bucket-C camera/environ scene-scope name survivors are deleted by the Phase-3 lighting
+rewrite (W3.x), as designed; the engine milo-engine-tests suite retains its 29
+pre-existing dc3-drift failures (W2-TESTFIX lane), none touching W1.7 files.
