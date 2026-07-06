@@ -256,3 +256,79 @@ committed `W2.2/char/parsed-default.json` baseline the shared-mesh clamp counts 
   **Default-ON flip left for a separate coordinator-gated one-line commit (NOT done here)** — and per
   the directive above, that flip must NOT also delete the name-scoped arms/rebind.
 - All captures used `native/build-agent-W2.1` (never `build-native`/`build-web*`).
+
+## VERIFY — complete (all exit criteria independently reproduced; 2 safe/minor deviations, none block the default-OFF landing)
+
+Adversarial verifier (own build `native/build-agent-W2.1-verify`, own engine test build
+`milo-native-engine/build-agent-W2.1-verify-tests`; engine HEAD `6852caa` = the S2 contract,
+pin still `6221a56`, NOT bumped). Re-derived every gate from scratch rather than trusting STATUS.
+
+### flag-OFF (default) — byte-identical: CONFIRMED
+- **census** `native_compat_census.py check` → **exit 0** (317 flags; `RB3_PLACEMENT_CONTRACT`
+  present in classification.json AND gen.inc).
+- **rb3-tests** `PlacementOracle.*:HandsBindOracle.*:DrawLogGolden.*` → **18 passed / 3 skipped**.
+- **canonical splash** `drawlog-golden.py --fixed-clock --canonical-order` (my bin) → **PASS 888**
+  (264 known eye-residual divergences within bound). flag-OFF the contract arm is gated off
+  (`sPlacementContract==0`) = verbatim identity, so these residuals are provably pre-existing
+  eye-flake, not W2.1.
+- **lineup-gate** (my bin) → **PASS all layers** (img/segA/ratioB/countC/pin).
+- **engine invariance** `milo-engine-tests` (own context build, DC3_DATA+MILO_LIB, `ctest -j1`) →
+  **198 pass / 0 fail / 2 by-design skip**. `SkinGolden.BrokenSkinDivergesFromGolden` (the fail-red
+  control) passed → shared skinning math not regressed by the S2 commit.
+
+### S1 gate fail-red on flag-OFF — REPRODUCED (the free proof it sees the bug)
+`placement-gate-capture.py --expect-red` on my flag-OFF build → `RealCaptureSpansBowl` **RED**:
+`posed=2610 far=2610 matched=0 skinnedDraws=231 clusters=1 posedExtent=319.148 drawnExtent=0.000`.
+Independently confirmed from the raw drawlog: **all 231 skinned draws share ONE obj.world
+translation (origin), 0 non-origin, world-extent 0.0**.
+
+### flag-ON placement correct — REPRODUCED (not a tautological pass)
+`RB3_PLACEMENT_CONTRACT=1 placement-gate-capture.py` → `RealCaptureSpansBowl` **GREEN**.
+Independent raw-drawlog check: flag-ON = **29 distinct obj.world translations, 28 non-origin,
+world-extent 316.6** (≈ posed 319.1) — real spread matching spXfm, not a green stub. Gameplay
+flag-ON: **28 of 79 distinct skinned mesh-names carry non-origin obj.world** (band/props/crowd,
+incl. bone-attached instrument props) vs **0** flag-OFF → drum/instrument props ARE placed ≠ origin
+by the general contract.
+
+### B2 A/A discipline — REPRODUCED EXACTLY (the key deliverable; NOT the W1.6 non-blocking rule)
+Three splash raw drawlogs under identical deterministic env (setarch -R, fixed-clock, stabilize),
+per-mesh-name world classification:
+- **A/A (OFF vs OFF2):** exactly **7** divergent meshes, **all non-skinned** = the W0.3d
+  CharEyes/CharLookAt eye-flake residual. 0 name-set drift; counts 888/888.
+- **A/B (OFF vs ON):** **8** divergent meshes = the same 7 non-skinned eye-flake **+ exactly 1 NEW,
+  skinned** = crowd mesh `0xc57f0ca822620500` (obj.world `(0,0,0)` → bowl-spread, draw count
+  **211 → 115** = the entire 888→792 delta). **No new world divergence on any non-crowd mesh.**
+- Conclusion: the eye residual is A/A-invariant (present OFF-vs-OFF2 AND OFF-vs-ON) → pre-existing,
+  NOT a W2.1 effect. W2.1's only draw-stream effect is the crowd mesh. **B2 satisfied.**
+
+### Gameplay visual A/B — equivalent modulo a pre-existing A/A-variable wash (adversarial catch, resolved)
+Initial single-frame A/B looked alarmingly different (one clean flag-ON frame vs one heavily
+bloom-washed flag-OFF frame). **A/A controls dissolved it:** captured OFF twice + ON twice — a
+pink bloom/exposure "wash" appears in BOTH flag states with run-to-run-varying intensity
+(off1 heavy / off2 moderate; on1 none / on2 moderate). Band placement, venue, and the drum kit
+(two cymbals, house-right) are **identical across all four frames** → vertex-invariance holds
+visually; **no shards, no holes, no skew** (the coupled-half trap the design guards against). The
+wash is orthogonal to W2.1 (pre-existing, likely the W0.3d venue/eye nondeterminism class).
+
+### S3 refutations spot-checked — CONFIRMED
+`songselect_flagON_SCROLLBAR_OFF_depth00.png`: with the scrollbar fix disabled under flag-ON the
+red thumb sits at **screen-center** (mid-list), not the right-edge track → the vertex-invariant
+contract genuinely does NOT subsume the name-scoped scrollbar fix. The S3 "opt-out no-op premise
+REFUTED" finding is real.
+
+### Deviations / blockers (none block the default-OFF landing; all are coordinator-flip guidance)
+1. **PLAN exit criterion "opt-outs proven no-ops" is REFUTED, not met** (safe R5 outcome, correctly
+   documented in S3): `RB3_NO_HUB_BAR_PLACEMENT_FIX` / `RB3_SCROLLBAR_THUMB_FIX_OFF` /
+   `RB3_NO_CROWD_REBIND` are NOT subsumed by the contract (it excludes the name-scoped UI arms, and
+   they fix genuinely-broken meshes). They **must be RETAINED at the flip** — not deleted.
+2. **Drum-specific bone/waypoint oracle assertion never implemented** (S1 deferred → S2 subsumed into
+   the general span; oracle checks `kind=="crowd"` only). Drum/instrument props DO get correct
+   non-origin placement via the general contract (verified above), but there is no independent
+   drummer-waypoint-correlation gate. Minor diagnostic gap.
+3. **Pre-existing A/A-variable bloom/exposure wash** at gameplay cameras — orthogonal to W2.1, worth
+   a separate look (W0.3d nondeterminism family), not a W2.1 regression.
+
+**VERDICT: W2.1 complete.** flag-OFF byte-identical + S1 fail-red RED + flag-ON oracle GREEN +
+B2 A/A clean + census 0 + rb3-tests 18/3 + engine 198/0/2, all independently reproduced. Default-OFF
+landed on engine `6852caa`; the coordinator-gated default-ON flip remains a separate commit and per
+(1) must NOT delete the name-scoped arms/rebind.
