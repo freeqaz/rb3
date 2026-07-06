@@ -61,14 +61,16 @@ REPO = pg.REPO
 def log(m): print(f"[crowd-bone-gate] {m}", flush=True)
 
 
-PROBE_RE = re.compile(r"\[CROWD_BONE_PROBE\]")
+# The oracle reads BOTH markers: [CROWD_BONE_PROBE] (owner-vs-own decision) and
+# [SKIN_CLAMP] (the faithful shard-drop event count the gate asserts on).
+PROBE_RE = re.compile(r"\[CROWD_BONE_PROBE\]|\[SKIN_CLAMP\]")
 
 
 def capture_condition(args, label, rebind_off, extra_env):
     """Boot rb3-native, nav to gameplay, pin a wide shot, and extract the
-    [CROWD_BONE_PROBE] lines into out/<label>.probe.log. Returns the probe path or
-    None on failure."""
-    out_probe = os.path.join(args.out, f"{label}.probe.log")
+    [CROWD_BONE_PROBE] + [SKIN_CLAMP] marker lines into out/<label>.marker.log.
+    Returns the marker path or None on failure."""
+    out_probe = os.path.join(args.out, f"{label}.marker.log")
     port = k.free_port()
     log_path = os.path.join(args.out, f"engine-{label}-{port}.log")
     logf = open(log_path, "w")
@@ -133,16 +135,17 @@ def capture_condition(args, label, rebind_off, extra_env):
         logf.close()
     if not ok:
         return None
-    nprobe = 0
+    nprobe = nclamp = 0
     with open(log_path, "r", errors="replace") as lf, open(out_probe, "w") as pf:
         for line in lf:
             if PROBE_RE.search(line):
                 pf.write(line if line.endswith("\n") else line + "\n")
-                nprobe += 1
-    log(f"[{label}] {nprobe} [CROWD_BONE_PROBE] lines -> {out_probe}")
-    if nprobe == 0:
-        log(f"[{label}] WARN: no CROWD_BONE_PROBE lines — crowd may be empty in this "
-            f"venue, or the probe was not honored")
+                if "[CROWD_BONE_PROBE]" in line: nprobe += 1
+                elif "[SKIN_CLAMP]" in line: nclamp += 1
+    log(f"[{label}] {nprobe} CROWD_BONE_PROBE + {nclamp} SKIN_CLAMP lines -> {out_probe}")
+    if nprobe == 0 and nclamp == 0:
+        log(f"[{label}] WARN: no crowd markers — crowd may be empty in this venue, "
+            f"or the probes were not honored")
         return None
     return out_probe
 
@@ -165,6 +168,12 @@ def summarize(probe_path, label):
             e["n"] += 1
             if int(di) > 0 or int(oe) == 0: e["shared"] = True
             e["wo"] = max(e["wo"], float(wo)); e["wn"] = max(e["wn"], float(wn))
+    nclamp = 0
+    with open(probe_path, errors="replace") as f:
+        for ln in f:
+            if "[SKIN_CLAMP]" in ln and ("crowd" in ln or "extra" in ln):
+                nclamp += 1
+    log(f"[{label}] crowd SKIN_CLAMP shard-drop events: {nclamp}")
     log(f"[{label}] per-crowd-mesh (worst instance): {len(per)} meshes")
     for mesh, e in sorted(per.items()):
         q1 = "SHARED" if e["shared"] else "SELF"

@@ -131,7 +131,15 @@ struct Options {
     double clampU     = 12.0;  // the SKIN_CLAMP shard threshold (mesh-local extent)
     int    shardSlack = 1;     // candidate may exceed baseline by this many meshes
                                // (boot-random band-char generation jitter, per W2.1)
-    bool   crowdOnly  = true;  // restrict to tag=crowdextra (drop otherskin props)
+    bool   crowdOnly  = true;  // restrict to crowd/extras meshes (drop other skin)
+    // The faithful shard-drop gate operates on the SKIN_CLAMP EVENT count (the
+    // engine's per-bone fallback-to-identity, = how badly the crowd shards). The
+    // candidate is "elevated" when it exceeds baseline*elevationFactor + eventSlack.
+    // MEASURED on 6852caa: baseline (rebind ON) ~1.6k, candidate (rebind OFF) ~14.5k
+    // (8.8x) — factor 2.0 + slack 500 cleanly separates them while absorbing the
+    // boot-random band-char generation jitter W2.1 documented.
+    double elevationFactor = 2.0;
+    int    eventSlack      = 500;
 };
 
 // Per-mesh reduction of the probe records (worst-instance extents, OR'd shared sig).
@@ -212,24 +220,88 @@ inline Decision DecideFrom(const ShardStats& raw) {
     return kMixed;
 }
 
+// ---------------------------------------------------------------------------
+// SKIN_CLAMP shard-drop signal — the FAITHFUL fail-red metric.
+//
+// The engine's crowd SKIN_CLAMP backstop drops a bone to identity
+// (sFallbackBones++) whenever its composed skin flings past 12u in the mesh's own
+// frame; SKIN_CLAMP_PROBE emits one "[SKIN_CLAMP] mesh='..' bone='..' meshLocal=..u"
+// per clamped bone. The COUNT of those events on crowd/extras meshes IS how badly
+// the crowd shards: with RebindCrowdCharBonesToOwnSkeleton ON the owner offsets are
+// rebaked at rest so few bones fling; with it OFF every offset-poisoned bone flings
+// and clamps. Unlike the CROWD_BONE_PROBE owner-extent (which is confounded by the
+// probe's `!mNativeBonesRebound` skip and — for these self-owned meshes — reads the
+// same poisoned bones in both states), this event count separates the two states
+// cleanly. MEASURED on 6852caa: baseline (rebind ON) ~1.6k, candidate (rebind OFF)
+// ~14.5k. This is the signal the gate asserts on.
+// ---------------------------------------------------------------------------
+inline bool IsCrowdExtraName(const std::string& n) {
+    return n.find("crowd") != std::string::npos || n.find("extra") != std::string::npos;
+}
+
+// A single capture (one boot condition): the CROWD_BONE_PROBE records (→ decision)
+// plus the SKIN_CLAMP shard-drop event count (→ gate).
+struct Capture {
+    int skinClampEvents = 0;             // [SKIN_CLAMP] lines on crowd/extras meshes
+    int skinClampMeshes = 0;             // distinct crowd/extras meshes clamped
+    std::vector<ProbeRec> probes;        // [CROWD_BONE_PROBE] records
+    ShardStats stats;                    // derived from probes (for the decision)
+};
+
+inline Capture ParseCapture(const std::string& text, const Options& opt = Options()) {
+    Capture c;
+    c.probes = ParseCrowdBoneProbeText(text);
+    c.stats  = ComputeShardStats(c.probes, opt);
+    std::map<std::string,int> clampMeshes;
+    size_t pos = 0;
+    while (pos < text.size()) {
+        size_t nl = text.find('\n', pos);
+        std::string line = text.substr(pos, nl == std::string::npos ? std::string::npos : nl - pos);
+        pos = (nl == std::string::npos) ? text.size() : nl + 1;
+        if (line.find("[SKIN_CLAMP]") == std::string::npos) continue;
+        const char* mp = strstr(line.c_str(), "mesh='");
+        if (!mp) continue;
+        const char* q0 = mp + 6;
+        const char* q1 = strchr(q0, '\'');
+        if (!q1) continue;
+        std::string mesh(q0, (size_t)(q1 - q0));
+        if (opt.crowdOnly && !IsCrowdExtraName(mesh)) continue;
+        c.skinClampEvents++;
+        clampMeshes[mesh]++;
+    }
+    c.skinClampMeshes = (int)clampMeshes.size();
+    return c;
+}
+
+inline Capture ParseCaptureFile(const char* path, const Options& opt = Options()) {
+    FILE* f = fopen(path, "rb");
+    if (!f) return Capture();
+    std::string s; char buf[8192]; size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) s.append(buf, n);
+    fclose(f);
+    return ParseCapture(s, opt);
+}
+
 struct OracleResult {
     bool passed       = false;
     bool inconclusive = false;
-    ShardStats baseline;   // rebind-ON
-    ShardStats candidate;  // rebind-OFF (the raw seam)
-    Decision   decision = kNoData;
+    Capture  baseline;    // rebind-ON
+    Capture  candidate;   // rebind-OFF (the raw seam)
+    Decision decision = kNoData;
     std::vector<std::string> failures;
 
     std::string Describe() const {
-        char buf[512];
+        char buf[640];
         snprintf(buf, sizeof(buf),
-            "baseline{meshes=%d ownerShard=%d} candidate{meshes=%d ownerShard=%d "
-            "ownShard=%d shared=%d self=%d ownFix=%d ownPoison=%d} decision=%s %s\n",
-            baseline.meshes, baseline.ownerShardMeshes,
-            candidate.meshes, candidate.ownerShardMeshes, candidate.ownShardMeshes,
-            candidate.sharedMeshes, candidate.selfMeshes,
-            candidate.ownFixMeshes, candidate.ownPoisonMeshes,
-            DecisionName(decision),
+            "baseline{clampEvents=%d clampMeshes=%d} candidate{clampEvents=%d "
+            "clampMeshes=%d probeMeshes=%d ownerShard=%d ownShard=%d shared=%d "
+            "self=%d ownFix=%d ownPoison=%d} decision=%s %s\n",
+            baseline.skinClampEvents, baseline.skinClampMeshes,
+            candidate.skinClampEvents, candidate.skinClampMeshes,
+            candidate.stats.meshes, candidate.stats.ownerShardMeshes,
+            candidate.stats.ownShardMeshes, candidate.stats.sharedMeshes,
+            candidate.stats.selfMeshes, candidate.stats.ownFixMeshes,
+            candidate.stats.ownPoisonMeshes, DecisionName(decision),
             inconclusive ? "[INCONCLUSIVE]" : (passed ? "[PASS]" : "[FAIL]"));
         std::string s = buf;
         for (const auto& f : failures) { s += "  - "; s += f; s += "\n"; }
@@ -237,29 +309,30 @@ struct OracleResult {
     }
 };
 
-// The negative-control gate: candidate shard-drop must NOT be elevated vs baseline.
-inline OracleResult RunCrowdBoneOracle(const std::vector<ProbeRec>& baselineRecs,
-                                       const std::vector<ProbeRec>& candidateRecs,
+// The negative-control gate: the candidate crowd SKIN_CLAMP shard-drop must NOT be
+// elevated vs the rebind-ON baseline. On the current build the candidate is
+// RB3_NO_CROWD_REBIND=1 → the count spikes ~8.8x → RED (the S1 fail-red).
+inline OracleResult RunCrowdBoneOracle(const Capture& baseline, const Capture& candidate,
                                        const Options& opt = Options()) {
     OracleResult r;
-    r.baseline  = ComputeShardStats(baselineRecs, opt);
-    r.candidate = ComputeShardStats(candidateRecs, opt);
-    r.decision  = DecideFrom(r.candidate);
+    r.baseline  = baseline;
+    r.candidate = candidate;
+    r.decision  = DecideFrom(candidate.stats);
 
-    if (r.candidate.meshes == 0) {
+    if (candidate.probes.empty() && candidate.skinClampEvents == 0) {
         r.inconclusive = true;
-        r.failures.push_back("INCONCLUSIVE: no crowd/extras probe records in the "
+        r.failures.push_back("INCONCLUSIVE: no crowd probe/clamp records in the "
                              "candidate capture (gameplay did not reach a crowd frame)");
         return r;
     }
-    char buf[256];
-    if (r.candidate.ownerShardMeshes > r.baseline.ownerShardMeshes + opt.shardSlack) {
+    char buf[320];
+    double thresh = baseline.skinClampEvents * opt.elevationFactor + opt.eventSlack;
+    if ((double)candidate.skinClampEvents > thresh) {
         snprintf(buf, sizeof(buf),
-            "shard-drop elevated: candidate ownerShard=%d > baseline ownerShard=%d "
-            "+ slack %d — crowd sharding/co-bunching returned (%d meshes fling past "
-            "the %.0fu SKIN_CLAMP)",
-            r.candidate.ownerShardMeshes, r.baseline.ownerShardMeshes, opt.shardSlack,
-            r.candidate.ownerShardMeshes, opt.clampU);
+            "shard-drop elevated: candidate SKIN_CLAMP events=%d > baseline=%d * "
+            "%.1f + slack %d (=%.0f) — crowd sharding/co-bunching returned",
+            candidate.skinClampEvents, baseline.skinClampEvents, opt.elevationFactor,
+            opt.eventSlack, thresh);
         r.failures.push_back(buf);
     }
     r.passed = r.failures.empty();

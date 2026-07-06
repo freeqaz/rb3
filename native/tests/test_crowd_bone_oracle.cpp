@@ -69,45 +69,50 @@ TEST(CrowdBoneOracle, ParsesProbeLine) {
 }
 
 // ---------------------------------------------------------------------------
-// GREEN: rebind-ON baseline and a candidate whose owner bones are equally clean
-// (both under the 12u SKIN_CLAMP) → shard-drop not elevated → PASS.
+// Parser: pull a real [SKIN_CLAMP] line out of a noisy engine log; only
+// crowd/extras meshes count toward the shard-drop metric.
 // ---------------------------------------------------------------------------
-TEST(CrowdBoneOracle, PassesWhenNotElevated) {
-    std::vector<ProbeRec> baseline = {
-        Rec("char_crowd_body.mesh", 0, true, 0, 2.0, 2.0),
-        Rec("char_extra_body.mesh", 0, true, 0, 3.5, 3.5),
-    };
-    std::vector<ProbeRec> candidate = {
-        Rec("char_crowd_body.mesh", 0, true, 0, 2.1, 2.1),
-        Rec("char_extra_body.mesh", 0, true, 0, 3.6, 3.6),
-    };
-    OracleResult r = RunCrowdBoneOracle(baseline, candidate);
-    EXPECT_TRUE(r.passed) << r.Describe();
-    EXPECT_FALSE(r.inconclusive) << r.Describe();
-    EXPECT_EQ(r.candidate.ownerShardMeshes, 0) << r.Describe();
+TEST(CrowdBoneOracle, ParsesSkinClampAndFiltersCrowd) {
+    std::string log =
+        "[SKIN_CLAMP] mesh='female_extras_skin01.mesh' bone='bone_L-mid.mesh' meshLocal=375.7u (clamped to bind)\n"
+        "[SKIN_CLAMP] mesh='male_crowd_body01.mesh' bone='bone_x.mesh' meshLocal=42.0u (clamped to bind)\n"
+        "[SKIN_CLAMP] mesh='trackjacket.mesh' bone='bone_y.mesh' meshLocal=20.0u (clamped to bind)\n";
+    Capture c = ParseCapture(log);
+    EXPECT_EQ(c.skinClampEvents, 2);  // trackjacket (band) is NOT crowd/extras
+    EXPECT_EQ(c.skinClampMeshes, 2);
 }
 
 // ---------------------------------------------------------------------------
-// FAIL-RED: the current-build fail-red. rebind-ON baseline is clean; the
-// rebind-OFF candidate's owner bones fling past the clamp on every crowd mesh →
-// shard-drop spikes → the gate goes RED. This is the exact condition W2.3-flag-ON
-// must later make GREEN without the rebind.
+// GREEN: rebind-ON baseline and a candidate with a comparable SKIN_CLAMP
+// shard-drop count (within baseline*factor + slack) → not elevated → PASS.
+// ---------------------------------------------------------------------------
+TEST(CrowdBoneOracle, PassesWhenNotElevated) {
+    Capture baseline;  baseline.skinClampEvents = 1642;
+    Capture candidate; candidate.skinClampEvents = 1700;
+    candidate.probes = { Rec("male_crowd_body01.mesh", 0, true, 0, 42.0, 42.0) };
+    candidate.stats  = ComputeShardStats(candidate.probes, Options());
+    OracleResult r = RunCrowdBoneOracle(baseline, candidate);
+    EXPECT_TRUE(r.passed) << r.Describe();
+    EXPECT_FALSE(r.inconclusive) << r.Describe();
+}
+
+// ---------------------------------------------------------------------------
+// FAIL-RED: the current-build fail-red. The rebind-OFF candidate's crowd bones
+// fling past the 12u clamp so the SKIN_CLAMP event count spikes ~8.8x vs the
+// rebind-ON baseline → the gate goes RED. (MEASURED: baseline 1642 → candidate
+// 14500 on 6852caa.)
 // ---------------------------------------------------------------------------
 TEST(CrowdBoneOracle, FailsRedWhenShardDropSpikes) {
-    std::vector<ProbeRec> baseline = {   // rebind ON: owner offsets rebaked clean
-        Rec("char_crowd_body.mesh", 0, true, 0, 1.8, 1.8),
-        Rec("char_extra_body.mesh", 0, true, 0, 2.4, 2.4),
-        Rec("clap_crowd.mesh",      0, true, 0, 0.9, 0.9),
+    Capture baseline;  baseline.skinClampEvents = 1642;   // rebind ON
+    Capture candidate; candidate.skinClampEvents = 14500; // rebind OFF
+    candidate.probes = {
+        Rec("male_crowd_body01.mesh",  0, true, 0, 42.7, 42.7),
+        Rec("female_extra_body01.mesh", 0, true, 0, 380.5, 380.5),
     };
-    std::vector<ProbeRec> candidate = {  // rebind OFF: raw poisoned owner offsets
-        Rec("char_crowd_body.mesh", 0, true, 0, 41.3, 41.3),
-        Rec("char_extra_body.mesh", 0, true, 0, 55.7, 55.7),
-        Rec("clap_crowd.mesh",      0, true, 0, 33.0, 33.0),
-    };
+    candidate.stats = ComputeShardStats(candidate.probes, Options());
     OracleResult r = RunCrowdBoneOracle(baseline, candidate);
     EXPECT_FALSE(r.passed) << r.Describe();
     EXPECT_FALSE(r.inconclusive) << r.Describe();
-    EXPECT_GT(r.candidate.ownerShardMeshes, r.baseline.ownerShardMeshes) << r.Describe();
 }
 
 // ---------------------------------------------------------------------------
@@ -164,8 +169,7 @@ TEST(CrowdBoneOracle, ClassifiesMixed) {
 // frame) is INCONCLUSIVE, not GREEN.
 // ---------------------------------------------------------------------------
 TEST(CrowdBoneOracle, InconclusiveWhenNoCrowd) {
-    std::vector<ProbeRec> baseline;
-    std::vector<ProbeRec> candidate;
+    Capture baseline, candidate;   // both empty
     OracleResult r = RunCrowdBoneOracle(baseline, candidate);
     EXPECT_FALSE(r.passed);
     EXPECT_TRUE(r.inconclusive) << r.Describe();
@@ -203,8 +207,8 @@ TEST(CrowdBoneOracle, RealCaptureNotElevated) {
                         "(see scripts/native/crowd-bone-gate-capture.py) to run the "
                         "live crowd bone-source gate";
     }
-    auto baseline  = ParseCrowdBoneProbeFile(basePath);
-    auto candidate = ParseCrowdBoneProbeFile(candPath);
+    Capture baseline  = ParseCaptureFile(basePath);
+    Capture candidate = ParseCaptureFile(candPath);
     OracleResult r = RunCrowdBoneOracle(baseline, candidate);
     if (r.inconclusive) {
         GTEST_SKIP() << "capture inconclusive (no crowd frame):\n" << r.Describe();
