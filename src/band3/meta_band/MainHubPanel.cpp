@@ -29,6 +29,7 @@
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
+#include "rndobj/Draw.h"
 #include "ui/UIPanel.h"
 #include "utl/Locale.h"
 #include "utl/Messages.h"
@@ -114,6 +115,25 @@ void MainHubPanel::Enter() {
 
 void MainHubPanel::Poll() {
     UIPanel::Poll();
+#ifdef HX_NATIVE
+    // W4.1(a): "playnow.lsw" is a LabelShrinkWrapper (system/ui/LabelShrinkWrapper.cpp)
+    // living directly under mb_playnow.grp / menu_buttons.grp in the 360-ARK
+    // ui/main/main_hub.milo. Live-toggle bisection (menu_buttons.grp's 6 direct
+    // children -> mb_playnow.grp -> its 2 members) localized an opaque light-grey
+    // capsule quad, fixed mid-screen below the menu list, to exactly this object;
+    // hiding it leaves the "PLAY NOW" label, the QUICKPLAY/START A ROAD CHALLENGE
+    // sub-items, and the message ticker untouched. Retail has no such quad here
+    // (images/retail-screenshots/yt_mhKNp9uAT48_menu_playnow_submenu.png) — this
+    // is the SYS-5 family (360 asset backing the Wii build never showed). The
+    // component's own `showing` flag is re-driven every Poll by its owning group,
+    // so the hide is re-asserted here each frame rather than once in Enter().
+    static bool sHideHubMenuQuad = !!getenv("RB3_HUB_MENU_QUAD_HIDE");
+    if (sHideHubMenuQuad) {
+        RndDrawable *quad = mDir ? mDir->Find<RndDrawable>("playnow.lsw", false) : NULL;
+        if (quad)
+            quad->SetShowing(false);
+    }
+#endif
     if (mMessageTimer.Running()) {
         mMessageTimer.Split();
         if (Timer::CyclesToMs(mMessageTimer.mCycles) > mMessageRotationMs) {
