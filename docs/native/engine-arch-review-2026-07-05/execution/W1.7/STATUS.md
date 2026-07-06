@@ -374,3 +374,111 @@ B13 behavior (PLAN's B13 row listed prism_gem, but it is debug-only).
   are the Bucket-C camera/environ scene-scope names (Phase-3-deferred, S1-documented).
 - Bucket-C deferral still pending explicit coordinator sign-off (S1's open note); S3 did
   NOT touch the cam gates, so no sign-off was required to proceed.
+
+## W1.7.S4 — done
+
+**Goal.** Relocate the Bucket-A stderr-only debug-probe name matches (CAM_DBG,
+RB3_HEADMAT_DBG, GEM_VTX/GEM_FORCE, BONE_PROBE, XBONE_TRACK, HUB_BAR_PROBE) out of
+the engine renderer so `grep -E 'strcmp|strstr|strncmp'` on Rnd_Wgpu_RB3.cpp +
+RB3MaterialBinder.cpp + RB3HaloPass.cpp shows zero RB3 asset (mesh/material/dir)
+name literals, then run the final verification sweep.
+
+### Commits (3, interface → implementation → wiring, per hard rule 1)
+1. Engine `013ec6a` — "add debug-probe name classifiers to GameRenderHook (no-op
+   defaults, unused)": 7 new non-pure virtuals (`IsCamDbgHighwayMesh`, `IsHubBarMesh`,
+   `IsHeadMesh`, `IsSkinDiffuseOutputTex`, `IsGemMesh`, `IsBoneProbeDefaultMesh`,
+   `IsTrackjacketMesh`), base default `return false`. Scaffold only.
+2. rb3 `d194da76` — "implement debug-probe name classifiers in rb3_render_hook":
+   `BandRenderHook` overrides with the real RB3 literal matches moved in verbatim
+   from the engine call sites.
+3. Engine `41b9e3a` — "relocate Bucket-A debug-probe asset-name literals to hook":
+   rewired all 9 call sites (CAM_DBG L2097-2100; HUB_BAR_PROBE draw-level L2213-2215
+   and per-bone L3118-3120; RB3_HEADMAT_DBG head.mesh L2339-2340/L2661-2662/L3990-3991;
+   GEM_VTX L2534-2536; BONE_PROBE default-list L2847-2850; XBONE_TRACK mesh filter
+   L3272-3273; RB3MaterialBinder.cpp skin_diffuse_output L166-168 and GEM_FORCE
+   prism_gem L516-518) to call the new hook methods. Pure MOVE — every probe's env-flag
+   gate, one-shot/throttle bookkeeping, and fprintf/uniform-override body is byte-for-
+   byte unchanged; only the name-match predicate is now hook-mediated.
+
+### Dedup decisions (documented, not scope creep)
+- `GEM_VTX` (Rnd_Wgpu_RB3.cpp) and `GEM_FORCE` (RB3MaterialBinder.cpp) both test the
+  same literal `"prism_gem"` → share ONE classifier `IsGemMesh`, consistent with the
+  existing `IsBandMemberSkeletonFile` reuse pattern from S1/S2.
+- Draw-level and per-bone `HUB_BAR_PROBE` occurrences share ONE classifier
+  `IsHubBarMesh`. Deliberately NOT reusing the existing B1/B4
+  `hubBarPlacement`/`shardExemptHubBar` policy fields — those are ANDed with the
+  unrelated `RB3_NO_HUB_BAR_*_FIX` opt-out flags, and the debug probe must fire
+  regardless of those production toggles. `IsHubBarMesh` is a pure name test with no
+  flag entanglement.
+- `BONE_PROBE`: only the *default* 5-name list (`plaidshirt`/`trackjacket`/`shirt`/
+  `jacket`/`vestdenim`) was relocated (`IsBoneProbeDefaultMesh`). The
+  `BONE_PROBE_NAME=<substr>` env-override branch stays inline in the engine — it
+  carries no baked-in RB3 literal, just a runtime user-supplied selector string.
+- `RB3_VENUE_PROBE`: investigated, has no hardcoded-literal strstr/strcmp of its own
+  to relocate (only gates an `fprintf` off a plain int flag). The nearby
+  `strstr(envNm, "char")` at L1336/1347 is a pre-existing, separate Bucket-C concern
+  (`sCharRealLight()`), already correctly classified as such by S1/S3 and out of S4
+  scope.
+
+### Final grep census (exit criterion met)
+```
+$ grep -nE 'strcmp|strstr|strncmp' Rnd_Wgpu_RB3.cpp RB3MaterialBinder.cpp RB3HaloPass.cpp
+```
+- `RB3HaloPass.cpp` → **0** (already clean since S3/B6).
+- `RB3MaterialBinder.cpp` → 2 survivors, both Bucket-C (unchanged from S3, S4 didn't
+  touch them): L341 `world.cam`, L425 `game.cam` (camera scene-scope names,
+  Phase-3-deferred, coordinator-approved in S1).
+- `Rnd_Wgpu_RB3.cpp` → 11 survivors:
+  - Bucket-C (5, deferred, unchanged): L1288 `world.cam`, L1336/L1347 `char` (env-name,
+    `sCharRealLight`), L2173 `world.cam`, L4110 `game.cam` (halo-capture cam guard).
+  - Generic env-var-driven selectors with **no hardcoded RB3 literal** (6, left in
+    place by design — the compared value is a runtime `getenv()` string, not game
+    content baked into engine source, so these do not violate the "zero RB3 asset
+    name" wording): L2235 `RB3_ISOLATE_MESH`, L2402/L2454 `MESH_DUMP` (x2), L2847
+    `BONE_PROBE_NAME` override branch, L3276/L3293 `XBONE_TRACK`/`XBONE` bone-name
+    filters, L3435 `C8_PROBE` token, L3517 `CHAIN_PROBE`, L3802 `IK_SHARD_VERT`. This
+    is the same category S1/S3 already used for `RB3_ISOLATE_MESH`; documenting here
+    rather than silently leaving undocumented, per PLAN.md's "if excluded, document"
+    fallback (no coordinator sign-off needed since these were never in the literal-
+    relocation set — S1's Bucket-A/B/C census only flagged the *hardcoded-literal*
+    sub-expressions within these probes, which are now gone).
+
+All hardcoded RB3 asset-name literals inside `strcmp/strstr/strncmp` calls in these
+3 files are now relocated to `rb3_render_hook.cpp`. Remaining survivors are either
+Bucket-C (explicitly deferred to Phase 3, already coordinator-signed-off in S1) or
+carry zero compiled-in RB3 asset knowledge.
+
+### Verification
+- **Build:** `cmake --build native/build-agent-W17S4 --target rb3-native rb3-tests -j8`
+  (clang: `-DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=/usr/bin/clang`)
+  green after every commit, including a from-scratch re-verify after all 3 commits
+  landed.
+- **rb3-tests:** 70 passed / 1 skipped (`DrawLogGolden.PopulatesFromRealDrawMesh`,
+  pre-existing skip, unrelated to this subtask). `StubCensus.*` + `DrawLogGolden.*`
+  all green.
+- **Rendered-output risk:** none by construction — every relocated site is either
+  stderr-only (`fprintf`) or an opt-in debug override gated behind a `getenv()` check
+  that defaults off (`GEM_FORCE`'s magenta-material override). No production
+  (non-debug-gated) code path was touched. Did not attempt a screenshot-hash A/B —
+  per S1/S2's established finding that menu/hub scenes are wall-clock-nondeterministic
+  and this subtask's own description states "no rendered-output risk (logging-only)",
+  so build-green + rb3-tests-green + the grep census constitute the evidence bar here,
+  consistent with how prior logging-only moves in this item were verified.
+- **DC3 not broken:** all 7 new `GameRenderHook` methods are non-pure with `return
+  false` defaults — purely additive header surface, same pattern as S1-S3's
+  classifiers. No dc3-decomp source touched.
+- **Flags:** ZERO net-new env flags (CAM_DBG, HUB_BAR_PROBE, RB3_HEADMAT_DBG, GEM_VTX,
+  GEM_FORCE, BONE_PROBE/BONE_PROBE_NAME, XBONE_TRACK all pre-existing, relocated not
+  created) → `NativeCompatFlags` ledger untouched.
+
+### Deviations from PLAN.md
+- None. Followed the suggested commit sequence (interface scaffold → rb3
+  implementation → engine wiring → grep-zero census) exactly.
+
+### Remains / handoff
+- W1.7 Bucket-A relocation is now complete. Only Bucket-C camera/environ scene-scope
+  names remain inline across all 3 files, per the S1-documented, coordinator-signed-off
+  Phase-3 deferral — no further action needed from this item.
+- The item-level exit criteria (per PLAN.md) should now be re-checked in full by a
+  verifier/coordinator pass over S1-S4 collectively; S4 did not re-verify S1-S3's own
+  claims beyond the grep census and a full rebuild.
