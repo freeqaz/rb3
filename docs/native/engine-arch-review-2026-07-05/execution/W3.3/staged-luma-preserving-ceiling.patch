@@ -1,0 +1,57 @@
+# STAGED PATCH PROPOSAL — W3.3 (do NOT apply this wave)
+#
+# Target: milo-native-engine/src/gfx/Shaders/rb3_postproc.wgsl.inc
+# (engine render file in Lane A's cross-backend WGSL/composite contract — FORBIDDEN
+#  to land this wave under the Wave-6 file fence; queue for Wave 7 after Lane A's
+#  W3.1b settles the WGSL/UniformStructs/composite files).
+#
+# WHY: the composite's "first-frame flash guard" uses a PER-CHANNEL Reinhard rolloff
+# to a common ~0.97 ceiling. During the authored song-start stage-light REVEAL the
+# native lit-path drives the venue HOT (documented in this same file); the per-channel
+# ceiling compresses the saturated-bright pink toward a shared ceiling, which
+# DESATURATES it into the observed grey/washed field (songMs ~2000-6000). Retail
+# (Wii GX) and our RB3_PP_OFF / post-settle captures show this reveal COLORED.
+#
+# FIX DIRECTION: compress on LUMINANCE (preserve chroma) instead of per-channel, so a
+# hot venue moment reads bright-but-COLORED (retail-faithful) rather than grey. Only
+# engages above the knee — correctly-exposed frames are byte-identical (as today).
+#
+# --- current (per-channel, desaturating) ---
+#     let ppCeil = 0.97;
+#     let ppKnee = 0.82;
+#     let ppSpan = ppCeil - ppKnee;
+#     let ppOver = max(color - vec3f(ppKnee), vec3f(0.0));
+#     let ppRolled = vec3f(ppKnee) + vec3f(ppSpan) * (ppOver / (ppOver + vec3f(ppSpan)));
+#     color = select(color, ppRolled, color > vec3f(ppKnee));
+#
+# +++ proposed (luminance-preserving) +++
+#     let ppCeil = 0.97;
+#     let ppKnee = 0.82;
+#     let ppSpan = ppCeil - ppKnee;
+#     let ppLuma = dot(color, vec3f(0.2126, 0.7152, 0.0722));
+#     if (ppLuma > ppKnee) {
+#         let ppOver = ppLuma - ppKnee;
+#         let ppRolledLuma = ppKnee + ppSpan * (ppOver / (ppOver + ppSpan));
+#         // scale RGB uniformly so hue/saturation survive the ceiling compression
+#         color = color * (ppRolledLuma / max(ppLuma, 1e-4));
+#     }
+#     // (final clamp(color,0,1) at return still bounds any single hot channel)
+#
+# VERIFY RECIPE (Wave 7, before/after with fail-red):
+#   1. Pin ONE song+venue across A/B (add --song-name to grayscale-sweep.py so the
+#      QUICKPLAY pick is deterministic — this wave's 3 runs each drew a different
+#      QUICKPLAY default, all the same pub venue; pin it to remove the confound).
+#   2. BEFORE: default_ms3000 grey/washed (this wave's A_default_ms3000_GREY.png).
+#   3. AFTER: default_ms3000 should read COLORED (like B_ppoff / C_venuelightoff),
+#      while ms9000+ settled frames stay byte-identical (never reach the knee).
+#   4. FAIL-RED: revert to per-channel ceiling -> grey wash returns at ms3000.
+#   5. GATE: DC3 zero-blast (this touches only rb3_postproc.wgsl.inc fs_postproc, no
+#      UniformStructs/static_assert change), milo-engine-tests 198/0/2, lineup gate.
+#
+# ALTERNATIVE LEVERS (engine-owner's call):
+#   (b) lower sVenueDirExposure/sVenuePointExposure during the reveal so the composite
+#       input never clips — broader exposure change, affects whole venue path.
+#   (c) render the venue DIRECT (skip Tier-2 composite) when intermediate mean-luma
+#       exceeds a threshold — most faithful (doc measured 0/16 clip direct) but the
+#       composite is needed for the grade on other screens.
+#   Recommend (a): smallest, most-targeted, faithful; does not touch lighting.
