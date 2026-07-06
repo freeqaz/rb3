@@ -149,3 +149,99 @@ S4 (sonnet, Bucket-A debug probes, one batched MOVE) + final grep-zero census.
 - S2/S3 byte-identical gating depends on a frame-deterministic capture (W0.3b) or
   frame-tolerant gates (lineup-gate for B3–B5); flagged above.
 - No net-new env flags introduced (S1 relocates nothing); NativeCompatFlags ledger untouched.
+
+## W1.7.S2 — done
+
+Implementer (Opus), 2026-07-06. Relocated the 5 geometric-placement + shard-guard
+behaviors (B1–B5) out of `milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp` into the
+game-side hook, ONE behavior per commit, each still behind its existing `RB3_*` flag
+(flag read moved INTO the hook). `strcmp/strstr/strncmp` count in the renderer dropped
+49 → 28 (the remaining 28 are S3/S4 Bucket-A debug probes + Bucket-C camera names, not
+S2 scope). All builds green; lineup gate PASS on every shard/skinning commit.
+
+### Commits (engine `milo-native-engine` + rb3, ordered)
+| B | behavior | flag | engine SHA | rb3 SHA |
+|---|---|---|---|---|
+| B1 | hub-bar placement | RB3_NO_HUB_BAR_PLACEMENT_FIX | `c31b387` | `c18841dd` |
+| B2 | scrollbar thumb | RB3_SCROLLBAR_THUMB_FIX_OFF | `2c98705` | `e2bace71` |
+| B3 | skel-rebake dyn-mesh/bone/dir select | RB3_NO_SKEL_REBAKE | `280347b` | `23badbd1` |
+| B4 | hub-bar shard exempt | RB3_NO_HUB_BAR_SHARD_EXEMPT | `0311467` | `05e902e0` |
+| B5 | band-member shard discriminator | (shard-guard region) | `657138a` | (engine-only) |
+
+### Interface used / extended
+- B1/B2/B4 use S1's `DrawGeomPolicy` POD fields (`hubBarPlacement`, `scrollbarBg`/
+  `scrollbarThumb`, `shardExemptHubBar`) via `QueryDrawGeomPolicy(mesh, outWorld)`,
+  fetched ONCE at the top of `DrawMesh` (`geomHook`/`geomPolicy`). Engine keeps ALL
+  matrix math (identity+label-translation, scrollbar-bg world cache) + the `skinned`/
+  `have` application guards, so no float ordering crosses the seam.
+- B3/B5 required per-bone / per-dir string classification that a mesh-only POD cannot
+  express, so **GameRenderHook.h was extended** (see DEVIATION 1) with two `const char*`
+  classifiers + one POD field: `IsBandMemberSkeletonFile(storedFile)` (B3 bandStatic +
+  B5 discriminator, shared), `IsRebakeDynamicBone(boneName)` (B3 per-bone exclusion),
+  and `DrawGeomPolicy.skelRebakeMesh` (B3 mesh-level gate = rebake-enabled && !dynamic-
+  mesh-name). Engine keeps the bone loops + all rebake math (Invert/Multiply/SetBone).
+
+### Byte-identical evidence (per PLAN §evidence procedure)
+- **Structural relocation proof (primary):** each commit is a pure decision relocation —
+  identical name-match predicate + identical flag (same `!= 0`/cache-once idiom) computed
+  in the hook, applied at the identical engine site with the identical guard. Verified
+  null-name parity: B1/B2 short-circuit on null name (`if (mesh->Name())`); B3's
+  `dynamicMesh = mn0 && (...)` (a null name is NOT dynamic) is mirrored exactly so
+  skelRebakeMesh = !off for a null-named mesh.
+- **Build:** `cmake --build native/build-agent-W17S2 --target rb3-native rb3-tests`
+  green after every commit (clang; gcc rejects the MWCC-compat flags — configure with
+  `-DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=/usr/bin/clang`).
+- **rb3-tests:** full suite 70 passed / 1 skipped (`DrawLogGolden.PopulatesFromRealDrawMesh`
+  is skipped in-process by design). `StubCensus.*` + `DrawLogGolden.*` green.
+- **Lineup gate (shard/skin path — B3/B4/B5):** `scripts/native/lineup-gate.py --bin
+  native/build-agent-W17S2/rb3-native` = `verdict=PASS img=PASS segA=PASS ratioB=PASS
+  countC=PASS pin=PASS` after B3, B4, and B5. Confirmed the numeric metrics land in the
+  same nondeterministic envelope as the baseline (baseline itself PASS pre-change): a B3
+  run showing fg_fill=0.53 was a capture-nondeterminism artifact — a re-run on the SAME
+  B3 binary gave fg_fill=0.16 matching baseline, and `max_band_ratio` swings 3.34–3.94
+  run-to-run on one binary. countC (per-slot draw/skinned/vert counts) PASS is the
+  decisive "no draw added/dropped/re-tessellated" signal for the skinning/shard path.
+- **DC3 not broken:** new header methods are NON-pure with base no-op defaults; a
+  DC3-shape hook (overrides only the 2 original pure virtuals) `clang++ -fsyntax-only`
+  compiles clean and is instantiable. No dc3-decomp source touched.
+- **Flags:** zero net-new env flags (all 4 relocated, not created) → NativeCompatFlags
+  ledger untouched (no regeneration needed).
+- **Grep:** B1–B5 asset-name literals (`highlight_main`/`highlight_pattern`/
+  `scrollbar_bg.mesh`/`scrollbar.mesh`/`facehair`…/`skeleton_unshared.milo`/bone-name
+  list) have ZERO remaining `strcmp|strstr|strncmp` CALLS in `Rnd_Wgpu_RB3.cpp` (only
+  prose comments remain). Renderer total 49 → 28 (S3/S4/Bucket-C remainder).
+
+### DEVIATIONS from PLAN.md (recorded per hard-rule requirement)
+1. **GameRenderHook.h extended in S2** (PLAN's S2 file list named only Rnd_Wgpu_RB3.cpp
+   + rb3_render_hook.cpp). B3/B5 classify per-BONE and per-DIR name strings inside engine
+   loops, which S1's `QueryDrawGeomPolicy(RndMesh*, float*)` (mesh-only) cannot express;
+   removing those `strstr` calls to hit the grep-zero exit criterion REQUIRES a hook
+   surface that takes the string. Added 2 `const char*` classifiers + 1 POD field, all
+   with base no-op defaults (DC3-safe). Within S2's goal (relocate B1–B5), not scope
+   expansion. Engine `geomHook` was hoisted from B1's if-scope to `DrawMesh` function
+   scope (in the B3 commit) so B3/B5 reuse the single fetch.
+2. **S1's `DrawGeomPolicy.shardBandMember` field left UNUSED.** B5's discriminator needs
+   the owner's bone iteration, so it is answered by `IsBandMemberSkeletonFile` (engine
+   keeps the loop) rather than a mesh-only POD field. `shardBandMember` retained for
+   source-compat; documented in the header.
+3. **Engine skin gtests (SkinGolden.*/ClipPoseFixture.*) NOT run.** `milo-engine-tests`
+   is the dc3-FLAVOR engine build and does NOT compile `Rnd_Wgpu_RB3.cpp` (RB3-flavor-
+   only per native/CMakeLists.txt); it is also a heavy dc3-coupled build with a
+   pre-existing `MeshVertexLoading` failure (W0.1 note) and concurrent dc3 owners. The
+   only shared change (GameRenderHook.h additive non-pure virtuals) is proven to compile
+   via the DC3-shape syntax check, and the REAL RB3 skinning/shard path (which the skin
+   golden abstracts) is directly gated by the lineup gate = PASS for B3/B5. Building the
+   dc3 suite fresh would add no signal for this specific renderer name-relocation.
+4. **Screenshot-hash A/B not usable for UI behaviors (B1/B2/B4-menu).** The menu render
+   is wall-clock non-deterministic even under RB3_FIXED_CLOCK (VERIFIED: two boots of the
+   SAME binary → different song-select PNG sha256), exactly the gate gap S1 documented.
+   Evidence for the UI relocations is therefore structural proof + build + rb3-tests
+   (+ lineup gate for the B4 shard-guard code path, PASS). Frame-deterministic UI capture
+   awaits W0.3b maturity.
+
+### Remains / handoff to S3/S4
+- S3: material-classification behaviors B6–B13 (RB3HaloPass + RB3MaterialBinder) via
+  `QueryDrawMaterialPolicy`/`QueryHaloPolicy` (S1 interface, unused so far).
+- S4: Bucket-A debug probes + final grep-zero census.
+- Bucket-C camera/environ names still deferred to Phase 3 (S1 decision; coordinator
+  sign-off still pending per S1's note).
