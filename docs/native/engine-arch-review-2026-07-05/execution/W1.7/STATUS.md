@@ -245,3 +245,132 @@ S2 scope). All builds green; lineup gate PASS on every shard/skinning commit.
 - S4: Bucket-A debug probes + final grep-zero census.
 - Bucket-C camera/environ names still deferred to Phase 3 (S1 decision; coordinator
   sign-off still pending per S1's note).
+
+## COORDINATOR SIGN-OFF (Fable, 2026-07-06) — Bucket-C scoping CONFIRMED
+
+The S1 scoping recommendation is **approved as-is**: relocate only asset-name
+(mesh/material/dir) behavior branches (Bucket B); the camera/environ scene-scope
+name selectors (`world.cam`/`game.cam`/`char` environ — RB3.cpp L1287/L1335/L1346/L2146,
+Binder L360/L440, halo cam guard) stay inline, documented, and are DELETED (not
+relocated) by the Phase-3 lighting rewrite that subsumes them. For B12/B13 the
+mesh/material-name half moves to the hook and the cam-name half stays inline as an
+engine-owned scene condition. The S4 grep-zero exit criterion is scoped to zero RB3
+ASSET-name strings, with the deferred Bucket-C survivors listed as permitted. Proceed.
+
+## W1.7.S3 — done
+
+Implementer (Opus), 2026-07-06. Relocated the halo-source NAME exclusions (B6) +
+the material-classification behaviors (B7–B13) out of
+`milo-native-engine/src/platform/{RB3HaloPass,RB3MaterialBinder}.cpp` into the
+game-side hook, ONE behavior per commit (engine commit + rb3 commit per behavior),
+each still behind its existing `RB3_*` flag (flag read moved INTO the hook). The
+engine keeps ALL uniform/shading math + the Bucket-C camera gates; the hook returns
+only WHICH class → uniforms stay bit-identical. RB3HaloPass is now grep-ZERO;
+RB3MaterialBinder's remaining `strcmp/strstr` are only Bucket-C camera names
+(`world.cam`/`game.cam`, Phase-3-deferred) + two Bucket-A debug probes (S4). All
+builds green; rb3-tests 70/70 (+1 skip); lineup gate PASS on the skinning-touching
+(B12) + gameplay (B13) commits.
+
+### Commits (engine `milo-native-engine` + rb3, ordered)
+| B | behavior | flag | engine SHA | rb3 SHA |
+|---|---|---|---|---|
+| B6 | halo-source NAME exclusions (IsHaloSourceMat) | RB3_SMASHER_HALO | `6ede0d3` | `c5e6daf2` |
+| B7 | UI-text material-name class (num*/_source/_comma/.lbl/font/label) | (text heuristic) | `310affc` | `e3e485e0` |
+| B8 | hub-highlight bar colour (highlight_main/pattern) | RB3_NO_HUB_HIGHLIGHT_FIX | `8a9904a` | `636e5dc6` |
+| B10 | colour-icon-font useAlphaAsRGB exclusion (`icon`) | (color-icon) | `54d42cd` | `f9601c3b` |
+| B11 | tail-chain fret colour (tail_green/red/...) | (tail chain) | `56e8c55` | `b16092e6` |
+| B12 | crowd/extras vs band-member path (crowd/extra/char/crowd//char/extras/) | RB3_CROWD_DIM_OFF (master, stays inline) | `fd48f1a` | `d3d02460` |
+| B13 | highway shading (surface/rails/gem_smasher_glow/peakstate) | RB3_TRACK_LIGHT_OFF (master, stays inline) | `efbc981` | `8b68484f` |
+
+### Interface used / extended
+- **B6** → `QueryHaloPolicy(RndMat*)` → `HaloPolicy.forceExclude` (S1 field). Engine
+  keeps the emissive-map/multiplier DATA test; hook owns the surface / gem_smasher_glow
+  name exclusions + the RB3_SMASHER_HALO opt-in (cached once).
+- **B7/B8/B10** → S1's `DrawMaterialPolicy` fields `isUiText`/`isHubHighlight`/
+  `isColorIcon` via `QueryDrawMaterialPolicy(mesh,mat,skinned,owner,camName)`, fetched
+  ONCE at the top of the binder's `if(mat)` block (`matHook`/`matPolicy`). Engine keeps
+  the empty-name RndText discriminator (`isTextMeshHeur`, a direct `'\0'` compare — NOT
+  an asset-name string) and ORs/applies each class.
+- **B11** required the per-fret colour, which S1's `bool isTailChain` cannot express, so
+  **GameRenderHook.h was extended** (DEVIATION 1) with `DrawMaterialPolicy.tailForceColor`
+  + `float tailColor[3]` (name-derived scalars the engine writes into `mu.color[0..2]` +
+  `useTexture=0`; the fret-name match + colour TABLE live entirely in the hook). Float
+  ordering never crosses the seam. `isTailChain` retained (unused, source-compat).
+- **B12** used per-string classifiers (engine keeps the owner-bone loop + the `world.cam`
+  scene gate — Bucket C — inline), mirroring S2's B3/B5 pattern. **Extended the header**
+  (DEVIATION 1) with `IsCrowdExtraMeshName(const char*)` + `IsCrowdExtraDir(const char*)`;
+  band-member discrimination reuses S2's existing `IsBandMemberSkeletonFile`.
+- **B13** used S1's `DrawMaterialPolicy.highwayClass`. **Extended the header**
+  (DEVIATION 1) with a NEUTRAL `enum HighwayMaterialClass { kHighwayNone/Surface/Rails/
+  Smasher/Peakstate }` so engine + hook share the class contract without the header
+  naming a specific asset file. Engine keeps `sTrackLight` + the `game.cam` gate (Bucket
+  C) + the EXACT if/else-if/if/if structure + ALL shading math + its sub-flags
+  (RB3_HIGHWAY_WATERMARK_*, RB3_FRET_GLOW_OFF); the hook only maps material name → class.
+
+### Bucket-C handled per S1 decision (camera names stay inline)
+- B12's `world.cam` and B13's `game.cam` gates were NOT relocated — they remain
+  engine-owned scene-scope conditions read from `RndCam::sCurrent` INSIDE the binder
+  (engine code). The hook NEVER touches `RndCam::sCurrent`: `QueryDrawMaterialPolicy`
+  receives `camName` as a string arg (the engine passes `RndCam::sCurrent->Name()`), and
+  no S3 classification actually consumes it (the material-name classes are cam-agnostic;
+  the engine applies highwayClass/crowd-dim only inside its own cam gate). This matches
+  the S1 Bucket-C scoping exactly.
+
+### B9 (skin_diffuse_output) — reclassified Bucket-A, deferred to S4 (DEVIATION 2)
+PLAN listed B9 as a material-classification BEHAVIOR branch, but the ONLY
+`skin_diffuse_output` occurrence in the current binder (L168, was ~175) is inside the
+`if (getenv("RB3_HEADMAT_DBG"))` DEBUG probe, and the `skinRt` local it computes is a
+DEAD variable (never read by the fprintf). It changes NO rendered output — it is a
+stderr-only Bucket-A debug probe (exactly as S1's own site classification already
+listed L175 under Bucket A). There is no separate skin-RTT behavior branch keyed on
+this name in the binder. Left in place; it will move with the other Bucket-A probes in
+S4 (byte-identical, logging-only). `DrawMaterialPolicy.isSkinRtt` stays unused.
+Similarly `prism_gem` (L517) is inside the `GEM_FORCE` debug probe → Bucket A / S4, not
+B13 behavior (PLAN's B13 row listed prism_gem, but it is debug-only).
+
+### Byte-identical evidence (per PLAN §evidence procedure)
+- **Structural relocation proof (primary):** each commit relocates a DECISION only —
+  identical name-match predicate + identical flag (same `!=0` / cache-once idiom)
+  computed in the hook, applied at the identical engine site with identical guards and
+  identical uniform/shading math. Null/empty-name parity verified per behavior (e.g.
+  B7 hook's `meshName && meshName[0]` + `matName && matName[0]` mirrors the binder's
+  prior guards; the engine's `isTextMeshHeur || matPolicy.isUiText` yields the same
+  final boolean regardless of whether the hook also runs the font/label check on an
+  empty-name mesh). B13 preserves the EXACT if/else-if/if/if control structure; the
+  highway classes are mutually exclusive by exact material name, so a single-value
+  `highwayClass` is equivalent to the four inline name tests.
+- **Build:** `cmake --build native/build-agent-W17S3 --target rb3-native rb3-tests -j8`
+  (clang: `-DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=/usr/bin/clang`)
+  green after EVERY commit.
+- **rb3-tests:** 70 passed / 1 skipped (`DrawLogGolden.PopulatesFromRealDrawMesh`,
+  skipped by design). `StubCensus.*` + `DrawLogGolden.*` green after each commit.
+- **Lineup gate (skinning/gameplay — B12 crowd path + B13 highway):**
+  `scripts/native/lineup-gate.py --bin native/build-agent-W17S3/rb3-native` =
+  `verdict=PASS img=PASS segA=PASS ratioB=PASS countC=PASS pin=PASS` after B12 (crowd
+  skinned path) AND B13 (gameplay highway materials). countC (per-slot draw/skinned/
+  vert counts) PASS = no draw added/dropped/re-tessellated on the skinned path.
+- **DC3 not broken:** all new header surface is additive + NON-pure (POD fields, the
+  `HighwayMaterialClass` enum, `IsCrowdExtra*` classifiers with base `return false`
+  defaults). A DC3-shape hook (overrides only the 2 original pure virtuals) `clang++
+  -std=c++17 -fsyntax-only` compiles clean AND is instantiable (no leftover pure
+  virtual). No dc3-decomp source touched.
+- **Flags:** ZERO net-new env flags (all relocated, not created) → NativeCompatFlags
+  ledger untouched.
+- **Screenshot-hash A/B:** not usable at menu/hub (wall-clock non-determinism, the
+  S1/S2-documented gate gap); the gameplay-scene captures are covered by the
+  frame-tolerant lineup gate above.
+
+### Grep census after S3 (S4 will finish grep-zero)
+- `RB3HaloPass.cpp` → **0** `strcmp/strstr/strncmp` (B6 fully cleaned it).
+- `RB3MaterialBinder.cpp` → 4 survivors, ALL out of S3 scope:
+  - L168 `skin_diffuse_output` — Bucket-A debug probe (RB3_HEADMAT_DBG) → S4.
+  - L517 `prism_gem` — Bucket-A debug probe (GEM_FORCE) → S4.
+  - L340 `world.cam`, L424 `game.cam` — Bucket-C camera scene-scope names → Phase 3.
+- `Rnd_Wgpu_RB3.cpp` unchanged by S3 (S2 dropped it 49→28; S4 handles its Bucket-A).
+
+### Remains / handoff to S4
+- S4: relocate the Bucket-A debug probes (incl. binder L168 skin_diffuse_output + L517
+  prism_gem) and run the final grep-zero census. After S4, the only permitted survivors
+  are the Bucket-C camera/environ scene-scope names (Phase-3-deferred, S1-documented).
+- Bucket-C deferral still pending explicit coordinator sign-off (S1's open note); S3 did
+  NOT touch the cam gates, so no sign-off was required to proceed.
