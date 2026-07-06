@@ -1358,6 +1358,40 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 // space fix cannot repair. Such bones stay pending (mesh stays
                 // on the guard — status quo) until a clip-free capture happens.
                 if (mDriver && mDriver->FirstPlaying()) {
+                    // W2.2.S2 — count-in/walkon clip-free capture gap
+                    // (RB3_HANDS_BIND_FIX, class:feature, default OFF). A bone whose
+                    // FIRST distinct resolve lands mid-clip (the count-in/walk-on
+                    // window always plays a clip, so a per-member skeleton that
+                    // streams in there first-resolves poisoned) is normally rejected
+                    // -> the whole mesh stays pending -> the V24 ratio guard drops it
+                    // (S1a measured: saddleshoe_skin.2 4.73x DROP + head.mesh 69.5u /
+                    // hand 2.3x grazes, all in the count-in window). But the
+                    // load-time seed (NativeCaptureRestPoseAfterDeform, poison-guarded
+                    // to the clip-free deform rest) has usually ALREADY snapshotted
+                    // this bone's own==bound magnet rest into mNativeRestPose (rp !=
+                    // end here, and it is NON-distinct = clip-free by construction:
+                    // the seed and the RB3_BOUND_REBAKE Poll capture are the only
+                    // writers and both are clip-free). The shared magnet and the
+                    // per-member bone hold the SAME weighted gender-bind rest at
+                    // load, and char-space divides out placement, so that seed is a
+                    // valid clip-free basis for the now-distinct bone. Reuse it
+                    // instead of poisoning on the mid-clip pose, and promote it to
+                    // distinct (authoritative for later frames). Default OFF; the S1b
+                    // oracle (offset'=meshWorld*inv(rest), HANDS_BIND_ORACLE_PERTURB)
+                    // fail-reds a wrong basis, and S3 measures whether this actually
+                    // clears the drop without re-introducing the 200-460u tripwire.
+                    static int sHandsBindFix = -1;
+                    if (sHandsBindFix < 0)
+                        sHandsBindFix = getenv("RB3_HANDS_BIND_FIX") ? 1 : 0;
+                    if (sHandsBindFix && rp != mNativeRestPose.end()) {
+                        rest = rp->second;              // clip-free load-time seed
+                        mNativeRestDistinct.insert(bname); // promote: authoritative
+                        owns[b] = own;
+                        rests[b] = rest;
+                        apply[b] = 1;
+                        resolvable++;
+                        continue;
+                    }
                     miss++;
                     if (!missBone) { missBone = bound->Name(); missWhy = "clipPlaying"; }
                     continue;
