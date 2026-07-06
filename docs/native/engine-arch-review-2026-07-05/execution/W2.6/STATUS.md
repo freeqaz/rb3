@@ -80,3 +80,30 @@ green) hold trivially: no new flag, no new code path.**
 `RB3_HANDS_BIND_FIX` + `RB3_SKEL_REBIND_FULL` + the 90 `rb3/src/system` scan-root flags, per S1 memo.
 
 **Files touched by W2.6.S2:** STATUS.md only (this section). No source, no commits beyond docs.
+
+## W2.6.S3 — done (verify: NO-FLIP, diagnosis-only certified regression-safe)
+
+**Premise:** S3 is gated "(only if S2 ran)". S2 = NO-OP (`2675cde6`): `RB3_FOOT_REST_CAPTURE` never
+introduced, `git diff HEAD -- src/system/bandobj/BandCharacter.{cpp,h}` EMPTY. So the flag A/B gates
+(Gate 2 flag-ON, Gate 5 flag-ON) are **N/A** — no flag. S3 instead certifies the diagnosis-only HEAD
+(= the "flag-OFF" state, byte-identical) is regression-safe and produces the go/no-go package.
+
+**Recommendation: NO-FLIP** (nothing to flip; PART-1 landed diagnosis-only per S1 STOP). Package:
+`W2.6/char/S3_MEASURE.md`.
+
+**Gate results (all applicable gates GREEN):**
+- **Gate 1 flag-OFF byte-identical — PASS:** source diff EMPTY; drawlog splash canonical golden PASS
+  (888 draws, 238 known-residual within bound, 0 unexpected); W0.5 `lineup-gate.py` PASS all layers
+  (img/segA/ratioB/countC/pin, max_band_ratio 3.99); `rb3-tests` 79 pass / 3 skip(fixture) / 0 fail
+  incl. `HandsBindOracle` green + `HANDS_BIND_ORACLE_PERTURB` fail-red RED (2 tests flip to FAILED).
+- **Gate 2 flag-ON drop clears — N/A:** no flag (S2 NO-OP).
+- **Gate 3 STOP-tripwire — PASS (inherited, no code delta):** S1 measured max SKINPOS 69.5u, 0 fling,
+  nothing ≥92u, nothing 200-460u; unchanged (no source change).
+- **Gate 4 negative control — PASS (trivial):** crowd/extras SKIN_CLAMP byte-identical vs S1 baseline
+  (`parsed-drop.json` 35 meshes/1778 events; `parsed-default.json` 36/2753 — lineup-dep) — no source
+  touches the non-rebound crowd/extras path.
+- **Gate 5 W0.5 lineup (flag-ON path) — PASS:** reduces to flag-OFF=HEAD; lineup gate verdict=PASS.
+
+**Commits:** `<S3_SHA>` (S3_MEASURE.md + this STATUS section). No source, no flag, no flip.
+**Exit criteria:** 1 (flag-OFF byte-identical) + 5 (`HandsBindOracle` green + fail-red) hold; criteria
+2/3/4 covered N/A or inherited-green per above. Default flip is NOT created (coordinator-gated; N/A).
