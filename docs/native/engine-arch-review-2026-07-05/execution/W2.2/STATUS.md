@@ -87,3 +87,56 @@ foot/hand appendage ratios), so the CLASSES are stable even as specific mesh nam
 no 200-460u smear, no band-appendage guard-drop. `RB3_BOUND_REBAKE` was NOT run.
 
 Commits: see `git log --grep='W2.2.S1a'`.
+
+## W2.2.S1b — done (numeric bind-pose identity oracle, fail-red)
+Implementer: Opus. Build dir `native/build-agent-W2.2` (Clang). Commit `03f76e11`.
+
+**Deliverable (all NEW, no shipped-source edits):**
+- `native/tests/test_hands_bind_oracle.cpp` — the falsifiable invariant BandPatchMesh
+  never had (SYS-7 hole). At the captured bind pose, `offset'=meshWorld·inv(restWorld)`
+  (exactly `BandCharacter.cpp:1425-1428`) composed back with the bone
+  (`offset'∘restWorld`) must reproduce `meshWorld`, and a mesh-local vert must skin to
+  its authored world position. Uses the SAME production engine free funcs the rebake
+  calls: `Multiply(Transform,Transform,Transform)` (row-vector "apply a then b",
+  `math/Rot.cpp:732-740`) + `Invert(Transform,Transform)` (`math/Mtx.h:697`), linked via
+  `_RB3_NATIVE_SRCS`.
+- `native/CMakeLists.txt` — one source line added to the `rb3-tests` target list
+  (`:718`; verified single-line diff, no sibling lines touched — the R5 cross-diff
+  merge point).
+- `native/tests/goldens/w2.2-hands/README.md` — documents the real-path fixture format
+  + the exact in-game dump point for the S1a probe.
+
+**Tests (4 in suite `HandsBindOracle`):**
+1. `ComposeIdentityAtBindPose` — `skin==meshWorld` AND `skin∘inv(meshWorld)==I`; honors
+   `HANDS_BIND_ORACLE_PERTURB` (fail-red).
+2. `SkinnedVertsMatchAuthored` — 4 mesh-local verts incl. a long-thin **R~200u fingertip**
+   to exercise the `R·sin(θ)` smear; honors the perturb env (fail-red).
+3. `PerturbationIsDetected` — self-contained permanent guard (fixed 0.02rad wrong basis
+   MUST exceed eps), so `kMatEps`(1e-3)/`kVertEps`(5e-2u) can never be loosened into
+   BandPatchMesh-style blindness.
+4. `RealPathFixture` — best-effort real-numbers arm; asserts the invariant on an
+   S1a-dumped fixture (`native/tests/goldens/w2.2-hands/bind_fixture.txt`, override
+   `HANDS_BIND_ORACLE_FIXTURE`) when present, else `GTEST_SKIP` (Risks §R3 fallback —
+   invariant still checked on synthetic transforms).
+
+**Gate evidence:**
+- Unperturbed: `ctest -R HandsBindOracle` → 3 pass / 1 skip (RealPathFixture; fixture
+  not yet dumped). `ComposeIdentityAtBindPose`, `SkinnedVertsMatchAuthored`,
+  `PerturbationIsDetected` GREEN.
+- **Fail-red proven:** `HANDS_BIND_ORACLE_PERTURB=0.15 rb3-tests` → both invariant tests
+  RED; fingertip smears **28.87u** (≈ 200·sin(0.15)=29.7u — the R·sin(θ) failure mode),
+  identity residual 0.897 vs 1e-3 eps.
+- **No regression:** full `rb3-tests` = **73 pass / 2 skip / 0 fail** (the +2 pass +1 skip
+  are exactly the new oracle).
+
+**PLAN deviation (recorded per protocol):** the plan/brief assumed test rotations could
+be built with the engine `Matrix3::RotateAboutX/Y/Z`. Those call the engine `Sine`, which
+reads `gBigSinTable` filled by `TrigTableInit()` — NOT run in the standalone gtest process
+(`Sine`→0 → singular test inputs). Fix: build INPUT rotations with host libm
+(`std::sin/std::cos`) via explicit orthonormal matrices; the compose/invert **under test**
+remain the production engine functions (trig-init-independent). No scope change — the
+invariant and fail-red are unaffected.
+
+**Remains / handoff:** RealPathFixture is armed but SKIPs until S1a (or a follow-up) dumps
+a `bind_fixture.txt` from the in-game rebake point (format in the goldens README). This is
+the plan's best-effort real-path arm; the numeric core is fully covered. No blockers.
