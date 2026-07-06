@@ -256,7 +256,8 @@ def main():
         log(f"PROBE: {reason}")
         return 0
 
-    STATES = [("OFF", {}), ("ON", {"RB3_PLACEMENT_CONTRACT": "1"})]
+    # Post-flip (Wave 6): contract is default-ON; OFF arm = opt-out env, ON arm = default.
+    STATES = [("OFF", {"RB3_PLACEMENT_CONTRACT_OFF": "1"}), ("ON", {"RB3_PLACEMENT_CONTRACT": "1"})]
     scores = {"OFF": [], "ON": []}
     batch_log = []
     verdict = None

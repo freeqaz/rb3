@@ -17,6 +17,19 @@ behavior-preserving extraction · **KEEP** = faithful/sound, do not touch.
 
 ---
 
+> **STATUS (coordinator, 2026-07-06 after Wave 6): THE SYS-1 PLACEMENT FIX SHIPPED.**
+> `RB3_PLACEMENT_CONTRACT` flipped **default-ON** (engine `fced18b`) — the Wave-5 wash hold was
+> refuted by a songMs-pinned interleaved measurement (A/A-variable: wash present flag-OFF, Mann-
+> Whitney p=1.0; filed as its own flip-independent backlog item). Crowd + drum now draw at faithful
+> placements by default; opt-out `RB3_PLACEMENT_CONTRACT_OFF`. Also shipped default-ON: the **black
+> singer head fix** (W2.7 — nested-subdir head texture unreachable by non-recursive Find). Landed
+> gated: hub grey-quad hide (W4.1), projLight + fog-verified `RB3_ENV_FOG` (W3.1b). Root-caused for
+> Wave 7: grayscale song-start (native composite over-exposure, patch staged), menu-text color floor
+> (`RB3MaterialBinder.cpp:145`), **finger-shard = rotation-basis invBind mismatch** (W2.2 oracle
+> blind to it — far-vertex metric first). W3.2 box-ambient prototype **refuted its own premise**
+> (venues have zero directional approx lights; the real SYS-4 gap is point-lights). Wave 6 table +
+> backlog in `execution/README.md`.
+>
 > **STATUS (coordinator, 2026-07-06 after Wave 5):** Draw order made deterministic (W0.3d-fix);
 > **the crowd/drum placement fix is ready-to-ship** (W2.1-flip staged as a one-line default toggle +
 > opt-out + drum oracle + Dolphin A/B). **Coordinator HELD the flip on visual sign-off** — the

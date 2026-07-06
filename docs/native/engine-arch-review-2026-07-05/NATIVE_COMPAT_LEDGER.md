@@ -5,9 +5,9 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 321  
-**By class:** feature=9, perf=9, probe=89, unknown=138, workaround=76  
-**Default-ON workarounds (the number §W5.3 must drive to 0):** 68
+**Total flags:** 325  
+**By class:** feature=10, perf=9, probe=91, unknown=138, workaround=77  
+**Default-ON workarounds (the number §W5.3 must drive to 0):** 69
 
 | name | class | default | owner | faithful-status | sites |
 |---|---|---|---|---|---|
@@ -104,6 +104,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_BAND_SHARD_WORLDFLOOR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BC_TEX_OFF` | workaround | on | render/texture | not-live: block-compressed texture path default-ON | 1 |
 | `RB3_BILLBOARD_OFF` | workaround | on | render/billboard | not-live: native RndMultiMesh::DrawShowing kFastBillboardXYZ branch default-ON; opt-out disables the native billboard branch | 1 |
+| `RB3_BLACK_HEAD_FIX_OFF` | workaround | on | render/c8-faces | not-live: band head_naked.mat gets a null diffuse on native because <gender>_head_diff.tex + head_naked.mat live in a nested head subdir unreachable by the non-recursive dir1->Find (the Wii milo flat-merges them); unlike torso/feet (dummy_* fallback) the head has no fallback -> flat-black head in dim venues / pink in warm. Default-ON recursively binds the head detail texture to the drawn head.mesh material; opt-out RB3_BLACK_HEAD_FIX_OFF=1 (W2.7, see project_c8_faces memory) [OutfitConfig.cpp:564] | 1 |
 | `RB3_BLOOM_BLEND` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BLOOM_OFF` | workaround | on | render/bloom | not-live: synthetic bloom pass default-ON | 1 |
 | `RB3_BLOOM_SCALE` | unknown | unknown | unclassified | n/a | 1 |
@@ -133,6 +134,9 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_DTA_OVERLAY` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_DUMP_STEMS` | probe | off | audio/stems | n/a: opt-in raw PCM stem dump to disk (one .s16 file per channel under the given directory); purely a side-channel file write, does not alter the audio mix/playback path [StandardStream.cpp:68] | 1 |
 | `RB3_ENV_FOG` | feature | off | render/lighting | not-live: faithful RndEnviron fog fill (FogEnable/GetFogStart/GetFogEnd/FogColor -> SceneUniforms fog + RndMat::mFog -> materialFogEnabled), default-OFF (W3.1a) | 1 |
+| `RB3_ENV_FOG_FORCE` | probe | off | render/lighting | probe: synthesizes authored fog params onto the current environ at the fill site so RB3_ENV_FOG renders on a real venue for screenshot A/B (no in-repo asset authors fog); requires RB3_ENV_FOG, default-OFF (W3.1b) | 1 |
+| `RB3_ENV_PROJLIGHT` | feature | off | render/lighting | not-live: faithful RndEnviron kFakeSpot projected-light fill (mLightsReal gobo -> projLight* SceneUniforms fields + local RndLight::Projection port + slot-3 gobo bind), default-OFF (W3.1b) | 1 |
+| `RB3_ENV_PROJLIGHT_FORCE` | probe | off | render/lighting | probe: synthesizes a projected light from the first showing RndEnviron light (relaxes the kFakeSpot/gobo gates) so RB3_ENV_PROJLIGHT renders a screenshot A/B on a real venue when none authors one; requires RB3_ENV_PROJLIGHT, default-OFF (W3.1b) | 1 |
 | `RB3_FAKE_ASYNC_OPEN_MS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_FIXED_CLOCK` | feature | off | session-telemetry/determinism | n/a: headless-determinism harness flag (off in shipping runs) — trace-free fixed sim clock | 1 |
 | `RB3_FIXED_CLOCK_DT_MS` | feature | off | session-telemetry/determinism | n/a: headless-determinism harness value knob (fixed per-frame sim dt in ms; off = built-in 1/60s default) | 1 |
@@ -225,8 +229,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PIPELINE_PREWARM_NOCHUNK` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_PIPELINE_PREWARM_OFF` | workaround | on | load/perf | not-live: GPU pipeline prewarm default-ON (see project_incremental_load_perf memory) | 1 |
 | `RB3_PIPELINE_PREWARM_PER_FRAME` | unknown | unknown | unclassified | n/a | 1 |
-| `RB3_PLACEMENT_CONTRACT` | feature | off | render/placement | not-live: SYS-1 skinned-placement contract (obj.world=meshWorld + bind-relative palette), default-OFF pending coordinator flip | 1 |
-| `RB3_PLACEMENT_CONTRACT_OFF` | feature | off | render/placement | opt-out for the SYS-1 placement contract (RB3_PLACEMENT_CONTRACT); disables it when the contract is default-ON (takes precedence over the opt-in). Effective default-OFF this wave. | 1 |
+| `RB3_PLACEMENT_CONTRACT` | feature | on | render/placement | live: SYS-1 skinned-placement contract (obj.world=meshWorld + bind-relative palette), default-ON as of Wave 6 flip (2026-07-06); opt out via RB3_PLACEMENT_CONTRACT_OFF | 1 |
+| `RB3_PLACEMENT_CONTRACT_OFF` | feature | off | render/placement | now the live opt-out: the SYS-1 placement contract is default-ON as of the Wave 6 flip; setting this disables it (takes precedence over the opt-in) | 1 |
 | `RB3_PLACEMENT_PROBE` | probe | off | render/placement | n/a: dumps each crowd instance's spXfm translation used by the W2.1 RB3_PLACEMENT_CONTRACT placement oracle; Wii-compile-inert, no behavior change [Crowd.cpp:421] | 2 |
 | `RB3_PP_OFF` | workaround | on | render/post | not-live: post-process stack default-ON | 1 |
 | `RB3_PP_PROBE` | probe | off | bandobj/patchmesh | n/a: dumps BandPatchMesh::WorkVerts::SetMeshVerts entry state (vert/face counts, max face index, OOB check) added while triaging the C8 head-invisible regression [BandPatchMesh.cpp:324] | 1 |
@@ -272,7 +276,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_SKINFIX_DBG` | probe | off | skinning | n/a: logs every MatSwap touched by the outfit skin-diffuse rebind loop and what it rebinds, added while triaging the C8 head-invisible regression [OutfitConfig.cpp:600] | 1 |
 | `RB3_SKIN_FIX_OFF` | workaround | on | render/c8-faces | not-live: skin RT-recolor compose rebind (only active when RB3_SKIN_RTT is also set); opt-out RB3_SKIN_FIX_OFF=1 (see project_c8_faces memory) [OutfitConfig.cpp:566] | 1 |
 | `RB3_SKIN_NOCACHE` | perf | off | skinning | n/a: A/B disable of the per-member skinned-mesh cache (measurement only; default cached path is a perf optimization, see incremental-load-perf memory) [BandCharacter.cpp:851] | 1 |
-| `RB3_SKIN_RTT` | feature | off | render/c8-faces | not-live: gates the engine skin-RTT composite path (broken on web); default-OFF ships the direct-bind diff x skin-tone bypass (see project_c8_faces memory 266ffb1b) [OutfitConfig.cpp:508,572] | 2 |
+| `RB3_SKIN_RTT` | feature | off | render/c8-faces | not-live: gates the engine skin-RTT composite path (broken on web); default-OFF ships the direct-bind diff x skin-tone bypass (see project_c8_faces memory 266ffb1b) [OutfitConfig.cpp:508,572] | 3 |
 | `RB3_SKIN_TIMING` | probe | off | skinning | n/a: timing print summing skinned-mesh cache rebuild vs cache-hit cost [BandCharacter.cpp:846] | 1 |
 | `RB3_SKIP_SKINNED` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SKIP_STATIC` | unknown | unknown | unclassified | n/a | 1 |

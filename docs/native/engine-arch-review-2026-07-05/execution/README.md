@@ -243,3 +243,59 @@ default-OFF oracle-RED confirmed against `a4bde9f`; pin bumped; flip HELD.
   lower-body/outfit meshes, default-OFF, inheriting W2.2's four-layer anti-revert gates. Plus a
   flag-registry cleanup: register `RB3_HANDS_BIND_FIX`/`RB3_SKEL_REBIND_FULL` and extend the census to
   scan `rb3/src/system/` (game-code flags are currently uncovered).
+
+## Wave 6 results (2026-07-06, run `wf_9bfc818f-c39`, 16 agents + 3 side agents)
+
+**THE CROWD/DRUM PLACEMENT FIX SHIPPED: `RB3_PLACEMENT_CONTRACT` flipped default-ON (engine
+`fced18b`) after the Wave-5 wash hold was refuted by measurement.** Also: black singer head fixed
+default-ON, main-hub grey quad hidden behind a flag, W3.1b lighting tail complete, BoxMap prototype
+partially refuted its own design, grayscale-venue + menu-text + finger-shard all root-caused.
+Engine `8e7eddd` → (pin bump pending re-golden). Kickoff+review: `caf28a2b` (8 amendments adopted;
+key catch: the bloom-halo suspect was mechanically impossible — game.cam-gated vs venue-cam A/B).
+
+| Item | Status | Highlights |
+|---|---|---|
+| W2.1-flip-blocker | ✅ **complete → FLIP EXECUTED** | S1 built `wash_score.py` (luma both-tails + pink-hue, selftest green, validated exactly against Wave-5 luma); batch-0 already found a PINK wash flag-OFF. S2 songMs-pinned (21000±250) interleaved measurement, n=7/state: **VERDICT A/A-variable** — wash flag-OFF 2/7 vs flag-ON 4/7 (Fisher p≈0.59), luma Mann-Whitney U=24.0 **p=1.0**, wash = full-frame magenta env cast a crowd-only transform cannot produce, class flips PINK↔NEARBLACK across boots at equal songMs. **The Wave-5 "wash only flag-ON" premise is refuted under time control.** S3 filed the wash as its own backlog item (ranked prior: async asset residency > RB3PostProc grade > P4 venue-light; needs N≥6/config matrix) + A5 pre-flip checks: re-measured post-flip count **792** (3/3), OFF-arm inversion sweep (3 harnesses), classification row drafts. S4 fresh sign-off package on detector-selected wash-free frames, oracle GREEN companion. **Coordinator E1: SIGNED OFF + flipped `kPlacementContractDefaultOn` 0→1 (`fced18b`); default build oracle GREEN / opt-out RED reproduced; harness OFF-arms inverted to `RB3_PLACEMENT_CONTRACT_OFF=1`.** Caveat recorded: the Wave-6 montage's small-venue shot is weakly informative for crowd-spread; sign-off leans on oracle + Wave-5 layout judgment + the wash refutation. |
+| W3.1b projLight + fog verify | ✅ **complete** | projLight kFakeSpot gobo fill landed default-OFF `RB3_ENV_PROJLIGHT` (+`_FORCE` probe), byte-identical flag-OFF; **fog visual verification CLOSED** — `RB3_ENV_FOG_FORCE` probe (no in-repo asset authors fog) renders visible grey-blue depth-graded fog (scene+material AND-gate 151 vs 19 noise). projLight *visible-effect* honestly asset+shader-blocked (no venue authors kFakeSpot+gobo; term only lights lit surfaces in cone) — documented, not a defect. A.S7 independent verify: all PLAN exits GREEN on fresh build (engine `0f3d7ef`), DC3 zero-blast, milo-engine-tests 198/0/2. |
+| W3.2 BoxMap prototype | ✅ **complete [design partially REFUTED]** | `RB3_BOX_AMBIENT` 6-axis box-ambient cube built + gated in worktree branch `wave6-boxmap-proto` (flag-OFF byte-identical, lineup PASS both states). **Refutation on real data: boot-reachable venues have 27 point + 1 fakespot + ZERO directional approx lights** → the per-environ directional-cube is a near-no-op; the genuine SYS-4 fidelity gap is **point-lights** (Wii per-object cube vs our per-pixel Lambert). → Wave-7 **escalate-or-drop** decision. |
+| W4.1 UI parity | ✅ **complete** | (a) main_hub grey quad = REAL, root-caused (`playnow.lsw` LabelShrinkWrapper in 360-ARK `main_hub.milo`, opaque-grey on native / hidden on Wii — SYS-5); fix landed default-OFF `RB3_HUB_MENU_QUAD_HIDE` (`b537d275`). (b) song_select overlap = **largely already fixed**; residual red sliver adjudicated a legitimate scrollbar thumb. (c) part_difficulty = **NOT A BUG** — settle-frame recapture (frames 366-734) shows widgets render correctly; the coordinator's frame-390 screenshot was a mid `part:guitar` camera zoom; black poster quads = venue backdrop → backlog handoff. Lane verify PASS, fence respected. |
+| W2.7 black head (Lane D) | ✅ **complete [default-ON]** | Singer flat-black head ROOT-CAUSED + FIXED in game code (`837808e1`): `<gender>_head_diff.tex` + `head_naked.mat` live in a nested head subdir unreachable by the non-recursive `dir1->Find` (Wii milo flat-merges); head has no `dummy_*` fallback (unlike torso/feet) → null diffuse → flat lit color (black in dim venues / pink in warm). Fix = recursive head-detail-texture bind, head-only, null-only, HX_NATIVE, Wii byte-identical, **default-ON** opt-out `RB3_BLACK_HEAD_FIX_OFF`. |
+| W3.3 grayscale venue (Lane D) | ✅ **complete [diagnosis; fix staged Wave 7]** | Native-only **postproc-composite over-exposure of the authored song-start stage-light reveal** (songMs ~2000-6000, self-corrects ~9000): composite runs the reveal hotter than Wii GX; the per-channel Reinhard ceiling guard desaturates hot pink → grey wash. NOT authored B&W, NOT P4 grey-fallback, NOT uninit tonemap (3-way flag matrix at ms3000: default=grey, RB3_PP_OFF=color, RB3_VENUE_LIGHT_OFF=color). Root cause in Lane-A-owned engine files → **staged luminance-preserving-ceiling patch** + Wave-7 backlog (`e5166976`). Likely same mechanism-space as the wash item. |
+
+**Side agents (user-reported, characterization-only):**
+- **W4.2 menu text/selection (`537c4f7b`):** focused menu items render pale-on-pale because of an
+  unconditional UI-text color floor `max(0.6, color)` at `RB3MaterialBinder.cpp:145-149` clobbering
+  `UILabel` per-focus-state colors (focused = authored ~black on gold). LONG-STANDING (engine
+  `08b3932`, 2026-05-30), not a wave regression. → Wave-7 engine fix; gate = the ticker/FRIEND
+  RANKINGS/CHOOSE INSTRUMENT labels the floor originally rescued stay readable.
+- **W2.8 missing hands + transparent torsos (`7ada449b`):** hands DO draw, zero guard-DROPs —
+  fingers **shard into thin sheets by R·sin(θ)** (rotation-basis mismatch: animated bone basis ≠
+  static magnet the invBind was baked against; the documented C8 residual). Whole-mesh ratio +
+  origin skinpos read CLEAN = **W2.2's oracle is BLIND to this** (needs a far-vertex rotation
+  metric). "Transparent torsos" = the same shard sheets over the silhouette; all torso base meshes
+  draw opaque (blend=1) — no material bug found. → Wave-7: **BL-A2 far-vertex oracle first, then
+  BL-A1 rotation-aware invBind rebake** (`BandCharacter.cpp`, collision-free).
+
+**Coordinator actions:** E1 sign-off + flip (`fced18b`) + oracle A/B reproduced (default GREEN /
+opt-out RED); single classification regen (`1b045d9`, 325 flags, check clean); harness OFF-arm
+inversions; re-golden 888→792 + N≥30 sidecar + 15/15 sweep + lineup gate delegated (in flight);
+pin bump follows.
+
+### New/updated backlog (Wave 6 → Wave 7)
+
+- **WASH (flip-independent, from W2.1-flip-blocker/STATUS.md):** stochastic full-frame venue-cam
+  wash (PINK/NEARBLACK/WHITE), boot-nondeterministic. Ranked prior: async asset residency (W0.3d
+  part-b patch still unlanded) > RB3PostProc grade > P4 venue-light. Method: 4-flag matrix, N≥6
+  boots/config, scored by `wash_score.py`. Cross-check W3.3 (same mechanism space).
+- **W3.3-fix:** land the staged luminance-preserving composite ceiling patch (Lane-A engine files
+  now free).
+- **W4.2-fix:** relax/gate the UI-text color floor (`RB3MaterialBinder.cpp:145-149`), A/B'd against
+  the three labels it originally rescued.
+- **W2.8:** BL-A2 far-vertex rotation oracle (rb3-tests; no engine hook) → BL-A1 rotation-aware
+  outfit invBind rebake in `BandCharacter.cpp`. BL-B1 (low): named-member torso recheck.
+- **W3.2 escalate-or-drop:** point-light fidelity (per-object cube vs per-pixel Lambert) is the real
+  SYS-4 gap; decide whether to land the box-ambient prototype anyway (near-no-op on current venues)
+  or redesign around point lights.
+- **RB3_HUB_MENU_QUAD_HIDE flip decision:** default-OFF; coordinator visual A/B then flip.
+- **Venue black poster quads** (part_difficulty backdrop, out of W4.1 fence) — SYS-5 family.
+- Carried: 4→8 light arrays (DC3 gates), W2.6 foot/shoe lower body, W2.4 BandPatchMesh decision.

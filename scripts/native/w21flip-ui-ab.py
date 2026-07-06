@@ -167,8 +167,9 @@ def main():
 
     captures = {}
     plan = [
-        ("OFF", 1, {}),
-        ("OFF", 2, {}),
+        # Post-flip (Wave 6): contract is default-ON; the OFF arm must set the opt-out.
+        ("OFF", 1, {"RB3_PLACEMENT_CONTRACT_OFF": "1"}),
+        ("OFF", 2, {"RB3_PLACEMENT_CONTRACT_OFF": "1"}),
         ("ON", 1, {"RB3_PLACEMENT_CONTRACT": "1"}),
         ("ON", 2, {"RB3_PLACEMENT_CONTRACT": "1"}),
     ]
