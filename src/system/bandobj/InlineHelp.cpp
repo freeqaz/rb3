@@ -9,6 +9,10 @@
 #include "ui/UIComponent.h"
 #include "utl/Locale.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstdio>  // RB3_HOLDLABEL_DBG probe (Wave12 W4.3-C34, C3/C4 diagnosis)
+#include <cstdlib> // getenv
+#endif
 
 
 #ifdef __MWERKS__
@@ -281,6 +285,23 @@ void InlineHelp::Enter() {
 void InlineHelp::Poll() {
     UIComponent::Poll();
     float uisecs = TheTaskMgr.UISeconds();
+#ifdef HX_NATIVE
+    // Wave12 W4.3-C34 (C3 diagnosis): the flip-rotation clock is process-wide
+    // static state shared by every InlineHelp instance. Log every branch so we
+    // can see whether uisecs is actually advancing under RB3_FIXED_CLOCK and
+    // whether sLabelRot ever escapes the formula's [-120,0]-equivalent range
+    // (it should be mathematically impossible for it to reach +-180).
+    static bool sHoldLabelDbg = getenv("RB3_HOLDLABEL_DBG") != NULL;
+    if (sHoldLabelDbg) {
+        fprintf(
+            stderr,
+            "[holdlabeldbg poll] this=%p uisecs=%.4f last=%.4f rotTime=%.4f "
+            "labelRot=%.3f rotated=%d willUpdate=%d\n",
+            (void *)this, uisecs, sLastUpdatedTime, sRotationTime, sLabelRot,
+            (int)sRotated, (int)(uisecs != sLastUpdatedTime)
+        );
+    }
+#endif
     if (uisecs != sLastUpdatedTime) {
         sNeedsTextUpdate = false;
         if (uisecs > sRotationTime) {
@@ -297,6 +318,15 @@ void InlineHelp::Poll() {
                 }
                 SetLabelRotationPcts(f1);
             }
+#ifdef HX_NATIVE
+            if (sHoldLabelDbg) {
+                fprintf(
+                    stderr,
+                    "[holdlabeldbg poll] f1=%.4f -> labelRot=%.3f rotated=%d\n",
+                    f1, sLabelRot, (int)sRotated
+                );
+            }
+#endif
         }
         sLastUpdatedTime = uisecs;
     }
@@ -326,6 +356,19 @@ void InlineHelp::DrawShowing() {
         rotXfm.v.Zero();
     }
 
+#ifdef HX_NATIVE
+    static bool sHoldLabelDbg = getenv("RB3_HOLDLABEL_DBG") != NULL;
+    if (sHoldLabelDbg) {
+        const char *nm = Name();
+        fprintf(
+            stderr,
+            "[holdlabeldbg draw] this=%p name='%s' numLabels=%d labelRot=%.3f "
+            "localXfm.v=(%.2f,%.2f,%.2f) worldXfm.v=(%.2f,%.2f,%.2f)\n",
+            (void *)this, nm ? nm : "?", numLabels, sLabelRot, LocalXfm().v.x,
+            LocalXfm().v.y, LocalXfm().v.z, worldXfm.v.x, worldXfm.v.y, worldXfm.v.z
+        );
+    }
+#endif
     for (int i = 0; i < numLabels; i++) {
         if (i > 0) {
             if (mHorizontal) {
@@ -335,9 +378,25 @@ void InlineHelp::DrawShowing() {
             }
         }
         Multiply(offsetXfm, worldXfm, labelXfm);
-        if (*mConfig[i].mSecondaryStr.c_str() != '\0') {
+        bool hasSecondary = *mConfig[i].mSecondaryStr.c_str() != '\0';
+        if (hasSecondary) {
             Multiply(rotXfm, labelXfm, labelXfm);
         }
+#ifdef HX_NATIVE
+        if (sHoldLabelDbg) {
+            const Hmx::Matrix3 &m = labelXfm.m;
+            float det = m.x.x * (m.y.y * m.z.z - m.y.z * m.z.y)
+                - m.x.y * (m.y.x * m.z.z - m.y.z * m.z.x)
+                + m.x.z * (m.y.x * m.z.y - m.y.y * m.z.x);
+            fprintf(
+                stderr,
+                "[holdlabeldbg draw]   label[%d] hasSecondary=%d text='%s' "
+                "labelXfm.v=(%.2f,%.2f,%.2f) det=%.4f\n",
+                i, (int)hasSecondary, mConfig[i].GetText(sRotated),
+                labelXfm.v.x, labelXfm.v.y, labelXfm.v.z, det
+            );
+        }
+#endif
         mTextLabels[i]->SetWorldXfm(labelXfm);
         mTextLabels[i]->Draw();
     }

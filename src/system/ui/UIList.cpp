@@ -18,6 +18,11 @@
 #include "ui/UIListSubList.h"
 #include "utl/Std.h"
 #include "ui/Utl.h"
+#ifdef HX_NATIVE
+#include <cstdio>  // RB3_HOLDLABEL_DBG probe (Wave12 W4.3-C34, C4 diagnosis)
+#include <cstdlib> // getenv
+#include <cstring> // strstr
+#endif
 #include <cstddef>
 #include "decomp.h"
 #include "utl/Symbols.h"
@@ -462,6 +467,23 @@ void UIList::DrawShowing() {
         if (ParentList()->ChildList() == this)
             b = ParentList()->mDrawManuallyControlledWidgets;
     }
+#ifdef HX_NATIVE
+    // Wave12 W4.3-C34 (C4 diagnosis): compare this list's local/world position
+    // against the sibling InlineHelp label ("expand_message_area.ihp") the hub
+    // ticker pairs it with, to see whether the authored offsets already differ
+    // (engine-side collapse) or were always the same (game-side layout gap).
+    if (getenv("RB3_HOLDLABEL_DBG")) {
+        const char *nm = Name();
+        const Transform &wx = WorldXfm();
+        fprintf(
+            stderr,
+            "[holdlabeldbg draw] UIList this=%p name='%s' localXfm.v=(%.2f,%.2f,%.2f) "
+            "worldXfm.v=(%.2f,%.2f,%.2f)\n",
+            (void *)this, nm ? nm : "?", LocalXfm().v.x, LocalXfm().v.y, LocalXfm().v.z,
+            wx.v.x, wx.v.y, wx.v.z
+        );
+    }
+#endif
     mListDir->DrawWidgets(mListState, mWidgets, WorldXfm(), DrawState(this), 0, b);
 }
 

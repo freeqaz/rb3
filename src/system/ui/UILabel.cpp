@@ -292,6 +292,20 @@ void UILabel::DrawShowing() {
     }
 
     UpdateAndDrawHighlightMesh();
+#ifdef HX_NATIVE
+    // Wave12 W4.3-C34 (C4 diagnosis): dump every UILabel's Name()+worldXfm so we
+    // can find the "message_text" label actually rendering the hub ticker body
+    // (the sibling UIList/UIListDir-level probe never fired for it).
+    if (getenv("RB3_HOLDLABEL_DBG")) {
+        const char *nm = Name();
+        const Transform &wx = WorldXfm();
+        fprintf(
+            stderr,
+            "[holdlabeldbg draw] UILabel this=%p name='%s' worldXfm.v=(%.2f,%.2f,%.2f)\n",
+            (void *)this, nm ? nm : "?", wx.v.x, wx.v.y, wx.v.z
+        );
+    }
+#endif
     mText->DrawShowing();
     if (sDebugHighlight) {
         Highlight();
