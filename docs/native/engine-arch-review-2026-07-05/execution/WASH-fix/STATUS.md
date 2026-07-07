@@ -309,3 +309,86 @@ Partial (run continued in background; representative):
   residual engaged-venue over-exposure (WHITE) is a luminance issue in the
   RB3_PP_LUMA_CEILING space (kept UNSET this wave per A7) — a Wave-9 follow-up if the
   coordinator wants the engaged-venue hot WHITE also clamped.
+
+---
+
+# WASH-fix — Stage A.S3 STATUS (Wave 8: INDEPENDENT VERIFY, Opus)
+
+Checkpoint id `A-S3`. Independent verifier (Opus). **FRESH build**
+`native/build-agent-WASH-fix-S3/rb3-native` (clang Debug, engine HEAD `89bc4a6`;
+`MILO_ENGINE_PIN a94762f` mismatch-warn is expected and correct — it builds the
+working-tree engine at the fix commit). `RB3_PP_LUMA_CEILING` **UNSET in every
+arm** (A7). `RB3_FIXED_CLOCK=1`. Every A.S2 gate re-run from scratch + 2 beyond-
+scope venue A/Bs + menu A/A controls + a source-level fix-correctness audit.
+
+## Headline verdict
+**Both fixes are correct, well-scoped, and byte-identical flag-OFF; every A.S2 gate
+reproduces on a fresh build.** FIX-H2 is the primary load-bearing fix (deterministic
+composite-pink removal) → **RECOMMEND FLIP default-ON**. FIX-H1 is inert on the
+shipping default by construction (the world.cam flat-default else-branch is never
+entered while the venue is engaged — 16/16 boots engaged) → **safe to flip but
+low-value** (a defensive fallback for a broken-env condition the default never hits).
+
+Two honest deltas vs A.S2: (1) `vlo_both` reproduced as **1/6 wash, not 0/5** — the
+PINK is deterministically gone (0/6 vs 5/6 baseline) but 1 boot shows the *disclosed*
+raw-luminance over-exposure (WHITE, pink=0.0, RB3_PP_LUMA_CEILING-space Wave-9 item).
+(2) The engine-tests isolation claim is CORRECTED (see gate f) — stronger than S2's
+wording, same conclusion.
+
+## Gate results (fresh build)
+
+| gate | result |
+|---|---|
+| (a) mechanism counter, N=16, flag-ON (`both_fix`) | **PASS** — 0/16 engagement misses (all boots `tail_eng=40/miss=0`), 0/16 wash (3 NEUTRAL + 13 NEARBLACK, no PINK/WHITE). `measure/probe_s3_both16.json`. |
+| (b) forced-miss fail-red | **PASS(fail-red) / correction reproduced** — `venue_light_off` **6/6 wash** (1 WHITE + 5 PINK, deterministic `miss=venue_off`); `vlo_both` **1/6 wash**: PINK **0/6** (vs 5/6 baseline — deterministic magenta removal), 5/6 NEUTRAL, 1 residual WHITE (luma 0.709, pink 0.0). Visually confirmed: baseline = whole-venue magenta flood; `vlo_both` = clean dark moody venue (CORK sign readable, warm floor, natural band colors). `measure/probe_s3_failred.json`. |
+| (c) ms2000-6000 sweep vs PP_OFF target | **CONFOUND REPRODUCED — not a clean numeric gate.** Director-RNG lands `default`/`chroma`/`pp_off` on *different* cuts (mean_val 0.16-0.58 at equal songMs; e.g. ms06000 default mid_sat 0.48 on a dark saturated shot vs pp_off 0.078 on a bright shot — backwards purely from shot mismatch). Exactly S1/S2's disclosure. Grey→color restoration rests on the shader math (uniform value-scaling preserves HSV sat, code-verified) + gate (b)'s deterministic pink removal, NOT on the unpinned sweep. |
+| (d) flag-OFF byte-identical (drawlog) | **PASS** — default build (both flags OFF), canonical-order = **792** draws (254 known-residual within bound). |
+| (e) lineup | **PASS** — all layers (img/segA/ratioB/countC/pin). |
+| (f) DC3 zero-blast | **PASS** — `UniformStructs.h` + `standard_wgsl.inc` **EMPTY diff** `71469af..89bc4a6`. |
+| (f) milo-engine-tests | **PASS (structural), claim CORRECTED.** S2 said "tests compile none of the edited TUs" — imprecise: the suite LINKS `milo-engine`, but it configures **`MILO_ENGINE_GPU_BACKEND=dc3`** (verified in `build-agent-A-S7-vtests/CMakeCache.txt`), and the dc3 flavor compiles `MILO_ENGINE_GPU_PLATFORM_SOURCES` and **EXCLUDES `..._RB3`** (CMakeLists.txt:372-375) — so `RB3PostProc.cpp` / `Rnd_Wgpu_RB3.cpp` / `rb3_postproc.wgsl.inc` are **never compiled into the tests**. Combined with the empty shared-contract diff and `static_assert(sizeof(PostProcUniforms)==176)` holding (my rb3 build compiled it), the 198/0/2 baseline is structurally unaffected. Full suite not re-run (needs DC3 assets; isolation is airtight). |
+| classification.json validity | **VALID** (202 keys parse; both flags `workaround`/`off`). Census `FAIL — stale, run gen` is the **expected append-only pre-regen state** (the 2 WASH flags + S1 probe + Lane B's two are registered; gen.inc regen is coordinator-only). |
+
+## Beyond-scope spot-checks
+- **Menus (main_hub + song_select), flag-ON vs flag-OFF: PASS.** A/A control proves it:
+  song_select OFF-vs-OFF noise (mean 1.60, 15.96% px) ≈ OFF-vs-ON (1.63, 15.52%), luma
+  identical (0.289 both); main_hub OFF-vs-OFF (29.3, 74.9%) ≥ OFF-vs-ON (25.1, 70.8%),
+  luma identical (0.4648 vs 0.464). The 15-75% raw diffs are pure animation phase
+  (carousel/ticker/character preview), NOT the fix — consistent with FIX-H1 (`world.cam`
+  gate) + FIX-H2 (`venueGrade` gate) being menu-inert by construction. text-floor
+  default-ON baseline honored.
+- **2 other venues (song_downs 0 + 8), flag-ON vs flag-OFF: PASS.** Both venues:
+  flag-ON **0/3 wash == flag-OFF 0/3 wash**. venue8 hue/sat identical (86/0.605 vs
+  83/0.600). venue0's hue-median swing (196→50) is director-RNG (per-boot hues span
+  75-299 in *both* states); the brightest ON boot renders as a normal warm venue (no
+  wash, no miscolor). `measure/venue_ab_s3.json`. No lighting/color regression.
+
+## Fix-correctness audit (source, engine `89bc4a6`)
+- **FIX-H2 (`rb3_postproc.wgsl.inc`):** `cpColor = sceneColor*(gradedLuma/inLuma)`
+  uniformly value-scales the ungraded scene chroma to the graded luminance — preserves
+  HSV saturation exactly (the claimed math). Luma-preserving ceiling rolloff after.
+  Guarded `chromaPreserveActive>0.5 && venueGrade>0.5`; menus pass `venueGrade=false`
+  (default arg on `RunPostProcComposite`) → byte-identical. Only corner: the final
+  `clamp([0,1])` can re-clip an extreme-saturated hot pixel — rare, acceptable.
+- **FIX-H1 (`Rnd_Wgpu_RB3.cpp:1601`):** dim key (0.50 dir + 0.10 ambient) only when
+  `sVenueFallbackFix() && camNm=="world.cam"`; else the original flood (1.0 + 0.45).
+  game.cam + menus + flag-OFF byte-identical. Inert on shipping default (else-branch
+  unreached while engaged).
+
+## Flip recommendation (per fix, separately)
+- **FIX-H2 `RB3_PP_CHROMA_PRESERVE` → RECOMMEND FLIP default-ON.** Deterministically
+  removes the composite magenta tint (5/6→0/6 PINK), 0/16 wash on the default engaged
+  venue, no menu / game.cam / 2-venue regression. Caveats for the coordinator: the
+  grey→color proof is director-RNG-confounded (mechanism is math-proven, not sweep-
+  proven), and it does NOT clamp raw luminance over-exposure (separate Wave-9 item).
+- **FIX-H1 `RB3_VENUE_FALLBACK_FIX` → SAFE but LOW-VALUE.** Risk-free (flag-OFF/ON
+  byte-identical on the shipping path; correct dim key for genuinely-broken envs) but
+  inert by construction on the default build and insufficient alone even on the broken
+  path (needs FIX-H2). Flip for defensive robustness or hold as a documented safety
+  net — both defensible; no visible default-build change either way.
+
+## Honest limits
+Clean deterministic wins: FIX-H2 pink removal + both-fix reducing the `venue_light_off`
+wash 6/6→1/6. The default-build **stochastic wash rate** is not cleanly separable at
+small N (0/16 flag-ON is encouraging but was not run back-to-back against a paired
+default arm this stage). The residual 1/6 `vlo_both` WHITE is the disclosed Wave-9
+luminance over-exposure. gate (c)'s unpinned sweep is not a valid numeric gate.
