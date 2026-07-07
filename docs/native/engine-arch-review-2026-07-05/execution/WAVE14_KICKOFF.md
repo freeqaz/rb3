@@ -1,7 +1,54 @@
 # Wave 14 — Kickoff Design (coordinator draft, for Fable review before dispatch)
 
-**Author:** coordinator. **Status:** DRAFT — under Fable pre-dispatch review, not yet dispatched.
+**Author:** coordinator. **Status:** REVIEWED (Fable, `WAVE14_REVIEW.md` rb3 `7f5b2160`) — **all 9
+amendments adopted**; dispatched with the corrected shape below.
 Parent: `execution/README.md` (Wave 13 results + Wave 14 menu). Engine pin `3b5af48`.
+
+## COORDINATOR ACCEPTANCE (2026-07-07) — final dispatched shape
+
+Fable review: **dispatch-with-amendments** (9). Adopted in full:
+
+- **A1 (CRITICAL, Lane R) — the Reskin premise corrected:** `RndMeshDeform::Reskin` lives in rb3
+  (`src/system/rndobj/MeshDeform.cpp:298-399`, NOT engine) and transforms the mesh's current
+  POSITIONS/NORMALS in place via a per-vertex weighted MULTI-BONE blend of `offset·boneWorld`; it
+  never writes weights, and it requires an authored RndMeshDeform asset — `hands_naked` is absent
+  from unk610 because NO SUCH ASSET EXISTS. R2 must SYNTHESIZE the deform inputs (precedent:
+  `BandPatchMesh.cpp:1408-1420`). The primitive family is still right — the weighted blend dodges
+  Seam B's mixed-sign wall (Seam B applied ONE bone's delta per vertex; the blend applies ALL,
+  same model as the GPU palette) — but the residual is ordinary LBS blend error: the wext gate
+  stays QUANTITATIVE (≤60u), not binary-zero.
+- **A2 (HIGH, Lane R) — invocation point pinned:** the reskin's source data (`RndBone::mOffset`,
+  the per-mesh authored inverse binds, `Mesh.h:33-52`) is DESTROYED by the default-ON
+  `RebindHeadHandsAtRest` rebake after first Poll. The reskin must run at `SetDeformation` time
+  (skeleton posed at the deterministic gender-bind rest, `BandCharacter.cpp:3064-3145`) with a
+  once-per-mesh latch, BEFORE the rebake consumes the authored offsets.
+- **A3 (HIGH, cross-lane) — collision matrix EMPTY:** Lane R is rb3-side; CPU verts are resident
+  and GPU re-upload is automatic (fingerprint/OnSync + lazy first-draw, engine `:3013`) — zero
+  expected engine TU edits. "V24 compressed verts" was a misnomer (V24 = the shard-guard version
+  tag, not a vert format) — the R-A data-availability risk largely dissolves.
+- **A4 (MEDIUM, Lane R):** the female-bind question is ANSWERABLE cheaply: dump both genders'
+  hands `mOffset` arrays pre-Poll in R1; the S2 "double mismatch" is currently pointer-level only
+  — R1 must establish whether the female mesh carries female-authored offsets.
+- **A5/A6 (MEDIUM, Lane U) — seam corrected + minimized:** the flush lives in
+  `RB3PostProc.cpp:44`, not Rnd_Wgpu_RB3.cpp. Minimal seam = a one-line visibility change at
+  `Rnd_Wgpu_RB3.h:257` + an RB3PostProc flush-only shim + the PanelDir trigger swap. FORBIDDEN: a
+  base-`Rnd` virtual (would need ungranted rb3 `Rnd.h`). The red-band mechanism is CONFIRMED
+  consistent with source (the else-branch performs depth+stencil clears per subsequent UI dir,
+  `Rnd_Wgpu_RB3.cpp:2326-2354`); the `a5cf8d3` consume-at-top latch is safe; KEEP the gameplay
+  gate on the trigger.
+- **A7 (MEDIUM, Lane A) — R-C refuted from source:** dirty propagation to trans-children WORKS
+  (`Trans.cpp:99-107,127-140`) and the lane's own STATUS saw `album_frame01.mesh` move. The
+  revealed grey element is a SEPARATE node (group draw-membership ≠ trans-parenting). Lane A must
+  identify it by TransParent-chain evidence (draw-log + parent walk), not assumption.
+- **A8 (LOW, Lane R) — three ungameable mechanism gates added to R2:** (i) gender-distinct vert
+  deltas (the reskin output differs male vs female — kills a shared-transform fake); (ii) offset
+  provenance (post-reskin verts consistent with own-basis skinning, not a clamp); (iii)
+  no-matching-TU-edit rule (the fix must not touch the wext/instrument TUs it is gated by).
+- **A9 (LOW):** the "seven defaults ON" tally verified correct anchor-by-anchor.
+
+---
+
+_(Original draft below, retained for provenance; superseded where the acceptance above differs.)_
 
 ## Where we are (entering Wave 14)
 
