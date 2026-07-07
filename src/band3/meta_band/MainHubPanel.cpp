@@ -312,9 +312,11 @@ void MainHubPanel::UpdateHeader() {
     // Poll() above. Nudge the message body down an additional 15u (measured
     // clean at 8/14/20/30u probes, no occlusion/z-fight at any of them --
     // that outcome from a prior pass of this lane did not reproduce) to
-    // restore a same-order-of-magnitude gap. getenv-gated, default-OFF
-    // pending coordinator sign-off (RB3_HUB_TICKER_YFIX=1 to enable).
-    if (getenv("RB3_HUB_TICKER_YFIX")) {
+    // restore a same-order-of-magnitude gap. Default-ON since the Wave-13
+    // coordinator E1 sign-off (retail-matching stacking); opt-out
+    // RB3_HUB_TICKER_YFIX_OFF.
+    static const bool sTickerYFix = !getenv("RB3_HUB_TICKER_YFIX_OFF");
+    if (sTickerYFix) {
         label->DirtyLocalXfm().v.z -= 15.0f;
     }
 #endif
