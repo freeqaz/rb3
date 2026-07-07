@@ -1,0 +1,23 @@
+F1 clips per member: {(0, 'male'): ['player3_m'], (1, 'female'): ['player2_f'], (2, 'male'): ['player0_m'], (3, 'female'): ['player1_f']}
+F2 join-script envelopes independently reproduced (slot2 L mf12/rf12): OK
+F3 shared male envelope endpoints (slot0 max vs slot2 min):
+    mf01: slot0 max   19.89  slot2 min   19.89  SHARED
+    mf12: slot0 max   45.05  slot2 min   45.05  SHARED
+    mf23: slot0 max   43.27  slot2 min   43.27  SHARED
+    rf01: slot0 max   25.20  slot2 min   25.20  SHARED
+    rf12: slot0 max   66.07  slot2 min   66.06  SHARED
+F4 within-member cross-pair correlation of |relRot| (1-D curl parameter):
+    slot0: corr(mf12,rf12)=1.0000 corr(mf12,mf23)=1.0000
+    slot1: corr(mf12,rf12)=1.0000 corr(mf12,mf23)=1.0000
+    slot2: corr(mf12,rf12)=1.0000 corr(mf12,mf23)=1.0000
+    slot3: corr(mf12,rf12)=1.0000 corr(mf12,mf23)=1.0000
+F5 pooled male (mf12->rf12) monotonicity violations >1deg: 0/63
+F6 Wii settled magnitude vs native envelopes (surviving pairs):
+    mf01: wii   5.40  < slot0 min: True  < slot2 min: True  inside slot1: False
+    mf12: wii  24.37  < slot0 min: True  < slot2 min: True  inside slot1: True
+    mf23: wii  17.73  < slot0 min: True  < slot2 min: True  inside slot1: False
+    rf01: wii   7.43  < slot0 min: True  < slot2 min: True  inside slot1: False
+    rf12: wii  26.13  < slot0 min: True  < slot2 min: True  inside slot1: True
+    rf23: wii   5.74  < slot0 min: True  < slot2 min: True  inside slot1: False
+
+ALL ASSERTIONS PASS — see VERDICT.md for what these facts force.
