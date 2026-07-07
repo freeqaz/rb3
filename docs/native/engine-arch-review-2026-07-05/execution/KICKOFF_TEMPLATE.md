@@ -110,6 +110,19 @@ lane, mark it `N/A — <reason>` explicitly; silence is not a pass._
   before the fix is implemented." (Gaps 4/5/6/8 of REPORT §4 were each built 1–3 waves late, as
   the refuting verify stage.)
 
+## Close-out (coordinator, end of EVERY wave — owner directive 2026-07-07)
+
+1. **Post-wave Fable review** — a Fable subagent reviews the wave's RESULTS (lane STATUS docs,
+   checkpoints, evidence, commits) the same way the pre-dispatch review vets the kickoff:
+   verdict validity, gate coverage, contradictions with shipped flags, anything a lane
+   self-graded too generously. Output `WAVE<NN>_CLOSEOUT_REVIEW.md`, committed.
+2. **Docs updated** — `execution/README.md` gains the wave's results table + next-wave menu;
+   per-lane STATUS docs finalized; ROADMAP/plan docs amended where the wave changed them;
+   single classjson regen + census check; ONE coordinator pin bump.
+3. **Findings summary handed back to the owner** — the coordinator's final message of the wave
+   is a user-facing summary: what shipped, what was refuted (with the evidence one-liner), what
+   the next wave should be and why. Not a log dump — the "teammate catching up" version.
+
 ## Risks / open questions for the reviewer
 
 - **R-A:** <first open question — the thing most likely to be wrong in this draft>.
