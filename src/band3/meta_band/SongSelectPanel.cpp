@@ -101,41 +101,95 @@ void SongSelectPanel::FinishLoad() {
                 fprintf(stderr, "[C2DIAG] forced %s showing=1\n", cand[i]);
             }
     }
-    // W4.3-C2b4 (C2b) fix: album_art.grp (picture + its own album_frame01.mesh
-    // bezel, both children of the group -- census W4.3-C2a census.txt:364-375)
-    // sits positioned too far up-left in the native render, so its top edge
-    // rides above/into the header row's stats.grp content (gamertag icon +
-    // careerscore.scr + careerstars.sd, census.txt:278-282) instead of sitting
-    // cleanly below it as in retail (yt_qRagnZCIMzk_song_select_album_art.png).
+    // W4.3-C2b4/C2b-ASM fix: album_art.grp (the picture, album_art.pic) sits
+    // positioned too far up-left in the native render, so its top edge rides
+    // above/into the header row's stats.grp content (gamertag icon +
+    // careerscore.scr + careerstars.sd, census W4.3-C2a census.txt:278-282)
+    // instead of sitting cleanly below it as in retail
+    // (yt_qRagnZCIMzk_song_select_album_art.png).
+    //
+    // CORRECTED (W4.3-C2b-ASM, supersedes the C2b4 write-up): album_art.grp's
+    // own decorative bezel is NOT album_frame01.mesh. Group draw-membership
+    // (census.txt:364-375 lists album_frame01.mesh as a member of
+    // album_art.grp for show/hide purposes) is a SEPARATE concept from
+    // RndTransformable scene-graph parenting (TransParent()) -- confirmed by
+    // TransParent-chain walk (RB3_C2B_ASM_DBG): album_frame01.mesh's real
+    // parent chain is `header_goals.grp <- header.grp <- all.grp`, i.e. it is
+    // an authored sibling of the CAREER header assembly, not a child of
+    // album_art.grp at all, despite the grouping. The original single-node
+    // -120 Z fix on album_art.grp alone therefore left album_frame01.mesh
+    // behind, revealing it as a bare grey ornate bezel with no picture inside
+    // (coordinator E1 hold) -- confirmed by hiding album_frame01.mesh
+    // (RB3_C2B_ASM_HIDE) and watching the grey box vanish.
+    //
+    // The two nodes also do NOT share a coordinate frame: album_art.grp's
+    // chain (bone_album_group.mesh <- all.grp) rotates local Z into world Y
+    // (measured: local z -= 120 -> world y += 107.17, world x/z unchanged),
+    // while album_frame01.mesh's chain (header_goals.grp <- header.grp <-
+    // all.grp) has no such rotation (local y maps 1:1 to world y; local z
+    // maps 1:1 to world z, a depth axis that barely moves screen position for
+    // this camera). So "one whole-assembly move" here means applying the
+    // SAME WORLD-SPACE delta via each node's own local axis, not literally
+    // the same local offset: album_frame01.mesh needs local Y (not Z) to
+    // track album_art.grp's local Z.
+    //
+    // X calibration (fixes the coordinator E1's second note, a new overlap
+    // with the left-column score/star readout that the pure-Z move
+    // introduced): moving down in this group's rotated frame also carries a
+    // small screen-leftward parallax shift (a perspective-projection
+    // side-effect of the rotation, not a bug in the offset itself), which
+    // pushes the box further left over the "0/10"-style score column text.
+    // Adding a matching local X (which maps ~1:1, no rotation, on both nodes)
+    // moves the whole assembly right enough to clear it with a clean gap
+    // (measured clean at local x=45/album_art.grp, x=41.2/album_frame01.mesh
+    // -- the ratio matches album_art.grp's ~0.915 local->world X scale vs
+    // album_frame01.mesh's 1:1).
+    //
     // Calibrated empirically (frame-count-settled screenshots, NOT wall-clock
     // sleeps -- wall-clock settling gave a NON-monotonic false trend here
-    // because the entrance-animation progress at a fixed sleep duration jitters
-    // run-to-run; frame-count settling fixed that): a Z offset in [-120,-150]
-    // on the group's local xfm moves the whole picture+frame down-and-right as
-    // a unit, clearing the header icon with a clean gap by -120, matching the
-    // retail layout. getenv-gated, default-OFF pending coordinator sign-off
-    // (RB3_SS_ART_YFIX=1 to enable). The raw world-xfm gap between
-    // album_art.grp/header.grp did NOT cleanly indicate this in isolation (both
-    // X and Z differ by 100s of units between the two siblings, unlike the C4
-    // message.lbl/expand_message_area.ihp pair) -- empirical nudge-and-capture
-    // was required here, same method as C4 but a different underlying gap
-    // magnitude/axis mix (this is NOT provably the "same family" as C4; see
-    // STATUS.md verdict).
+    // because the entrance-animation progress at a fixed sleep duration
+    // jitters run-to-run; frame-count settling fixed that). getenv-gated,
+    // default-OFF pending coordinator sign-off (RB3_SS_ART_YFIX=1 to enable).
     if (getenv("RB3_SS_ART_YFIX")) {
         if (RndTransformable *g = mDir->Find<RndTransformable>("album_art.grp", false)) {
-            g->DirtyLocalXfm().v.z -= 120.0f;
+            Transform &t = g->DirtyLocalXfm();
+            t.v.x += 45.0f;
+            t.v.z -= 120.0f;
+        }
+        if (RndTransformable *f = mDir->Find<RndTransformable>("album_frame01.mesh", false)) {
+            Transform &t = f->DirtyLocalXfm();
+            t.v.x += 41.2f;
+            t.v.y += 107.17f;
         }
     }
-    // W4.3-C2b4 (C2b) EXPERIMENTAL calibration probe (RB3_C2B_ART_NUDGE=<float>):
-    // apply an additional additive Z offset to album_art.grp's local xfm for
-    // further empirical calibration beyond the -120 default above. Diagnostic
-    // only, default-off, harmless to leave in (never reached with the flag
-    // unset).
+    // W4.3-C2b-ASM EXPERIMENTAL calibration probe
+    // (RB3_C2B_ART_NUDGE=<art_x>,<art_z>,<frame_x>,<frame_y>,<frame_z>):
+    // album_art.grp's chain (bone_album_group.mesh <- all.grp) rotates local Z
+    // into world Y almost entirely (measured: -120 local z -> +107.17 world
+    // y, world x/z unchanged), while album_frame01.mesh's chain
+    // (header_goals.grp <- header.grp <- all.grp) has NO such rotation (local
+    // z maps 1:1 to world z, a depth axis that barely moves screen position
+    // for this camera) — the two nodes do NOT share a coordinate frame, so
+    // applying the same "-120 local z" to both does not move them together
+    // on screen. This probe independently controls both so the correct
+    // per-node axis/magnitude pair can be found empirically. Diagnostic only,
+    // default-off, harmless to leave in (never reached with the flag unset).
     if (const char *nudge = getenv("RB3_C2B_ART_NUDGE")) {
+        float ax = 0.0f, az = 0.0f, fx = 0.0f, fy = 0.0f, fz = 0.0f;
+        sscanf(nudge, "%f,%f,%f,%f,%f", &ax, &az, &fx, &fy, &fz);
         if (RndTransformable *g = mDir->Find<RndTransformable>("album_art.grp", false)) {
-            g->DirtyLocalXfm().v.z += (float)atof(nudge);
-            fprintf(stderr, "[C2BNUDGE] album_art.grp local.z += %s\n", nudge);
+            g->DirtyLocalXfm().v.x += ax;
+            g->DirtyLocalXfm().v.z += az;
         }
+        if (RndTransformable *f = mDir->Find<RndTransformable>("album_frame01.mesh", false)) {
+            f->DirtyLocalXfm().v.x += fx;
+            f->DirtyLocalXfm().v.y += fy;
+            f->DirtyLocalXfm().v.z += fz;
+        }
+        fprintf(
+            stderr, "[C2BNUDGE] album_art.grp local += (%.1f,_,%.1f); album_frame01.mesh local += (%.1f,%.1f,%.1f)\n",
+            ax, az, fx, fy, fz
+        );
     }
     // W4.3-C2b4 (C2b) diagnosis: album_art.pic (top edge overlaps the header
     // row on quick-view) has no C++-set local_xfm anywhere in this file or
@@ -160,6 +214,53 @@ void SongSelectPanel::FinishLoad() {
             } else {
                 fprintf(stderr, "[C2BXFM] %-20s <not found>\n", names[i]);
             }
+        }
+    }
+    // W4.3-C2b-ASM DIAGNOSTIC (RB3_C2B_ASM_DBG): walk the TransParent() chain
+    // (NOT group draw-membership) for the revealed grey-bezel candidates plus
+    // album_art.grp, to prove the revealed element is parented outside
+    // album_art.grp's own chain (binding A7: group membership != trans
+    // parenting).
+    if (getenv("RB3_C2B_ASM_DBG")) {
+        static const char *names[] = { "album_art.grp", "album_art.pic", "album_frame01.mesh",
+                                        "bone_album.mesh", "bone_album_group.mesh",
+                                        "line_details01.mesh", "song.sbd",
+                                        "header_song_shadow.mesh", "album.mesh",
+                                        "album_overlay.mesh", "setlist.lst", "album_bg.mesh",
+                                        "career_frame.mesh", "career.pic", "career.mesh",
+                                        "goal_desc.lbl", "goal_title.lbl",
+                                        "header_goals.grp", "header.grp",
+                                        "stats.grp", "all.grp", nullptr };
+        for (int i = 0; names[i]; i++) {
+            RndTransformable *t = mDir->Find<RndTransformable>(names[i], false);
+            if (!t) {
+                fprintf(stderr, "[C2BASM] %-20s <not found>\n", names[i]);
+                continue;
+            }
+            const Transform &wx = t->WorldXfm();
+            fprintf(stderr, "[C2BASM] %-20s world.v=(%.2f,%.2f,%.2f) chain:", names[i],
+                    wx.v.x, wx.v.y, wx.v.z);
+            RndTransformable *p = t;
+            for (int depth = 0; p && depth < 12; depth++) {
+                Hmx::Object *po = dynamic_cast<Hmx::Object *>(p);
+                fprintf(stderr, " %s", po ? po->Name() : "?");
+                p = p->TransParent();
+                if (p)
+                    fprintf(stderr, " <-");
+            }
+            fprintf(stderr, "\n");
+        }
+    }
+    // W4.3-C2b-ASM DIAGNOSTIC (RB3_C2B_ASM_HIDE=<obj name>): force-hide one
+    // named RndDrawable, to empirically confirm/refute a revealed-element
+    // candidate by A/B screenshot (does the grey bezel disappear when this
+    // node is hidden?).
+    if (const char *hide = getenv("RB3_C2B_ASM_HIDE")) {
+        if (RndDrawable *d = mDir->Find<RndDrawable>(hide, false)) {
+            d->SetShowing(false);
+            fprintf(stderr, "[C2BASM] forced %s showing=0\n", hide);
+        } else {
+            fprintf(stderr, "[C2BASM] %s <not found, not hidden>\n", hide);
         }
     }
 #endif
