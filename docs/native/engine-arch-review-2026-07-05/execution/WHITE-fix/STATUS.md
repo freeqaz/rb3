@@ -457,3 +457,110 @@ exposure change can be A/B'd at N=6.
 `white_ab.py`, `measure/bs1_enghot.json`, `measure/bs1_flood.json`, raws `/tmp/whitefix-bs1-caps/`,
 drawlog `/tmp/wf-bs1-drawlog.log`, lineup `/tmp/wf-bs1-lineup.log`. Checkpoint
 `/tmp/wave10-checkpoints/B-S1.json`.
+
+---
+
+# WHITE-fix — Stage B.S2 STATUS (Wave 10: INDEPENDENT VERIFY, Opus) — CONFIRMS HOLD
+
+Checkpoint id `B-S2`. Distinct agent from B.S1 (WAVE10_REVIEW A8(i)). Lane B, **engine-read-only**.
+**Fresh, isolated build:** a clean engine `git worktree` pinned at STEP-0 commit `2998e78`
+(`/tmp/bs2-engine-2998e78` — NO Lane-A dualskin probe, NO FxSendNative edit), configured with
+`-DMILO_ENGINE_PATH=/tmp/bs2-engine-2998e78 -DMILO_ENGINE_PIN=2998e78…` into
+`native/build-agent-WHITE-fix-BS2` (clang Debug, 875/875 clean link). This is a fully independent
+reproduction — B.S1's captures were NOT reused (fresh raws `/tmp/whitefix-bs2-caps/`, fresh
+`measure/bs2.json`). Refuted-experiment flags (`RB3_PP_LUMA_CEILING`, `RB3_HANDS_POSEAWARE`,
+`RB3_HANDS_PERFRAME_CONJ`, `RB3_APPENDAGE_REST_ROT`) UNSET in every arm; chroma-preserve at its
+shipped default-ON in every arm. Arms differ ONLY by `RB3_VENUE_WHITE_GUARD` (unset=OFF vs `=1`=ON).
+
+## VERDICT: **CONFIRM B.S1's HOLD** — do NOT flip `RB3_VENUE_WHITE_GUARD` default-ON.
+
+The staged guard is safe, scope-correct, and regression-clean (drawlog 792 flag-OFF + lineup PASS),
+but its behavioral benefit is **not demonstrable** and the arm-mean gate is **confounded by W0.3d
+per-boot lighting nondeterminism**. My independent run reproduces every one of B.S1's pre-registered
+gate outcomes and, decisively, the PRIMARY metric **flips sign between the two independent runs** —
+the cleanest possible proof the gate is non-resolving at this N. Concur fully: keep landed
+default-OFF, documented.
+
+## Engine-read-only respected (audited)
+
+`git log 10a9ca6..HEAD` on the engine = **exactly one commit this wave: `2998e78` (STEP-0)**. The two
+DC3-shared guard files (`UniformStructs.h`, `standard_wgsl.inc`) are touched **only** by `2998e78`.
+The engine working tree's uncommitted changes are **Lane A's dualskin probe** (`Rnd_Wgpu_RB3.cpp`,
+all hunks inside `BandRnd::DrawMesh` `:4402–4650`, disjoint from the guard write site `:1474` —
+`grep venueHighlightLumaMode|sVenueWhiteGuard` on the diff = empty) + the concurrent audio agent's
+`FxSendNative.cpp`. **No Lane-B engine write after STEP-0.** The WAVE10_REVIEW A1 single-writer
+contract (Rnd_Wgpu_RB3.cpp's sole writer = Lane A) is honored.
+
+## Data (my independent BS2, N=3/arm, same pinned `coop_dir_crowd.shot`, songMs ~21000, RB3_FIXED_CLOCK=1)
+
+| arm | guard | hi_frac | mid_sat | mean_luma | WHITE |
+|---|---|---|---|---|---|
+| eng_hot (ENGAGED — guard FIRES) | OFF | 44.90 | 0.216 | 0.712 | 3/3 |
+| eng_hot | ON | 38.01 | 0.207 | 0.638 | 2/3 |
+| eng_hot Δ (ON−OFF) | | **−6.89** | **−0.009** | −0.074 | −1 |
+| venue_light_off flood (NON-engaged — guard provably INERT) | OFF | 33.08 | 0.199 | 0.605 | 1/3 |
+| flood | ON | 38.42 | 0.197 | 0.680 | 3/3 |
+| flood Δ (ON−OFF) NULL CONTROL | | **+5.34** | −0.002 | +0.076 | +2 |
+
+Per-boot eng_hot OFF hi_frac {40.9, 65.2, 28.7} at IDENTICAL params/shot (mid_sat {0.219, 0.067,
+0.362}) — the W0.3d per-boot spread in one arm alone is ~±18 hi_frac and 5× mid_sat.
+
+## Why HOLD — three independent lines, all reproduced
+
+1. **The PRIMARY delta SIGN-FLIPS between the two independent runs.** B.S1 measured eng_hot
+   `d_hi_frac = +17.96` (guard-ON looked WORSE); B.S2 measured `−6.89` (guard-ON looked BETTER) — same
+   shot, same params, same N-scale. Two blind runs disagreeing on the *sign* of the headline metric
+   is conclusive evidence the arm-mean gate cannot resolve the guard's effect. G1a is un-passable in
+   any principled sense (my favorable −6.89 is a lucky draw, not a benefit).
+2. **The null control reproduces the boot-noise floor.** On the flood the guard is **provably INERT**
+   (field written only in the engaged branch, `Rnd_Wgpu_RB3.cpp:1474`; flood takes the non-engaged
+   else branch → `venueHighlightLumaMode` stays 0 → byte-identical scene uniforms both arms; I read
+   this in the clean worktree source). Yet the flood arm-mean swung `d_hi_frac = +5.34` (WHITE 1→3) —
+   in the *unfavorable* direction this time (B.S1 got −11.01, favorable). A swing the guard **cannot**
+   cause quantifies the floor at ~±5–18 hi_frac. The eng_hot ±delta is the *same noise*.
+3. **G1b (chroma UP) FAILS in BOTH runs — the fix premise is refuted.** `d_mid_sat` = −0.009 (B.S2),
+   −0.067 (B.S1); both fail the `≥+0.02` gate. The guard does not raise mid-band saturation because
+   the wash is **white-lit zero-chroma**: hot WHITE boots collapse mid_sat (my WHITE boots:
+   eng_hot_OFF 0.067, eng_hot_ON 0.030, flood_OFF 0.028, flood_ON 0.039). Where the frame washes there
+   is no chroma for a chroma-preserving compression to save — S1 §2's design premise does not hold for
+   the regions that actually wash.
+
+**Source corroboration (noise-independent):** `compressHighlightsLuma` is identity below the knee and
+monotone luminance-reducing above it (`rolled = k+(1−k)·tanh((L−k)/(1−k)) < L`, RGB scaled by
+`rolled/L < 1`), so at identical lighting input guard-ON can **never add** over-exposed/WHITE pixels
+vs guard-OFF. The flood's inert +2 WHITE (ON) is therefore *impossible* from the guard → pure boot RNG,
+exactly as the null control says.
+
+## Gate ledger (pre-registered, B.S1 §PRE-REGISTRATION — reproduced on my fresh build)
+
+- **G1 (PRIMARY, eng_hot): FAIL.** G1b `d_mid_sat ≥ +0.02` = **−0.009** (wrong sign, both runs);
+  G1a `d_hi_frac ↓ ≥3` is +17.96 (B.S1) vs −6.89 (B.S2) — sign-flips, within the ±5–18 null floor →
+  cannot certify benefit. Per the pre-registered flip rule (G1 must pass) → **no flip.**
+- **G2a (venue not over-dimmed): PASS.** ON lum 0.638 ≥ OFF 0.712−0.08=0.632 (marginal, itself noise;
+  no dimming concern).
+- **G2b (highway/HUD preserved): PASS (source-proven).** Guard field=0 off `world.cam`
+  (game.cam/menu/HUD leave it 0 → byte-identical); corroborated by G5a drawlog-792 flag-OFF.
+- **G3 (FAIL-RED): PASS.** Flag-OFF over-exposure reproduces on my build: eng_hot OFF **3/3 WHITE**
+  (hi to 65.2), flood OFF over-exposed (hi 18–59, 1/3 WHITE). The target defect exists with the flag off.
+- **G4 (SCOPE / null control): PASS by source.** Guard provably inert on the non-engaged flood
+  (eng=0/40). The pre-registered numeric |d_hi|<3 is violated (5.34) — that violation IS the boot-noise
+  floor, not a scope leak (field=0 both arms); it is the null control that invalidates the eng_hot
+  arm-mean (mirrors B.S1's 11.01).
+- **G5a (drawlog-792 flag-OFF, my build): PASS** — `drawlog-golden.py --fixed-clock --canonical-order`
+  → `count=792`, canonical-order matches golden (164 known-residual eye-jitter within bound; the rc=−11
+  bounded-boot teardown SIGSEGV is the documented W0.3.S1 pre-existing teardown, dump written before it).
+- **G5b (lineup-gate, my build): PASS** — all layers green (img=PASS segA=PASS ratioB=PASS countC=PASS
+  pin=PASS) on the default (guard-OFF) build.
+
+## Flip recommendation
+**HOLD.** Do NOT flip `RB3_VENUE_WHITE_GUARD` default-ON. Flipping would ship a fix that does not
+measurably fix its target defect (a fake-win). The patch stays landed default-OFF, safe (flag-OFF
+byte-identical / DC3 zero-blast / WGSL valid — STEP-0), scope-correct, documented. The real lever
+(reduce venue exposure/tonemap on hot engaged moments, scoped off the A2/A3/A4 glow tuning) needs a
+deterministic ENGAGED-hot reproducer that W0.3d does not yet permit — B.S1's next-direction stands.
+
+## Artifacts
+`white_ab.py`, `measure/bs2.json`, raws `/tmp/whitefix-bs2-caps/`, drawlog `/tmp/wf-bs2-drawlog.log`,
+lineup `/tmp/wf-bs2-lineup.log` (+ `/tmp/wf-bs2-lineup/verdict.json`), build
+`native/build-agent-WHITE-fix-BS2` against clean worktree `/tmp/bs2-engine-2998e78`. Checkpoint
+`/tmp/wave10-checkpoints/B-S2.json`.
