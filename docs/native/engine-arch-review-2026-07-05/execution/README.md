@@ -471,3 +471,37 @@ lineup PASS on default arms; pin bumped `146fd19` → `44716f4`; C34 re-dispatch
   layout offsets (art-over-header + ticker), flipped hold-labels per the C34 re-run verdict.
 - Carried: loader-determinism sufficient fix (rejection-sampler-site order determinization —
   staged design in W0.3d-b/STATUS.md), WHITE real-lever, 4→8 lights (DC3 gates), W2.4.
+
+## Wave 13 results (2026-07-07, run `wf_6092bda5-74c`, 6 agents + 2 side agents)
+
+**One flip shipped (hub ticker), one flip earned-but-held on my E1 (UI post-grade — visible
+song_select depth-clear artifact), the hands root cause finally NAMED at the asset level after a
+premise inversion, and two "bugs" honestly closed as not-bugs.** Engine → `3b5af48` (regen 354).
+
+| Item | Status | Highlights |
+|---|---|---|
+| SKEL S.S1 | ✅ **PREMISE INVERTED** | Runtime pointers overturn the Wave-9→12 framing: `own=Find(name)` is PER-MEMBER, ANIMATES (4 distinct ptrs across members, 116 distinct own vs 42 shared bound, moves 186-276u/Poll) and IS gender-posed (index01 male 109.5° vs female 120.1°); `bound=BoneTransAt` is the SHARED static authored bind. The old "shared magnet animates" reading = the dual-skin probe sampling PRE-rebind state with own/bound labelled backwards. Offset writer = RebindHeadHandsAtRest distinct-resolve bake (`:1656-1752`); crowd risk EVAPORATES (no share-layer change needed). Residual = mesh verts encode `bound`'s inter-bone geometry vs own's per-member gender rest (~17°/bone female, ~6° male). |
+| SKEL S.S2 | ❌ **BLOCKED (feasibility-gated pre-edit)** | Seam A (un-share+gender-pose the embedded bind) proven DEGENERATE by dataflow: the palette never reads `bound` after the SetBone repoint — copying ownRest onto it is a no-op; the only bound-reading bake IS the dead 6th cell. No "gender-posed bound rest" exists (gender bind is a runtime CharClip, no static skeleton asset). Seam B (per-vertex re-pose) TEARS multi-bone knuckle blends (per-bone own-vs-bound gaps MIXED SIGN up to ~35°). **ROOT CAUSE NAMED: native-port bind-basis split — hands verts skinned against the shared male-bind while drawing on per-member gender-posed bones; female double-mismatched (female-authored verts → male bind, identical ptr). FAITHFUL FIX = per-member RESKIN of verts+weights onto `own` via the existing RndMeshDeform::Reskin pipeline (`BandCharacter.cpp:3111-3115`) — engine lane, Wave 14 headline.** Offset-bake class formally exhausted (6 dead cells + this degenerate 7th framing); no fake flag landed; RB3_NO_SKIN_CLAMP stays the shipped mitigation. |
+| UIGRADE G.S1/G.S2 | ✅ machinery landed + verified-inert | Mechanism: menu PanelDirs never flush → single EndFrame composite grades venue+UI together. Machinery: `RB3_UI_POST_GRADE` + FlushPostProcMidFrame venueGrade parameterization via menu-flush latch (engine `f677871`), DC3 zero-blast by construction (RB3-only TU). Baselines: grade exemption is a measurable win ONLY on the hub (1.95→PP_OFF 2.20); song_select + partdiff are grade-INERT (their residual = bar-bleed polarity, separate item). |
+| UIGRADE G-TRIGGER | ✅ wired / ⚠️ **FLIP HELD (E1)** | Side agent found TWO more false premises (menus are `mCanEndWorld=1`; `Rnd::EndWorld()` is a permanent no-op on native — BandRnd::BeginDrawing never resets mWorldEnded) → trigger wired via the public `ClearDepthForOverlay()` seam in `PanelDir::DrawShowing` (HX_NATIVE, default-OFF, gameplay-gated; engine hardened `a5cf8d3`, rb3 `82aa81c7`). Gates: hub 1.954→**2.204 PASS** (== PP_OFF target), partdiff in-band, A5 backdrop chroma unchanged, gameplay pixel-invariant, flag-OFF 792 + Wii byte-identical. **COORDINATOR E1 HOLD: song_select flag-ON shows a VISIBLE compositing change (red band on the SETLISTS row; metric 1.110→1.049 below parity) — the ClearDepthForOverlay depth-clear side effect. Clean flush-only seam (no depth-clear) needs a small Rnd_Wgpu_RB3.h grant → Wave 14; flip after.** |
+| W4.3-C2a | ✅ **closed: asset difference, not a bug** | The 360-ARK `song_select.milo` has NO quick-view sidebar backing — `difficulty_bg*/raitings_bg` belong to the details DRILL-IN page (blanket-show double-draws it; force-show changes grid ROI <1% = nothing composites behind). Retail Wii's backing = different asset layout. Faithful fix would require AUTHORING a new backing quad → backlog polish item, not a render bug. |
+| W4.3-C2b4 | ✅ C4 **FLIPPED default-ON** / C2b held | C4 hub ticker: `message.lbl` authored Z gap ~6u vs ~20.8u for a confirmed-stacked pair → −15u nudge; **coordinator E1 PASS (retail-matching stacking), flipped default-ON `RB3_HUB_TICKER_YFIX` with opt-out `_OFF`** (rb3, drawlog 792 PASS post-flip). Also REFUTED the C34 font-scale/wrap theory with probe data (message.lbl already 16.2/750-wrap). C2b album art −120u: fixes the header overlap but **E1 HOLD — reveals a misaligned grey bezel frame that doesn't move with `album_art.grp` + new left-column overlap**; needs the whole assembly identified and moved together. Shared-family verdict: PARTIAL (both authored-spacing gaps, different mechanisms). |
+| W4.3-C34 (Wave-12 carryover) | ✅ closed | C3 hold-labels NOT A BUG (faithful InlineHelp flip-card animation, captured mid-transition). C4 root work superseded by C2b4's fix above. |
+
+**Coordinator actions:** RB3_HUB_TICKER_YFIX flipped default-ON (E1 sign-off); RB3_SS_ART_YFIX +
+RB3_UI_POST_GRADE held with documented reasons; C2a closed as asset-difference; regen (`3b5af48`,
+354 clean); 792 + lineup PASS; pin bumped `44716f4` → `3b5af48`.
+
+### Wave 14 menu
+
+- **RESKIN (headline, engine lane):** per-member reskin of `hands_naked` (+ `fingernails_resource`)
+  verts+weights onto the per-member `own` skeleton via the RndMeshDeform::Reskin pipeline
+  (`BandCharacter.cpp:3111-3115` precedent) — the ONLY remaining faithful hands lever; must handle
+  the female double-mismatch (female verts currently bound to the shared male bind). Gates already
+  built (Instrument-B invariants, wext, Tier-2, crowd oracles, lineup).
+- **UIGRADE clean seam (small grant):** flush-only entry into `Rnd_Wgpu_RB3.h/.cpp` (no
+  depth-clear) → removes the song_select red-band artifact → then flip `RB3_UI_POST_GRADE`.
+- **C2b art assembly:** identify the grey bezel/frame element that doesn't move with
+  `album_art.grp`; move the whole assembly; then flip `RB3_SS_ART_YFIX`.
+- Carried: song-select sidebar backing quad (authored polish, optional), bar-bleed text polarity
+  (song_select/partdiff residual), loader sufficient-fix, WHITE real-lever, 4→8 lights, W2.4.
