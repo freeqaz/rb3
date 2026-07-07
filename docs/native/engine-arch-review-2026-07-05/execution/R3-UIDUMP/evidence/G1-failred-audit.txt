@@ -1,0 +1,6 @@
+[drawlog-golden] [fail-red-canonical] (a) count change (dropped a draw): expected FAIL, got FAIL -> OK (1 unexpected divergence(s))
+[drawlog-golden] [fail-red-canonical] (b) bind-group collapse (draw 1.obj := draw 0.obj): expected FAIL, got FAIL -> OK (1 unexpected divergence(s))
+[drawlog-golden] [fail-red-canonical] (c) world-xfm out-of-bound (draw 0 translation +100.0): expected FAIL, got FAIL -> OK (1 unexpected divergence(s))
+[drawlog-golden] [fail-red-canonical] (d) mesh-identity change (draw 0 verts retagged): expected FAIL, got FAIL -> OK (2 unexpected divergence(s))
+[drawlog-golden] [fail-red-canonical] (e) pure order permutation (shuffled draws): expected PASS, got PASS -> OK (0 unexpected divergence(s))
+[drawlog-golden] [fail-red-canonical] ALL CHECKS OK (4 fail-red classes RED, permutation GREEN)

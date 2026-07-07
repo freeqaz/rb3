@@ -1,0 +1,39 @@
+{
+  "provAvailable": true,
+  "totalDraws": 330,
+  "uiNamedDraws": 110,
+  "uiDegenerateDraws": 0,
+  "uiDegenerateFraction": 0.0,
+  "glasstop_present": true,
+  "glasstop": [
+    {
+      "mesh": "ml_highlight_glasstopp.mesh",
+      "rect": [
+        0.0,
+        0.0,
+        1046.0,
+        720.0
+      ],
+      "rectKind": 1,
+      "cam": "[ui.cam]",
+      "matColor": [
+        0.8235,
+        0.7647,
+        0.01961,
+        0.08
+      ],
+      "boundColor": [
+        0.8235,
+        0.7647,
+        0.01961,
+        0.08
+      ],
+      "pass": 1,
+      "panel": "",
+      "owner": ""
+    }
+  ],
+  "highlight_yellow_present": false,
+  "highlight_yellow": [],
+  "distinct_named_meshes": 128
+}

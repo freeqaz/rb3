@@ -1,0 +1,3 @@
+[drawlog-golden] [capture] captured frame=60 count=789
+[drawlog-golden] FAIL (canonical-order): 1 unexpected divergence(s) vs golden (0 known-residual divergence(s) tolerated):
+[drawlog-golden]   canonical: count golden=792 candidate=789
