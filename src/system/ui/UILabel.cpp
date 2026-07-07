@@ -22,6 +22,30 @@
 #include "utl/SuperFormatString.h"
 #include "utl/Symbols.h"
 
+#ifdef HX_NATIVE
+// W17 R3-UIDUMP provenance draw-scope (engine-owned, game-fed via
+// milo-native-engine/src/platform/RB3DrawLogDebug.h). Forward-declared because the
+// engine src/platform dir is NOT on the game include path. Push/pop are no-ops
+// (one cached branch) unless RB3_DRAWLOG_PROV. kind 1=owner. Wii/matching build
+// never compiles this (byte-identical).
+extern void RB3DrawScopePush(int kind, const char *name);
+extern void RB3DrawScopePop(int kind);
+namespace {
+struct RB3ProvScope {
+    int kind;
+    bool active;
+    RB3ProvScope(int k, const char *n) : kind(k), active(n && n[0]) {
+        if (active)
+            RB3DrawScopePush(k, n);
+    }
+    ~RB3ProvScope() {
+        if (active)
+            RB3DrawScopePop(kind);
+    }
+};
+} // namespace
+#endif
+
 bool UILabel::sDebugHighlight;
 bool UILabel::sDeferUpdate;
 INIT_REVS(UILabel)
@@ -252,6 +276,12 @@ void UILabel::Draw() {
 }
 
 void UILabel::DrawShowing() {
+#ifdef HX_NATIVE
+    // Owner scope for the whole label draw (highlight mesh + mText->DrawShowing()
+    // glyphs). The inner RndText is unnamed → skips its own push → its glyphs
+    // attribute here, to this authored UILabel.
+    RB3ProvScope _provScope(1, Name());
+#endif
     if (mAlpha <= 0)
         return;
     if (mText->GetFont()) {

@@ -30,6 +30,30 @@ class Rnd;
 extern void RB3FlushMenuUIPostGrade(Rnd* rnd);
 #endif
 
+#ifdef HX_NATIVE
+// W17 R3-UIDUMP provenance draw-scope (engine-owned, game-fed via
+// milo-native-engine/src/platform/RB3DrawLogDebug.h). Forward-declared because the
+// engine src/platform dir is NOT on the game include path. Push/pop are no-ops
+// (one cached branch) unless RB3_DRAWLOG_PROV. kind 0=panel. Wii/matching build
+// never compiles this (byte-identical).
+extern void RB3DrawScopePush(int kind, const char *name);
+extern void RB3DrawScopePop(int kind);
+namespace {
+struct RB3ProvScope {
+    int kind;
+    bool active;
+    RB3ProvScope(int k, const char *n) : kind(k), active(n && n[0]) {
+        if (active)
+            RB3DrawScopePush(k, n);
+    }
+    ~RB3ProvScope() {
+        if (active)
+            RB3DrawScopePop(kind);
+    }
+};
+} // namespace
+#endif
+
 INIT_REVS(PanelDir)
 bool gSendFocusMsg = true;
 bool PanelDir::sAlwaysNeedFocus = true;
@@ -149,6 +173,12 @@ RndCam *PanelDir::CamOverride() {
 }
 
 void PanelDir::DrawShowing() {
+#ifdef HX_NATIVE
+    // W17 R3-UIDUMP: panel scope (kind 0) over this dir's whole draw — back
+    // panels, RndDir::DrawShowing (mDraws), and front panels — so every draw the
+    // panel issues carries its panel name in the prov sidecar.
+    RB3ProvScope _provScope(0, Name());
+#endif
 #ifdef HX_NATIVE
     // Wave-13 Lane G (RB3_UI_POST_GRADE): menus render the whole frame (venue
     // backdrop + UI) into the postproc intermediate and grade it ONCE at

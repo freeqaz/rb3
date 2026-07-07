@@ -23,6 +23,32 @@
 #include <cstring>
 #endif
 
+#ifdef HX_NATIVE
+// W17 R3-UIDUMP provenance draw-scope (engine-owned, game-fed via
+// milo-native-engine/src/platform/RB3DrawLogDebug.h). Forward-declared because the
+// engine src/platform dir is NOT on the game include path. Push/pop are no-ops
+// (one cached branch) unless RB3_DRAWLOG_PROV. kind: 0=panel, 1=owner. `active`
+// only when the name is non-empty, so an UNNAMED label-internal RndText does not
+// overwrite the enclosing UILabel owner on the stack — its glyphs attribute to
+// the label. Wii/matching build never compiles this (byte-identical).
+extern void RB3DrawScopePush(int kind, const char *name);
+extern void RB3DrawScopePop(int kind);
+namespace {
+struct RB3ProvScope {
+    int kind;
+    bool active;
+    RB3ProvScope(int k, const char *n) : kind(k), active(n && n[0]) {
+        if (active)
+            RB3DrawScopePush(k, n);
+    }
+    ~RB3ProvScope() {
+        if (active)
+            RB3DrawScopePop(kind);
+    }
+};
+} // namespace
+#endif
+
 std::set<RndText *> RndText::mTextMeshSet;
 float gSuperscriptScale = 0.7f;
 float gGuitarScale = 0.7f;
@@ -1720,6 +1746,12 @@ void RndText::Draw() {
 }
 
 void RndText::DrawShowing() {
+#ifdef HX_NATIVE
+    // Attribute every glyph draw in the mMeshMap loop below to this RndText (kind
+    // 1=owner). Skipped when unnamed (label-internal RndText) so the enclosing
+    // UILabel's owner scope stays on top → those glyphs join to the label.
+    RB3ProvScope _provScope(1, Name());
+#endif
     unk124b4 = 0;
     if (unkbp5) {
         unkbp5 = false;

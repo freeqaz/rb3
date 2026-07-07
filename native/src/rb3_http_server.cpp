@@ -208,6 +208,7 @@ void RB3HttpServer::ProcessCommands() {
             case kCmdDtaEval: HandleDtaEval(*cmd); break;
             case kCmdInput:   HandleInput(*cmd); break;
             case kCmdDrawLog: HandleDrawLog(*cmd); break;
+            case kCmdUIDump:  HandleUIDump(*cmd); break;
             case kCmdReplayMemory:
             case kCmdReplayCall:
             case kCmdReplayInfo:
@@ -369,6 +370,22 @@ void RB3HttpServer::RegisterEndpoints() {
         std::string prov = req.has_param("prov") ? req.get_param_value("prov") : "";
         std::string roi  = req.has_param("roi")  ? req.get_param_value("roi")  : "";
         auto result = QueueAndWait(kCmdDrawLog, prov, roi);
+        if (result.ok) {
+            res.set_content(result.jsonData, "application/json");
+        } else {
+            res.status = result.httpStatus;
+            res.set_content(JsonError(result.error), "application/json");
+        }
+    });
+
+    // W17 R3-UIDUMP: authored UI scene-graph dump joined to the just-drawn frame.
+    // GET /api/uidump[?panel=<substr>][&join=0]. Returns the standard ok/data
+    // envelope (this endpoint has no golden). Join needs RB3_DRAWLOG_PROV at boot;
+    // without it the authored dump still returns (draws=null, joinDisabled noted).
+    svr->Get("/api/uidump", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string panel = req.has_param("panel") ? req.get_param_value("panel") : "";
+        std::string join  = req.has_param("join")  ? req.get_param_value("join")  : "";
+        auto result = QueueAndWait(kCmdUIDump, panel, join);
         if (result.ok) {
             res.set_content(result.jsonData, "application/json");
         } else {

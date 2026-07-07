@@ -607,6 +607,11 @@ add_executable(rb3-native
     # use the MWCC compat flags, while the httplib TU must NOT — see the
     # set_source_files_properties note after rb3_configure_target below).
     ${CMAKE_SOURCE_DIR}/src/rb3_http_handlers.cpp
+    # W17 R3-UIDUMP: authored UI scene-graph dump (GET /api/uidump), joined to the
+    # drawlog+RB3_DRAWLOG_PROV sidecar. Includes decomp headers (ui/, rndobj/,
+    # math/), no httplib -> rides the target-wide MWCC compat flags like
+    # rb3_http_handlers.cpp (NOT in the MS-compat-OFF override list below).
+    ${CMAKE_SOURCE_DIR}/src/rb3_uidump.cpp
     # milo-trace W9 replay API (RB3_REPLAY_API=1): /api/memory + /api/call +
     # /api/replay/info. The native-side half of milo-trace mode (c) differential
     # replay (run the SHIPPING native code vs a captured guest-BE record). Ordinary
@@ -724,6 +729,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_farvert_rotation_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_placement_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_crowd_bone_oracle.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_skinning_oracle.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)

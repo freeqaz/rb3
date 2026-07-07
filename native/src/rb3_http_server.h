@@ -46,6 +46,11 @@ public:
         // iteration (App.cpp), so the ring reflects the frame that just finished
         // drawing (populated in DrawMesh, cleared next BeginFrame).
         kCmdDrawLog,
+        // W17 R3-UIDUMP: authored UI scene-graph dump (GET /api/uidump), joined to
+        // the just-drawn frame's drawlog+prov sidecar. Walks TheUI screens/panels/
+        // dirs on the main thread between frames (same safety model as kCmdDtaEval).
+        // param1 = optional panel-name substring filter; param2 = "0" to skip join.
+        kCmdUIDump,
         // milo-trace W9 replay API (gated by RB3_REPLAY_API=1; handlers live in
         // rb3_replay_api.cpp). param1 carries the JSON request body.
         kCmdReplayMemory, // /api/memory   — sandboxed arena alloc/read/write/clear
@@ -90,6 +95,7 @@ private:
     void HandleDtaEval(Command& cmd);
     void HandleInput(Command& cmd);
     void HandleDrawLog(Command& cmd);
+    void HandleUIDump(Command& cmd);   // W17 R3-UIDUMP (native/src/rb3_uidump.cpp)
 
     volatile bool mRunning = false;
     int mPort = 0;
