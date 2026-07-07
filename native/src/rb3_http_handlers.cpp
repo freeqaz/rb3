@@ -196,8 +196,38 @@ void RB3HttpServer::HandleScreenshot(Command& cmd) {
 // RunOneFrame(frame) each iteration, so the ring reflects the frame that just
 // finished drawing (DrawMesh populates it; the NEXT frame's BeginFrame clears
 // it) — no extra synchronization needed, this is the main thread.
+// Minimal JSON string escape for milo object names (quotes/backslashes/control).
+static std::string RB3JsonEscape(const std::string& s) {
+    std::string o;
+    o.reserve(s.size() + 4);
+    for (char c : s) {
+        switch (c) {
+            case '"':  o += "\\\""; break;
+            case '\\': o += "\\\\"; break;
+            case '\n': o += "\\n";  break;
+            case '\t': o += "\\t";  break;
+            case '\r': o += "\\r";  break;
+            default:
+                if ((unsigned char)c < 0x20) { char t[8]; snprintf(t, sizeof(t), "\\u%04x", c); o += t; }
+                else o += c;
+        }
+    }
+    return o;
+}
+
 void RB3HttpServer::HandleDrawLog(Command& cmd) {
     const std::vector<RB3DrawRecord>& log = RB3DebugGetDrawLog();
+    // W17 R3-UIDUMP: provenance sidecar (index-aligned; empty unless RB3_DRAWLOG_PROV).
+    const std::vector<RB3DrawProv>& prov = RB3DebugGetDrawProv();
+    bool wantProv = (cmd.param1 == "1" || cmd.param1 == "true");
+    // roi=x,y,w,h -> server-side rect-intersect filter (implies prov).
+    float roi[4] = {0,0,0,0};
+    bool wantRoi = false;
+    if (!cmd.param2.empty() &&
+        sscanf(cmd.param2.c_str(), "%f,%f,%f,%f", &roi[0], &roi[1], &roi[2], &roi[3]) == 4) {
+        wantRoi = true; wantProv = true;
+    }
+    bool provAvail = wantProv && prov.size() == log.size();
 
     std::unordered_map<const void*, int> sceneIds, matIds, objIds, boneIds;
     auto denseId = [](std::unordered_map<const void*, int>& m, const void* p) -> int {
@@ -214,7 +244,10 @@ void RB3HttpServer::HandleDrawLog(Command& cmd) {
     snprintf(buf, sizeof(buf), "{ \"frame\": %d, \"count\": %d,\n  \"draws\": [",
              gBandRnd.mFrameCount, (int)log.size());
     json += buf;
-    for (size_t i = 0; i < log.size(); ++i) {
+
+    // Emit one draw's base record; append its prov object when emitProv. Returns
+    // whether anything was written (always true here — kept for symmetry).
+    auto emitDraw = [&](size_t i, bool leadComma, bool emitProv) {
         const RB3DrawRecord& r = log[i];
         int sceneId = denseId(sceneIds, r.sceneBG);
         int matId   = denseId(matIds,   r.matBG);
@@ -227,7 +260,7 @@ void RB3HttpServer::HandleDrawLog(Command& cmd) {
                  "\"idx\":%u, \"tris\":%u, \"verts\":%u, "
                  "\"scene\":%d, \"mat\":%d, \"obj\":%d, \"bone\":%d,\n"
                  "      \"world\":[",
-                 (i == 0 ? "" : ","),
+                 (leadComma ? "," : ""),
                  (int)i,
                  (unsigned long long)r.meshNameHash,
                  (unsigned long long)r.pipelineHash,
@@ -243,9 +276,62 @@ void RB3HttpServer::HandleDrawLog(Command& cmd) {
             snprintf(buf, sizeof(buf), "%s%.6g", (e == 0 ? "" : ","), (double)r.world[e]);
             json += buf;
         }
-        json += "] }";
+        json += "]";                    // close world array
+        if (emitProv) {
+            const RB3DrawProv& p = prov[i];
+            const char* dl = p.passDepthLoadOp == 0 ? "Clear"
+                           : p.passDepthLoadOp == 1 ? "Load" : "none";
+            snprintf(buf, sizeof(buf),
+                     ",\n      \"prov\": { \"mesh\":\"%s\", \"mat\":\"%s\", \"cam\":\"%s\", "
+                     "\"trans\":\"%s\", \"panel\":\"%s\", \"owner\":\"%s\", "
+                     "\"matColor\":[%.4g,%.4g,%.4g,%.4g], \"boundColor\":[%.4g,%.4g,%.4g,%.4g], "
+                     "\"rect\":[%.1f,%.1f,%.1f,%.1f], \"rectKind\":%u, "
+                     "\"pass\":%u, \"passDepthLoad\":\"%s\" }",
+                     RB3JsonEscape(p.meshName).c_str(), RB3JsonEscape(p.matName).c_str(),
+                     RB3JsonEscape(p.camName).c_str(), RB3JsonEscape(p.transParent).c_str(),
+                     RB3JsonEscape(p.scopePanel).c_str(), RB3JsonEscape(p.scopeOwner).c_str(),
+                     p.matColor[0], p.matColor[1], p.matColor[2], p.matColor[3],
+                     p.boundColor[0], p.boundColor[1], p.boundColor[2], p.boundColor[3],
+                     p.rect[0], p.rect[1], p.rect[2], p.rect[3], (unsigned)p.rectKind,
+                     (unsigned)p.passIdx, dl);
+            json += buf;
+        }
+        json += " }";                   // close draw (byte-identical to old "] }" when no prov)
+    };
+
+    if (wantRoi) {
+        // Filter to draws whose projected rect intersects the ROI, in submission
+        // order. lastWriter = index (into the returned array) of the last such draw.
+        int emitted = 0;
+        for (size_t i = 0; i < log.size(); ++i) {
+            if (!provAvail) break;
+            const RB3DrawProv& p = prov[i];
+            if (p.rectKind == 2 || p.rect[2] < 0) continue;  // degenerate / unavailable
+            bool overlap = p.rect[0] < roi[0] + roi[2] && p.rect[0] + p.rect[2] > roi[0] &&
+                           p.rect[1] < roi[1] + roi[3] && p.rect[1] + p.rect[3] > roi[1];
+            if (!overlap) continue;
+            emitDraw(i, emitted != 0, true);
+            emitted++;
+        }
+        int lastWriter = emitted > 0 ? emitted - 1 : -1;
+        snprintf(buf, sizeof(buf),
+                 "%s],\n  \"roi\":[%.1f,%.1f,%.1f,%.1f], \"matched\":%d, \"lastWriter\":%d, "
+                 "\"provAvailable\":%s, \"coverage\":\"BandRnd::DrawMesh only\" }\n",
+                 emitted == 0 ? "" : "\n  ", roi[0], roi[1], roi[2], roi[3],
+                 emitted, lastWriter, provAvail ? "true" : "false");
+        json += buf;
+    } else if (wantProv) {
+        for (size_t i = 0; i < log.size(); ++i) emitDraw(i, i != 0, provAvail);
+        snprintf(buf, sizeof(buf),
+                 "%s],\n  \"provAvailable\":%s, \"provSize\":%d, \"logSize\":%d, \"coverage\":\"BandRnd::DrawMesh only\" }\n",
+                 log.empty() ? "" : "\n  ", provAvail ? "true" : "false",
+                 (int)prov.size(), (int)log.size());
+        json += buf;
+    } else {
+        // Default path: byte-identical to the committed golden.
+        for (size_t i = 0; i < log.size(); ++i) emitDraw(i, i != 0, false);
+        json += log.empty() ? "] }\n" : "\n  ] }\n";
     }
-    json += log.empty() ? "] }\n" : "\n  ] }\n";
 
     cmd.result.ok = true;
     cmd.result.jsonData = std::move(json);

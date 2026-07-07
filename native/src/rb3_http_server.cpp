@@ -362,8 +362,13 @@ void RB3HttpServer::RegisterEndpoints() {
     // drawlog-golden.py's comparator can diff the response body directly
     // against the committed golden file with no unwrapping step. Empty
     // ({"draws":[]}) when RB3_DRAWLOG (or the debug override) is not enabled.
-    svr->Get("/api/drawlog", [this](const httplib::Request&, httplib::Response& res) {
-        auto result = QueueAndWait(kCmdDrawLog);
+    // ?prov=1 adds the W17 R3-UIDUMP provenance sidecar per draw (names/rect/pass/
+    // scope; requires RB3_DRAWLOG_PROV at boot). ?roi=x,y,w,h server-side rect-
+    // intersect filter (implies prov). Absent both -> byte-identical to the golden.
+    svr->Get("/api/drawlog", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string prov = req.has_param("prov") ? req.get_param_value("prov") : "";
+        std::string roi  = req.has_param("roi")  ? req.get_param_value("roi")  : "";
+        auto result = QueueAndWait(kCmdDrawLog, prov, roi);
         if (result.ok) {
             res.set_content(result.jsonData, "application/json");
         } else {
