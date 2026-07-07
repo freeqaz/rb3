@@ -1,0 +1,2065 @@
+{
+ "wii_side": {
+  "scene": "shell:ui/overshell (D2 Bank-8-on-retail)",
+  "build": "bank8_debug_dol_on_retail_disc(patched_apploader)",
+  "map_vtable_charbone": "0x80bfeaa8",
+  "offsets_bank8": {
+   "cb_name": 12,
+   "cb_mtrans": 72,
+   "world_xfm": 76,
+   "local_xfm": 28,
+   "mat_row_stride": 12
+  }
+ },
+ "native_side": {
+  "scene": "shell:main_hub (charcache preview band)",
+  "build": "rb3-native",
+  "members": [
+   {
+    "slot": 0,
+    "name": "player0",
+    "gender": "male",
+    "source": "charcache"
+   },
+   {
+    "slot": 1,
+    "name": "player1",
+    "gender": "female",
+    "source": "charcache"
+   },
+   {
+    "slot": 2,
+    "name": "player2",
+    "gender": "male",
+    "source": "charcache"
+   },
+   {
+    "slot": 3,
+    "name": "player3",
+    "gender": "female",
+    "source": "charcache"
+   }
+  ]
+ },
+ "convention": {
+  "layout": "col",
+  "transpose": false,
+  "order": "ipc",
+  "worst_residual": 0.13326560712575677,
+  "n_checks": 20
+ },
+ "redteam": {
+  "desc": "Wii[L-forearm->L-hand] vs native[L-hand->L-thumb01]",
+  "delta_deg": 168.822,
+  "verdict": "RED (machinery separates)"
+ },
+ "summary": {
+  "n_rows": 80,
+  "n_ok": 80,
+  "anchor_delta_mean": 90.611,
+  "finger_delta_mean": 29.732,
+  "finger_delta_max": 89.603
+ },
+ "rows": [
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-forearm->l-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 92.727,
+   "delta_deg": 114.759,
+   "wii_relT": [
+    8.872,
+    -1.146,
+    -0.046
+   ],
+   "native_relT": [
+    2.904,
+    8.326,
+    -5.244
+   ],
+   "dTrans": 12.343,
+   "native_trans_addr": "0x556e46482200"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.404,
+   "native_relRot": 19.831,
+   "delta_deg": 20.996,
+   "wii_relT": [
+    3.793,
+    4.869,
+    1.31
+   ],
+   "native_relT": [
+    1.192,
+    0.721,
+    -3.041
+   ],
+   "dTrans": 6.55,
+   "native_trans_addr": "0x556e46485140"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger01->l-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 45.008,
+   "delta_deg": 36.874,
+   "wii_relT": [
+    0.494,
+    1.948,
+    0.876
+   ],
+   "native_relT": [
+    -0.545,
+    0.939,
+    -1.893
+   ],
+   "dTrans": 3.125,
+   "native_trans_addr": "0x556e464854a0"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger02->l-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 43.194,
+   "delta_deg": 36.121,
+   "wii_relT": [
+    0.062,
+    1.141,
+    0.055
+   ],
+   "native_relT": [
+    1.014,
+    -0.131,
+    -0.527
+   ],
+   "dTrans": 1.692,
+   "native_trans_addr": "0x556e46485800"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.428,
+   "native_relRot": 25.145,
+   "delta_deg": 27.034,
+   "wii_relT": [
+    2.864,
+    5.14,
+    1.781
+   ],
+   "native_relT": [
+    1.139,
+    1.784,
+    -2.794
+   ],
+   "dTrans": 5.931,
+   "native_trans_addr": "0x556e46486fa0"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger01->l-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 65.957,
+   "delta_deg": 56.205,
+   "wii_relT": [
+    0.285,
+    1.748,
+    0.701
+   ],
+   "native_relT": [
+    -0.799,
+    0.703,
+    -1.579
+   ],
+   "dTrans": 2.733,
+   "native_trans_addr": "0x556e46487300"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger02->l-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 50.397,
+   "delta_deg": 47.418,
+   "wii_relT": [
+    -0.016,
+    0.98,
+    -0.046
+   ],
+   "native_relT": [
+    0.873,
+    -0.463,
+    -0.085
+   ],
+   "dTrans": 1.696,
+   "native_trans_addr": "0x556e46487660"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.644,
+   "native_relRot": 124.859,
+   "delta_deg": 63.196,
+   "wii_relT": [
+    2.372,
+    3.318,
+    -0.801
+   ],
+   "native_relT": [
+    -0.572,
+    0.004,
+    -0.754
+   ],
+   "dTrans": 4.433,
+   "native_trans_addr": "0x556e46489160"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb01->l-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 23.577,
+   "delta_deg": 15.659,
+   "wii_relT": [
+    -0.223,
+    -1.428,
+    -1.783
+   ],
+   "native_relT": [
+    -0.159,
+    2.287,
+    0.197
+   ],
+   "dTrans": 4.21,
+   "native_trans_addr": "0x556e464894c0"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb02->l-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 11.98,
+   "delta_deg": 8.005,
+   "wii_relT": [
+    0.366,
+    -1.012,
+    -0.411
+   ],
+   "native_relT": [
+    -0.289,
+    1.043,
+    0.39
+   ],
+   "dTrans": 2.301,
+   "native_trans_addr": "0x556e46489820"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-forearm->r-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 81.368,
+   "delta_deg": 82.45,
+   "wii_relT": [
+    8.944,
+    -0.183,
+    -0.022
+   ],
+   "native_relT": [
+    -5.854,
+    -0.073,
+    8.646
+   ],
+   "dTrans": 17.15,
+   "native_trans_addr": "0x556e46492940"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.363,
+   "native_relRot": 10.93,
+   "delta_deg": 13.239,
+   "wii_relT": [
+    -0.642,
+    -4.974,
+    -3.826
+   ],
+   "native_relT": [
+    1.826,
+    1.503,
+    2.366
+   ],
+   "dTrans": 9.294,
+   "native_trans_addr": "0x556e46495880"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger01->r-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 36.02,
+   "delta_deg": 26.351,
+   "wii_relT": [
+    0.324,
+    -1.946,
+    -0.956
+   ],
+   "native_relT": [
+    1.398,
+    0.99,
+    1.351
+   ],
+   "dTrans": 3.886,
+   "native_trans_addr": "0x556e46495be0"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger02->r-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 34.236,
+   "delta_deg": 25.71,
+   "wii_relT": [
+    -0.033,
+    -1.142,
+    -0.056
+   ],
+   "native_relT": [
+    0.871,
+    0.323,
+    0.678
+   ],
+   "dTrans": 1.872,
+   "native_trans_addr": "0x556e46495f40"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.385,
+   "native_relRot": 16.166,
+   "delta_deg": 19.232,
+   "wii_relT": [
+    0.249,
+    -5.199,
+    -3.264
+   ],
+   "native_relT": [
+    2.684,
+    1.375,
+    1.769
+   ],
+   "dTrans": 8.63,
+   "native_trans_addr": "0x556e464976e0"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger01->r-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 43.735,
+   "delta_deg": 33.065,
+   "wii_relT": [
+    0.328,
+    -1.748,
+    -0.683
+   ],
+   "native_relT": [
+    1.179,
+    0.944,
+    1.161
+   ],
+   "dTrans": 3.371,
+   "native_trans_addr": "0x556e46497a40"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger02->r-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 28.173,
+   "delta_deg": 24.654,
+   "wii_relT": [
+    0.007,
+    -0.981,
+    0.045
+   ],
+   "native_relT": [
+    0.746,
+    0.282,
+    0.589
+   ],
+   "dTrans": 1.561,
+   "native_trans_addr": "0x556e46497da0"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.723,
+   "native_relRot": 124.855,
+   "delta_deg": 31.512,
+   "wii_relT": [
+    -1.788,
+    -3.417,
+    -1.559
+   ],
+   "native_relT": [
+    0.023,
+    0.944,
+    0.065
+   ],
+   "dTrans": 4.993,
+   "native_trans_addr": "0x556e464998a0"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb01->r-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 23.577,
+   "delta_deg": 7.095,
+   "wii_relT": [
+    2.268,
+    -0.217,
+    -0.281
+   ],
+   "native_relT": [
+    -1.87,
+    -0.753,
+    -1.109
+   ],
+   "dTrans": 4.254,
+   "native_trans_addr": "0x556e46499c00"
+  },
+  {
+   "member_slot": 0,
+   "member": "player0",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb02->r-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 11.98,
+   "delta_deg": 3.672,
+   "wii_relT": [
+    1.146,
+    0.097,
+    0.065
+   ],
+   "native_relT": [
+    -0.462,
+    -0.69,
+    -0.796
+   ],
+   "dTrans": 1.987,
+   "native_trans_addr": "0x556e46499f60"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-forearm->l-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 95.27,
+   "delta_deg": 70.232,
+   "wii_relT": [
+    8.872,
+    -1.146,
+    -0.046
+   ],
+   "native_relT": [
+    -6.798,
+    4.85,
+    4.321
+   ],
+   "dTrans": 17.337,
+   "native_trans_addr": "0x556e4645ffa0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.404,
+   "native_relRot": 12.835,
+   "delta_deg": 14.509,
+   "wii_relT": [
+    3.793,
+    4.869,
+    1.31
+   ],
+   "native_relT": [
+    -2.084,
+    -0.91,
+    -2.438
+   ],
+   "dTrans": 9.055,
+   "native_trans_addr": "0x556e46462ee0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger01->l-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 19.876,
+   "delta_deg": 24.355,
+   "wii_relT": [
+    0.494,
+    1.948,
+    0.876
+   ],
+   "native_relT": [
+    -1.003,
+    -1.072,
+    -0.603
+   ],
+   "dTrans": 3.681,
+   "native_trans_addr": "0x556e46463240"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger02->l-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 29.772,
+   "delta_deg": 27.731,
+   "wii_relT": [
+    0.062,
+    1.141,
+    0.055
+   ],
+   "native_relT": [
+    -1.11,
+    -0.122,
+    -0.825
+   ],
+   "dTrans": 1.935,
+   "native_trans_addr": "0x556e464635a0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.428,
+   "native_relRot": 17.521,
+   "delta_deg": 18.212,
+   "wii_relT": [
+    2.864,
+    5.14,
+    1.781
+   ],
+   "native_relT": [
+    -2.641,
+    -0.768,
+    -1.724
+   ],
+   "dTrans": 8.804,
+   "native_trans_addr": "0x556e46464d40"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger01->l-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 38.209,
+   "delta_deg": 38.204,
+   "wii_relT": [
+    0.285,
+    1.748,
+    0.701
+   ],
+   "native_relT": [
+    -0.748,
+    -1.15,
+    -0.523
+   ],
+   "dTrans": 3.311,
+   "native_trans_addr": "0x556e464650a0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger02->l-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 31.252,
+   "delta_deg": 29.691,
+   "wii_relT": [
+    -0.016,
+    0.98,
+    -0.046
+   ],
+   "native_relT": [
+    -0.969,
+    0.504,
+    -0.92
+   ],
+   "dTrans": 1.379,
+   "native_trans_addr": "0x556e46465400"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.644,
+   "native_relRot": 125.669,
+   "delta_deg": 52.152,
+   "wii_relT": [
+    2.372,
+    3.318,
+    -0.801
+   ],
+   "native_relT": [
+    0.25,
+    -0.966,
+    -1.057
+   ],
+   "dTrans": 4.788,
+   "native_trans_addr": "0x556e46466f00"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb01->l-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 14.492,
+   "delta_deg": 12.408,
+   "wii_relT": [
+    -0.223,
+    -1.428,
+    -1.783
+   ],
+   "native_relT": [
+    -1.08,
+    0.647,
+    1.151
+   ],
+   "dTrans": 3.695,
+   "native_trans_addr": "0x556e46467260"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb02->l-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 6.263,
+   "delta_deg": 6.987,
+   "wii_relT": [
+    0.366,
+    -1.012,
+    -0.411
+   ],
+   "native_relT": [
+    -0.809,
+    0.267,
+    0.649
+   ],
+   "dTrans": 2.035,
+   "native_trans_addr": "0x556e464675c0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-forearm->r-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 90.565,
+   "delta_deg": 84.753,
+   "wii_relT": [
+    8.944,
+    -0.183,
+    -0.022
+   ],
+   "native_relT": [
+    -3.552,
+    2.872,
+    8.218
+   ],
+   "dTrans": 15.277,
+   "native_trans_addr": "0x556e46ecba60"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.363,
+   "native_relRot": 12.279,
+   "delta_deg": 14.034,
+   "wii_relT": [
+    -0.642,
+    -4.974,
+    -3.826
+   ],
+   "native_relT": [
+    2.907,
+    0.248,
+    1.614
+   ],
+   "dTrans": 8.334,
+   "native_trans_addr": "0x556e46ece9a0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger01->r-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 18.889,
+   "delta_deg": 21.345,
+   "wii_relT": [
+    0.324,
+    -1.946,
+    -0.956
+   ],
+   "native_relT": [
+    1.515,
+    0.237,
+    0.408
+   ],
+   "dTrans": 2.836,
+   "native_trans_addr": "0x556e46eced00"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger02->r-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 28.676,
+   "delta_deg": 24.276,
+   "wii_relT": [
+    -0.033,
+    -1.142,
+    -0.056
+   ],
+   "native_relT": [
+    1.363,
+    0.108,
+    0.244
+   ],
+   "dTrans": 1.898,
+   "native_trans_addr": "0x556e46ecf060"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.385,
+   "native_relRot": 16.697,
+   "delta_deg": 17.373,
+   "wii_relT": [
+    0.249,
+    -5.199,
+    -3.264
+   ],
+   "native_relT": [
+    3.152,
+    -0.03,
+    0.775
+   ],
+   "dTrans": 7.173,
+   "native_trans_addr": "0x556e46ed0800"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger01->r-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 36.25,
+   "delta_deg": 32.745,
+   "wii_relT": [
+    0.328,
+    -1.748,
+    -0.683
+   ],
+   "native_relT": [
+    1.424,
+    0.185,
+    0.305
+   ],
+   "dTrans": 2.431,
+   "native_trans_addr": "0x556e46ed0b60"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger02->r-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 29.153,
+   "delta_deg": 26.734,
+   "wii_relT": [
+    0.007,
+    -0.981,
+    0.045
+   ],
+   "native_relT": [
+    1.428,
+    -0.008,
+    -0.022
+   ],
+   "dTrans": 1.723,
+   "native_trans_addr": "0x556e46ed0ec0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.723,
+   "native_relRot": 127.213,
+   "delta_deg": 42.684,
+   "wii_relT": [
+    -1.788,
+    -3.417,
+    -1.559
+   ],
+   "native_relT": [
+    0.365,
+    0.977,
+    1.012
+   ],
+   "dTrans": 5.528,
+   "native_trans_addr": "0x556e46ed29c0"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb01->r-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 14.527,
+   "delta_deg": 11.367,
+   "wii_relT": [
+    2.268,
+    -0.217,
+    -0.281
+   ],
+   "native_relT": [
+    -1.701,
+    0.107,
+    -0.082
+   ],
+   "dTrans": 3.987,
+   "native_trans_addr": "0x556e46ed2d20"
+  },
+  {
+   "member_slot": 1,
+   "member": "player1",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb02->r-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 6.263,
+   "delta_deg": 6.595,
+   "wii_relT": [
+    1.146,
+    0.097,
+    0.065
+   ],
+   "native_relT": [
+    -1.012,
+    -0.108,
+    -0.335
+   ],
+   "dTrans": 2.204,
+   "native_trans_addr": "0x556e46ed3080"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-forearm->l-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 85.579,
+   "delta_deg": 127.557,
+   "wii_relT": [
+    8.872,
+    -1.146,
+    -0.046
+   ],
+   "native_relT": [
+    4.149,
+    7.519,
+    5.349
+   ],
+   "dTrans": 11.247,
+   "native_trans_addr": "0x556e47ff1440"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.404,
+   "native_relRot": 28.811,
+   "delta_deg": 27.469,
+   "wii_relT": [
+    3.793,
+    4.869,
+    1.31
+   ],
+   "native_relT": [
+    -0.118,
+    3.0,
+    -1.474
+   ],
+   "dTrans": 5.152,
+   "native_trans_addr": "0x556e47ff4380"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger01->l-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 65.904,
+   "delta_deg": 65.518,
+   "wii_relT": [
+    0.494,
+    1.948,
+    0.876
+   ],
+   "native_relT": [
+    -1.886,
+    0.953,
+    -0.544
+   ],
+   "dTrans": 2.946,
+   "native_trans_addr": "0x556e47ff46e0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger02->l-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 61.814,
+   "delta_deg": 60.906,
+   "wii_relT": [
+    0.062,
+    1.141,
+    0.055
+   ],
+   "native_relT": [
+    1.067,
+    0.422,
+    0.084
+   ],
+   "dTrans": 1.235,
+   "native_trans_addr": "0x556e47ff4a40"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.428,
+   "native_relRot": 36.888,
+   "delta_deg": 34.145,
+   "wii_relT": [
+    2.864,
+    5.14,
+    1.781
+   ],
+   "native_relT": [
+    -0.524,
+    3.421,
+    -0.552
+   ],
+   "dTrans": 4.458,
+   "native_trans_addr": "0x556e47ff61e0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger01->l-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 74.132,
+   "delta_deg": 73.784,
+   "wii_relT": [
+    0.285,
+    1.748,
+    0.701
+   ],
+   "native_relT": [
+    -1.774,
+    0.295,
+    -0.626
+   ],
+   "dTrans": 2.848,
+   "native_trans_addr": "0x556e47ff92a0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger02->l-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 47.983,
+   "delta_deg": 47.184,
+   "wii_relT": [
+    -0.016,
+    0.98,
+    -0.046
+   ],
+   "native_relT": [
+    0.896,
+    0.387,
+    0.174
+   ],
+   "dTrans": 1.11,
+   "native_trans_addr": "0x556e47ff94c0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.644,
+   "native_relRot": 120.931,
+   "delta_deg": 89.603,
+   "wii_relT": [
+    2.372,
+    3.318,
+    -0.801
+   ],
+   "native_relT": [
+    -0.712,
+    0.225,
+    -0.581
+   ],
+   "dTrans": 4.374,
+   "native_trans_addr": "0x556e47ffafc0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb01->l-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 26.129,
+   "delta_deg": 6.828,
+   "wii_relT": [
+    -0.223,
+    -1.428,
+    -1.783
+   ],
+   "native_relT": [
+    -0.076,
+    1.943,
+    1.23
+   ],
+   "dTrans": 4.524,
+   "native_trans_addr": "0x556e47ffb320"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb02->l-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 7.552,
+   "delta_deg": 5.088,
+   "wii_relT": [
+    0.366,
+    -1.012,
+    -0.411
+   ],
+   "native_relT": [
+    -0.431,
+    0.886,
+    0.594
+   ],
+   "dTrans": 2.291,
+   "native_trans_addr": "0x556e47ffb680"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-forearm->r-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 107.999,
+   "delta_deg": 102.838,
+   "wii_relT": [
+    8.944,
+    -0.183,
+    -0.022
+   ],
+   "native_relT": [
+    -6.331,
+    0.076,
+    7.89
+   ],
+   "dTrans": 17.204,
+   "native_trans_addr": "0x556e480047a0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.363,
+   "native_relRot": 22.245,
+   "delta_deg": 25.551,
+   "wii_relT": [
+    -0.642,
+    -4.974,
+    -3.826
+   ],
+   "native_relT": [
+    2.162,
+    1.697,
+    1.906
+   ],
+   "dTrans": 9.232,
+   "native_trans_addr": "0x556e483a6580"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger01->r-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 50.611,
+   "delta_deg": 31.454,
+   "wii_relT": [
+    0.324,
+    -1.946,
+    -0.956
+   ],
+   "native_relT": [
+    1.371,
+    1.396,
+    0.966
+   ],
+   "dTrans": 3.995,
+   "native_trans_addr": "0x556e483a68e0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger02->r-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 48.2,
+   "delta_deg": 33.744,
+   "wii_relT": [
+    -0.033,
+    -1.142,
+    -0.056
+   ],
+   "native_relT": [
+    1.088,
+    0.206,
+    0.311
+   ],
+   "dTrans": 1.792,
+   "native_trans_addr": "0x556e483a6c40"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.385,
+   "native_relRot": 28.234,
+   "delta_deg": 31.532,
+   "wii_relT": [
+    0.249,
+    -5.199,
+    -3.264
+   ],
+   "native_relT": [
+    2.862,
+    1.666,
+    1.12
+   ],
+   "dTrans": 8.554,
+   "native_trans_addr": "0x556e483a83e0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger01->r-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 68.233,
+   "delta_deg": 47.38,
+   "wii_relT": [
+    0.328,
+    -1.748,
+    -0.683
+   ],
+   "native_relT": [
+    1.149,
+    1.318,
+    0.755
+   ],
+   "dTrans": 3.484,
+   "native_trans_addr": "0x556e483a8740"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger02->r-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 49.836,
+   "delta_deg": 44.893,
+   "wii_relT": [
+    0.007,
+    -0.981,
+    0.045
+   ],
+   "native_relT": [
+    0.984,
+    0.066,
+    0.105
+   ],
+   "dTrans": 1.432,
+   "native_trans_addr": "0x556e483a8aa0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.723,
+   "native_relRot": 123.804,
+   "delta_deg": 17.83,
+   "wii_relT": [
+    -1.788,
+    -3.417,
+    -1.559
+   ],
+   "native_relT": [
+    -0.065,
+    0.94,
+    0.083
+   ],
+   "dTrans": 4.965,
+   "native_trans_addr": "0x556e483aa5a0"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb01->r-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 24.243,
+   "delta_deg": 15.159,
+   "wii_relT": [
+    2.268,
+    -0.217,
+    -0.281
+   ],
+   "native_relT": [
+    -1.831,
+    -1.376,
+    0.223
+   ],
+   "dTrans": 4.289,
+   "native_trans_addr": "0x556e483aa900"
+  },
+  {
+   "member_slot": 2,
+   "member": "player2",
+   "gender": "male",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb02->r-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 10.79,
+   "delta_deg": 7.346,
+   "wii_relT": [
+    1.146,
+    0.097,
+    0.065
+   ],
+   "native_relT": [
+    -0.574,
+    -0.993,
+    0.083
+   ],
+   "dTrans": 2.037,
+   "native_trans_addr": "0x556e483aac60"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-forearm->l-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 87.073,
+   "delta_deg": 94.337,
+   "wii_relT": [
+    8.872,
+    -1.146,
+    -0.046
+   ],
+   "native_relT": [
+    -6.051,
+    2.121,
+    -6.878
+   ],
+   "dTrans": 16.733,
+   "native_trans_addr": "0x556e48869e80"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.404,
+   "native_relRot": 29.932,
+   "delta_deg": 33.626,
+   "wii_relT": [
+    3.793,
+    4.869,
+    1.31
+   ],
+   "native_relT": [
+    1.222,
+    -2.664,
+    -1.59
+   ],
+   "dTrans": 8.471,
+   "native_trans_addr": "0x556e4886cdc0"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger01->l-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 53.304,
+   "delta_deg": 30.83,
+   "wii_relT": [
+    0.494,
+    1.948,
+    0.876
+   ],
+   "native_relT": [
+    -0.596,
+    -1.259,
+    -0.761
+   ],
+   "dTrans": 3.762,
+   "native_trans_addr": "0x556e4886d120"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-middlefinger02->l-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 60.158,
+   "delta_deg": 43.513,
+   "wii_relT": [
+    0.062,
+    1.141,
+    0.055
+   ],
+   "native_relT": [
+    0.997,
+    -0.673,
+    -0.694
+   ],
+   "dTrans": 2.174,
+   "native_trans_addr": "0x556e4886d480"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.428,
+   "native_relRot": 40.386,
+   "delta_deg": 44.457,
+   "wii_relT": [
+    2.864,
+    5.14,
+    1.781
+   ],
+   "native_relT": [
+    0.771,
+    -2.212,
+    -2.248
+   ],
+   "dTrans": 8.641,
+   "native_trans_addr": "0x556e4886ec20"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger01->l-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 61.518,
+   "delta_deg": 37.755,
+   "wii_relT": [
+    0.285,
+    1.748,
+    0.701
+   ],
+   "native_relT": [
+    -0.491,
+    -1.273,
+    -0.54
+   ],
+   "dTrans": 3.358,
+   "native_trans_addr": "0x556e4886ef80"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-ringfinger02->l-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 39.906,
+   "delta_deg": 34.468,
+   "wii_relT": [
+    -0.016,
+    0.98,
+    -0.046
+   ],
+   "native_relT": [
+    1.081,
+    -0.355,
+    -0.863
+   ],
+   "dTrans": 1.912,
+   "native_trans_addr": "0x556e4886f2e0"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-hand->l-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.644,
+   "native_relRot": 122.013,
+   "delta_deg": 46.844,
+   "wii_relT": [
+    2.372,
+    3.318,
+    -0.801
+   ],
+   "native_relT": [
+    0.166,
+    -1.343,
+    0.531
+   ],
+   "dTrans": 5.326,
+   "native_trans_addr": "0x556e48894920"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb01->l-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 6.773,
+   "delta_deg": 19.184,
+   "wii_relT": [
+    -0.223,
+    -1.428,
+    -1.783
+   ],
+   "native_relT": [
+    -1.213,
+    1.183,
+    -0.199
+   ],
+   "dTrans": 3.211,
+   "native_trans_addr": "0x556e48894c80"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "L",
+   "pair": "l-thumb02->l-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 0.799,
+   "delta_deg": 11.638,
+   "wii_relT": [
+    0.366,
+    -1.012,
+    -0.411
+   ],
+   "native_relT": [
+    -0.812,
+    0.698,
+    -0.005
+   ],
+   "dTrans": 2.117,
+   "native_trans_addr": "0x556e48894fe0"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-forearm->r-hand",
+   "kind": "anchor",
+   "status": "ok",
+   "wii_relRot": 91.31,
+   "native_relRot": 91.882,
+   "delta_deg": 47.961,
+   "wii_relT": [
+    8.944,
+    -0.183,
+    -0.022
+   ],
+   "native_relT": [
+    -2.108,
+    7.874,
+    4.686
+   ],
+   "dTrans": 14.464,
+   "native_trans_addr": "0x556e488add00"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-middlefinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 5.363,
+   "native_relRot": 16.664,
+   "delta_deg": 18.698,
+   "wii_relT": [
+    -0.642,
+    -4.974,
+    -3.826
+   ],
+   "native_relT": [
+    3.193,
+    0.048,
+    0.96
+   ],
+   "dTrans": 7.926,
+   "native_trans_addr": "0x556e488b0c40"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger01->r-middlefinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 24.366,
+   "native_relRot": 23.646,
+   "delta_deg": 24.762,
+   "wii_relT": [
+    0.324,
+    -1.946,
+    -0.956
+   ],
+   "native_relT": [
+    1.552,
+    0.291,
+    0.162
+   ],
+   "dTrans": 2.786,
+   "native_trans_addr": "0x556e488b0fa0"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-middlefinger02->r-middlefinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 17.732,
+   "native_relRot": 33.332,
+   "delta_deg": 29.523,
+   "wii_relT": [
+    -0.033,
+    -1.142,
+    -0.056
+   ],
+   "native_relT": [
+    1.388,
+    0.026,
+    0.029
+   ],
+   "dTrans": 1.841,
+   "native_trans_addr": "0x556e488b1300"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-ringfinger01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 7.385,
+   "native_relRot": 22.307,
+   "delta_deg": 23.036,
+   "wii_relT": [
+    0.249,
+    -5.199,
+    -3.264
+   ],
+   "native_relT": [
+    3.241,
+    -0.182,
+    0.073
+   ],
+   "dTrans": 6.727,
+   "native_trans_addr": "0x556e488b2aa0"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger01->r-ringfinger02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 26.126,
+   "native_relRot": 49.626,
+   "delta_deg": 46.307,
+   "wii_relT": [
+    0.328,
+    -1.748,
+    -0.683
+   ],
+   "native_relT": [
+    1.449,
+    0.209,
+    0.11
+   ],
+   "dTrans": 2.39,
+   "native_trans_addr": "0x556e488b2e00"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-ringfinger02->r-ringfinger03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 5.74,
+   "native_relRot": 42.774,
+   "delta_deg": 40.906,
+   "wii_relT": [
+    0.007,
+    -0.981,
+    0.045
+   ],
+   "native_relT": [
+    1.37,
+    -0.172,
+    -0.366
+   ],
+   "dTrans": 1.636,
+   "native_trans_addr": "0x556e488b3160"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-hand->r-thumb01",
+   "kind": "finger_base",
+   "status": "ok",
+   "wii_relRot": 123.723,
+   "native_relRot": 127.143,
+   "delta_deg": 42.187,
+   "wii_relT": [
+    -1.788,
+    -3.417,
+    -1.559
+   ],
+   "native_relT": [
+    0.616,
+    0.896,
+    0.964
+   ],
+   "dTrans": 5.545,
+   "native_trans_addr": "0x556e488b4c60"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb01->r-thumb02",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 23.562,
+   "native_relRot": 3.426,
+   "delta_deg": 21.35,
+   "wii_relT": [
+    2.268,
+    -0.217,
+    -0.281
+   ],
+   "native_relT": [
+    -1.042,
+    0.614,
+    -1.203
+   ],
+   "dTrans": 3.535,
+   "native_trans_addr": "0x556e488b4fc0"
+  },
+  {
+   "member_slot": 3,
+   "member": "player3",
+   "gender": "female",
+   "source": "charcache",
+   "hand": "R",
+   "pair": "r-thumb02->r-thumb03",
+   "kind": "finger",
+   "status": "ok",
+   "wii_relRot": 11.948,
+   "native_relRot": 6.368,
+   "delta_deg": 8.782,
+   "wii_relT": [
+    1.146,
+    0.097,
+    0.065
+   ],
+   "native_relT": [
+    -0.694,
+    0.309,
+    -0.755
+   ],
+   "dTrans": 2.026,
+   "native_trans_addr": "0x556e488b5320"
+  }
+ ]
+}

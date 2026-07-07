@@ -122,3 +122,53 @@ exact patch instructions + provenance hashes, and evidence text/JSON. Disc left 
 every bone row; instrument shown red (production-mode reject) AND green (dev-mode
 boot); rigidity+topology validated before the table was emitted (no unvalidated
 oracle); other lanes' Dolphin untouched (instance-scoped by `-u`); pgid-only teardown.
+
+---
+
+## D3 / Wave-B (2026-07-07) — native-side probe + Wii-vs-native inter-bone JOIN
+
+Lane D3 built the **native half** of the inter-bone delta table and joined it
+against the D2 Wii ground truth. **Verdict: TABLE DELIVERED + validated machinery,
+with a priced matched-clock caveat.** Full detail + reproduction:
+`evidence/D3_findings.md`; deliverable `evidence/D3_delta_table.{md,json}` (primary,
+shell/D2-matched) + `D3_delta_table_gameplay.{md,json}` (director band); raw dumps
+`evidence/D3_native_bones_{shell,gameplay}.json`.
+
+**What D3 did.** Added `native/src/rb3_bonedump_native.cpp` — env-gated
+(`RB3_BONE_PROBE_OUT`, default-OFF) native bone probe, `extern "C"
+rb3bp_dump_bones()` reached over the existing `/api/call` endpoint
+(RB3_REPLAY_API=1, static-vaddr+bias resolve like `rb3rc_capture_sweep`). It walks
+each band member's **OWN** BandCharacter dir and dumps every hand-chain
+`RndTransformable` bone's world/local matrix + parent + **pointer identity**. The
+harness `scripts/native/d3-bonedump-capture.py` boots headless (RB3_FIXED_CLOCK=1),
+reaches the shell (main_hub) and gameplay, POSTs the dump. The join
+`scripts/analysis/interbone_diff.py` computes `D=inv(W_parent)·W_child` per pair per
+side and `delta=angle(D_wii·inv(D_native))` for D2's full M-2 pair list (forearm→hand
+anchor + middle/ring/thumb cascades, BOTH hands), all 4 members.
+
+**Validity gates (all GREEN):** (1) convention **self-calibrated** to reproduce D2's
+20 stored pairs to worst **0.133°** (layout=col, order=inv(P)·C) → native measured in
+D2's own convention; (2) **red-team** known-bad pair reads **168.8°** (machinery
+separates); (3) **anti-magnet pointer-verified** — 0/54 bones shared across members
+(dumped OWN animating bones, avoided the campaign own/bound trap); (4) gender/member
+split (lint 2); (5) evidence committed (lint 7).
+
+**Headline (shell, D2-matched):** anchor delta mean 90.6°, finger delta mean 29.7°.
+The **anchor + thumb chain agree in relRot magnitude to ~1°** (thumb01→02 Δmag 0.02°,
+thumb02→03 0.03°) while **middle/ring diverge 20–45°** (native fingers more curled).
+
+**The priced caveat (why the numbers don't yet close R5):** D2's static shell artifact
+carries **no clip/frame join key**, so a frame-exact "matched clock" join (PLAN §3.6)
+is impossible from it — both sides are in un-synced idle poses. The "equal magnitude,
+large delta" signature (anchor/thumb) is a per-bone local-frame **conjugation**
+(`inv(L)·D·L` preserves angle, rotates axis) / unmatched-frame artifact, NOT a scale
+defect; the middle/ring divergence is the one pose-level signal but can't be separated
+from a frame difference without a shared label. **Exact unblock:** emit the member's
+CharClipDriver clip+frame on BOTH sides (native probe + D2's `wii_bone_dirboot.py`),
+drive to the same `(clip,frame)`, re-run the join — then the residual is the real
+skeleton delta. Details in `evidence/D3_findings.md`.
+
+**Not committed:** no default flips, no pin bumps, no engine edits (rb3-side probe TU
+only). Process lints held: pointer identity on every native bone row; metric shown red
+on a known-bad pair AND calibrated green on D2; own-vs-magnet proven by pointer
+distinctness before the table was trusted (no unvalidated oracle promoted).

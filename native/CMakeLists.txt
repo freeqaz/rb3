@@ -630,6 +630,14 @@ add_executable(rb3-native
     # MS-compat-OFF override rb3_replay_api.cpp needs). One exported entry point
     # (rb3rc_capture_sweep), reached over the existing /api/call endpoint.
     ${CMAKE_SOURCE_DIR}/src/rb3_replay_capture.cpp
+    # W17 R1-DOLPHIN Lane D3: native-side hand-chain BONE PROBE (RB3_BONE_PROBE_OUT).
+    # Emits the native half of the Wii-vs-native inter-bone delta table (join lands
+    # at execution/R1-DOLPHIN/evidence/D3_delta_table.*). Includes decomp headers
+    # (bandobj/BandCharacter.h+BandDirector.h, meta_band/CharCache.h, rndobj/Trans.h)
+    # so it rides the
+    # target-wide MWCC compat flags like rb3_replay_capture.cpp. One exported entry
+    # point (rb3bp_dump_bones) reached over the existing /api/call endpoint.
+    ${CMAKE_SOURCE_DIR}/src/rb3_bonedump_native.cpp
     # C2: save/profile/settings persistence (keystone). Host-FS blob store behind
     # IPersistBackend, backing ProfileMgr's self-contained global-options +
     # profile-0 GameplayOptions serializers. Bypasses the EXCLUDED Wii
