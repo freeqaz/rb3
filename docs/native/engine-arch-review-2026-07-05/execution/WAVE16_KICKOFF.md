@@ -1,8 +1,43 @@
 # Wave 16 — Kickoff Design (coordinator draft, for Fable review before dispatch)
 
-**Author:** coordinator. **Status:** DRAFT — under Fable pre-dispatch review.
+**Author:** coordinator. **Status:** REVIEWED (Fable, `WAVE16_REVIEW.md` rb3 `d122c830`) — **all 7
+amendments adopted**; dispatched with the corrected shape below.
 Parent: `execution/README.md` (Wave 15 results + Wave 16 menu). Engine pin `84ccb9e`. Ten
 defaults ON.
+
+## COORDINATOR ACCEPTANCE (2026-07-07) — final dispatched shape
+
+- **A1 (CRITICAL, Lane T) — the "RndText glyph shader ignores font-material color" premise is
+  REFUTED at source:** `standard_wgsl.inc:764` multiplies material.color into EVERY draw (text
+  included), `RB3MaterialBinder.cpp:132-134` binds `mat->GetColor()`, and the shipped W4.2 hub
+  result proves dark fontMat colors reach pixels on this exact path. The drop is LIST-PATH
+  SPECIFIC; prime suspect (source-grounded): `UILabel::DrawShowing` propagates `mColorOverride`
+  only to the MAIN font's material (`UILabel.cpp:266-270`) while the ALT font's mat always gets
+  `GetStateColor` (`:279-292`), and RndText assigns per-font materials to submeshes
+  (`Text.cpp:1402`) — exactly reproducing "line 269 fires dark, pixels stay 167". Lane T =
+  observation-first (existing `RB3_UI_FLOOR_DBG` probe: which submesh/material renders the
+  focused-row glyphs), grant EXTENDED to rb3 `src/system/ui/`; the fix may be entirely rb3-side.
+- **A2 (Lane T / R-C):** no new multiply is introduced by any candidate fix → the global-tint
+  worry dissolves; skip "!= white" scoping. Keep the screen-sweep no-regression net anyway.
+- **A3 (Lane F / R-A) — the cell is CONFIRMED distinct and never-measured:** today's default
+  repoints (`:1756-1757`) AND unconditionally overwrites offsets (`:1775`); SHELL_FIX baked
+  against bound-rest. (authored offsets, own bone) has never run. Dispatch stands.
+- **A4 (Lane F, BINDING) — "pristine authored offsets" has a real mutation window:** engine
+  SKEL_REBAKE (`Rnd_Wgpu_RB3.cpp:3545`, `SetBone(b,bt,true)`) excludes finger bones but NOT
+  `bone_?-hand`/wrist — arm W shows it didn't fire there, but the lane must VERIFY offset
+  provenance at its own runtime (probe pre/post), not inherit. Pass-A semantics (own==bound
+  cases, clipPlaying misses) must be handled explicitly and documented.
+- **A5 (Lane F):** Tier-1 xcheck has no perturb fail-red — the flag-OFF arm IS Tier-1's red
+  control (87.3° signature must reproduce flag-OFF in the same session as the flag-ON reading).
+- **A6 (Lane F, BINDING) — female gate pinned:** 28.9° is the FAILURE signature, not a pass
+  bound. Female PASS = count(>5°)==0, same as male. Before any Dolphin fallback, extend
+  `evidence/offset_basis_derivation.py` (male-only today) with the female axis offline.
+- **A7 (housekeeping):** fix the inverted bound/own comment block at `BandCharacter.cpp:1558-1572`
+  in Lane F's commit (it sits exactly where the lane edits).
+
+---
+
+_(Original draft below, retained for provenance; superseded where the acceptance above differs.)_
 
 ## Where we are
 
