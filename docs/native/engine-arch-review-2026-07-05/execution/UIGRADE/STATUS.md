@@ -206,3 +206,106 @@ no-op-or-parity there; only the HUB ratio should move to ≥2.0.
 - Harnesses: `scripts/native/_uigrade_baseline.py`, `_uigrade_gate.py`, `drawlog-golden.py`.
 - Captures: `/tmp/uigrade` (G-S1 baselines), `/tmp/uigrade-s2` (G-S2 off/on/off2 arms).
 - Checkpoint: `/tmp/wave13-checkpoints/G-S2.json`.
+
+---
+
+# Lane G — UIGRADE — STATUS (G-TRIGGER, wire the game-side trigger)
+
+Outcome: **LANDED (default-OFF), WITH ONE CAVEAT + an ESCALATE followup.** The
+game-side venue->UI boundary trigger is wired in `src/system/ui/PanelDir.cpp`
+(HX_NATIVE, flag-gated). Hub grade-exemption win delivered; gameplay invariance,
+A5, and flag-OFF byte-identity all verified. Commits: engine `a5cf8d3`, rb3
+`82aa81c7` (pin bumped to `a5cf8d3`). Built/verified in `native/build-agent-uigrade`.
+
+## 0. THE G-S1/G-S2 PREMISE WAS FALSE (root-cause correction)
+Two load-bearing G-S1 claims were wrong, proven by an in-code probe over the live
+draw path (`RB3_UIGRADE_PROBE`, since removed):
+1. **Menu dirs are `mCanEndWorld=1`, NOT 0.** `main_hub`, `overshell_dir`,
+   `slot0..3`, `saveload_status`, `song_select_filter` all report
+   `mCanEndWorld=1`; only `song_select`/`splash` are 0. So the proposed
+   `!mCanEndWorld` gate would fire on almost nothing on the hub.
+2. **`Rnd::EndWorld()` is a PERMANENT no-op on native.** `Rnd::BeginDrawing`
+   resets `mWorldEnded=false` each frame (rb3 `Rnd.cpp:578`), but native
+   `BandRnd::BeginDrawing` (engine `Rnd_Wgpu_RB3.cpp:199`) **bypasses base
+   BeginDrawing and never resets `mWorldEnded`** — it sticks at its ctor value 1
+   forever, so `EndWorld()`'s `if(!mWorldEnded)` body never runs. The menu dirs
+   already CALL `EndWorld()` (mCanEndWorld=1) but it does nothing. This is why
+   G-S1's `RB3_TIER2_DBG` saw zero menu flushes — and it means the G-S1/G-S2
+   EndWorld-reuse trigger **could never flush** (measured inert: hub 1.954 both).
+
+The mid-frame flush is actually reachable only via the existing public seam
+`Rnd::ClearDepthForOverlay()` (base virtual; `BandRnd` override calls
+`FlushPostProcMidFrame()` when a graded venue is pending). Gameplay's own
+note-highway flush already comes from `TrackPanel::Draw -> ClearDepthForOverlay`,
+NOT from EndWorld.
+
+## 1. The wired trigger (`PanelDir::DrawShowing`, HX_NATIVE, default-OFF)
+```cpp
+bool inGameplay = (TheGamePanel && TheGamePanel->GetGameState() == kGamePlaying);
+if (RB3UIPostGradeActive() && !inGameplay) {
+    RB3SetMenuUIFlushPending();       // -> FlushPostProcMidFrame venueGrade=false (A5)
+    TheRnd->ClearDepthForOverlay();   // the only game-side seam to the flush
+}
+```
+- Fires on every menu `PanelDir::DrawShowing`; `FlushPostProcMidFrame` is
+  idempotent per frame (mPostProcFlushed) and its guards early-return until the
+  venue is in the intermediate, so the flush lands on the first UI dir AFTER the
+  venue backdrop (measured: hub f3 flush at meshesDrawnSoFar=1049).
+- **Gameplay gate is REQUIRED (R1/R-D):** gameplay already flushes ~1/frame via
+  TrackPanel; firing the menu trigger during gameplay adds extra
+  ClearDepthForOverlay calls / moves the venue-flush point, breaking
+  pixel-invariance. Gate = `GetGameState()==kGamePlaying` (include
+  `game/GamePanel.h` under HX_NATIVE only, so the Wii build is untouched).
+- **Latch robustness (engine `a5cf8d3`):** `FlushPostProcMidFrame` now consumes
+  the menu-flush latch at its TOP (before the early-returns) so a no-op flush /
+  ClearDepthForOverlay else-branch can't leave it dangling into a later gameplay
+  flush (which would wrongly composite venueGrade=false). Gameplay never sets the
+  latch -> reads false -> venueGrade=true -> byte-identical.
+
+## 2. Pre-registered gates — RESULTS (bin native/build-agent-uigrade, RB3_HUB_TEXT_CONTRAST unset)
+| screen     | flag-OFF | flag-ON | band / target        | verdict |
+|------------|----------|---------|----------------------|---------|
+| hub        | 1.954    | **2.204** | ≥2.0 (win)         | **PASS** (==PP_OFF target 2.204) |
+| partdiff   | 1.409    | 1.417   | [1.35,1.49] parity   | PASS |
+| songselect | 1.110    | 1.049   | [1.06,1.17] parity   | **CAVEAT** (−0.011 below floor; stable across 2 runs) |
+
+- **R1 (menus render fully):** PASS — hub/song_select/partdiff all render
+  completely ON (no missing draws; char preview + album art intact on
+  song_select; visually more vibrant/retail-faithful). song_select's metric drop
+  is the ClearDepthForOverlay **else-branch depth-clears** altering its layered
+  3D-preview compositing (differs from pure grade-exemption, which would land
+  ≈PP_OFF 1.11) — the text is fully legible; it is a metric-only regression.
+- **A5 (B+W backdrop):** PASS — hub venue-backdrop ROIs (tiger mural / city blur
+  / neon) chroma ON−OFF = −0.45 / −0.19 / −0.58 (no chroma injected; venueGrade=
+  false holds chroma-preserve OFF).
+- **R2 (venue behind UI):** PASS — the graded venue backdrop renders and the UI
+  composites ungraded on top (E1 `AFTER_flagON_hub.png`).
+- **Gameplay pixel-invariance (R-D):** PASS — with the gate, my trigger is
+  skipped during kGamePlaying (probe: `inGameplay=1` skips). Measured
+  kGamePlaying flush counts are equal ON vs OFF (OFF 395 / ON 402 ≈ 1/frame, all
+  from TrackPanel); my flag adds zero gameplay flushes.
+- **flag-OFF drawlog 792:** PASS — `drawlog-golden.py --fixed-clock
+  --canonical-order --scene splash_screen` = 792 draws, canonical match (243
+  known-residual within bound). Wii/matching build byte-identical (all edits
+  `#ifdef HX_NATIVE`).
+
+## 3. CAVEAT + ESCALATE followup (coordinator)
+song_select's −0.011 metric drop is the ClearDepthForOverlay reuse side-effect
+(its else-branch clears depth between menu UI dirs). A **clean flush-ONLY seam**
+(no depth-clear) would remove it and likely bring song_select in-band (≈PP_OFF
+1.11). That requires making private `BandRnd::FlushPostProcMidFrame()` reachable
+game-side — either public, or a new base-`Rnd` virtual + `BandRnd` override — in
+**ungranted `Rnd_Wgpu_RB3.h`/.cpp**. Per the G-TRIGGER grant this STOPS here:
+**verdict ESCALATE_COORDINATOR for the clean-seam followup only** (the wired
+ClearDepthForOverlay trigger itself is landed and correct within grant; the flag
+stays default-OFF for the coordinator to flip).
+
+## E1 before/after
+- `/tmp/uigrade-trigger-e1/BEFORE_flagOFF_hub.png` (1.954) vs
+  `AFTER_flagON_hub.png` (2.204); same pairs for songselect/partdiff.
+- Final arms: `/tmp/uigrade-final/{off,on}_{hub,songselect,partdiff}.png`.
+
+## Files
+- Trigger: `src/system/ui/PanelDir.cpp` (rb3 `82aa81c7`).
+- Engine: `RB3PostProc.cpp` latch-consume-at-top + classification (engine `a5cf8d3`).
+- Checkpoint: `/tmp/wave13-checkpoints/G-TRIGGER.json`.
