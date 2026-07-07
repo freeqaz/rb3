@@ -1,0 +1,386 @@
+[C2CENSUS] === SongSelectPanel dir census ===
+[C2DIR] DIR 'ui/song_select/song_select.milo' isSubDir=0 nSub=0
+[C2OBJ]   OBJ carrer_bg.mat (Mat)
+[C2OBJ]   OBJ header_song_bg_spot02.lit (Light)
+[C2OBJ]   GRP right_side_setlist.grp showing=1 nmemb=4
+[C2GRPMEMB]     <right_side_setlist.grp> setlist_bg_setlist.mesh (Mesh)
+[C2GRPMEMB]     <right_side_setlist.grp> setlist_main.lst (BandList)
+[C2GRPMEMB]     <right_side_setlist.grp> setlist_info.lbl (AppLabel)
+[C2GRPMEMB]     <right_side_setlist.grp> setlist_creator.lbl (AppLabel)
+[C2OBJ]   OBJ header_song_bg_etched_art_color.mat (Mat)
+[C2OBJ]   OBJ header_rating01.tex (RndTex)
+[C2OBJ]   DRW album_art.pic (UIPicture) showing=1
+[C2OBJ]   OBJ details_hide.trg (UITrigger)
+[C2OBJ]   GRP header.grp showing=1 nmemb=8
+[C2GRPMEMB]     <header.grp> settings_bg01.mesh (Mesh)
+[C2GRPMEMB]     <header.grp> settings_bg.mesh (Mesh)
+[C2GRPMEMB]     <header.grp> stats.grp (Group)
+[C2GRPMEMB]     <header.grp> header_song_shadow_details.mesh (Mesh)
+[C2GRPMEMB]     <header.grp> header_left.grp (Group)
+[C2GRPMEMB]     <header.grp> viewing.ihp (AppInlineHelp)
+[C2GRPMEMB]     <header.grp> header_tour.grp (Group)
+[C2GRPMEMB]     <header.grp> header_goals.grp (Group)
+[C2OBJ]   GRP all.grp showing=1 nmemb=16
+[C2GRPMEMB]     <all.grp> background.grp (Group)
+[C2GRPMEMB]     <all.grp> song_lists.grp (Group)
+[C2GRPMEMB]     <all.grp> header_song_bg.grp (Group)
+[C2GRPMEMB]     <all.grp> header.grp (Group)
+[C2GRPMEMB]     <all.grp> line_05.mesh (Mesh)
+[C2GRPMEMB]     <all.grp> ml_glasstop.mesh (Mesh)
+[C2GRPMEMB]     <all.grp> album_art.grp (Group)
+[C2GRPMEMB]     <all.grp> right_side.grp (Group)
+[C2GRPMEMB]     <all.grp> line_04.mesh (Mesh)
+[C2GRPMEMB]     <all.grp> sort_wait.grp (Group)
+[C2GRPMEMB]     <all.grp> help_bg.mesh (Mesh)
+[C2GRPMEMB]     <all.grp> etched_art.grp (Group)
+[C2GRPMEMB]     <all.grp> help.ihp (AppInlineHelp)
+[C2GRPMEMB]     <all.grp> settings.ihp (AppInlineHelp)
+[C2GRPMEMB]     <all.grp> song_demo.grp (Group)
+[C2GRPMEMB]     <all.grp> line_details05.mesh (Mesh)
+[C2OBJ]   DRW career_frame.mesh (Mesh) showing=1
+[C2OBJ]   OBJ album_etched_shadow_art_norm.tex (RndTex)
+[C2OBJ]   OBJ details_show.trg (UITrigger)
+[C2OBJ]   DRW line_details02.mesh (Mesh) showing=0
+[C2OBJ]   OBJ album_overlay.mat (Mat)
+[C2OBJ]   OBJ highlight_subheader.mat (Mat)
+[C2OBJ]   OBJ header_setlist.trg (UITrigger)
+[C2OBJ]   OBJ header_color.anim (PropAnim)
+[C2OBJ]   OBJ album_etched_shadow_art.tex (RndTex)
+[C2OBJ]   OBJ album_etched_art_shadow.mat (Mat)
+[C2OBJ]   DRW header_song_shadow_details.mesh (Mesh) showing=1
+[C2OBJ]   OBJ difficulty_hide.trg (UITrigger)
+[C2OBJ]   NESTED-DIR song_select_details (PanelDir) showing=0
+[C2DIR]   DIR 'ui/song_select/song_select_details.milo' isSubDir=0 nSub=0
+[C2OBJ]     OBJ rank_bg.tex (RndTex)
+[C2OBJ]     OBJ details.anim (PropAnim)
+[C2OBJ]     OBJ pro_stars.set (Set)
+[C2OBJ]     GRP setlist_scores.grp showing=1 nmemb=1
+[C2GRPMEMB]       <setlist_scores.grp> setlist_scores.lst (BandList)
+[C2OBJ]     DRW difficulty_bg02.mesh (Mesh) showing=1
+[C2OBJ]     OBJ details_background.mat (Mat)
+[C2OBJ]     DRW raitings_bg.mesh (Mesh) showing=1
+[C2OBJ]     OBJ details_songscore_bg.tex (RndTex)
+[C2OBJ]     GRP review.grp showing=0 nmemb=2
+[C2GRPMEMB]       <review.grp> review_buttons.grp (Group)
+[C2GRPMEMB]       <review.grp> review_desc.lbl (AppLabel)
+[C2OBJ]     OBJ button_bg.mat (Mat)
+[C2OBJ]     GRP all.grp showing=1 nmemb=6
+[C2GRPMEMB]       <all.grp> song_info.grp (Group)
+[C2GRPMEMB]       <all.grp> buttons.grp (Group)
+[C2GRPMEMB]       <all.grp> submenu_buttons.grp (Group)
+[C2GRPMEMB]       <all.grp> performance.grp (Group)
+[C2GRPMEMB]       <all.grp> review.grp (Group)
+[C2GRPMEMB]       <all.grp> details_bottom.grp (Group)
+[C2OBJ]     GRP song_info.grp showing=1 nmemb=5
+[C2GRPMEMB]       <song_info.grp> genre.lbl (AppLabel)
+[C2GRPMEMB]       <song_info.grp> year.lbl (AppLabel)
+[C2GRPMEMB]       <song_info.grp> album.lbl (AppLabel)
+[C2GRPMEMB]       <song_info.grp> details_artist_name.lbl (AppLabel)
+[C2GRPMEMB]       <song_info.grp> details_song_name_length.lbl (AppLabel)
+[C2OBJ]     DRW details_pro.lbl (AppLabel) showing=1
+[C2OBJ]     GRP basicstars.grp showing=1 nmemb=16
+[C2GRPMEMB]       <basicstars.grp> difficulty_bg04.mesh (Mesh)
+[C2GRPMEMB]       <basicstars.grp> difficulty_bg05.mesh (Mesh)
+[C2GRPMEMB]       <basicstars.grp> difficulty_bg06.mesh (Mesh)
+[C2GRPMEMB]       <basicstars.grp> difficulty_bg07.mesh (Mesh)
+[C2GRPMEMB]       <basicstars.grp> basic_easy.sd (StarDisplay)
+[C2GRPMEMB]       <basicstars.grp> basic_medium.sd (StarDisplay)
+[C2GRPMEMB]       <basicstars.grp> basic_hard.sd (StarDisplay)
+[C2GRPMEMB]       <basicstars.grp> basic_expert.sd (StarDisplay)
+[C2GRPMEMB]       <basicstars.grp> basic_medium_pct.lbl (AppLabel)
+[C2GRPMEMB]       <basicstars.grp> basic_medium.lbl (AppLabel)
+[C2GRPMEMB]       <basicstars.grp> basic_hard_pct.lbl (AppLabel)
+[C2GRPMEMB]       <basicstars.grp> basic_hard.lbl (AppLabel)
+[C2GRPMEMB]       <basicstars.grp> basic_expert_pct.lbl (AppLabel)
+[C2GRPMEMB]       <basicstars.grp> basic_expert.lbl (AppLabel)
+[C2GRPMEMB]       <basicstars.grp> basic_easy_pct.lbl (AppLabel)
+[C2GRPMEMB]       <basicstars.grp> basic_easy.lbl (AppLabel)
+[C2OBJ]     DRW details_basic.lbl (AppLabel) showing=1
+[C2OBJ]     DRW difficulty_bg01.mesh (Mesh) showing=1
+[C2OBJ]     OBJ instantrank.color (UIColor)
+[C2OBJ]     OBJ function_setlist_bg.tex (RndTex)
+[C2OBJ]     OBJ highlight_function_setlist.mat (Mat)
+[C2OBJ]     OBJ highlight_subheader.mat (Mat)
+[C2OBJ]     DRW details_songscores_bg02.mesh (Mesh) showing=1
+[C2OBJ]     GRP prostars.grp showing=1 nmemb=16
+[C2GRPMEMB]       <prostars.grp> difficulty_bg.mesh (Mesh)
+[C2GRPMEMB]       <prostars.grp> difficulty_bg01.mesh (Mesh)
+[C2GRPMEMB]       <prostars.grp> difficulty_bg02.mesh (Mesh)
+[C2GRPMEMB]       <prostars.grp> difficulty_bg03.mesh (Mesh)
+[C2GRPMEMB]       <prostars.grp> pro_easy.sd (StarDisplay)
+[C2GRPMEMB]       <prostars.grp> pro_medium.sd (StarDisplay)
+[C2GRPMEMB]       <prostars.grp> pro_hard.sd (StarDisplay)
+[C2GRPMEMB]       <prostars.grp> pro_expert.sd (StarDisplay)
+[C2GRPMEMB]       <prostars.grp> pro_medium_pct.lbl (AppLabel)
+[C2GRPMEMB]       <prostars.grp> pro_medium.lbl (AppLabel)
+[C2GRPMEMB]       <prostars.grp> pro_hard_pct.lbl (AppLabel)
+[C2GRPMEMB]       <prostars.grp> pro_hard.lbl (AppLabel)
+[C2GRPMEMB]       <prostars.grp> pro_expert_pct.lbl (AppLabel)
+[C2GRPMEMB]       <prostars.grp> pro_expert.lbl (AppLabel)
+[C2GRPMEMB]       <prostars.grp> pro_easy_pct.lbl (AppLabel)
+[C2GRPMEMB]       <prostars.grp> pro_easy.lbl (AppLabel)
+[C2OBJ]     DRW rating_description.lbl (AppLabel) showing=1
+[C2OBJ]     GRP submenu_buttons.grp showing=0 nmemb=2
+[C2GRPMEMB]       <submenu_buttons.grp> submenu01.btn (BandButton)
+[C2GRPMEMB]       <submenu_buttons.grp> submenu02.btn (BandButton)
+[C2OBJ]     GRP details_bottom.grp showing=0 nmemb=9
+[C2GRPMEMB]       <details_bottom.grp> setlist_scores.grp (Group)
+[C2GRPMEMB]       <details_bottom.grp> details_songscores_bg.mesh (Mesh)
+[C2GRPMEMB]       <details_bottom.grp> details_songscores_bgmask.mesh (Mesh)
+[C2GRPMEMB]       <details_bottom.grp> details_songscores_bg01.mesh (Mesh)
+[C2GRPMEMB]       <details_bottom.grp> instruments.lst (BandList)
+[C2GRPMEMB]       <details_bottom.grp> instrument_icon.lbl (AppLabel)
+[C2GRPMEMB]       <details_bottom.grp> back.ihp (AppInlineHelp)
+[C2GRPMEMB]       <details_bottom.grp> stars.grp (Group)
+[C2GRPMEMB]       <details_bottom.grp> profile_msg.grp (Group)
+[C2OBJ]     DRW details_songscores_bg01.mesh (Mesh) showing=1
+[C2OBJ]     GRP review_buttons.grp showing=1 nmemb=6
+[C2GRPMEMB]       <review_buttons.grp> review_0.rvw (ReviewDisplay)
+[C2GRPMEMB]       <review_buttons.grp> review_1.rvw (ReviewDisplay)
+[C2GRPMEMB]       <review_buttons.grp> review_2.rvw (ReviewDisplay)
+[C2GRPMEMB]       <review_buttons.grp> review_3.rvw (ReviewDisplay)
+[C2GRPMEMB]       <review_buttons.grp> review_4.rvw (ReviewDisplay)
+[C2GRPMEMB]       <review_buttons.grp> review_5.rvw (ReviewDisplay)
+[C2OBJ]     DRW details_5.btn (BandButton) showing=1
+[C2OBJ]     OBJ raitings_bg.mat (Mat)
+[C2OBJ]     DRW details_4.btn (BandButton) showing=1
+[C2OBJ]     DRW details_3.btn (BandButton) showing=1
+[C2OBJ]     DRW details_2.btn (BandButton) showing=1
+[C2OBJ]     GRP performance.grp showing=1 nmemb=9
+[C2GRPMEMB]       <performance.grp> details_songscores_bg02.mesh (Mesh)
+[C2GRPMEMB]       <performance.grp> view_gamer_card.ihp (AppInlineHelp)
+[C2GRPMEMB]       <performance.grp> leaderboard_types.lst (BandList)
+[C2GRPMEMB]       <performance.grp> leaderboard_instruments.lst (BandList)
+[C2GRPMEMB]       <performance.grp> occluders.grp (Group)
+[C2GRPMEMB]       <performance.grp> view_leaderboard.ihp (AppInlineHelp)
+[C2GRPMEMB]       <performance.grp> leaderboard_help.ihp (AppInlineHelp)
+[C2GRPMEMB]       <performance.grp> perf_song_only.grp (Group)
+[C2GRPMEMB]       <performance.grp> lb_status.lbl (AppLabel)
+[C2OBJ]     DRW details_1.btn (BandButton) showing=1
+[C2OBJ]     OBJ highlight_bg05.mat (Mat)
+[C2OBJ]     GRP perf_song_only.grp showing=1 nmemb=2
+[C2GRPMEMB]       <perf_song_only.grp> performance.lst (BandList)
+[C2GRPMEMB]       <perf_song_only.grp> ScrollbarDisplay.sbd (ScrollbarDisplay)
+[C2OBJ]     GRP rating.grp showing=1 nmemb=3
+[C2GRPMEMB]       <rating.grp> raitings_bg.mesh (Mesh)
+[C2GRPMEMB]       <rating.grp> rating.lbl (AppLabel)
+[C2GRPMEMB]       <rating.grp> rating_description.lbl (AppLabel)
+[C2OBJ]     OBJ basic_stars.set (Set)
+[C2OBJ]     OBJ highlight_bg04.mat (Mat)
+[C2OBJ]     OBJ highlight_bg03.mat (Mat)
+[C2OBJ]     DRW details_artist_name.lbl (AppLabel) showing=1
+[C2OBJ]     DRW difficulty_bg.mesh (Mesh) showing=1
+[C2OBJ]     OBJ subheader.color (UIColor)
+[C2OBJ]     OBJ highlight_bg02.mat (Mat)
+[C2OBJ]     OBJ header.color (UIColor)
+[C2OBJ]     OBJ header.tex (RndTex)
+[C2OBJ]     DRW performance.lst (BandList) showing=1
+[C2OBJ]     OBJ details_songscores_bg01.mat (Mat)
+[C2OBJ]     OBJ difficulty_bg.mat (Mat)
+[C2OBJ]     OBJ highlight_header.mat (Mat)
+[C2OBJ]     OBJ difficulty_bg.tex (RndTex)
+[C2OBJ]     OBJ function_musicstore_bg.tex (RndTex)
+[C2OBJ]     DRW rating.lbl (AppLabel) showing=1
+[C2OBJ]     GRP profile_msg.grp showing=0 nmemb=1
+[C2GRPMEMB]       <profile_msg.grp> profile_msg.lbl (AppLabel)
+[C2OBJ]     GRP buttons.grp showing=1 nmemb=7
+[C2GRPMEMB]       <buttons.grp> details_1.btn (BandButton)
+[C2GRPMEMB]       <buttons.grp> details_2.btn (BandButton)
+[C2GRPMEMB]       <buttons.grp> details_3.btn (BandButton)
+[C2GRPMEMB]       <buttons.grp> details_4.btn (BandButton)
+[C2GRPMEMB]       <buttons.grp> details_5.btn (BandButton)
+[C2GRPMEMB]       <buttons.grp> rating.grp (Group)
+[C2GRPMEMB]       <buttons.grp> description.lbl (AppLabel)
+[C2OBJ]     DRW details_song_name_length.lbl (AppLabel) showing=1
+[C2OBJ]     OBJ highlight_function_musicstore.mat (Mat)
+[C2OBJ]     DRW difficulty_bg07.mesh (Mesh) showing=1
+[C2OBJ]     OBJ perf_bg.mat (Mat)
+[C2OBJ]     OBJ hide_details.trg (UITrigger)
+[C2OBJ]     OBJ header_color_bg.anim (PropAnim)
+[C2OBJ]     OBJ details_songscores_bg.mat (Mat)
+[C2OBJ]     DRW difficulty_bg06.mesh (Mesh) showing=1
+[C2OBJ]     OBJ highlight_function_random.mat (Mat)
+[C2OBJ]     OBJ show_details.trg (UITrigger)
+[C2OBJ]     GRP occluders.grp showing=1 nmemb=1
+[C2GRPMEMB]       <occluders.grp> occluder_top.mesh (Mesh)
+[C2OBJ]     OBJ details_songscores_bgmask.mat (Mat)
+[C2OBJ]     OBJ highlight_setlist.mat (Mat)
+[C2OBJ]     DRW details_songscores_bg.mesh (Mesh) showing=1
+[C2OBJ]     DRW difficulty_bg05.mesh (Mesh) showing=1
+[C2OBJ]     OBJ occluder.mat (Mat)
+[C2OBJ]     OBJ highlight_function.mat (Mat)
+[C2OBJ]     OBJ subsubheader.color (UIColor)
+[C2OBJ]     DRW difficulty_bg04.mesh (Mesh) showing=1
+[C2OBJ]     DRW occluder_top.mesh (Mesh) showing=1
+[C2OBJ]     OBJ highlight_bg.mat (Mat)
+[C2OBJ]     OBJ highlight_song.mat (Mat)
+[C2OBJ]     GRP stars.grp showing=1 nmemb=4
+[C2GRPMEMB]       <stars.grp> prostars.grp (Group)
+[C2GRPMEMB]       <stars.grp> basicstars.grp (Group)
+[C2GRPMEMB]       <stars.grp> details_basic.lbl (AppLabel)
+[C2GRPMEMB]       <stars.grp> details_pro.lbl (AppLabel)
+[C2OBJ]     DRW difficulty_bg03.mesh (Mesh) showing=1
+[C2OBJ]     DRW details_songscores_bgmask.mesh (Mesh) showing=1
+[C2OBJ]     OBJ rank_bg.mat (Mat)
+[C2OBJ]     OBJ highlight_song.tex (RndTex)
+[C2OBJ]     DRW album.lbl (AppLabel) showing=1
+[C2OBJ]     OBJ function_random_bg.tex (RndTex)
+[C2OBJ]   OBJ header_song_bg.env (Environ)
+[C2OBJ]   DRW header_song_bg.mesh (Mesh) showing=1
+[C2OBJ]   GRP header_song_bg.grp showing=1 nmemb=5
+[C2GRPMEMB]     <header_song_bg.grp> header_song_bg_refraction.mesh (Mesh)
+[C2GRPMEMB]     <header_song_bg.grp> header_song_etched_art_color.mesh (Mesh)
+[C2GRPMEMB]     <header_song_bg.grp> header_song_etched_art.mesh (Mesh)
+[C2GRPMEMB]     <header_song_bg.grp> header_song_bg.mesh (Mesh)
+[C2GRPMEMB]     <header_song_bg.grp> line_details03.mesh (Mesh)
+[C2OBJ]   OBJ difficulty_show.trg (UITrigger)
+[C2OBJ]   OBJ header_song_bg_spot01.lit (Light)
+[C2OBJ]   OBJ setlist_bg_setlist.mat (Mat)
+[C2OBJ]   DRW header_song_etched_art.mesh (Mesh) showing=1
+[C2OBJ]   DRW header_song_bg01.mesh (Mesh) showing=1
+[C2OBJ]   DRW career.mesh (Mesh) showing=0
+[C2OBJ]   OBJ rank_container.tex (RndTex)
+[C2OBJ]   DRW setlist_bg_setlist.mesh (Mesh) showing=0
+[C2OBJ]   OBJ enter_highlight.trg (UITrigger)
+[C2OBJ]   OBJ song_select_details.env (Environ)
+[C2OBJ]   DRW header_song_bg_refraction01.mesh (Mesh) showing=1
+[C2OBJ]   DRW header_song_etched_art_color.mesh (Mesh) showing=1
+[C2OBJ]   DRW header_song_etched_art_color01.mesh (Mesh) showing=1
+[C2OBJ]   OBJ subheader.tex (RndTex)
+[C2OBJ]   DRW demo.mesh (Mesh) showing=1
+[C2OBJ]   OBJ stars_bg.mat (Mat)
+[C2OBJ]   DRW ml_glasstop.mesh (Mesh) showing=0
+[C2OBJ]   OBJ header_song_shadow.mat (Mat)
+[C2OBJ]   DRW bone_album.mesh (Mesh) showing=1
+[C2OBJ]   DRW header_list_bg.mesh (Mesh) showing=1
+[C2OBJ]   OBJ settings_bg01.mat (Mat)
+[C2OBJ]   OBJ leaderb_bg.tex (RndTex)
+[C2OBJ]   DRW ps_logo.mesh (Mesh) showing=1
+[C2OBJ]   GRP etched_art01.grp showing=1 nmemb=0
+[C2OBJ]   OBJ career_bg.tex (RndTex)
+[C2OBJ]   OBJ header.color (UIColor)
+[C2OBJ]   OBJ header_song_bg_etched_art.mat (Mat)
+[C2OBJ]   GRP background.grp showing=1 nmemb=3
+[C2GRPMEMB]     <background.grp> header_list_bg.mesh (Mesh)
+[C2GRPMEMB]     <background.grp> stars_bg.mesh (Mesh)
+[C2GRPMEMB]     <background.grp> bottom_square_refraction.mesh (Mesh)
+[C2OBJ]   DRW line_details05.mesh (Mesh) showing=1
+[C2OBJ]   DRW stars_bg.mesh (Mesh) showing=0
+[C2OBJ]   DRW album_frame01.mesh (Mesh) showing=1
+[C2OBJ]   DRW album_overlay.mesh (Mesh) showing=0
+[C2OBJ]   OBJ header_song_shadow.tex (RndTex)
+[C2OBJ]   DRW header_review.rvw (ReviewDisplay) showing=1
+[C2OBJ]   DRW careerstars.sd (StarDisplay) showing=1
+[C2OBJ]   OBJ album_bg.mat (Mat)
+[C2OBJ]   DRW settings_bg01.mesh (Mesh) showing=0
+[C2OBJ]   DRW help_bg.mesh (Mesh) showing=0
+[C2OBJ]   DRW album.mesh (Mesh) showing=0
+[C2OBJ]   GRP stats.grp showing=1 nmemb=4
+[C2GRPMEMB]     <stats.grp> gamertag.lbl (AppLabel)
+[C2GRPMEMB]     <stats.grp> careerscore.scr (ScoreDisplay)
+[C2GRPMEMB]     <stats.grp> careerstars.sd (StarDisplay)
+[C2GRPMEMB]     <stats.grp> profile_picture.mesh (Mesh)
+[C2OBJ]   GRP etched_art.grp showing=1 nmemb=4
+[C2GRPMEMB]     <etched_art.grp> header_song_bg_refraction01.mesh (Mesh)
+[C2GRPMEMB]     <etched_art.grp> header_song_etched_art_color01.mesh (Mesh)
+[C2GRPMEMB]     <etched_art.grp> header_song_etched_art01.mesh (Mesh)
+[C2GRPMEMB]     <etched_art.grp> header_song_bg01.mesh (Mesh)
+[C2OBJ]   DRW line_04.mesh (Mesh) showing=0
+[C2OBJ]   DRW line_details03.mesh (Mesh) showing=1
+[C2OBJ]   DRW header_song_etched_art01.mesh (Mesh) showing=1
+[C2OBJ]   DRW help_bg_rating.mesh (Mesh) showing=0
+[C2OBJ]   GRP right_side_song.grp showing=1 nmemb=5
+[C2GRPMEMB]     <right_side_song.grp> live_diffs.grp (Group)
+[C2GRPMEMB]     <right_side_song.grp> live_lb.grp (Group)
+[C2GRPMEMB]     <right_side_song.grp> song_review.grp (Group)
+[C2GRPMEMB]     <right_side_song.grp> help_bg_rating.mesh (Mesh)
+[C2GRPMEMB]     <right_side_song.grp> ps3_storelogo.grp (Group)
+[C2OBJ]   GRP live_lb.grp showing=0 nmemb=1
+[C2GRPMEMB]     <live_lb.grp> leaderboard.mld (MiniLeaderboardDisplay)
+[C2OBJ]   OBJ album_bg.tex (RndTex)
+[C2OBJ]   DRW rank_container.mesh (Mesh) showing=1
+[C2OBJ]   DRW bottom_square_refraction.mesh (Mesh) showing=1
+[C2OBJ]   DRW leaderboards_bg.mesh (Mesh) showing=0
+[C2OBJ]   OBJ header_list_bg.mat (Mat)
+[C2OBJ]   OBJ highlight_subheader_rating01.mat (Mat)
+[C2OBJ]   OBJ settings_bg.mat (Mat)
+[C2OBJ]   GRP header_goals.grp showing=1 nmemb=5
+[C2GRPMEMB]     <header_goals.grp> goal_desc.lbl (AppLabel)
+[C2GRPMEMB]     <header_goals.grp> goal_title.lbl (AppLabel)
+[C2GRPMEMB]     <header_goals.grp> career.pic (UIPicture)
+[C2GRPMEMB]     <header_goals.grp> career_frame.mesh (Mesh)
+[C2GRPMEMB]     <header_goals.grp> career.mesh (Mesh)
+[C2OBJ]   DRW profile_picture.mesh (Mesh) showing=0
+[C2OBJ]   GRP header_tour.grp showing=1 nmemb=2
+[C2GRPMEMB]     <header_tour.grp> tour_desc.lbl (AppLabel)
+[C2GRPMEMB]     <header_tour.grp> tour_title.lbl (AppLabel)
+[C2OBJ]   DRW line_details01.mesh (Mesh) showing=0
+[C2OBJ]   GRP song_review.grp showing=1 nmemb=2
+[C2GRPMEMB]     <song_review.grp> header_review.rvw (ReviewDisplay)
+[C2GRPMEMB]     <song_review.grp> review.ihp (AppInlineHelp)
+[C2OBJ]   OBJ header_song_bg.mat (Mat)
+[C2OBJ]   OBJ header_song_bg_normal.tex (RndTex)
+[C2OBJ]   GRP right_side.grp showing=1 nmemb=4
+[C2GRPMEMB]     <right_side.grp> leaderboards_bg.mesh (Mesh)
+[C2GRPMEMB]     <right_side.grp> right_side_song.grp (Group)
+[C2GRPMEMB]     <right_side.grp> right_side_setlist.grp (Group)
+[C2GRPMEMB]     <right_side.grp> line_details02.mesh (Mesh)
+[C2OBJ]   OBJ bone_album_group.mat (Mat)
+[C2OBJ]   GRP header_left.grp showing=1 nmemb=3
+[C2GRPMEMB]     <header_left.grp> music_library.lbl (AppLabel)
+[C2GRPMEMB]     <header_left.grp> status_viewing.lbl (AppLabel)
+[C2GRPMEMB]     <header_left.grp> status.lbl (AppLabel)
+[C2OBJ]   DRW sort_wait.mesh (Mesh) showing=1
+[C2OBJ]   OBJ header_song_bg_refract.mat (Mat)
+[C2OBJ]   OBJ header_list_bg.tex (RndTex)
+[C2OBJ]   DRW header_song_shadow.mesh (Mesh) showing=1
+[C2OBJ]   DRW settings_bg.mesh (Mesh) showing=0
+[C2OBJ]   DRW album_bg.mesh (Mesh) showing=0
+[C2OBJ]   GRP song_demo.grp showing=1 nmemb=2
+[C2GRPMEMB]     <song_demo.grp> demo.mesh (Mesh)
+[C2GRPMEMB]     <song_demo.grp> song_demo.lbl (AppLabel)
+[C2OBJ]   OBJ header_song_bg.tex (RndTex)
+[C2OBJ]   OBJ rank_containert.mat (Mat)
+[C2OBJ]   GRP live_diffs.grp showing=1 nmemb=12
+[C2GRPMEMB]     <live_diffs.grp> pro.lbl (AppLabel)
+[C2GRPMEMB]     <live_diffs.grp> basic.lbl (AppLabel)
+[C2GRPMEMB]     <live_diffs.grp> keys_pro.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> drum_pro.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> bass_pro.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> guitar_pro.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> harmony.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> vocals.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> keys.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> drum.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> bass.idd (InstrumentDifficultyDisplay)
+[C2GRPMEMB]     <live_diffs.grp> guitar.idd (InstrumentDifficultyDisplay)
+[C2OBJ]   DRW bone_album_group.mesh (Mesh) showing=1
+[C2OBJ]   OBJ album.mat (Mat)
+[C2OBJ]   GRP sort_wait.grp showing=0 nmemb=3
+[C2GRPMEMB]     <sort_wait.grp> sort_wait.mesh (Mesh)
+[C2GRPMEMB]     <sort_wait.grp> rank_container.mesh (Mesh)
+[C2GRPMEMB]     <sort_wait.grp> sort_wait.lbl (AppLabel)
+[C2OBJ]   OBJ song_select_details.anim (PropAnim)
+[C2OBJ]   GRP album_art.grp showing=1 nmemb=11
+[C2GRPMEMB]     <album_art.grp> album_art.pic (UIPicture)
+[C2GRPMEMB]     <album_art.grp> bone_album.mesh (Mesh)
+[C2GRPMEMB]     <album_art.grp> bone_album_group.mesh (Mesh)
+[C2GRPMEMB]     <album_art.grp> album_frame01.mesh (Mesh)
+[C2GRPMEMB]     <album_art.grp> line_details01.mesh (Mesh)
+[C2GRPMEMB]     <album_art.grp> song.sbd (ScrollbarDisplay)
+[C2GRPMEMB]     <album_art.grp> header_song_shadow.mesh (Mesh)
+[C2GRPMEMB]     <album_art.grp> album.mesh (Mesh)
+[C2GRPMEMB]     <album_art.grp> album_overlay.mesh (Mesh)
+[C2GRPMEMB]     <album_art.grp> setlist.lst (BandList)
+[C2GRPMEMB]     <album_art.grp> album_bg.mesh (Mesh)
+[C2OBJ]   DRW header_song_bg_refraction.mesh (Mesh) showing=1
+[C2OBJ]   GRP ps3_storelogo.grp showing=0 nmemb=1
+[C2GRPMEMB]     <ps3_storelogo.grp> ps_logo.mesh (Mesh)
+[C2OBJ]   OBJ bg.env (Environ)
+[C2OBJ]   DRW line_05.mesh (Mesh) showing=0
+[C2OBJ]   GRP song_lists.grp showing=1 nmemb=1
+[C2GRPMEMB]     <song_lists.grp> song.lst (BandList)
+[C2OBJ]   OBJ header_normal.trg (UITrigger)
+[C2OBJ]   OBJ header_song_bg_spec.tex (RndTex)
+[C2OBJ]   OBJ difficulty.anim (PropAnim)
+[C2CENSUS] === end census ===

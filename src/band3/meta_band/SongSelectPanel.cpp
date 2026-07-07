@@ -20,9 +20,12 @@
 #include "utl/Symbols3.h"
 #ifdef HX_NATIVE
 #include "rndobj/Group.h"
+#include "rndobj/Mesh.h" // RndMesh (C2a census)
 #include "utl/Std.h" // FOREACH
 #include <cstdio>
 #include <cstdlib> // getenv (RB3_SS_GRPLOG, C2a census)
+#include <cstring> // strstr (C2a census)
+static void C2CensusDir(ObjectDir *dir, int depth); // C2a fwd decl
 #endif
 
 SongSelectPanel::SongSelectPanel()
@@ -65,6 +68,39 @@ void SongSelectPanel::FinishLoad() {
     // shown. The Poll() show-path (set_mini_leaderboard_showing 1) re-shows it
     // explicitly when an online leaderboard actually becomes ready.
     SetMiniLeaderboardGroupShowing(false);
+    if (getenv("RB3_SS_CENSUS")) {
+        fprintf(stderr, "[C2CENSUS] === SongSelectPanel dir census ===\n");
+        C2CensusDir(mDir, 0);
+        fprintf(stderr, "[C2CENSUS] === end census ===\n");
+    }
+    // C2a DIAGNOSTIC (RB3_SS_DETAILS_DIAG): force-show the whole song_select_details
+    // PanelDir to observe where its difficulty_bg/raitings_bg backing lands relative
+    // to the quick-view live_diffs grid. VERDICT (W4.3-C2a): force-showing the panel
+    // (whole OR backing-only) produces NO measurable backing behind the quick-view
+    // grid (ROI brightness delta <1% = noise). The difficulty_bg*/raitings_bg meshes
+    // belong to the details drill-in page — interleaved in basicstars/prostars/rating
+    // groups with details-page stars (A10 entanglement) and positioned/animated for
+    // the details layout, not the sidebar. They are NOT a valid backing for the
+    // quick-view grid. No game-side backing fix ships (see STATUS.md).
+    if (getenv("RB3_SS_DETAILS_DIAG")) {
+        if (RndDrawable *det = mDir->Find<RndDrawable>("song_select_details", false)) {
+            det->SetShowing(true);
+            fprintf(stderr, "[C2DIAG] forced song_select_details showing=1\n");
+        }
+    }
+    // C2a DIAGNOSTIC (RB3_SS_LBBG_DIAG): the only main-dir right-side backing
+    // candidates (leaderboards_bg.mesh in right_side.grp, help_bg_rating.mesh in
+    // right_side_song.grp) are authored showing=0. Test whether force-showing them
+    // yields a right-side panel backing co-located with the live_diffs grid.
+    if (getenv("RB3_SS_LBBG_DIAG")) {
+        static const char *cand[] = { "leaderboards_bg.mesh", "help_bg_rating.mesh",
+                                      nullptr };
+        for (int i = 0; cand[i]; i++)
+            if (RndDrawable *m = mDir->Find<RndDrawable>(cand[i], false)) {
+                m->SetShowing(true);
+                fprintf(stderr, "[C2DIAG] forced %s showing=1\n", cand[i]);
+            }
+    }
 #endif
 }
 
@@ -83,6 +119,89 @@ static void C2LogGroup(ObjectDir *dir, const char *grpName) {
             o ? o->ClassName().Str() : "?"
         );
     }
+}
+
+// C2a census (RB3_SS_CENSUS): full recursive walk of the panel dir + every
+// inlined subdir, logging each drawable's name/class/showing plus the group
+// membership of the backing meshes. Answers never-submitted vs
+// submitted-and-dropped for difficulty_bg*/raitings_bg/details_background, and
+// gives the A10 sub-panel content census (song_select_details inlined subdir).
+static bool C2NameOfInterest(const char *n) {
+    if (!n)
+        return false;
+    static const char *keys[] = { "bg",       "background", "rating",  "raiting",
+                                  "difficulty", "detail",   "occlud",  "highlight",
+                                  "album",    "star",       "perf",    "rank",
+                                  "header",   "backing",    nullptr };
+    for (int i = 0; keys[i]; i++)
+        if (strstr(n, keys[i]))
+            return true;
+    return false;
+}
+
+static void C2CensusDir(ObjectDir *dir, int depth) {
+    if (!dir)
+        return;
+    char ind[24];
+    int n = depth * 2;
+    if (n > 20)
+        n = 20;
+    for (int i = 0; i < n; i++)
+        ind[i] = ' ';
+    ind[n] = 0;
+    const char *pn = dir->GetPathName();
+    fprintf(
+        stderr, "[C2DIR]%s DIR '%s' isSubDir=%d nSub=%d\n", ind, pn ? pn : "?",
+        (int)dir->IsSubDir(), (int)dir->mSubDirs.size()
+    );
+    // objects directly in THIS dir (no subdir recursion: b=false)
+    for (ObjDirItr<Hmx::Object> it(dir, false); it; ++it) {
+        Hmx::Object *o = it;
+        if (!o)
+            continue;
+        RndGroup *g = dynamic_cast<RndGroup *>(o);
+        if (g) {
+            fprintf(
+                stderr, "[C2OBJ]%s   GRP %s showing=%d nmemb=%d\n", ind, o->Name(),
+                (int)g->Showing(), g->mObjects.size()
+            );
+            FOREACH (mit, g->mObjects) {
+                Hmx::Object *m = *mit;
+                fprintf(
+                    stderr, "[C2GRPMEMB]%s     <%s> %s (%s)\n", ind, o->Name(),
+                    m ? m->Name() : "<null>", m ? m->ClassName().Str() : "?"
+                );
+            }
+            continue;
+        }
+        // Nested PanelDir/ObjectDir object (e.g. song_select_details) — its
+        // content is NOT in mSubDirs; recurse in to census difficulty_bg etc.
+        ObjectDir *nested = dynamic_cast<ObjectDir *>(o);
+        if (nested && nested != dir) {
+            RndDrawable *nd = dynamic_cast<RndDrawable *>(o);
+            fprintf(
+                stderr, "[C2OBJ]%s   NESTED-DIR %s (%s) showing=%d\n", ind, o->Name(),
+                o->ClassName().Str(), nd ? (int)nd->Showing() : -1
+            );
+            C2CensusDir(nested, depth + 1);
+            continue;
+        }
+        RndDrawable *d = dynamic_cast<RndDrawable *>(o);
+        bool interest = C2NameOfInterest(o->Name());
+        if (d && (interest || dynamic_cast<RndMesh *>(o))) {
+            fprintf(
+                stderr, "[C2OBJ]%s   DRW %s (%s) showing=%d\n", ind, o->Name(),
+                o->ClassName().Str(), (int)d->Showing()
+            );
+        } else if (interest) {
+            fprintf(
+                stderr, "[C2OBJ]%s   OBJ %s (%s)\n", ind, o->Name(),
+                o->ClassName().Str()
+            );
+        }
+    }
+    for (int i = 0; i < (int)dir->mSubDirs.size(); i++)
+        C2CensusDir(dir->mSubDirs[i], depth + 1);
 }
 
 void SongSelectPanel::SetMiniLeaderboardGroupShowing(bool showing) {
