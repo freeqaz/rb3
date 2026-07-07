@@ -292,3 +292,20 @@ composite-desat delta S1 identified rather than a fixed songMs.
 Engine `89bc4a6`: `rb3_postproc.wgsl.inc`, `RB3PostProc.{cpp,h}`,
 `Rnd_Wgpu_RB3.{cpp,h}`, `NativeCompatFlags.classification.json`.
 rb3: `WASH-fix/PLAN.md.S2`, `wash_probe_run.py` (+3 fix arms), `measure/probe_s2*.json`.
+
+## Amendment — pinned same-shot A/B on the DEFAULT engaged venue (regression + H1-symptom)
+`wash_probe_run.py` default vs h2fix vs both_fix, pinned wide shot ms21000, engaged
+8/8 (`tail_eng/miss=40/0` every boot — confirms gate (a): 0 engagement misses flag-ON).
+Partial (run continued in background; representative):
+- default:  ~25% PINK, else NEARBLACK (matches S1's stochastic ~25% pink rate).
+- h2fix:    the composite PINK **hue** is removed (pink -> WHITE/NEUTRAL/NEARBLACK),
+  BUT a hot engaged venue can still read WHITE (raw over-exposure) on some boots —
+  FIX-H2 removes the magenta tint, it does NOT eliminate luminance over-exposure of
+  the *engaged* venue (that pixel range sits below the sub-knee ceiling). FIX-H1 does
+  not touch the engaged path either (it only corrects the broken-env else branch).
+- **Honest limit:** at small N the default-build stochastic wash *rate* is not cleanly
+  separable; the demonstrated wins are (1) the deterministic `venue_light_off` fail-red
+  cleared by both fixes (0/5) and (2) the song-start grey->color restoration. The
+  residual engaged-venue over-exposure (WHITE) is a luminance issue in the
+  RB3_PP_LUMA_CEILING space (kept UNSET this wave per A7) — a Wave-9 follow-up if the
+  coordinator wants the engaged-venue hot WHITE also clamped.
