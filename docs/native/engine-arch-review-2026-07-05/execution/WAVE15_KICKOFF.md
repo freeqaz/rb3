@@ -1,8 +1,50 @@
 # Wave 15 — Kickoff Design (coordinator draft, for Fable review before dispatch)
 
-**Author:** coordinator. **Status:** DRAFT — under Fable pre-dispatch review.
+**Author:** coordinator. **Status:** REVIEWED (Fable, `WAVE15_REVIEW.md` rb3 `fd9f32f4`) — **all 9
+amendments adopted**; dispatched with the corrected shape below.
 Parent: `execution/README.md` (Wave 14 results + Wave 15 menu). Engine pin `fdf0ad9`. Nine
 defaults ON.
+
+## COORDINATOR ACCEPTANCE (2026-07-07) — final dispatched shape
+
+- **A1 (Lane H) — derivation re-anchored at the WII COMPOSITION** `v·A_b·live_b` (already exposed
+  natively behind `RB3_NO_HEAD_REBIND`): the record's decisive syllogism is that identical
+  authored data shards natively under that composition too — so the defect is (a) native
+  `own_live(t)` bone worlds or (b) the offset↔bone pairing, UPSTREAM of all 7 dead bakes. ONE
+  cheap pre-registered baseline discriminates: the Wii-composition arm with reskin OFF (only the
+  reskin-contaminated variant of that arm was ever measured, 136u). The rebake equation stands
+  (verified `BandCharacter.cpp:1750-1758` + `Rnd_Wgpu_RB3.cpp:3299-3305`) with two footnotes
+  (4-bone blend; CHAR-vs-WORLD space mix) but is itself an HX_NATIVE workaround, not the anchor.
+- **A2 (Lane H) — mandatory raw-number reproduction:** the adjudicator must re-derive 87.3° from
+  committed `W2.8f/evidence/readings.txt` (noting its documented 42.6/87.3 BIMODALITY — not a
+  constant) and the mixed-sign per-bone gaps from `SKEL/evidence/apd_diag_gameplay_grep.log`
+  (**rescued from /tmp by the coordinator pre-dispatch, this commit**) before trusting either.
+- **Ground truth (R-A):** decomp source (structural), rb3-viewer pose/offset dumps (asset
+  numeric), **Dolphin + milo-trace (runtime numeric — decisive)**, DWARF/DC3 (corroboration).
+- **A3/A4 (Lane B, CRITICAL) — mechanism prior REFUTED at pixel level:** the native focused
+  song_select row is white text on a DARK NAVY fill (ROI p60 luma=15), not a bright bar — the
+  hub's "bar bleeds through AA text" mechanism does NOT transfer. Prime suspect = the
+  **z-occluded selection quad** U-CLEAN found, whose occlusion the now-default
+  `RB3_UI_POST_GRADE` depth `LoadOp::Load` deliberately preserves (the real R-C interaction is
+  DEPTH, not grade). Retail truth confirmed (black-on-white, both row types). Gate corrected:
+  the old [1.06,1.17] parity band would be VIOLATED by a real fix and a wrong-polarity screen
+  reads "legible" — use a directional two-region gate (bar-fill luma ≥ threshold AND text-stroke
+  darker than fill, retail-calibrated) + the SETLISTS red-band re-check. The fix is probably
+  engine-side: **pre-authorized grant = the menu-flush depth handling in `RB3PostProc.cpp` (per-
+  quad or selection-pass exception), NOT a blanket LoadOp revert** — the red-band fix must
+  survive.
+- **A5 (Lane N) — decided from Wii source:** the provider is the `PlatformMgr::GetName` weak NULL
+  stub (`dta_link_stubs.s`) behind `AppLabel::SetUserName`/`user_name.lbl`; Wii
+  `PlatformMgr_Wii.cpp:489-496` falls back to localized "Player N" — implement THAT in
+  `native/src/rb3_platform_native.cpp` (one provider fixes header + overshell + all consumers).
+  Hiding would be unfaithful.
+- **Collisions:** Lane H restricted to EXISTING probes (no new engine TU edits) → H↔B matrix
+  empty. Stale `RB3PostProc.h:81` "default-OFF" comment noted for cleanup in Lane B's commit.
+- Nine-defaults tally verified at accessor/opt-out level.
+
+---
+
+_(Original draft below, retained for provenance; superseded where the acceptance above differs.)_
 
 ## Where we are
 
