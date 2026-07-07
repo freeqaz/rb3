@@ -1,8 +1,25 @@
 #include "ui/UIListWidget.h"
 #include "rndobj/Utl.h"
+#ifdef HX_NATIVE
+#include "rndobj/Mat.h"
+#include "rndobj/Tex.h"
+#include "rndobj/Mesh.h"
+#endif
 #include "math/Rot.h"
 #include "utl/Symbols.h"
 #include "decomp.h"
+
+#ifdef HX_NATIVE
+// W4.4-ROWFIX flag + per-list fill latch (see UIListWidget.h).
+bool RB3RowfixActive() {
+    static const bool on = getenv("RB3_ROWFIX") != 0;
+    return on;
+}
+static bool sRowfixFillDrawn = false;
+void RB3RowfixResetFill()    { sRowfixFillDrawn = false; }
+void RB3RowfixSetFillDrawn() { sRowfixFillDrawn = true; }
+bool RB3RowfixFillDrawn()    { return sRowfixFillDrawn; }
+#endif
 
 INIT_REVS(UIListWidget);
 
@@ -50,6 +67,30 @@ void UIListWidget::DrawMesh(
             if (mat)
                 mat->SetColor(col->GetColor());
         }
+#ifdef HX_NATIVE
+        // W4.4-ROWFIX probe (RB3_ROWFIX_DBG): log the color/state/material of
+        // every UIListWidget mesh draw so the focused-row highlight fill can be
+        // isolated. Inert unless the env var is set. Wii build untouched.
+        if (getenv("RB3_ROWFIX_DBG")) {
+            RndMat *mat = mesh->mMat;
+            const Hmx::Color c = col ? col->GetColor() : Hmx::Color(0,0,0,0);
+            const Hmx::Color mc = mat ? mat->GetColor() : Hmx::Color(0,0,0,0);
+            RndTex *tex = mat ? mat->GetDiffuseTex() : 0;
+            RndMesh *owner = mesh->GeomOwner();
+            fprintf(stderr,
+                "[ROWFIX] mesh='%s' verts=%d ownverts=%d ownself=%d faces=%d wstate=%d cstate=%d col=(%.2f,%.2f,%.2f,a%.2f) hascol=%d "
+                "mat='%s' matcol=(%.2f,%.2f,%.2f,a%.2f) tex='%s' blend=%d zmode=%d\n",
+                mesh->Name(), mesh->NumVerts(),
+                owner ? owner->NumVerts() : -1, owner == mesh ? 1 : 0,
+                owner ? owner->NumFaces() : -1,
+                (int)wstate, (int)cstate,
+                c.red, c.green, c.blue, c.alpha, col ? 1 : 0,
+                mat ? mat->Name() : "(null)",
+                mc.red, mc.green, mc.blue, mc.alpha,
+                tex ? tex->Name() : "(notex)",
+                mat ? (int)mat->GetBlend() : -1, mat ? (int)mat->GetZMode() : -1);
+        }
+#endif
         mesh->DrawShowing();
     }
 }

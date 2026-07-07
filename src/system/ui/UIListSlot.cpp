@@ -98,9 +98,31 @@ void UIListSlot::Draw(
                 if (ParentList())
                     ParentList()->AdjustTrans(tfa8, curdrawstate);
                 CalcXfm(ctf, curdrawstate.mPos, tfa8);
+#ifdef HX_NATIVE
+                // W4.4-ROWFIX Part B (RB3_ROWFIX, default-OFF): on the row that
+                // Part A painted a solid bright fill under (this list latched
+                // RB3RowfixFillDrawn), the highlighted-row text must read DARK on
+                // the bright bar (target polarity) instead of the default white.
+                // Temporarily darken the label color around this one draw, then
+                // restore (uicolor is a shared authored UIColor — mutate/restore
+                // in place, single-threaded, used immediately). Scoped to the
+                // highlighted display element of the fill-bearing list only.
+                Hmx::Color rowfixSaved;
+                bool rowfixDark = false;
+                if (!box && uicolor && RB3RowfixActive() && RB3RowfixFillDrawn() &&
+                    curdrawstate.mDisplay == drawstate.mHighlightDisplay) {
+                    rowfixSaved = uicolor->GetColor();
+                    uicolor->SetColor(Hmx::Color(0.06f, 0.05f, 0.02f, rowfixSaved.alpha));
+                    rowfixDark = true;
+                }
+#endif
                 if (cmd != kExcludeFirst || i > 0) {
                     mElements[i]->Draw(tfa8, d10, uicolor, box);
                 }
+#ifdef HX_NATIVE
+                if (rowfixDark)
+                    uicolor->SetColor(rowfixSaved);
+#endif
                 if (cmd == kDrawFirst)
                     return;
             }

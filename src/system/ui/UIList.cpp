@@ -484,6 +484,14 @@ void UIList::DrawShowing() {
         );
     }
 #endif
+#ifdef HX_NATIVE
+    // W4.4-ROWFIX: reset the per-list focus-fill latch before this list draws its
+    // widgets. The highlight widget (Part A) sets it when it paints the
+    // ml_highlight fill quad; the slot widgets (Part B) read it to darken the
+    // highlighted-row text. Resetting here scopes the darken to the list that
+    // actually drew the fill (no-op unless RB3_ROWFIX is set).
+    RB3RowfixResetFill();
+#endif
     mListDir->DrawWidgets(mListState, mWidgets, WorldXfm(), DrawState(this), 0, b);
 }
 

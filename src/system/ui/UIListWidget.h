@@ -12,6 +12,29 @@
 
 class UIList;
 
+#ifdef HX_NATIVE
+// W4.4-ROWFIX (RB3_ROWFIX, default-OFF): the song_select focused-row selection
+// bar. On the target the focused list row is a solid bright bar (yellow/white)
+// with DARK text; natively the row shows only the yellow FRAME (highlight_main,
+// zmode=0 so NOT depth-occluded) over a dark navy fill and WHITE text. Root
+// cause (W4.4 diagnosis): the solid FILL is produced by the list highlight's
+// focus animation/trigger (list_song_select_browser.milo highlight_bar.grp /
+// highlight_light.trig / highlight_yellow.mesh + highlight_bar_color.tex) which
+// does not run natively, so the full-row fill quad (ml_highlight_glasstopp) is
+// drawn only as its near-invisible additive sheen (white, alpha 0.08). This
+// flag approximates the focus bar in two coupled parts, scoped to the list that
+// actually draws the ml_highlight fill quad: (A) render the glasstopp full-row
+// quad as a solid fill in the highlight's authored color; (B) darken the
+// highlighted-row text so it reads on the bright bar. Default-OFF -> the whole
+// path is a no-op and flag-OFF is byte-identical (Wii build never compiles this
+// under HX_NATIVE either). NOT a depth fix: the menu-flush depth LoadOp::Load
+// (SETLISTS red-band fix) is untouched.
+bool RB3RowfixActive();
+void RB3RowfixResetFill();     // UIList::DrawShowing, per-list, before widgets
+void RB3RowfixSetFillDrawn();  // Part A, when the ml_highlight fill quad drew
+bool RB3RowfixFillDrawn();     // Part B, scopes the text-darken to that list
+#endif
+
 class UIListWidgetDrawState {
 public:
     UIListWidgetDrawState() {}
