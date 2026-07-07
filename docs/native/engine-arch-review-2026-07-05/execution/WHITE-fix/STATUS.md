@@ -199,3 +199,60 @@ DC3-shared and coordinator-sequenced). My composite-side fence has nothing to ch
 ## Deliverable
 `staged-patch-scene-side.md` (finalized, 3-file hunks + verified anchors + Wave-10 land order
 + coordinator decision). Ready for Lane A to land in Wave 10.
+
+---
+
+# WHITE-fix — Stage STEP-0 STATUS (Wave 10: PRE-LAND staged engine patch, Opus) — LANDED
+
+Checkpoint id `STEP0`. Serialized STEP 0 (WAVE10_KICKOFF COORDINATOR ACCEPTANCE A1). Engine
+pin base `10a9ca6`; concurrent `FxSendNative.cpp` audio edit left untouched (never staged).
+Build `milo-native-engine/build-agent-STEP0` + `rb3/native/build-agent-STEP0` (clang Debug,
+Ninja). This stage is **LAND + inertness proof only** — the WHITE behavioral gates are Lane B's.
+
+## Outcome: staged scene-side patch APPLIED to the engine, default-OFF, inert. Engine commit `2998e78`.
+
+Applied `execution/WHITE-fix/staged-patch-scene-side.md` verbatim (all 8 anchors re-verified
+against the current tree — they had NOT rotted from the S2 verification at `30d4f00`):
+
+1. **`src/gfx/UniformStructs.h`** — repurposed `_padPL[0]` -> `float venueHighlightLumaMode`
+   (+ `_padPL1` trailing pad). Pure pad rename; `static_assert(sizeof(SceneUniforms)==656)`
+   unchanged.
+2. **`src/gfx/standard_wgsl.inc`** — mirrored the field (`_padPL2` -> `venueHighlightLumaMode`);
+   added `fn compressHighlightsLuma` (compress luminance, scale RGB uniformly so hue/sat survive);
+   gated the `fs_main` `compressHighlights(finalColor)` call on `scene.venueHighlightLumaMode > 0.5`.
+   The **optional `softClipLighting` luma variant was intentionally NOT landed** (staged patch land
+   order: land `compressHighlights` first, re-measure; that decision is Lane B's).
+3. **`src/platform/Rnd_Wgpu_RB3.cpp`** — added `sVenueWhiteGuard()` accessor (default-OFF,
+   presence-truthy opt-in `RB3_VENUE_WHITE_GUARD`) next to `sVenuePointFalloffGx()`; set
+   `s.venueHighlightLumaMode = sVenueWhiteGuard() ? 1.0f : 0.0f;` in the ENGAGED venue branch
+   right after the `s.pointFalloffMode` write (`WriteSceneUniforms`).
+
+Flag registered in `NativeCompatFlags.classification.json` (append-only under
+`flock /tmp/milo-engine-classjson.lock`, class `workaround`, owner `render/lighting`,
+default off, read presence). **No `gen.inc` regen** (coordinator-only).
+
+## Inertness gates (all GREEN)
+
+| Gate | Result |
+|---|---|
+| flag-OFF byte-identical — `drawlog-golden.py --fixed-clock --canonical-order` | **792 PASS** (306 known-residual eye-jitter divergences within bound, non-blocking) |
+| WGSL validity — `rb3-tests WgslValidation.AllRB3ShadersCompile` | **PASS** — `standard_wgsl.inc OK` via real Dawn/Tint (RTX 3090); `HarnessCatchesBadShader` fail-red green |
+| DC3 zero-blast + size — `milo-engine-tests` (ctest -j1, DC3_RUNTIME_ROOT=dc3-decomp) | **200/200 pass, 0 fail** (2 by-design skips); compiles `UniformStructs.h` -> `static_assert 656` held on the DC3 build |
+| build — `rb3-native` + `rb3-tests` (clang) | clean link |
+
+DC3 zero-blast mechanism (WAVE10_REVIEW A5, now confirmed behaviorally): both `SceneUniforms`
+constructions value-initialize; nothing writes the repurposed pad on the DC3 path; WGSL gate
+`> 0.5` selects the unchanged per-channel `else` branch -> DC3 rendered scene byte-identical.
+The file diff on the two shared files (`UniformStructs.h`, `standard_wgsl.inc`) is non-empty but
+behaviorally inert — the accepted behavioral-zero-blast (pointFalloffMode precedent).
+
+## Single-writer handoff
+
+After this commit (`2998e78`), per WAVE10_REVIEW A1, `Rnd_Wgpu_RB3.cpp`'s ONLY writer for the
+rest of Wave 10 is **Lane A (W2.8e)**. Lane B is **engine-read-only** (reproducers, WHITE
+behavioral gates, flip recommendation). I did **not** run the WHITE behavioral reproducers/deltas
+(`RB3_VENUE_LIGHT_OFF` flood, eng_hot, hi_frac/mid_sat paired deltas) — those are Lane B's per the
+kickoff. Coordinator must NOT bump the pin or flip the default here (default-OFF stays until Lane B
+earns the flip).
+
+Checkpoint: `/tmp/wave10-checkpoints/STEP0.json`.
