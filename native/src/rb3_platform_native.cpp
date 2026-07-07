@@ -43,6 +43,9 @@
 #include "meta_band/BandSongMgr.h"
 #include "obj/DataFile.h"
 #include "obj/Data.h"
+#include "utl/Locale.h"    // Localize() free function (W4.5-GAMERTAG)
+#include "utl/Symbols4.h"  // extern Symbol player;
+#include "utl/MakeString.h"
 #include <cstring>
 #include <cstdlib>
 #include <string>
@@ -91,6 +94,36 @@ PlatformMgr::~PlatformMgr() {
 // Wii body reads the console's SC region; native has none. Default to NA so the
 // "region has not been initialized" notify clears and region-keyed DTA resolves.
 void PlatformMgr::RegionInit() { SetRegion(kRegionNA); }
+
+// --- GetName: Wii "Player N" fallback for the missing native profile subsystem ---
+// (W4.5-GAMERTAG / Wave-15 acceptance A5.) Native has no profile/gamertag
+// backend: TheWiiProfileMgr is Wii-SDK-bound and not compiled here, so
+// IsSignedIn(pad) (PlatformMgr.cpp) is always false natively -> on Wii this
+// unconditionally takes the ELSE branch of PlatformMgr_Wii.cpp:489-496:
+//   return MakeString("%s %d", Localize(player, 0), pad + 1);
+// Without this override, GetName resolves to the WEAK no-op stub in
+// dta_link_stubs.s (__hmx_tramp_dta_172, `xorl %eax,%eax; ret` — returns NULL).
+// Every consumer that formats that result with "%s" therefore prints the
+// literal string "(null)": AppLabel::SetUserName(int)
+// (meta_band/AppLabel.cpp:161, the song_select header) and the overshell
+// `user_name.lbl` player plate (OvershellSlot.cpp:96) both call
+// ThePlatformMgr.GetName(pad) — so this one strong definition (it wins over
+// the weak stub) fixes every consumer at once, matching the acceptance's
+// "one provider fixes header + overshell + all consumers".
+// Flag-gated (RB3_PLAYER_NAME_FALLBACK, default-OFF, presence-mode) so
+// flag-OFF stays byte-identical to today's stub (returns nullptr, same as the
+// trampoline). Localize() already degrades gracefully when the token/Locale
+// table isn't available (Locale.cpp Localize() falls back to the literal
+// token string "player", not null/empty) — satisfies "localized token if
+// available, literal fallback otherwise" without any extra fallback logic.
+const char *PlatformMgr::GetName(int pad) const {
+    static int enabled = -1;
+    if (enabled < 0)
+        enabled = ::getenv("RB3_PLAYER_NAME_FALLBACK") ? 1 : 0;
+    if (!enabled)
+        return nullptr;
+    return MakeString("%s %d", Localize(player, 0), pad + 1);
+}
 
 // --- TheContentMgr: native ContentMgr that scans the extracted song tree ---
 // `ContentMgr *TheContentMgr;` and its `= &TheWiiContentMgr` static initializer
