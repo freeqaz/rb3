@@ -66,3 +66,17 @@ with flag OFF and trigger unwired, build is byte-identical (verified at G-S1).
 - Flag default-OFF; granted-file build compiles; flag-OFF path byte-identical
   (static never set → venueGrade=true unchanged for gameplay Tier-2).
 - Baselines + pre-registration committed. Trigger declared + STOPPED for sign-off.
+
+---
+
+## G-S2 (verify) — declared file ranges (re-derived by symbol, current tree)
+G-S1 STOPPED for a trigger-site sign-off, so G-S2 is a VERIFY-WHAT-LANDED stage:
+no un-granted file is edited. Files touched by G-S2 = docs only
+(`execution/UIGRADE/{PLAN,STATUS}.md`) + checkpoint JSON. Engine machinery under
+review (already committed, NOT edited here):
+- `milo-native-engine/src/platform/RB3PostProc.cpp`
+  - `FlushPostProcMidFrame()` (venueGrade parameterization at the `RunPostProcComposite` call)
+  - `RB3UIPostGradeActive()`, `RB3SetMenuUIFlushPending()`, `RB3ConsumeMenuUIFlushPending()`
+- `milo-native-engine/src/platform/RB3PostProc.h` (decls)
+Verification harnesses (mine, added earlier): `scripts/native/_uigrade_baseline.py`,
+`scripts/native/_uigrade_gate.py`, `scripts/native/drawlog-golden.py` (existing).

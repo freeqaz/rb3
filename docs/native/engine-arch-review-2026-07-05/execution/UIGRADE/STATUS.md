@@ -110,3 +110,99 @@ the ratio should move (target ≥2.0).
 - Harness: `scripts/native/_uigrade_baseline.py`, gate `scripts/native/_uigrade_gate.py`.
 - Baselines: `/tmp/uigrade/`; probe log `/tmp/rb3-uigrade-probe-*.log`.
 - Checkpoint: `/tmp/wave13-checkpoints/G-S1.json`.
+
+---
+
+# Lane G — UIGRADE — STATUS (G-S2, verify)
+
+Outcome: **VERIFIED-INERT / PENDING-TRIGGER.** The G-S1 renderer machinery
+(engine `f677871`, flag `RB3_UI_POST_GRADE` default-OFF) is confirmed correct and
+**inert-by-construction** with no regression on any gate. It cannot yet move the
+contrast metric because its game-side TRIGGER is unwired (STOPPED at G-S1 for
+coordinator sign-off; the trigger lives in un-granted `PanelDir.cpp`, so G-S2
+does NOT edit it). This stage verifies what landed and re-declares the pending
+item for the coordinator.
+
+## What was verified (bin: `native/build-agent-uigrade/rb3-native`, engine f677871, rebuilt green)
+
+### 0. Diff-scope lockdown (DC3 zero-blast by construction)
+`git show f677871 --stat` = exactly 3 files, all RB3-only:
+`RB3PostProc.cpp` (+31/−1), `RB3PostProc.h` (+23), `NativeCompatFlags.classification.json`
+(append-only, +1/−1). **`rb3_postproc.wgsl.inc` NOT touched.** `RB3PostProc.cpp`
+is in `MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3` (CMakeLists.txt:326) — the RB3-only
+GPU platform set. DC3 and `milo-engine-tests` (+ its Dawn WGSL gtest) never
+compile this TU, and no shader changed ⇒ the shared-engine test binary is
+byte-identical before/after; DC3 zero-blast is guaranteed structurally, not just
+empirically.
+
+### 1. The ONLY behavioral hunk is a null-op today
+`FlushPostProcMidFrame`: `RunPostProcComposite(mFrameView, /*venueGrade=*/true)`
+→ `RunPostProcComposite(mFrameView, /*venueGrade=*/!menuBoundary)` where
+`menuBoundary = RB3ConsumeMenuUIFlushPending()`. The latch setter
+`RB3SetMenuUIFlushPending()` has **ZERO callers** anywhere in engine+rb3 src
+(grep-verified) ⇒ `menuBoundary` is always `false` ⇒ `!false == true` == the old
+hardcode. Gameplay Tier-2 flush is **byte-identical**; menu screens never flush
+(no trigger). So flag-ON == flag-OFF == pre-change default, regardless of env.
+
+### 2. Contrast gate per screen (flag-OFF vs flag-ON, my machinery-bearing bin)
+Captured off / on arms on all three A7 screens (RB3_HUB_TEXT_CONTRAST unset in
+all arms), ROI p60/p5:
+
+| screen     | flag-OFF | flag-ON | Δ ratio | verdict |
+|------------|----------|---------|---------|---------|
+| hub        | 1.954    | 1.954   | 0.000   | IDENTICAL |
+| songselect | 1.105    | 1.088   | −0.017  | within PP_OFF-parity band [1.06,1.17] |
+| partdiff   | 1.409    | 1.409   | +0.001  | IDENTICAL |
+
+Full-frame meanAbs looked large (hub 35.4) but a same-flag **noise control**
+(off vs off2) is comparable-or-larger (hub 34.1, songselect ctrl 1.21, partdiff
+ctrl 14.1 vs on-diff 9.1) — the deltas are animation-phase non-determinism (the
+harness settles on wall-clock and reaches each screen at slightly different frame
+indices), NOT the flag. The flag adds nothing beyond run-to-run noise. **The
+pre-registered 2.0 / PP_OFF-parity PASS targets are the SIGN-OFF criteria for the
+WIRED trigger — they cannot be exercised until the trigger lands; today they read
+INERT (== default), which is the correct landed state.**
+
+### 3. B+W menu-backdrop ROI gate (A5 trap)
+Protection is designed-in (`venueGrade=false` forced at the menu boundary →
+chroma-preserve stays off). Unexercised today (menus never flush) so no chroma
+can appear ⇒ authored grayscale backdrop unchanged. Confirmed by the INERT
+result. The live A5 ROI assertion becomes exercisable only once the trigger wires.
+
+### 4. Gameplay pixel-invariance (R-D)
+Guaranteed by construction (§1): the menu latch is never set during gameplay, so
+`venueGrade=true` identical to the old hardcode ⇒ a fixed-clock gameplay frame is
+pixel-identical flag-ON vs flag-OFF. (Lane G "done right" is a no-op on gameplay,
+per R-D.)
+
+### 5. drawlog flag-OFF 792 byte-identical
+`drawlog-golden.py --fixed-clock --canonical-order --scene splash_screen` on my
+bin: **PASS — 792 draws, canonical-order match** to the committed golden (287
+known-residual divergences within the documented bound, non-blocking).
+
+### 6. Wave-7 labels legible / venue wash unchanged
+Since flag-ON == flag-OFF == shipped default within noise (§2 control), the
+Wave-7-rescued labels and the venue wash are unchanged from the shipped six-ON
+default. No new regression introduced by the machinery landing.
+
+## PENDING ITEM FOR COORDINATOR (blocks G-S2 → S2-fix completion)
+The measurable win (hub 1.95→~2.20) requires wiring the game-side TRIGGER, which
+is OUTSIDE Lane G's grant. Proposed flag-gated diff (from G-S1 §3, unchanged):
+in `rb3/src/system/ui/PanelDir.cpp` `PanelDir::DrawShowing`, when
+`!mCanEndWorld && RB3UIPostGradeActive()`, call `RB3SetMenuUIFlushPending()` then
+`TheRnd->EndWorld()` (HX_NATIVE). Open risks to resolve under the flag once
+granted: R1 `Rnd::EndWorld()`→`DoWorldEnd()` side-effects on non-world menu dirs
+(may need a dedicated public flush seam + a small `Rnd_Wgpu_RB3.h` grant instead
+of reusing EndWorld); R2 venue-before-UI ordering live-check; R3 the A5 B+W ROI
+assertion. song_select + partdiff stay grade-inert ⇒ the trigger is
+no-op-or-parity there; only the HUB ratio should move to ≥2.0.
+
+## E1 before/after captures
+- BEFORE (shipped default, washed): `/tmp/uigrade/default_{hub,songselect,partdiff}.png` (hub 1.95).
+- TARGET the wired trigger achieves (grade-exempt proxy): `/tmp/uigrade/ppoff_{hub,...}.png` (hub 2.20).
+- LANDED state (INERT, flag-OFF vs flag-ON): `/tmp/uigrade-s2/{off,on,off2}_*.png` (hub 1.954 both).
+
+## Files
+- Harnesses: `scripts/native/_uigrade_baseline.py`, `_uigrade_gate.py`, `drawlog-golden.py`.
+- Captures: `/tmp/uigrade` (G-S1 baselines), `/tmp/uigrade-s2` (G-S2 off/on/off2 arms).
+- Checkpoint: `/tmp/wave13-checkpoints/G-S2.json`.
