@@ -356,3 +356,26 @@ flipped default; pin bumped `a94762f` → `a320f9d`.
 - **Current-state re-baseline:** fresh screenshot sweep vs `/tmp/wave6-current-state/` — five
   defaults flipped since; find what the user sees now + surface new items.
 - Carried: 4→8 lights (DC3 gates), W2.4 BandPatchMesh, song_select residuals.
+
+## Wave 9 results (2026-07-07, run `wf_0a159b21-2f4`, 5 agents)
+
+**Diagnosis wave: the hands factor is NAMED (offset rotation basis, constant 42-87° off the
+per-member rest basis) but the world-space fix attempt was refuted (4th dead class) — exactly ONE
+unrefuted path remains; WHITE is proven SCENE-SIDE with a staged patch; the rebaseline confirms 4
+fixes on-screen + surfaces 1 new anomaly.** No flips this wave. Engine → `10a9ca6` (probes + regen).
+
+| Item | Status | Highlights |
+|---|---|---|
+| W2.8d attribution | ✅ **named** / ❌ **fix refuted** | S1 (dualskin probe at the palette-compose point, RealPathFixture golden populated SKIP→RED 32.8u): **candidate (b) — the skin offset's rotation basis is conjugated ~42-87° off the per-member bone rest basis, constant/pose-independent**; candidate (a) refuted (live bone worlds are faithful rigid transforms to 178° curl). S2's minimal fix (world-space rest capture, `RB3_APPENDAGE_REST_ROT`) **REFUTED**: wext regresses 73→80u — it reproduces the 2026-06-11 world-space lever-arm dead-end, and the probe's ΔR is partly a placement-yaw artifact (the review's A1 risk realized). **Wave 10 = the only unrefuted path: asset-level rebake against `skeleton_unshared.milo`'s AUTHORED bind rotation (char-space, asset-derived, static)** + fix the ΔR metric to like-space comparison. Do NOT flip `RB3_APPENDAGE_REST_ROT` (documented regression). |
+| WHITE-fix | ✅ **complete [SCENE-SIDE, patch staged]** | Force-reproduced 3 ways (deterministic flood 5/5 over-exposed; natural engaged 1/5 matching the disclosed ~1/6). Discriminator: **the RAW scene whites at ≥ the composite peak and the composite RAISES mid-band sat (0.045→0.283)** — chroma-preserve restores color, it is not the gain; the near-white is baked by `softClipLighting`+`compressHighlights` on pale surfaces × hot lighting before the UNORM clamp. Fix designed + **staged** (luminance-preserving venue highlight compression via a repurposed `SceneUniforms.venueHighlightLumaMode`, default-OFF `RB3_VENUE_WHITE_GUARD`) — touches Lane-A + DC3-shared files → lands Wave 10 coordinator-sequenced. |
+| REBASELINE | ✅ complete | **Confirmed fixed on-screen vs the archived Wave-6 baseline:** hub grey quad GONE, menu text crisp, black head absent across 6 frames/3 boots, part_difficulty "missing widgets" independently re-refuted (settle sequence). **NEW anomaly: disconnected floating forearm+hand** (2 contexts: partdiff wipe transition +060/+120, and a gameplay ceiling-hung disembodied forearm with no wipe active) — H1 shard-family full detachment vs H2 occlusion illusion, deliberately not diagnosed in-lane → Wave-10 triage attached to the hands lane. |
+
+**Coordinator actions:** no flips (nothing earned one); regen (`10a9ca6`, 339 clean); 792 + lineup
+PASS; pin bumped `a320f9d` → `10a9ca6`; montages reviewed (hub + band confirmed by eye).
+
+### Wave 10 menu
+
+- **W2.8e:** asset-derived bind-rotation rebake (the only unrefuted hands path) + like-space ΔR
+  metric fix + floating-forearm triage (H1 vs H2) as a sub-check.
+- **WHITE-fix landing:** the staged `RB3_VENUE_WHITE_GUARD` patch (single-writer sequencing now free).
+- Carried: 4→8 lights (DC3 gates), W2.4 BandPatchMesh, song_select residuals.

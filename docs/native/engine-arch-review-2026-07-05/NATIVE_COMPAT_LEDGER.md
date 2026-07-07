@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 336  
-**By class:** feature=12, perf=9, probe=93, unknown=140, workaround=82  
+**Total flags:** 339  
+**By class:** feature=12, perf=9, probe=96, unknown=140, workaround=82  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 70
 
 | name | class | default | owner | faithful-status | sites |
@@ -95,6 +95,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `PART_MOVE_DBG` | probe | off | render/particles | n/a: per-call MoveParticles trace (dt/frameSpan, relative-frame force rows, relative xfm state, first particle velocity) for substring-matched systems, pinpointing runaway fog velocity origin [Part.cpp:1338] | 1 |
 | `PART_PROBE` | unknown | off | unclassified | n/a | 1 |
 | `POS_DUMP_VERBOSE` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_APPENDAGE_REST_ROT` | probe | off | skinning | not-live: W2.8d Wave-9 Lane-A REFUTED experiment, default-OFF do-NOT-flip. Tested whether the finger shard is a rest-bake SPACE error by baking appendage (hand/finger/nail/glove) offset=meshWorld*inv(WORLD-space rest of the palette-sampled bone) instead of the default CHAR-space rest (NativeCharSpaceRestXfm). MEASURED a REGRESSION on the independent IK_SHARD_VERT wext metric (hands_naked mean 73.1->79.9u, p90 83->92u); dual-skin worstSep only partially/inconsistently moved (one member 36.9->21.4u still >20u gate, other unchanged) — reproduces the scout-c8 2026-06-11 world-space lever-arm R*sin smear. Genuine residual is a rest-CAPTURE basis/pose problem needing the authored skeleton_unshared.milo bind pose (Wave 10). flag-OFF byte-identical (drawlog 792, getenv-cached, HX_NATIVE) [BandCharacter.cpp] | 1 |
 | `RB3_APPLY_HANDLER_FIX_OFF` | workaround | on | bandobj/trackpanel | not-live: single-player scoreboard/applause right/left.grp x-translation neutralization (K9 apply-handler fix) default-ON; =1 reverts to raw V22 | 2 |
 | `RB3_ASYNC_OPEN_OFF` | workaround | on | load/io | not-live: async file-open default-ON | 2 |
 | `RB3_AUDIO_LATENCY_MS` | unknown | unknown | unclassified | n/a | 1 |
@@ -134,6 +135,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_DRAWRECT_DBG` | unknown | off | unclassified | n/a | 1 |
 | `RB3_DRAWSORT_DETERMINISTIC_OFF` | feature | on | render/determinism | n/a: deterministic SortDraws material-name tie-break, active under RB3_FIXED_CLOCK, default-ON; opt-out restores Wii mat-pointer order (draw-order flake) for W0.3d-fix fail-red | 1 |
 | `RB3_DTA_OVERLAY` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_DUALSKIN_FIXTURE` | probe | off | skinning | probe: optional output path override for the RB3_DUALSKIN_PROBE live_pose.txt capture (default native/tests/goldens/w2.8-farvert/live_pose.txt); path-valued, gates only that fopen [Rnd_Wgpu_RB3.cpp] | 2 |
+| `RB3_DUALSKIN_PROBE` | probe | off | skinning | probe: W2.8d bone-level factor attribution for the finger/hand rotation-basis shard. For one worst-flung far vertex of a selected mesh (default hands_naked) dumps per-bone offset(BoneOffsetAt)/liveWorld(WorldXfm)/liveLocal(LocalXfm)/weight/composed-skin with determinants+orthonormality (candidate-a: is the live bone world a clean rigid transform?) and the rest-basis conjugation delta inverse(offset)-vs-per-member-captured-rest -> DeltaR -> predicted R*2sin(theta/2) vs measured (candidate-b). Also writes goldens/w2.8-farvert/live_pose.txt (asDrawn vs coherent per-member-own-rest ref, per far vert) so the BL-A2 RealPathFixture gtest stops SKIPping. Additive-only, gated on wext>60, render-inert; value is a name-substr / 1 / *; override output path via RB3_DUALSKIN_FIXTURE [Rnd_Wgpu_RB3.cpp] | 2 |
 | `RB3_DUMP_STEMS` | probe | off | audio/stems | n/a: opt-in raw PCM stem dump to disk (one .s16 file per channel under the given directory); purely a side-channel file write, does not alter the audio mix/playback path [StandardStream.cpp:68] | 1 |
 | `RB3_ENV_FOG` | feature | off | render/lighting | not-live: faithful RndEnviron fog fill (FogEnable/GetFogStart/GetFogEnd/FogColor -> SceneUniforms fog + RndMat::mFog -> materialFogEnabled), default-OFF (W3.1a) | 1 |
 | `RB3_ENV_FOG_FORCE` | probe | off | render/lighting | probe: synthesizes authored fog params onto the current environ at the fill site so RB3_ENV_FOG renders on a real venue for screenshot A/B (no in-repo asset authors fog); requires RB3_ENV_FOG, default-OFF (W3.1b) | 1 |
