@@ -379,3 +379,31 @@ PASS; pin bumped `a320f9d` → `10a9ca6`; montages reviewed (hub + band confirme
   metric fix + floating-forearm triage (H1 vs H2) as a sub-check.
 - **WHITE-fix landing:** the staged `RB3_VENUE_WHITE_GUARD` patch (single-writer sequencing now free).
 - Carried: 4→8 lights (DC3 gates), W2.4 BandPatchMesh, song_select residuals.
+
+## Wave 10 results (2026-07-07, run `wf_79fca7a3-5a2`, 6 agents)
+
+**No flips — and that is the system working: the 5th hands fix class was refuted (it freezes the
+hands) with the S1 instrument itself unmasked as confounded; the WHITE guard was HELD on a
+sign-flipping primary metric + a null control that quantifies a per-boot lighting-noise floor; the
+floating forearm is confirmed H1 (real shard-family vertex smear).** Engine → `6834744`.
+
+| Item | Status | Highlights |
+|---|---|---|
+| STEP-0 WHITE land | ✅ complete | Staged scene-side patch landed default-OFF `RB3_VENUE_WHITE_GUARD` (engine `2998e78`): `_padPL`→`venueHighlightLumaMode` (static_assert 656 intact), gated `compressHighlightsLuma`, world.cam-engaged write. Inertness proven (792, Dawn WGSL gtest, milo-engine-tests 200/200 incl. DC3). Single-writer handoff honored (audited: exactly one Lane-B engine commit). |
+| W2.8e S1 | ✅ **MATCH** (with hindsight caveat) | Like-space fixture re-derivation; placement-yaw confound REFUTED by measurement (bone-chain roots at identity; placement lives in obj.world); fixture re-proven RED 37.4u; provenance-by-invariance: `inv(off)` identical 106.0° across members with distinct 38/40-bone skeletons = offset baked against the shared magnet while the palette animates per-member bones. All 6 pre-registered tolerances PASS → verdict MATCH. |
+| W2.8e S2 | ❌ **REFUTED [5th class dead + instrument unmasked]** | The asset rebake collapses worstSep to **0.0u by FREEZING the appendages** (worldExt pinned to 2 discrete values; same worst vert every frame; characterize MARGINAL→HARD-SHARD). `RB3_APD_DIAG` found the real story: the DEFAULT rebind repoints mesh `bound`(static 129° bind copy)→`own`(live animating 106°), and **the dual-skin probe's reference was captured pre-repoint** — the 37.4u "shard" compares the drawn vertex against a bone the draw does not use; the metric is unsatisfiable without freezing. **All five bind-side bake classes are dead; any 6th attempt is forbidden — the next step is a NEW instrument (coherent-vs-drawn-bone, post-repoint) to establish whether a real residual exists at all.** `RB3_APPENDAGE_ASSET_REBAKE`+`RB3_APD_DIAG` kept default-OFF documented. |
+| W2.8e S3 forearm triage | ✅ **H1 confirmed** | Both sightings = the known hand-shard family: `hands_naked.mesh` IS drawn (0 guard-DROPs, band cap 110u), far-from-wrist verts smear by ~R·sin(θ) to 61→106u worldExt while the wrist bone stays attached; body renders coherently at ~50u. H2 (occlusion) + H3 (guard-DROP leaving a legit forearm) refuted by draw-log census. **The visible symptom is real** — in tension with S2's "characterize=MARGINAL": reconciling the instruments is the Wave-11 job. |
+| WHITE-fix B.S1/B.S2 | ✅ **complete → HOLD (no flip)** | Two blind runs: the primary `d_hi_frac` **sign-flips** (+17.96 vs −6.89); the **null control** (flood arm where the guard is source-provably inert) swings ±5-18 hi_frac — the eng_hot delta is the same noise; G1b (chroma up) fails BOTH runs because washing regions are **zero-chroma** (nothing for chroma-preservation to save — the design premise doesn't hold where it matters). Guard stays landed default-OFF, safe, documented. **The real levers: (a) venue exposure on hot engaged moments, (b) FIRST tame the per-boot lighting nondeterminism (mid_sat 0.067–0.362 at identical params/shot/fixed-clock) that makes every arm-mean visual gate non-resolving.** |
+
+**Coordinator actions:** no flips (correctly none earned); regen (`6834744`, 343 clean); 792 +
+lineup PASS; pin bumped `10a9ca6` → `6834744`.
+
+### Wave 11 menu
+
+- **BOOTRNG (new, unblocks everything):** root-cause the per-boot lighting/grade nondeterminism
+  (which postproc/venue-event state varies per boot at a pinned shot under RB3_FIXED_CLOCK) — it is
+  the visual-gate noise floor AND the last stochastic user-visible phenomenon.
+- **W2.8f:** the coherent-vs-drawn-bone instrument (post-repoint reference); reconcile
+  characterize-MARGINAL vs the confirmed H1 visible smear; NO fix attempt until the instruments agree.
+- Carried: WHITE real-lever design (after BOOTRNG), 4→8 lights (DC3 gates), W2.4, song_select
+  residuals.
