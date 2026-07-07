@@ -21,6 +21,12 @@ SongRecord::SongRecord(const BandSongMetadata *data)
     mShortName = TheSongMgr.GetShortNameFromSongID(data->ID(), true);
     mDemo = TheSongMgr.IsDemo(data->ID());
     mRestricted = TheSongMgr.IsRestricted(data->ID());
+#ifdef HX_NATIVE
+    // UpdateSharedStatus() below compares against mIsShared before anything
+    // has stored to it — loading an uninitialized bool is UB on wasm -O2
+    // (UBSan: "load of value 200"). The original leaves it uninitialized.
+    mIsShared = false;
+#endif
     FOREACH (it, data->Ranks()) {
         Symbol key = it->first;
         float val = it->second;

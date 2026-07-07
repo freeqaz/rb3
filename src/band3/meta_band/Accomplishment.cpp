@@ -290,7 +290,15 @@ const char *Accomplishment::GetIconPath() {
 
 bool Accomplishment::IsUserOnValidScoreType(LocalBandUser *i_pUser) const {
     bool returnValue = false;
+#ifdef HX_NATIVE
+    // The cast below is a CodeWarrior vbase-layout idiom: it reads the
+    // BandUser virtual-base pointer stored at offset 0. On Itanium ABI that
+    // word is the vptr, so it calls through garbage (UBSan: ControllerType
+    // 13935). Use the normal virtual-base conversion instead.
+    ControllerType controllerType = i_pUser->GetControllerType();
+#else
     ControllerType controllerType = (*(BandUser **)i_pUser)->GetControllerType();
+#endif
 
     std::set<ScoreType> scoreTypes;
 

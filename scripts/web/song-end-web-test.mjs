@@ -255,7 +255,10 @@ try {
           // freeze candidate. Confirm each press we keep advancing frames.
           L('advancing through endgame screens (Confirm presses)...');
           let prevScreen = s2.screen;
-          for (let p = 0; p < 16; p++) {
+          // 32 presses: award/goal screens swallow Confirms during their
+          // animations, so 16 sometimes ends the run one screen short of
+          // song_select even though nothing is wrong.
+          for (let p = 0; p < 32; p++) {
             await press(page, 'Enter', 220, 1500);
             const sp = await state(page, 5000);
             if (sp === Symbol.for('timeout') || !sp) {

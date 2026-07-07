@@ -225,7 +225,14 @@ void BandUI::Poll() {
             static Message msg("check_wipe_done");
             mAbstractWipePanel->HandleType(msg);
         }
+#ifdef HX_NATIVE
+        // mWaitingUserGate is never allocated natively (see Init) — null
+        // member call is UB that wasm -O2 is entitled to miscompile.
+        if (mWaitingUserGate)
+            mWaitingUserGate->Poll();
+#else
         mWaitingUserGate->Poll();
+#endif
         TheUIEventMgr->Poll();
         UpdateUIOverlay();
     }
@@ -296,10 +303,10 @@ UIFlowType BandUI::GetCurrentFlowType() const {
         return kUIFlowType_InGame;
     case kNetUI_Campaign:
         if (TheGameMode->InMode("qp_coop"))
-            return (UIFlowType)4;
+            return kUIFlowType_QpCoopCampaign;
         return kUIFlowType_Main;
     case (NetUIState)22:
-        return (UIFlowType)6;
+        return kUIFlowType_Unk6;
     default:
         return kUIFlowType_None;
     }

@@ -23,7 +23,12 @@ enum UIFlowType {
     kUIFlowType_None,
     kUIFlowType_Main,
     kUIFlowType_MusicLibrary,
-    kUIFlowType_InGame
+    kUIFlowType_InGame,
+    // Raw values returned by BandUI::GetCurrentFlowType for qp_coop campaign
+    // and NetUIState 22; declared so 4/6 are inside the enum's valid value
+    // range (loading them is otherwise UB — UBSan flags it on wasm).
+    kUIFlowType_QpCoopCampaign = 4,
+    kUIFlowType_Unk6 = 6
 };
 
 class BandUI : public UIManager, public MsgSource {

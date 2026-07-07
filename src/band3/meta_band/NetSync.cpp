@@ -228,7 +228,14 @@ void NetSync::SyncScreen(UIScreen *s, int i2) {
             MILO_ASSERT(!IsBlockingTransition(), 0x11C);
 #endif
             NetSyncScreenMsg msg(s, i2);
+#ifdef HX_NATIVE
+            // TheSyncStore is a weak null stub natively (network layer
+            // excluded); a null member call is UB wasm -O2 can miscompile.
+            if (TheSyncStore)
+                TheSyncStore->Poll();
+#else
             TheSyncStore->Poll();
+#endif
             mUILockStep->StartLock(msg);
         }
     }
@@ -261,7 +268,12 @@ void NetSync::SendStartTransitionMsg(StartTransitionMsg &msg) {
         if (TheUI.InTransition() && IsEnabled() && u) {
             if (TheNetSession->HasUser(u) && u->IsLocal()) {
                 MILO_ASSERT(!IsBlockingTransition(), 0x145);
+#ifdef HX_NATIVE
+                if (TheSyncStore) // weak null stub natively (see SyncScreen)
+                    TheSyncStore->Poll();
+#else
                 TheSyncStore->Poll();
+#endif
                 mUILockStep->StartLock(msg);
             }
         }

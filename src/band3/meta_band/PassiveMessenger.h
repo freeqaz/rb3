@@ -10,7 +10,16 @@
 #include "utl/Symbol.h"
 #include <list>
 
+// Values from the HandlePassiveMessage switch (setup_message_* handlers).
+// An empty enum's valid value range is 0..1, so loading/storing types 2-4
+// through it is UB — clang -O2 (wasm) folds those switch cases to
+// `unreachable`, which killed the tab when award toasts fired at song end.
 enum PassiveMessageType {
+    kPassiveMessageText = 0,
+    kPassiveMessageIcon = 1,
+    kPassiveMessageCareerStep = 2,
+    kPassiveMessageCareerGoal = 3,
+    kPassiveMessageCareerMulti = 4
 };
 
 class PassiveMessage {

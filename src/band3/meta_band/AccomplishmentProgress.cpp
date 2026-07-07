@@ -456,8 +456,18 @@ void AccomplishmentProgress::UpdateScoreTypeSpecificStats(
     if (accuracy > mBestAccuracy[type][diff]) {
         mBestAccuracy[type][diff] = accuracy;
     }
+#ifdef HX_NATIVE
+    // Songs with zero HOPO gems make this 0/0 -> NaN, and casting NaN to int
+    // is UB (poison on wasm -O2; the kick-percent sites above guard the same
+    // way). The original leaves it unguarded — benign on PPC (fctiwz -> INT_MIN).
+    int hoposPercent = 0;
+    if (stats.mHopoGemCount != 0)
+        hoposPercent =
+            (int)(100.0f * ((float)stats.mHopoGemsHopoed / (float)stats.mHopoGemCount));
+#else
     int hoposPercent =
         (int)(100.0f * ((float)stats.mHopoGemsHopoed / (float)stats.mHopoGemCount));
+#endif
     if (hoposPercent > mBestHoposPercent[type][diff]) {
         mBestHoposPercent[type][diff] = hoposPercent;
     }
