@@ -1,0 +1,45 @@
+mesh                            nb reb | Tier1 worst(deg)          Tier1xcheck(deg)        | Tier2 worst(u)            Tier2 exactJoint(u)
+fingernails_resource.mesh       10   1 | min=168.80 med=174.50 max=176.90 n=834 min=168.70 med=174.40 max=176.70 n=834 | min=0.00 med=0.00 max=0.00 n=834 min=0.00 med=0.00 max=0.00 n=834
+gloves_resource.1.mesh           4   1 | min=60.20 med=60.20 max=60.20 n=801 min=60.20 med=60.20 max=60.20 n=801 | min=7.34 med=40.62 max=43.20 n=801 min=0.16 med=0.16 max=0.37 n=801
+gloves_resource.mesh            40   1 | min=68.80 med=68.80 max=68.80 n=801 min=68.80 med=68.80 max=68.80 n=801 | min=41.23 med=98.66 max=117.55 n=801 min=0.40 med=6.18 max=6.43 n=801
+gloves_skin.2.mesh               9   1 | min=38.90 med=38.90 max=38.90 n=801 min=38.90 med=38.90 max=38.90 n=801 | min=15.79 med=15.80 max=15.80 n=801 min=6.73 med=6.73 max=6.73 n=801
+greaserjacket_resource.1.mesh    4   1 | min=0.60 med=0.60 max=0.60 n=705 min=0.60 med=0.60 max=0.60 n=705 | min=0.18 med=9.32 max=17.98 n=705 min=0.07 med=0.07 max=0.18 n=705
+greaserjacket_resource.mesh     29   1 | min=27.30 med=27.30 max=27.30 n=705 min=27.30 med=27.30 max=27.30 n=705 | min=18.52 med=37.38 max=89.70 n=705 min=0.00 med=0.30 max=0.33 n=705
+hands_naked.mesh                38   1 | min=42.60 med=87.30 max=87.30 n=2214 min=42.60 med=87.30 max=87.30 n=2214 | min=11.02 med=43.70 max=110.54 n=2214 min=0.00 med=0.00 max=0.33 n=2214
+
+=== A7 co-variation: Tier2 worst vs wext ===
+fingernails_resource.mesh      wext[9.6..64.6] Δ=55.0  corr(wext,Tier2)=+nan  corr(wext,exact)=+nan
+gloves_resource.1.mesh         wext[2.7..20.2] Δ=17.5  corr(wext,Tier2)=+0.99  corr(wext,exact)=-0.98
+gloves_resource.mesh           wext[31.9..79.3] Δ=47.4  corr(wext,Tier2)=+0.27  corr(wext,exact)=+0.27
+gloves_skin.2.mesh             wext[7.3..47.7] Δ=40.4  corr(wext,Tier2)=+nan  corr(wext,exact)=+nan
+greaserjacket_resource.1.mesh  wext[12.2..13.7] Δ=1.5  corr(wext,Tier2)=-0.89  corr(wext,exact)=+0.40
+greaserjacket_resource.mesh    wext[41.4..54.0] Δ=12.6  corr(wext,Tier2)=+0.37  corr(wext,exact)=-0.17
+hands_naked.mesh               wext[35.2..105.8] Δ=70.6  corr(wext,Tier2)=+0.03  corr(wext,exact)=+0.34
+
+=== hands_naked.mesh co-sample (every ~8th block) ===
+  frame    wext  t2worst  t2exact  t1worst t1cnt
+      3   105.8    57.23     0.00     87.3    34
+    340    99.7    76.06     0.33     87.3    34
+    758    68.2    81.01     0.00     87.3    34
+   1219    75.8    95.00     0.00     87.3    34
+   1564    61.7    32.47     0.00     42.6    36
+   1871    64.1    55.20     0.14     87.3    34
+   2207    51.2    45.48     0.00     87.3    34
+   2517    75.1    37.54     0.33     87.3    34
+   2851    76.9    33.01     0.00     87.3    34
+   3228    77.6    33.85     0.33     87.3    34
+   3586    71.8    29.91     0.00     42.6    36
+   3895    78.1    35.39     0.33     87.3    34
+   4438    68.3    24.14     0.00     42.6    36
+   4805    68.9    80.87     0.00     42.6    36
+   5155    67.8    50.34     0.00     87.3    34
+   5643    82.0    33.20     0.33     87.3    34
+   6047    48.3    36.86     0.00     42.6    36
+   6577    77.5    80.07     0.00     87.3    34
+   6888    64.6    48.99     0.00     87.3    34
+   7190    63.7   109.35     0.00     42.6    36
+   7671    83.2    44.54     0.00     87.3    34
+   8060    71.8    43.68     0.00     87.3    34
+   8415    63.2    62.80     0.14     87.3    34
+   8770    78.4    43.68     0.00     87.3    34
+   9168    59.1    28.49     0.00     42.6    36

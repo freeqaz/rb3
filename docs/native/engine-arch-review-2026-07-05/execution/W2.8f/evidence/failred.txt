@@ -1,0 +1,3 @@
+=== fail-red ===
+baseline hands_naked exactJoint max: 0.33u
+perturb bone 0 exactJoint max: 5.53u (17x) -> Tier-2 CAN read RED
