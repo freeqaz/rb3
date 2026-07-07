@@ -1,0 +1,166 @@
+{
+  "tag": "m2verify",
+  "bin": "native/build-agent-R4/rb3-native",
+  "k": 300,
+  "boot_window": 120,
+  "target_ms": 6000.0,
+  "jitter_us": 200,
+  "arms": {
+    "OFF": {
+      "arm": "OFF",
+      "env": {
+        "RB3_LOADDET_JITTER": "200"
+      },
+      "n": 4,
+      "ok": 4,
+      "postAnchorDeltas": [
+        32902,
+        37227,
+        32358,
+        32838
+      ],
+      "distinctDeltas": [
+        32358,
+        32838,
+        32902,
+        37227
+      ],
+      "deltaSpread": 4869,
+      "absTargets": [
+        134388,
+        137949,
+        133068,
+        133845
+      ],
+      "absSpread": 4881,
+      "reseedFiredAll": false,
+      "boots": [
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2876,
+          "targetFrame": 3176,
+          "gAnchor": 101486,
+          "gTarget": 134388,
+          "postAnchorDelta": 32902,
+          "absTarget": 134388,
+          "reseedFired": false,
+          "maxFrame": 5563
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2733,
+          "targetFrame": 3033,
+          "gAnchor": 100722,
+          "gTarget": 137949,
+          "postAnchorDelta": 37227,
+          "absTarget": 137949,
+          "reseedFired": false,
+          "maxFrame": 5107
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2693,
+          "targetFrame": 2993,
+          "gAnchor": 100710,
+          "gTarget": 133068,
+          "postAnchorDelta": 32358,
+          "absTarget": 133068,
+          "reseedFired": false,
+          "maxFrame": 5093
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2804,
+          "targetFrame": 3104,
+          "gAnchor": 101007,
+          "gTarget": 133845,
+          "postAnchorDelta": 32838,
+          "absTarget": 133845,
+          "reseedFired": false,
+          "maxFrame": 5419
+        }
+      ]
+    },
+    "ON": {
+      "arm": "ON",
+      "env": {
+        "RB3_LOADDET_JITTER": "200",
+        "RB3_LOAD_DETERMINISM": "1"
+      },
+      "n": 4,
+      "ok": 4,
+      "postAnchorDeltas": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "distinctDeltas": [
+        0
+      ],
+      "deltaSpread": 0,
+      "absTargets": [
+        1966,
+        1968,
+        1965,
+        1967
+      ],
+      "absSpread": 3,
+      "reseedFiredAll": true,
+      "boots": [
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2636,
+          "targetFrame": 2936,
+          "gAnchor": 1966,
+          "gTarget": 1966,
+          "postAnchorDelta": 0,
+          "absTarget": 1966,
+          "reseedFired": true,
+          "maxFrame": 5120
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2708,
+          "targetFrame": 3008,
+          "gAnchor": 1968,
+          "gTarget": 1968,
+          "postAnchorDelta": 0,
+          "absTarget": 1968,
+          "reseedFired": true,
+          "maxFrame": 5163
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2590,
+          "targetFrame": 2890,
+          "gAnchor": 1965,
+          "gTarget": 1965,
+          "postAnchorDelta": 0,
+          "absTarget": 1965,
+          "reseedFired": true,
+          "maxFrame": 5164
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2688,
+          "targetFrame": 2988,
+          "gAnchor": 1967,
+          "gTarget": 1967,
+          "postAnchorDelta": 0,
+          "absTarget": 1967,
+          "reseedFired": true,
+          "maxFrame": 5202
+        }
+      ]
+    }
+  }
+}

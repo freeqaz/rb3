@@ -46,6 +46,38 @@ unsigned long RB3GRandDrawCount();
 // `reason` is a short tag logged once for provenance. Inert (no reseed, no log)
 // unless BOTH gates are on; flag-OFF is byte-identical.
 void RB3ReseedGRandAtAnchor(const char *reason);
+
+// R4 (Wave 17, Lane L): per-consumer isolated Rand streams. Returns the stream
+// for `tag` when the load-determinism seam is active
+// (RB3FixedClockActive() && RB3LoadDeterminism()), else nullptr. Streams are
+// lazily created, seeded 0x5EED ^ fnv1a(tag), and reset by
+// RB3ReseedGRandAtAnchor so post-anchor per-consumer state is boot-invariant.
+// Main-thread only (same MainThread() contract as RandomInt). M1 attribution
+// (evidence/M1-divergent-consumers.md) named the variable-count gRand consumers
+// whose per-frame draw COUNT diverges run-to-run under fixed clock; routing each
+// onto its own stream removes it from the shared gRand count, so the global
+// per-frame gRand draw count becomes a sum of fixed-count consumers -> the
+// post-anchor gRand stream position (the PRIMARY gate metric) is boot-invariant
+// by construction. Default boots (either flag off) get nullptr -> the normal
+// RandomInt/RandomFloat path, byte-identical.
+Rand *RB3LoadDetStream(const char *tag);
+
+// Scoped redirect: for the dynamic extent of this guard, the shared-stream
+// RandomInt/RandomFloat free functions draw from the per-tag isolated stream
+// instead of gRand (seam-ON only; when the seam is off RB3LoadDetStream returns
+// nullptr and the guard is inert — no redirect, byte-identical). Declared at the
+// top of a measured variable-count gRand consumer (M1: RndParticleSys::InitParticle
+// / CreateParticles, CamShot::Shake, CharEyes::NextLook, RandomGroupSeq::PickNextIndex)
+// so ALL of that consumer's draws — across every caller, and any particle helper
+// it calls — leave the shared gRand count with a single line. That makes the
+// global per-frame gRand count a sum of fixed-count consumers -> the post-anchor
+// gRand stream position (PRIMARY gate) is boot-invariant. Nesting is safe: the
+// inner guard restores the outer stream on scope exit. Main-thread only.
+struct RB3LoadDetRedirect {
+    Rand *mPrev;
+    RB3LoadDetRedirect(const char *tag);
+    ~RB3LoadDetRedirect();
+};
 #endif
 
 #endif

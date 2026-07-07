@@ -212,6 +212,11 @@ int RandomGroupSeq::NextIndex() {
 }
 
 void RandomGroupSeq::PickNextIndex() {
+#ifdef HX_NATIVE
+    // R4 (Wave 17): random-sequence index picks onto the isolated "randgroupseq"
+    // stream (M1 boot-window divergent, spread 6). Inert when the seam is off.
+    RB3LoadDetRedirect _detSeq("randgroupseq");
+#endif
 #ifdef MILO_DEBUG
     MILO_ASSERT(GetNumSimul() == 1 || Children().size() == 1, 0x1C0);
 #else

@@ -520,6 +520,11 @@ inline float EaseInExp(float t) {
 }
 
 void CharEyes::NextLook() {
+#ifdef HX_NATIVE
+    // R4 (Wave 17): eye-look target draws onto the isolated "chareyes" stream
+    // (M1 gate-window divergent, spread 6). Inert when the seam is off.
+    RB3LoadDetRedirect _detEyes("chareyes");
+#endif
     Vector3 oldTarget = mTarget;
 
     RndTransformable *head = GetHead();
