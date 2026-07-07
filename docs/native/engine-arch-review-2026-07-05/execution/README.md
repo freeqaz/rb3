@@ -505,3 +505,39 @@ RB3_UI_POST_GRADE held with documented reasons; C2a closed as asset-difference; 
   `album_art.grp`; move the whole assembly; then flip `RB3_SS_ART_YFIX`.
 - Carried: song-select sidebar backing quad (authored polish, optional), bar-bleed text polarity
   (song_select/partdiff residual), loader sufficient-fix, WHITE real-lever, 4→8 lights, W2.4.
+
+## Wave 14 results (2026-07-07, run `wf_bf82df0b-570`, 4 agents)
+
+**TWO FLIPS SHIPPED (menu grade-exempt UI + album-art assembly — defaults now NINE) and the hands
+reskin was implemented, measured, and honestly REFUTED by its own pre-registered gate — closing
+the vert/offset-bake class entirely and reframing the defect one final level: ANIMATION-BASIS.**
+Engine → `fdf0ad9` (regen 357 clean).
+
+| Item | Status | Highlights |
+|---|---|---|
+| RESKIN R1 | ✅ FEASIBLE (with 2 premise fixes) | Verified from MeshDeform.cpp:337-357: the weighted ALL-bones blend matches the GPU palette's LBS model (dodges Seam-B's single-bone wall). KEY: do NOT route through RndMeshDeform::Reskin — ExportWorldXfm returns live pose only for `exo_`-prefixed bones; compute own->WorldXfm directly. A4 answered: **female hands carry FEMALE-AUTHORED offsets** (distinct mOffset on the same shared boundPtr; male 1876v/38b vs female 1256v/40b) → per-mesh source, no cross-gender derivation. Pivotal de-risk: hands meshes are DISTINCT+self-owned per member → in-place mutation, zero cloning/memory. |
+| RESKIN R2 | ❌ **REFUTED by own gate (do NOT flip `RB3_HANDS_RESKIN`)** | Implemented exactly per recipe (fires correctly both genders, gender-distinct A8-i PASS, zero engine TUs) — but wext REGRESSES: flag-OFF mean 74.8u → flag-ON 87.7u → flag-ON+no-rebake 136u. **Root cause reframed: the shard is an ANIMATION-BASIS problem (own_rest vs own_live rotation, R·sinθ) — with the default rebake, skinPos(t)=v'·meshWorld·inv(own_rest)·own_live(t), so the live-vs-rest delta is IDENTICAL flag-ON/OFF by construction; a one-time vertex re-pose only moves verts to larger radius and AMPLIFIES the smear.** Same dead-end class as APPENDAGE_REST_ROT/ASSET_REBAKE. Vert/offset-bake class now CLOSED with 7 measured artifacts. The genuine fix is asset/skeleton-side: make own_live's basis track the verts' authored bind (skeleton bind correction), out of scope for any bake. Kept in-tree default-OFF with REFUTED headers. |
+| UIGRADE U-CLEAN | ✅ **READY_FOR_FLIP → FLIPPED default-ON** | Root cause corrected AGAIN: the red band was NOT the ClearDepthForOverlay else-branch — the minimal flush-only shim still showed it. It is FlushPostProcMidFrame's OWN depth-clear-on-resume revealing a z-occluded SETLISTS selection quad. Fix = menuBoundary-gated depth **LoadOp::Load** on the menu flush re-open (venue depth preserved → occluded UI stays occluded); gameplay keeps LoadOp::Clear byte-identical. ALL gates: hub 2.204 ≥2.0, song_select 1.125 in band + red band GONE (0% red both arms), partdiff in band, chroma OK, gameplay flush counts equal, 792 PASS, DC3 structural. **Coordinator E1 PASS → `RB3_UI_POST_GRADE` default-ON (opt-out `_OFF`), engine flip.** |
+| W4.3-C2b-ASM | ✅ **FIXED → FLIPPED default-ON** | The revealed grey bezel = `album_frame01.mesh` — a group DRAW-member of album_art.grp but NOT its trans-child (TransParent chain: header_goals.grp←header.grp←all.grp; refutes the C2b4 claim it moved). Whole-assembly move: group (x,z)+=(45,−120) + frame (x,y)+=(41.2,107.17) in each node's own coordinate frame; the X component kills the E1 left-column parallax overlap. **Coordinator E1 PASS (art below header, aligned with bezel, no overlaps, retail-matching) → `RB3_SS_ART_YFIX` default-ON (opt-out `_OFF`).** Follow-up filed: "(null)" gamertag stub text revealed at header top-right (profile subsystem). |
+
+**Coordinator actions:** TWO flips (RB3_UI_POST_GRADE engine + RB3_SS_ART_YFIX rb3) after eyes-on
+E1 both arms; RB3_HANDS_RESKIN documented REFUTED default-OFF; regen (`fdf0ad9`, 357 clean); 792 +
+lineup PASS on flipped defaults; pin `3b5af48` → `fdf0ad9`. **Defaults now NINE: placement, black
+head, hands rest-capture, text floor, hub quad, chroma-preserve, hub ticker, UI post-grade,
+album-art assembly.**
+
+### Wave 15 menu
+
+- **HANDS-ADJUDICATION (Fable, synthesis-only):** seven measured dead artifacts + three premise
+  inversions demand a full-saga adjudication BEFORE any 8th attempt: read every hands STATUS
+  (W2.2→RESKIN), reconcile the animation-basis reframe (own_rest vs own_live vs authored bind),
+  and either derive the correct fix with a proof-level argument (candidate: correct the per-member
+  skeleton bind so own_live's basis tracks the verts' authored bind — what asset/load change does
+  that concretely mean?) or declare the option set closed with residual mitigations
+  (RB3_NO_SKIN_CLAMP stays).
+- **Bar-bleed text polarity:** song_select highlighted row + partdiff GUITAR are grade-inert —
+  their focused-text residual (white-on-yellow vs retail black-on-white) is the bar compositing
+  through AA text, a different mechanism than UIGRADE fixed on the hub.
+- **"(null)" gamertag stub** (revealed by the art fix; profile subsystem text).
+- Carried: sidebar backing quad (authored polish), loader sufficient-fix, WHITE real-lever,
+  4→8 lights (DC3 gates), W2.4 BandPatchMesh.

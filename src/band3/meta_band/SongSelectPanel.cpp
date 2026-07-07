@@ -149,8 +149,10 @@ void SongSelectPanel::FinishLoad() {
     // sleeps -- wall-clock settling gave a NON-monotonic false trend here
     // because the entrance-animation progress at a fixed sleep duration
     // jitters run-to-run; frame-count settling fixed that). getenv-gated,
-    // default-OFF pending coordinator sign-off (RB3_SS_ART_YFIX=1 to enable).
-    if (getenv("RB3_SS_ART_YFIX")) {
+    // Default-ON since the Wave-14 coordinator E1 flip (art below the header,
+    // aligned with its bezel, retail-matching); opt-out RB3_SS_ART_YFIX_OFF.
+    static const bool sArtYFix = !getenv("RB3_SS_ART_YFIX_OFF");
+    if (sArtYFix) {
         if (RndTransformable *g = mDir->Find<RndTransformable>("album_art.grp", false)) {
             Transform &t = g->DirtyLocalXfm();
             t.v.x += 45.0f;
