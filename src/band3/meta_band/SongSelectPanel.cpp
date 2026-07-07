@@ -20,6 +20,9 @@
 #include "utl/Symbols3.h"
 #ifdef HX_NATIVE
 #include "rndobj/Group.h"
+#include "utl/Std.h" // FOREACH
+#include <cstdio>
+#include <cstdlib> // getenv (RB3_SS_GRPLOG, C2a census)
 #endif
 
 SongSelectPanel::SongSelectPanel()
@@ -66,11 +69,54 @@ void SongSelectPanel::FinishLoad() {
 }
 
 #ifdef HX_NATIVE
+static void C2LogGroup(ObjectDir *dir, const char *grpName) {
+    RndGroup *g = dir->Find<RndGroup>(grpName, false);
+    if (!g) {
+        fprintf(stderr, "[C2GRP] %s = <not found>\n", grpName);
+        return;
+    }
+    fprintf(stderr, "[C2GRP] %s showing=%d members:\n", grpName, (int)g->Showing());
+    FOREACH (it, g->mObjects) {
+        Hmx::Object *o = *it;
+        fprintf(
+            stderr, "[C2GRP]   - %s (%s)\n", o ? o->Name() : "<null>",
+            o ? o->ClassName().Str() : "?"
+        );
+    }
+}
+
 void SongSelectPanel::SetMiniLeaderboardGroupShowing(bool showing) {
     if (RndGroup *lb = mDir->Find<RndGroup>("live_lb.grp", false))
         lb->SetShowing(showing);
     if (RndGroup *diffs = mDir->Find<RndGroup>("live_diffs.grp", false))
         diffs->SetShowing(!showing);
+    if (getenv("RB3_SS_GRPLOG")) {
+        // C2a census: where do difficulty_bg*/raitings_bg background meshes live,
+        // and which of live_lb.grp / live_diffs.grp is shown?
+        C2LogGroup(mDir, "live_lb.grp");
+        C2LogGroup(mDir, "live_diffs.grp");
+        static const char *bgNames[] = {
+            "difficulty_bg.mesh",   "raitings_bg.mesh",     "rating.grp",
+            "details_background.mat", "details_songscores_bg.mesh",
+            "difficulty_bg01.mesh", "all.grp",              "song_info.grp",
+            "perf_song_only.grp",   "performance.grp",      nullptr
+        };
+        for (int i = 0; bgNames[i]; i++) {
+            RndDrawable *d = mDir->Find<RndDrawable>(bgNames[i], false);
+            if (d)
+                fprintf(
+                    stderr, "[C2BG] %-28s FOUND showing=%d\n", bgNames[i],
+                    (int)d->Showing()
+                );
+            else {
+                Hmx::Object *o = mDir->Find<Hmx::Object>(bgNames[i], false);
+                fprintf(
+                    stderr, "[C2BG] %-28s %s\n", bgNames[i],
+                    o ? "FOUND (non-drawable)" : "<not found>"
+                );
+            }
+        }
+    }
 }
 #endif
 

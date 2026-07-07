@@ -28,6 +28,10 @@
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
+#ifdef HX_NATIVE
+#include <cstdio>  // RB3_RANKTIER_LOG probe (C2c)
+#include <cstdlib> // getenv
+#endif
 #include "utl/Messages2.h"
 #include "utl/Symbols4.h"
 
@@ -380,6 +384,29 @@ const char *BandSongMgr::SongPath(Symbol s) const {
 int BandSongMgr::RankTier(float f, Symbol s) const {
     std::list<SongRanking>::const_iterator r =
         std::find(mSongRankings.begin(), mSongRankings.end(), s);
+#ifdef HX_NATIVE
+    if (getenv("RB3_RANKTIER_LOG")) {
+        int probeTier;
+        bool found = (r != mSongRankings.end());
+        int ntiers = found ? (int)r->mTierRanges.size() : -1;
+        if (!found) {
+            probeTier = -999; // std::find missed -> end() deref (probe i)
+        } else if (ntiers == 0) {
+            probeTier = -1; // empty mTierRanges -> RankTier returns i-1 == -1 (probe ii)
+        } else {
+            int pi = 0;
+            for (; pi < ntiers; pi++)
+                if (f <= r->mTierRanges[pi].second)
+                    break;
+            probeTier = (pi < ntiers) ? pi : pi - 1;
+        }
+        fprintf(
+            stderr,
+            "[RANKTIER] inst=%s rank=%.3f found=%d ntiers=%d tier=%d\n",
+            s.Str(), f, (int)found, ntiers, probeTier
+        );
+    }
+#endif
     MILO_ASSERT(r != mSongRankings.end(), 0x278);
     int i = 0;
     for (; i < r->mTierRanges.size(); i++) {
