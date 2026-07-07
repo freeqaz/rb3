@@ -160,3 +160,42 @@ shared shader; my only engine reads were analysis. The fix is delivered as a sta
   natural hot boot).
 - Artifacts: `white_discriminate.py`, `analyze_disc.py`, `measure/disc1.json`,
   `measure/disc2.json`, `montage_discriminator.png`, raws under `/tmp/whitefix-caps/`.
+
+---
+
+# WHITE-fix — Stage B.S2 STATUS (Wave 9: FINALIZE staged patch, Opus) — NO-CODE
+
+Checkpoint id `B-S2`. Lane B. Verdict from S1 (**SCENE-SIDE**) upheld; staged patch
+**finalized** for Wave-10 land by Lane A. **Honest no-code outcome** — nothing applied this
+wave (A5: `Rnd_Wgpu_RB3.cpp` is Lane A's single-writer TU; the shader/uniform edits are
+DC3-shared and coordinator-sequenced). My composite-side fence has nothing to change.
+
+## What S2 did
+1. **Re-verified every patch anchor** against the CURRENT engine working tree (HEAD `30d4f00`,
+   advanced from S1's `a320f9d` by a concurrent FxSendNative audio edit). All 8 hunk anchors
+   still resolve exactly — the patch did not rot. Table in `staged-patch-scene-side.md` §
+   "S2 FINALIZATION".
+2. **Verified the field-offset alignment** (the one thing that could silently corrupt the
+   uniform buffer): C++ `_padPL[0]` ↔ WGSL `_padPL2`; the patch renames both to
+   `venueHighlightLumaMode` at the same offset, `_padPL[1]`/`_padPL3` stay pad. Size 656
+   unchanged, `static_assert` unaffected. Pure pad-rename, no layout risk.
+3. **Verified the shader math**: `compressHighlightsLuma` runs on linear `finalColor`
+   (pre-sRGB at :886); Rec.709 luma weights correct for linear RGB; below-knee identity;
+   gate threshold `> 0.5` robust vs the 0.0f/1.0f upload writes. `softClipLighting` confirmed
+   per-channel (mechanism doc accurate).
+4. **Isolated the single coordinator decision**: the fix is intrinsically in DC3-shared
+   `standard_wgsl.inc` + `UniformStructs.h` (no RB3-only fragment path; per-pixel tonemap
+   can't move to CPU). Mitigation is behavioral zero-blast (gate defaults 0 → per-channel
+   `else` for DC3). Coordinator accepts behavioral-zero-blast (recommended, matches how the
+   sibling `pointFalloffMode` venue gate already ships shared) or re-homes (not recommended).
+
+## Gates
+- No behavior changed this wave → flag-OFF byte-identical / drawlog 792 / lineup / DC3
+  zero-blast are all trivially satisfied (no code touched). They become Wave-10's land gates,
+  restated in the patch's "Wave-10 land order".
+- Fence honored: no edits to `Rnd_Wgpu_RB3.cpp` or any shared shader; engine reads
+  analysis-only.
+
+## Deliverable
+`staged-patch-scene-side.md` (finalized, 3-file hunks + verified anchors + Wave-10 land order
++ coordinator decision). Ready for Lane A to land in Wave 10.

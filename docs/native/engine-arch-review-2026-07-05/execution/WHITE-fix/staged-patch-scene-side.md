@@ -169,3 +169,73 @@ field is 0 even on the venue path → **byte-identical** (drawlog 792).
 - **Blunt venue exposure cut in `Rnd_Wgpu_RB3.cpp` only** (lower `sVenueDirExposure` /
   `sVenuePointExposure`): dims the WHOLE venue to fix a localized blowout and regresses the
   A2/A3/A4 glow-campaign lighting tuning. NOT recommended.
+
+---
+
+## S2 FINALIZATION (Lane B, Wave 9 stage B.S2) — anchors re-verified, HONEST NO-CODE
+
+**Outcome: no-code this wave.** S1's verdict (SCENE-SIDE) is upheld and the staged patch is
+**finalized** for Wave-10 land by Lane A. I did not apply it: per WAVE9_REVIEW A5,
+`Rnd_Wgpu_RB3.cpp` is Lane A's single-writer TU this wave, and the shader/uniform edits are
+DC3-shared — this is a coordinator-sequenced land, not a Lane-B edit. My composite-side fence
+(RB3PostProc.* / rb3_postproc.wgsl.inc) has nothing to change: a composite grade on an
+already-chroma-0 white pixel cannot restore color (REFUTED in S1, re-affirmed below).
+
+### Anchors re-verified against the CURRENT engine working tree (HEAD `30d4f00`)
+
+The patch did **not** rot when the pin advanced (`a320f9d`→`30d4f00`, concurrent FxSendNative
+audio edit). Every hunk anchor still resolves:
+
+| Patch hunk | File | Anchor (current tree) | Status |
+|---|---|---|---|
+| pad repurpose | `UniformStructs.h:41` | `float _padPL[2];` after `pointFalloffMode` (:38) | EXACT |
+| size guard | `UniformStructs.h:56` | `static_assert(sizeof(SceneUniforms) == 656 ...)` | HOLDS (rename only) |
+| WGSL mirror | `standard_wgsl.inc:80-82` | `pointFalloffMode: f32,` / `_padPL2: f32,` / `_padPL3: f32,` | EXACT |
+| new fn site | `standard_wgsl.inc:621` | `fn compressHighlights(color: vec3f)` | EXACT |
+| gate call | `standard_wgsl.inc:878` | `finalColor = compressHighlights(finalColor);` | EXACT |
+| optional follow-on | `standard_wgsl.inc:613` | `fn softClipLighting(...)` — per-channel (vec3f knee/span) confirmed | EXACT (doc said :609, drift +4) |
+| accessor site | `Rnd_Wgpu_RB3.cpp:~1168` | next to `sVenueDirExposure()` (:1168) / `sVenuePointFalloffGx()` (:1185) | EXACT |
+| gate assignment | `Rnd_Wgpu_RB3.cpp:1460` | `s.pointFalloffMode = sVenuePointFalloffGx() ? 1.0f : 0.0f;` (ENGAGED venue branch) | EXACT |
+
+### Field-offset alignment — VERIFIED CORRECT (the load-bearing correctness detail)
+
+C++ member order `... numPointLights, pointFalloffMode, _padPL[2], lightViewProj ...` maps
+1:1 to WGSL `... numPointLights, pointFalloffMode, _padPL2, _padPL3, lightViewProj ...`, so
+C++ `_padPL[0]` ↔ WGSL `_padPL2`. The patch renames **both** of those to
+`venueHighlightLumaMode` (C++ `_padPL[0]` slot; WGSL `_padPL2`), keeping them at the same
+byte offset, and leaves `_padPL[1]`/`_padPL3` as the trailing pad. **Size unchanged (656),
+offset preserved, `static_assert` unaffected.** This is a pure pad-rename — no layout risk.
+
+### Shader-math sanity — VERIFIED
+
+`compressHighlightsLuma` operates on `finalColor` at :878, which is in **linear** space
+(sRGB encode is at :886, after). Rec.709 luma weights (0.2126, 0.7152, 0.0722) are the
+correct luminance basis for linear RGB. Below-knee identity (`luma <= knee → return color`)
+means correctly-exposed venue frames are bit-unchanged; only over-knee pixels get the
+uniform RGB scale that preserves hue/sat. Threshold `venueHighlightLumaMode > 0.5` is robust
+against the exact 0.0f/1.0f the upload writes.
+
+### The ONE coordinator decision this land requires (flagged, not hidden)
+
+The fix is intrinsically in the **DC3-shared** `standard_wgsl.inc` + `UniformStructs.h`. There
+is no RB3-only variant of the standard fragment path, and per-pixel highlight tonemapping
+cannot be moved to the CPU-side uniform upload — so a scene-side WHITE fix **cannot** avoid
+touching the shared shader. Mitigation is behavioral, not textual: the gate field defaults to
+0 for DC3 / menus / game.cam (value-initialized `SceneUniforms`), selecting the unchanged
+per-channel `else` branch → **behaviorally byte-identical for DC3, non-empty file diff**.
+Coordinator must either (a) accept behavioral-zero-blast on these two shared files, or
+(b) re-home the shader into an RB3-specific include (larger, not recommended — forks the
+standard fragment path). Recommendation: **(a)**, consistent with how `pointFalloffMode` (an
+identical venue-only gate on the same struct) already ships in the shared files.
+
+### Wave-10 land order (unchanged from S1, restated)
+1. Land `compressHighlights`→luma gate first (dominant term); re-measure on the S1 flood
+   reproducer + a re-captured natural hot boot.
+2. Add the optional `softClipLighting` luma variant only if a WHITE residual persists.
+3. Gates: paired continuous `wash_score` delta ON-vs-OFF on the flood (`RB3_VENUE_LIGHT_OFF=1`)
+   — expect `mid_sat`↑, `hi_frac`↓, colored where OFF is white; **fail-red** = disable flag →
+   WHITE reproduces; flag-OFF `drawlog-golden.py`→792; `lineup-gate.py` PASS; DC3 behavioral
+   zero-blast (per above); `milo-engine-tests` green (compiles `UniformStructs.h`, size guarded).
+
+Fence honored: no edits to `Rnd_Wgpu_RB3.cpp` or any shared shader; engine reads were
+analysis-only. Deliverable is this finalized patch spec.
