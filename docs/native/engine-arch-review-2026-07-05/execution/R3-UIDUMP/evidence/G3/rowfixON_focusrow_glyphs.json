@@ -1,0 +1,38 @@
+[
+  {
+    "i": 211,
+    "mat": "Pentatonic_Hub(5_00)4x.mat",
+    "rectKind": 0,
+    "rect": [
+      91.5,
+      328.9,
+      268.9,
+      26.6
+    ],
+    "boundColor": [
+      0.06,
+      0.05,
+      0.02,
+      0.5
+    ],
+    "owner": ""
+  },
+  {
+    "i": 212,
+    "mat": "Pentatonic_Regular_(5_00)4x_fadeout.mat",
+    "rectKind": 0,
+    "rect": [
+      91.5,
+      324.3,
+      165.5,
+      31.2
+    ],
+    "boundColor": [
+      0.06,
+      0.05,
+      0.02,
+      0.7
+    ],
+    "owner": ""
+  }
+]

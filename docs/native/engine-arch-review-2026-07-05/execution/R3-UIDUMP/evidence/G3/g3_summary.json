@@ -1,0 +1,170 @@
+{
+  "rowfixON": {
+    "labelCount": 3,
+    "splitLabels": 1,
+    "split": [
+      {
+        "name": "gamertag.lbl",
+        "text": "<alt>G</alt> Player 1",
+        "state": "kNormal",
+        "fontMat": "Pentatonic_Hub(5_00)4x.mat",
+        "fontMatColor": [
+          0.1804,
+          0.1804,
+          0.1804,
+          1
+        ],
+        "altFontMat": "instrument_icons.mat",
+        "altFontMatColor": [
+          0.7529,
+          0.7529,
+          0.7529,
+          1
+        ],
+        "mainMax": 0.1804,
+        "altMax": 0.7529,
+        "draws": {
+          "count": 2,
+          "rects": [
+            [
+              890.3,
+              43.4,
+              94.4,
+              27.2
+            ],
+            [
+              854.3,
+              29.3,
+              36.0,
+              36.0
+            ]
+          ],
+          "lastDrawIdx": 228,
+          "passIdx": 1
+        }
+      }
+    ],
+    "focusRowGlyphs": [
+      {
+        "i": 211,
+        "mat": "Pentatonic_Hub(5_00)4x.mat",
+        "rectKind": 0,
+        "rect": [
+          91.5,
+          328.9,
+          268.9,
+          26.6
+        ],
+        "boundColor": [
+          0.06,
+          0.05,
+          0.02,
+          0.5
+        ],
+        "owner": ""
+      },
+      {
+        "i": 212,
+        "mat": "Pentatonic_Regular_(5_00)4x_fadeout.mat",
+        "rectKind": 0,
+        "rect": [
+          91.5,
+          324.3,
+          165.5,
+          31.2
+        ],
+        "boundColor": [
+          0.06,
+          0.05,
+          0.02,
+          0.7
+        ],
+        "owner": ""
+      }
+    ]
+  },
+  "rowfixOFF": {
+    "labelCount": 3,
+    "splitLabels": 1,
+    "split": [
+      {
+        "name": "gamertag.lbl",
+        "text": "<alt>G</alt> Player 1",
+        "state": "kNormal",
+        "fontMat": "Pentatonic_Hub(5_00)4x.mat",
+        "fontMatColor": [
+          0.1804,
+          0.1804,
+          0.1804,
+          1
+        ],
+        "altFontMat": "instrument_icons.mat",
+        "altFontMatColor": [
+          0.7529,
+          0.7529,
+          0.7529,
+          1
+        ],
+        "mainMax": 0.1804,
+        "altMax": 0.7529,
+        "draws": {
+          "count": 2,
+          "rects": [
+            [
+              890.3,
+              43.4,
+              94.4,
+              27.2
+            ],
+            [
+              854.3,
+              29.3,
+              36.0,
+              36.0
+            ]
+          ],
+          "lastDrawIdx": 228,
+          "passIdx": 1
+        }
+      }
+    ],
+    "focusRowGlyphs": [
+      {
+        "i": 211,
+        "mat": "Pentatonic_Hub(5_00)4x.mat",
+        "rectKind": 0,
+        "rect": [
+          91.5,
+          328.9,
+          268.9,
+          26.6
+        ],
+        "boundColor": [
+          0.06,
+          0.05,
+          0.02,
+          0.5
+        ],
+        "owner": ""
+      },
+      {
+        "i": 212,
+        "mat": "Pentatonic_Regular_(5_00)4x_fadeout.mat",
+        "rectKind": 0,
+        "rect": [
+          91.5,
+          324.3,
+          165.5,
+          31.2
+        ],
+        "boundColor": [
+          0.06,
+          0.05,
+          0.02,
+          0.7
+        ],
+        "owner": ""
+      }
+    ]
+  }
+}

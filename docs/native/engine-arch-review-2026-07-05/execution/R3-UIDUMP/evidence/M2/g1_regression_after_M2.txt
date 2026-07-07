@@ -1,0 +1,4 @@
+G1 golden re-run AFTER M2 scope hooks (Text/UILabel/PanelDir DrawShowing):
+drawlog-golden.py --fixed-clock --canonical-order --scene splash_screen
+=> PASS (canonical-order): 792 draws, 265 known-residual divergences within bound.
+Confirms scope hooks are no-op at prov-off; G2/G5 golden no-regression holds.

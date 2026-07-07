@@ -1,0 +1,44 @@
+{
+  "knobON": {
+    "redFracBand": 0.034453125,
+    "redFracSearch": 0.034453125,
+    "bbox": [
+      0,
+      120,
+      1046,
+      300
+    ],
+    "roi": [
+      0,
+      120,
+      1046,
+      300
+    ],
+    "lastWriterDepth": "Clear",
+    "matched": 99,
+    "lastWriterMesh": "bg_shadow02.mesh",
+    "lastWriterMat": "bg_shadow03.mat",
+    "lastWriterPanel": "slot3"
+  },
+  "knobOFF": {
+    "redFracBand": 0.0011588541666666668,
+    "redFracSearch": 0.0011588541666666668,
+    "bbox": [
+      892,
+      120,
+      154,
+      300
+    ],
+    "roi": [
+      0,
+      120,
+      1046,
+      300
+    ],
+    "lastWriterDepth": "Load",
+    "matched": 99,
+    "lastWriterMesh": "bg_shadow02.mesh",
+    "lastWriterMat": "bg_shadow03.mat",
+    "lastWriterPanel": "slot3"
+  }
+}

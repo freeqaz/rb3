@@ -1,0 +1,103 @@
+[
+  {
+    "name": "genre.lbl",
+    "text": "Keep Playing!",
+    "state": "kNormal",
+    "fontMat": "Pentatonic_Regular_(5_00)4x_znormal.mat",
+    "fontMatColor": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "altFontMat": "instrument_icons_small.mat",
+    "altFontMatColor": [
+      0.8235,
+      0.8235,
+      0.8235,
+      1
+    ],
+    "mainMax": 1,
+    "altMax": 0.8235,
+    "draws": {
+      "count": 0,
+      "rects": [],
+      "lastDrawIdx": -1,
+      "passIdx": -1
+    }
+  },
+  {
+    "name": "music_library.lbl",
+    "text": "MUSIC LIBRARY",
+    "state": "kNormal",
+    "fontMat": "Pentatonic_Regular_(9_00)4x.mat",
+    "fontMatColor": [
+      0.7529,
+      0.7529,
+      0.7529,
+      0.5
+    ],
+    "altFontMat": "icons_tour.mat",
+    "altFontMatColor": [
+      0.7529,
+      0.7529,
+      0.7529,
+      1
+    ],
+    "mainMax": 0.7529,
+    "altMax": 0.7529,
+    "draws": {
+      "count": 1,
+      "rects": [
+        [
+          69.9,
+          28.8,
+          461.9,
+          60.2
+        ]
+      ],
+      "lastDrawIdx": 232,
+      "passIdx": 1
+    }
+  },
+  {
+    "name": "gamertag.lbl",
+    "text": "<alt>G</alt> Player 1",
+    "state": "kNormal",
+    "fontMat": "Pentatonic_Hub(5_00)4x.mat",
+    "fontMatColor": [
+      0.1804,
+      0.1804,
+      0.1804,
+      1
+    ],
+    "altFontMat": "instrument_icons.mat",
+    "altFontMatColor": [
+      0.7529,
+      0.7529,
+      0.7529,
+      1
+    ],
+    "mainMax": 0.1804,
+    "altMax": 0.7529,
+    "draws": {
+      "count": 2,
+      "rects": [
+        [
+          890.3,
+          43.4,
+          94.4,
+          27.2
+        ],
+        [
+          854.3,
+          29.3,
+          36.0,
+          36.0
+        ]
+      ],
+      "lastDrawIdx": 228,
+      "passIdx": 1
+    }
+  }
+]
