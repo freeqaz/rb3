@@ -541,3 +541,33 @@ album-art assembly.**
 - **"(null)" gamertag stub** (revealed by the art fix; profile subsystem text).
 - Carried: sidebar backing quad (authored polish), loader sufficient-fix, WHITE real-lever,
   4→8 lights (DC3 gates), W2.4 BandPatchMesh.
+
+## Wave 15 results (2026-07-07, run `wf_06c0e645-e15`, 3 agents)
+
+**The hands saga is ADJUDICATED with a proof-level derivation (one never-measured cell named as
+the fix), the focused-row defect is decomposed into two named gaps (one landed, one blocked on a
+real engine gap), and the "(null)" gamertag is FIXED AND FLIPPED (defaults now TEN).**
+Engine → `84ccb9e` (regen 360 clean).
+
+| Item | Status | Highlights |
+|---|---|---|
+| HANDS-ADJUDICATION | ✅ **(a) proof-level derivation** | A2 discharged (87.3° reproduced from readings.txt incl. bimodality; mixed-sign gaps from the rescued log). Pre-registered arm-W baseline RUN: `bound` is STATIC (same boneWorld every frame); **male authored offsets match bound's basis EXACTLY (Tier-1 xcheck 0.1°, all 38 bones)**; female 28.9° off. **NUMERIC CLOSURE: angle(B·inv(R))=87.2° for both L/R middlefinger03 — the runtime 87.3° IS the authored-bind-vs-SetDeformation-seed rotation; the default rebake anchors to a TRANSIENT pose.** Bonus arm-S gender-split run: male palette Tier-1=3.1°, 0/1038 blocks >5° → **the W2.8g "6th dead cell" death certificate was CONFOUNDED** (the shared-B bake killed female/gloves/nails, not the composition). **Named minimal fix (never measured): keep AUTHORED per-mesh offsets + repoint appendages to `own` (SetBone calcOffset=false, the torso pattern) in RebindHeadHandsAtRest — flag-first, rb3-only → Wave 16.** Gates re-anchored: gender-split everything; **wext>60 declared NOT a hands-shard oracle** (legit two-hand extents reach 104u); fallback ground truth = Dolphin+milo-trace single-bone capture. |
+| W4.4-ROWFIX | ✅ diagnosed / ⚠️ half-landed (flag stays OFF) | **Depth-occlusion prime suspect REFUTED** (both highlight meshes zmode=0 — no depth test; LoadOp variants identical). Real defect = two coupled focus-state gaps: **(A)** the full-row fill quad (`ml_highlight_glasstopp`) is authored as a near-invisible additive sheen (a=0.08); retail's solid bar comes from an un-translated focus anim/trigger (highlight_bar.grp / highlight_yellow.mesh — 0 GPU draws natively). Part-A repaint landed (`RB3_ROWFIX` default-OFF): focused fill p60 94→179 WORKS. **(B)** focused text stays white because **the native RndText glyph shader IGNORES font-material color** (UILabel::Draw sets the dark color at UILabel.cpp:269; luma unchanged 167) — a real engine gap, BLOCKS the flip (bright fill + white text = worse). → Wave-16 engine item. SETLISTS red-band re-checked 0% both arms; RB3PostProc.h:81 stale comment fixed. |
+| W4.5-GAMERTAG | ✅ **FIXED → FLIPPED default-ON** | "(null)" = the weak NULL `PlatformMgr::GetName` stub; strong native override ports `PlatformMgr_Wii.cpp:489-496` verbatim ("Player N" via Localize, graceful token fallback) — ONE provider fixes header + overshell + all consumers. **Coordinator E1 PASS ("Player 1" both places) → default-ON, opt-out `RB3_PLAYER_NAME_FALLBACK_OFF`.** |
+
+**Coordinator actions:** Player-N flip (E1 both arms); `RB3_ROWFIX` correctly held per its own
+lane; APD_DIAG evidence rescued to `SKEL/evidence/` pre-dispatch (review A2); regen (`84ccb9e`,
+360 clean); 792 + lineup PASS; pin `fdf0ad9` → `84ccb9e`. **Defaults now TEN.**
+
+### Wave 16 menu
+
+- **HANDS-FIX (the adjudicated cell):** authored-offsets + repoint-to-own (SetBone
+  calcOffset=false, torso pattern) in RebindHeadHandsAtRest apdMesh scope — flag-first, rb3-only,
+  gates per VERDICT §5 (gender-split Tier-1 count>5°=0, ceiling-hand E1 gone, Tier-2 ≤1u,
+  drawlog-792; wext used descriptively only). If the male visual gate misses: the pre-registered
+  Dolphin+milo-trace single-bone capture.
+- **RndText font-material color (engine):** make the glyph shader honor font-material color
+  (UILabel focus-state darkening) — unblocks `RB3_ROWFIX` Part B → then flip ROWFIX (A+B
+  together) + the same pass for partdiff GUITAR.
+- Carried: sidebar backing quad (polish), loader sufficient-fix, WHITE real-lever, 4→8 lights,
+  W2.4 BandPatchMesh, un-translated list-highlight focus anim (ROWFIX root, asset-side option).

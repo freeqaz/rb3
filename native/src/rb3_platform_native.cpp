@@ -110,16 +110,16 @@ void PlatformMgr::RegionInit() { SetRegion(kRegionNA); }
 // ThePlatformMgr.GetName(pad) — so this one strong definition (it wins over
 // the weak stub) fixes every consumer at once, matching the acceptance's
 // "one provider fixes header + overshell + all consumers".
-// Flag-gated (RB3_PLAYER_NAME_FALLBACK, default-OFF, presence-mode) so
-// flag-OFF stays byte-identical to today's stub (returns nullptr, same as the
-// trampoline). Localize() already degrades gracefully when the token/Locale
+// Default-ON since the Wave-15 coordinator E1 flip ("Player 1" in the header
+// + overshell plate, ports PlatformMgr_Wii.cpp:489-496 verbatim); opt out
+// with RB3_PLAYER_NAME_FALLBACK_OFF (restores the null-stub "(null)" text). Localize() already degrades gracefully when the token/Locale
 // table isn't available (Locale.cpp Localize() falls back to the literal
 // token string "player", not null/empty) — satisfies "localized token if
 // available, literal fallback otherwise" without any extra fallback logic.
 const char *PlatformMgr::GetName(int pad) const {
     static int enabled = -1;
     if (enabled < 0)
-        enabled = ::getenv("RB3_PLAYER_NAME_FALLBACK") ? 1 : 0;
+        enabled = ::getenv("RB3_PLAYER_NAME_FALLBACK_OFF") ? 0 : 1;
     if (!enabled)
         return nullptr;
     return MakeString("%s %d", Localize(player, 0), pad + 1);
