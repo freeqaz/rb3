@@ -439,3 +439,35 @@ visible-smear frames.** No flips (none expected — diagnosis wave). Engine → 
   followups) — instrument first.
 - Carried: WHITE real-lever reframe (per-preset/FX phase fidelity, unblocked once W0.3d-b lands),
   4→8 lights (DC3 gates), W2.4 BandPatchMesh, song_select residuals.
+
+## Wave 12 results (2026-07-07, run `wf_c561d974-479`, 7 agents; C34 stalled → side-agent re-run)
+
+**Two honest measured failures that each NAME the real fix, one major exoneration, and one
+architecture-level UI diagnosis.** No flips. Engine → `44716f4` (regen 353 clean).
+
+| Item | Status | Highlights |
+|---|---|---|
+| W0.3d-b A.S1 | ✅ **H-TIMING REFUTED / H-ORDER named** | All 511 loader completions byte-identical across boots and landed by frame 2, yet gdraw diverges from frame 4 with ZERO completions on diverging frames — completion-frame timing is OUT. Mechanism class = **consumer-ORDER × variable-count rejection samplers** (unsorted `mAnims` walk `Dir.cpp:53` + `Rand::Gaussian` do-while / `CameraShot.cpp:265-267` conditional draws / `Crowd.cpp:1234` Fisher-Yates — order permutation DOES change the count, reconciling A2), order variance sourced from the main↔ThreadCall-worker glibc-arena allocation race (survives setarch -R). `--tol` 150ms lever landed (`653ba4a4`); `RB3_LOADDET_PROBE` attribution instrument landed. |
+| W0.3d-b A.S2 | ⚠️ **PRIMARY-FAIL / PARTIAL landed** | H-RESEED + worker-serialize + mAnims-sort behind opt-in `RB3_LOAD_DETERMINISM` (fixed-clock-scoped): best variant reduces the post-anchor gdraw spread ~62% but every ON arm stays distinct → PRIMARY (10/10 identical stream position) FAILS — reseed fixes VALUES not ORDER; the Wind/CameraShot/Crowd rejection-sampler sites remain order-varying. Kept landed as a documented partial reducer + gate scaffolding (`loaddet_gate.py`, jitter fail-red flag); flag-OFF 792 byte-identical BOTH arms. **Sufficient fix (staged design, in STATUS.md with the landed mAnims-sort as template): determinize order at every rejection-sampler-feeding site or per-consumer isolated Rand streams.** DO NOT default-flip. |
+| W2.8g B.S1 | ✅ **SPACE_AXIS (decode refuted)** | Instrument B + rest-free discriminator landed (`:4872-4966`, `RB3_HANDS_INSTR_B`): sub-shells transported ISOMETRICALLY (isoDistort~0.0000, orthoResid~0.0002) with shellMax 20-227u vs clean-body 1-4u; oracle truth-table PASS (SPACE conjugation iso=0 + shellErr≈R·2sin(θ/2); DECODE iso=0.231). Verts sharing a bone move as ONE rigid rotation → per-vertex weight/index/decode REFUTED. Design-doc literal ‖s−ŝ‖ found CONFOUNDED for the per-frame A7 gate (hands smear from frame 3 — no clean-rest frame exists); trustworthy fix gate = rest-free invariants stay ~0 + wext collapse. |
+| W2.8g B.S2 | ❌ **BLOCKED — 6th cell measured dead; RE-LANED** | The last untried single-live-bone cell (`RB3_HANDS_SHELL_FIX` = own-live + bound-rest 129°) predicted-and-confirmed shard-at-REST: wext min 34.8→51.0u UP, mean 68.9→82.4u UP, Tier-2 0.33→0.81u worse, screenshot = flesh-spike starburst. **The 87° basis gap is IRREDUCIBLE with any single live bone.** Root cause re-confirmed: the ANIMATING `Find(name)` instance is the SHARED MAGNET (invOff identical 106° across members with distinct 38/40-bone skeletons) while the per-member authored 129° rest lives on a STATIC bone. **The real fix = skeleton instancing / loader merge: make `Find(name)` resolve the per-member ANIMATING bone carrying `skeleton_unshared.milo`'s authored rest — out of the renderer/no-bake charter → Wave-13 SKEL lane.** Flag documented default-OFF regression. |
+| W4.3-C1 | ✅ **DIAGNOSED_ESCALATE (+1 faithful sub-fix landed)** | Both A7 candidates DISPROVEN with probes: UILabel focus color IS applied (mb_playnow focused sets dark 0.118,0.122,0.035) and it REACHES the shader unchanged. **Root cause = compositing: the postproc grade lifts dark glyphs + the focus bar composites through semi-transparent AA text** — PP_OFF passes the contrast gate (2.20 vs default 1.95<2.0; retail calibration 4.17). Sub-finding: `highlight_main.mat` alpha animates to 3.56 (>1) natively vs Wii's [0,1] clamp → clamp landed default-OFF `RB3_HUB_TEXT_CONTRAST` (faithful, doesn't pass the gate alone). **Gate-passing fix = draw UI after grade OR opaque UI text — needs a coordinator declared-range grant (Rnd_Wgpu_RB3.cpp/RB3PostProc) → Wave-13.** |
+| W4.3-C2 | ✅ **C2c NOT A BUG / C2a refuted / C2b diagnosed** | **C2c: the all-devil ratings are CORRECT AND FAITHFUL** — `RankTier` returns found=1/ntiers=7 for all 856 calls, tiers monotonic, even histogram; both A8 probes refuted; devil glyph renders correctly (skulls intact). Tiering is equal-count bucketing: on the 83-song stock library the hardest ~1/7 land tier6=Impossible=devil; the retail ref showed a 587-song DLC library — apples-to-oranges. No fix. C2a: leaderboard-hide refuted; the panel backing lives in the sibling `song_select_details.milo` sub-panel which is not compositing behind the grid natively (next: walk the subdir — never-submitted vs dropped). C2b: album-art quad overlapping the header = SYS-5 Y-anchor/panel-origin offset family (same as C4), diagnosis only. |
+| W4.3-C34 | ⏳ stalled → re-running | Prior agent stalled 6× (suspected casualty of Lane A's global `pkill -f rb3-native` — process-hygiene rule added: pgid-only cleanup). Re-dispatched as a side agent; folds into Wave-13 planning. |
+
+**Coordinator actions:** no flips (correctly none earned); regen (`44716f4`, 353 clean); 792 +
+lineup PASS on default arms; pin bumped `146fd19` → `44716f4`; C34 re-dispatched.
+
+### Wave 13 menu
+
+- **SKEL (new lane, from B.S2's re-lane):** per-member skeleton instancing — make the animating
+  `Find(name)` resolution return the member's own bone (authored 129° rest) instead of the shared
+  magnet; the named root fix for the hands/finger shard family, loader/merge-side, renderer
+  untouched. Gates already built: rest-free Instrument-B invariants + wext + Tier-2 + lineup.
+- **C1-grant:** UI-after-grade compositing (coordinator declared-range grant into
+  Rnd_Wgpu_RB3.cpp/RB3PostProc): draw UI/overlay pass after the postproc grade (or opaque text
+  path) — the gate-passing fix for focused-text contrast; highest user-visible win.
+- **C2a/C2b/C4 (+C3 per side-agent):** song_select_details panel-bg submission, SYS-5 Y-anchor
+  layout offsets (art-over-header + ticker), flipped hold-labels per the C34 re-run verdict.
+- Carried: loader-determinism sufficient fix (rejection-sampler-site order determinization —
+  staged design in W0.3d-b/STATUS.md), WHITE real-lever, 4→8 lights (DC3 gates), W2.4.
