@@ -115,3 +115,102 @@ per-vertex shell / composition level, not re-bake off_b).
 - rb3 `<rb3-sha>` (flock): `W2.8g/PLAN.md` + `W2.8g/STATUS.md` + `W2.8g/evidence/`.
 
 Checkpoint: `/tmp/wave12-checkpoints/B-S1.json` (`verdict: SPACE_AXIS`).
+
+---
+
+## B-S2 — done (Opus, Lane B) — VERDICT: **BLOCKED** (measured 6th dead cell; NO fix landed)
+
+**Charter:** WAVE12_KICKOFF Lane B S2 — implement the fix for the B-S1 NAMED axis (SPACE/
+composition), flag-first default-OFF, under the BINDING STOP-TRIPWIRE (five bind-side bake classes
+are dead; a 6th bake = STOP + report BLOCKED). Engine pin `146fd19`. Build `native/build-agent-W2.8g`.
+
+### One-line verdict
+The SPACE axis is real and correctly named, but its fix is **NOT reachable from Lane B's renderer/
+composition + no-bake charter**: the ~87° smear is the **magnet-vs-per-member bone rest-basis gap**,
+which is **irreducible with any single live bone**. The one untried single-bone cell was implemented,
+measured, and **REGRESSES** (shard-at-rest) — the predicted 6th dead class. **No fix landed.**
+
+### The mechanism (B-S1 SPACE verdict × W2.8e ground truth)
+Each finger sub-shell is a clean **rigid** conjugation ~87° about its bone (B-S1: isoDistort≈0,
+orthoResid≈0). W2.8e `RB3_APD_DIAG` established WHY, pose-independently:
+- `own` = `Find(boneName)` = the **SHARED MAGNET** instance (`invOff` **IDENTICAL 106°** across two
+  members with **distinct** 38/40-bone skeletons) — this is what **ANIMATES**.
+- `bound` = `mesh->BoneTransAt(b)` = the **PER-MEMBER static** bone (char-rest **129° / 119°**) —
+  correct authored basis, but **does not animate**.
+- Gap `angle(off·restW)` = **87.3° / 68.8°**, pose-INDEPENDENT and asset-derivable.
+
+Two single-bone cells were already dead before this stage:
+| cell | live bone | rest basis | result |
+|---|---|---|---|
+| DEFAULT | own (magnet, animates) | own 106° | coherent@rest, **106°-basis fling SHARD** |
+| RB3_APPENDAGE_ASSET_REBAKE (W2.8e, 5th dead) | bound (static) | bound 129° | correct basis but **FREEZE** |
+
+### The one untried cell — implemented + measured (`RB3_HANDS_SHELL_FIX`, default-OFF)
+The last permutation: **own-live (animates, no freeze) + bound-rest (129° authored basis)** — bind
+appendage meshes to the animating magnet bone but bake `off = meshWorld·inv(NativeCharSpaceRestXfm(bound))`.
+Implemented in `src/system/bandobj/BandCharacter.cpp` (`RebindHeadHandsAtRest`, new branch before the
+asset-rebake block; flag read next to the other `sApd*` flags; added to `sApdAny`). Default-OFF,
+settle-guarded, getenv-cached, HX_NATIVE.
+
+**Prediction (from the 87° pose-independent gap):** at own's rest (106°),
+`skin = meshWorld·inv(129°)·106° = meshWorld·R₈₇` → the shell is rotated 87° about the bone **at rest**
+(shard-AT-rest). **CONFIRMED by A/B** (`evidence/bs2_shellfix_ab.py`, gameplay ceiling-forearm
+sighting, `RB3_HANDS_ATTACH_PROBE=1`, N≈1400/arm, `/tmp/wave12-bs2ab`):
+
+| metric | OFF (default) | ON (`RB3_HANDS_SHELL_FIX`) | gate |
+|---|---|---|---|
+| wext **min** | 34.8u | **51.0u ↑ (rest now sharded)** | — |
+| wext mean | 68.9u | **82.4u ↑** | — |
+| wext **max** | 105.8u | 106.6u (unchanged) | ≤60u → **FAIL** |
+| Tier-2 exact max | 0.33u | **0.81u ↑ (worse)** | ≤1u |
+| distinct wext (freeze) | 467 | 435 (not frozen) | ON>3 |
+
+The ON screenshot (`evidence/ON_ms12000.png`) is a **catastrophic flesh-spike starburst** far worse
+than OFF (`evidence/OFF_ms12000.png`) — the 87° now flung at rest AND animated. The cell is the
+**measured 6th dead class**; it stays default-OFF, `class:workaround`, not-live, do-NOT-flip.
+
+### Why every composition formulation reduces to this (the no-bake wall)
+Any frame-consistent skin = `meshWorld·inverse(restW)·liveW`, coherent **iff** `restW` is the
+animating bone's TRUE rest. But the animating bone IS the magnet (106°), whose rest genuinely differs
+from the per-member authored rest (129°) by exactly the 87° that IS the smear. Closing it needs
+either (a) **conjugation** — retarget own's motion into bound's frame (`= W2.8c`, dead, freezes), or
+(b) a per-member **ANIMATING** instance carrying the authored rest — i.e. make `Find(boneName)`
+resolve the per-member bone from **`skeleton_unshared.milo`** rather than the shared magnet. (b) is a
+**loader / skeleton-merge / asset** fix, OUTSIDE Lane B's renderer-composition + no-off_b-bake scope.
+No draw-time-available or rest-capture-available correction is per-bone-constant AND non-conjugating.
+
+### RE-LANE recommendation (for the coordinator)
+The faithful fix = **skeleton instancing**: the appendage meshes' bones must resolve to a per-member
+animating instance whose rest == the authored `skeleton_unshared.milo` basis (129°), so the DEFAULT
+composition (`own-live + own-rest`) becomes coherent with zero bind bake. That belongs in a
+loader/`BandCharacter` skeleton-merge lane (cf. the `char-skinning-deform` torso rebind that fixed the
+analogous **body** case by repointing outfit bones to the member's OWN animated skeleton) — NOT Lane B.
+
+### Gates / process (B-S2)
+- **wext ≤60u WITHOUT freezing:** **FAIL** (ON max 106.6u; min ROSE 34.8→51.0u = shard-at-rest). No
+  fix landed → the fix gate is not claimed; this is a BLOCKED, not a pass.
+- **Tier-2 joint-attach ≤1u:** OFF 0.33u / ON 0.81u (both ≤1u; ON worse — consistent with a rigid
+  conjugation that keeps joints attached while flinging far verts).
+- **drawlog-golden flag-OFF = PASS 792** (`--fixed-clock --canonical-order`, `build-agent-W2.8g`, 284
+  known-residual within bound). Flag-OFF byte-identical by construction (getenv default-OFF; the
+  `sApdAny` term is inert when the flag is unset).
+- **No fix-by-hiding / no vertex clamp:** none used — the cell is a bind composition, not a clamp.
+- **STOP-TRIPWIRE respected:** the cell degenerated into a (regressing) bind bake → STOPPED, reported
+  BLOCKED, did NOT land it as anything but a documented default-OFF diagnostic.
+- All refuted-experiment flags UNSET in all arms; six shipped defaults untouched; uncommitted
+  `FxSendNative.cpp` engine audio edit left intact; staged only my own files under flock.
+- classification.json append-only (`RB3_HANDS_SHELL_FIX`, class:workaround not-live); **NO gen.inc
+  regen** (coordinator).
+
+### E1 review artifacts (band screenshots)
+`evidence/OFF_ms02000.png`, `evidence/OFF_ms12000.png` (before = current default, hand smear),
+`evidence/ON_ms02000.png`, `evidence/ON_ms12000.png` (after = the regressing cell, flesh-spike
+starburst). Full set + probe logs in `/tmp/wave12-bs2ab/`.
+
+### Commits
+- rb3 `<rb3-sha>` (flock): `src/system/bandobj/BandCharacter.cpp` (`RB3_HANDS_SHELL_FIX` branch,
+  default-OFF) + `W2.8g/STATUS.md` + `W2.8g/PLAN.md` + `W2.8g/evidence/`.
+- engine `<eng-sha>` (flock, classjson-lock): `NativeCompatFlags.classification.json` (append-only
+  `RB3_HANDS_SHELL_FIX`; NO gen.inc regen).
+
+Checkpoint: `/tmp/wave12-checkpoints/B-S2.json` (`verdict: BLOCKED`).

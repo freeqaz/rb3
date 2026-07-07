@@ -1312,10 +1312,36 @@ void BandCharacter::RebindHeadHandsAtRest() {
         sApdAssetRebake = getenv("RB3_APPENDAGE_ASSET_REBAKE") ? 1 : 0;
     static int sApdDiag = -1;
     if (sApdDiag < 0) sApdDiag = getenv("RB3_APD_DIAG") ? 1 : 0;
+
+    // W2.8g (Wave 12 Lane B, B-S2) — RB3_HANDS_SHELL_FIX, default OFF, DIAGNOSTIC.
+    // The SPACE-axis (B-S1 verdict) has ONE untried reconciliation cell left, and
+    // this measures it. GROUND TRUTH (W2.8e RB3_APD_DIAG): the animating instance
+    // `own` = Find(name) is the SHARED MAGNET (invOff IDENTICAL 106deg across two
+    // members with DISTINCT 38/40-bone skeletons) while `bound` = mesh->BoneTransAt
+    // is the PER-MEMBER static bone (char-rest 129deg/119deg) — a pose-INDEPENDENT,
+    // asset-derivable 87.3deg/68.8deg basis gap. The two prior single-bone cells:
+    //   * DEFAULT   = own-live + own-rest   -> coherent-at-rest, but off is baked
+    //                 against the magnet 106deg basis => R*sin(theta) fling (SHARD).
+    //   * ASSET_REBAKE = bound-live + bound-rest -> correct 129deg basis, but bound
+    //                 is a STATIC copy => FREEZE (W2.8e refuted, 5th dead class).
+    // The untried cell = own-live (ANIMATES, no freeze) + bound-rest (per-member
+    // 129deg basis): bind to the animating magnet bone but bake off against the
+    // per-member authored rest. PREDICTION from the 87deg pose-independent gap:
+    // at own's rest (106deg) skin = meshWorld*inv(129deg)*106deg = meshWorld*R_87
+    // => the shell is rotated 87deg about the bone AT REST (shard-at-rest), i.e.
+    // this cell should NOT close the gap either (the 87deg is irreducible with any
+    // single live bone; only conjugation W2.8c[dead] or a per-member ANIMATING
+    // instance carrying the authored rest closes it). Kept default-OFF; a measured
+    // A/B either confirms BLOCKED (6th dead cell) or, if the prediction is wrong,
+    // reveals the fix. HX_NATIVE only; flag-OFF byte-identical (getenv-cached).
+    static int sHandsShellFix = -1;
+    if (sHandsShellFix < 0)
+        sHandsShellFix = getenv("RB3_HANDS_SHELL_FIX") ? 1 : 0;
+
     // Compute appendage-ness whenever ANY appendage path is active (the refuted
     // probe, the MATCH rebake, or the diagnostic) — the old code gated apdMesh on
     // sApdRestRot alone, which hid the scope from the new flag + the diag.
-    const int sApdAny = sApdRestRot || sApdAssetRebake || sApdDiag;
+    const int sApdAny = sApdRestRot || sApdAssetRebake || sApdDiag || sHandsShellFix;
 
     // Collect every skinned mesh the member draws (shared collector — same walk as
     // the torso rebind; see NativeCollectSkinnedMeshes).
@@ -1447,6 +1473,38 @@ void BandCharacter::RebindHeadHandsAtRest() {
             std::map<std::string, Transform>::iterator rp = mNativeRestPose.find(bname);
             bool haveDistinct =
                 mNativeRestDistinct.find(bname) != mNativeRestDistinct.end();
+            // ============ W2.8g B-S2 untried cell: own-live + bound-rest ==========
+            // (RB3_HANDS_SHELL_FIX, default OFF). Bind to the ANIMATING magnet bone
+            // `own` (no freeze) but bake off against the PER-MEMBER authored rest
+            // `NativeCharSpaceRestXfm(bound)` (129deg basis). Same settle guard as
+            // the asset rebake. See the flag header for the shard-at-rest prediction.
+            if (sHandsShellFix && apdMesh) {
+                if (mDriver && mDriver->FirstPlaying()) {
+                    miss++;
+                    if (!missBone) { missBone = bound->Name(); missWhy = "shellClipPlaying"; }
+                    continue;
+                }
+                std::map<std::string, Transform>::iterator sp =
+                    mNativeApdAssetRest.find(bname);
+                Transform srest;
+                if (sp != mNativeApdAssetRest.end()) {
+                    srest = sp->second;
+                } else {
+                    srest = NativeCharSpaceRestXfm(bound); // per-member 129deg basis
+                    if (!(std::fabs(srest.v.x) < 1e5f && std::fabs(srest.v.y) < 1e5f &&
+                          std::fabs(srest.v.z) < 1e5f)) {
+                        miss++;
+                        if (!missBone) { missBone = bound->Name(); missWhy = "shellNonFinite"; }
+                        continue;
+                    }
+                    mNativeApdAssetRest[bname] = srest;
+                }
+                owns[b] = own;     // ANIMATING magnet bone (no freeze) — the untried delta
+                rests[b] = srest;  // but the per-member authored rest basis
+                apply[b] = 1;
+                resolvable++;
+                continue;
+            }
             // ================= W2.8e MATCH-path appendage asset rebake =============
             // (RB3_APPENDAGE_ASSET_REBAKE, default OFF). GROUND TRUTH (RB3_APD_DIAG,
             // measured this wave): for hands_naked/finger/glove meshes the default

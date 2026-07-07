@@ -55,3 +55,24 @@ with zero GPU). Deferred as a separate ~200-LOC build; logged if run. Not the ga
 - drawlog-golden flag-OFF must stay PASS (792) on the committed binary (probe render-inert).
 - Fail-red: Instrument B must read RED on an induced space error (oracle test) and GREEN on decode.
 - Commits per review cycle under flock. classification.json append-only. Leave FxSendNative.cpp alone.
+
+---
+
+# W2.8g — STAGE B-S2: implement the SPACE-axis fix (flag-first, default-OFF)
+
+Engine pin `146fd19`. Build `native/build-agent-W2.8g` (own). Checkpoint `/tmp/wave12-checkpoints/B-S2.json`.
+
+## Declared edits (before editing)
+1. `src/system/bandobj/BandCharacter.cpp`:
+   - `RebindHeadHandsAtRest` flag block (~:1313-1339): ADD `static int sHandsShellFix` getenv read
+     (default-OFF) + include it in `sApdAny`.
+   - Same method, per-bone loop (~:1452, before the `RB3_APPENDAGE_ASSET_REBAKE` branch): ADD a new
+     `if (sHandsShellFix && apdMesh)` capture branch = own-live + bound-rest (the untried cell).
+2. engine `src/platform/NativeCompatFlags.classification.json`: append-only `RB3_HANDS_SHELL_FIX`
+   (class:workaround, not-live, default-OFF) under `/tmp/milo-engine-classjson.lock`. NO gen.inc regen.
+3. `W2.8g/evidence/bs2_shellfix_ab.py` (A/B harness) + `W2.8g/{STATUS,PLAN}.md` + screenshots.
+
+## Result — BLOCKED (see STATUS.md B-S2)
+The untried cell REGRESSES (shard-at-rest, min wext 34.8→51.0u, ON screenshot = flesh-spike
+starburst). STOP-TRIPWIRE hit (6th bind bake, no gain) → BLOCKED, no fix landed. Flag stays
+default-OFF as a measured dead-cell diagnostic. Faithful fix = skeleton-merge (re-lane), not Lane B.
