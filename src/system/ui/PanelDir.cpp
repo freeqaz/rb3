@@ -21,8 +21,13 @@
 #include "game/GamePanel.h"
 // Renderer machinery in milo-native-engine/src/platform/RB3PostProc.{h,cpp};
 // declared extern here (free functions, global C++ linkage) per the rb3 idiom.
-extern bool RB3UIPostGradeActive();
-extern void RB3SetMenuUIFlushPending();
+// Wave-14 U-CLEAN: RB3FlushMenuUIPostGrade is the flush-ONLY seam (sets the
+// menu-flush latch + drives BandRnd::FlushPostProcMidFrame DIRECTLY, no
+// depth-clear), replacing the former RB3SetMenuUIFlushPending + ClearDepthForOverlay
+// pair whose depth-clear else-branch produced the song_select red band. It gates
+// on RB3_UI_POST_GRADE internally (default-OFF).
+class Rnd;
+extern void RB3FlushMenuUIPostGrade(Rnd* rnd);
 #endif
 
 INIT_REVS(PanelDir)
@@ -149,28 +154,29 @@ void PanelDir::DrawShowing() {
     // backdrop + UI) into the postproc intermediate and grade it ONCE at
     // EndFrame, washing the focused-item text (hub p60/p5 1.95 vs 2.20 grade-off).
     // When the flag is on and we are NOT in gameplay, flush the venue grade at
-    // this venue->UI boundary: set the menu-flush latch (so FlushPostProcMidFrame
-    // composites with venueGrade=false, keeping the authored B+W look — the A5
-    // trap) then drive the flush via the existing public ClearDepthForOverlay
-    // seam, which calls FlushPostProcMidFrame when a graded venue is pending
-    // (idempotent per frame) so the UI draws UNGRADED on top.
+    // this venue->UI boundary so the UI draws UNGRADED on top of the graded venue.
+    // Wave-14 U-CLEAN: this now drives the FLUSH-ONLY seam RB3FlushMenuUIPostGrade
+    // (sets the menu-flush latch → FlushPostProcMidFrame composites with
+    // venueGrade=false, the A5-safe B+W look, and NO depth-clear). The prior
+    // TheRnd->ClearDepthForOverlay() drive reached the same flush but its
+    // else-branch (the note-highway depth+stencil clear) fired per SUBSEQUENT menu
+    // UI dir, altering song_select's layered 3D-preview compositing into a visible
+    // red band on the SETLISTS row. The direct flush is idempotent per frame
+    // (early-returns once flushed), so no stray depth-clear remains.
     // MECHANISM NOTE: on native, BandRnd::BeginDrawing bypasses base
     // Rnd::BeginDrawing and never resets mWorldEnded, so TheRnd->EndWorld() is a
     // permanent no-op here — the originally-proposed EndWorld-reuse trigger would
-    // never flush. ClearDepthForOverlay is the only game-side seam that reaches
-    // the flush without an engine-header grant. The gameplay gate is REQUIRED:
-    // gameplay already flushes ~once/frame via TrackPanel::Draw's own
-    // ClearDepthForOverlay (the note-highway path); firing our menu trigger there
-    // too would add extra ClearDepthForOverlay calls / move the venue-flush point,
-    // breaking gameplay pixel-invariance (verified: kGamePlaying flush counts are
-    // equal ON vs OFF only with this gate). Default-OFF => RB3UIPostGradeActive()==false is a no-op;
-    // the Wii/matching build never compiles this block (byte-identical).
+    // never flush. The gameplay gate is REQUIRED: gameplay already flushes
+    // ~once/frame via TrackPanel::Draw's own ClearDepthForOverlay (the
+    // note-highway path); firing our menu trigger during kGamePlaying would move
+    // the venue-flush point, breaking gameplay pixel-invariance (verified:
+    // kGamePlaying flush counts are equal ON vs OFF only with this gate). The seam
+    // gates on RB3_UI_POST_GRADE internally (default-OFF => a no-op); the
+    // Wii/matching build never compiles this block (byte-identical).
     bool inGameplay =
         (TheGamePanel && TheGamePanel->GetGameState() == kGamePlaying);
-    if (RB3UIPostGradeActive() && !inGameplay) {
-        RB3SetMenuUIFlushPending();
-        TheRnd->ClearDepthForOverlay();
-    }
+    if (!inGameplay)
+        RB3FlushMenuUIPostGrade(TheRnd);
 #endif
     if (mCanEndWorld)
         TheRnd->EndWorld();

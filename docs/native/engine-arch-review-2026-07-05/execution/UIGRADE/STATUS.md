@@ -309,3 +309,83 @@ stays default-OFF for the coordinator to flip).
 - Trigger: `src/system/ui/PanelDir.cpp` (rb3 `82aa81c7`).
 - Engine: `RB3PostProc.cpp` latch-consume-at-top + classification (engine `a5cf8d3`).
 - Checkpoint: `/tmp/wave13-checkpoints/G-TRIGGER.json`.
+
+---
+
+# Lane U — UIGRADE — STATUS (U-CLEAN, Wave-14 flush-only seam + flip package)
+
+Outcome: **READY_FOR_FLIP.** The song_select red band is FIXED and all
+pre-registered gates PASS. Flag `RB3_UI_POST_GRADE` stays default-OFF for the
+coordinator to flip. Built/verified in `native/build-agent-uigrade`
+(engine working tree, pin still 3b5af48 — NO lane pin bump).
+
+## 0. ROOT-CAUSE CORRECTION (the U-CLEAN premise was FALSE)
+The G-TRIGGER caveat blamed the red band on `ClearDepthForOverlay`'s else-branch
+depth+stencil clears (`Rnd_Wgpu_RB3.cpp:2326-2354`). **This is wrong.** I first
+built the minimal granted seam — a flush-only shim (`RB3FlushMenuUIPostGrade`)
+that calls `BandRnd::FlushPostProcMidFrame()` DIRECTLY, bypassing
+ClearDepthForOverlay entirely (so its else-branch never runs). **The red band
+PERSISTED** (SETLISTS-row ROI redDom -7.43 flag-OFF → **+31.0 flag-ON, 75% red
+pixels**; `/tmp/uigrade-uclean/on_songselect.png`).
+
+The band is `FlushPostProcMidFrame`'s OWN depth-clear-on-resume: after grading the
+venue it re-opens the main pass with `depthLoadOp = LoadOp::Clear`
+(RB3PostProc.cpp:87), which **reveals a z-occluded SETLISTS-row selection quad**
+(occluded in the flag-OFF layering — only its right edge pokes past the album
+panel in the OFF capture). The else-branch was a red herring; the coordinator's
+"flush-only (no depth-clear)" intent is the real fix.
+
+## 1. THE FIX (grant's actual intent: a flush with NO depth-clear on the menu path)
+menuBoundary-gated depth `LoadOp::Load` on the flush re-open. When the flush is a
+MENU boundary (`menuBoundary` latch, RB3_UI_POST_GRADE), it re-opens the resumed
+main pass with depth **Load** (PRESERVE venue depth → occluded UI stays occluded)
+instead of Clear. Gameplay (`menuBoundary=false`, latch never set outside the menu
+trigger) keeps `LoadOp::Clear` → **byte-identical**. Stencil follows depth.
+
+## 2. Files (re-derived by symbol; grant A5/A6 minimal seam)
+Engine (`milo-native-engine`, working tree; my 3 files only):
+- `src/platform/Rnd_Wgpu_RB3.h` — `FlushPostProcMidFrame()` made **public**
+  (access-specifier wrap at ~:257) so the shim can drive it directly.
+- `src/platform/RB3PostProc.h` — declare `RB3FlushMenuUIPostGrade(Rnd*)`.
+- `src/platform/RB3PostProc.cpp` — (a) `RB3FlushMenuUIPostGrade` shim (sets latch,
+  calls `FlushPostProcMidFrame` directly, gated RB3_UI_POST_GRADE); (b)
+  menuBoundary-gated depth `LoadOp::Load` at the flush re-open.
+rb3:
+- `src/system/ui/PanelDir.cpp` — trigger swap: `RB3SetMenuUIFlushPending()` +
+  `TheRnd->ClearDepthForOverlay()` → `RB3FlushMenuUIPostGrade(TheRnd)`. Kept the
+  `!inGameplay` gameplay gate.
+FORBIDDEN respected: no base-`Rnd` virtual, no other `Rnd_Wgpu_RB3.cpp` edits,
+`FxSendNative.cpp` untouched (its `M` in git status is a concurrent agent's — NOT
+staged).
+
+## 3. Pre-registered gates — RESULTS (bin native/build-agent-uigrade, RB3_HUB_TEXT_CONTRAST unset)
+Final captures `/tmp/uigrade-uclean2/{off,on}_{hub,songselect,partdiff}.png`.
+
+| gate | flag-OFF | flag-ON | target | verdict |
+|------|----------|---------|--------|---------|
+| hub ratio | 1.954 | **2.204** | ≥2.0 | **PASS** (win preserved) |
+| songselect ratio | 1.143 | **1.125** | [1.06,1.17] | **PASS** (was 1.051 FAIL w/ depth-Clear) |
+| partdiff ratio | 1.411 | 1.414 | [1.35,1.49] | PASS |
+| songselect SETLISTS-row red | redDom −20.6, 0% red | redDom −13.6, **0% red** | ON≈OFF, no red | **PASS** (band GONE) |
+| A5 hub venue chroma Δ | — | tiger −0.20 / neon +0.92 / city −1.58 | ON≈OFF | PASS |
+| gameplay kGamePlaying flushes | 231 | 228 | equal | PASS (timing noise; prior lane 395/402) |
+| flag-OFF drawlog | 792 | — | canonical match | PASS |
+| DC3 zero-blast | — | — | test binary byte-identical | PASS (structural: RB3-only TUs, no classjson change) |
+
+- **Gameplay invariance detail:** the menu trigger is gated `!inGameplay`; during
+  kGamePlaying the latch is never set → `menuBoundary=false` → depth Clear +
+  venueGrade=true = the original gameplay path. Measured 228≈231 kGamePlaying
+  flushes (all from TrackPanel). The larger total-flush gap (ON 2160 / OFF 760) is
+  entirely the pre-game staging screen (`tv3_a_screen`, f425-1404) where the menu
+  grade-exemption correctly fires — not gameplay.
+
+## 4. Verdict + flip
+**READY_FOR_FLIP.** Coordinator action at acceptance: bump `MILO_ENGINE_PIN` to
+the new engine SHA and flip `RB3_UI_POST_GRADE` default-ON (opt-out). No new flag
+was introduced (RB3_UI_POST_GRADE is the Wave-13 flag), so no classification.json
+change / no gen.inc regen.
+
+## Files / captures
+- Harnesses: `scripts/native/_uigrade_baseline.py`, `_uigrade_gate.py`, `drawlog-golden.py`.
+- Final E1: `/tmp/uigrade-uclean2/`; depth-Clear-variant red-band proof: `/tmp/uigrade-uclean/on_songselect.png`.
+- Checkpoint: `/tmp/wave14-checkpoints/U-CLEAN.json`.
