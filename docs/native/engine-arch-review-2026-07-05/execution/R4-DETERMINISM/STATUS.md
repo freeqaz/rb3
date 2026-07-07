@@ -60,11 +60,36 @@ Evidence: `evidence/M2-verify-n4.json`, `M2-verify-summary.txt`, `M2-attrib-on-g
 `batch_objdiff` on all touched units == report.json baseline; directly-edited `RandomInt`/
 `RandomFloat`/`CreateParticles` stay exactly 100%; consumers keep pre-existing sub-100 values.
 
-## M3 — PRIMARY gate at scale + inertness + flag disposition: (in progress)
+## M3 — PRIMARY gate at scale + inertness + flag disposition: **DONE — PRIMARY PASS 10/10**
 
-`--n 10 --k 300 --jitter 200 --ledger`. PRIMARY = ON-arm postAnchorDelta spread == 0, 10/10;
-fail-red = OFF-arm spread > 0 under identical jitter. + G2 (flag-OFF 0 `[LOADDET]` lines) +
-per-axis ledger. Coordinator (not lane) flips classjson at close-out.
+`--arm both --n 10 --k 300 --jitter 200 --ledger` (build-agent-R4, input-free):
+- **ARM ON: postAnchorDelta spread == 0, 10/10 boots** (distinctDeltas=[0], reseedAll). **PRIMARY PASS.**
+- ARM OFF: spread **7179** (10/10 distinct, 32679…39858) — FAIL-RED reproduced (larger at N=10).
+- **Per-axis ledger (`LEDGER.md`, `evidence/M3-ledger.json`): stream 10/10 (PRIMARY), count 10/10,
+  order 10/10, clock 10/10; callerOrder 1/10 (informational, non-gating — particle-spawn timing
+  still jitters on the now-PRIVATE streams, no longer reaching gRand).**
+  - NOTE: the ledger's count/order/clock axes were corrected to anchor-relative / completion-only /
+    span==k semantics (the pre-anchor absolute-gdraw, attrib-caller-timing, and exact-anchor-frame
+    residues are non-gating by the seam's re-base-at-anchor design). Harness updated; this run's
+    ledger recomputed offline from the saved ON-boot logs.
+
+### G2 — flag-OFF inertness: **PASS** (`evidence/G2a-normal-boot.txt`, `G2b-drawlog.txt`)
+Normal boot (no `RB3_LOADDET_*`) emits 0 `[LOADDET]` lines; flag-OFF splash_screen drawlog
+matches the committed golden (792 draws).
+
+## Disposition / hand-off to coordinator
+- All lane milestones M1→M3 done; PRIMARY (the gate that failed 3× in Wave 12) now resolves.
+- `RB3_LOAD_DETERMINISM` stays **opt-in**. The classjson PARTIAL/DO-NOT-flip → PASS-PRIMARY flip
+  is **coordinator close-out** (plan §M3), gated on the flag-ON gameplay-scene drawlog re-golden.
+  NOT done by this lane (no engine edits, no default flips, no pin bump).
+- M4 (WHITE re-grade + wash per-FX co-sampling dispatch) is unblocked: the seam now delivers
+  stream-matched boots (ledger PROVES 10/10), so any residual WHITE spread cleanly indicts a
+  non-RNG axis. M4 itself is a follow-on lane, not R4's deliverable.
+
+## Commits
+- `937e4194` M1 — attribution instrument + promoted harness (GO)
+- `63df7f93` M2 — isolate consumers, PRIMARY N=4 spread 0 + G3
+- (M3 commit below) — N=10 PRIMARY + ledger + G2
 
 ## Notes / carried constraints
 

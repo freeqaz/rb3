@@ -1,0 +1,7 @@
+[loaddet-gate] === ARM OFF: n=10 env={'RB3_LOADDET_JITTER': '200'} attrib=True ===
+[loaddet-gate] === ARM ON: n=10 env={'RB3_LOADDET_JITTER': '200', 'RB3_LOAD_DETERMINISM': '1'} attrib=True ===
+ARM OFF: ok=10/10  postAnchorDeltaSpread=7179  distinctDeltas=[32679, 36965, 37715, 37743, 37844, 38232, 38379, 38464, 39534, 39858]  absSpread=10104  reseedAll=False
+ARM ON: ok=10/10  postAnchorDeltaSpread=0  distinctDeltas=[0]  absSpread=3  reseedAll=True
+PRIMARY (ON collapses):  PASS (ON distinctDeltas=[0])
+FAIL-RED (OFF reproduces spread under jitter):  PASS (OFF spread=7179)
+  "PRIMARY": "PASS"
