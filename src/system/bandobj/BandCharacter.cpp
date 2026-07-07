@@ -2484,6 +2484,11 @@ void BandCharacter::SyncObjects() {
     // NativeCollectSkinnedMeshes, which then rewalks once into the fresh cache).
     NativeInvalidateSkinnedMeshCache();
     NativeCaptureRestPoseAfterDeform();
+    // Wave 14 Lane RESKIN (R2): REFUTED per-member hands reskin (default-OFF, do NOT
+    // flip — measured a wext regression; see NativeReskinHandsAtRest header). Wired
+    // HERE (post-SetDeformation/post-rest-seed, skeleton at gender-bind rest, authored
+    // offsets intact) but inert unless RB3_HANDS_RESKIN=1. flag-OFF byte-identical.
+    NativeReskinHandsAtRest();
     mNativeReboundOnce = 0;
     mNativeReboundQuiet = 0;
     mNativeHeadReboundOnce = 0;
@@ -3110,6 +3115,195 @@ void BandCharacter::SyncOutfitConfig(OutfitConfig *cfg) {
         }
     }
 }
+
+#ifdef HX_NATIVE
+// Wave 14 Lane RESKIN (R2): re-pose the per-member hands_naked verts from the
+// authored (shared-male) bind basis onto the member's OWN gender-posed rest, via a
+// synthesized per-vertex weighted multi-bone blend.
+//
+// ============================ REFUTED — do NOT flip ==========================
+// MEASURED (build-agent RESKIN, A/B on the pre-registered IK_SHARD_VERT wext gate,
+// gameplay burst, N~1000 draws/arm) — flag-ON is a REGRESSION, the wext shard does
+// NOT drop to <=60u:
+//   * flag-OFF (default rebake):        hands_naked wext 60-106u, mean 74.8 (39
+//                                       distinct values => animating, not frozen)
+//   * flag-ON  (reskin + rebake):       hands_naked wext 60-105u, mean 87.7  WORSE
+//   * flag-ON  (reskin, RB3_NO_HEAD_REBIND): wext 75-187u, mean 136  MUCH WORSE
+// ROOT CAUSE (now proven, refutes R1's rest-shape thesis): the hands wext shard is
+// an ANIMATION-BASIS problem (the per-member skeleton animates in a basis whose
+// ROTATION differs from the verts' authored bind — own_rest vs own_live, the
+// R*sin(theta) far-vert smear), NOT a rest-SHAPE / bind-basis problem. A one-time
+// vertex re-pose changes only the REST shape; the animation delta (own_live vs
+// own_rest) is IDENTICAL to flag-OFF by construction, so the shard is untouched —
+// and AMPLIFIED, because the re-posed verts sit at a LARGER radius from their bones
+// (bigger R => bigger R*sin(theta)). This is the SAME dead-end class as the already-
+// refuted RB3_APPENDAGE_REST_ROT (world-rest lever) and RB3_APPENDAGE_ASSET_REBAKE
+// (freeze), and confirms the standing finding above (~L1273): "the char-space
+// rebake ALREADY applies to hands_naked yet leaves a real shard ... requiring the
+// authored per-member bind pose from skeleton_unshared.milo (asset data)." The
+// genuine fix is asset/skeleton-basis, not any vert/offset bake. Kept in-tree
+// default-OFF (RB3_HANDS_RESKIN) as the definitive measured artifact so the
+// per-member-reskin lever is not re-attempted. flag-OFF inert / Wii byte-identical.
+// =============================================================================
+//
+// WHY a synthesized blend, not RebindOutfitBonesToOwnSkeleton's SetBone repoint:
+// the torso rebind repoints the mesh's bone pointer + keeps the authored offset,
+// which for hands produced Seam-B's single-dominant-bone tearing (mixed-sign ~35deg
+// per-bone deltas tear at the knuckles). This blends ALL of each vertex's (bone,
+// weight) pairs — the exact LBS model the GPU palette uses (Rnd_Wgpu_RB3.cpp:
+// 3299-3305) — so a knuckle vert weighted across two bones gets a smooth
+// interpolation of both deltas, no tearing. Residual is ordinary LBS blend error
+// (candy-wrapper class), not a hard wall — the wext gate stays QUANTITATIVE (<=60u).
+//
+// The math mirrors RndMeshDeform::Reskin (MeshDeform.cpp:298-399) but computes the
+// per-bone transform DIRECTLY here. R1 KEY FINDING: do NOT route through
+// RndMeshDeform::Reskin — BoneDesc::ExportWorldXfm (MeshDeform.cpp:181-189) returns
+// the live pose only for "exo_"-prefixed helper bones; hands are regular bones, so
+// a synthesized RndMeshDeform would blend the wrong (authored parent) transforms.
+//   per bone b: A_b   = mesh->BoneOffsetAt(b)            // authored invBind = meshWorld*inv(boundBind_b),
+//                                                        // intact pre-Poll-rebake
+//               own_b = Find(BoneTransAt(b)->Name())     // member's gender-posed bone
+//               T_b   = A_b . NativeCharSpaceRestXfm(own_b)  // CHAR space: placement
+//                       // divided out — world-space would reintroduce the R*sin(theta)
+//                       // placement fling that killed RB3_APPENDAGE_REST_ROT (RISK-1).
+//   per vert v: weighted = ( sum_i w_i . T_{v.bone_i} ) / sum_i w_i   // v's own 4 weights
+//               v.pos    = v.pos . weighted ; rotate+renorm v.norm    // MeshDeform.cpp:366-395
+//
+// Composes with the default-ON RebindHeadHandsAtRest rebake: reskin fixes the rest
+// SHAPE (verts), the rebake keeps the GPU palette basis-consistent (off =
+// meshWorld*inv(rest_own) => at own-rest skin = re-posed vert; then animates in the
+// correct basis). Ordering is correct by construction — this runs at SyncObjects
+// rest time, BEFORE the first Poll rebake overwrites the authored offsets it reads.
+//
+// Scope: hands_naked only (fingernails_resource = 0 verts, nailboots_resource =
+// footwear). Per-member meshes are DISTINCT + self-owned (probe: meshPtr==geomOwner,
+// distinct across members) so verts are mutated in place — no cloning, no
+// cross-member corruption, zero extra memory. Latched once per mesh POINTER: a
+// re-stuffed mesh is a NEW pointer => re-reskinned; a persistent mesh keeps its
+// (already re-posed) verts => skipped, no double-transform (RISK-2). Default-OFF
+// (RB3_HANDS_RESKIN); flag-OFF inert, Wii byte-identical.
+void BandCharacter::NativeReskinHandsAtRest() {
+    static int sReskin = -1;
+    if (sReskin < 0) sReskin = getenv("RB3_HANDS_RESKIN") ? 1 : 0;
+    if (!sReskin) return;
+    static int sProbe = -1;
+    if (sProbe < 0) sProbe = getenv("RB3_RESKIN_PROBE") ? 1 : 0;
+    // Persistent per-mesh-POINTER latch (NEVER cleared): mesh pointers are globally
+    // unique, so a re-stuffed mesh (new pointer, fresh authored verts) re-reskins
+    // while a persistent mesh (verts already re-posed) is correctly skipped.
+    static std::set<RndMesh *> sReskinned;
+
+    std::vector<RndMesh *> targets;
+    NativeCollectSkinnedMeshes(targets);
+    for (std::vector<RndMesh *>::iterator mi = targets.begin(); mi != targets.end();
+         ++mi) {
+        RndMesh *mesh = *mi;
+        const char *mn = mesh->Name();
+        if (!mn) continue;
+        // scope: hands_naked only (case-insensitive "hand"). Excludes
+        // nailboots_resource (footwear) and the 0-vert fingernails_resource proxy.
+        std::string ln(mn);
+        for (size_t i = 0; i < ln.size(); i++) {
+            char c = ln[i];
+            if (c >= 'A' && c <= 'Z') ln[i] = (char)(c + 32);
+        }
+        if (ln.find("hand") == std::string::npos) continue;
+        if (sReskinned.count(mesh)) continue; // already reskinned (RISK-2)
+        RndMesh::VertVector &verts = mesh->Verts();
+        if (verts.size() == 0) continue; // RISK-4: 0-vert proxy — nothing to reskin
+
+        // Build the per-bone re-pose transform T_b = A_b . charSpaceRest(own_b).
+        int nb = mesh->NumBones();
+        std::vector<Transform> xfms((size_t)nb);
+        std::vector<unsigned char> valid((size_t)nb, 0);
+        int resolved = 0;
+        for (int b = 0; b < nb; b++) {
+            RndTransformable *bound = mesh->BoneTransAt(b);
+            if (!bound || !bound->Name()) continue; // empty slot
+            RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
+            if (!own) continue;
+            Transform rest = NativeCharSpaceRestXfm(own); // placement divided out
+            if (!(std::fabs(rest.v.x) < 1e5f && std::fabs(rest.v.y) < 1e5f &&
+                  std::fabs(rest.v.z) < 1e5f))
+                continue; // reject a broken bone (no clamp backstop after Sync)
+            Multiply(mesh->BoneOffsetAt(b), rest, xfms[b]); // T_b = A_b . rest
+            valid[b] = 1;
+            resolved++;
+        }
+        if (resolved == 0) { // nothing resolvable — latch so we don't rescan forever
+            sReskinned.insert(mesh);
+            continue;
+        }
+
+        // Per-vertex weighted multi-bone blend (mirrors MeshDeform.cpp:329-395).
+        int mutated = 0;
+        for (int vi = 0; vi < verts.size(); vi++) {
+            RndMesh::Vert &v = verts[vi];
+            Transform weighted;
+            weighted.m.x.x = 0; weighted.m.x.y = 0; weighted.m.x.z = 0;
+            weighted.m.y.x = 0; weighted.m.y.y = 0; weighted.m.y.z = 0;
+            weighted.m.z.x = 0; weighted.m.z.y = 0; weighted.m.z.z = 0;
+            weighted.v.x = 0; weighted.v.y = 0; weighted.v.z = 0;
+            float total = 0.0f;
+            for (int i = 0; i < 4; i++) {
+                float w = v.boneWeights.FloatAt(i);
+                if (w <= 0.0f) continue;
+                int bi = v.boneIndices[i];
+                if (bi < 0 || bi >= nb || !valid[bi]) continue;
+                const Transform &bx = xfms[bi];
+                weighted.m.x.x += bx.m.x.x * w; weighted.m.x.y += bx.m.x.y * w;
+                weighted.m.x.z += bx.m.x.z * w;
+                weighted.m.y.x += bx.m.y.x * w; weighted.m.y.y += bx.m.y.y * w;
+                weighted.m.y.z += bx.m.y.z * w;
+                weighted.m.z.x += bx.m.z.x * w; weighted.m.z.y += bx.m.z.y * w;
+                weighted.m.z.z += bx.m.z.z * w;
+                weighted.v.x += bx.v.x * w; weighted.v.y += bx.v.y * w;
+                weighted.v.z += bx.v.z * w;
+                total += w;
+            }
+            if (total <= 1e-6f) continue; // unweighted vert: leave as authored
+            float inv = 1.0f / total;
+            weighted.m.x.x *= inv; weighted.m.x.y *= inv; weighted.m.x.z *= inv;
+            weighted.m.y.x *= inv; weighted.m.y.y *= inv; weighted.m.y.z *= inv;
+            weighted.m.z.x *= inv; weighted.m.z.y *= inv; weighted.m.z.z *= inv;
+            weighted.v.x *= inv; weighted.v.y *= inv; weighted.v.z *= inv;
+            Multiply(v.pos, weighted, v.pos); // new = pos * M + v
+            // rotate + renormalize the normal (MeshDeform.cpp:369-395)
+            Vector3 axis;
+            float anx = std::fabs(v.norm.x);
+            float any = std::fabs(v.norm.y);
+            float anz = std::fabs(v.norm.z);
+            if (anx <= any && anx <= anz) {
+                axis.x = v.norm.x * -v.norm.x + 1.0f;
+                axis.y = v.norm.y * -v.norm.x;
+                axis.z = v.norm.z * -v.norm.x;
+            } else if (any < anx && any < anz) {
+                axis.x = v.norm.x * -v.norm.y;
+                axis.y = v.norm.y * -v.norm.y + 1.0f;
+                axis.z = v.norm.z * -v.norm.y;
+            } else {
+                axis.x = v.norm.x * -v.norm.z;
+                axis.y = v.norm.y * -v.norm.z;
+                axis.z = v.norm.z * -v.norm.z + 1.0f;
+            }
+            Vector3 cross;
+            Cross(v.norm, axis, cross);
+            Multiply(axis, weighted.m, axis);
+            Multiply(cross, weighted.m, cross);
+            Cross(axis, cross, v.norm);
+            Normalize(v.norm, v.norm);
+            mutated++;
+        }
+        mesh->Sync(0x1f); // bump the vert fingerprint -> GPU re-upload (parity w/ Reskin)
+        sReskinned.insert(mesh);
+        if (sProbe)
+            fprintf(stderr,
+                    "[RESKIN_APPLY] char='%s' mesh='%s' verts=%d bones=%d "
+                    "resolvedBones=%d mutated=%d\n",
+                    Name() ? Name() : "?", mn, verts.size(), nb, resolved, mutated);
+    }
+}
+#endif
 
 void BandCharacter::SetDeformation() {
 #ifdef HX_NATIVE

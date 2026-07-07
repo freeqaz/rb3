@@ -12,7 +12,17 @@ cells + degenerate 7th).
   math end-to-end from source; dump both genders' authored `mOffset` pre-Poll (A4); confirm
   vert data availability + invalidation; price cost + mesh-instance sharing. Deliver
   FEASIBLE/BLOCKED + the precise R2 recipe. NO fix. — see STATUS.md.
-- **R2 (next) — fix, flag-first default-OFF.** Implement per-member reskin per the R1 recipe.
+- **R2 (DONE — VERDICT: REFUTED).** Implemented the per-member reskin per the R1
+  recipe (flag-first, default-OFF `RB3_HANDS_RESKIN`). Builds clean, fires correctly
+  (all bones resolved, gender-distinct, per-member in-place, zero engine edits). The
+  pre-registered `wext` gate FAILS: flag-ON is a REGRESSION (hands_naked wext mean
+  74.8 → 87.7u; target ≤60u), corroborated by E1 (larger hand shards, both genders).
+  Root cause: the shard is an ANIMATION-BASIS problem (own_rest vs own_live rotation),
+  not a rest-shape one — a vertex re-pose leaves it untouched and amplifies it. Same
+  class as refuted `RB3_APPENDAGE_REST_ROT`/`_ASSET_REBAKE`; genuine fix is
+  asset/skeleton-basis (skeleton_unshared.milo per-member bind). Kept default-OFF as
+  the definitive measured dead-end. See STATUS.md. Original gate list below:
+- **R2 (original spec) — fix, flag-first default-OFF.** Implement per-member reskin per the R1 recipe.
   Pre-registered gates (from WAVE14 A8): Instrument-B rest-free invariants ~0; Tier-2 ≤1u;
   wext 95-106u → ≤60u WITHOUT freeze (distinct-value freeze rider); guard-DROP census
   unchanged; crowd oracle both arms + `RB3_NO_CROWD_REBIND` fail-red; skin-golden + RealPath

@@ -138,6 +138,14 @@ public:
     // animates. Complements RebindOutfitBonesToOwnSkeleton (which owns the torso).
     // Opt-out RB3_NO_HEAD_REBIND=1. No-op on Wii (HX_NATIVE only).
     void RebindHeadHandsAtRest();
+    // Wave 14 Lane RESKIN (R2): REFUTED per-member hands reskin, kept default-OFF as
+    // a documented dead-end (do NOT flip). Synthesized per-vertex weighted multi-bone
+    // blend that re-poses hands_naked verts to the member's own gender rest. MEASURED
+    // a REGRESSION on the IK_SHARD_VERT wext gate (mean 74.8 -> 87.7u): the hands
+    // shard is an ANIMATION-BASIS problem, not a rest-shape one, so a vert re-pose
+    // leaves it untouched and amplifies it. Opt-in RB3_HANDS_RESKIN=1. No-op on Wii
+    // (HX_NATIVE only). See BandCharacter.cpp header for the full A/B + root cause.
+    void NativeReskinHandsAtRest();
     // wave-inststrings (native-only): fix the band lead-guitar *_strings skin
     // explosion. The "brain"-class special guitars (chainsaw/guitar_brain/...) author
     // their string-bend rig on the CHARACTER skeleton (skeleton_unshared.milo) and
