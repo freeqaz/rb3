@@ -826,6 +826,17 @@ void DataLoader::ThreadDone(DataArray *da) {
     delete fileobj;
     fileobj = NULL;
     ptmf = &DataLoader::DoneLoading;
+#ifdef HX_NATIVE
+    // Wave-12 W0.3d-b A-S1: this is the async ThreadCall-worker completion point
+    // (MainThread-asserted above) — the DataLoader's milo/DTA parse finished on the
+    // worker pthread and is observed here on a scheduler-timing-dependent main-thread
+    // poll, i.e. a DIFFERENT sim frame run-to-run (the H-TIMING prime suspect). Log
+    // the frame it lands on. RB3_LOADDET_PROBE, default-OFF, probe-only.
+    {
+        extern void RB3LoadDetComplete(const char *, const char *);
+        RB3LoadDetComplete(mFile.c_str(), "data");
+    }
+#endif
 }
 
 DECOMP_FORCEACTIVE(

@@ -524,6 +524,11 @@ add_executable(rb3-native
     # avoids. The frame/input/boot taps are inline edits at App::RunOneFrame /
     # JoypadPoll / BootMark; this TU owns only the nav sink + song-ms chain.
     ${CMAKE_SOURCE_DIR}/src/rb3_trace_taps.cpp
+    # Wave-12 Lane A (W0.3d-b) A-S1 attribution instrument (RB3_LOADDET_PROBE,
+    # default-OFF, probe-only): per-frame gRand draw-count + per-dir load-completion
+    # frame streams. Frame tap called from rb3_session_trace.cpp RB3TraceSetFrame;
+    # completion taps from DirLoader.cpp / DataFile.cpp.
+    ${CMAKE_SOURCE_DIR}/src/rb3_loaddet_probe.cpp
     # Session telemetry TIER-1 REPLAY: loads a recorded trace's `in` events into
     # an ordered (frame, bits) carry-forward table (RB3_REPLAY=<path> on native;
     # ?replay=<sid> -> window.__rb3ReplayData on web). The JoypadPoll hook in

@@ -734,6 +734,15 @@ void DirLoader::LoadObjs() {
             return;
     }
     mState = &DirLoader::DoneLoading;
+#ifdef HX_NATIVE
+    // Wave-12 W0.3d-b A-S1: log the sim frame on which this ObjectDir went live
+    // (RB3_LOADDET_PROBE, default-OFF, probe-only). Placed at the LoadObjs->Done
+    // transition; additive, no behavioural change.
+    {
+        extern void RB3LoadDetComplete(const char *, const char *);
+        RB3LoadDetComplete(mFile.c_str(), "dir");
+    }
+#endif
     Cleanup(0);
     if (TheLoadMgr.GetFirstLoading() != this)
         return;

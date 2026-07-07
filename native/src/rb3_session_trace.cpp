@@ -902,6 +902,12 @@ void RB3TraceInit() {
 
 void RB3TraceSetFrame(int frame) {
     gRB3TraceFrame = frame;
+    // Wave-12 W0.3d-b A-S1: per-frame gRand stream-position sample. RB3TraceSetFrame
+    // runs once per RunOneFrame at frame start (under gRB3TraceActive OR
+    // RB3FixedClockActive), so this covers the fixed-clock attribution boot. No-op
+    // unless RB3_LOADDET_PROBE is set (probe-only, default-OFF).
+    extern void RB3LoadDetFrameTap(int);
+    RB3LoadDetFrameTap(frame);
 }
 
 void RB3RecordFrame(float dt, float lp, float lpu, const char *scr, int pend) {
