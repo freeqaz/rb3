@@ -205,3 +205,90 @@ bake attempt.
   NO gen.inc regen — coordinator) — `<eng-sha>`
 
 Checkpoint: `/tmp/wave10-checkpoints/A-S2.json` (`verdict: REFUTED`).
+
+---
+
+## A.S3 — done (triage, engine-read-only) — VERDICT: **H1** (known hand-shard family; H2/H3 refuted)
+
+**Charter:** WAVE10_KICKOFF A.S3 + WAVE10_REVIEW A6. Reproduce both REBASELINE §(b)
+floating-forearm sightings flag-OFF baseline FIRST; one draw-log at the sighting separates
+H1 (detached-mesh shard) / H2 (occlusion-wipe illusion) / H3 (rest-of-char guard-DROPped,
+one legit forearm survives). Build dir `native/build-agent-W2.8e` (flag-OFF default;
+`RB3_APPENDAGE_ASSET_REBAKE` unset ⇒ the refuted S2 fix is inert). Engine-read-only:
+only existing env-gated probes used (`SHARD_DBG` drop-log, `SHARD_RATIO_DBG` skinned-mesh
+census, `SHARD_BONE_DBG` outlier bone-world). Single-writer respected — **no engine edits**.
+Harness: `evidence/s3_triage_harness.py`.
+
+### Verdict in one line
+Both sightings are **H1** — the **known W2.8d/A.S1 hand/finger shard family** (a real,
+placement-free, pose-independent **ROTATION-basis conjugation error**). **Refinement:** the
+forearm mesh is **present and DRAWN** (never guard-dropped); the "detachment" is **vertex
+smear** — far-from-wrist verts fling by ≈R·sin(θ) to a ~105u world extent while the wrist
+**bone stays attached** — NOT a bone-world displacement. **H2 and H3 refuted by measurement.**
+
+### Sighting 1 — part_difficulty settle (reproduced)
+Screenshots `evidence/s3_sighting1_partdiff_060.png` (+060, frame 453) and `_120.png`
+(+120, frame 520): the female band-preview character's **body renders coherently** (torso/
+legs/head, outfit meshes at normal ~50u extent, ratio ~1.0) while a **forearm+hand mesh
+floats detached** beside/above it. The draw-log census pins the culprit:
+
+| mesh (band) | worldExt range | ratio | guard DROP |
+|---|---|---|---|
+| `hands_naked.mesh` | **61 → 106u** | ≤1.32 | **0** (band cap 110u ⇒ draws) |
+| `gloves_resource.mesh` | 33 → 64u | ≤1.67 | 0 |
+| `fingernails_resource.mesh` | 32 → 64u | ≤1.27 | 0 |
+| `greaserjacket_resource.mesh` (body) | 54u | ~1.0 | 0 |
+| `bikinistockings_skin.2.mesh` (body) | 46u | ~1.2 | 0 |
+
+The hand meshes smear to ~105u; the body meshes stay at ~50u/ratio~1.0 (coherent). **Zero
+band DROPs.** All `SHARD_GUARD` drops in the run end at **frame 352** — *before* part_diff
+arrival (frame 384) and the sighting (453/520) — and every dropped dir is crowd/extras
+(`crowd_male01`, `crowd_female01`, `lighter.mesh`/`clap.mesh`), never a band-member dir.
+
+### Sighting 2 — gameplay late (reproduced, run2)
+`evidence/s3_sighting2_gameplay_late_run2.png`: top-left **pink shard** = the female
+singer's hand smearing up to the ceiling ("disembodied forearm hangs from the ceiling,
+top-left" per §(b)#2); the male member's raised forearm smears upward. Bodies coherent
+(`evidence/s3_gameplay_band_run2_bodies_coherent.png`). Census:
+`hands_naked.mesh` maxWorldExt **105.8u** — **identical in run1 (105.75u) and run2** ⇒ the
+shard is **scene-deterministic**, present every boot; the director-shot camera only controls
+whether it is on-screen (this is H2's grain of truth: framing gates *visibility*, not the
+defect). **0 band DROPs** in either run; the only dropped dirs across all runs are
+`crowd_*` / `male_extras*` / `scrollbar` (UI). `SHARD_BONE` flags **no** band-hand bone-world
+outlier (only a drum-cymbal prop `ludvista_smallclub`) ⇒ **bones attached, verts smear**.
+
+### Hypothesis disposition
+- **H1 (detached-mesh shard family) — CONFIRMED.** `hands_naked`/`gloves`/`fingernails`
+  (the band character's own skin set) draw at anomalous ~64–106u extents (rotation-basis
+  smear) while the body draws coherently; same signature both sightings, both contexts.
+- **H2 (occlusion/wipe illusion) — REFUTED.** The bodies are *drawn* at normal extents, not
+  merely occluded off-frame; a genuinely smeared mesh exists. (Camera framing controls only
+  *visibility*, not the presence of the defect — hands_naked is 105.8u regardless of shot.)
+- **H3 (rest-of-char guard-DROPped, lone forearm survives) — REFUTED.** No band-member/
+  `player*` dir is *ever* guard-DROPped in any run; the V24 mixed-palette drop family
+  (`BandCharacter.cpp:1416-1428`) fires only on crowd/extras/UI. The forearm is not a lone
+  survivor of a drop cascade — the *whole* character (body + hands) draws; only the hands are
+  smeared.
+
+### Flip-package exhibit (A6)
+A.S2 **did not land a fix** — `RB3_APPENDAGE_ASSET_REBAKE` is REFUTED (freezes the hands;
+default-OFF, dead) — so there is no landed default-ON fix whose collapse could be tested.
+Honest statement for the eventual flip package: **the floating forearm is a live
+manifestation of the still-unfixed hand shard (H1); it is NOT collapsed by any current
+candidate fix (the sole candidate freezes rather than fixes).** Per A6 this is
+**flip-BLOCKING evidence** for any future "hands correct ⇒ default-ON" recommendation — the
+hands remain genuinely broken on-screen — but is **not** a land gate for this wave. A real
+fix must collapse the ~105u `hands_naked` extent into the ≤70u clean-limb envelope **without
+freezing** before a hands flip is signed.
+
+### Gates
+- **Flag-OFF baseline captured FIRST** (default build; refuted S2 flag unset) — done.
+- **Single-writer (A1):** no engine or `Rnd_Wgpu_RB3.cpp` edits — triage used only existing
+  env-gated probes; Lane B read-only after Step 0 respected.
+- Build dir: `native/build-agent-W2.8e` (own dir; `build-native` untouched).
+
+Checkpoint: `/tmp/wave10-checkpoints/A-S3.json` (`verdict: H1`).
+
+### Commits
+- rb3 (flock `/tmp/rb3-git.lock`): this STATUS append + `W2.8e/evidence/` (4 sighting PNGs +
+  triage harness) — `<rb3-sha>`
