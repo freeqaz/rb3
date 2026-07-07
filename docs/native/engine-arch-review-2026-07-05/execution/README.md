@@ -329,3 +329,30 @@ correction (two static approaches empirically killed); BoxMap = DROP.** Engine �
 - **WASH verdict** (when the matrix lands) → mechanism item or fix.
 - Carried: venue black poster quads (SYS-5), 4→8 lights (DC3 gates), W2.6 foot/shoe, W2.4
   BandPatchMesh, song_select minor residuals.
+
+## Wave 8 results (2026-07-07, run `wf_daec8375-122`, 8 agents)
+
+**THE VENUE WASH + GRAYSCALE ARE FIXED AND SHIPPED (chroma-preserve composite, default-ON); the
+matrix's own mechanism theory was overturned by instrumentation; the hands conjugation was refuted
+honestly at smoke; the black poster quads are NOT a bug.** Engine → `a320f9d` (pin bumped after
+792 + lineup PASS on the flipped default). Kickoff+review `2eb2652b`.
+
+| Item | Status | Highlights |
+|---|---|---|
+| WASH-fix S1 instrumentation | ✅ **complete [H1 REFUTED]** | `RB3_WASH_PROBE` (engine `71469af`): **0/8 default boots miss engagement — the env-state machine is exonerated**; PINK boots have byte-identical lighting inputs to clean boots. The pink is a downstream screen-space magenta flood (composite grade), NOT a revealed pink base — reframing the Wave-7 matrix verdict (venue_light_off washes because the flat-default flood replaces dark engaged lighting, not because it unmasks). H2 confirmed-refined: composite desaturates hot venue input; the grey is **director-shot-dependent**, not ms-pinned. |
+| WASH-fix S2/S3 | ✅ **complete → FIX-H2 FLIPPED default-ON** | Two fixes, separately flagged: **`RB3_PP_CHROMA_PRESERVE`** (venue-scoped chroma preservation in the Stage-2 composite — graded luminance × ungraded chroma, menu B+W look untouched via a `venueGrade` uniform, struct stays 176B) + **`RB3_VENUE_FALLBACK_FIX`** (dim exposure-safe broken-env fallback, world.cam-scoped). Gates: vlo deterministic fail-red 6/6 wash → **0/5 NEUTRAL** (both fixes); **grey venue → restored colored stage lighting** (mid_sat 0.067→0.208, PP_OFF-look with engagement verified); per-flag flag-OFF byte-identical; lineup PASS; DC3 zero-blast. A.S3 independent verify: reproduce all + **RECOMMEND FLIP for FIX-H2**. **Coordinator flip (engine `a320f9d`): FIX-H2 default-ON (opt-out `RB3_PP_CHROMA_PRESERVE_OFF`, legacy `=0` disable kept); FIX-H1 stays opt-in** (inert on the default path — documented safety net). Disclosed residual → Wave 9: engaged-venue WHITE over-exposure (raw sub-knee, in the space `RB3_PP_LUMA_CEILING` was aimed at). |
+| W2.8c per-frame hands | ❌ **refuted [honest negative]** | The per-bone conjugation `offset_b(t)=inv(A_b)·inv(L_b(t0))·L_b(t)·A_b·inv(L_b(t))` **AMPLIFIED the twist under animation (80u → 500-2600u)** — caught at the planned S2 smoke tripwire, stopped rather than tuned blindly. B.S3 confirms DO NOT FLIP. "Rotation basis wrong, translation correct." **Three fix classes are now dead with numbers** (static rebake, rigid anchor, game-side conjugation). → Wave 9: bone-level attribution FIRST (dump per-bone offset/boneWorld/weight vs the CPU reference per sharding vertex; name the wrong factor empirically before any 4th fix attempt). |
+| W5.1 black poster quads | ✅ **complete [NOT A BUG]** | `RB3_HEADMAT_DBG` census (zero new code): the reference cork-board black poster is the **tv3_a transition vignette**, and `showtonight_poster.mesh` binds + samples its texture (`hasTex=1`, faint embossed text) — an **authored-dark concert poster**, not a null-diffuse. The W2.7-family hypothesis was correctly killed by the probe before any code. No fix needed. |
+
+**Coordinator actions:** FIX-H2 flip + regen (`a320f9d`, 336 flags clean); 792 + lineup PASS on
+flipped default; pin bumped `a94762f` → `a320f9d`.
+
+### Wave 9 menu (from Wave 8)
+
+- **W2.8d hands attribution:** per-bone factor diff (GPU palette vs CPU reference vs authored data)
+  on a sharding finger vertex — name the wrong factor with numbers; only then design fix #4.
+- **WHITE over-exposure (engaged venue):** the residual A.S2 disclosed — raw sub-knee over-exposure
+  on hot engaged venues; composite family, same files (now unowned).
+- **Current-state re-baseline:** fresh screenshot sweep vs `/tmp/wave6-current-state/` — five
+  defaults flipped since; find what the user sees now + surface new items.
+- Carried: 4→8 lights (DC3 gates), W2.4 BandPatchMesh, song_select residuals.
