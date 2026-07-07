@@ -335,3 +335,125 @@ Metrics: `wash_score.py` → `hi_frac` (% pixels luma>0.90), `mean_luma`, `wash_
 Recommend **flip default-ON** iff **G1(a+b) PASS AND G2(a+b) PASS AND G3 PASS AND G4 PASS AND
 G5(a,b,c) PASS**. Any PRIMARY (G1) or preservation (G2) failure → **hold**, documented honestly.
 "WHITE class 0/N" is secondary color only (Fisher-trap, A7).
+
+---
+
+# WHITE-fix — Stage B.S1 STATUS (Wave 10: BEHAVIORAL GATES, Opus) — RESULTS + RECOMMENDATION
+
+Checkpoint `B-S1`. Engine-read-only (STEP-0 patch pre-landed, engine `2998e78`). Build
+`native/build-agent-WHITE-fix-BS1/rb3-native`. Arms differ ONLY by `RB3_VENUE_WHITE_GUARD`
+(unset=OFF vs `=1`=ON); chroma-preserve default-ON, refuted flags UNSET, both arms.
+Drivers `white_ab.py` (reuses `white_discriminate.run_arm`); raws `/tmp/whitefix-bs1-caps/`,
+JSON `measure/bs1_enghot.json` + `measure/bs1_flood.json`.
+
+## RECOMMENDATION: **HOLD** (do NOT flip `RB3_VENUE_WHITE_GUARD` default-ON)
+
+The guard is landed, safe, and correctly scoped, but its **behavioral benefit is NOT demonstrable**
+on the available reproducers, and the arm-mean gates are **confounded by per-boot lighting
+nondeterminism** (W0.3d) beyond rescue at N=6. Per the pre-registered FLIP rule (G1+G2 must PASS),
+**G1 does not pass** → HOLD. Details below; this is a mechanism-grounded honest negative, not a
+tooling failure.
+
+## Data (N=6/arm, same pinned `coop_dir_crowd.shot`, songMs ~21000, `RB3_FIXED_CLOCK=1`)
+
+| arm | guard | hi_frac | mid_sat | mean_luma | WHITE |
+|---|---|---|---|---|---|
+| eng_hot (ENGAGED — guard FIRES) | OFF | 17.22 | 0.313 | 0.537 | 1/6 |
+| eng_hot | ON | 35.18 | 0.246 | 0.644 | 3/6 |
+| eng_hot Δ (ON−OFF) | | **+17.96** | **−0.067** | +0.107 | +2 |
+| venue_light_off flood (NON-engaged — guard INERT) | OFF | 32.49 | 0.219 | 0.596 | 3/6 |
+| flood | ON | 21.48 | 0.250 | 0.521 | 1/6 |
+| flood Δ (ON−OFF) | | **−11.01** | +0.031 | −0.075 | −2 |
+
+## Why the arm-mean gate is CONFOUNDED (the null control proves it)
+
+The guard field is written at **exactly one site** — `Rnd_Wgpu_RB3.cpp:1474`, inside the ENGAGED
+branch (`sVenueLightEnabled() && world.cam && mAmbientFogOwner`); `SceneUniforms s{}` zero-inits it
+(`:1334`); no other write. So on the **flood** (`RB3_VENUE_LIGHT_OFF=1` → non-engaged else branch,
+`eng=0/40` every boot) the guard is **provably INERT** — flag-ON and flag-OFF render byte-identical
+scene uniforms.
+
+Yet the flood arm-mean swings **d_hi_frac = −11.01** (WHITE 3→1) — in the *favorable* direction.
+Since the guard cannot possibly cause that (field=0 both arms), it is **pure per-boot lighting
+nondeterminism**: the OFF arm happened to draw 3 hot WHITE boots, the ON arm 1. This flood delta is
+the **NULL CONTROL**: it quantifies the boot-noise floor at **~±11–18 hi_frac**. The eng_hot
++17.96 and the flood −11.01 are the *same noise*, opposite draws.
+
+Corroborating: on eng_hot, WHITE count 3/6 (ON) vs 1/6 (OFF) at the SAME shot + SAME params — but
+`compressHighlightsLuma` is monotone luminance-reducing, so it **cannot add WHITE frames**. The +2
+WHITE (and the +17.96 hi_frac) are therefore boot-RNG, not the guard. At N=6 with a ~25–50% WHITE
+rate this noise dwarfs any guard effect → the pre-registered arm-mean gate cannot resolve it (the
+W0.3d async-completion-order nondeterminism breaks per-boot pairing; RB3_FIXED_CLOCK does not fix it).
+
+## Why even a clean measurement would show little benefit (mechanism + visual)
+
+Matched-hotness stratification of eng_hot removes some noise:
+- NEUTRAL (moderate, below wash): OFF hi 11.96 / mid 0.319 (n5) vs ON hi 16.13 / mid **0.344** (n3)
+  → mid_sat +0.025 (the guard's intended direction, but tiny; these frames don't wash anyway).
+- WHITE: OFF mid 0.284 (n1) vs ON mid **0.148** (n3) — but ON's WHITE boots are hotter draws.
+
+Visual A/B (`Read` of the raws):
+- `OFF_05` (WHITE): only the **left third** washes (doorway backlight) — a **zero-chroma white-lit**
+  region; the rest is fully colored. `ON_03` (WHITE, hotter boot): the **entire frame** blows
+  near-white and the guard did **not** rescue it. `ON_06` (hi 26, mid 0.349) stays colored; `OFF_01`
+  (hi 14) colored. **Where it's hot it's white-lit (no chroma); where it's colored it isn't hot.**
+
+`compressHighlightsLuma` preserves chroma *during* highlight compression but does **not** reduce
+exposure more than the per-channel path. The actual venue wash is **white-lit zero-chroma**, where a
+chroma-preserving op is a no-op — so the fix's design premise (S1 §2: "engaged WHITE keeps chroma
+the luma-preserving fix can save") **does not hold for the regions that actually wash**. That is the
+core finding.
+
+## Gate ledger (pre-registered)
+
+- **G1 (PRIMARY, eng_hot):** **INCONCLUSIVE→FAIL.** G1a (hi_frac ↓ ≥3) is +17.96 (wrong sign);
+  G1b (mid_sat ↑ ≥0.02) is −0.067. Both are within the null-control noise floor (flood ±11), so the
+  gate cannot certify benefit. Per the flip rule → **no flip.**
+- **G2a (venue not over-dimmed):** PASS trivially (ON lum 0.644 ≥ OFF 0.537−0.08) — but this "pass"
+  is also noise (ON drew brighter boots). No dimming concern regardless.
+- **G2b (highway/HUD preserved):** SOURCE-PROVEN — guard field=0 off world.cam (game.cam/menu/HUD),
+  so those draws are byte-identical flag-ON vs OFF (no runtime read outside the engaged venue branch).
+- **G3 (FAIL-RED):** **PASS.** Flag-OFF over-exposure reproduces: flood OFF 3/6 strict-WHITE
+  (hi up to 67), eng_hot OFF 1/6 WHITE (hi 43.56). The target defect exists with the flag off.
+- **G4 (SCOPE / null control):** **PASS by source** (guard inert on non-engaged flood, `eng=0/40`).
+  The pre-registered |d_hi|<3 numeric bound is VIOLATED (11.01) — but that is the **boot-noise floor,
+  not a scope leak** (the guard field is provably 0 on the flood). The violation is itself the null
+  control that invalidates the eng_hot arm-mean. (Pre-registration mis-calibrated the threshold below
+  the noise floor; the source proof is the authoritative scope check.)
+- **G5 (REGRESSION):** G5a drawlog-792 flag-OFF + G5b lineup — see below (STEP-0 already confirmed
+  792 on this exact engine commit). G5c 2-condition venue captures (engaged chars.env + flood
+  chars.env) render sane in both flag states (no new artifacts in the visual A/B).
+
+## G5 regression results
+- **G5a drawlog-792 flag-OFF (my build):** **PASS** — `drawlog-golden.py --fixed-clock
+  --canonical-order` → `count=792`, canonical-order matches golden (254 known-residual eye-jitter
+  divergences within bound, non-blocking; the rc=-11 bounded-boot teardown SIGSEGV is the documented
+  W0.3.S1 pre-existing teardown, dump written before it). The landed default-OFF patch is
+  regression-clean, corroborating STEP-0's 792 on this same engine commit `2998e78`.
+- **G5b lineup-gate (my build):** **PASS** — all layers green (img/segA/ratioB/countC/pin); default build (guard OFF) regression-clean.
+- **G5c venue captures:** engaged `chars.env` (guard fires, `eng=40/0`) + flood `chars.env`
+  (guard inert, `eng=0/40`) both render sane in flag-ON and flag-OFF (visual A/B, no new artifacts).
+  Single boot-reachable venue family on `song_downs=4` (chars/geom.env); a distinct 2nd venue needs
+  a different song — deferred (does not affect the HOLD).
+
+## What the coordinator should NOT do
+Do **not** flip `RB3_VENUE_WHITE_GUARD` default-ON. It would ship a fix that does not measurably fix
+its target defect (the engaged-venue WHITE), which is a fake-win. The patch stays landed default-OFF,
+safe (flag-OFF byte-identical, DC3 zero-blast, WGSL valid — STEP-0), scope-correct, and documented.
+
+## The real fix direction (for a future wave)
+The engaged-venue WHITE is a **white-lit zero-chroma over-exposure** — pale surfaces × hot near-white
+venue lighting summing past 1.0 before the UNORM clamp. A **chroma-preserving highlight compression
+cannot fix a region that has no chroma.** The effective lever is to **reduce the venue exposure /
+tonemap on the offending hot moments** (cap the pale-surface × hot-light product below the wash
+onset), scoped/localized so it does NOT regress the A2/A3/A4 emissive-glow tuning (S1 §4 correctly
+flagged a blunt venue exposure cut as regressing glow). Prerequisite for *measuring* any such fix: a
+**deterministic ENGAGED hot reproducer** — the flood is inert (non-engaged) and the engaged arm is
+confounded by W0.3d boot-nondeterminism (this stage's null control quantified the ~±15 hi_frac floor).
+Until W0.3d's async-completion-order nondeterminism is closed on the engaged path, no engaged-venue
+exposure change can be A/B'd at N=6.
+
+## Artifacts
+`white_ab.py`, `measure/bs1_enghot.json`, `measure/bs1_flood.json`, raws `/tmp/whitefix-bs1-caps/`,
+drawlog `/tmp/wf-bs1-drawlog.log`, lineup `/tmp/wf-bs1-lineup.log`. Checkpoint
+`/tmp/wave10-checkpoints/B-S1.json`.
