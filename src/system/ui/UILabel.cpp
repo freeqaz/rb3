@@ -299,10 +299,16 @@ void UILabel::DrawShowing() {
     if (getenv("RB3_HOLDLABEL_DBG")) {
         const char *nm = Name();
         const Transform &wx = WorldXfm();
+        // W4.3-C2b4 (C4): also log wrap_width/size so the hub-ticker
+        // font-scale/wrap gap (message.lbl vs expand_message_area.ihp) can be
+        // diagnosed from one pass -- mText is the RndText this label wraps.
+        float ww = mText ? mText->WrapWidth() : -1.0f;
+        float sz = mText ? mText->Size() : -1.0f;
         fprintf(
             stderr,
-            "[holdlabeldbg draw] UILabel this=%p name='%s' worldXfm.v=(%.2f,%.2f,%.2f)\n",
-            (void *)this, nm ? nm : "?", wx.v.x, wx.v.y, wx.v.z
+            "[holdlabeldbg draw] UILabel this=%p name='%s' worldXfm.v=(%.2f,%.2f,%.2f) "
+            "wrap_width=%.2f size=%.2f\n",
+            (void *)this, nm ? nm : "?", wx.v.x, wx.v.y, wx.v.z, ww, sz
         );
     }
 #endif

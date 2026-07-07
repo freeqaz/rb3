@@ -101,6 +101,67 @@ void SongSelectPanel::FinishLoad() {
                 fprintf(stderr, "[C2DIAG] forced %s showing=1\n", cand[i]);
             }
     }
+    // W4.3-C2b4 (C2b) fix: album_art.grp (picture + its own album_frame01.mesh
+    // bezel, both children of the group -- census W4.3-C2a census.txt:364-375)
+    // sits positioned too far up-left in the native render, so its top edge
+    // rides above/into the header row's stats.grp content (gamertag icon +
+    // careerscore.scr + careerstars.sd, census.txt:278-282) instead of sitting
+    // cleanly below it as in retail (yt_qRagnZCIMzk_song_select_album_art.png).
+    // Calibrated empirically (frame-count-settled screenshots, NOT wall-clock
+    // sleeps -- wall-clock settling gave a NON-monotonic false trend here
+    // because the entrance-animation progress at a fixed sleep duration jitters
+    // run-to-run; frame-count settling fixed that): a Z offset in [-120,-150]
+    // on the group's local xfm moves the whole picture+frame down-and-right as
+    // a unit, clearing the header icon with a clean gap by -120, matching the
+    // retail layout. getenv-gated, default-OFF pending coordinator sign-off
+    // (RB3_SS_ART_YFIX=1 to enable). The raw world-xfm gap between
+    // album_art.grp/header.grp did NOT cleanly indicate this in isolation (both
+    // X and Z differ by 100s of units between the two siblings, unlike the C4
+    // message.lbl/expand_message_area.ihp pair) -- empirical nudge-and-capture
+    // was required here, same method as C4 but a different underlying gap
+    // magnitude/axis mix (this is NOT provably the "same family" as C4; see
+    // STATUS.md verdict).
+    if (getenv("RB3_SS_ART_YFIX")) {
+        if (RndTransformable *g = mDir->Find<RndTransformable>("album_art.grp", false)) {
+            g->DirtyLocalXfm().v.z -= 120.0f;
+        }
+    }
+    // W4.3-C2b4 (C2b) EXPERIMENTAL calibration probe (RB3_C2B_ART_NUDGE=<float>):
+    // apply an additional additive Z offset to album_art.grp's local xfm for
+    // further empirical calibration beyond the -120 default above. Diagnostic
+    // only, default-off, harmless to leave in (never reached with the flag
+    // unset).
+    if (const char *nudge = getenv("RB3_C2B_ART_NUDGE")) {
+        if (RndTransformable *g = mDir->Find<RndTransformable>("album_art.grp", false)) {
+            g->DirtyLocalXfm().v.z += (float)atof(nudge);
+            fprintf(stderr, "[C2BNUDGE] album_art.grp local.z += %s\n", nudge);
+        }
+    }
+    // W4.3-C2b4 (C2b) diagnosis: album_art.pic (top edge overlaps the header
+    // row on quick-view) has no C++-set local_xfm anywhere in this file or
+    // TexLoadPanel — its position is purely the authored milo xfm of
+    // album_art.grp/album_art.pic, a sibling of header.grp/header_song_bg.grp
+    // under all.grp (see W4.3-C2a census.txt:12,14,26,27,30). Log world xfm
+    // of all four to compare the authored album-vs-header vertical gap
+    // against the retail screenshot's gap.
+    if (getenv("RB3_C2B_XFM_DBG")) {
+        static const char *names[] = { "album_art.grp", "album_art.pic", "header.grp",
+                                        "header_song_bg.grp", "all.grp", nullptr };
+        for (int i = 0; names[i]; i++) {
+            RndTransformable *t = mDir->Find<RndTransformable>(names[i], false);
+            if (t) {
+                const Transform &wx = t->WorldXfm();
+                const Transform &lx = t->LocalXfm();
+                fprintf(
+                    stderr,
+                    "[C2BXFM] %-20s world.v=(%.2f,%.2f,%.2f) local.v=(%.2f,%.2f,%.2f)\n",
+                    names[i], wx.v.x, wx.v.y, wx.v.z, lx.v.x, lx.v.y, lx.v.z
+                );
+            } else {
+                fprintf(stderr, "[C2BXFM] %-20s <not found>\n", names[i]);
+            }
+        }
+    }
 #endif
 }
 
@@ -298,6 +359,25 @@ void SongSelectPanel::ResultFailure() { HandleType(lb_failure_msg); }
 
 void SongSelectPanel::Poll() {
     HeldButtonPanel::Poll();
+#ifdef HX_NATIVE
+    // W4.3-C2b4 (C2b): re-log every Poll (not just FinishLoad) so the values
+    // reflect the settled post-entrance-animation position, not a possibly
+    // mid-transition-in snapshot taken right after load.
+    if (getenv("RB3_C2B_XFM_DBG")) {
+        static const char *names[] = { "album_art.grp", "album_art.pic", "header.grp",
+                                        "header_song_bg.grp", "all.grp", nullptr };
+        for (int i = 0; names[i]; i++) {
+            RndTransformable *t = mDir->Find<RndTransformable>(names[i], false);
+            if (t) {
+                const Transform &wx = t->WorldXfm();
+                fprintf(
+                    stderr, "[C2BXFMPOLL] %-20s world.v=(%.2f,%.2f,%.2f)\n", names[i],
+                    wx.v.x, wx.v.y, wx.v.z
+                );
+            }
+        }
+    }
+#endif
     if (mLeaderboard)
         mLeaderboard->Poll();
     if (mLastRotateSecs >= 0.0f && GetState() == kUp) {

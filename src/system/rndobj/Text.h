@@ -122,6 +122,10 @@ public:
     void SetTextASCII(const char *);
     float Size() const { return mStyle.size; }
     void SetSize(float);
+    // W4.3-C2b4 (C4 diagnosis): mWrapWidth has a setter (SetWrapWidth) but no
+    // public getter; needed to log the authored-vs-runtime value for
+    // message.lbl without poking the private member from outside the class.
+    float WrapWidth() const { return mWrapWidth; }
     void GetMeshes(std::vector<RndMesh *> &);
     void SetFixedLength(int);
     void GetCurrentStringDimensions(float &, float &);

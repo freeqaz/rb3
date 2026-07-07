@@ -388,12 +388,19 @@ void InlineHelp::DrawShowing() {
             float det = m.x.x * (m.y.y * m.z.z - m.y.z * m.z.y)
                 - m.x.y * (m.y.x * m.z.z - m.y.z * m.z.x)
                 + m.x.z * (m.y.x * m.z.y - m.y.y * m.z.x);
+            // W4.3-C2b4 (C4): also log this label's wrap_width/size -- InlineHelp
+            // draws mTextLabels[i] directly via ->Draw() (bypassing
+            // UILabel::DrawShowing(), so the sibling probe there never sees
+            // these "NEXT MESSAGE (n/n)" labels). Needed to compare the header
+            // label's font metrics against message.lbl's (MainHubPanel.cpp).
+            RndText *txt = mTextLabels[i]->TextObj();
             fprintf(
                 stderr,
                 "[holdlabeldbg draw]   label[%d] hasSecondary=%d text='%s' "
-                "labelXfm.v=(%.2f,%.2f,%.2f) det=%.4f\n",
+                "labelXfm.v=(%.2f,%.2f,%.2f) det=%.4f wrap_width=%.2f size=%.2f\n",
                 i, (int)hasSecondary, mConfig[i].GetText(sRotated),
-                labelXfm.v.x, labelXfm.v.y, labelXfm.v.z, det
+                labelXfm.v.x, labelXfm.v.y, labelXfm.v.z, det,
+                txt ? txt->WrapWidth() : -1.0f, txt ? txt->Size() : -1.0f
             );
         }
 #endif

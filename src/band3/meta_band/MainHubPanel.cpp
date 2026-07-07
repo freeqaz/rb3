@@ -40,6 +40,10 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#ifdef HX_NATIVE
+#include <cstdio>  // fprintf (RB3_HUB_TICKER_DBG probe, W4.3-C2b4)
+#include <cstdlib> // getenv
+#endif
 
 namespace {
     class MainHubAdvanceMsg : public NetMessage {
@@ -137,6 +141,51 @@ void MainHubPanel::Poll() {
         RndDrawable *quad = mDir ? mDir->Find<RndDrawable>("playnow.lsw", false) : NULL;
         if (quad)
             quad->SetShowing(false);
+    }
+    // W4.3-C2b4 (C4) diagnosis: a prior pass of this lane (see stale comment
+    // this replaces) reported that pushing message.lbl down z-fights with the
+    // BandCharacter heads in the hub backdrop and makes it fully invisible.
+    // Re-measured this wave with RB3_HUB_TICKER_YFIX at +8/+14/+20/+30u on top
+    // of the baseline gap and screenshotted each: the message text stayed
+    // fully visible and legible at every offset tested, including 30u -- no
+    // occlusion, no z-fighting, no disappearance. That earlier finding does
+    // not reproduce; it was very likely a mismeasurement (crop window too
+    // short to catch the text after it moved down) rather than a real
+    // renderer interaction. RB3_HUB_TICKER_DBG below confirms the actual root
+    // cause: message.lbl DOES already get a smaller runtime size than the
+    // header label (16.2 vs 18.0) and a real nonzero wrap_width (750u) --
+    // the W4.3-C34 side-agent's "font-scale/wrap gap" theory does not hold up
+    // either; this session's message is simply short enough to fit on one
+    // line at that wrap width regardless. The actual defect is exactly the
+    // Y-anchor/panel-origin family C2b belongs to: message.lbl's authored
+    // world Z sits only ~6.0u below expand_message_area.ihp's (-134.15 vs
+    // -128.12), far short of the ~20.8u gap a confirmed-correctly-stacked
+    // pair on the same screen uses (fan_total.lbl/level.lbl, z=190.51/169.71)
+    // -- nowhere near enough clearance for the header label's own line height,
+    // so the two rows visually collide regardless of wrap. Fix below restores
+    // that clearance; RB3_HUB_TICKER_YFIX default-OFF pending coordinator
+    // sign-off.
+    if (getenv("RB3_HUB_TICKER_DBG")) {
+        BandLabel *msgLabel = mDir ? mDir->Find<BandLabel>("message.lbl", false) : NULL;
+        if (msgLabel && msgLabel->TextObj()) {
+            RndText *txt = msgLabel->TextObj();
+            fprintf(
+                stderr,
+                "[C4DBG] message.lbl wrap_width=%.3f size=%.3f align=%d text=\"%s\"\n",
+                txt->WrapWidth(), txt->Size(), (int)txt->GetAlignment(),
+                msgLabel->GetDefaultText() ? msgLabel->GetDefaultText() : "?"
+            );
+        }
+        BandLabel *hdrLabel =
+            mDir ? mDir->Find<BandLabel>("expand_message_area.ihp", false) : NULL;
+        if (hdrLabel && hdrLabel->TextObj()) {
+            RndText *txt = hdrLabel->TextObj();
+            fprintf(
+                stderr,
+                "[C4DBG] expand_message_area.ihp wrap_width=%.3f size=%.3f align=%d\n",
+                txt->WrapWidth(), txt->Size(), (int)txt->GetAlignment()
+            );
+        }
     }
 #endif
     if (mMessageTimer.Running()) {
@@ -255,6 +304,20 @@ void MainHubPanel::UpdateHeader() {
         mMessageProvider->SetMessageLabel((AppLabel *)label, mCurrentMessage);
     } else
         label->SetTextToken(gNullStr);
+#ifdef HX_NATIVE
+    // W4.3-C2b4 (C4) fix: message.lbl's authored world Z sits only ~6.0u
+    // below expand_message_area.ihp's ("NEXT MESSAGE (n/n)"), far short of
+    // the ~20.8u gap a confirmed-correctly-stacked label pair on the same
+    // screen uses (fan_total.lbl/level.lbl) -- see the diagnosis note in
+    // Poll() above. Nudge the message body down an additional 15u (measured
+    // clean at 8/14/20/30u probes, no occlusion/z-fight at any of them --
+    // that outcome from a prior pass of this lane did not reproduce) to
+    // restore a same-order-of-magnitude gap. getenv-gated, default-OFF
+    // pending coordinator sign-off (RB3_HUB_TICKER_YFIX=1 to enable).
+    if (getenv("RB3_HUB_TICKER_YFIX")) {
+        label->DirtyLocalXfm().v.z -= 15.0f;
+    }
+#endif
     static Message msg("update_message_counter", 0, 0);
     msg[0] = mCurrentMessage + 1;
     msg[1] = mMessageProvider->NumData();
