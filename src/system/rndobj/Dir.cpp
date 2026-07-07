@@ -15,6 +15,10 @@
 #include "utl/Std.h"
 #include <algorithm>
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstring>
+#include "rb3_replay.h"  // W0.3d-b: RB3FixedClockActive / RB3LoadDeterminism
+#endif
 
 INIT_REVS(RndDir)
 
@@ -61,6 +65,23 @@ void RndDir::SyncObjects() {
              ++it) {
             VectorRemove(mAnims, *it);
         }
+#ifdef HX_NATIVE
+        // W0.3d-b (Wave 12, A-S2): deterministic mAnims order under the
+        // load-determinism seam. mAnims is built by an address-ordered ObjDirItr
+        // walk and — unlike mPolls (SortPolls) and mDraws (SortDraws) below — was
+        // NEVER sorted, so RndDir::SetFrame walked the variable-count Rand
+        // rejection samplers (Wind::/CameraShot/Crowd) in a boot-varying order ->
+        // per-frame gRand COUNT divergence (A-S1 H-ORDER). Object names within a
+        // dir are unique, so a Name() compare is a total order independent of
+        // allocation address. Gated RB3FixedClockActive() && RB3LoadDeterminism();
+        // flag-OFF byte-identical (the MWCC match build never takes this branch).
+        if (RB3FixedClockActive() && RB3LoadDeterminism()) {
+            std::sort(mAnims.begin(), mAnims.end(),
+                      [](const RndAnimatable *a, const RndAnimatable *b) {
+                          return strcmp(a->Name(), b->Name()) < 0;
+                      });
+        }
+#endif
         std::list<RndPollable *> pollchildren;
         for (ObjDirItr<RndPollable> it(this, true); it != 0; ++it) {
             if (it != this) {

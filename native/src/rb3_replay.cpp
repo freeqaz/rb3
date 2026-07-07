@@ -512,6 +512,7 @@ namespace {
 int   gFixedClockActive = -1;      // RB3_FIXED_CLOCK: -1 unchecked, 0/1
 float gFixedClockDt      = -1.0f;  // seconds; -1 unchecked, else >= 0
 int   gDrawSortDeterministicOff = -1;  // RB3_DRAWSORT_DETERMINISTIC_OFF: -1 unchecked, 0/1
+int   gLoadDeterminism = -1;           // RB3_LOAD_DETERMINISM: -1 unchecked, 0/1
 }  // namespace
 
 // ── W0.3d-fix — opt-out for the deterministic SortDraws material-name tie-break ─
@@ -534,6 +535,28 @@ bool RB3DrawSortDeterministicOff() {
 #endif
     }
     return gDrawSortDeterministicOff != 0;
+}
+
+// ── W0.3d-b (Wave 12, A-S2) — opt-in for the H-RESEED load-determinism seam ────
+// Parse RB3_LOAD_DETERMINISM once (same idiom as RB3DrawSortDeterministicOff).
+// DEFAULT OFF. When set (non-empty, non-"0") AND RB3FixedClockActive(), gRand is
+// reseeded to a canonical constant at the is_playing 0->1 anchor
+// (RB3ReseedGRandAtAnchor, called from GamePanel::StartGame). Web:
+// window.__rb3LoadDeterminism.
+bool RB3LoadDeterminism() {
+    if (gLoadDeterminism < 0) {
+#ifdef __EMSCRIPTEN__
+        int on = EM_ASM_INT({
+            var v = window.__rb3LoadDeterminism;
+            return (v === true || v === 1 || v === '1') ? 1 : 0;
+        });
+        gLoadDeterminism = on ? 1 : 0;
+#else
+        const char *v = std::getenv("RB3_LOAD_DETERMINISM");
+        gLoadDeterminism = (v && *v && std::strcmp(v, "0") != 0) ? 1 : 0;
+#endif
+    }
+    return gLoadDeterminism != 0;
 }
 
 bool RB3FixedClockActive() {

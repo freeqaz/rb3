@@ -164,3 +164,113 @@ S2 adds the seam flag and re-runs: ON must collapse final-gdraw spread to 0 at t
 `/tmp/loaddet/as1-boot{0..7}.log` + `/tmp/loaddet-quiescent/q-boot{0..3}.log`. Probe:
 `native/src/rb3_loaddet_probe.cpp`, taps in `rb3_session_trace.cpp` / `DirLoader.cpp` /
 `DataFile.cpp`. Checkpoint `/tmp/wave12-checkpoints/A-S1.json`.
+
+---
+
+# W0.3d-b — Stage A-S2 (seam landing) — STATUS
+
+Implemented the H-RESEED seam A-S1 recommended, flag-first (opt-in
+`RB3_LOAD_DETERMINISM`, active ONLY under `RB3_FIXED_CLOCK`). Default/user boots
+byte-identical (verified). Then, because the pre-registered PRIMARY gate FAILED,
+hardened it with the A-S1 complementary lever (worker-serialize) and finally the
+mechanism-correct root fix (deterministic `mAnims` order) under the same flag.
+
+## What landed (all flag-gated, default-OFF, flag-OFF byte-identical)
+1. `RB3LoadDeterminism()` opt-in flag helper — `native/src/rb3_replay.{h,cpp}`
+   (env `RB3_LOAD_DETERMINISM`, same getenv/EM_ASM idiom as
+   `RB3DrawSortDeterministicOff`).
+2. `RB3ReseedGRandAtAnchor()` — `src/system/math/Rand.{h,cpp}`. Reseeds the shared
+   global `gRand` to a canonical `0x5EED` at the anchor; gated
+   `RB3FixedClockActive() && RB3LoadDeterminism()`.
+3. Anchor call site — `src/band3/game/GamePanel.cpp` `StartGame()` right after
+   `mGameState = kGamePlaying;` (the is_playing 0->1 edge, songMs~=0, the
+   boot-count-INDEPENDENT engine-state edge A-S1 named). Also emits the
+   probe-gated `[LOADDET] anchor frame=N gdraw=M` marker (both gate arms).
+4. Worker-serialize lever — engine `ThreadCall_Native.cpp`: under
+   `RB3_FIXED_CLOCK && RB3_LOAD_DETERMINISM`, drain ThreadCall jobs synchronously
+   on the main thread (the proven `__EMSCRIPTEN__` path) to remove the
+   worker<->main glibc-arena alloc RACE at source (`LoadDetSerialize()`).
+5. Deterministic `mAnims` order — `src/system/rndobj/Dir.cpp` `SyncObjects()`:
+   `std::sort(mAnims, byName)` under the flag (mAnims was the one per-frame
+   RndAnimatable walk never sorted, unlike mPolls/mDraws). The mechanism-correct
+   fix for the A-S1 H-ORDER divergence.
+6. `RB3_LOADDET_JITTER` (engine, probe) — TEST-ONLY randomized worker-thread
+   nanosleep amplifying the alloc race for the fail-red.
+7. Gate harness `execution/W0.3d-b/loaddet_gate.py` + anchor marker/songMs-free
+   frame alignment.
+
+## Gate metric (why post-anchor DELTA)
+The seam RE-BASES the stream at the anchor, so the RNG STATE (table+indices) at a
+later capture is a deterministic function of ONLY the draws SINCE the reseed. The
+cumulative counter still carries the boot-varying PRE-anchor menu draws, so the
+meaningful "stream position at capture" = `postAnchorDelta = gdraw@[anchorFrame+K]
+- gdraw@anchorFrame`. Measured INPUT-FREE (no autohit during the K-frame window;
+`nofail` + fixed-clock free-run) to strip the wall-clock HTTP-autohit input-draw
+confound that pollutes the raw count with note-hit RNG unrelated to the
+boot-determinism axis (the autohit-confounded runs showed a 69356 outlier).
+
+## PRE-REGISTERED GATE RESULTS (jitter=200us, K=300 frames)
+| config (ON arm) | regime | N | OFF spread | ON spread | ON distinct | verdict |
+|---|---|---|---|---|---|---|
+| reseed only | autohit (confounded) | 2 | 648 | 452 | 2/2 | FAIL |
+| reseed+serialize | autohit (confounded) | 3 | 6493 | 36741 | 3/3 | FAIL (noise) |
+| reseed+serialize | INPUT-FREE (clean) | 3 | 1910 | 733 | 3/3 | FAIL, ~62% reduce |
+| reseed+serialize+mAnims-sort | INPUT-FREE (clean) | 4 | 2086 | 1332 | 4/4 | FAIL, ~36% reduce |
+
+## VERDICT: PRIMARY-FAIL (partial). H-RESEED (even fully hardened) is INSUFFICIENT.
+Three progressively-stronger seam variants — reseed; +worker-serialize;
++deterministic mAnims-sort — ALL fail the pre-registered PRIMARY gate (10/10
+identical post-anchor stream position). Each REDUCES the post-anchor `gdraw`-delta
+spread (~62% serialize / ~36% +sort) but none collapses it: every ON boot stays
+DISTINCT. This robustly confirms A-S1's own "multi-site" caveat and REFINES the
+verdict: the boot-varying per-frame gRand COUNT is NOT produced by a single
+channel. Reseeding fixes VALUES not ORDER; worker-serialize removes the LOAD-time
+alloc race but not ongoing per-frame allocation churn; sorting `mAnims` fixes the
+ONE list-build walk A-S1 named but there are OTHER unsorted rejection-sampler
+consumers (Wind:: Gaussian, CameraShot conditional draws, Crowd Fisher-Yates)
+whose order still varies. Collapsing PRIMARY requires deterministic ORDER at
+EVERY such site (or per-consumer isolated Rand streams) — the multi-site
+H-ORDER root-fix A-S1 rejected as too invasive to land safely this wave.
+
+## Disposition
+- The three levers are LANDED under `RB3_LOAD_DETERMINISM` (opt-in, fixed-clock-
+  scoped, default-OFF, flag-OFF byte-identical) as a DOCUMENTED PARTIAL reducer +
+  the flag/probe/gate scaffolding for the next wave. **Coordinator: DO NOT flip
+  the default — PRIMARY not met.** classjson marks it PARTIAL / DO-NOT-flip.
+- `loaddet_gate.py` is the reusable input-free PRIMARY gate harness (post-anchor
+  `gdraw`-delta collapse, ON vs OFF under `RB3_LOADDET_JITTER`).
+- STAGED DESIGN (the sufficient fix) — gate protocol + concrete next sites — is in
+  the "Staged sufficient-fix design + gate protocol" section below (committed in
+  this STATUS.md; the landed `mAnims`-sort in `Dir.cpp` is the proven-applyable
+  template for the remaining sites).
+
+## Staged sufficient-fix design + gate protocol
+SUFFICIENT FIX = deterministic per-frame ORDER at every gRand-consuming walk, OR
+isolate the rejection samplers onto their own seeded Rand (so global-stream order
+stops mattering). Concrete next sites (enumerate + make address-independent):
+  1. `RndDir::SetFrame` mAnims walk — DONE (Dir.cpp sort, landed).
+  2. `Wind::` Gaussian consumers (`rndobj/Wind.cpp`) — per-frame `Rand::Gaussian`
+     rejection loop; give Wind its own boot-invariant-seeded Rand, or ensure its
+     owning walk is name-sorted.
+  3. `CameraShot.cpp:265-267` conditional `RandomFloat()` draws — the shot-eval
+     walk order; sort or isolate.
+  4. `Crowd.cpp:1234` Fisher-Yates — per-frame shuffle; seed a Crowd-local Rand.
+GATE PROTOCOL (each candidate): `loaddet_gate.py --n 10 --k 300 --jitter 200`
+INPUT-FREE; PASS = ON `deltaSpread == 0` (1 distinct) 10/10 AND OFF spread > 0
+(fail-red) AND `drawlog-golden --fixed-clock` flag-OFF 792 byte-identical. Only
+when ON collapses 10/10 does the coordinator flip the default (with a flag-ON
+drawlog re-golden).
+
+REGRESSION gate (drawlog): PASS both arms — `--fixed-clock --scene splash_screen`
+count=792 byte-identical, 281 known fixed-clock camera residuals within bound
+(non-blocking), flag-OFF AND flag-ON (`RB3_LOAD_DETERMINISM=1`) BOTH PASS 792
+within bound (splash has no gameplay -> reseed never fires; serialize + mAnims-sort
+under the flag do not push the splash draw state past the residual bound). So NO
+re-golden is required for the splash golden. My flag-OFF paths are provably inert
+(verified 0 `[LOADDET]` lines on a normal boot; reseed/serialize/sort all gated
+off). Note: a gameplay-scene golden under flag-ON WOULD differ (the seam changes
+the gRand stream by construction) — the coordinator re-goldens only when flipping
+a PRIMARY-passing variant to default, which is not this wave.
+
+FAIL-RED (OFF reproduces the spread under jitter): PASS in every arm (OFF spread
+> 0 in all runs).

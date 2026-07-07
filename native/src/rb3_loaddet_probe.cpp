@@ -58,6 +58,19 @@ void RB3LoadDetFrameTap(int frame) {
     fprintf(stderr, "[LOADDET] frame=%d gdraw=%lu\n", frame, RB3GRandDrawCount());
 }
 
+// A-S2 anchor marker. Fires from GamePanel::StartGame at the is_playing 0->1 edge
+// (the reseed anchor), gated ONLY on RB3_LOADDET_PROBE (NOT the determinism flag)
+// so it lands in BOTH the seam-ON and seam-OFF gate arms. Logs the anchor sim
+// frame + cumulative gdraw so the gate harness can align both arms by frame index
+// and read the POST-ANCHOR draw delta (gdraw@[anchor+K] - gdraw@anchor) — the
+// re-based stream position the seam is supposed to collapse.
+void RB3LoadDetAnchorMark() {
+    if (!LoadDetOn())
+        return;
+    fprintf(stderr, "[LOADDET] anchor frame=%d gdraw=%lu\n", gRB3TraceFrame,
+            RB3GRandDrawCount());
+}
+
 // A loader reached its DoneLoading transition on the current sim frame. `kind`
 // is "dir" (DirLoader — a whole .milo ObjectDir went live) or "data" (DataLoader
 // — a milo/DTA file finished parsing on the ThreadCall worker). `name` is the

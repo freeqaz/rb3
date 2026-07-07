@@ -38,3 +38,47 @@ default-OFF. drawlog-golden flag-OFF must stay byte-identical.
    boots and name what happened on it (load-completing-on-different-frame vs order swap).
 2. Pre-register H-TIMING vs H-ORDER vs H-RESEED with per-boot evidence tables +
    recommended seam design (files, shape, risks). Do NOT implement.
+
+---
+
+# W0.3d-b — Stage A-S2 (seam landing) — PLAN
+
+Checkpoint: `/tmp/wave12-checkpoints/A-S2.json`. Build: own dir
+`native/build-agent-W0.3d-b`. Engine local edits compile (soft pin WARNING only,
+no bump — coordinator).
+Mode: LAND the H-RESEED seam A-S1 recommended, flag-first (opt-in
+`RB3_LOAD_DETERMINISM`, active ONLY under RB3_FIXED_CLOCK). Default/user boots
+byte-identical.
+
+## Seam design (from A-S1 verdict, acceptance A3)
+Reseed `gRand` to a canonical 0x5EED constant at the boot-count-INDEPENDENT
+anchor `is_playing` 0->1 (`GamePanel::StartGame`, `mGameState=kGamePlaying`,
+songMs~=0), gated `RB3FixedClockActive() && RB3LoadDeterminism()`. Collapses the
+post-anchor gRand stream to one position across boots so the pinned BOOTRNG
+capture (post-anchor, songMs~21000) reads one stream position 10/10.
+
+## Declared edit ranges (declare-before-edit)
+- `native/src/rb3_replay.h` — after the `RB3DrawSortDeterministicOff()` decl
+  (~line 85): add `bool RB3LoadDeterminism();` decl + doc comment.
+- `native/src/rb3_replay.cpp` — namespace `gLoadDeterminism = -1;` beside
+  `gDrawSortDeterministicOff` (~line 515); add `RB3LoadDeterminism()` body after
+  `RB3DrawSortDeterministicOff()` (~line 538). Same getenv/EM_ASM idiom.
+- `src/system/math/Rand.h` — in the HX_NATIVE block (~line 32-37): declare
+  `void RB3ReseedGRandAtAnchor(const char *reason);`.
+- `src/system/math/Rand.cpp` — HX_NATIVE: `#include "rb3_replay.h"` (guarded);
+  add `RB3ReseedGRandAtAnchor` body after the `RB3GRandDrawCount` block (~line 14).
+- `src/band3/game/GamePanel.cpp` — in `StartGame()` right after
+  `mGameState = kGamePlaying;` (line 310): HX_NATIVE call
+  `RB3ReseedGRandAtAnchor("is_playing")` + include guard for Rand.h (already
+  included transitively; add extern decl locally to avoid header churn).
+- ENGINE `src/platform/ThreadCall_Native.cpp` — in `WorkerMain` before/after the
+  `ThreadStart()`/`mFunc()` dispatch: getenv-gated (`RB3_LOADDET_JITTER`)
+  randomized nanosleep (fail-red worker-latency jitter), default-OFF.
+- ENGINE `src/platform/NativeCompatFlags.classification.json` — append
+  `RB3_LOAD_DETERMINISM` (feature/determinism-seam) + `RB3_LOADDET_JITTER`
+  (probe), under flock, append-only. gen.inc regen = coordinator.
+- NEW `docs/.../execution/W0.3d-b/loaddet_gate.py` — PRIMARY/SECONDARY gate
+  harness: boot to gameplay, read gdraw@BOOTRNG-capture, ON vs OFF under jitter.
+
+All source edits additive, HX_NATIVE-guarded, getenv-gated, default-OFF.
+Regression: flag-OFF drawlog 792 byte-identical.

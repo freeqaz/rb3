@@ -2,6 +2,10 @@
 #include "math/Utl.h"
 #include "os/Debug.h"
 #include "os/OSFuncs.h"
+#ifdef HX_NATIVE
+#include "rb3_replay.h"  // W0.3d-b: RB3FixedClockActive / RB3LoadDeterminism
+#include <cstdio>
+#endif
 
 Rand gRand(0x29A);
 
@@ -13,6 +17,27 @@ Rand gRand(0x29A);
 // HX_NATIVE-only so the MWCC match build is byte-identical.
 static unsigned long sGRandDrawCount = 0;
 unsigned long RB3GRandDrawCount() { return sGRandDrawCount; }
+
+// W0.3d-b (Wave 12, A-S2): H-RESEED load-determinism seam. See Rand.h. Reseeds
+// the shared global gRand to a canonical 0x5EED constant at the is_playing 0->1
+// anchor. Gated on RB3FixedClockActive() && RB3LoadDeterminism() so a normal
+// user boot (either flag off) NEVER touches the stream — flag-OFF byte-identical.
+// Reseeding at each song-start (StartGame fires once per song) makes each song's
+// post-anchor gameplay stream a deterministic function of the constant,
+// independent of the boot-varying pre-anchor consumer-order shuffle A-S1 traced.
+static int sReseedLogged = 0;
+void RB3ReseedGRandAtAnchor(const char *reason) {
+    if (!(RB3FixedClockActive() && RB3LoadDeterminism()))
+        return;
+    unsigned long before = sGRandDrawCount;
+    gRand.Seed(0x5EED);
+    if (sReseedLogged < 4) {
+        ++sReseedLogged;
+        fprintf(stderr,
+                "[LOADDET] reseed anchor=%s seed=0x5EED gdrawBefore=%lu\n",
+                reason ? reason : "?", before);
+    }
+}
 #endif
 
 Rand::Rand(int i)

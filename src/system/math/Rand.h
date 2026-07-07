@@ -37,6 +37,15 @@ float RandomFloat(float, float);
 // stream position at a pinned capture and prove whether it varies per boot under
 // RB3_FIXED_CLOCK. Additive, HX_NATIVE-only -> MWCC match build byte-identical.
 unsigned long RB3GRandDrawCount();
+
+// W0.3d-b (Wave 12, A-S2): H-RESEED load-determinism seam. Reseeds the shared
+// global gRand stream to a canonical constant, but ONLY when
+// RB3FixedClockActive() && RB3LoadDeterminism() (both default-OFF). Called at the
+// is_playing 0->1 anchor (GamePanel::StartGame) so the post-anchor stream — and
+// thus the pinned BOOTRNG capture — collapses to one boot-invariant position.
+// `reason` is a short tag logged once for provenance. Inert (no reseed, no log)
+// unless BOTH gates are on; flag-OFF is byte-identical.
+void RB3ReseedGRandAtAnchor(const char *reason);
 #endif
 
 #endif

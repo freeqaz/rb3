@@ -85,6 +85,18 @@ bool RB3FixedClockActive();
 // re-exposes the async-loader draw-order flake. Web: window.__rb3DrawSortDeterministicOff.
 bool RB3DrawSortDeterministicOff();
 
+// W0.3d-b (Wave 12, A-S2): opt-in for the H-RESEED load-determinism seam. True
+// iff RB3_LOAD_DETERMINISM is set (non-empty, non-"0"), parsed once. DEFAULT OFF.
+// When set AND RB3FixedClockActive(), gRand is reseeded to a canonical constant
+// at the boot-count-INDEPENDENT `is_playing` 0->1 anchor (GamePanel::StartGame),
+// collapsing the post-anchor global-stream position across boots so the pinned
+// BOOTRNG capture reads one stream position (kills the ~11k boot-to-boot gRand
+// draw-count spread A-S1 traced to the worker<->main alloc-race consumer-order
+// shuffle). Fixed-clock-scoped determinism SEAM, not de-randomization of retail
+// behaviour: flag-OFF (or no fixed clock) is byte-identical. Web:
+// window.__rb3LoadDeterminism.
+bool RB3LoadDeterminism();
+
 // The constant per-frame sim dt (SECONDS) to advance the menu/UI clock by when
 // RB3FixedClockActive() and no trace is driving the clock. Default 1/60s so the
 // animation PROGRESSES deterministically to a well-defined frame-N state.

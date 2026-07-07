@@ -309,6 +309,18 @@ void GamePanel::StartGame() {
         mGame->Start();
     mGameState = kGamePlaying;
 #ifdef HX_NATIVE
+    // W0.3d-b (Wave 12, A-S2): the is_playing 0->1 anchor for the H-RESEED
+    // load-determinism seam. This is the boot-count-INDEPENDENT engine-state edge
+    // (song clock crosses 0) A-S1 named: reseed the global gRand stream here so
+    // the post-anchor gameplay stream — and the pinned BOOTRNG capture at
+    // songMs~21000 — collapses to one boot-invariant position. Inert unless BOTH
+    // RB3_FIXED_CLOCK and RB3_LOAD_DETERMINISM are set (flag-OFF byte-identical).
+    {
+        extern void RB3LoadDetAnchorMark();  // probe marker (both gate arms)
+        extern void RB3ReseedGRandAtAnchor(const char *);
+        RB3LoadDetAnchorMark();
+        RB3ReseedGRandAtAnchor("is_playing");
+    }
     // V25 (salvage V33 re-apply): the HUD master group `draw_order.grp` is
     // hidden during the cinematic intro by `TrackPanelDir::Reset() ->
     // SetShowing(false)`; retail then re-shows it via the milo `play_intro`
