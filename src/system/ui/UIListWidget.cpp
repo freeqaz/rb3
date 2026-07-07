@@ -12,7 +12,9 @@
 #ifdef HX_NATIVE
 // W4.4-ROWFIX flag + per-list fill latch (see UIListWidget.h).
 bool RB3RowfixActive() {
-    static const bool on = getenv("RB3_ROWFIX") != 0;
+    // Default-ON since the Wave-16 coordinator E1 flip (retail-matching dark
+    // text on the solid focused-row bar, Parts A+B); opt-out RB3_ROWFIX_OFF.
+    static const bool on = getenv("RB3_ROWFIX_OFF") == 0;
     return on;
 }
 static bool sRowfixFillDrawn = false;

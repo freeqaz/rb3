@@ -571,3 +571,20 @@ lane; APD_DIAG evidence rescued to `SKEL/evidence/` pre-dispatch (review A2); re
   together) + the same pass for partdiff GUITAR.
 - Carried: sidebar backing quad (polish), loader sufficient-fix, WHITE real-lever, 4→8 lights,
   W2.4 BandPatchMesh, un-translated list-highlight focus anim (ROWFIX root, asset-side option).
+
+## Wave 16 results (2026-07-07, run `wf_61997c73-0c8`, 2 agents)
+
+**ROWFIX FLIPPED (defaults now ELEVEN) and the hands adjudicated cell was measured — REFUTED by
+the decisive VISUAL gate despite passing every numeric gate, closing the band-side offset-bake
+class at 8 cells and pointing conclusively at a true engine reskin (verts+WEIGHTS) or closure.**
+Engine → `51640ff` (regen 361 clean).
+
+| Item | Status | Highlights |
+|---|---|---|
+| HANDS-FIX | ❌ **REFUTED BY VISUAL GATE (8th/final cell)** | `RB3_HANDS_AUTHORED_REPOINT` implemented exactly per VERDICT §4-5: ALL numeric gates PASS — Tier-1 count(>5°)==0 BOTH genders (87.3→3.1° male, 42.6→3.1° female — the A6 female gate PASSES, confound broken), gloves improved, Tier-2 ≤1u, provenance clean (A4), 792 byte-identical. **But matched-frame E1 FAILS decisively: flag-ON TEARS multi-bone finger blends into spike-fans** (burst_08 strand-shred, burst_12 triangular fan — coordinator eyes confirm, worse than the coherent flag-OFF "ceiling hand"). ROOT CAUSE (vindicates SKEL Seam-B): **the authored verts encode SHARED-bind INTER-bone geometry** — Tier-1 is a static per-bone check, structurally blind to inter-bone animated tearing; NO repoint/offset choice can fix vert-encoded inter-bone geometry. Band-side offset-bake class EXHAUSTED (8 measured cells). Dolphin fallback correctly assessed mis-targeted for THIS failure (single-bone WorldXfm can't see a multi-bone tear) → the Wave-17 probe spec is refined to **two-adjacent-bone RELATIVE-pose comparison**. Genuine remaining option: engine per-member TRUE reskin (verts+weights re-derived in the own basis — distinct from W14's refuted positions-only re-pose) or closure with RB3_NO_SKIN_CLAMP as the shipped mitigation. |
+| W4.4-TEXTCOLOR | ✅ **READY_FOR_FLIP → FLIPPED default-ON** | Mechanism refined once more: the focused row draws with a NULL provider color, so the old Part-B guard skipped it. Two rb3-side fixes folded into `RB3_ROWFIX`: UIListSlot supplies a dark UIColor for the highlight element when the provider returns null; UILabel propagates the override to the ALT font material (title + italic artist both darken). Gates: song_select directional PASS (solid bright bar fill=179, dark strokes=74, contrast 2.41), hub 2.20 unchanged, partdiff no-op (already correct polarity), SETLISTS red-band 0%, 792 PASS, Wave-7 labels + W4.2 floor unaffected. **Coordinator E1 PASS (dark-on-yellow focused row, retail polarity) → default-ON, opt-out `RB3_ROWFIX_OFF`.** |
+
+**Coordinator actions:** ROWFIX flip (E1 both arms); hands refutation E1-confirmed and archived;
+regen (`51640ff`, 361 clean); 792 + lineup PASS on flipped defaults; pin `84ccb9e` → `51640ff`.
+**Defaults now ELEVEN.** Wave 17+ = the retrospective roadmap
+(`RETROSPECTIVE/ROADMAP.md` + per-item plans under `RETROSPECTIVE/plans/`).
