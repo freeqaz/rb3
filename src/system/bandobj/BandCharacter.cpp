@@ -2,6 +2,7 @@
 #include <cstdlib>
 #ifdef HX_NATIVE
 #include <cstdio>
+#include <cstring>
 #include <cmath>
 #include <ctime>
 #include <vector>
@@ -1347,6 +1348,55 @@ void BandCharacter::RebindHeadHandsAtRest() {
     // the torso rebind; see NativeCollectSkinnedMeshes).
     std::vector<RndMesh *> targets;
     NativeCollectSkinnedMeshes(targets);
+
+    // R1 (Wave 14 Lane RESKIN) — feasibility probe, diagnosis-only, default-OFF.
+    // Runs at the TOP of RebindHeadHandsAtRest, on the first call, BEFORE the
+    // two-pass rebake below OVERWRITES mOffset with meshWorld*inv(rest_own) — so
+    // BoneOffsetAt here reads the AUTHORED per-bone inverse-bind. Answers:
+    //   (A4) do male vs female hands carry DISTINCT authored offsets? -> reskin source
+    //   (T4) are the hands RndMesh + GeomOwner (verts live on GeomOwner) DISTINCT
+    //        per member? shared verts -> a per-member reskin needs per-member
+    //        mesh instances.
+    // HX_NATIVE only; getenv-cached; flag-OFF inert; Wii byte-identical.
+    {
+        static int sReskinProbe = -1;
+        if (sReskinProbe < 0) sReskinProbe = getenv("RB3_RESKIN_PROBE") ? 1 : 0;
+        if (sReskinProbe && !mNativeHeadReboundOnce) {
+            const char *gender = (mGender == "male")     ? "male"
+                                 : (mGender == "female") ? "female"
+                                                         : "other";
+            for (std::vector<RndMesh *>::iterator mi = targets.begin();
+                 mi != targets.end(); ++mi) {
+                RndMesh *mesh = *mi;
+                const char *mn = mesh->Name() ? mesh->Name() : "?";
+                if (!strstr(mn, "hand") && !strstr(mn, "nail")) continue;
+                RndMesh *go = mesh->GeomOwner();
+                fprintf(stderr,
+                        "[RESKIN_MESH] char='%s' gender=%s mesh='%s' meshPtr=%p "
+                        "geomOwner=%p verts=%d bones=%d rebound=%d\n",
+                        Name() ? Name() : "?", gender, mn, (void *)mesh, (void *)go,
+                        (int)mesh->Verts().size(), mesh->NumBones(),
+                        (int)mesh->mNativeBonesRebound);
+                for (int b = 0; b < mesh->NumBones(); b++) {
+                    RndTransformable *bt = mesh->BoneTransAt(b);
+                    const char *bn = (bt && bt->Name()) ? bt->Name() : "?";
+                    if (!strstr(bn, "index") && !strstr(bn, "middle") &&
+                        !strstr(bn, "finger") && !strstr(bn, "thumb") &&
+                        !strstr(bn, "hand"))
+                        continue;
+                    Transform &off = mesh->BoneOffsetAt(b);
+                    fprintf(stderr,
+                            "[RESKIN_OFF] char='%s' gender=%s mesh='%s' b=%d bone='%s' "
+                            "boundPtr=%p offV=(%.4f,%.4f,%.4f) "
+                            "M=[%.5f,%.5f,%.5f;%.5f,%.5f,%.5f;%.5f,%.5f,%.5f]\n",
+                            Name() ? Name() : "?", gender, mn, b, bn, (void *)bt,
+                            off.v.x, off.v.y, off.v.z, off.m.x.x, off.m.x.y, off.m.x.z,
+                            off.m.y.x, off.m.y.y, off.m.y.z, off.m.z.x, off.m.z.y,
+                            off.m.z.z);
+                }
+            }
+        }
+    }
 
     int reboundMeshes = 0, pending = 0, slots = 0, reboundBones = 0;
     for (std::vector<RndMesh *>::iterator mi = targets.begin();
