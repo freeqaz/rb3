@@ -30,4 +30,13 @@ int RandomInt(int, int);
 float RandomFloat();
 float RandomFloat(float, float);
 
+#ifdef HX_NATIVE
+// BOOTRNG (Wave 11 A.S1, diagnosis-only): global-stream position probe. Every
+// draw off the shared global gRand instance (Rand.cpp) bumps this counter, so
+// any consumer (LightPresetManager preset picks, BandDirector, etc.) can log the
+// stream position at a pinned capture and prove whether it varies per boot under
+// RB3_FIXED_CLOCK. Additive, HX_NATIVE-only -> MWCC match build byte-identical.
+unsigned long RB3GRandDrawCount();
+#endif
+
 #endif

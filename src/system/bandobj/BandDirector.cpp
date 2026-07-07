@@ -18,6 +18,9 @@
 #include "world/CameraShot.h"
 #include "rndobj/Cam.h"
 #include <cstdlib> // Q9: getenv for RB3_VENUE_SYNC (guarded out of Wii build)
+#include <cstdio>  // BOOTRNG A.S1: fprintf for the postproc-source-tuple probe
+#include <cstring> // BOOTRNG A.S1: strcmp/strncpy for the throttle
+#include "math/Rand.h" // BOOTRNG A.S1: RB3GRandDrawCount() stream-position probe
 // crowd-venues: gDataDir (named-global object lookup) + Message (to Handle the
 // MetaPerformer get_venue_override query) for the venue-override bridge below.
 #include "obj/DataUtl.h"
@@ -300,6 +303,34 @@ void BandDirector::Poll() {
             }
         }
         UpdatePostProcOverlay(presets, p1, p2, fref);
+#ifdef HX_NATIVE
+        // BOOTRNG (Wave 11 A.S1, diagnosis-only): log the postproc SOURCE TUPLE
+        // the native composite ultimately reads (A2 — RndPostProc::Current()
+        // identity is uninformative because world.pp is rewritten in place every
+        // frame; the tuple {source, p1, p2, blend} is what actually differs).
+        // Sample the gRand stream position alongside so a per-boot tuple change
+        // can be attributed to stream divergence. Throttled: emit only on change
+        // or every 120th call. Additive; gated by RB3_BOOTRNG_PROBE + HX_NATIVE.
+        {
+            static int sBRP = -1;
+            if (sBRP < 0) { const char* e = getenv("RB3_BOOTRNG_PROBE"); sBRP = (e && e[0] && e[0] != '0') ? 1 : 0; }
+            if (sBRP) {
+                static char sLast[256] = {0};
+                static int sHB = 0;
+                char buf[256];
+                snprintf(buf, sizeof(buf),
+                         "[BOOTRNG] PPSRC src=%s p1=%s p2=%s blend=%.3f gdraw=%lu",
+                         presets ? presets : "<null>",
+                         p1 && p1->Name() ? p1->Name() : "<null>",
+                         p2 && p2->Name() ? p2->Name() : "<null>",
+                         fref, RB3GRandDrawCount());
+                if (std::strcmp(buf, sLast) != 0 || (++sHB % 120) == 0) {
+                    fprintf(stderr, "%s\n", buf);
+                    std::strncpy(sLast, buf, sizeof(sLast) - 1);
+                }
+            }
+        }
+#endif
 #ifdef MILO_DEBUG
         DataNode &fps_var = DataVariable("cheat.emulate_fps");
         if (fps_var.Int() > 0) {

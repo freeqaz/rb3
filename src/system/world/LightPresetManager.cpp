@@ -3,6 +3,23 @@
 #include "math/Rand.h"
 #include "utl/Symbols.h"
 
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+// BOOTRNG (Wave 11 A.S1, diagnosis-only): the named prime suspect. The light
+// preset at a lighting event is a global-RNG pick (mPresets[s][RandomInt]).
+// Under RB3_FIXED_CLOCK the seed is pinned but the gRand stream POSITION varies
+// per boot with upstream consumption order, so the pick can differ per boot.
+// Log the pick identity + the stream position at the pick under RB3_BOOTRNG_PROBE.
+// Additive, HX_NATIVE + flag gated; the single RandomInt draw is preserved so
+// behaviour is identical to the shipping path with the flag set or unset.
+static bool sBootRngProbe() {
+    static int v = -1;
+    if (v < 0) { const char* e = getenv("RB3_BOOTRNG_PROBE"); v = (e && e[0] && e[0] != '0') ? 1 : 0; }
+    return v != 0;
+}
+#endif
+
 // fn_805B04EC
 LightPresetManager::LightPresetManager(WorldDir *dir)
     : mParent(dir), mPresetOverride(0), mPresetNew(0), mPresetPrev(0), mPresetNewStartTime(0), mPresetPrevStartTime(0),
@@ -259,8 +276,22 @@ LightPreset *LightPresetManager::PickRandomPreset(Symbol s) {
     int count = mPresets[s].size();
     if (count == 0) {
         return 0;
-    } else
-        return mPresets[s][RandomInt(0, count)];
+    }
+#ifdef HX_NATIVE
+    if (sBootRngProbe()) {
+        // Consume exactly ONE gRand draw (identical to the shipping path), but
+        // capture the index + stream position so the pick can be attributed to a
+        // boot's stream state. gdraw is sampled AFTER the draw (== position that
+        // produced this pick).
+        int idx = RandomInt(0, count);
+        LightPreset *p = mPresets[s][idx];
+        fprintf(stderr, "[BOOTRNG] PRESET cat=%s idx=%d/%d preset=%s gdraw=%lu\n",
+                s.Str(), idx, count, (p && p->Name()) ? p->Name() : "<null>",
+                RB3GRandDrawCount());
+        return p;
+    }
+#endif
+    return mPresets[s][RandomInt(0, count)];
 }
 
 void LightPresetManager::ReportError() {
