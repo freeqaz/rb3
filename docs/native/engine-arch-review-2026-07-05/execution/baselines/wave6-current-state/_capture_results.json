@@ -1,0 +1,99 @@
+{
+  "results": {
+    "default": [
+      [
+        "mainhub_default.png",
+        "main hub / main menu (early frame, pre-confirm)",
+        [
+          6,
+          -1.0,
+          "splash_screen"
+        ],
+        2104433
+      ],
+      [
+        "songselect_default.png",
+        "song select / music library",
+        [
+          245,
+          -1.0,
+          "song_select_screen"
+        ],
+        1557536
+      ],
+      [
+        "partdiff_default.png",
+        "part/difficulty select screen",
+        [
+          390,
+          -1.0,
+          "part_difficulty_screen"
+        ],
+        1732755
+      ],
+      [
+        "gameplay_default_1.png",
+        "gameplay early (songMs>3000)",
+        [
+          2224,
+          3014.6,
+          "game_screen"
+        ],
+        1114798
+      ],
+      [
+        "gameplay_default_2.png",
+        "gameplay mid (songMs>20000)",
+        [
+          4255,
+          20153.2,
+          "game_screen"
+        ],
+        1513262
+      ],
+      [
+        "gameplay_default_3.png",
+        "gameplay later (songMs>45000)",
+        [
+          8120,
+          45146.4,
+          "game_screen"
+        ],
+        1976189
+      ],
+      [
+        "band_default.png",
+        "band-visible wide/establishing frame attempt (songMs>70000)",
+        [
+          11694,
+          70174.7,
+          "game_screen"
+        ],
+        1997147
+      ]
+    ],
+    "placement_on": [
+      [
+        "gameplay_placement_on_1.png",
+        "gameplay early w/ RB3_PLACEMENT_CONTRACT=1 (songMs>3000)",
+        [
+          2335,
+          3031.7,
+          "game_screen"
+        ],
+        1035020
+      ],
+      [
+        "gameplay_placement_on_2.png",
+        "gameplay mid w/ RB3_PLACEMENT_CONTRACT=1 (songMs>20000)",
+        [
+          4325,
+          20148.7,
+          "game_screen"
+        ],
+        1479554
+      ]
+    ]
+  },
+  "notes": []
+}
