@@ -945,6 +945,18 @@ static Transform NativeCharSpaceRestXfm(RndTransformable *own) {
     return rest;
 }
 
+// W2.8e (Wave 10 Lane A) helper: absolute rotation angle (deg) of a Transform's
+// rotation basis vs identity, angle = acos((trace(m)-1)/2). Used only by the
+// RB3_APD_DIAG appendage rest-basis diagnostic and the asset-rebake provenance
+// log; no behavior effect. Assumes m is ~orthonormal (bone worlds are rigid).
+static float NativeRotAngleVsIdentityDeg(const Hmx::Matrix3 &m) {
+    float tr = m.x.x + m.y.y + m.z.z;
+    float c = (tr - 1.f) * 0.5f;
+    if (c > 1.f) c = 1.f;
+    if (c < -1.f) c = -1.f;
+    return acosf(c) * 57.29578f;
+}
+
 // render-polish 2026-06-11 (char-render step 2): deterministic rest-pose seeding.
 // Called from SyncObjects() IMMEDIATELY after SetDeformation(), where the gender
 // deform clip's PoseMeshes() has just left every deform-driven bone at the
@@ -1265,6 +1277,46 @@ void BandCharacter::RebindHeadHandsAtRest() {
     static int sApdRestRot = -1;
     if (sApdRestRot < 0) sApdRestRot = getenv("RB3_APPENDAGE_REST_ROT") ? 1 : 0;
 
+    // W2.8e (Wave 10 Lane A) — REFUTED experiment, kept default-OFF as a documented
+    // dead-end (do NOT flip). class:workaround, not-live. This was the "only
+    // unrefuted path" (asset-derived char-space static rebake): for appendage
+    // (hand/finger/nail/glove) meshes, keep the mesh bound to its OWN per-member
+    // bone (mesh->BoneTransAt(b), whose char-space rest ~129 deg == the dual-skin
+    // restW) — NO repoint — and rebake off = meshWorld*inv(that bone's settled
+    // clip-free rest), so at rest skin = inv(restW)*restW = I (coherent by
+    // construction, one char-space end-to-end).
+    //
+    // MEASURED (build-agent-W2.8e, A/B this wave) — REFUTED, it FREEZES the hands:
+    //   * dual-skin worstSep collapses 37.4u -> 0.0u (the S1 target metric), BUT
+    //   * hands_naked worldExt is PINNED (56/80u, 2 discrete values) flag-ON vs a
+    //     CONTINUOUS animating sweep 91.8-106.6u flag-OFF; IK_SHARD wext constant
+    //     80u on the SAME worst vert (686) every frame => the appendage is STATIC.
+    //   * hands_bind_characterize verdict DEGRADES: MARGINAL-GRAZE (flag-OFF, no
+    //     hard hand shard) -> HARD-SHARD (flag-ON).
+    // ROOT CAUSE: `bound` (mesh->BoneTransAt) is a STATIC embedded bind-pose
+    // skeleton copy; the per-member ANIMATION lives in the `own = Find(name)`
+    // instance the DEFAULT distinct rebind repoints to. Keeping `bound` de-shards
+    // but loses animation. The default (repoint->own, off=inv(own rest ~106)) is
+    // already COHERENT w.r.t. the DRAWN (animating) bone. The dual-skin worstSep
+    // shard is a STALE-BONE artifact: the probe's rest reference `bw` is captured
+    // from the PRE-repoint static `bound` (129 deg) while asDrawn uses the
+    // POST-repoint animating `own` (106 deg) — a confound A.S1 ruled out for
+    // PLACEMENT but not for the bound-vs-drawn-bone mismatch. The metric is
+    // unsatisfiable without freezing (own=106 animating and bound=129 static are
+    // mutually exclusive). => the 5th and final fix class is dead. See
+    // execution/W2.8e/STATUS.md (A.S2) for the full A/B + the RB3_APD_DIAG data.
+    // HX_NATIVE; Wii byte-identical (getenv-cached; flag-OFF the block is inert;
+    // drawlog-792 PASS). Kept as an instrument, not a fix.
+    static int sApdAssetRebake = -1;
+    if (sApdAssetRebake < 0)
+        sApdAssetRebake = getenv("RB3_APPENDAGE_ASSET_REBAKE") ? 1 : 0;
+    static int sApdDiag = -1;
+    if (sApdDiag < 0) sApdDiag = getenv("RB3_APD_DIAG") ? 1 : 0;
+    // Compute appendage-ness whenever ANY appendage path is active (the refuted
+    // probe, the MATCH rebake, or the diagnostic) — the old code gated apdMesh on
+    // sApdRestRot alone, which hid the scope from the new flag + the diag.
+    const int sApdAny = sApdRestRot || sApdAssetRebake || sApdDiag;
+
     // Collect every skinned mesh the member draws (shared collector — same walk as
     // the torso rebind; see NativeCollectSkinnedMeshes).
     std::vector<RndMesh *> targets;
@@ -1319,7 +1371,7 @@ void BandCharacter::RebindHeadHandsAtRest() {
         // W2.8d: is this an appendage (hand/finger/nail/glove) mesh — the R*sin(dR)
         // rotation-basis shard scope. Case-insensitive substring match on the name.
         bool apdMesh = false;
-        if (sApdRestRot && mn) {
+        if (sApdAny && mn) {
             std::string ln(mn);
             for (size_t i = 0; i < ln.size(); i++) {
                 char c = ln[i];
@@ -1395,6 +1447,53 @@ void BandCharacter::RebindHeadHandsAtRest() {
             std::map<std::string, Transform>::iterator rp = mNativeRestPose.find(bname);
             bool haveDistinct =
                 mNativeRestDistinct.find(bname) != mNativeRestDistinct.end();
+            // ================= W2.8e MATCH-path appendage asset rebake =============
+            // (RB3_APPENDAGE_ASSET_REBAKE, default OFF). GROUND TRUTH (RB3_APD_DIAG,
+            // measured this wave): for hands_naked/finger/glove meshes the default
+            // distinct rebind REPOINTS the mesh from its OWN per-member bone
+            // (`bound`, char-space rest ~129 deg == the dual-skin restW the GPU
+            // palette samples) to `Find(name)` (`own`), which resolves the SHARED
+            // MAGNET instance (~106 deg) — then bakes off = meshWorld*inv(106 deg).
+            // The 106-vs-129 basis conjugation IS the R*2sin(dR/2) far-vert shard.
+            // FIX: keep the mesh bound to its OWN per-member bone (NO repoint) and
+            // bake off = meshWorld*inv(CHAR-space rest of THAT bone), captured once
+            // at a clip-free (settled) frame. Coherent by construction: at rest
+            // skin = inv(restW)*restW = I. One space (char) end-to-end — no
+            // frame-mixing (a single captured transform supplies both rotation and
+            // translation). Distinct from the REFUTED RB3_APPENDAGE_REST_ROT (which
+            // baked WORLD-space rest of the WRONG bone = the Find/magnet result).
+            if (sApdAssetRebake && apdMesh) {
+                // Settle guard: only capture/complete while no clip is posing the
+                // bone (RebindHeadHandsAtRest runs pre-Character::Poll, so at a
+                // clip-free scan `bound` holds its per-member settled rest). A
+                // mid-clip capture would poison the basis (the W2.8c failure).
+                if (mDriver && mDriver->FirstPlaying()) {
+                    miss++;
+                    if (!missBone) { missBone = bound->Name(); missWhy = "apdClipPlaying"; }
+                    continue;
+                }
+                std::map<std::string, Transform>::iterator ap =
+                    mNativeApdAssetRest.find(bname);
+                Transform arest;
+                if (ap != mNativeApdAssetRest.end()) {
+                    arest = ap->second;
+                } else {
+                    // The per-member bone the GPU actually samples (NOT Find/magnet).
+                    arest = NativeCharSpaceRestXfm(bound);
+                    if (!(std::fabs(arest.v.x) < 1e5f && std::fabs(arest.v.y) < 1e5f &&
+                          std::fabs(arest.v.z) < 1e5f)) {
+                        miss++;
+                        if (!missBone) { missBone = bound->Name(); missWhy = "apdNonFinite"; }
+                        continue;
+                    }
+                    mNativeApdAssetRest[bname] = arest;
+                }
+                owns[b] = bound;   // keep the per-member bone — no repoint to magnet
+                rests[b] = arest;
+                apply[b] = 1;
+                resolvable++;
+                continue;          // skip the default own/bound resolution
+            }
             // W2.8d: capture the LIVE target bone's WORLD-space rest (no placement
             // division) for the appendage rebake, first clip-free resolve wins. This
             // is the exact bone (own == the palette-sampled per-member instance after
@@ -1505,6 +1604,35 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 }
                 mNativeRestPose[bname] = rest;
                 mNativeRestDistinct.insert(bname);
+            }
+            // W2.8e (Wave 10 Lane A) — RB3_APD_DIAG: for appendage (hand/finger/
+            // nail/glove) meshes, dump the rest-basis PROVENANCE the default path
+            // bakes vs the bone the GPU palette actually samples. The dual-skin
+            // probe showed the SHIPPED offset basis (invOff ~106 deg magnet) differs
+            // from the per-member bound bone's own rest (restW ~129 deg) => a
+            // stale/shared rest is baked while a distinct per-member bone is drawn.
+            // This log names the exact discrepancy: is the baked `rest` the same as
+            // `own`'s CURRENT world (fresh) or a stale cached entry from an earlier
+            // (magnet) resolve, and does it match the bone the mesh binds to?
+            {
+                if (sApdDiag && apdMesh) {
+                    Transform ownNow = NativeCharSpaceRestXfm(own);
+                    bool cached = (rp != mNativeRestPose.end() && haveDistinct);
+                    static std::map<std::string, int> sSeen;
+                    std::string key = std::string(Name() ? Name() : "?") + "/" +
+                                      (mn ? mn : "?") + "/" + bname;
+                    if (sSeen[key]++ % 240 == 0)
+                        fprintf(stderr,
+                            "[APD_DIAG] member='%s' mesh='%s' bone='%s' distinct=%d "
+                            "cached=%d bakedRest.ang=%.1f ownNow.ang=%.1f "
+                            "boundNow.ang=%.1f own=%p bound=%p\n",
+                            Name() ? Name() : "?", mn ? mn : "?", bname.c_str(),
+                            (own != bound) ? 1 : 0, cached ? 1 : 0,
+                            NativeRotAngleVsIdentityDeg(rest.m),
+                            NativeRotAngleVsIdentityDeg(ownNow.m),
+                            NativeRotAngleVsIdentityDeg(NativeCharSpaceRestXfm(bound).m),
+                            (void *)own, (void *)bound);
+                }
             }
             owns[b] = own;
             rests[b] = rest;

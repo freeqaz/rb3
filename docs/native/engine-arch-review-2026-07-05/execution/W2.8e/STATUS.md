@@ -117,3 +117,91 @@ must capture per-member and clip-free (settled ~frame 18–20). Compose in ONE s
   like-space fixture) + this STATUS + PLAN — `<rb3-sha>`
 
 Checkpoint: `/tmp/wave10-checkpoints/A-S1.json` (`verdict: MATCH`).
+
+---
+
+## A.S2 — done (Opus, single writer of `Rnd_Wgpu_RB3.cpp`) — VERDICT: **REFUTED (honest-negative)**
+
+**Charter:** WAVE10_KICKOFF A.S2 + WAVE10_REVIEW A2/A3/A4. S1 checkpoint verdict = MATCH ⇒
+authorized to implement (not the NO_MATCH no-code stop). Build dir `native/build-agent-W2.8e`
+(engine HEAD `e0bf593`). The fix was implemented faithfully at the sanctioned site and then
+**empirically REFUTED at verification: it FREEZES the appendages.** The 5th and final hands fix
+class (asset-derived char-space static rebake) is dead. Flag + diagnostic kept **default-OFF** as a
+documented dead-end (matching `RB3_APPENDAGE_REST_ROT` / `RB3_HANDS_POSEAWARE` /
+`RB3_HANDS_PERFRAME_CONJ`).
+
+### What was implemented (the S1-guided MATCH path)
+New default-OFF flag **`RB3_APPENDAGE_ASSET_REBAKE`** at the existing `RB3_APPENDAGE_REST_ROT` site
+inside `RebindHeadHandsAtRest` (`BandCharacter.cpp`). For appendage (hand/finger/nail/glove) meshes:
+keep the mesh bound to its OWN per-member bone (`mesh->BoneTransAt(b)` — the char-space rest ~129°
+that equals the dual-skin `restW`), **NO repoint**, and rebake `off = meshWorld·inv(that bone's
+settled clip-free char-space rest)`. Coherent by construction (at rest `skin = inv(restW)·restW = I`),
+one char-space end-to-end (a single captured transform supplies rotation AND translation — no
+W2.8c frame-mixing). New member `mNativeApdAssetRest`; new helper `NativeRotAngleVsIdentityDeg`.
+Plus **`RB3_APD_DIAG`** — a per-bone rest-basis provenance probe (render-inert) that produced the
+decisive data below. `apdMesh` scoping generalized from `sApdRestRot`-only to `sApdAny` (any
+appendage path) so the new flag + diag can see the scope; the refuted `RB3_APPENDAGE_REST_ROT`
+path is preserved unchanged when it (and only it) is set.
+
+### The decisive measurement — the fix FREEZES the hands (A/B, this wave)
+| metric | flag-OFF (default) | flag-ON (`RB3_APPENDAGE_ASSET_REBAKE=1`) |
+|---|---|---|
+| dual-skin `worstSep` (S1 target) | 37.4u (RED) | **0.0u** |
+| `hands_naked` worldExt over time | **CONTINUOUS 91.8–106.6u** (animating) | **PINNED to 56.1/80.3u** (2 discrete values = frozen) |
+| IK_SHARD wext / worst vert | varies (86–107u, worst vert jumps 108…1057) | **constant 80u, same vert 686 every frame** |
+| hands_bind_characterize verdict | BRANCH-RESIDUAL / **MARGINAL-GRAZE** (no hard hand shard) | BRANCH-RESIDUAL / **HARD-SHARD** |
+
+The dual-skin worstSep collapses to 0.0u exactly as S1 predicted — but the appendage is now STATIC.
+
+### Root cause — the S1 dual-skin metric is confounded by a STALE-BONE reference (`RB3_APD_DIAG`)
+`RB3_APD_DIAG` logged, per resolved appendage bone: `bound` = `mesh->BoneTransAt(b)` (the mesh's
+authored bone) has char-space rest **~129°**; `own` = `Find(bone-name)` resolves a **different**
+instance at **~106°** (the shared magnet — `invOff` is IDENTICAL 106° across members with distinct
+38/40-bone skeletons, S1's own provenance). The DEFAULT distinct rebind **repoints the mesh
+`bound`→`own`** and bakes `off = inv(own rest ~106°)` — and that is **coherent w.r.t. the DRAWN
+(animating) bone**: `own` is the live per-member instance that animates, `bound` is a STATIC
+embedded bind-pose copy. The dual-skin probe's rest reference `bw` is captured from
+`owner->BoneTransAt(b)` at the FIRST draw, **before** the repoint completes = the static `bound`
+(129°), while `asDrawn` uses the post-repoint animating `own` (106°). The 37.4u "shard" is the probe
+comparing the drawn vertex against a bone the draw does not use — a **bound-vs-drawn-bone confound
+A.S1 ruled out for PLACEMENT but not here**. The metric is **unsatisfiable without freezing**:
+own=106° (animating) and bound=129° (static) are mutually exclusive, and matching `bw`=129° forces
+the mesh onto the static bone. The real hands are already coherently animating (characterize
+MARGINAL, no hard hand shard); the fix trades animation for a metric artifact. **5th fix class dead.**
+
+### Gates
+- **drawlog-792** `--fixed-clock --canonical-order` flag-OFF = **PASS** (792 draws, byte-identical;
+  172 known-residual eye-jitter within bound). All new code is `getenv`-cached; with every flag
+  unset `sApdAny=0` ⇒ `apdMesh=false` ⇒ the whole block is inert.
+- **Two-fixture protocol, leg 1** — committed flag-OFF `live_pose.txt` `RealPathFixture` gtest =
+  **RED (36.9u > 20u)** on today's build (anti-revert instrument intact; not overwritten — restored
+  to S1's HEAD via `git show` redirect after a baseline probe run touched it, NOT `checkout --`).
+- **Two-fixture protocol, leg 2** — a flag-ON re-capture DOES read <20u (0.0u), but ONLY by
+  freezing the hand ⇒ this is the REFUTATION, not a pass. Placement-independent wext + characterize
+  A/B (the mandatory S2 exits) FAIL flag-ON (freeze / MARGINAL→HARD).
+- **rb3-native + rb3-tests build** = clean (clang).
+- DC3 zero-blast: all code is rb3 `BandCharacter.cpp/.h` (game code, HX_NATIVE) + append-only
+  classification rows; no engine `Rnd_Wgpu_RB3.cpp` edit this stage (Lane A single-writer respected;
+  no dual-skin probe modification needed — the A.S1 `RB3_DUALSKIN_MINWEXT` gate sufficed).
+
+### Floating-forearm triage (S3) — deferred
+Not separately captured this stage: the refutation supersedes it (the fix does not collapse the
+finger shard — it freezes it — so the "does the forearm anomaly collapse with the S2 flag" check is
+moot). Filed for a future wave with the H1/H2/H3 draw-log at the sighting.
+
+### Disposition
+`RB3_APPENDAGE_ASSET_REBAKE` + `RB3_APD_DIAG` kept **default-OFF** (flag-OFF byte-identical),
+registered append-only in `NativeCompatFlags.classification.json` (class workaround / probe;
+not-live; do-NOT-flip). No pin bump, no default flip (coordinator-only). The three static +
+per-frame + world-space classes AND now the asset-derived static class are all dead with numbers;
+the genuine open item, if any real residual survives the stale-bone confound, is a DIFFERENT
+instrument (a coherent-vs-drawn-bone metric that tracks the post-repoint bone), not a 6th bind-side
+bake attempt.
+
+### Commits
+- rb3 (flock `/tmp/rb3-git.lock`): `BandCharacter.cpp` + `BandCharacter.h` + this STATUS — `<rb3-sha>`
+- engine (flock `/tmp/milo-engine-classjson.lock` + `/tmp/milo-engine-git.lock`):
+  `NativeCompatFlags.classification.json` (append-only `RB3_APPENDAGE_ASSET_REBAKE` + `RB3_APD_DIAG`;
+  NO gen.inc regen — coordinator) — `<eng-sha>`
+
+Checkpoint: `/tmp/wave10-checkpoints/A-S2.json` (`verdict: REFUTED`).

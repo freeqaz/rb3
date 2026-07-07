@@ -372,6 +372,15 @@ public:
     // see RebindHeadHandsAtRest for the A/B numbers. Only populated when the flag is
     // set; Wii untouched (HX_NATIVE). Default empty.
     std::map<std::string, Transform> mNativeApdWorldRest;
+    // W2.8e (Wave 10 Lane A, native-only): CHAR-space asset rebake basis for the
+    // appendage (hand/finger/nail/glove) meshes under RB3_APPENDAGE_ASSET_REBAKE
+    // (default-OFF, the MATCH path). Keyed by bone name; captured ONCE at a clip-free
+    // (settled) frame from the mesh's OWN per-member bone (mesh->BoneTransAt(b), the
+    // exact bone the GPU palette samples — NOT the Find/magnet result the default
+    // path repoints to). The offset is then rebaked off = meshWorld*inv(this rest),
+    // coherent by construction. Only populated when the flag is set; Wii untouched
+    // (HX_NATIVE). Default empty.
+    std::map<std::string, Transform> mNativeApdAssetRest;
     // wave-inststrings: rebind bookkeeping for RebindInstStringsToRestBasis (the band
     // lead-guitar *_strings rebind, called from Poll after mInstDir->Poll()).
     // mNativeInstReboundOnce latches when no in-scope strings mesh remains to rebind
