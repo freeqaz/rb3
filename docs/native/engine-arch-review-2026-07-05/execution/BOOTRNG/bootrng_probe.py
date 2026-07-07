@@ -88,7 +88,13 @@ def main():
     ap.add_argument("--bin", required=True)
     ap.add_argument("--n", type=int, default=10)
     ap.add_argument("--songms", type=float, default=21000.0)
-    ap.add_argument("--tol", type=float, default=2000.0)
+    # Wave-12 A-S1 harness lever: tightened 2000 -> 150 ms. The old ±2000 ms
+    # window admitted a bimodal songMs split (~20,900 vs ~21,150) that dominated
+    # the measured mid_sat spread (pearson(songMs,mid_sat)=0.77 was the cluster
+    # separation, NOT the genuine fixed-phase per-boot residual). Tightening to
+    # 150 ms removes that confound so the residual is the true gRand-stream
+    # divergence this lane attributes.
+    ap.add_argument("--tol", type=float, default=150.0)
     ap.add_argument("--out", default=os.path.join(HERE, "measure"))
     ap.add_argument("--raws", default="/tmp/bootrng-caps")
     ap.add_argument("--tag", default="as1")

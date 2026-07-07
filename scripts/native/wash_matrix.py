@@ -80,7 +80,8 @@ def main():
         REPO, "docs", "native", "engine-arch-review-2026-07-05", "execution", "WASH", "measure"))
     ap.add_argument("--n", type=int, default=6, help="captures per config (>=6)")
     ap.add_argument("--songms", type=float, default=21000.0)
-    ap.add_argument("--tol", type=float, default=250.0)
+    # Wave-12 A-S1 harness lever: tightened 250 -> 150 ms (see wash-measure.py).
+    ap.add_argument("--tol", type=float, default=150.0)
     ap.add_argument("--max-retries", type=int, default=8,
                     help="max discarded (overshoot/nav) boots per needed capture")
     ap.add_argument("--only", default=None, help="comma list of config keys to run (default all)")

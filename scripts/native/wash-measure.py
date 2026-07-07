@@ -223,7 +223,12 @@ def main():
     ap.add_argument("--raws", default=DEFAULT_RAWS)
     ap.add_argument("--out", default=DEFAULT_OUT)
     ap.add_argument("--songms", type=float, default=21000.0)
-    ap.add_argument("--tol", type=float, default=250.0)
+    # Wave-12 A-S1 harness lever: tightened 250 -> 150 ms so the pinned-shot
+    # capture window no longer admits the ~20,900 vs ~21,150 ms bimodal songMs
+    # split that drove the dominant BOOTRNG confound (pearson(songMs,mid_sat)=0.77
+    # was cluster-separation, not within-cluster structure). All spread gates
+    # compare same-tol arms at this window.
+    ap.add_argument("--tol", type=float, default=150.0)
     ap.add_argument("--overshoot-max", type=float, default=None,
                     help="discard a boot once songMs passes this without a capture "
                          "(default songms+tol)")
