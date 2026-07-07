@@ -160,3 +160,73 @@ asset-level load only confirms provenance.
   `native/tests/goldens/w2.8-farvert/live_pose.txt` — `<rb3-sha>`
 
 Checkpoint: `/tmp/wave9-checkpoints/A-S1.json`.
+
+---
+
+## A.S2 — done (conditional minimal fix → HONEST NEGATIVE, Opus)
+
+**Outcome: the named-factor minimal fix is REFUTED.** S1 named the factor unambiguously
+(candidate (b), the skin offset's rotation basis), so per charter I implemented the minimal
+fix at that factor behind a default-OFF registered flag. It does **not** achieve the hard
+exit and reproduces a documented prior regression. The refuted experiment stays landed
+default-OFF (RB3_BOUND_REBAKE / RB3_HANDS_POSEAWARE precedent), UNSET in all arms.
+
+### The fix attempted — `RB3_APPENDAGE_REST_ROT` (default OFF, class probe)
+S1's prescription: `off_b = meshWorld · inverse(perMemberBoneRestWorld_b)` using the
+per-member bone's **rest ROTATION basis**. The default rebind (`RebindHeadHandsAtRest`)
+already bakes `off = meshWorld · inverse(rest)` — but against the **CHAR-space** rest
+(`NativeCharSpaceRestXfm`, placement divided out). The dual-skin probe's proven-plausible
+"coherent" reference composes rest+sample **both in WORLD space** from the exact
+palette-sampled bone (`owner->BoneTransAt`). So the flag, for hand/finger/nail/glove meshes,
+captures the target bone's **world-space** rest at a clip-free resolve and bakes
+`off = meshWorld · inverse(worldRest)`.
+
+### Why it's refuted — three independent findings
+1. **Independent wext A/B REGRESSES** (build-agent-W2.8d, `IK_SHARD_VERT=hands_naked`,
+   settled gameplay, N≈600-700/arm): flag-OFF mean **73.1u** / p90 **83.0** / max 106.0;
+   flag-ON mean **79.9u** / p90 **92.0** / max 105.0. Flag-ON makes the world-AABB extent
+   *worse*, not better.
+2. **Gate not reached.** Two band members share `hands_naked.mesh` (38 vs 40 bones). Dual-skin
+   worstSep: the 40-bone member moved 36.9→**21.4u** (still **> the 20u** RealPathFixture
+   threshold); the 38-bone member was **unchanged** at 87.3° / 36.9u. Inconsistent + short of
+   the gate.
+3. **Documented prior regression.** The `NativeCharSpaceRestXfm` header records the scout-c8
+   2026-06-11 finding: world-space rest makes every vert swing on a **|placement|-length lever
+   arm** as the bone rotates → the R·sin(θ) 200-460u smear that char-space was introduced to
+   fix. My A/B reproduces exactly that. `RB3_BOUND_REBAKE` is the same dead-end.
+
+### What this establishes (mechanism, for Wave 10)
+- **The shard is real and is NOT a rest-SPACE error.** Traced the real path
+  (`APD_*` instrumentation, since removed): `hands_naked.mesh` IS collected and IS rebound by
+  `RebindHeadHandsAtRest` (all 4 members, ~38-40 bones, not pending) — the default **char-space**
+  rebake already applies to it, yet the probe still reads the shard. So the residual is a
+  **rest-CAPTURE basis/pose** problem (the captured "rest" rotation ≠ the per-member finger
+  bone's true authored bind rotation), not the char-vs-world space of the *formula*.
+- **Probe-metric caveat (A1 review risk realized).** The dual-skin `DELTA-R = angle(inverse(off),
+  bw)` compares a **char-space** `inverse(off)` against a **world-space** `bw` — so the constant
+  ~87°/43° is substantially a **placement-rotation artifact** (≈2× the member's facing yaw), not
+  purely a bake error. The genuinely load-bearing metric is worstSep (asDrawn vs coherent), which
+  is real but which world-space rest does not cleanly reduce.
+
+### Wave-10 design (the sanctioned fallback, no forced code)
+Attribute the residual to **asset data**: load the per-member `skeleton_unshared.milo` finger-bone
+**authored bind rotation** (vs the shared magnet `char/main/skeleton.milo`) — S1's own deferred
+confirmation — and rebake the **char-space** offset against that authored bind basis (a
+static asset-derived basis, NOT a live world-capture and NOT world-space). This is the only
+approach not already refuted (static live-capture rebake, world-space rebake, rigid wrist-collapse,
+per-frame conjugation are all dead with numbers).
+
+### Gates
+- **flag-OFF byte-identical:** drawlog golden `--fixed-clock --canonical-order` = **792 PASS**
+  (agent binary; all changes behind `getenv("RB3_APPENDAGE_REST_ROT")`, HX_NATIVE; Wii untouched).
+- **RealPathFixture** stays **RED 32.8u** (committed fixture untouched) — the documented shard
+  instrument.
+- W2.2 numeric gate set N/A for a default-OFF refuted flag (flag-ON is the regression, not shipped).
+
+### Commits
+- rb3 (flock `/tmp/rb3-git.lock`): `BandCharacter.cpp` + `BandCharacter.h` + this STATUS —
+  `<rb3-sha>`
+- engine (flock `/tmp/milo-engine-git.lock`): `NativeCompatFlags.classification.json` append-only
+  probe row (NO gen.inc regen — coordinator) — `<eng-sha>`
+
+Checkpoint: `/tmp/wave9-checkpoints/A-S2.json`.

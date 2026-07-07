@@ -364,6 +364,14 @@ public:
     // own == bound (post-deform SyncObjects seeding, which may have resolved the
     // shared magnet) are overwritten ONCE by the first distinct resolve.
     std::set<std::string> mNativeRestDistinct;
+    // W2.8d (Wave 9 Lane A, native-only): world-space rest basis for the appendage
+    // (hand/finger/nail/glove) rebake under RB3_APPENDAGE_REST_ROT — a REFUTED
+    // experiment kept default-OFF (do NOT flip). Keyed by bone name; captured from the
+    // LIVE target bone's WorldXfm (no placement division) at a clip-free resolve.
+    // Measured a REGRESSION (world-space lever-arm smear, per scout-c8 2026-06-11) —
+    // see RebindHeadHandsAtRest for the A/B numbers. Only populated when the flag is
+    // set; Wii untouched (HX_NATIVE). Default empty.
+    std::map<std::string, Transform> mNativeApdWorldRest;
     // wave-inststrings: rebind bookkeeping for RebindInstStringsToRestBasis (the band
     // lead-guitar *_strings rebind, called from Poll after mInstDir->Poll()).
     // mNativeInstReboundOnce latches when no in-scope strings mesh remains to rebind

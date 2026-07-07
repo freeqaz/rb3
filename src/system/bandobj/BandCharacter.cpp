@@ -1245,6 +1245,26 @@ void BandCharacter::RebindHeadHandsAtRest() {
     if (mNativeHeadReboundOnce) return;
     bool probe = getenv("HEAD_REBIND_PROBE") != 0;
 
+    // W2.8d (Wave 9 Lane A) — REFUTED EXPERIMENT, kept default-OFF as a documented
+    // dead-end (do NOT flip). Hypothesis: the finger shard (W2.8d dual-skin verdict
+    // candidate-b, offset rotation basis ~42-87 deg off) is a rest-bake SPACE error —
+    // so for hand/finger/nail/glove meshes, bake off = meshWorld * inverse(WORLD-space
+    // rest) captured from the exact palette-sampled bone, instead of the default
+    // CHAR-space rest (NativeCharSpaceRestXfm). MEASURED (build-agent-W2.8d, A/B on the
+    // independent IK_SHARD_VERT wext metric): flag-ON is a REGRESSION — hands_naked wext
+    // mean 73.1 -> 79.9u, p90 83 -> 92u; the dual-skin worstSep only partially/
+    // inconsistently moved (one member 36.9 -> 21.4u, still > the 20u gate; the other
+    // member unchanged at 87.3 deg / 36.9u). This reproduces the scout-c8 2026-06-11
+    // finding (see NativeCharSpaceRestXfm header): world-space rest makes every vert
+    // swing on a |placement|-length lever arm -> the R*sin(theta) 200-460u smear the
+    // char-space capture was introduced to fix. The genuine residual is a rest-CAPTURE
+    // basis/pose problem (the char-space rebake ALREADY applies to hands_naked yet
+    // leaves a real shard), requiring the authored per-member bind pose from
+    // skeleton_unshared.milo (asset data) — deferred to Wave 10. Default OFF, registered
+    // (class probe). HX_NATIVE only; Wii byte-identical.
+    static int sApdRestRot = -1;
+    if (sApdRestRot < 0) sApdRestRot = getenv("RB3_APPENDAGE_REST_ROT") ? 1 : 0;
+
     // Collect every skinned mesh the member draws (shared collector — same walk as
     // the torso rebind; see NativeCollectSkinnedMeshes).
     std::vector<RndMesh *> targets;
@@ -1296,6 +1316,20 @@ void BandCharacter::RebindHeadHandsAtRest() {
         const char *mn = mesh->Name();
         bool torsoName = mn && (strstr(mn, "trackjacket") || strstr(mn, "vestdenim") ||
                                 strstr(mn, "plaidshirt") || strstr(mn, "shred"));
+        // W2.8d: is this an appendage (hand/finger/nail/glove) mesh — the R*sin(dR)
+        // rotation-basis shard scope. Case-insensitive substring match on the name.
+        bool apdMesh = false;
+        if (sApdRestRot && mn) {
+            std::string ln(mn);
+            for (size_t i = 0; i < ln.size(); i++) {
+                char c = ln[i];
+                if (c >= 'A' && c <= 'Z') ln[i] = (char)(c + 32);
+            }
+            apdMesh = ln.find("hand") != std::string::npos ||
+                      ln.find("finger") != std::string::npos ||
+                      ln.find("nail") != std::string::npos ||
+                      ln.find("glove") != std::string::npos;
+        }
         // COMPLEMENT of the torso scope: a torso mesh with any DISTINCT-resolving
         // bone (own != bound) is owned by the Poll torso rebind
         // (RebindOutfitBonesToOwnSkeleton, authored offsets) — skip it here. But a
@@ -1361,6 +1395,22 @@ void BandCharacter::RebindHeadHandsAtRest() {
             std::map<std::string, Transform>::iterator rp = mNativeRestPose.find(bname);
             bool haveDistinct =
                 mNativeRestDistinct.find(bname) != mNativeRestDistinct.end();
+            // W2.8d: capture the LIVE target bone's WORLD-space rest (no placement
+            // division) for the appendage rebake, first clip-free resolve wins. This
+            // is the exact bone (own == the palette-sampled per-member instance after
+            // the repoint below) and space (world) the GPU palette reads at draw, so
+            // baking off = meshWorld * inverse(worldRest) makes skin@rest == meshWorld
+            // (coherent) — unlike the char-space rest whose rotation basis reads
+            // ~42-87 deg off. Clip-free-guarded so it can't snapshot a mid-animation
+            // pose (same poison guard the char-space distinct capture uses).
+            if (sApdRestRot && apdMesh &&
+                mNativeApdWorldRest.find(bname) == mNativeApdWorldRest.end() &&
+                !(mDriver && mDriver->FirstPlaying())) {
+                Transform wr = own->WorldXfm();
+                if (std::fabs(wr.v.x) < 1e5f && std::fabs(wr.v.y) < 1e5f &&
+                    std::fabs(wr.v.z) < 1e5f)
+                    mNativeApdWorldRest[bname] = wr;
+            }
             Transform rest;
             if (own == bound) {
                 // render-polish 2026-06-11 (char-render): the mesh is ALREADY bound
@@ -1470,7 +1520,22 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 if (owns[b] != mesh->BoneTransAt(b))
                     mesh->SetBone(b, owns[b], false);
                 Transform invRest;
-                Invert(rests[b], invRest);
+                // W2.8d: for appendage bones with a captured WORLD-space rest, bake
+                // off = meshWorld * inverse(worldRest) (same space + same bone the GPU
+                // palette samples) so the rest ROTATION basis matches — collapsing the
+                // R*sin(dR) far-vert shard. Falls back to the char-space rest when no
+                // world-rest was captured (never regresses the default path).
+                bool usedWorldRest = false;
+                if (sApdRestRot && apdMesh && owns[b] && owns[b]->Name()) {
+                    std::map<std::string, Transform>::iterator wp =
+                        mNativeApdWorldRest.find(std::string(owns[b]->Name()));
+                    if (wp != mNativeApdWorldRest.end()) {
+                        Invert(wp->second, invRest);
+                        usedWorldRest = true;
+                    }
+                }
+                if (!usedWorldRest)
+                    Invert(rests[b], invRest);
                 Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b));
                 reboundBones++;
                 if (probe) {
