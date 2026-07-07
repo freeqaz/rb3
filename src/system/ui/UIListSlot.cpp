@@ -1,5 +1,6 @@
 #include "ui/UIListSlot.h"
 #include "ui/UIList.h"
+#include "ui/UIColor.h"
 #include "utl/Std.h"
 #include "utl/Symbols.h"
 
@@ -99,29 +100,45 @@ void UIListSlot::Draw(
                     ParentList()->AdjustTrans(tfa8, curdrawstate);
                 CalcXfm(ctf, curdrawstate.mPos, tfa8);
 #ifdef HX_NATIVE
-                // W4.4-ROWFIX Part B (RB3_ROWFIX, default-OFF): on the row that
+                // W4.4-TEXTCOLOR (RB3_ROWFIX Part B, default-OFF): on the row that
                 // Part A painted a solid bright fill under (this list latched
                 // RB3RowfixFillDrawn), the highlighted-row text must read DARK on
-                // the bright bar (target polarity) instead of the default white.
-                // Temporarily darken the label color around this one draw, then
-                // restore (uicolor is a shared authored UIColor — mutate/restore
-                // in place, single-threaded, used immediately). Scoped to the
-                // highlighted display element of the fill-bearing list only.
+                // the bright bar (target polarity) instead of the default light.
+                //
+                // W4.4-TEXTCOLOR observation (evidence/): the focused-row label
+                // draws with NO provider color (uicolor==null: DisplayColor/
+                // SlotColorOverride return 0 for these rows) and stays at kNormal
+                // state, so its text falls to GetStateColor (light, 0.87). The
+                // Wave-15 attempt only mutated a non-null uicolor, so its `uicolor
+                // &&` guard SKIPPED every focused row (probe: colOv=0, mainCol
+                // stayed 0.87). Fix: for the highlighted display element of the
+                // fill-bearing list, force a dark label color — reuse the
+                // provider's UIColor when present (mutate/restore in place), else
+                // supply a file-static dark UIColor. Immediate draw (see engine
+                // DrawMeshImmediate) snapshots the color, so restore-after is safe.
                 Hmx::Color rowfixSaved;
-                bool rowfixDark = false;
-                if (!box && uicolor && RB3RowfixActive() && RB3RowfixFillDrawn() &&
+                UIColor *rowfixMutated = 0;
+                if (!box && RB3RowfixActive() && RB3RowfixFillDrawn() &&
                     curdrawstate.mDisplay == drawstate.mHighlightDisplay) {
-                    rowfixSaved = uicolor->GetColor();
-                    uicolor->SetColor(Hmx::Color(0.06f, 0.05f, 0.02f, rowfixSaved.alpha));
-                    rowfixDark = true;
+                    static UIColor sRowfixDark;
+                    Hmx::Color dark(0.06f, 0.05f, 0.02f, 1.0f);
+                    if (uicolor) {
+                        rowfixSaved = uicolor->GetColor();
+                        dark.alpha = rowfixSaved.alpha;
+                        uicolor->SetColor(dark);
+                        rowfixMutated = uicolor;
+                    } else {
+                        sRowfixDark.SetColor(dark);
+                        uicolor = &sRowfixDark;
+                    }
                 }
 #endif
                 if (cmd != kExcludeFirst || i > 0) {
                     mElements[i]->Draw(tfa8, d10, uicolor, box);
                 }
 #ifdef HX_NATIVE
-                if (rowfixDark)
-                    uicolor->SetColor(rowfixSaved);
+                if (rowfixMutated)
+                    rowfixMutated->SetColor(rowfixSaved);
 #endif
                 if (cmd == kDrawFirst)
                     return;

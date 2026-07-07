@@ -12,6 +12,7 @@
 #include "rndobj/Utl.h"
 #include "rndwii/Rnd.h"
 #include "ui/UIComponent.h"
+#include "ui/UIListWidget.h"
 #include "utl/Loader.h"
 #include "utl/Locale.h"
 #include "ui/UILabelDir.h"
@@ -277,6 +278,22 @@ void UILabel::DrawShowing() {
     }
 
     if (mAltStyleEnabled && AltFont()) {
+#ifdef HX_NATIVE
+        // W4.4-TEXTCOLOR (RB3_ROWFIX Part B, default-OFF). A1-grounded fix: the
+        // song_select focused-row glyphs are drawn by the ALT font submesh
+        // (RndText assigns per-font materials, Text.cpp:1402). The stock path
+        // below never honors mColorOverride on the alt mat — it always applies
+        // mAltTextColor / GetStateColor (light) — so the row-darken that reaches
+        // the MAIN mat (:266-270) leaves the visible alt-drawn glyphs light on
+        // the Part-A bright bar. When RB3_ROWFIX is set AND a per-draw color
+        // override is active, propagate the override to the alt mat too, exactly
+        // as the main font does. getenv-gated → Wii + flag-OFF byte-identical.
+        if (RB3RowfixActive() && mColorOverride) {
+            RndMat *fontMat = AltFont()->GetMat();
+            if (fontMat)
+                fontMat->SetColor(mColorOverride->GetColor());
+        } else
+#endif
         if (mAltTextColor) {
             RndMat *fontMat = AltFont()->GetMat();
             if (fontMat) {
