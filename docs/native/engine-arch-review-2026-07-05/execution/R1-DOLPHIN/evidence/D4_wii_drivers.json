@@ -1,0 +1,20 @@
+{
+ "side": "wii",
+ "build": "bank8_debug_dol_on_retail_disc(patched_apploader)",
+ "chardriver_vt": "0x80c01468",
+ "charclip_vt": "0x80bfff44",
+ "chardriver_instances": 18,
+ "charclip_instances_named": 370,
+ "player_clips_resident": [
+  "player0_f",
+  "player0_m",
+  "player1_f",
+  "player1_m",
+  "player2_f",
+  "player2_m",
+  "player3_f",
+  "player3_m"
+ ],
+ "active_player_clip_drivers": [],
+ "finding": "NO active CharClipDriver playing a player* vignette clip at the frozen instant"
+}

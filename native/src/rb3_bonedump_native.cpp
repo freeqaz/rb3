@@ -35,6 +35,8 @@
 #include "bandobj/BandCharDesc.h"   // Gender()
 #include "bandobj/BandDirector.h"   // TheBandDirector->GetCharacter(slot) (live in-game band)
 #include "meta_band/CharCache.h"    // TheCharCache->GetCharacter(slot) (shell/preview band)
+#include "char/CharDriver.h"        // D4: CharClipDriver clip name + frame join key
+#include "char/CharClip.h"          // CharClip::Name()
 
 #include <cstdint>
 #include <cstdio>
@@ -72,6 +74,11 @@ bool IsHandChainBone(const char* nm) {
         "forearm", "hand", "middlefinger", "ringfinger", "thumb",
         // kept for completeness / provenance if present in the rig:
         "indexfinger", "pinky", "wrist",
+        // D4: pelvis + spine are the convention-pin reference bones (known-shared
+        // structure; pelvis≈identity per D3 unblock). Captured so the join can null
+        // the per-bone local-frame conjugation on a non-hand bone before reading the
+        // finger deltas.
+        "pelvis", "spine",
     };
     for (const char* t : toks)
         if (strstr(low, t)) return true;
@@ -99,6 +106,51 @@ void EmitRows(FILE* f, const Transform& t) {
         t.m.y.x, t.m.y.y, t.m.y.z,
         t.m.z.x, t.m.z.y, t.m.z.z,
         t.v.x, t.v.y, t.v.z);
+}
+
+// D4 (Wave-C, the frame-matched join): emit the member's CharClipDriver clip name +
+// frame so the join has the (clip, frame) key PLAN §3.6/§3.7 require — the exact thing
+// D3's static-shell table lacked. The hand bones are posed by a CharDriver (or the
+// CharDriverMidi subclass) living in the member's OWN dir; each driver holds a
+// CharClipDriver STACK (mFirst..Last), the top of which carries the live beat.
+//   - clip   = Last()->GetClip()->Name()   (the top/deepest clip TopClipFrame uses)
+//   - frame  = CharDriver::TopClipFrame()   (beat->frame via the clip's fps)
+//   - beat   = Last()->mBeat                (raw driver beat, the un-fps'd clock)
+// We emit EVERY CharDriver in the member dir (body/face/etc), tagged by driver name +
+// clip_type Symbol, so the join can pick the body/skeleton driver that moves the hand
+// chain. Read-only: FirstPlaying()/Last()/TopClipFrame()/GetClip()/Name() are all const
+// or non-mutating accessors. Returns the number of drivers emitted.
+int DumpDrivers(FILE* f, BandCharacter* bc) {
+    int n = 0;
+    fprintf(f, "\"drivers\":[");
+    for (ObjDirItr<CharDriver> it(bc, true); it != 0; ++it) {
+        CharDriver* dr = it;
+        // Top (deepest) clip driver = what TopClipFrame() reads.
+        CharClipDriver* last = dr->Last();
+        CharClip* topClip = last ? last->GetClip() : nullptr;
+        // First fully-blended-in playing clip (may differ from top during a blend).
+        CharClipDriver* fp = dr->FirstPlaying();
+        CharClip* playClip = fp ? fp->GetClip() : nullptr;
+        float frame = dr->TopClipFrame();
+        float beat = last ? last->mBeat : 0.0f;
+        // count the stack depth for provenance
+        int depth = 0;
+        for (CharClipDriver* d = fp; d; d = d->Next()) depth++;
+        const char* drName = dr->Name() ? dr->Name() : "";
+        const char* clipType = dr->ClipType().Str() ? dr->ClipType().Str() : "";
+        const char* topName = (topClip && topClip->Name()) ? topClip->Name() : "";
+        const char* playName = (playClip && playClip->Name()) ? playClip->Name() : "";
+        if (n > 0) fprintf(f, ",");
+        fprintf(f,
+            "{\"driver\":\"%s\",\"clip_type\":\"%s\",\"clip\":\"%s\","
+            "\"playing_clip\":\"%s\",\"frame\":%.6f,\"beat\":%.6f,\"depth\":%d,"
+            "\"driver_addr\":\"%p\"}",
+            JEsc(drName).c_str(), JEsc(clipType).c_str(), JEsc(topName).c_str(),
+            JEsc(playName).c_str(), frame, beat, depth, (void*)dr);
+        n++;
+    }
+    fprintf(f, "]");
+    return n;
 }
 
 // Dump one member's OWN hand-chain bones. The animating per-member skeleton bones
@@ -135,9 +187,12 @@ int DumpMember(FILE* f, int slot, const char* source, BandCharacter* bc,
     fprintf(f,
         "  {\"slot\":%d,\"source\":\"%s\",\"name\":\"%s\",\"gender\":\"%s\","
         "\"char_addr\":\"%p\",\"loading\":%d,\"total_trans\":%d,"
-        "\"name_sample\":\"%s\",\"bones\":[\n",
+        "\"name_sample\":\"%s\",",
         slot, source, JEsc(nm).c_str(), JEsc(gender).c_str(),
         (void*)bc, bc->IsLoading() ? 1 : 0, totalTrans, sample.c_str());
+    // D4: the (clip, frame) join key — emitted per member, before the bones.
+    DumpDrivers(f, bc);
+    fprintf(f, ",\"bones\":[\n");
 
     int n = 0;
     for (ObjDirItr<RndTransformable> it(bc, true); it != 0; ++it) {

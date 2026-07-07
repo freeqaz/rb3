@@ -1,0 +1,233 @@
+{
+ "port": 56247,
+ "n": 32,
+ "dt": 0.32,
+ "frames": [
+  0.634139,
+  0.951577,
+  1.293154,
+  1.626082,
+  1.953525,
+  2.283311,
+  2.619726,
+  2.958518,
+  3.289768,
+  3.607285,
+  3.92541,
+  4.281161,
+  4.601525,
+  4.939222,
+  5.273643,
+  5.597227,
+  5.934847,
+  6.26371,
+  6.589332,
+  0.254707,
+  0.5834,
+  0.909523,
+  1.238701,
+  1.571163,
+  1.885897,
+  2.213006,
+  2.551135,
+  2.862535,
+  3.195747,
+  3.528893,
+  3.868464,
+  4.199322
+ ],
+ "sweep": [
+  {
+   "i": 0,
+   "snap": "sweep_000.json",
+   "count": 232,
+   "main_frame": 0.634139
+  },
+  {
+   "i": 1,
+   "snap": "sweep_001.json",
+   "count": 232,
+   "main_frame": 0.951577
+  },
+  {
+   "i": 2,
+   "snap": "sweep_002.json",
+   "count": 232,
+   "main_frame": 1.293154
+  },
+  {
+   "i": 3,
+   "snap": "sweep_003.json",
+   "count": 232,
+   "main_frame": 1.626082
+  },
+  {
+   "i": 4,
+   "snap": "sweep_004.json",
+   "count": 232,
+   "main_frame": 1.953525
+  },
+  {
+   "i": 5,
+   "snap": "sweep_005.json",
+   "count": 232,
+   "main_frame": 2.283311
+  },
+  {
+   "i": 6,
+   "snap": "sweep_006.json",
+   "count": 232,
+   "main_frame": 2.619726
+  },
+  {
+   "i": 7,
+   "snap": "sweep_007.json",
+   "count": 232,
+   "main_frame": 2.958518
+  },
+  {
+   "i": 8,
+   "snap": "sweep_008.json",
+   "count": 232,
+   "main_frame": 3.289768
+  },
+  {
+   "i": 9,
+   "snap": "sweep_009.json",
+   "count": 232,
+   "main_frame": 3.607285
+  },
+  {
+   "i": 10,
+   "snap": "sweep_010.json",
+   "count": 232,
+   "main_frame": 3.92541
+  },
+  {
+   "i": 11,
+   "snap": "sweep_011.json",
+   "count": 232,
+   "main_frame": 4.281161
+  },
+  {
+   "i": 12,
+   "snap": "sweep_012.json",
+   "count": 232,
+   "main_frame": 4.601525
+  },
+  {
+   "i": 13,
+   "snap": "sweep_013.json",
+   "count": 232,
+   "main_frame": 4.939222
+  },
+  {
+   "i": 14,
+   "snap": "sweep_014.json",
+   "count": 232,
+   "main_frame": 5.273643
+  },
+  {
+   "i": 15,
+   "snap": "sweep_015.json",
+   "count": 232,
+   "main_frame": 5.597227
+  },
+  {
+   "i": 16,
+   "snap": "sweep_016.json",
+   "count": 232,
+   "main_frame": 5.934847
+  },
+  {
+   "i": 17,
+   "snap": "sweep_017.json",
+   "count": 232,
+   "main_frame": 6.26371
+  },
+  {
+   "i": 18,
+   "snap": "sweep_018.json",
+   "count": 232,
+   "main_frame": 6.589332
+  },
+  {
+   "i": 19,
+   "snap": "sweep_019.json",
+   "count": 232,
+   "main_frame": 0.254707
+  },
+  {
+   "i": 20,
+   "snap": "sweep_020.json",
+   "count": 232,
+   "main_frame": 0.5834
+  },
+  {
+   "i": 21,
+   "snap": "sweep_021.json",
+   "count": 232,
+   "main_frame": 0.909523
+  },
+  {
+   "i": 22,
+   "snap": "sweep_022.json",
+   "count": 232,
+   "main_frame": 1.238701
+  },
+  {
+   "i": 23,
+   "snap": "sweep_023.json",
+   "count": 232,
+   "main_frame": 1.571163
+  },
+  {
+   "i": 24,
+   "snap": "sweep_024.json",
+   "count": 232,
+   "main_frame": 1.885897
+  },
+  {
+   "i": 25,
+   "snap": "sweep_025.json",
+   "count": 232,
+   "main_frame": 2.213006
+  },
+  {
+   "i": 26,
+   "snap": "sweep_026.json",
+   "count": 232,
+   "main_frame": 2.551135
+  },
+  {
+   "i": 27,
+   "snap": "sweep_027.json",
+   "count": 232,
+   "main_frame": 2.862535
+  },
+  {
+   "i": 28,
+   "snap": "sweep_028.json",
+   "count": 232,
+   "main_frame": 3.195747
+  },
+  {
+   "i": 29,
+   "snap": "sweep_029.json",
+   "count": 232,
+   "main_frame": 3.528893
+  },
+  {
+   "i": 30,
+   "snap": "sweep_030.json",
+   "count": 232,
+   "main_frame": 3.868464
+  },
+  {
+   "i": 31,
+   "snap": "sweep_031.json",
+   "count": 232,
+   "main_frame": 4.199322
+  }
+ ]
+}

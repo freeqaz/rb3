@@ -172,3 +172,52 @@ skeleton delta. Details in `evidence/D3_findings.md`.
 only). Process lints held: pointer identity on every native bone row; metric shown red
 on a known-bad pair AND calibrated green on D2; own-vs-magnet proven by pointer
 distinctness before the table was trusted (no unvalidated oracle promoted).
+
+---
+
+## D4 / Wave-C (2026-07-07) — FRAME-MATCHED join → **the R5-decisive table**
+
+Lane D4 executed D3's exact priced unblock and delivered the frame-matched table.
+**Verdict: FRAME-MATCHED TABLE DELIVERED — supersedes D3's unsynced table for the R5
+gate.** Full detail: `evidence/D4_findings.md`; deliverable
+`evidence/D4_delta_table.{md,json}`; Wii driver census `evidence/D4_wii_drivers.json`;
+raw native sweep `evidence/D4_native_sweep_raw.tar.gz` + `..._manifest.json`.
+
+**What D4 did.** (1) Extended the native probe
+(`native/src/rb3_bonedump_native.cpp`) to emit each member's `CharDriver` clip name +
+`TopClipFrame()` + beat (the join key) and to capture pelvis/spine (convention-pin
+refs). (2) New `scripts/native/d4-bonedump-sweep.py` — under `RB3_FIXED_CLOCK=1`
+(a real 1/60 s step) the shell `playerN` vignette advances, so a burst of `/api/call`
+dumps a DENSE sweep across the whole clip loop [~0.25..6.59], 32 samples. (3) Extended
+`milo-trace tools/wii_bone_dirboot.py` with a `drivers` command. (4) New
+`scripts/analysis/interbone_framematch.py` — the frame-matched, convention-invariant
+join.
+
+**Why pose-anchored, not beat-labelled (measured).** The Wii `drivers` probe finding
+(`D4_wii_drivers.json`, reproducible): at the D2 frozen instant **0 active
+CharClipDrivers play a `playerN` vignette** (the 8 player clips are resident but their
+heap referencers are config/string tables, not live beat-bearing drivers). So the Wii
+carries no vignette beat — the Wii POSE is the frame label, matched against the native
+sweep (task-blessed nearest-frame fallback).
+
+**The metric = convention-invariant `|Δmag|`.** The raw `angle(D_wii·inv(D_native))`
+is conjugation-contaminated (D3's ambiguity); the geodesic **magnitude** `|relRot|` is
+conjugation-invariant. Decisive quantity = the **FLOOR** (smallest `|Δmag|` over ANY
+native vignette frame). Gates RE-RUN green: convention 0.133°; red-team 157.5° (RED);
+pelvis→spine1 convention pin 2.5–7.8°; bilateral L/R symmetry; gender/member split.
+
+**HEADLINE — middle/ring divergence SURVIVES frame-matching (male rig).** The Wii D2
+chain is **male** (thumb FLOOR ~0 vs native males). On the clean apples-to-apples
+comparison (native slot2 male, thumb+anchor FLOOR **<0.06°**), the middle/ring
+inner-segment magnitudes FLOOR at **14–41°** — no vignette frame closes them (native
+curls those fingers systematically more than the Wii). slot0 male mr FLOOR 7.5°.
+Females are cross-gender (confounded), de-weighted. → **Surviving deltas = male
+middle/ring fingers (real skeleton/pose candidate); collapsing deltas = wrist anchor +
+whole thumb cascade (exonerated).** R5 issues the verdict; D4 reports the deltas + the
+caveat that this is native-active-vignette-envelope vs Wii-settled-pose (see findings
+§Interpretation).
+
+**Not committed:** no default flips, no pin bumps, no engine edits (rb3-side probe TU +
+scripts + milo-trace tool only). Lints held: pointer identity per row; red-team red +
+calibration green RE-RUN on the new capture; convention pin on a shared non-hand bone;
+gender split so an aggregate can't refute; evidence committed.
