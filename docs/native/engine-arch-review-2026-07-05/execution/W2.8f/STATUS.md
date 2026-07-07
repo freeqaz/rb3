@@ -120,3 +120,84 @@ the mesh shell's relationship to the offsets."
 - rb3 `<this>` (flock git): `W2.8f/PLAN.md` + `W2.8f/STATUS.md` + `W2.8f/evidence/`.
 
 Checkpoint: `/tmp/wave11-checkpoints/B-S1.json` (`verdict: INSTRUMENT_BUILT_RECONCILED`).
+
+---
+
+## B.S2 — done (Opus, Lane B) — RECONCILE WITH THE VISIBLE SMEAR — VERDICT: **GREEN BRANCH — axis is the mesh SHELL, not skeleton, not GPU path**
+
+**Charter:** WAVE11_KICKOFF Lane B S2 + ACCEPTANCE A6/A7/A8. Reproduce the A.S3 forearm sighting WITH
+the B.S1 instrument LIVE; walk the decision tree. **No fix (diagnosis wave).** Engine binary
+`native/build-agent-W2.8f/rb3-native` (B.S1 probe, engine `4c93608`); **no engine change this stage.**
+
+### Verdict in one line
+Both A.S3 sightings **reproduce with the instrument live** (visible finger/hand shard shells +
+wext 95-106u), while the corrected **Tier-2 EXACT joint-attachment reads GREEN on the exact
+sighting frames** (≤0.33u) and **A7 co-variation FAILS** — so per the pre-registered S2 branch the
+defect is **NOT in the palette-coherence / skeleton axis**. The decisive new datum: **`wext` (the
+106u smear) is a pure CPU 4-bone blend of the same authored verts × weights × uploaded palette the
+GPU consumes** → the GPU faithfully reproduces the CPU, so the A6 **GPU-vs-CPU-same-palette readback
+is predicted GREEN** (confirmatory-only). **The named Wave-12 axis is the authored-vertex-to-offset
+composition — the skinned mesh SHELL — localized to the far-radius finger bones by R·sin θ.**
+
+### Reproduction WITH the instrument live (`evidence/bs2_sighting_harness.py`, `bs2_readings.txt`)
+Same two A.S3 nav sequences as `W2.8e/evidence/s3_triage_harness.py`, now with `RB3_HANDS_ATTACH_PROBE=1`.
+
+| sighting | hands_naked N | wext range | HI-wext bin (visible smear) Tier-2 EXACT | A7 corr(wext,t2exact) |
+|---|---|---|---|---|
+| GAMEPLAY (ceiling-forearm) | 1677 | 35.8–105.8u | ≥91.8u, n=206: min0.0 **mean0.029 max0.33u** | **+0.261 → FAILS** |
+| PARTDIFF (wipe-transition) | 228 | 53.3–105.8u | ≥95.3u, n=44: min0.0 mean0.27 **max0.33u** | +0.620 → **SPURIOUS** |
+
+- **Visible smear CONFIRMED on-screen** (`evidence/bs2_gameplay_smear_ms2000.png`,
+  `bs2_partdiff_smear_060.png`): center singer's raised hand = finger starburst of thin shards;
+  partdiff female hand = detached floating shard shell by the window — the exact A.S3 §(b) sightings.
+- **Decisive verbatim gameplay record (frame 2439, wext=95.2u):** `TIER2 … exactJoint=0.00u
+  (palette-wide exactWorst=0.33u)` while `TIER2approx worst=89.58u bone[9]='bone_R-thumb01' R=48.5`
+  and `TIER1 worst=87.3deg bone[33]='bone_L-middlefinger03'`. The far-radius FINGERS fling; the
+  wrist/joint stays attached — A.S3's exact signature.
+- **The partdiff +0.620 is rejected as spurious:** Tier-2 EXACT spans only 0.0–0.33u across the
+  *entire* wext 53→106u range — three orders below both the 5.53u fail-red and the 106u symptom. A
+  fix that eliminated the 106u smear would move this metric by ≤0.33u (below noise). Correlation on a
+  near-constant signal is the A7 "tracking for its own reasons" trap; the metric does **not** track
+  the symptom's magnitude in either run.
+
+### Why the GPU-vs-CPU readback is predicted GREEN (the axis, with data)
+`wext` (`Rnd_Wgpu_RB3.cpp:4360-4394`) is the CPU 4-bone blend mirroring the shader — same
+`skinnedView` authored verts, same per-vertex `boneWeights`, same uploaded `bones.bones[]`. It
+reproduces the full 106u smear with **zero GPU involvement** ⇒ the GPU is faithful to the CPU ⇒ a
+`|GPU − CPU_skinnedView|` readback (which shares all three inputs) cannot see the fault (A6 caveat).
+- **Ruled OUT:** GPU-only V24 decode / WGSL indexing / shader weight-norm as the smear cause (CPU
+  alone smears). **Weight normalization ruled out** — clean body control `greaserjacket_resource`
+  (same wsum-normalized blend) reads normal 41-54u; only the 87°-conjugated appendage meshes smear.
+- **Ruled OUT:** skeleton / inter-bone incoherence (Tier-2 EXACT = 0, joints coherent every pose).
+- **Ruled IN:** authored-vertex-to-offset composition (the SHELL). `off_b` baked in the shared-magnet
+  basis (87° off each per-member bone's own rest, Tier-1 / A.S1); off_b AND liveBone_b both in the
+  magnet frame ⇒ joint origins (R=0) fixed ⇒ Tier-2 EXACT ≈ 0; authored VERTS at R≠0 swept by
+  R·sin θ ⇒ wext smear. Arithmetic closes: `48.5·sin(87.3°) ≈ 48.4u`/bone × finger chain → 95-106u.
+
+### Wave-12 instruments designed (GREEN branch, `S2_WAVE12_INSTRUMENT_DESIGN.md`)
+- **Instrument A (scoped, Wave-12 build):** GPU-vs-CPU-same-palette readback (wgpu MAP_READ buffer +
+  compute skin ~150-250 LOC + async map), gated `RB3_HANDS_GPU_READBACK`. **Pre-registered
+  prediction: GREEN (≤1e-3u).** A RED result would OVERTURN this verdict and move the axis to the GPU
+  vertex path — logged either way.
+- **Instrument B (the actual fix gate):** per-vertex **shell invariant** `‖s(v) − ŝ(v)‖` (CPU blend
+  vs authored shell transported by ONLY coherent bone motion, using Tier-1's freshness-validated
+  rest). Reads the 106u magnitude Tier-2 EXACT cannot; **A7 bar: must co-vary with wext.** This is
+  the gate a Wave-12 shell-level fix must satisfy.
+
+**Fix-side honesty:** the 87° own-rest signal is the SAME one Wave-9/10 refuted as a *bind-side*
+target (5 dead classes; rebaking off_b freezes the hands). B.S2 does NOT resurrect a bind-side fix —
+it REDIRECTS Wave 12 to the **per-vertex shell level** (Instrument B), away from the skeleton (proven
+coherent) and the GPU path (predicted GREEN by Instrument A). No fix attempted.
+
+### Gates / process (A8, rule 7/8)
+- **No engine change this stage** ⇒ no new engine probe commit ⇒ per A8 no new golden run mandated;
+  the drawlog-golden 792 flag-OFF was validated by B.S1 on this exact binary lineage (`4c93608`).
+  All B.S2 work is rb3-side docs + a read-only reproduction harness reusing the committed B.S1 probe.
+- Lane A's uncommitted `FxSendNative.cpp` (unrelated audio) left untouched; only my own W2.8f files
+  staged under `flock /tmp/rb3-git.lock`. No reset/rebase/checkout/stash on shared trees.
+
+### Commits
+- rb3 `<this>` (flock git): `W2.8f/STATUS.md` + `W2.8f/S2_WAVE12_INSTRUMENT_DESIGN.md` +
+  `W2.8f/evidence/{bs2_sighting_harness.py,bs2_readings.txt,bs2_gameplay_smear_ms2000.png,bs2_partdiff_smear_060.png}`.
+
+Checkpoint: `/tmp/wave11-checkpoints/B-S2.json` (`verdict: GREEN_BRANCH_SHELL_AXIS`).

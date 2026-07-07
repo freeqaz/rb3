@@ -1,0 +1,17 @@
+=== W2.8f B.S2 — A.S3 sighting reproduced WITH RB3_HANDS_ATTACH_PROBE live ===
+binary: native/build-agent-W2.8f/rb3-native (engine 4c93608, B.S1 probe)
+
+--- GAMEPLAY (ceiling-forearm sighting), hands_naked N=1677 ---
+wext[35.8..105.8]  HI-wext(>=91.8,n=206): Tier2 EXACT (min0.0 mean0.029 max0.33)u  Tier2approx(35.9..89.6)u  Tier1 87.3deg
+A7 corr(wext,t2exact)=+0.261  -> FAILS (metric near-constant 0-0.33u)
+
+--- PARTDIFF (wipe-transition sighting), hands_naked N=228 ---
+wext[53.3..105.8]  HI-wext(>=95.3,n=44): Tier2 EXACT (min0.0 mean0.27 max0.33)u
+A7 corr(wext,t2exact)=+0.620 -> SPURIOUS: full metric range 0-0.33u (<< 5.53u fail-red, << 106u symptom); a 106u->0 fix moves it <=0.33u = below noise. NOT tracking.
+
+--- DECISIVE verbatim gameplay record (real gameplay frame) ---
+[HANDS_ATTACH] mesh='hands_naked.mesh' owner='hands_naked.mesh' frame=2439 nb=38 wext=95.2 rebound=1
+  TIER1 rest-coherence: worst=87.3deg bone[33]='bone_L-middlefinger03.mesh' count(>5deg)=34 freshRecap=0  xcheck(invOff-vs-restW) worst=87.3deg bone[33]
+  TIER2 joint-attach(PRIMARY): worst=89.58u bone[9]='bone_R-thumb01.mesh' parent[13] R=48.5 exactJoint=0.00u pairs=30  (palette-wide exactWorst=0.33u)
+
+R*sin(theta) closure: bone_R-thumb01 R=48.5 x sin(87.3deg)=48.4u/bone; finger chain -> 95-106u whole-mesh wext.
