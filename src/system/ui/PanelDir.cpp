@@ -12,6 +12,19 @@
 #include "utl/Messages.h"
 #include "utl/Symbols.h"
 
+#ifdef HX_NATIVE
+// Wave-13 Lane G (RB3_UI_POST_GRADE, default-OFF): the menu grade-exempt flush
+// must NOT fire during active gameplay (gameplay composites its own way; firing
+// there breaks gameplay pixel-invariance). GamePanel gives the cheap gameplay
+// gate. HX_NATIVE-only, so the Wii/matching build never sees this include and is
+// byte-identical. See docs/native/.../execution/UIGRADE/STATUS.md.
+#include "game/GamePanel.h"
+// Renderer machinery in milo-native-engine/src/platform/RB3PostProc.{h,cpp};
+// declared extern here (free functions, global C++ linkage) per the rb3 idiom.
+extern bool RB3UIPostGradeActive();
+extern void RB3SetMenuUIFlushPending();
+#endif
+
 INIT_REVS(PanelDir)
 bool gSendFocusMsg = true;
 bool PanelDir::sAlwaysNeedFocus = true;
@@ -131,6 +144,34 @@ RndCam *PanelDir::CamOverride() {
 }
 
 void PanelDir::DrawShowing() {
+#ifdef HX_NATIVE
+    // Wave-13 Lane G (RB3_UI_POST_GRADE): menus render the whole frame (venue
+    // backdrop + UI) into the postproc intermediate and grade it ONCE at
+    // EndFrame, washing the focused-item text (hub p60/p5 1.95 vs 2.20 grade-off).
+    // When the flag is on and we are NOT in gameplay, flush the venue grade at
+    // this venue->UI boundary: set the menu-flush latch (so FlushPostProcMidFrame
+    // composites with venueGrade=false, keeping the authored B+W look — the A5
+    // trap) then drive the flush via the existing public ClearDepthForOverlay
+    // seam, which calls FlushPostProcMidFrame when a graded venue is pending
+    // (idempotent per frame) so the UI draws UNGRADED on top.
+    // MECHANISM NOTE: on native, BandRnd::BeginDrawing bypasses base
+    // Rnd::BeginDrawing and never resets mWorldEnded, so TheRnd->EndWorld() is a
+    // permanent no-op here — the originally-proposed EndWorld-reuse trigger would
+    // never flush. ClearDepthForOverlay is the only game-side seam that reaches
+    // the flush without an engine-header grant. The gameplay gate is REQUIRED:
+    // gameplay already flushes ~once/frame via TrackPanel::Draw's own
+    // ClearDepthForOverlay (the note-highway path); firing our menu trigger there
+    // too would add extra ClearDepthForOverlay calls / move the venue-flush point,
+    // breaking gameplay pixel-invariance (verified: kGamePlaying flush counts are
+    // equal ON vs OFF only with this gate). Default-OFF => RB3UIPostGradeActive()==false is a no-op;
+    // the Wii/matching build never compiles this block (byte-identical).
+    bool inGameplay =
+        (TheGamePanel && TheGamePanel->GetGameState() == kGamePlaying);
+    if (RB3UIPostGradeActive() && !inGameplay) {
+        RB3SetMenuUIFlushPending();
+        TheRnd->ClearDepthForOverlay();
+    }
+#endif
     if (mCanEndWorld)
         TheRnd->EndWorld();
     RndCam *curCam = RndCam::sCurrent;
