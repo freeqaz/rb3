@@ -135,3 +135,19 @@ sides); R2's coverage of the Wave-16 failure mode R5 describes (R2 `bad-torn` ar
 `BlendSpreadSeparatesTornBlend` = the exact multi-bone-blend-at-articulation tear R5 §0/§2.1
 describes); and cost totals — every plan's self-estimate lands inside its ROADMAP row (R1 1–2 ✓,
 R2 ~1 in 0.5–1 ✓, R3 ~1 ✓, R4 1.25–1.75 in 1–2 ✓, R5 0.5 decision + fix TBD ✓).
+
+## COORDINATOR RESOLUTIONS (2026-07-07) — binding for Wave 17
+
+- **M-1 (engine TU + pin race):** the standing campaign rule already forbids lane pin bumps —
+  both plans are corrected by rule, not edit: R2 and R3 land their `Rnd_Wgpu_RB3.cpp` blocks
+  under DECLARED DISJOINT RANGES (R2 ~:4736 palette dump, R3 ~:5324 provenance sidecar — the
+  precedent mechanism), R2's engine commit lands FIRST (R3 rebases its engine edit after R2's
+  commit exists; game-side R3 work proceeds in parallel), and the COORDINATOR does one pin bump
+  at wave end.
+- **M-2 (missing anchor row):** ADOPTED into R1 — the probe's pair list gains `forearm→wrist`
+  (R5's GT-U upstream branch keys on it). R1's M1 exit unchanged.
+- **M-3 (comparand basis):** PINNED — the cross-instrument inter-bone comparand is defined over
+  bone WORLDS: `D_side = inv(W_parent)·W_child`, delta = `angle(D_wii·inv(D_native))` (R1/R5's
+  definition). R2's palette-composed `M_InterBoneRelPose` is a legitimate INTERNAL metric but is
+  NOT the R1 comparand; R2 adds a bone-world variant for the cross-check row and labels the
+  palette one accordingly.
