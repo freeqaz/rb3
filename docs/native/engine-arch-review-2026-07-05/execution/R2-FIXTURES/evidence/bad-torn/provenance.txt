@@ -1,0 +1,9 @@
+arm=bad-torn
+engine_head=753ed2014200b40d82ad83ffb815de9c1d4ce875
+engine_status:
+ M src/platform/FxSendNative.cpp
+arm_env={RB3_HANDS_AUTHORED_REPOINT:1} (A3 carve-out — REFUTED flag, capture-harness ONLY)
+note=Repoint-arm hands_naked = Wave-16 spike-fan tear. Tier-1 reads GREEN (bind 3.1 deg, count>5=0) but M_BlendSpread reads 20-33 at gameplay frames 74-134. Confirmed-provenance recapture 2026-07-07 (RB3_HANDS_AUTHORED_REPOINT=1 explicitly set).
+palette_dump_env=RB3_PALETTE_DUMP=hands_naked RB3_PALETTE_DUMP_EVERY=40 RB3_PALETTE_DUMP_MAXFRAMES=6
+capture=keyboard-to-gameplay.py --song-downs 3 --game-burst 12 --burst-interval 0.3 (RB3_FIXED_CLOCK=1), reached game_screen songMs=21759
+dumps=18

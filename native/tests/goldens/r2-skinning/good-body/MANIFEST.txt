@@ -1,0 +1,5 @@
+arm=good-body  role=known-GOOD (coherent reference)
+mesh=escapeartist_resource.mesh / escapeartist_skin.1.mesh  nb=20,27
+env={} (default)  engine_head=753ed2014200b40d82ad83ffb815de9c1d4ce875
+M_BlendSpread over all frames: [0.581 .. 2.962]  (coherent — bounded even under gameplay articulation)
+fixtures=12

@@ -1,0 +1,8 @@
+arm=bad-torn  role=known-BAD (Wave-16 spike-fan tear)
+mesh=hands_naked.mesh  nb=38(male),40(female)
+env={RB3_HANDS_AUTHORED_REPOINT=1} (A3 carve-out — REFUTED flag, capture-harness ONLY)
+engine_head=753ed2014200b40d82ad83ffb815de9c1d4ce875  capture=confirmed-provenance recapture 2026-07-07
+curation=gameplay frames 74-134 only (the torn poses); coherent bind frames 3/43 excluded.
+M_BlendSpread over these frames: [20.598 .. 33.214]  vs good-body max 2.962 => VALID 6.95x zero-overlap.
+Tier-1 at bind reads 3.1 deg (GREEN) — the Wave-16 blindness this fixture pins.
+fixtures=12
