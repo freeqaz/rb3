@@ -256,3 +256,82 @@ kickoff. Coordinator must NOT bump the pin or flip the default here (default-OFF
 earns the flip).
 
 Checkpoint: `/tmp/wave10-checkpoints/STEP0.json`.
+
+---
+
+# WHITE-fix — Stage B.S1 STATUS (Wave 10: BEHAVIORAL GATES, Opus) — PRE-REGISTRATION
+
+Checkpoint id `B-S1`. Lane B (**engine-read-only** — STEP-0 already landed the patch,
+engine `2998e78`; `Rnd_Wgpu_RB3.cpp`'s sole writer for the rest of Wave 10 is Lane A).
+Build `native/build-agent-WHITE-fix-BS1/rb3-native` (clang Debug, against engine working
+tree HEAD `2998e78`; concurrent `FxSendNative.cpp` audio edit untouched). All refuted-experiment
+flags (`RB3_PP_LUMA_CEILING`, `RB3_HANDS_POSEAWARE`, `RB3_HANDS_PERFRAME_CONJ`,
+`RB3_APPENDAGE_REST_ROT`) **UNSET in every arm**; chroma-preserve at its shipped **default-ON**
+in every arm. Arms differ ONLY by `RB3_VENUE_WHITE_GUARD` (unset = OFF vs `=1` = ON).
+
+## Mechanism correction adopted BEFORE measuring (A7 gate-validity, file:line evidence)
+
+The guard field is written at **exactly one site** —
+`Rnd_Wgpu_RB3.cpp:1474` `s.venueHighlightLumaMode = sVenueWhiteGuard() ? 1.0f : 0.0f;` —
+which sits **inside the ENGAGED venue branch** (`:1466`
+`if (sVenueLightEnabled() && camNm=="world.cam" && venv && venv->mAmbientFogOwner)`).
+`SceneUniforms s{}` value-initializes the field to 0 (`:1334`); there is **no other write**
+(`grep venueHighlightLumaMode Rnd_Wgpu_RB3.cpp` → the comment + `:1474` only). Therefore:
+
+- The **flood** reproducer (`RB3_VENUE_LIGHT_OFF=1`) forces `sVenueLightEnabled()=false` → the
+  flat-default **else** branch (`:1611`) → the field stays 0 → **the guard is provably INERT on
+  the flood**. The flood **cannot** show a flag-ON improvement (flag-ON == flag-OFF there); the
+  kickoff's "paired deltas on the flood" is mechanically impossible as an *improvement* gate.
+- The **eng_hot** arm keeps `sVenueLightEnabled()` default-true with a real env → engaged branch
+  taken (`final_engaged=1` every boot, Wave-9 §2) → the guard **fires**. It is the **only** valid
+  improvement vehicle. Its WHITE keeps `mid_sat 0.256` (real chroma to save), the case the fix is
+  designed for.
+
+Consequently the flood is repurposed here as the **negative-control + fail-red** (a change that
+improved the flood would be a *scope-leak defect*), and **eng_hot carries the PRIMARY paired
+deltas**. This is a mechanism-grounded correction of the kickoff wording, recorded before any
+capture so the gate can still fail.
+
+## PRE-REGISTERED numeric thresholds (written before measuring; N≥6 per arm)
+
+Metrics: `wash_score.py` → `hi_frac` (% pixels luma>0.90), `mean_luma`, `wash_class`;
+`tonal_band_sat.py` → `mid_sat` (per-image), arm-mean over N≥6 boots. songMs pinned 21000±2000,
+`song_downs=4`, `RB3_WASH_PROBE=1`, `RB3_FIXED_CLOCK=1`. Because per-boot shots are director-RNG
+(not pairable per-boot), gates compare **arm distributions** (mean + one-sided Mann-Whitney color).
+
+### G1 — PRIMARY (eng_hot engaged arm; the fix's real effect). BOTH must hold:
+- **G1a over-exposure DOWN:** `mean(hi_frac | ON) ≤ mean(hi_frac | OFF) − 3.0` pp **and** directional `ON<OFF`.
+- **G1b chroma UP:** `mean(mid_sat | ON) ≥ mean(mid_sat | OFF) + 0.02`.
+- Secondary color (not a hard gate): one-sided Mann-Whitney on `hi_frac` (ON<OFF) p<0.10;
+  strict-WHITE count ON ≤ OFF.
+
+### G2 — BRIGHT MOMENTS PRESERVED (must be able to fail):
+- **G2a venue not over-dimmed (eng_hot):** `mean(mean_luma | ON) ≥ mean(mean_luma | OFF) − 0.08`
+  (the fix caps zero-chroma whites; it must NOT crush overall venue brightness → colored-bright).
+  FAILS if the venue craters dark.
+- **G2b intended-bright non-venue elements untouched (game.cam highway / HUD):** capture a normal
+  gameplay highway frame (game.cam, guard field provably 0 off world.cam) flag-ON vs OFF; the
+  full-frame `|Δmean_luma| < 0.01` and `|Δhi_frac| < 1.0` (expected ~identical). FAILS if the
+  scoped fix leaks onto the highway/HUD bright FX. (If an SP-overlay/strobe frame is reliably
+  reachable headless it is added as G2c; otherwise documented as not-headless-reachable and G2b
+  stands as the falsifiable preservation gate.)
+
+### G3 — FAIL-RED (the WHITE we're fixing must exist with the flag OFF):
+- **G3 flood OFF reproduces over-exposure:** `RB3_VENUE_LIGHT_OFF=1` flag-OFF → `≥1/6` strict-WHITE
+  **or** `mean(hi_frac|OFF) ≥ 15`. Proves the reproducer still produces the target defect.
+
+### G4 — SCOPE / NEGATIVE CONTROL (flood, where the guard is inert):
+- **G4 flood flag-invariance:** `|mean(hi_frac|ON) − mean(hi_frac|OFF)| < 3.0` **and**
+  `|mean(mid_sat|ON) − mean(mid_sat|OFF)| < 0.02`. Proves the fix is venue-engaged-scoped and does
+  NOT touch the non-engaged path (a flood *improvement* would be a scope-leak defect, FAIL).
+
+### G5 — REGRESSION:
+- **G5a** `drawlog-golden.py --fixed-clock --canonical-order` = **792** flag-OFF (re-confirm on this build).
+- **G5b** `lineup-gate.py` PASS (default build).
+- **G5c** 2-venue flag-ON vs OFF spot captures render sane (no new artifacts; engaged venue stays
+  bright-but-colored, second venue unaffected/consistent).
+
+### FLIP RECOMMENDATION RULE (pre-registered):
+Recommend **flip default-ON** iff **G1(a+b) PASS AND G2(a+b) PASS AND G3 PASS AND G4 PASS AND
+G5(a,b,c) PASS**. Any PRIMARY (G1) or preservation (G2) failure → **hold**, documented honestly.
+"WHITE class 0/N" is secondary color only (Fisher-trap, A7).
