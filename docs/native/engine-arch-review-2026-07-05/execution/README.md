@@ -426,10 +426,12 @@ visible-smear frames.** No flips (none expected — diagnosis wave). Engine → 
 
 ### Wave 12 menu
 
-- **W0.3d part-b landing (coordinator-sequenced):** the staged async-loader completion-order
-  determinism patch — now the single named blocker for boot-stable visual gates, with three
-  consumers (BOOTRNG, WHITE gate resolution, all future arm-mean gates). Plus the free harness
-  lever: wash capture `--tol` 2000→100-150ms.
+- **W0.3d part-b (coordinator-sequenced):** boot-stable gRand stream position under fixed clock —
+  the single named blocker for boot-stable visual gates, three consumers (BOOTRNG, WHITE gate
+  resolution, all future arm-mean gates). _CORRECTION (Wave-12 review A1): no staged patch exists —
+  the only staged part-b artifact was the SortDraws tie-break, landed Wave 5; this is NEW design
+  work, attribution-first (completion-frame TIMING is the prime suspect, not insertion order)._
+  Plus the free harness lever: wash capture `--tol` 2000→100-150ms.
 - **W2.8g hands SHELL axis:** with palette+GPU exonerated, diagnose the authored-vert-to-offset
   composition (vert basis vs offset basis at compose time; V24/weight interpretation on the shell
   verts) using the now-trustworthy joint-attachment + wext instruments as the fix gate.

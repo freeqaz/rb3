@@ -1,7 +1,80 @@
 # Wave 12 — Kickoff Design (coordinator draft, for Fable review before dispatch)
 
-**Author:** coordinator. **Status:** DRAFT — under Fable pre-dispatch review, not yet dispatched.
+**Author:** coordinator. **Status:** REVIEWED (Fable, `WAVE12_REVIEW.md` rb3 `464d6041`) — **all 11
+amendments adopted**; dispatched with the corrected shape below.
 Parent: `execution/README.md` (Wave 11 results + Wave 12 menu). Engine pin `146fd19`.
+
+## COORDINATOR ACCEPTANCE (2026-07-07) — final dispatched shape
+
+Fable review: **dispatch-with-amendments** (11). Adopted in full:
+
+- **A1 (RECORD CORRECTION) — the "staged since Wave 4" loader patch DOES NOT EXIST.** The only
+  staged W0.3d part-b artifact was the SortDraws name tie-break, which LANDED in Wave 5
+  (`76f51077`, live `Utl.cpp:192-199`). `WAVE7_REVIEW.md:40-58` already refuted this claim once;
+  it regressed via BOOTRNG's backlog wording. **Lane A is NEW design work**; a staged-design exit
+  is legitimate but "staged" must mean a `git apply --check`-able artifact in the repo. README
+  Wave-12 menu + memory corrected in this commit.
+- **A2 — mechanism model rewritten.** "Insertion order → gRand consumption order" is unsupported:
+  per-frame consumption is name-sorted (`SortPolls` `Utl.cpp:207-214`), completion callbacks draw
+  no gRand (`Rand.cpp:80-97` MainThread assert), and BOOTRNG's ~11,231-draw spread is a COUNT axis
+  an order-only permutation cannot produce. **Prime suspect = completion-FRAME TIMING** (ThreadCall/
+  async I/O completions landing on different sim frames → per-frame consumers start/advance at
+  different offsets, value-feedback amplifies). S1 = attribution-first: per-frame `RB3GRandDrawCount`
+  + per-dir load-completion frame, N≥6 boots, find the FIRST divergent frame; pre-register H-TIMING
+  vs H-ORDER (the unsorted `mAnims` hash-order walk `Dir.cpp:50-63` is the one genuine order
+  channel) vs the cheap third candidate: **re-seed gRand at a canonical mid-boot anchor** under
+  fixed clock (0x5EED precedent).
+- **A3 — seam shape corrected.** "SortDraws shipped default-ON" was FALSE (it is
+  `RB3FixedClockActive() && !RB3DrawSortDeterministicOff()`-gated). The Lane-A seam =
+  **fixed-clock-scoped + own opt-in flag (`RB3_LOAD_DETERMINISM`) during the wave**, coordinator
+  flips opt-in→fixed-clock-default at wave end with a re-golden provision (regression gate reads
+  "flag-OFF 792 byte-identical; flag-ON 792-or-coordinator-re-golden"). Default-ON would also fight
+  the shipped incremental-load stack. Other lanes' fixed-clock gates stay stable mid-wave.
+- **A4 — gate hygiene:** land S3's `--tol` tighten FIRST so the SECONDARY spread gate compares
+  same-tol arms vs a fresh OFF-arm baseline; re-state the A9 escape clause (PRIMARY-pass/
+  SECONDARY-fail = file the FX/swept-light-phase finding, no gate fudge); fail-red proof = seam-ON
+  10/10 identical stream position **under induced contention + env-gated worker-latency jitter**,
+  seam-OFF reproduces the spread under the same jitter (the W0.3c quiescent-machine trap).
+- **A5 — Lane B gates gain Instrument B** (per-vertex shell invariant `‖s(v)−ŝ(v)‖` with the A7
+  co-variation bar — the fix gate `S2_WAVE12_INSTRUMENT_DESIGN.md` mandates): S1 BUILDS it;
+  S2 gates add "Instrument B co-varies with wext pre-fix, reads ~0 post-fix, guard-DROP census
+  unchanged (no fix-by-hiding)". A wext-only gate is gameable by a vertex clamp.
+- **A6 — S1 must DISTINGUISH authored-SPACE error from per-vertex WEIGHT/INDEX/decode error**
+  (all current evidence consistent with both; the CPU mirror shares the decode, so "GPU exonerated"
+  ≠ decode exonerated). Pre-registered branches: Instrument B RED co-varying → composition axis;
+  Instrument B GREEN while wext RED → weights/indices/decode axis. Cheap check: do sampled verts
+  sharing a dominant bone move by ONE rigid rotation (space) or scatter (decode)? Composition
+  oracle = the in-repo W0.1 skin golden `RefSkinVertex` extended with real `hands_naked` inputs;
+  DC3 = corroboration only. Line ranges re-declared: dualskin block now `:4453-4735`, wext
+  `:4360-4394` (TU 5,775 lines).
+- **A7 — C1's regression arm SKIPPED (already resolved):** binder byte-unchanged
+  `a94762f..146fd19` (empty git log); **Wave 7's own `W4.2/cs2_hub_off_vs_on.png` flag-ON panel
+  already shows pale-yellow-on-gold** (the hub top-level items were never dark post-flip — Wave 7
+  verified QUICKPLAY, a different label route); chroma-preserve is genuinely venue-gated
+  (`venueGrade>0.5`, menus pass false). C1 = path tracing from day one: which material/color route
+  hub items take and where retail's DARK focused color comes from (UILabel focus-state color never
+  applied natively, or a font-material variant bypassing the binder's UI-text branch). Keep the
+  Wave-7-rescued-labels no-regression clause.
+- **A8 — C2c starts at `BandSongMgr::RankTier`** (`BandSongMgr.cpp:380-401`): one log line
+  (song, instrument, rank, returned tier) decides data-vs-widget in one boot; two named probes =
+  `std::find(mSongRankings…)` end()-deref garbage tier, and empty `mTierRanges` → −1 → sentinel/
+  devil glyph. Devil-scribble = separate atlas sub-finding (RndFont::CellDiff precedent).
+- **A9 — C3 fence contradiction repaired:** text renders via the GENERIC mesh path in
+  `Rnd_Wgpu_RB3.cpp:5042-5086` (cull None, xfm as-is, no determinant handling) — NOT RB3Quad.
+  C3 = **diagnosis-first, read-only** (draw-log the three labels' world xfms + determinants vs
+  authored milo xfms); if the fix must touch `Rnd_Wgpu_RB3.cpp`, ESCALATE to the coordinator for a
+  declared-range grant (`~:5040-5090`, disjoint from Lane B's `:4360-4735+`); game-side negative
+  scale → game-side fix, fence holds.
+- **A10 — C-lane ranking pre-authorized:** C1 > C2c > C3 > C2a ≈ C2b > C4, partial return OK.
+  R-D: no loader-flag pinning needed (A3 seam is opt-in during the wave); pin SETTLE-FRAMES
+  (the W4.1 frame-390 mid-zoom trap).
+- **A11 — C1 gate made re-runnable:** percentile rule on the focused-bar ROI — text stroke = p5
+  luma, bar field = p60 luma, gate `p60/p5 ≥ 2.0`, calibrated on the retail ref (~3-6:1; current
+  ~1.1-1.3:1 → achievable AND fail-red). Same rule on the song-select row + partdiff GUITAR.
+
+---
+
+_(Original draft below, retained for provenance; superseded where the acceptance above differs.)_
 
 ## Where we are (entering Wave 12)
 
