@@ -1,0 +1,64 @@
+[
+  {
+    "arm": "default",
+    "png": "/tmp/whitefix-caps/smoke2_default_01.png",
+    "songms": 21092.2,
+    "class": "NEARBLACK",
+    "is_wash": false,
+    "mean_luma": 0.06354463845491409,
+    "hi_frac": 1.2198350694444444,
+    "lo_frac": 82.21082899305556,
+    "pink_frac": 0.006510416666666667,
+    "p50": 0.0,
+    "p95": 0.44705885648727417,
+    "mid_sat": 0.47959505638115724,
+    "low_sat": 0.007435294767892964,
+    "high_sat": 0.5836594200891772,
+    "mean_val": 0.025603723344171946,
+    "tail_engaged": 40,
+    "tail_missed": 0,
+    "tail_miss_reasons": {},
+    "tail_envs": {
+      "crowd.env": 7,
+      "geom.env": 20,
+      "chars.env": 13
+    },
+    "final_env": "geom.env",
+    "final_engaged": 1,
+    "pp": {
+      "fmt": "RGBA8Unorm",
+      "unorm": 1
+    }
+  },
+  {
+    "arm": "forced_hot",
+    "png": "/tmp/whitefix-caps/smoke2_forced_hot_01.png",
+    "songms": 21203.1,
+    "class": "NEUTRAL",
+    "is_wash": false,
+    "mean_luma": 0.2646452784538269,
+    "hi_frac": 2.556640625,
+    "lo_frac": 18.279296875,
+    "pink_frac": 0.009440104166666666,
+    "p50": 0.24578824639320374,
+    "p95": 0.7061848044395447,
+    "mid_sat": 0.23957534127019384,
+    "low_sat": 0.08993023759933967,
+    "high_sat": 0.4930092928449405,
+    "mean_val": 0.3148015637707861,
+    "tail_engaged": 40,
+    "tail_missed": 0,
+    "tail_miss_reasons": {},
+    "tail_envs": {
+      "geom.env": 20,
+      "chars.env": 14,
+      "crowd.env": 6
+    },
+    "final_env": "chars.env",
+    "final_engaged": 1,
+    "pp": {
+      "fmt": "RGBA8Unorm",
+      "unorm": 1
+    }
+  }
+]

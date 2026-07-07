@@ -1,0 +1,33 @@
+[
+  {
+    "arm": "forced_hot",
+    "png": "/tmp/whitefix-caps/smoke_forced_hot_01.png",
+    "songms": 21116.6,
+    "class": "NEUTRAL",
+    "is_wash": false,
+    "mean_luma": 0.24548132717609406,
+    "hi_frac": 3.5248480902777777,
+    "lo_frac": 6.617730034722221,
+    "pink_frac": 0.009548611111111112,
+    "p50": 0.20016470551490784,
+    "p95": 0.8032392263412476,
+    "mid_sat": 0.376361816045883,
+    "low_sat": 0.10688714792838946,
+    "high_sat": 0.5221886883772989,
+    "mean_val": 0.26591588449902614,
+    "tail_engaged": 40,
+    "tail_missed": 0,
+    "tail_miss_reasons": {},
+    "tail_envs": {
+      "geom.env": 20,
+      "chars.env": 14,
+      "crowd.env": 6
+    },
+    "final_env": "chars.env",
+    "final_engaged": 1,
+    "pp": {
+      "fmt": "RGBA8Unorm",
+      "unorm": 1
+    }
+  }
+]
