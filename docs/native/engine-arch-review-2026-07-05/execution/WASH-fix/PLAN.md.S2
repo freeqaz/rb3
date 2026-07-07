@@ -1,0 +1,43 @@
+# WASH-fix — Stage A.S2 (Wave 8): two fixes, two flags
+
+KEY=WASH-fix. Checkpoint id `A-S2`. Opus. Engine pin `a94762f` (HEAD `71469af`).
+Lane A owns `Rnd_Wgpu_RB3.cpp` + `RB3PostProc.*` + `rb3_postproc.wgsl.inc`.
+
+## S1 findings drive the shape (evidence over the kickoff framing)
+- H1 (PINK @ ms21000) = engagement-miss: **REFUTED**. Engagement is deterministic
+  8/8; PINK is a downstream, boot-nondeterministic, structure-preserving flood.
+- H2 (GREY) = composite desaturation of hot UNORM-clamped venue input: **CONFIRMED**.
+  default mid_sat 0.026-0.079 vs RB3_PP_OFF control 0.389-0.746.
+
+## FIX-H1 — `RB3_VENUE_FALLBACK_FIX` (default-OFF)
+The literal "engage deterministically" is a no-op (already 8/8). The actionable,
+evidence-backed half is the **broken/unlit-env fallback**: the flat-default else
+branch (Rnd_Wgpu_RB3.cpp:1578) writes `1.0 white dir + 0.45 grey ambient`, a bright
+flood that over-exposes the venue through the composite → the deterministic
+`RB3_VENUE_LIGHT_OFF` PINK 8/8. Fix: when the flag is ON **and this is a world.cam
+frame** (the venue shot that fell through to the flat default — venue_off / no_env /
+fogowner_null), write a DIM exposure-safe key instead of the flood. Scoped to
+world.cam so menus + game.cam highway are untouched.
+
+## FIX-H2 — `RB3_PP_CHROMA_PRESERVE` (default-OFF)
+Scope the composite fix to the **venue backdrop grade** (FlushPostProcMidFrame path)
+via a `venueGrade` uniform (the menu/song_select B+W "etched" look is left intact).
+When both on, reconstruct the output from the INPUT chroma scaled to the graded
+luminance: `color = sceneColor * (gradedLuma / inLuma)`. Uniform value-scaling
+preserves HSV saturation exactly, so the venue keeps the RB3_PP_OFF hue/sat (same
+clamped input both paths see) while retaining the grade's exposure; a
+luminance-preserving ceiling replaces the per-channel one so hot pixels don't
+re-desaturate.
+
+## Uniform / DC3 safety
+Repurpose the two unused tail pads in PostProcUniforms (`_padLumaCeiling0/1` →
+`chromaPreserveActive`, `venueGrade`); struct stays 176B (static_assert holds).
+RB3PostProc.h + rb3_postproc.wgsl.inc are RB3-only — `UniformStructs.h` /
+`standard_wgsl.inc` untouched → DC3 zero-blast by construction.
+
+## Gates
+(a) engagement-miss 0/N over N>=16 flag-ON; (b) RB3_VENUE_LIGHT_OFF forced-miss:
+FIX-H1 ON → non-pink; (c) song-start sweep ms2000-6000 both fixes ON → mid_sat/hue
+toward the PP_OFF control WITH venue engaged; (d) flag-OFF byte-identical (drawlog
+792) per flag; (e) lineup PASS; (f) milo-engine-tests 198/0/2 + DC3 zero-blast.
+RB3_PP_LUMA_CEILING UNSET everywhere.

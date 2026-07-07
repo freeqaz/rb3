@@ -33,6 +33,12 @@ ARMS = {
     "default":          {},
     "venue_light_off":  {"RB3_VENUE_LIGHT_OFF": "1"},
     "pp_off":           {"RB3_PP_OFF": "1"},
+    # A.S2 fix arms
+    "vlo_h1fix":        {"RB3_VENUE_LIGHT_OFF": "1", "RB3_VENUE_FALLBACK_FIX": "1"},  # gate (b): non-pink
+    "both_fix":         {"RB3_VENUE_FALLBACK_FIX": "1", "RB3_PP_CHROMA_PRESERVE": "1"},  # gate (a): miss 0/N
+    "h2fix":            {"RB3_PP_CHROMA_PRESERVE": "1"},
+    "vlo_h2":           {"RB3_VENUE_LIGHT_OFF": "1", "RB3_PP_CHROMA_PRESERVE": "1"},  # does H2 kill the pink?
+    "vlo_both":         {"RB3_VENUE_LIGHT_OFF": "1", "RB3_VENUE_FALLBACK_FIX": "1", "RB3_PP_CHROMA_PRESERVE": "1"},
 }
 
 SCENE_RE = re.compile(r"\[WASHPROBE\] SCENE env=(\S+) engaged=(\d) miss=(\S+) dl=(\d+) pl=(\d+) greykey=(\d)")

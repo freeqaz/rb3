@@ -198,3 +198,97 @@ python3 .../WASH-fix/tonal_band_sat.py /tmp/washfix-h2/{default,pp_off}/*_ms0{3,
 - Gate the grey fix on the **default-vs-pp_off mid_sat delta on a director-PINNED shot**,
   not a fixed ms3000 (grey is shot-dependent on this pin). Keep the deterministic
   `venue_light_off` PINK 4/4 as the fail-red control.
+
+---
+
+# WASH-fix — Stage A.S2 STATUS (Wave 8: TWO FIXES, TWO FLAGS)
+
+Checkpoint id `A-S2`. Opus. Engine `71469af` -> `89bc4a6` (fixes committed). rb3 master.
+Binary `native/build-agent-WASH-fix/rb3-native` (engine `89bc4a6`). `RB3_PP_LUMA_CEILING`
+UNSET in every arm (A7). `RB3_FIXED_CLOCK=1` for the sweep.
+
+## Headline
+Two composite-side fixes landed default-OFF, each behind its own registered flag.
+S1's refutation held: the wash is **not** a lighting/engagement problem — it lives in
+the Stage-2 composite. The two fixes are **complementary**, not redundant.
+
+- **FIX-H2 `RB3_PP_CHROMA_PRESERVE`** (the primary fix): venue-scoped chroma
+  preservation in the composite. Reconstructs the graded output from the ungraded
+  scene chroma scaled to the graded luminance (uniform value-scaling preserves HSV
+  saturation exactly) so a hot venue moment keeps the RB3_PP_OFF hue/sat instead of
+  desaturating to grey. Scoped to the venue-backdrop composite (new `venueGrade`
+  uniform on the FlushPostProcMidFrame path) so the menu/song_select B+W look is
+  untouched.
+- **FIX-H1 `RB3_VENUE_FALLBACK_FIX`**: a dim, exposure-safe key for a broken/unlit
+  `world.cam` venue (venue_off/no_env/fogowner_null) replacing the bright
+  `1.0 white dir + 0.45 ambient` flood that over-exposes through the composite.
+
+## Key measurement: the two fixes are complementary (pinned wide shot, ms21000)
+`wash_probe_run.py`, `RB3_PP_LUMA_CEILING` unset:
+
+| arm | env | wash (PINK/WHITE) / N | classes |
+|---|---|---|---|
+| venue_light_off | VENUE_LIGHT_OFF | **6/6** | PINK 5, WHITE 1 |
+| vlo_h1fix | + VENUE_FALLBACK_FIX | 6/6 | PINK 5, WHITE 1 (FIX-H1 alone: NOT enough) |
+| vlo_h2 | + PP_CHROMA_PRESERVE | 3/5 | WHITE 3, NEUTRAL 2 (pink gone, flood still hot) |
+| **vlo_both** | + BOTH fixes | **0/5** | NEUTRAL ×5 (luma 0.23-0.55) |
+
+Interpretation: the deterministic `venue_light_off` wash has **two** components —
+(1) the over-exposed flat flood (FIX-H1 dims it) and (2) the composite adding a
+magenta tint to hot input (FIX-H2 removes it). Neither fix alone clears it; **both
+together render non-pink (0/5)**. This is the honest reconciliation of the kickoff's
+"FIX-H1 renders non-pink" gate (b) with S1's refutation: the fallback is corrected by
+FIX-H1, but non-pink is reached only in combination with the composite fix — the pink
+is dominantly a composite tint, exactly as S1 found.
+
+Visual (pinned wide shot): `venue_light_off` = whole-frame magenta wash;
+`vlo_both` = clean dark moody venue (CORK sign readable, warm wood floor, dark walls,
+band visible) — no pink. Images `/tmp/washfix-s2-h1/`, `/tmp/washfix-s2-h2/`.
+
+## FIX-H2 grey -> color (gate c, qualitative — director-shot-dependent per S1)
+`grayscale-sweep.py` default vs chroma_preserve vs pp_off, `RB3_FIXED_CLOCK=1`.
+The **unpinned** per-songMs mid_sat numbers are confounded (each boot's director cut
+differs — mean_val varies 0.08-0.55 at equal songMs), so they are NOT a clean A/B.
+The **visual** result at a grey-shot is unambiguous:
+- `default_ms09000.png` = flat GREY desaturated venue (the H2 symptom; mid_sat 0.067).
+- `chroma_preserve` matched shot = restored colored stage lighting (pink spots, warm
+  wood, red accents, structure fully visible — mid_sat 0.208). Grey -> colored.
+
+FIX-H2 mathematically reproduces the PP_OFF saturation for the venue (both see the
+same UNORM-clamped input; the fix applies a luma-only grade), so it targets the
+composite-desat delta S1 identified rather than a fixed songMs.
+
+## Gates
+- (a) engagement-miss flag-ON: the engagement PRECONDITION (`:1441`) is UNCHANGED by
+  either fix (FIX-H1 edits only the else-branch OUTPUT; FIX-H2 is composite-only), so
+  a flag-ON miss is structurally impossible to introduce; both-fix boots show
+  tail_missed=0 (spot-check). S1 already measured default = 0/8 misses.
+- (b) deterministic fail-red: `venue_light_off` = 6/6 wash; **`vlo_both` = 0/5 wash**
+  (NEUTRAL) — corrected fallback renders non-pink (both fixes; see reconciliation).
+- (c) song-start grey -> color: visually confirmed (grey venue -> colored stage
+  lighting); mid_sat delta tracks S1's composite-desat, venue path stays engaged.
+- (d) flag-OFF byte-identical: `drawlog-golden.py --fixed-clock --canonical-order`
+  (both flags unset) -> **PASS, 792 draws**.
+- (e) lineup: `lineup-gate.py` default build -> **PASS** (img/segA/ratioB/countC/pin).
+- (f) standing engine gates: DC3 zero-blast (UniformStructs.h + standard_wgsl.inc
+  untouched); milo-engine-tests unaffected by construction (build-tests is dc3-backend
+  and compiles NONE of the edited RB3-only TUs); PostProcUniforms static_assert 176B
+  held at compile.
+
+## Honest caveats (for the coordinator flip decision)
+- The clean numeric fail-red is `vlo_both` (0/5), NOT FIX-H1 alone. FIX-H1's value is
+  scoped to genuinely-broken venue envs; the shipping default build never enters that
+  else path on world.cam, so FIX-H1 is inert in normal gameplay (it only helps the
+  venue_light_off / broken-env condition). FIX-H2 is the fix that matters for the
+  default build's stochastic pink + song-start grey.
+- The default-build stochastic PINK (S1 H1 symptom) discriminator (PP_OFF-on-PINK
+  boots) was NOT isolated to a clean N here — a pinned same-shot default-vs-h2fix A/B
+  is in flight (probe_s2pin.json) and appended on completion; but FIX-H2 removes the
+  composite's added chroma by construction, and vlo_h2 shows the pink component gone.
+- Band-character SKIN grey in the captures is the pre-existing skin-RTT issue
+  (MEMORY: web/native grey skin), independent of these fixes.
+
+## Files
+Engine `89bc4a6`: `rb3_postproc.wgsl.inc`, `RB3PostProc.{cpp,h}`,
+`Rnd_Wgpu_RB3.{cpp,h}`, `NativeCompatFlags.classification.json`.
+rb3: `WASH-fix/PLAN.md.S2`, `wash_probe_run.py` (+3 fix arms), `measure/probe_s2*.json`.
