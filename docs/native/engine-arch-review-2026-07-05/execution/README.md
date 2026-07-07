@@ -407,3 +407,33 @@ lineup PASS; pin bumped `10a9ca6` → `6834744`.
   characterize-MARGINAL vs the confirmed H1 visible smear; NO fix attempt until the instruments agree.
 - Carried: WHITE real-lever design (after BOOTRNG), 4→8 lights (DC3 gates), W2.4, song_select
   residuals.
+
+## Wave 11 results (2026-07-07, run `wf_8a8111a5-b24`, diagnosis-only, 2 lanes)
+
+**Both diagnosis exits hit: BOOTRNG's boot-varying state is NAMED (global `gRand` stream position —
+upstream owner = W0.3d part-b) with the render/postproc stack exonerated as deterministic-given-
+inputs; the hands defect axis is NAMED (authored-vertex-to-offset SHELL composition) with the
+palette/skeleton axis EXONERATED by a trustworthy rest-capture-free instrument on the exact
+visible-smear frames.** No flips (none expected — diagnosis wave). Engine → `146fd19`.
+
+| Item | Status | Highlights |
+|---|---|---|
+| BOOTRNG A.S1/A.S2 | ✅ **named [upstream owner: W0.3d part-b]** | N≥10 instrumented boots at the pinned shot: preset PICK is deterministic (10/10 same preset — the A1 prime suspect refuted as the variance source), per-light VALUE digest + resolved postproc ColorXfm tuple **identical across boots** (the A3 color-blindness fixed and the Wave-8 exoneration now holds at value level). The boot-varying state = **global `gRand` stream POSITION** (~11k draw-count spread across boots): seed is pinned (0x5EED) but consumption ORDER varies per boot via async loader completion order — the exact mechanism W0.3d part-b (staged since Wave 4) exists to fix. Free harness lever found: capture `--tol` 2000→100-150ms (songMs Pearson 0.77 = the dominant measurable confound). Residual wash after both = FX/swept-light PHASE axis (co-sampling instrument = Wave-12 item). S2 correctly did NOT patch in-lane (mechanism is upstream of the render). |
+| W2.8f B.S1/B.S2 | ✅ **GREEN_BRANCH_SHELL_AXIS** | The corrected instrument (Tier-2 parent/child **joint-attachment** on the UPLOADED palette, rest-capture-free per A5; fail-red proven by perturb) reads **GREEN ≤0.33u over 2,214 samples on the exact frames showing the visible 95-106u smear** (A7 co-variation FAILS) → **the palette/skeleton axis is EXONERATED** — retro-explaining why all five bind-side fix classes died: they patched a coherent palette. `wext` reproduces the smear in a **pure CPU 4-bone blend** of the same authored verts × weights × uploaded palette → GPU exonerated too (A6 readback = confirmatory-only, predicted GREEN). Named axis: **authored-vertex-to-offset composition (the mesh SHELL)** — the shell rotates about each joint by ΔR while joints stay attached (R·sin(θ): 48.5·sin(87.3°)=48.4u/bone → 95-106u finger chain), which is structurally invisible to every skeleton-side metric we built. Wave-12 fix gate = joint-attachment stays GREEN + wext drops to ~50u body-coherent range. |
+
+**Coordinator actions:** no flips; regen (`146fd19`, 346 clean); 792 + lineup PASS; pin bumped
+`6834744` → `146fd19`.
+
+### Wave 12 menu
+
+- **W0.3d part-b landing (coordinator-sequenced):** the staged async-loader completion-order
+  determinism patch — now the single named blocker for boot-stable visual gates, with three
+  consumers (BOOTRNG, WHITE gate resolution, all future arm-mean gates). Plus the free harness
+  lever: wash capture `--tol` 2000→100-150ms.
+- **W2.8g hands SHELL axis:** with palette+GPU exonerated, diagnose the authored-vert-to-offset
+  composition (vert basis vs offset basis at compose time; V24/weight interpretation on the shell
+  verts) using the now-trustworthy joint-attachment + wext instruments as the fix gate.
+- **FX/swept-light phase co-sampling probe:** the residual wash axis after BOOTRNG (per Lane A
+  followups) — instrument first.
+- Carried: WHITE real-lever reframe (per-preset/FX phase fidelity, unblocked once W0.3d-b lands),
+  4→8 lights (DC3 gates), W2.4 BandPatchMesh, song_select residuals.
