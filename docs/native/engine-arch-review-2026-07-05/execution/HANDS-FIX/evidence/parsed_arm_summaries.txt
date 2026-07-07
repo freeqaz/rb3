@@ -1,0 +1,43 @@
+### FLAG-OFF (control / arm C reproduction) ###
+
+=== fingernails_resource.mesh ===
+  nb10 (nb=10) blocks=  666 | Tier1 worst 168.8-176.9 count(>5)max=10 count(>5)min=10 count(>5)==0 in 0/666 | Tier2 R-radius worst   0.00u EXACTworst  0.00u | wext 10.7-64.6 mean 32.5 distinct 305 | rebound 666/666
+
+=== gloves_resource.1.mesh ===
+  nb4 (nb=4) blocks=  552 | Tier1 worst  60.2- 60.2 count(>5)max= 4 count(>5)min= 4 count(>5)==0 in 0/552 | Tier2 R-radius worst  43.26u EXACTworst  0.37u | wext 2.6-20.3 mean 14.7 distinct 71 | rebound 552/552
+
+=== gloves_resource.mesh ===
+  female(nb=40) blocks=  552 | Tier1 worst  68.8- 68.8 count(>5)max=40 count(>5)min=40 count(>5)==0 in 0/552 | Tier2 R-radius worst 115.81u EXACTworst  6.88u | wext 31.9-79.4 mean 61.3 distinct 239 | rebound 552/552
+
+=== gloves_skin.2.mesh ===
+  nb9 (nb=9) blocks=  552 | Tier1 worst  38.9- 38.9 count(>5)max= 9 count(>5)min= 9 count(>5)==0 in 0/552 | Tier2 R-radius worst  15.80u EXACTworst  6.88u | wext 7.3-46.9 mean 35.8 distinct 181 | rebound 552/552
+
+=== hands_naked.mesh ===
+  male  (nb=38) blocks= 1042 | Tier1 worst  87.3- 87.3 count(>5)max=34 count(>5)min=34 count(>5)==0 in 0/1042 | Tier2 R-radius worst 106.69u EXACTworst  0.33u | wext 40.0-105.8 mean 75.1 distinct 405 | rebound 1042/1042
+  female(nb=40) blocks=  527 | Tier1 worst  42.6- 42.6 count(>5)max=36 count(>5)min=36 count(>5)==0 in 0/527 | Tier2 R-radius worst 109.45u EXACTworst  0.04u | wext 36.2-80.6 mean 60.5 distinct 215 | rebound 527/527
+
+--- GATE (hands_naked, Tier-1 count(>5deg)==0 male AND female) ---
+  male: Tier-1 count(>5)==0 on ALL 1042 blocks: FAIL (max count=34, max EXACTworst=0.33u)
+  female: Tier-1 count(>5)==0 on ALL 527 blocks: FAIL (max count=36, max EXACTworst=0.04u)
+
+### FLAG-ON (RB3_HANDS_AUTHORED_REPOINT=1) ###
+
+=== fingernails_resource.mesh ===
+  nb10 (nb=10) blocks=  630 | Tier1 worst 177.7-179.2 count(>5)max=10 count(>5)min=10 count(>5)==0 in 0/630 | Tier2 R-radius worst   0.00u EXACTworst  0.00u | wext 9.6-60.0 mean 33.3 distinct 312 | rebound 630/630
+
+=== gloves_resource.1.mesh ===
+  nb4 (nb=4) blocks=  528 | Tier1 worst   1.1-  1.1 count(>5)max= 0 count(>5)min= 0 count(>5)==0 in 528/528 | Tier2 R-radius worst  50.90u EXACTworst  0.03u | wext 3.0-3.9 mean 3.3 distinct 8 | rebound 528/528
+
+=== gloves_resource.mesh ===
+  female(nb=40) blocks=  528 | Tier1 worst   3.1-  3.1 count(>5)max= 0 count(>5)min= 0 count(>5)==0 in 528/528 | Tier2 R-radius worst  87.25u EXACTworst  0.03u | wext 31.2-63.0 mean 54.3 distinct 183 | rebound 528/528
+
+=== gloves_skin.2.mesh ===
+  nb9 (nb=9) blocks=  528 | Tier1 worst   3.1-  3.1 count(>5)max= 0 count(>5)min= 0 count(>5)==0 in 528/528 | Tier2 R-radius worst   0.59u EXACTworst  0.02u | wext 21.2-51.1 mean 43.7 distinct 163 | rebound 528/528
+
+=== hands_naked.mesh ===
+  male  (nb=38) blocks=  992 | Tier1 worst   3.1-  3.1 count(>5)max= 0 count(>5)min= 0 count(>5)==0 in 992/992 | Tier2 R-radius worst 120.34u EXACTworst  0.34u | wext 63.3-106.9 mean 87.9 distinct 308 | rebound 992/992
+  female(nb=40) blocks=  502 | Tier1 worst   3.1-  3.1 count(>5)max= 0 count(>5)min= 0 count(>5)==0 in 502/502 | Tier2 R-radius worst 120.52u EXACTworst  0.03u | wext 42.9-90.3 mean 65.0 distinct 216 | rebound 502/502
+
+--- GATE (hands_naked, Tier-1 count(>5deg)==0 male AND female) ---
+  male: Tier-1 count(>5)==0 on ALL 992 blocks: PASS (max count=0, max EXACTworst=0.34u)
+  female: Tier-1 count(>5)==0 on ALL 502 blocks: PASS (max count=0, max EXACTworst=0.03u)

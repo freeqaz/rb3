@@ -1339,10 +1339,46 @@ void BandCharacter::RebindHeadHandsAtRest() {
     if (sHandsShellFix < 0)
         sHandsShellFix = getenv("RB3_HANDS_SHELL_FIX") ? 1 : 0;
 
+    // Wave-16 HANDS-FIX (RB3_HANDS_AUTHORED_REPOINT), default OFF. The adjudicated
+    // NEVER-MEASURED cell (HANDS-ADJUDICATION/VERDICT.md §4–5): for appendage
+    // (hand/finger/nail/glove) meshes, KEEP each mesh's OWN AUTHORED offset
+    // (inv(its-own-authored world bind): male hands_naked 0.1° vs the bind basis B,
+    // female HERS, gloves/nails theirs) and REPOINT only to the per-member ANIMATING
+    // bone `own = Find(name)` — SetBone(b, own, false), with NO rebake. This IS the
+    // Wii composition v·inv(bindWorld)·own_live(t) and removes the transient
+    // SetDeformation-seed-R dependence that is the 87.2° "ceiling-hand" shard (§2).
+    // Distinct from all 7 dead artifacts (§3): every prior cell REBAKED off (off =
+    // meshWorld·inv(X)); this one keeps the authored off untouched. Distinct from
+    // RB3_HANDS_SHELL_FIX (which forced the SHARED male-bind anchor onto EVERY mesh →
+    // right for male hands_naked only, 28.9° wrong for the female, 60–69° for gloves,
+    // ~170° for nails — the confounded 6th-dead-cell death certificate, §4): here
+    // each mesh keeps ITS OWN authored basis, so it is per-gender/per-asset correct
+    // BY CONSTRUCTION. flag-OFF byte-identical (getenv-cached, #ifdef HX_NATIVE).
+    //
+    // MEASURED (Wave-16 Lane F, gender-split) — REFUTED by the VISUAL gate, kept
+    // default-OFF as the definitive 8th dead cell (do-NOT-flip). Tier-1 palette
+    // rest-coherence PASSES both genders (87.3°→3.1° male, 42.6°→3.1° female,
+    // count(>5°)==0 — strictly better than SHELL_FIX, which left the female at
+    // 28.9°) AND drawlog-792 flag-OFF byte-identical AND A4 provenance clean. BUT
+    // the matched-frame E1 band frames REGRESS: flag-ON tears the multi-bone finger
+    // blends into spike-fans at ANIMATED poses (worse than the flag-OFF coherent
+    // "ceiling hand"). Tier-1 is a STATIC per-bone check (own≈B at the repoint
+    // frame); it does not capture that the authored verts encode the SHARED-bind
+    // INTER-bone geometry, so repointing to per-member `own` (different animated
+    // inter-bone poses) tears the knuckle blends — vindicating SKEL/STATUS.md
+    // seam-B. The offset-bake fix class is now EXHAUSTED (7 prior + this 8th); the
+    // genuine fix is an engine per-member RESKIN (RndMeshDeform), not a band-side
+    // repoint. See execution/HANDS-FIX/STATUS.md + evidence/.
+    static int sHandsAuthoredRepoint = -1;
+    if (sHandsAuthoredRepoint < 0)
+        sHandsAuthoredRepoint = getenv("RB3_HANDS_AUTHORED_REPOINT") ? 1 : 0;
+
     // Compute appendage-ness whenever ANY appendage path is active (the refuted
-    // probe, the MATCH rebake, or the diagnostic) — the old code gated apdMesh on
-    // sApdRestRot alone, which hid the scope from the new flag + the diag.
-    const int sApdAny = sApdRestRot || sApdAssetRebake || sApdDiag || sHandsShellFix;
+    // probe, the MATCH rebake, the diagnostic, or the authored-repoint fix) — the old
+    // code gated apdMesh on sApdRestRot alone, which hid the scope from the newer
+    // flags + the diag.
+    const int sApdAny = sApdRestRot || sApdAssetRebake || sApdDiag || sHandsShellFix ||
+                        sHandsAuthoredRepoint;
 
     // Collect every skinned mesh the member draws (shared collector — same walk as
     // the torso rebind; see NativeCollectSkinnedMeshes).
@@ -1520,6 +1556,48 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 continue;
             }
             std::string bname(bound->Name());
+            // ===== Wave-16 HANDS-FIX: authored-offset repoint (§4–5) =====
+            // (RB3_HANDS_AUTHORED_REPOINT, default OFF; apdMesh only.) KEEP the mesh's
+            // OWN authored offset (no rebake, handled in pass B) and repoint to the
+            // per-member animating `own`. Pass-A semantics (A4):
+            //  • own==bound: repoint is a no-op below; the authored offset already
+            //    pairs with `bound` (coherent at rest). apply[b]=1 so the mesh can
+            //    still COMPLETE (matches the default, which also completes own==bound).
+            //  • clipPlaying: NO clip-free guard — we capture NO rest pose (nothing to
+            //    poison); repointing a pointer mid-clip is safe (own is the bone that
+            //    SHOULD drive this mesh).
+            //  • provenance (A4): the engine SKEL_REBAKE (Rnd_Wgpu_RB3.cpp:3545) can
+            //    SetBone(b,bt,true)-mutate a >12u band-static hand/wrist offset BEFORE
+            //    we complete; we repoint on the first clip-free Poll then flag
+            //    mNativeBonesRebound (SKEL_REBAKE then skips the mesh). The probe below
+            //    reads off·own_world at resolve time: a pristine authored off
+            //    (=inv(bindWorld)) composed with own's rest is a coherent basis (~small
+            //    when own≈bind); a rebake-mutated off is not — catches mutation
+            //    in-session.
+            if (sHandsAuthoredRepoint && apdMesh) {
+                if (probe || sApdDiag) {
+                    Transform sk;
+                    Multiply(mesh->BoneOffsetAt(b), own->WorldXfm(), sk);
+                    static std::map<std::string, int> sRepSeen;
+                    std::string k = std::string(Name() ? Name() : "?") + "/" +
+                                    (mn ? mn : "?") + "/" + bname;
+                    if (sRepSeen[k]++ % 240 == 0)
+                        fprintf(stderr,
+                            "[HANDS_REPOINT] member='%s' mesh='%s' bone='%s' own=%p "
+                            "bound=%p distinct=%d off*ownWorld.ang=%.1f "
+                            "boundNow.ang=%.1f rebound=%d\n",
+                            Name() ? Name() : "?", mn ? mn : "?", bname.c_str(),
+                            (void *)own, (void *)bound, (own != bound) ? 1 : 0,
+                            NativeRotAngleVsIdentityDeg(sk.m),
+                            NativeRotAngleVsIdentityDeg(
+                                NativeCharSpaceRestXfm(bound).m),
+                            (int)mesh->mNativeBonesRebound);
+                }
+                owns[b] = own;  // per-member animating bone (own==bound → no-op below)
+                apply[b] = 1;   // authored offset KEPT (pass B skips the rebake)
+                resolvable++;
+                continue;
+            }
             std::map<std::string, Transform>::iterator rp = mNativeRestPose.find(bname);
             bool haveDistinct =
                 mNativeRestDistinct.find(bname) != mNativeRestDistinct.end();
@@ -1556,20 +1634,27 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 continue;
             }
             // ================= W2.8e MATCH-path appendage asset rebake =============
-            // (RB3_APPENDAGE_ASSET_REBAKE, default OFF). GROUND TRUTH (RB3_APD_DIAG,
-            // measured this wave): for hands_naked/finger/glove meshes the default
-            // distinct rebind REPOINTS the mesh from its OWN per-member bone
-            // (`bound`, char-space rest ~129 deg == the dual-skin restW the GPU
-            // palette samples) to `Find(name)` (`own`), which resolves the SHARED
-            // MAGNET instance (~106 deg) — then bakes off = meshWorld*inv(106 deg).
-            // The 106-vs-129 basis conjugation IS the R*2sin(dR/2) far-vert shard.
-            // FIX: keep the mesh bound to its OWN per-member bone (NO repoint) and
-            // bake off = meshWorld*inv(CHAR-space rest of THAT bone), captured once
-            // at a clip-free (settled) frame. Coherent by construction: at rest
-            // skin = inv(restW)*restW = I. One space (char) end-to-end — no
-            // frame-mixing (a single captured transform supplies both rotation and
-            // translation). Distinct from the REFUTED RB3_APPENDAGE_REST_ROT (which
-            // baked WORLD-space rest of the WRONG bone = the Find/magnet result).
+            // (RB3_APPENDAGE_ASSET_REBAKE, default OFF; REFUTED — the 5th dead cell,
+            // a FREEZE.) CORRECTED bound/own labeling (A7 — the original text here had
+            // them INVERTED; per HANDS-ADJUDICATION/VERDICT.md §1–2 + SKEL/STATUS.md,
+            // one of the saga's scalar-vs-matrix premise slips, VERDICT §0):
+            //   • `bound` = mesh->BoneTransAt is the SHARED, STATIC embedded-bind
+            //     instance — ONE pointer across ALL members, the authored bind basis B
+            //     (char-space rest ~129° for R-middlefinger03); the mesh's verts are
+            //     authored against it, and it NEVER animates (arm W FREEZE proof).
+            //   • `own` = Find(name) is the PER-MEMBER, gender-posed bone (distinct
+            //     pointer per member) that ANIMATES; its SetDeformation SEED rest is
+            //     the transient R (~106°), 87.2° (matrix) off B, but during play `own`
+            //     sits ≈B (arm S Tier-1 3.1°).
+            // The DEFAULT distinct rebind repoints bound→own and bakes off =
+            // meshWorld·inv(own seed rest R). The B(129°)-vs-R(106°) matrix relative
+            // rotation of 87.2° IS the R·2sin(dR/2) far-vert "ceiling-hand" shard (§2).
+            // This branch instead keeps the mesh bound to the STATIC `bound` and bakes
+            // off = meshWorld·inv(charRest(bound)): coherent at rest (skin =
+            // inv(restW)·restW = I) but FROZEN (bound never animates) → refuted. The
+            // authored-repoint fix above (§4–5, RB3_HANDS_AUTHORED_REPOINT) is the cell
+            // that keeps the authored off AND repoints to the ANIMATING `own`. Distinct
+            // from the REFUTED RB3_APPENDAGE_REST_ROT (WORLD-space rest of `own`).
             if (sApdAssetRebake && apdMesh) {
                 // Settle guard: only capture/complete while no clip is posing the
                 // bone (RebindHeadHandsAtRest runs pre-Character::Poll, so at a
@@ -1586,7 +1671,8 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 if (ap != mNativeApdAssetRest.end()) {
                     arest = ap->second;
                 } else {
-                    // The per-member bone the GPU actually samples (NOT Find/magnet).
+                    // The SHARED static embedded-bind instance `bound` (its ~129°
+                    // authored basis B) — NOT the animating Find/`own` (A7 corrected).
                     arest = NativeCharSpaceRestXfm(bound);
                     if (!(std::fabs(arest.v.x) < 1e5f && std::fabs(arest.v.y) < 1e5f &&
                           std::fabs(arest.v.z) < 1e5f)) {
@@ -1596,7 +1682,7 @@ void BandCharacter::RebindHeadHandsAtRest() {
                     }
                     mNativeApdAssetRest[bname] = arest;
                 }
-                owns[b] = bound;   // keep the per-member bone — no repoint to magnet
+                owns[b] = bound;   // keep the SHARED static bind bone → FREEZE (refuted)
                 rests[b] = arest;
                 apply[b] = 1;
                 resolvable++;
@@ -1755,24 +1841,34 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 if (!apply[b]) continue;
                 if (owns[b] != mesh->BoneTransAt(b))
                     mesh->SetBone(b, owns[b], false);
-                Transform invRest;
-                // W2.8d: for appendage bones with a captured WORLD-space rest, bake
-                // off = meshWorld * inverse(worldRest) (same space + same bone the GPU
-                // palette samples) so the rest ROTATION basis matches — collapsing the
-                // R*sin(dR) far-vert shard. Falls back to the char-space rest when no
-                // world-rest was captured (never regresses the default path).
-                bool usedWorldRest = false;
-                if (sApdRestRot && apdMesh && owns[b] && owns[b]->Name()) {
-                    std::map<std::string, Transform>::iterator wp =
-                        mNativeApdWorldRest.find(std::string(owns[b]->Name()));
-                    if (wp != mNativeApdWorldRest.end()) {
-                        Invert(wp->second, invRest);
-                        usedWorldRest = true;
+                // Wave-16 HANDS-FIX (RB3_HANDS_AUTHORED_REPOINT): for appendage meshes
+                // KEEP the authored inverse-bind offset — repoint ONLY, skip the rebake
+                // overwrite. This is the whole point of the never-measured cell (§5):
+                // the authored off already carries inv(each mesh's own bind), so the
+                // palette composes v·inv(bindWorld)·own_live(t) = the Wii composition.
+                // Non-appendage meshes (heads — a measured net win) and the flag-OFF
+                // default still rebake below (byte-identical when the flag is OFF).
+                if (!(sHandsAuthoredRepoint && apdMesh)) {
+                    Transform invRest;
+                    // W2.8d: for appendage bones with a captured WORLD-space rest, bake
+                    // off = meshWorld * inverse(worldRest) (same space + same bone the
+                    // GPU palette samples) so the rest ROTATION basis matches —
+                    // collapsing the R*sin(dR) far-vert shard. Falls back to the
+                    // char-space rest when no world-rest was captured (never regresses
+                    // the default path).
+                    bool usedWorldRest = false;
+                    if (sApdRestRot && apdMesh && owns[b] && owns[b]->Name()) {
+                        std::map<std::string, Transform>::iterator wp =
+                            mNativeApdWorldRest.find(std::string(owns[b]->Name()));
+                        if (wp != mNativeApdWorldRest.end()) {
+                            Invert(wp->second, invRest);
+                            usedWorldRest = true;
+                        }
                     }
+                    if (!usedWorldRest)
+                        Invert(rests[b], invRest);
+                    Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b));
                 }
-                if (!usedWorldRest)
-                    Invert(rests[b], invRest);
-                Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b));
                 reboundBones++;
                 if (probe) {
                     // anchor diagnosis: is this bone a trans-descendant of THIS
