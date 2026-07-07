@@ -1,0 +1,53 @@
+HANDS-ADJUDICATION 2026-07-07 - three-arm A/B on native/build-native/rb3-native
+(built 2026-07-07 12:31, engine pin fdf0ad9; protocol keyboard-to-gameplay.py
+--song-downs 3 --game-burst 15 --burst-interval 0.3, RB3_FIXED_CLOCK=1,
+RB3_HANDS_ATTACH_PROBE=1 IK_SHARD_VERT='*'; hands_naked [HANDS_ATTACH] blocks;
+nb=38 male members, nb=40 female member)
+
+Arm C - CONTROL (all hands flags unset = shipped default):
+  all      : blocks=1635 wext 36.9-105.8 mean 71.9 distinct=452 rebound=1
+  nb=38(M) : blocks=1086 wext 55.4-105.8 med 77.0 mean 77.8 distinct=335
+  nb=40(F) : blocks= 549 wext 36.9- 79.1 med 60.1 mean 60.3 distinct=218
+  Tier-1 modes: 87.3 (x1086), 42.6 (x549) -- W2.8f bimodality reproduced
+  PROTOCOL VALID (matches RESKIN R2 flag-OFF 74.8-mean/60-106 gate window +
+  W2.8f 35.2-105.8 range).
+
+Arm W - the pre-registered CLEAN Wii-composition arm (RB3_NO_HEAD_REBIND=1,
+reskin OFF, + RB3_NO_SKIN_CLAMP=1 SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1 so the
+un-rebound mesh is neither guard-censored nor clamp-frozen):
+  all      : blocks=1593 wext 76.0-184.9 mean 115.2 distinct=74 rebound=0
+             QUANTIZED clusters 76/80/98/100/152/159/165 (vs arm C 452 distinct)
+  nb=38(M) : Tier-1 mode (0.1 deg, count>5deg=0) x401 -- AUTHORED offsets match
+             the bound instance's basis EXACTLY, matrix-level, all 38 bones.
+             Secondary modes (173.7/105.5/60.8 deg, count=8) = the 8 arm-slot
+             bones that resolve to per-member ANIMATED instances at load ->
+             mixed-anchor placement-lever smears (100-185u = |placement|).
+  nb=40(F) : Tier-1 mode (28.9 deg, count=34/40) -- female authored offsets are
+             ~29 deg off the shared male-bind bound basis.
+  FREEZE PROOF: [IK_SHARD_VERT] hands_naked wext=80 worstVtx=686
+  domBone='bone_L-thumb01' boneWorld.v=(-21.4,0.6,43.5) IDENTICAL EVERY frame;
+  skinRow0=(1.00,0.00,-0.00) (= off*boneWorld ~ identity).
+  => bound is STATIC; the Wii pairing target (one instance that both carries
+  the authored bind basis AND animates) DOES NOT EXIST natively.
+
+Arm S - RB3_HANDS_SHELL_FIX=1 (the W2.8g "6th dead cell"), GENDER-SPLIT for the
+first time (B-S2 only measured the aggregate):
+  nb=38(M) : blocks=1038 wext 64.5-104.1 med 87.7 mean 88.1 distinct=313
+             Tier-1 = (3.1 deg, count>5deg=0) on ALL 1038 blocks -- with the
+             authored-bind anchor the male palette is BASIS-COHERENT at every
+             freshness capture => own sits ~at the authored bind during play;
+             the default bake's seed rest R (87.2 deg away) is a TRANSIENT
+             SetDeformation-time pose the bones do not hold at play time.
+  nb=40(F) : blocks=525 wext 51.0-93.2 mean 70.8 (vs 60.3 default = REGRESSION)
+             Tier-1 = (28.9 deg, count=40/40) on ALL blocks -- the shared-B bake
+             is wrong for the female by construction (her authored basis is
+             ~29 deg away); B-S2's aggregate "min 34.8->51.0" is HER min.
+  Residual >60u IK_SHARD_VERT population: clap.mesh (crowd, 60-837u),
+  hands_naked 60-104 (two-hands-apart legit extents at raised poses),
+  gloves_resource (authored basis 60-69 deg off shared-B -> SHELL_FIX wrong for
+  it), fingernails (authored ~169-177 deg off shared-B -> ditto), crowd bodies.
+  E1 frames: armS_burst_08/12 vs armC_burst_08/12 -- the arm C floating
+  "ceiling hand" (a COHERENT hand displaced from the wrist + connecting spike
+  webbing = the D1 rigid-displacement signature) changes morphology under
+  SHELL_FIX; residual twig-fans attribute to female/gloves/nails (all
+  wrong-anchored by the shared-B bake) + crowd clap.
