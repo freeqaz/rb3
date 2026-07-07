@@ -1,6 +1,35 @@
 # Wave 17 — Kickoff (instrument wave; executes the Fable-authored roadmap plans)
 
-**Author:** coordinator. **Status:** DRAFT — under Fable pre-dispatch review.
+**Author:** coordinator. **Status:** REVIEWED (Fable, `WAVE17_REVIEW.md` rb3 `c5f1a925`) —
+**dispatch-with-amendments, all adopted; notably the first wave in the campaign's recent record
+with NO false premise found** (both engine ranges resolve exactly by symbol at pin `51640ff`;
+R1's M1 claims all verified true: wbfs 4.1GB on disk, dolphin-emu-nogui built with the W7 hook
+`bc3b1f5`, milo-trace RSP client present, map anchors match, `/api/call` exists gated
+`RB3_REPLAY_API=1`).
+
+## COORDINATOR ACCEPTANCE (2026-07-07)
+
+- **A1 (HIGH, sequencing shape):** lanes stay PARALLEL; only the LANDING is sequenced. Lane S
+  commits its engine probe block at M1-exit (M1's only code artifact, landable regardless of the
+  metric verdict). Lane U develops its engine sidecar in an ISOLATED ENGINE WORKTREE from wave
+  start (its M1 IS the engine spike), rebases when S's commit lands, escalates to the
+  coordinator at the mid-wave checkpoint if it hasn't landed. No hard-sequenced stage.
+- **A2 (MEDIUM, grants):** Lane D's writable surfaces are OUT-OF-REPO and granted explicitly:
+  `/home/free/code/milohax/milo-trace` (its own repo — commit there per its norms) and the
+  dolphin fork. rb3/engine source stays read-only for Lane D beyond declared probe additions.
+- **A3 (MEDIUM, carve-out):** the carried "refuted flags UNSET" rule gains a CAPTURE-ARM
+  carve-out: Lane S's known-bad arm runs `RB3_HANDS_AUTHORED_REPOINT=1` deliberately (verified
+  in-tree default-OFF at `BandCharacter.cpp:1372-1374`, Wave-16 tear evidence real) — allowed
+  ONLY inside the fixture-capture harness, never in gate/verify arms of other items.
+- **A4 (LOW, M1 box):** corrected reading — the ~1-day box covers M1 TOTAL; switch route A→B
+  (retail DOL) on the FIRST decisive route-A failure, not after a day of troubleshooting.
+- **A5 (LOW):** Lane U records its FULL engine edit-site list in PLAN.md (DrawMesh call site
+  `:5283`, `RecordDrawLog` `:5324`, `WriteSceneUniforms` ~`:1380`, four BeginRenderPass sites,
+  +3 other TUs — all verified disjoint from Lane S's `:4736` region).
+- **A6:** rb3-tests fixture suites are boot/asset-free by design; `orig-assets/extracted` is
+  present for capture arms. Eleven-defaults tally reconciled; all ten §4 lints carried.
+- **Hazard note:** the engine tree carries the long-standing uncommitted `M FxSendNative.cpp`
+  (concurrent audio work) — as always, never stage it.
 Parent: `RETROSPECTIVE/ROADMAP.md` + `RETROSPECTIVE/plans/PLAN-R{1,2,3}-*.md` (Fable-authored,
 cross-checked by `plans/INDEX.md` incl. the COORDINATOR RESOLUTIONS section, which is BINDING).
 Engine pin `51640ff`. Eleven defaults ON.
