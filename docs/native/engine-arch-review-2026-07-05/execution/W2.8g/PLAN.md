@@ -44,6 +44,12 @@ Checkpoint `/tmp/wave12-checkpoints/B-S1.json`. **No fix this stage** — diagno
 GPU-vs-CPU-same-palette readback is predicted GREEN by design (wext already smears 106u on the CPU
 with zero GPU). Deferred as a separate ~200-LOC build; logged if run. Not the gate.
 
+## DONE (B-S1 landed)
+- Instrument B inserted at `Rnd_Wgpu_RB3.cpp:4872-4966` (verified). Oracle appended to
+  `test_skin_golden.cpp` (ShellInvariantAxisOracle). classjson row `RB3_HANDS_INSTR_B` appended.
+- Verdict: **SPACE/composition axis; DECODE refuted** (orthoResid≈0.0002, isoDistort≈0.0000 on hands
+  vs 1-4u clean-body control; oracle truth-table PASS). See STATUS.md. Engine `218494a`, rb3 `dde9aacc`.
+
 ## Gates / process
 - Own build dir `native/build-agent-W2.8g`; `build-native` only under flock if needed.
 - drawlog-golden flag-OFF must stay PASS (792) on the committed binary (probe render-inert).
