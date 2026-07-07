@@ -1,39 +1,42 @@
-# Lane SKEL — S-S1 (mechanism study, diagnosis-only) — PLAN
+# Lane SKEL — S-S2 (fix, flag-first default-OFF) — PLAN
 
-Wave 13, KEY=SKEL, STAGE=S-S1. Engine pin `44716f4`. Diagnosis ONLY — no fix, no behavior
-change, no flag flips. Charter: WAVE13_KICKOFF ACCEPTANCE A1-A4 + STOP-TRIPWIRE.
+Wave 13, KEY=SKEL, STAGE=S-S2. Engine pin `44716f4`. Charter: implement the two-half fix
+(un-share + gender-pose) at the S-S1-named seam, band-side scoped, flag-first default-OFF.
+STOP-TRIPWIRE (binding): "if the seam degenerates into any dead cell OR the un-shared bone
+resolves-but-doesn't-animate → STOP, verdict BLOCKED with evidence."
 
-## Objective
-Answer, from source + runtime probes, the six binding questions:
-(1) EXISTENCE of per-member finger bones, (2) ANIMATION of the un-shared instance,
-(3) GENDER-POSE reaching it before rest capture, (4) the ACTUAL final offset writer for
-`hands_naked`, (5) BAKE-TIME magnet provenance, (6) CROWD-interaction scoping. Then name the
-exact seam for the two-half fix. NO fix this stage.
+(S-S1 mechanism-study PLAN preserved in git history at commit 8f73b6fa.)
 
-## Files READ (source trace) — line ranges re-derived BY SYMBOL on current tree
+## Objective (as dispatched)
+Register a new default-OFF flag and implement seam A (per-member gender-posed authored bind)
+and/or seam B (per-vertex shell re-pose) from S-S1, in `RebindHeadHandsAtRest`
+(`BandCharacter.cpp:1595-1725`, re-derived by symbol), then pass the pre-registered gates.
+
+## Files inspected (line ranges re-derived BY SYMBOL on current tree, HEAD 8f73b6fa)
 - `src/system/bandobj/BandCharacter.cpp`:
-  - `Poll()` rebind ordering — `:369`; `RebindHeadHandsAtRest()` call pre-Poll `:526`;
-    `Character::Poll()` `:529`; `RebindOutfitBonesToOwnSkeleton()` post-Poll `:574`.
-  - `NativeCaptureRestPoseAfterDeform()` load-time seed `:973`.
-  - `RebindOutfitBonesToOwnSkeleton()` `:1101` (torso-scoped default).
-  - `RebindHeadHandsAtRest()` `:1253`: GeomOwner propagation `:1438-1448`; first-distinct
-    clip-free rest capture `NativeCharSpaceRestXfm(own)` `:1656`; pass-B bake
-    `Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b))` `:1725`; rebound-flag `:1752`;
-    `RB3_APD_DIAG` provenance log `:1676-1693`.
-  - `FilterSubdir()` 2026-06-06 investigation + two-half fix + crowd warning `:3915-3937`.
-- `src/system/char/CharBonesMeshes.cpp`: `ReallocateInternal()` driver pose-target bind
-  `CharUtlFindBoneTrans(mBones[i].name, Dir())` `:54` (captured into `mMeshes`).
-- `src/system/char/CharUtl.cpp`: `CharUtlFindBoneTrans` `:183` (= `dir->Find<CharBone/Trans>`).
-- engine `src/platform/Rnd_Wgpu_RB3.cpp`: SKEL_REBAKE pre-pass `:3442-3549`, SKIN_CLAMP `:3753+`
-  (both skip `mNativeBonesRebound` meshes) — READ-ONLY (renderer not touched this lane).
+  - `RebindHeadHandsAtRest()` `:1253`; default distinct rest capture
+    `NativeCharSpaceRestXfm(own)` `:1656`; pass-B bake
+    `Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b))` `:1725`; rebound flag `:1752`.
+  - `RB3_HANDS_SHELL_FIX` (own-live + bound-rest) branch `:1481-1507`, header `:1316-1339`.
+  - `RB3_APPENDAGE_ASSET_REBAKE` (bound-live + bound-rest) branch `:1523-1554`.
+  - `SetDeformation()` `:3064`; `RndMeshDeform::Reskin` per-member reskin call `:3111-3115`.
+  - `FilterSubdir` 2026-06-06 note (the original "un-share + gender-pose" statement) `:3915-3937`.
+- `src/system/bandobj/BandCharDesc.cpp`: `GetDeformClip()` `:59-64` — gender bind = runtime CharClip.
+- `src/band3/meta_band/AssetTypes.cpp`: `male_hands_naked`/`female_hands_naked` `:250-256`.
+- engine `src/platform/Rnd_Wgpu_RB3.cpp`: palette build (skin = `BoneOffsetAt(i) * boneWorld`)
+  `:3299-3305`; INSTR_B/wext/IK_SHARD instruments `:4394-4983` — READ-ONLY (renderer untouched).
 
-## Runtime probe (read-only, existing committed probes; NO new source)
-Harness `evidence/s1_mechanism_probe.py` launches the committed W2.8g binary
-(`native/build-agent-W2.8g/rb3-native`, commit `d016ce66`, matches HEAD BandCharacter.cpp) to a
-live gameplay band render with render-inert getenv probes: `RB3_APD_DIAG`, `HEAD_REBIND_PROBE`,
-`SKEL_REBIND_PROBE`, `SKEL_REBAKE_PROBE`, `RELOAD_PROBE`, `BAND_ANIM_PROBE`. All only print.
-Cleanup by PGID only. Log: `/tmp/wave13-skel-s1/gameplay.log`.
+## Declared edit range (pre-registered before editing)
+Intended: new getenv-gated branch inside `RebindHeadHandsAtRest` `:1462-1707` + a NativeCompatFlags
+classification append. **NOT EXECUTED** — the feasibility gate below tripped the STOP-TRIPWIRE
+before any source edit. No file in this range was modified this stage.
+
+## Feasibility gate (run FIRST, per STOP-TRIPWIRE) → TRIPPED → BLOCKED
+Provenance-independent proof that seam A degenerates + seam B is out of scope; both from source +
+the S-S1 APD_DIAG hard data + the committed `d016ce66` measurement. See STATUS.md for the full
+argument. Result: no non-degenerate, in-scope implementation exists → verdict **BLOCKED**, no
+source change, no flag registered (registering a byte-identical-to-default flag would be a fake).
 
 ## Deliverable
-STATUS.md with (1)-(6) answered + probe evidence, the corrected mechanism, and the seam for the
-two-half fix (files + shape). Interaction analysis vs both default-ON rebinds. NO fix.
+STATUS.md (BLOCKED verdict + degeneration proof + APD_DIAG evidence + named real fix = engine
+per-member reskin), checkpoint `/tmp/wave13-checkpoints/S-S2.json`, docs-only commit.
