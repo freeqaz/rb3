@@ -259,6 +259,11 @@ bool CamShot::CheckShotOver(float f) { return !mShotOver && !mLooping && f >= mD
 void CamShot::Shake(
     float freq, float amp, const Vector2 &ang, Vector3 &output, Vector3 &eulerOutput
 ) {
+#ifdef HX_NATIVE
+    // R4 (Wave 17): the conditional 1-or-5 shake draws onto the isolated "camshot"
+    // stream (M1 gate-window divergent, spread 63). Inert when the seam is off.
+    RB3LoadDetRedirect _detShake("camshot");
+#endif
     if (TheTaskMgr.DeltaSeconds() > 0 && !AutoPrepTarget::sChanging) {
         Vector2 localAng = ang;
         localAng *= DEG2RAD;

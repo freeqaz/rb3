@@ -616,6 +616,12 @@ void RndParticleSys::InitParticle(RndParticle *p, const Transform *t) {
 void RndParticleSys::InitParticle(
     float frame, RndParticle *particle, const Transform *tf, PartOverride &partOverride
 ) {
+#ifdef HX_NATIVE
+    // R4 (Wave 17): route this consumer's ~26 per-particle gRand draws onto the
+    // isolated "part" stream when the load-determinism seam is on (M1 named it the
+    // dominant variable-count leak: spread 5801). Inert when the seam is off.
+    RB3LoadDetRedirect _detParticle("part");
+#endif
     particle->birthFrame = frame;
     if (partOverride.mask & 1) {
         particle->deathFrame = particle->birthFrame + partOverride.life;
@@ -1049,6 +1055,11 @@ void RndParticleSys::MakeLocToRel(Transform &tf) {
 }
 
 void RndParticleSys::CreateParticles(float f1, float f2, const Transform &tf) {
+#ifdef HX_NATIVE
+    // R4 (Wave 17): the emit-rate/burst draws that DECIDE the spawn count, plus the
+    // nested per-particle InitParticle draws, onto the same isolated "part" stream.
+    RB3LoadDetRedirect _detParticle("part");
+#endif
     if (!(f2 <= 0) && mNumActive < mMaxParticles) {
         mEmitCount += f2 * RandomFloat(mEmitRate.x, mEmitRate.y);
         mEmitCount += CheckBursts(f2);

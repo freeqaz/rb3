@@ -1,0 +1,280 @@
+{
+  "referenceBoot": 0,
+  "boots": [
+    {
+      "boot": 0,
+      "anchorFrame": 2686,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2686",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "27692e91ba12",
+        "pass": true
+      }
+    },
+    {
+      "boot": 1,
+      "anchorFrame": 2608,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2608",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "35164432e680",
+        "pass": false
+      }
+    },
+    {
+      "boot": 2,
+      "anchorFrame": 2586,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2586",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "3ef22886a92a",
+        "pass": false
+      }
+    },
+    {
+      "boot": 3,
+      "anchorFrame": 2714,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2714",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "66458ef5287c",
+        "pass": false
+      }
+    },
+    {
+      "boot": 4,
+      "anchorFrame": 2750,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2750",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "b29e50c5c9ab",
+        "pass": false
+      }
+    },
+    {
+      "boot": 5,
+      "anchorFrame": 2726,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2726",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "446fb09b9fc0",
+        "pass": false
+      }
+    },
+    {
+      "boot": 6,
+      "anchorFrame": 2738,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2738",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "28070ab7a9b7",
+        "pass": false
+      }
+    },
+    {
+      "boot": 7,
+      "anchorFrame": 2819,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2819",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "10d592e27d18",
+        "pass": false
+      }
+    },
+    {
+      "boot": 8,
+      "anchorFrame": 2804,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2804",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "1ecad65dd384",
+        "pass": false
+      }
+    },
+    {
+      "boot": 9,
+      "anchorFrame": 2863,
+      "axes": {
+        "count": {
+          "value": "0+92e3e1b0eb7b",
+          "pass": true
+        },
+        "order": {
+          "value": "794628df023d",
+          "pass": true
+        },
+        "stream": {
+          "value": 0,
+          "pass": true
+        },
+        "clock": {
+          "value": "span=300,anchor=2863",
+          "pass": true
+        }
+      },
+      "callerOrder": {
+        "value": "520e15f7e548",
+        "pass": false
+      }
+    }
+  ],
+  "summary": {
+    "count": "10/10",
+    "order": "10/10",
+    "stream": "10/10",
+    "clock": "10/10",
+    "callerOrder(info)": "1/10",
+    "PRIMARY": "PASS"
+  },
+  "meta": {
+    "date": "2026-07-07",
+    "n": 10,
+    "k": 300,
+    "jitter": 200,
+    "note": "recomputed offline with corrected anchor-relative clock axis"
+  }
+}

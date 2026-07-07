@@ -1,0 +1,665 @@
+{
+  "window": "gate",
+  "range": [
+    0,
+    300
+  ],
+  "nBoots": 4,
+  "rows": [
+    {
+      "off": "0x5f62c8",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:654"
+    },
+    {
+      "off": "0x5f6afc",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:719"
+    },
+    {
+      "off": "0x5f6291",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:653"
+    },
+    {
+      "off": "0x5f63a1",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:662"
+    },
+    {
+      "off": "0x5f758d",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:824"
+    },
+    {
+      "off": "0x5f6c1c",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:731"
+    },
+    {
+      "off": "0x5f636b",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:661"
+    },
+    {
+      "off": "0x5f602e",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:629"
+    },
+    {
+      "off": "0x5f6cc1",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:739"
+    },
+    {
+      "off": "0x5f6b33",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:720"
+    },
+    {
+      "off": "0x5f693a",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:704"
+    },
+    {
+      "off": "0x5f763e",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:830"
+    },
+    {
+      "off": "0x5f6bc3",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:726"
+    },
+    {
+      "off": "0x5f7601",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:828"
+    },
+    {
+      "off": "0x5f6cf8",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:740"
+    },
+    {
+      "off": "0x5f6ac6",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:718"
+    },
+    {
+      "off": "0x5f6d66",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:742"
+    },
+    {
+      "off": "0x5f6d2f",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:741"
+    },
+    {
+      "off": "0x5f75c7",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:826"
+    },
+    {
+      "off": "0x5f6b6a",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:721"
+    },
+    {
+      "off": "0x5f625a",
+      "perBoot": [
+        1503,
+        1642,
+        1753,
+        1556
+      ],
+      "min": 1503,
+      "max": 1753,
+      "spread": 250,
+      "distinct": [
+        1503,
+        1556,
+        1642,
+        1753
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:652"
+    },
+    {
+      "off": "0x5f8a85",
+      "perBoot": [
+        297,
+        315,
+        241,
+        316
+      ],
+      "min": 241,
+      "max": 316,
+      "spread": 75,
+      "distinct": [
+        241,
+        297,
+        315,
+        316
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::CreateParticles(float, float, Transform const&) @ src/system/rndobj/Part.cpp:1064"
+    },
+    {
+      "off": "0xb4543a",
+      "perBoot": [
+        21,
+        22,
+        22,
+        18
+      ],
+      "min": 18,
+      "max": 22,
+      "spread": 4,
+      "distinct": [
+        18,
+        21,
+        22
+      ],
+      "variable": true,
+      "sym": "CharEyes::NextLook() @ src/system/char/CharEyes.cpp:565"
+    },
+    {
+      "off": "0x5f6a4b",
+      "perBoot": [
+        3,
+        4,
+        3,
+        2
+      ],
+      "min": 2,
+      "max": 4,
+      "spread": 2,
+      "distinct": [
+        2,
+        3,
+        4
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:710"
+    },
+    {
+      "off": "0x5f6a14",
+      "perBoot": [
+        3,
+        4,
+        3,
+        2
+      ],
+      "min": 2,
+      "max": 4,
+      "spread": 2,
+      "distinct": [
+        2,
+        3,
+        4
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:709"
+    },
+    {
+      "off": "0x5f70e2",
+      "perBoot": [
+        3,
+        4,
+        3,
+        2
+      ],
+      "min": 2,
+      "max": 4,
+      "spread": 2,
+      "distinct": [
+        2,
+        3,
+        4
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:769"
+    },
+    {
+      "off": "0x5f7027",
+      "perBoot": [
+        3,
+        4,
+        3,
+        2
+      ],
+      "min": 2,
+      "max": 4,
+      "spread": 2,
+      "distinct": [
+        2,
+        3,
+        4
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:764"
+    },
+    {
+      "off": "0x5f7073",
+      "perBoot": [
+        3,
+        3,
+        2,
+        2
+      ],
+      "min": 2,
+      "max": 3,
+      "spread": 1,
+      "distinct": [
+        2,
+        3
+      ],
+      "variable": true,
+      "sym": "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:765"
+    },
+    {
+      "off": "0x78e3f7",
+      "perBoot": [
+        260,
+        260,
+        260,
+        260
+      ],
+      "min": 260,
+      "max": 260,
+      "spread": 0,
+      "distinct": [
+        260
+      ],
+      "variable": false,
+      "sym": "CamShot::Shake(float, float, Vector2 const&, Vector3&, Vector3&) @ src/system/world/CameraShot.cpp:270"
+    },
+    {
+      "off": "0x78e450",
+      "perBoot": [
+        71,
+        71,
+        71,
+        71
+      ],
+      "min": 71,
+      "max": 71,
+      "spread": 0,
+      "distinct": [
+        71
+      ],
+      "variable": false,
+      "sym": "CamShot::Shake(float, float, Vector2 const&, Vector3&, Vector3&) @ src/system/world/CameraShot.cpp:272"
+    },
+    {
+      "off": "0x78e5a9",
+      "perBoot": [
+        71,
+        71,
+        71,
+        71
+      ],
+      "min": 71,
+      "max": 71,
+      "spread": 0,
+      "distinct": [
+        71
+      ],
+      "variable": false,
+      "sym": "CamShot::Shake(float, float, Vector2 const&, Vector3&, Vector3&) @ src/system/world/CameraShot.cpp:279"
+    },
+    {
+      "off": "0x78e427",
+      "perBoot": [
+        71,
+        71,
+        71,
+        71
+      ],
+      "min": 71,
+      "max": 71,
+      "spread": 0,
+      "distinct": [
+        71
+      ],
+      "variable": false,
+      "sym": "CamShot::Shake(float, float, Vector2 const&, Vector3&, Vector3&) @ src/system/world/CameraShot.cpp:271"
+    },
+    {
+      "off": "0x78e55a",
+      "perBoot": [
+        71,
+        71,
+        71,
+        71
+      ],
+      "min": 71,
+      "max": 71,
+      "spread": 0,
+      "distinct": [
+        71
+      ],
+      "variable": false,
+      "sym": "CamShot::Shake(float, float, Vector2 const&, Vector3&, Vector3&) @ src/system/world/CameraShot.cpp:277"
+    },
+    {
+      "off": "0xb85833",
+      "perBoot": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "min": 4,
+      "max": 4,
+      "spread": 0,
+      "distinct": [
+        4
+      ],
+      "variable": false,
+      "sym": "CharInterest::ComputeScore(Vector3 const&, Vector3 const&, Vector3 const&, float, int, bool) @ src/system/char/CharInterest.cpp:172"
+    }
+  ]
+}

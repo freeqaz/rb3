@@ -1,0 +1,4 @@
+G2a — normal boot inertness (build-agent-R4, NO RB3_LOADDET_* flags, MILO_MAX_FRAMES=400)
+[LOADDET] lines emitted: 0
+frames reached: 404 (bounded cap; exit 139 = pre-existing bounded-boot teardown SIGSEGV, unrelated)
+VERDICT: PASS — flag-OFF boot is silent (0 probe lines).

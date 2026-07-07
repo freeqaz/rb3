@@ -1,0 +1,66 @@
+[loaddet-gate] === ARM OFF: n=4 env={'RB3_LOADDET_JITTER': '200'} attrib=True ===
+[placement-gate] HTTP up
+[placement-gate] game_screen reached
+[loaddet-gate]   OFF boot0: anchor@2812 gAnchor=100587 gTarget=134434 postDelta=33847 reseed=False callers=61
+[placement-gate] HTTP up
+[placement-gate] game_screen reached
+[loaddet-gate]   OFF boot1: anchor@2921 gAnchor=101354 gTarget=135364 postDelta=34010 reseed=False callers=61
+[placement-gate] HTTP up
+[placement-gate] game_screen reached
+[loaddet-gate]   OFF boot2: anchor@2790 gAnchor=100731 gTarget=133213 postDelta=32482 reseed=False callers=61
+[placement-gate] HTTP up
+[placement-gate] game_screen reached
+[loaddet-gate]   OFF boot3: anchor@2800 gAnchor=100908 gTarget=138655 postDelta=37747 reseed=False callers=61
+
+==== ATTRIB OFF / boot window ([0, 120]) — 44 callers, 35 divergent ====
+  spread=    18 perBoot=[633, 651, 647, 647] RndParticleSys::CreateParticles(float, float, Transform const&) @ src/system/rndobj/Part.cpp:1053
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:655
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:823
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:818
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:736
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:698
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:822
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:646
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:713
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:820
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:623
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:648
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:735
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:647
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:714
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:734
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:715
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:725
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:720
+  spread=     9 perBoot=[590, 588, 597, 591] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:656
+  wrote /tmp/r4-m1-attrib/attrib-off-boot.json
+
+==== ATTRIB OFF / gate window ([0, 300]) — 34 callers, 33 divergent ====
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:655
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:823
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:818
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:736
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:698
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:822
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:646
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:713
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:820
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:623
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:648
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:735
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:647
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:714
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:734
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:715
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:725
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:720
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:656
+  spread=   276 perBoot=[1570, 1576, 1502, 1778] RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:733
+  wrote /tmp/r4-m1-attrib/attrib-off-gate.json
+
+[M1 decision — OFF] gate-window divergent variable-count sites = 33 (GO if <= 8)
+
+==================== GATE RESULT ====================
+ARM OFF: ok=4/4  postAnchorDeltaSpread=5265  distinctDeltas=[32482, 33847, 34010, 37747]  absSpread=5442  reseedAll=False
+
+wrote /tmp/r4-m1-attrib/attrib-off.json

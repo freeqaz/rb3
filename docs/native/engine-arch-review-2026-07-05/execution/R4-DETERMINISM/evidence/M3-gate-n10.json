@@ -1,0 +1,340 @@
+{
+  "tag": "m3",
+  "bin": "native/build-agent-R4/rb3-native",
+  "k": 300,
+  "boot_window": 120,
+  "target_ms": 6000.0,
+  "jitter_us": 200,
+  "arms": {
+    "OFF": {
+      "arm": "OFF",
+      "env": {
+        "RB3_LOADDET_JITTER": "200"
+      },
+      "n": 10,
+      "ok": 10,
+      "postAnchorDeltas": [
+        38379,
+        37743,
+        37844,
+        38464,
+        39858,
+        38232,
+        37715,
+        36965,
+        32679,
+        39534
+      ],
+      "distinctDeltas": [
+        32679,
+        36965,
+        37715,
+        37743,
+        37844,
+        38232,
+        38379,
+        38464,
+        39534,
+        39858
+      ],
+      "deltaSpread": 7179,
+      "absTargets": [
+        138952,
+        138186,
+        138089,
+        138831,
+        142660,
+        138276,
+        137792,
+        137635,
+        133450,
+        143554
+      ],
+      "absSpread": 10104,
+      "reseedFiredAll": false,
+      "boots": [
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2704,
+          "targetFrame": 3004,
+          "gAnchor": 100573,
+          "gTarget": 138952,
+          "postAnchorDelta": 38379,
+          "absTarget": 138952,
+          "reseedFired": false,
+          "maxFrame": 5132
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2624,
+          "targetFrame": 2924,
+          "gAnchor": 100443,
+          "gTarget": 138186,
+          "postAnchorDelta": 37743,
+          "absTarget": 138186,
+          "reseedFired": false,
+          "maxFrame": 5014
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2571,
+          "targetFrame": 2871,
+          "gAnchor": 100245,
+          "gTarget": 138089,
+          "postAnchorDelta": 37844,
+          "absTarget": 138089,
+          "reseedFired": false,
+          "maxFrame": 5005
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2664,
+          "targetFrame": 2964,
+          "gAnchor": 100367,
+          "gTarget": 138831,
+          "postAnchorDelta": 38464,
+          "absTarget": 138831,
+          "reseedFired": false,
+          "maxFrame": 5000
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2588,
+          "targetFrame": 2888,
+          "gAnchor": 102802,
+          "gTarget": 142660,
+          "postAnchorDelta": 39858,
+          "absTarget": 142660,
+          "reseedFired": false,
+          "maxFrame": 4955
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2619,
+          "targetFrame": 2919,
+          "gAnchor": 100044,
+          "gTarget": 138276,
+          "postAnchorDelta": 38232,
+          "absTarget": 138276,
+          "reseedFired": false,
+          "maxFrame": 5000
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2513,
+          "targetFrame": 2813,
+          "gAnchor": 100077,
+          "gTarget": 137792,
+          "postAnchorDelta": 37715,
+          "absTarget": 137792,
+          "reseedFired": false,
+          "maxFrame": 4873
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2665,
+          "targetFrame": 2965,
+          "gAnchor": 100670,
+          "gTarget": 137635,
+          "postAnchorDelta": 36965,
+          "absTarget": 137635,
+          "reseedFired": false,
+          "maxFrame": 5160
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2708,
+          "targetFrame": 3008,
+          "gAnchor": 100771,
+          "gTarget": 133450,
+          "postAnchorDelta": 32679,
+          "absTarget": 133450,
+          "reseedFired": false,
+          "maxFrame": 5221
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2684,
+          "targetFrame": 2984,
+          "gAnchor": 104020,
+          "gTarget": 143554,
+          "postAnchorDelta": 39534,
+          "absTarget": 143554,
+          "reseedFired": false,
+          "maxFrame": 5085
+        }
+      ]
+    },
+    "ON": {
+      "arm": "ON",
+      "env": {
+        "RB3_LOADDET_JITTER": "200",
+        "RB3_LOAD_DETERMINISM": "1"
+      },
+      "n": 10,
+      "ok": 10,
+      "postAnchorDeltas": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "distinctDeltas": [
+        0
+      ],
+      "deltaSpread": 0,
+      "absTargets": [
+        1967,
+        1966,
+        1965,
+        1966,
+        1968,
+        1968,
+        1968,
+        1968,
+        1968,
+        1968
+      ],
+      "absSpread": 3,
+      "reseedFiredAll": true,
+      "boots": [
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2686,
+          "targetFrame": 2986,
+          "gAnchor": 1967,
+          "gTarget": 1967,
+          "postAnchorDelta": 0,
+          "absTarget": 1967,
+          "reseedFired": true,
+          "maxFrame": 5148
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2608,
+          "targetFrame": 2908,
+          "gAnchor": 1966,
+          "gTarget": 1966,
+          "postAnchorDelta": 0,
+          "absTarget": 1966,
+          "reseedFired": true,
+          "maxFrame": 4942
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2586,
+          "targetFrame": 2886,
+          "gAnchor": 1965,
+          "gTarget": 1965,
+          "postAnchorDelta": 0,
+          "absTarget": 1965,
+          "reseedFired": true,
+          "maxFrame": 5016
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2714,
+          "targetFrame": 3014,
+          "gAnchor": 1966,
+          "gTarget": 1966,
+          "postAnchorDelta": 0,
+          "absTarget": 1966,
+          "reseedFired": true,
+          "maxFrame": 5354
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2750,
+          "targetFrame": 3050,
+          "gAnchor": 1968,
+          "gTarget": 1968,
+          "postAnchorDelta": 0,
+          "absTarget": 1968,
+          "reseedFired": true,
+          "maxFrame": 5312
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2726,
+          "targetFrame": 3026,
+          "gAnchor": 1968,
+          "gTarget": 1968,
+          "postAnchorDelta": 0,
+          "absTarget": 1968,
+          "reseedFired": true,
+          "maxFrame": 5325
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2738,
+          "targetFrame": 3038,
+          "gAnchor": 1968,
+          "gTarget": 1968,
+          "postAnchorDelta": 0,
+          "absTarget": 1968,
+          "reseedFired": true,
+          "maxFrame": 5358
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2819,
+          "targetFrame": 3119,
+          "gAnchor": 1968,
+          "gTarget": 1968,
+          "postAnchorDelta": 0,
+          "absTarget": 1968,
+          "reseedFired": true,
+          "maxFrame": 5437
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2804,
+          "targetFrame": 3104,
+          "gAnchor": 1968,
+          "gTarget": 1968,
+          "postAnchorDelta": 0,
+          "absTarget": 1968,
+          "reseedFired": true,
+          "maxFrame": 5399
+        },
+        {
+          "ok": true,
+          "reason": "?",
+          "anchorFrame": 2863,
+          "targetFrame": 3163,
+          "gAnchor": 1968,
+          "gTarget": 1968,
+          "postAnchorDelta": 0,
+          "absTarget": 1968,
+          "reseedFired": true,
+          "maxFrame": 5493
+        }
+      ]
+    }
+  }
+}

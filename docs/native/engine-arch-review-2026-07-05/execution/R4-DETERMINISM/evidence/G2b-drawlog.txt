@@ -1,0 +1,3 @@
+[drawlog-golden] [capture] note: process exited rc=-11 (non-zero) — tolerated, this is the pre-existing bounded-boot teardown SIGSEGV documented in W0.3.STATUS S1, unrelated to RB3_DRAWLOG/RB3_FIXED_CLOCK; dump was written before teardown.
+[drawlog-golden] [capture] captured frame=60 count=792
+[drawlog-golden] PASS: live capture matches golden (792 draws) (253 known-residual divergence(s) within bound, non-blocking)
