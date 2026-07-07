@@ -73,3 +73,52 @@ shown to FALSE-POSITIVE on scaled/degenerate data (why the matrix read is NO-GO,
 silent pass). Evidence committed under `execution/R1-DOLPHIN/evidence/`. No unvalidated
 oracle promoted — the delta table is explicitly NOT produced because no clean matrix was
 validated (refusing to emit an unvalidated ground truth is the disciplined outcome).
+
+---
+
+## D2 / Option 1 (2026-07-07) — patched-disc apploader boot → **M1 flips to GO**
+
+Side-lane D2 executed **Option 1** above ("restore the clean map path"). **Result:
+M1 = GO.** The above route-A/B NO-GO stands as the record of *why* Option 1 was
+needed; D2 supersedes it with a bootable Bank-8 image whose map is valid by
+construction. Full detail + reproduction: `evidence/D2_boot_apploader_patch.md`;
+deliverable `evidence/D2_wii_bones.json` + `evidence/D2_interbone_table.md`; boot
+proof `evidence/D2_boot_log_excerpt.txt`. Tool: `milo-trace tools/wii_bone_dirboot.py`.
+
+**What D2 did.** wit-extracted the retail disc to a Dolphin DirectoryBlob, swapped in
+the Bank-8 `main.dol` + `band_r_wii.sel`, kept all retail assets, and booted the
+*directory* so the **retail apploader** loads our Bank-8 DOL with a full IOS/BI2/disc
+environment (the thing route A lacked). Two blockers found and cleared:
+
+1. **Production apploader memory-bound gate (the real blocker, sharper than §6.1's
+   "ARK reject").** Retail Dec-2009 production apploader hard-rejects any DOL section
+   past `0x80900000`; the Bank-8 *debug* DOL links to `0x80dcdf60` (its map symbols
+   live in that debug region — that is precisely why route A/bare-DOL never init).
+   Fixed by a **1-instruction apploader patch** forcing its development-mode branch
+   (`bne`→`b` at image off 0xe40; dev limit 0x81200000 > our DOL end). Non-fatal
+   WARNING now; DOL loads fully incl. sections >0x80900000 (log-proven).
+2. **`_r` (release-w/symbols) vs `_s` (shipping) companion files.** Debug DOL requests
+   `band_r_wii.sel` + `{cntsdrso,hmbrso,keyboardrso}_r.rso`; retail ships `_s`. Added
+   the SEL; copied the same-source `_s` RSOs to `_r` names — they relocate cleanly.
+
+**The §6.1 ARK-version risk did NOT materialize** — Bank-8 (Build 100924_C) reads the
+retail USA `main_wii` ARK set and boots to the `ui/overshell` shell with 992 live
+`__vt__8CharBone` instances (was 0 on retail), `TheTaskMgr`/`TheBandDirector` live.
+
+**M1 GO datum.** Bank-8 struct offsets **re-derived empirically on the live image**
+(G2 — Bank-5 DWARF diverges: name @+12 not +24, packed 12-byte Matrix3 rows not
+16-byte). Per bone: `CharBone`(name+12) → `mTrans`(+72) → world Transform(+76,packed).
+**989/992 CharBones rigid** (det=+1.000). Emitted the per-pair inter-bone table
+`D=inv(W_parent)·W_child` for **both hands** (forearm→hand anchor per M-2, + middle/
+ring/thumb cascades), pointer-verified. **Bilaterally symmetric** (identical L/R
+relRot°, mirrored translations) — independent proof of real posed matrices, defeating
+exactly the scaled-false-positive failure the retail route hit. This is the **Wii
+ground-truth half of the R5 artifact**; the Wii-vs-native join is Wave-B (native
+`/api/call` dump + matched clock, PLAN §3.6), now **unblocked**.
+
+**Not committed:** the patched disc / any large binary (per rules) — only scripts,
+exact patch instructions + provenance hashes, and evidence text/JSON. Disc left in
+`/home/free/tmp/wave17-d2/` (out of repo). Process lints held: pointer identity on
+every bone row; instrument shown red (production-mode reject) AND green (dev-mode
+boot); rigidity+topology validated before the table was emitted (no unvalidated
+oracle); other lanes' Dolphin untouched (instance-scoped by `-u`); pgid-only teardown.

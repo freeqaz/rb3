@@ -11,8 +11,13 @@ acceptance in `../WAVE17_KICKOFF.md` (A1–A6).
 - **M-3 applied:** the cross-instrument comparand is defined over bone WORLDS:
   `D_side = inv(W_parent)·W_child`, `delta = angle(D_wii · inv(D_native))`.
 
-**M1 outcome:** see `STATUS.md`. Boot-GO (route B, retail); clean named-bone-matrix
-NO-GO within the ~1-day box (retail layout diverges from every symbol source we hold).
-Priced options for continuation are in `STATUS.md §Priced options`. The delta table
-(the R5 handoff artifact, format per PLAN §3.7) is **not** produced this wave — it is
-gated on one of the priced paths being funded.
+**M1 outcome:** see `STATUS.md`. Initial pass: Boot-GO (route B, retail) but clean
+named-bone-matrix NO-GO (retail layout diverges from every symbol source). **D2 /
+Option 1 (2026-07-07) flips M1 to GO** — patched the retail disc to boot OUR Bank-8
+DOL under the retail apploader (1-instruction apploader dev-mode patch clears the
+production 0x80900000 section-limit gate; `_r`↔`_s` companion files reconciled), so
+the Bank-8 map is valid by construction. The **Wii-side** inter-bone table (D=inv(W_p)·
+W_c, both hands, format §3.7) IS produced: `evidence/D2_wii_bones.json` +
+`D2_interbone_table.md` + `D2_boot_apploader_patch.md`. The Wii-vs-**native** join is
+Wave-B (native `/api/call` dump + matched clock, §3.6) — now unblocked by the
+high-confidence map-symbol-driven Wii ground truth R1's premise required.

@@ -1,0 +1,20 @@
+### D2 boot-log proof (patched apploader + _r RSO substitutes) — /tmp/d2-boot-verbose.log
+# apploader section-limit outcome (was fatal ERROR pre-patch; now non-fatal WARNING):
+27:57:354 Core/Boot/Boot.cpp:524 N[BOOT]: Booting from disc: /home/free/tmp/wave17-d2/disc/sys/main.dol
+APPLOADER WARNING >>> One of the sections in the dol file exceeded its boundary. All the sections should not exceed 0x80900000 in production mode.
+# DOL sections loaded ABOVE the old 0x80900000 production limit (proves patch worked):
+27:57:412 Core/Boot/Boot_BS2Emu.cpp:209 I[BOOT]: DVDRead: offset: 00b70840   memOffset: 80b34820   length: 832
+27:57:414 Core/Boot/Boot_BS2Emu.cpp:209 I[BOOT]: DVDRead: offset: 00b70b80   memOffset: 80b34b60   length: 32
+27:57:417 Core/Boot/Boot_BS2Emu.cpp:209 I[BOOT]: DVDRead: offset: 00b70ba0   memOffset: 80b34b80   length: 87648
+27:57:422 Core/Boot/Boot_BS2Emu.cpp:209 I[BOOT]: DVDRead: offset: 00b86200   memOffset: 80b4a1e0   length: 1238784
+27:57:425 Core/Boot/Boot_BS2Emu.cpp:209 I[BOOT]: DVDRead: offset: 00cb4900   memOffset: 80c788e0   length: 4576
+27:57:427 Core/Boot/Boot_BS2Emu.cpp:209 I[BOOT]: DVDRead: offset: 00cb5ae0   memOffset: 80c7b920   length: 2976
+# game runs its OWN Bank-8 code on RETAIL assets:
+27:57:511 Core/HW/EXI/EXI_DeviceIPL.cpp:306 N[OSREPORT]: Console Type : NDEV 2.1
+27:57:655 Core/HW/EXI/EXI_DeviceIPL.cpp:306 N[OSREPORT]: Reading the archive
+27:58:201 Core/HW/EXI/EXI_DeviceIPL.cpp:306 N[OSREPORT]: SystemInit Params: band_r_wii.elf
+# content-store RSO (_s substituted as _r) initialized past the earlier APP FAILED:
+28:28:996 Core/HW/EXI/EXI_DeviceIPL.cpp:306 N[OSREPORT]: << RVL_SDK - CNT 	release build: Dec 11 2009 15:59:28 (0x4302_145) >>
+28:29:021 Core/HW/EXI/EXI_DeviceIPL.cpp:306 N[OSREPORT]: << RVL_SDK - CNTSD 	release build: Jul 10 2009 07:13:39 (0x4302_145) >>
+28:33:992 Core/HW/EXI/EXI_DeviceIPL.cpp:306 N[OSREPORT]: NOTIFY: slot0 (ui/overshell/overshell_player.milo): invite_friends.lbl has fixed length of 20 but text is 31 long ([noforcecase]INVITE Wii FRIENDS)
+28:34:247 Core/HW/EXI/EXI_DeviceIPL.cpp:306 N[OSREPORT]: NOTIFY: slot1 (ui/overshell/overshell_player.milo): invite_friends.lbl has fixed length of 20 but text is 31 long ([noforcecase]INVITE Wii FRIENDS)
