@@ -102,22 +102,45 @@ float Rand::Gaussian() {
 
 void SeedRand(int seed) { gRand.Seed(seed); }
 
+#ifdef HX_NATIVE
+// R4 (Wave-17 Lane L) attribution tap. gRB3LoadDetAttribOn is armed once at static
+// init in rb3_loaddet_probe.cpp; flag-OFF (normal boots AND the M2/M3 gate arms)
+// is a single predicted-not-taken load+branch — no call, no return-address eval.
+// __builtin_return_address(0) is captured INSIDE each wrapper so it resolves to
+// the actual gRand consumer (CamShot::Shake, WorldCrowd::OnIterateFrac, ...).
+// Every free-function wrapper produces exactly one gRand draw, so one record per
+// wrapper entry matches the sGRandDrawCount increment count.
+extern int gRB3LoadDetAttribOn;
+extern void RB3LoadDetAttribRecord(void *pc);
+#define RB3_LOADDET_ATTRIB_TAP()                                                   \
+    do {                                                                           \
+        if (gRB3LoadDetAttribOn)                                                   \
+            RB3LoadDetAttribRecord(__builtin_return_address(0));                   \
+    } while (0)
+#else
+#define RB3_LOADDET_ATTRIB_TAP() ((void)0)
+#endif
+
 int RandomInt() {
     MILO_ASSERT(MainThread(), 0x6C);
+    RB3_LOADDET_ATTRIB_TAP();
     return gRand.Int();
 }
 
 int RandomInt(int i1, int i2) {
     MILO_ASSERT(MainThread(), 0x73);
+    RB3_LOADDET_ATTRIB_TAP();
     return gRand.Int(i1, i2);
 }
 
 float RandomFloat() {
     MILO_ASSERT(MainThread(), 0x79);
+    RB3_LOADDET_ATTRIB_TAP();
     return gRand.Float();
 }
 
 float RandomFloat(float f1, float f2) {
     MILO_ASSERT(MainThread(), 0x7F);
+    RB3_LOADDET_ATTRIB_TAP();
     return gRand.Float(f1, f2);
 }
