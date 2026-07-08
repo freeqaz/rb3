@@ -5,6 +5,10 @@ W4→W11 failure the campaign is built to prevent). Four gating axes + one infor
 each boot graded against a reference boot. Produced by
 `scripts/native/loaddet_gate.py --ledger`; machine copy: `evidence/M3-ledger.json`.
 
+> **Axes v2 (close-out review F5):** the axis semantics below were revised from PLAN-R4 §3.4
+> mid-run (disclosed in STATUS; PRIMARY definition untouched, fail-red reproduced under v2).
+> Cite THIS file, not the PLAN, for axis definitions.
+
 ## Run: M3 gate at scale — `--arm both --n 10 --k 300 --jitter 200 --ledger`
 Binary `native/build-agent-R4/rb3-native`. Input-free post-anchor drive under
 `RB3_LOADDET_JITTER=200`. Seam ON = `RB3_FIXED_CLOCK=1 RB3_LOAD_DETERMINISM=1`.

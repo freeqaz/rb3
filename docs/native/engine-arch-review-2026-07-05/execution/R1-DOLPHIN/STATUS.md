@@ -221,3 +221,15 @@ caveat that this is native-active-vignette-envelope vs Wii-settled-pose (see fin
 scripts + milo-trace tool only). Lints held: pointer identity per row; red-team red +
 calibration green RE-RUN on the new capture; convention pin on a shared non-hand bone;
 gender split so an aggregate can't refute; evidence committed.
+
+---
+
+## CORRECTION to the D4 section above (Wave-17 close-out, R5 VERDICT §8)
+
+The D4 "headline" was **dissolved** by the R5 adjudication (`R5-HANDS-ENDGAME/VERDICT.md`,
+`fd2f83ac`): the surviving middle/ring FLOORs are clip curl-interval coverage vs a driverless
+Wii settled pose (different clips per male member; one scalar curl parameter, corr 1.0000;
+slot1's relaxed-region clip floors the same segments at 0.12–0.65°). All cleanly comparable
+channels exonerate native skeleton **statics** to ≤0.65°. D4 remains valuable as machinery +
+the FLOOR table; its mechanism attribution is withdrawn. Discriminator = Lane D5 (articulated
+capture with live clip+frame key). See `R1-DOLPHIN/evidence/D4_findings.md` CORRECTION block.

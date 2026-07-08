@@ -1,0 +1,107 @@
+[
+ {
+  "attempt": 1,
+  "png": "/tmp/bootrng-caps/smoke_01.png",
+  "songms": 21078.8,
+  "class": "WHITE",
+  "mean_luma": 0.4985080659389496,
+  "hi_frac": 29.385850694444443,
+  "mid_sat": 0.17197218899799188,
+  "n_preset": 24,
+  "preset_seq": [
+   "coop_intro.pst",
+   "coop_intro.pst",
+   "coop_loop_cool.pst",
+   "coop_flare_slow.pst",
+   "coop_flare_slow.pst",
+   "coop_silhouettes_spot.pst",
+   "coop_strobe_fast.pst",
+   "coop_strobe_fast.pst",
+   "coop_silhouettes_spot.pst",
+   "coop_flare_fast.pst",
+   "coop_flare_fast.pst",
+   "coop_silhouettes_spot.pst",
+   "coop_flare_fast.pst",
+   "coop_flare_fast.pst",
+   "coop_silhouettes_spot.pst",
+   "coop_flare_fast.pst",
+   "coop_flare_fast.pst",
+   "coop_silhouettes_spot.pst",
+   "coop_flare_fast.pst",
+   "coop_flare_fast.pst",
+   "coop_silhouettes_spot.pst",
+   "coop_flare_slow.pst",
+   "coop_flare_slow.pst",
+   "coop_silhouettes_spot.pst"
+  ],
+  "preset_final_by_cat": {
+   "intro": "coop_intro.pst",
+   "loop_cool": "coop_loop_cool.pst",
+   "flare_slow": "coop_flare_slow.pst",
+   "silhouettes_spot": "coop_silhouettes_spot.pst",
+   "strobe_fast": "coop_strobe_fast.pst",
+   "flare_fast": "coop_flare_fast.pst"
+  },
+  "preset_gdraws": [
+   24867,
+   24868,
+   142546,
+   189055,
+   189056,
+   189089,
+   263056,
+   263057,
+   285243,
+   290755,
+   290756,
+   290836,
+   301785,
+   301786,
+   302422,
+   312821,
+   312822,
+   315405,
+   324187,
+   324188,
+   327614,
+   336259,
+   336260,
+   339890
+  ],
+  "n_ppsrc": 6082,
+  "ppsrc_tail": [
+   "song authoring",
+   "film_contrast_red.pp",
+   "film_contrast_red.pp",
+   0.954,
+   356135
+  ],
+  "gdraw_capture": 356135,
+  "n_lightv": 23566,
+  "valhash_tail": [
+   "8feaa34ae1fdd93c",
+   "a900cd290966f937",
+   "d46a89bc6f63dd18"
+  ],
+  "lightv_tail_envs": {
+   "geom.env": 20,
+   "chars.env": 14,
+   "crowd.env": 6
+  },
+  "ppres_tail": [
+   "world.pp",
+   50.0,
+   15.0,
+   -20.0,
+   0.0
+  ],
+  "scene_tail": [
+   "chars.env",
+   1,
+   "engaged",
+   1,
+   0,
+   0
+  ]
+ }
+]

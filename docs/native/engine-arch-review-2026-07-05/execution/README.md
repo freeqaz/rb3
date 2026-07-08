@@ -588,3 +588,44 @@ Engine → `51640ff` (regen 361 clean).
 regen (`51640ff`, 361 clean); 792 + lineup PASS on flipped defaults; pin `84ccb9e` → `51640ff`.
 **Defaults now ELEVEN.** Wave 17+ = the retrospective roadmap
 (`RETROSPECTIVE/ROADMAP.md` + per-item plans under `RETROSPECTIVE/plans/`).
+
+## Wave 17 results (2026-07-07→08, the INSTRUMENT wave — full roadmap, one lane per item)
+
+**All six roadmap items delivered; zero default flips (instrument wave, as designed); the hands
+saga got external ground truth for the first time and its Wave-16 "genuine fix is a reskin"
+conclusion was itself dissolved.** Engine `51640ff` → `49ca0d6` (single close-out bump; regen
+372 clean). Ran through a mid-wave duplicate-workflow collision (a killed run's lanes survived
+as live orphans; both self-detected via checkpoints, one escalated and yielded — the checkpoint
+protocol's first real fire drill, passed) and a wedged workflow (finished via continuation
+agents). Close-out review: `WAVE17_CLOSEOUT_REVIEW.md` (`a11b22a0`) — substance survived; F1-F8
+record-consistency fixes applied at close-out. Disposition note (F8): workflow `wf_a6d64a07-446`
+wedged mid-retry-storm and is permanently paused; its lanes finished as standalone agents.
+
+| Item | Status | Highlights |
+|---|---|---|
+| R1 Dolphin ground truth (D→D2→D3→D4) | ✅ **GO — the instrument exists** | Bare-DOL boot fails (apploader skipped); retail wbfs boots but layout ≠ map. **Owner's DOL-swap idea = the unlock (D2, `7872bd35`):** Bank-8 debug DOL+SEL swapped into the wit-extracted retail disc; real blocker was the production apploader's 0x80900000 section limit → 1-instruction patch (dev-mode branch); §6.1 ARK risk didn't materialize. 992 map-valid CharBones; guest RAM via `/proc/PID/fd` memfd. D3 (`93e0a37c`) built + validated the join (convention 0.133°, red-team 168.8°, own-bones pointer-proven). D4 (`176480e9`) delivered the FLOOR table — thumbs+anchor <0.06°, middle/ring 14-41°… |
+| R5 hands endgame (Fable adjudication) | ✅ **VERDICT C (`fd2f83ac`) — D4's headline DISSOLVED** | Adversarial re-derivation from the raw sweep: different clips per male member; ONE scalar curl parameter (corr 1.0000); Wii settled pose below both sampled curl intervals; slot1's relaxed-region clip floors the same segments at 0.12-0.65°. **The 14-41° "survivor" = clip curl-coverage, NOT the vert-encoded basis mechanism; native skeleton STATICS externally exonerated ≤0.65° on all cleanly comparable channels.** Pre-registered branch table → Wave 18 is a script lookup (GT-A palette forensics prior / GT-B anim-basis / GT-C decode / GT-D closure pre-authorized). §8 standing corrections: Wave-16's "genuine fix is an engine reskin" line is a banned citation; `RB3_NO_SKIN_CLAMP` does NOT touch band hands; bone-world comparisons are structurally blind to offset-class arms → palette/skinned-output gates (G5′) + matched-frame E1 mandatory. **Lane D5 (articulated Wii capture, live clip+frame key) IN FLIGHT.** |
+| R2 skinning fixtures + oracle validation | ✅ (`363542e7`, engine `04651e1`) | Palette probe landed FIRST (A1); harness + Suite C committed after finding the prior instance left them uncommitted with a dangling CMake reference. Prior captures were provenance-broken (NO-GO honestly declared); clean A/B recapture reproduces the Wave-15/16 story on REAL data: default arm IS the ceiling (Tier-1 87.3°/42.6° seen), repoint arm IS the torn blend — known-GOOD = body meshes. `M_BlendSpread` VALID 6.95× zero-overlap; rb3-tests 114/0/8-skip. F3 debt: re-capture good-body (legacy provenance, repeated frame) before it backs G5′. |
+| R3 uidump + drawlog provenance | ✅ (engine `753ed20`, rb3 ×5 commits) | `RB3_DRAWLOG_PROV` sidecar + `/api/uidump` + ROI killer query (`uidump_query.py`). Validation by RETRODICTION from the shipped build: W14 red-band = one query pair (LoadOp Clear→3.45% red vs Load→0.12%, same quad); ROWFIX main-vs-alt split prints directly (0.18 dark vs 0.75 light). 792 byte-identical prov-off. v1 gap (top Wave-18 UI follow-up): authored-walk misses instanced list rows + overshell HUD (draw-side capture covers them). |
+| R4 loader determinism + ledger | ✅ **PRIMARY 10/10** (merge `65c5092e`) | Attribution refuted the inherited guess (Wind fixed-count; real divergents: `RndParticleSys::InitParticle` dominant + `CamShot::Shake` + `CreateParticles` + `CharEyes::NextLook` + `RandomGroupSeq` boot). `RB3LoadDetStream` per-tag isolation → ON-arm stream-position spread 0 (10/10, contention+jitter) vs OFF 7179 fail-red; G2 flag-OFF inert; G3 Wii-match untouched. Classjson row → PASS-PRIMARY (stays opt-in; flag-ON gameplay re-golden precondition recorded). **The Wave-10 visual-gate noise floor is dead — WHITE re-grade + wash co-sampling unblocked.** |
+| R6 process lints → standing template | ✅ (`ee3a4dc8` + `a55c53b4`) | `KICKOFF_TEMPLATE.md` with the ten §4 lints as a mandatory pre-dispatch checklist + the owner-directed close-out section (post-wave Fable review → docs → findings summary to owner). This close-out is its first execution. |
+
+**Coordinator actions:** collision reaped (kept the instance with committed state per lane);
+R4 branch merged; classjson regen ×2 (372 clean; R4 PASS-PRIMARY + F1 row amendment `49ca0d6`);
+pin `51640ff`→`49ca0d6`; gates on final pin: drawlog 792 canonical PASS, lineup PASS, rb3-tests
+114/0; F1-F5 corrections applied (D4/STATUS correction blocks, ROADMAP R5 row, LEDGER axes-v2
+marker, superseded first-instance evidence deleted in favor of committed aggregates).
+
+### Wave 18 menu (from `WAVE17_CLOSEOUT_REVIEW.md`)
+
+- **Flagship: D5 branch-table execution** — D5's articulated capture lands → run the
+  pre-registered branch (GT-A palette forensics prior, substrate = R2 palette dumps; G-D5-1..4
+  + G5′ as written) + its funded follow-on (fix per branch letter).
+- **R4 M4 cash-in:** WHITE re-grade + wash per-FX co-sampling — charter must embed the
+  ledger-PASS validity precondition (F6).
+- **R2 net-tightening:** engine-emitted Tier-1 field in `RB3_PALETTE_DUMP` (flips VerdictTable
+  SKIP→real) + good-body re-capture (F3) + a cheap middle/ring curl regression assertion.
+- **Optional: R3 v1 walk gap** (instanced rows + overshell HUD authored-side join).
+- **Deferred:** 4→8 lights; W2.4 BandPatchMesh (twice-burned, same blend machinery as the hands
+  endgame — do not run concurrently with the D5 branch); web-build confirmation rides as a tail
+  gate on the next flip wave, not a lane.

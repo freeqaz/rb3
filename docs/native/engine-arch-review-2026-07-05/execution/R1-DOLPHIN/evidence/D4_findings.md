@@ -127,3 +127,23 @@ python3 scripts/analysis/interbone_framematch.py \
 ```
 Raw native sweep: `D4_native_sweep_raw.tar.gz` (32 dumps + manifest, each carrying its
 clip+frame). Full per-pair per-member numbers: `D4_delta_table.json`.
+
+---
+
+## CORRECTION (Wave-17 close-out, per R5 VERDICT §8 — SUPERSEDES the interpretation above)
+
+The R5 adjudication (`execution/R5-HANDS-ENDGAME/VERDICT.md`, rb3 `fd2f83ac`) adversarially
+re-derived this table from the committed raw sweep and **dissolved the headline**:
+
+- The two male members play **different clips** (`player3_m` vs `player0_m` — the 3.5×
+  FLOOR disparity is a clip variable); every finger pair is driven by **one scalar curl
+  parameter** (cross-pair correlation 1.0000, all members); both male clips sample one
+  shared monotone 1-D pose family; the Wii settled pose sits **below** both sampled curl
+  intervals — while slot1, whose clip covers the relaxed region, floors the mid-segment
+  pairs at 0.12–0.65°.
+- The surviving 14–41° middle/ring FLOOR is therefore **clip curl-interval coverage vs a
+  driverless settled pose**, NOT the vert-encoded inter-bone basis mechanism. The phrase
+  "confirming the mechanism" above is a **banned citation** (VERDICT §8.1) — do not quote it.
+- Scope correction (VERDICT/close-out F2): with `D4_wii_drivers.json` showing **0 live player
+  clip drivers**, this is a settled-pose-vs-envelope FLOOR table, not a matched
+  articulated-frame comparison. The articulated discriminator is **Lane D5** (VERDICT §4).
