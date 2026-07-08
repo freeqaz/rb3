@@ -81,3 +81,15 @@ pose fling. Shipping a flag that does nothing would be noise; reverted.
 - `burst-off-dl10-float.json` — the drawlog for the float frame
 
 Checkpoint: `/tmp/wave22-checkpoints/FOREARM.json` (verdict recorded).
+
+---
+## ERRATA (Wave-22 close-out review `6c972e88`, ERR-2, ERR-4)
+- ERR-2 (severity RE-RATED LOW→MED): the float is NOT "transition-only" — it recurs on in-song
+  band-closeup camera-cut frames (6/16 of the lane's own burst) plus count-in, and is visible in
+  the HUD lane's own gameplay A/B captures at score 260 AND the coordinator's post-flip capture at
+  score 525 (`W22-HUD/evidence/`, `/tmp/w22-flip/burst_03.png` — exploded white arm/hand spike-fans
+  either side of the guitarist). Screen-third shard fan. Wave-23 upgrades this from parked to a
+  DISCOVERY-scoped pose-driver lane.
+- ERR-4: "ZERO in steady gameplay" is corrected — zero in all OFF steady frames; one ON steady
+  frame (dl_01, skinned=307) showed 6 draws, attributed to burst nondeterminism (fix fired 0×), so
+  the burst-ROI metric carries ~±6 noise.

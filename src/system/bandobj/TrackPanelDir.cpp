@@ -341,8 +341,20 @@ void TrackPanelDir::ConfigureTracks(bool b) {
                 // hidden (see the SetShowing(b15) below), making their
                 // neutralization visually inert either way. Coordinator flips the
                 // default at close-out (cf RB3_HUB_TICKER_YFIX, 512a1bde).
-                static const bool sScoreboardTopRight =
-                    !!getenv("RB3_HUD_SCOREBOARD_TOPRIGHT");
+                // Coordinator flip (Wave-22 close-out, E1-confirmed top-right vs the
+                // Wii GT + review-endorsed): default-ON, opt-out-wins. Default now KEEPS
+                // the scoreboard top-right (skips K9's neutralization);
+                // RB3_HUD_SCOREBOARD_TOPRIGHT_OFF=1 (or RB3_HUD_SCOREBOARD_TOPRIGHT=0)
+                // restores K9's mid-screen neutralization. 13th default-ON.
+                static int sScoreboardTopRight = -1;
+                if (sScoreboardTopRight < 0) {
+                    if (getenv("RB3_HUD_SCOREBOARD_TOPRIGHT_OFF"))
+                        sScoreboardTopRight = 0;
+                    else {
+                        const char *e = getenv("RB3_HUD_SCOREBOARD_TOPRIGHT");
+                        sScoreboardTopRight = (e && e[0] == '0') ? 0 : 1;
+                    }
+                }
                 if (!sScoreboardTopRight)
                     neutralizeAnchor(Find<RndTransAnim>("scoreboard_to_top.tnm", false));
                 neutralizeAnchor(Find<RndTransAnim>("applause_meter_to_top.tnm", false));

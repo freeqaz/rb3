@@ -786,3 +786,22 @@ withdrawn.** Engine pin `6e6387c`→`be70ca8` (flag classification only). TWELVE
 - **T3 pinning mode** (all-3-timeline-axes collapse at N≥6; honest NO-GO if songClock is
   wall-clock-fundamental).
 - Half-lanes: N-tail bad-torn tier1 recapture; R3 v1 walk gap.
+
+## Wave 22 — VISUAL PUSH: HUD score-position FIXED (13th default) ∥ FOREARM narrowed ∥ Wave-23 menu
+
+Owner: *"keep pushing through the visual bugs we can find."* Kickoff `26893122`→acceptance
+`81a81de5` (pre-review `08d62a96` A1-A9), close-out review `6c972e88` ACCEPT-WITH-ERRATA
+(ERR-1..5, flip ENDORSED). Engine pin `be70ca8`→`4a72845` (flags), census 386.
+
+| Lane | Result |
+|---|---|
+| **HUD — score/star (WIN)** | **Score-HUD mid-screen → top-right FIXED + FLIPPED default-ON (13th default, `RB3_HUD_SCOREBOARD_TOPRIGHT`, opt-out `_OFF`).** Root cause: our own default-ON K9 (`RB3_APPLY_HANDLER_FIX_OFF`) zeroed the scoreboard's right.grp.x on a false "retail SP = top-center" premise; the Wii GT (`yt_qRagnZCIMzk_gameplay_*`) is top-RIGHT. Fix re-scopes K9 (single-player-gated → no MP regression; ConfigureTracks objdiff 100% HX_NATIVE-only; rb3-tests 116/0). Coordinator E1 PASS (score pill 88% width, `d15484f1`). Star-meter "never fills" = FALSE ALARM (fills correctly, 3 pips at 3.4★; the 07-02 diff caught it <1.0★). |
+| **FOREARM — narrowed, deferred (MED)** | Binding-first discriminator EXONERATED binding (own==bound at draw 75/75) → it's a POSE bug: `bone_R-foreArm` driven to world y≈+182 on in-song band-closeup camera-cut frames, bilateral (not a transpose), no valid repoint target (the member-subtree foreArm/hand IS the mis-posed magnet). Code reverted, tree==HEAD (`669c244b` docs-only). **ERR-2 re-rated LOW→MED** (recurs on camera cuts, visible in HUD + flip captures = the exploded arm/hand spike-fans). Handoff: Wave-23 pose-driver discovery lane. |
+| **SWEEP — Wave-23 menu** | Ranked discovery (scripts+docs only): **S1** hub mid-street crowd absent (MED, ROI-confirmed), **S2** hub over-bright grade (MED), **S3** part/diff picker cramped, **S4** player1 avatar edge-crop, **S5** now-bar combo glow. Refuted 07-02 #6 stray-red-bar (= subway backdrop). Confirmed shipped: hub-ticker/song_select-overlap/album-art. |
+
+### Wave 23 menu (from `WAVE22_CLOSEOUT_REVIEW.md` Q6 ordering)
+1. **S2 hub over-bright grade discriminator FIRST** (cheapest; A/B `RB3_PP_OFF`/`RB3_UI_POST_GRADE_OFF` + the shipped menu-lighting default; re-scopes S4).
+2. **S1 hub mid-street crowd absent** (crowd-rebind family first; dump hub `.milo` owners).
+3. **FOREARM pose-driver** — DISCOVERY-scoped lane (upgraded from parked by ERR-2), HARD STOP before fix code, binding closed; find what poses `bone_R-foreArm` high on camera cuts (walk-on/count-in freeze class `67e87ae1`?).
+4. **S5** now-bar/combo glow (needs driven-combo capture).
+5. Defer S3 (no GT) / S4 (authored, C8+hands overlap).

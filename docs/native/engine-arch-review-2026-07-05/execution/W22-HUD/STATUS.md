@@ -56,3 +56,14 @@ star" because it captured early-song (pre-1.0 star = the correct initial state:
 ## Coordinator ask
 Flip `RB3_HUD_SCOREBOARD_TOPRIGHT` default-ON at close-out (add an `_OFF` opt-out,
 mirroring the HUB_TICKER_YFIX lifecycle) — this is the retail-correct HUD position.
+
+---
+## ERRATA (Wave-22 close-out review `6c972e88`, ERR-1, ERR-5)
+- ERR-1: the "applause/mtv neutralization is visually inert" claim is STANDARD-PLAY-scoped —
+  BotB `SetupApplauseMeter` (TrackPanelDir.cpp:515) CAN show `applause_meter.grp`; that path is
+  unchanged by this fix and has no GT. Non-blocking watch item.
+- ERR-5: the flag-OFF "byte-identical" gate was PASS-BY-CONSTRUCTION (code inspection of the
+  wrapped call), not a measured drawlog run. The coordinator flip supplies the measured half:
+  post-flip DEFAULT-run capture `evidence/05_FLIP_default_topright_score525.png` shows the
+  score pill top-right (x≈88% width) with NO flag set, drawlog-golden 792 PASS (scoreboard
+  reposition is in-gameplay, past the 60-frame boot golden window).
