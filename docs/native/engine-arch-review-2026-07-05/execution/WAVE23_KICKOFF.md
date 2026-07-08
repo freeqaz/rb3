@@ -6,9 +6,53 @@ menu). Owner directive: *"keep pushing through the visual bugs we can find."*
 Engine pin `4a72845`. THIRTEEN defaults ON. **FIX + DISCOVERY wave** — flag-gated fixes
 default-OFF; coordinator-only default decisions at close-out.
 
-## COORDINATOR ACCEPTANCE (<pending review>)
+## COORDINATOR ACCEPTANCE (from `WAVE23_REVIEW.md`, rb3 `1cdff0ec` — DISPATCH-WITH-AMENDMENTS)
 
-_To be filled from `WAVE23_REVIEW.md`._
+**A1–A9 adopted verbatim and BINDING; the review file overrides this kickoff wherever they
+differ.** Two lanes materially re-anchored (A1 GRADE mechanism, A4/A5 CROWD target). Headlines:
+
+- **A1 (GRADE mechanism — the kickoff's 2-flag A/B was incomplete):** the hub backdrop rides
+  the shipped world.cam VENUE-LIGHT path (wave-5 "menu-contrast Fix 3",
+  `Rnd_Wgpu_RB3.cpp:1196-1218`); if it stops engaging the frame falls to the flat
+  "1.0 white dir + 0.45 grey ambient" flood (`:1327-1335`) = exactly SWEEP's wash.
+  Discriminator = FOUR arms + probe: `RB3_PP_OFF=1`, `RB3_UI_POST_GRADE_OFF=1` (dedupe,
+  expect NULL on backdrop — its direction re-washes, can't darken), **`RB3_VENUE_LIGHT_OFF=1`
+  (PRIME: if the hub look doesn't change, venue-light isn't engaging on the hub)**,
+  `RB3_WASH_PROBE=1` (engagement/grey-key digest, `:1119-1145`); optional
+  `RB3_VENUE_FALLBACK_FIX=1` (`:1327-1340`).
+- **A2 (GRADE numeric):** re-measure the wave-5 hub 3x3 contrast metric ON/OFF vs the history
+  (2.6:1 → target ~10:1) so regression-vs-residual is decided NUMERICALLY. No-fix branch
+  reframed: not "Wii might be brighter" (no Wii hub GT) but "still meets the wave-5 tuned
+  contrast envelope → residual, close as known-limitation".
+- **A3 (GRADE guardrail):** NO edits in game.cam/`kGamePlaying` branches; gameplay matched A/B
+  + UIGRADE flush-count parity + song_select parity band (RB3_UI_POST_GRADE 1.110→1.049 caveat
+  must not worsen) + drawlog-792 + batch_objdiff; new knob default-OFF; thirteen defaults intact.
+- **A4 (CROWD re-anchored — NOT main_hub.milo):** the street scene is
+  `world/vignette/shell/gen/sv3_a.milo_xbox` (`config/vignettes.dta:4-28`, fresh-profile pick);
+  the walkers ARE authored there: `crowd_chars.grp`/`characters.grp` +
+  `sv3/a/streetslomo/streetslomo{,_clips,_ao}.milo` + shared `world/shared/gen/vignette_chars.milo_xbox`,
+  env `street_slomo_char.env`. Census these BY NAME in the live tree first
+  (`rb3_http_handlers.cpp:690` pos-dump + uidump ROI).
+- **A5 (CROWD tree — crowd-rebind is MISDIRECTED):** `strings sv3_a` has ZERO WorldCrowd →
+  `RebindCrowdCharBonesToOwnSkeleton` never touches these. Discriminator = (a1) sub-/shared-milo
+  load failure | (b) loaded-but-not-drawn (showing/draw-gate) | (c) mis-posed/off-screen | (d)
+  loaded-but-never-animated (CharClipSet/driver not polled — cf hack-audit "chars.milo + CharSync
+  Poll"). (a2 "not authored") is PRE-REFUTED. `RB3_NO_CROWD_REBIND` = 1-boot dedupe ONLY.
+- **A6 (CROWD guardrail):** NO `BandCharacter.cpp` edits; NO `Crowd.cpp:884-1000` edits absent
+  WorldCrowd proof; any fix = a NEW seam, vignette-dir-scoped (sv3_a/streetslomo name-gated),
+  default-OFF.
+- **A7 (FOREARM — no probe code needed for name-match):** `BAND_ANIM_PROBE='*'` wildcard
+  already works (`BandCharacter.cpp:672`, prints real member Name() + playing clip) — run `'*'`
+  FIRST (Wave-22's "player3" guess was wrong), set `BAND_ANIM_BONE=bone_R-foreArm.mesh`. The
+  real gap = the `%30` throttle (`:700`) misses camera-cut frames → amend to EVENT-triggered
+  emit (bone world-y > threshold), probe-only edit, allowed under lint 10.
+- **A8 (FOREARM):** do NOT gate discovery on exact-frame reproducibility (camera cuts ±6 noise);
+  long fixed-clock burst + event-triggered probe is the instrument. Deliverable = named driver +
+  Wave-24 charter. If the driver is the walk-on/count-in freeze class (`67e87ae1`), note memory's
+  caveat that count-in thin-geo shards were a SEPARATE pose-independent residual — don't conflate
+  without probe evidence.
+- **A9 (wave-wide GT):** `yt_mhKNp9uAT48_*` is 360/PS3 — content/layout authoritative (native
+  loads the same 360 assets), absolute color CAPPED → E1 uses structural/relative metrics ONLY.
 
 - **Hazard note:** engine tree carries uncommitted `M FxSendNative.cpp`; rb3 tree carries
   `native/src/rb3_session_trace.cpp` — never stage either. Hands are CLOSED — no lane may
