@@ -1,0 +1,483 @@
+{
+  "verdict": "DEGENERATE",
+  "instrument_validated": false,
+  "n_shots": 37,
+  "covariate_distinct": {
+    "fx_emit_win": 2,
+    "light_changes_win": 1,
+    "songms": 2,
+    "frame": 2,
+    "light_pos_amp": 1
+  },
+  "outcome_distinct": {
+    "hi_frac": 37,
+    "mean_luma": 37,
+    "class": 3
+  },
+  "refused": {
+    "fx_emit_win": 2,
+    "light_changes_win": 1,
+    "songms": 2,
+    "frame": 2,
+    "light_pos_amp": 1
+  },
+  "n_min_distinct": 5,
+  "black_excluded": 0,
+  "note": "degenerate covariate(s): each has < 5 distinct values across the joined shots (stale/collapsed join). No separation claim computed \u2014 v1's false instrument_validated is mechanically prevented.",
+  "mode": "live",
+  "tag": "wash_v2",
+  "bin": "native/build-T1/rb3-native",
+  "win_smooth": 2,
+  "off_boot": {
+    "guard": "OFF",
+    "shots": [
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.9098307291666667,
+        "mean_luma": 0.069549560546875,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.895941840277778,
+        "mean_luma": 0.0693872720003128,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.2415364583333333,
+        "mean_luma": 0.06321204453706741,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 0.9225260416666667,
+        "mean_luma": 0.0579955168068409,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 0.9369574652777778,
+        "mean_luma": 0.05670956149697304,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 0.9701605902777778,
+        "mean_luma": 0.05965081602334976,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 0.9751519097222222,
+        "mean_luma": 0.05929321423172951,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 0.9998914930555556,
+        "mean_luma": 0.059868574142456055,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.0247395833333335,
+        "mean_luma": 0.06045999005436897,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.0514322916666667,
+        "mean_luma": 0.060222089290618896,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.0869140625,
+        "mean_luma": 0.062348417937755585,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.1617838541666667,
+        "mean_luma": 0.06362111121416092,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.138671875,
+        "mean_luma": 0.06424368172883987,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.1684027777777777,
+        "mean_luma": 0.06519857048988342,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.2034505208333335,
+        "mean_luma": 0.06689847260713577,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.1809895833333335,
+        "mean_luma": 0.06629728525876999,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.2175564236111112,
+        "mean_luma": 0.10905536264181137,
+        "class": "NEARBLACK",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.2281901041666665,
+        "mean_luma": 0.1345580816268921,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.2574869791666667,
+        "mean_luma": 0.17339083552360535,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.5212673611111112,
+        "mean_luma": 0.21917158365249634,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.4557291666666665,
+        "mean_luma": 0.2510773241519928,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 1.5452473958333335,
+        "mean_luma": 0.27595528960227966,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 2.2250434027777777,
+        "mean_luma": 0.2955571413040161,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 24.58029513888889,
+        "mean_luma": 0.40056565403938293,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 26.590928819444443,
+        "mean_luma": 0.4467586278915405,
+        "class": "WHITE",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 28.082139756944446,
+        "mean_luma": 0.5027540326118469,
+        "class": "WHITE",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 21009.0,
+        "frame": 5098,
+        "hi_frac": 28.368489583333336,
+        "mean_luma": 0.5699127316474915,
+        "class": "WHITE",
+        "fx_emit_win": 1489,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 27.649631076388886,
+        "mean_luma": 0.6287099719047546,
+        "class": "WHITE",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 23.331705729166664,
+        "mean_luma": 0.6767825484275818,
+        "class": "WHITE",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 13.835828993055554,
+        "mean_luma": 0.6993232369422913,
+        "class": "WHITE",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 8.060221354166666,
+        "mean_luma": 0.6898739337921143,
+        "class": "WHITE",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 6.184461805555555,
+        "mean_luma": 0.6545599102973938,
+        "class": "WHITE",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 4.407660590277778,
+        "mean_luma": 0.5817335844039917,
+        "class": "NEUTRAL",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 2.6885850694444446,
+        "mean_luma": 0.4820629954338074,
+        "class": "NEUTRAL",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 1.8453776041666667,
+        "mean_luma": 0.3375106751918793,
+        "class": "NEUTRAL",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 1.3628472222222223,
+        "mean_luma": 0.24669241905212402,
+        "class": "NEUTRAL",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      },
+      {
+        "songms": 27408.4,
+        "frame": 5125,
+        "hi_frac": 1.1417100694444444,
+        "mean_luma": 0.1514870524406433,
+        "class": "NEUTRAL",
+        "fx_emit_win": 13656,
+        "light_changes_win": 13,
+        "light_pos_amp": 0.0
+      }
+    ],
+    "phase_meta": {
+      "guard_hits": 28371,
+      "fx_offs": [
+        "0x60251e",
+        "0x60274a",
+        "0x602781",
+        "0x6027b8",
+        "0x60285b",
+        "0x602891",
+        "0x602e2a",
+        "0x602f04",
+        "0x602f3b",
+        "0x602fb6",
+        "0x602fec",
+        "0x603023",
+        "0x60305a",
+        "0x6030b3",
+        "0x60310c",
+        "0x6031b1",
+        "0x6031e8",
+        "0x60321f",
+        "0x603256",
+        "0x603517",
+        "0x603563",
+        "0x6035d2",
+        "0x603a7d",
+        "0x603ab7",
+        "0x603af1",
+        "0x603b2e",
+        "0x604f75",
+        "0x60530e",
+        "0x605332",
+        "0x60537f"
+      ],
+      "fx_syms": [
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1280",
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1281",
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1285",
+        "RndParticleSys::CreateParticles(float, float, Transform const&) @ src/system/rndobj/Part.cpp:1064",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:629",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:652",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:653",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:654",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:661",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:662",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:704",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:709",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:710",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:718",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:719",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:720",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:721",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:726",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:731",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:739",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:740",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:741",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:742",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:764",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:765",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:769",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:824",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:826",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:828",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:830"
+      ],
+      "n_attrib_offs": 61
+    },
+    "attempt_disclosure": {
+      "attempts": 37,
+      "captured": 37,
+      "discarded": 0,
+      "discarded_reasons": []
+    },
+    "log": "/tmp/r4m4-wash-v2/wash_v2_off.engine.log",
+    "n_shots": 37
+  },
+  "capture_lints": "scripts/native/capture_lints.py"
+}
