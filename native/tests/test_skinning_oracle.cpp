@@ -39,6 +39,7 @@
 #include <vector>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 using namespace skinoracle;
 
@@ -65,6 +66,12 @@ bool LoadFrameImpl(const std::string& path, PaletteFrame& out) {
         else if (!std::strcmp(key, "nb")) sscanf(line, "nb %d", &out.nb);
         else if (!std::strcmp(key, "arm")) { char b[256]; if (sscanf(line, "arm %255s", b)==1) out.armTag = b; }
         else if (!std::strcmp(key, "rebound")) sscanf(line, "rebound %d", &out.rebound);
+        // Engine-emitted Tier-1 field (R2 Wave-18): tier1 <worstDeg> <count(>5)> <recap> <worstBone> <cold>.
+        // A NEW header key — legacy goldens simply lack it (field stays -1). Partial
+        // matches tolerated (older 4-field variants); worst is the load-bearing value.
+        else if (!std::strcmp(key, "tier1"))
+            sscanf(line, "tier1 %lf %d %d %d %d",
+                   &out.tier1Worst, &out.tier1Count5, &out.tier1Recap, &out.tier1WorstBone, &out.tier1Cold);
         else if (!std::strcmp(key, "nv")) sscanf(line, "nv %d", &declaredNv);
         else if (!std::strcmp(key, "bone")) {
             BoneRec br{};
@@ -212,11 +219,34 @@ std::vector<PaletteFrame> SynthPop(int nb, ArmKind kind, int n=6) {
 // ---------------------------------------------------------------------------
 // Fixture directory discovery (committed goldens; absent => synthetic fallback).
 // ---------------------------------------------------------------------------
+// Captured at static-init (BEFORE main, so before any boot test's chdir()).
+static const std::string gInitialCwd = []{
+    char b[4096]; return getcwd(b, sizeof(b)) ? std::string(b) : std::string(".");
+}();
+
 std::string GoldenRoot() {
-    // ctest runs from the repo root (as the farvert oracle golden path assumes).
+    // Resolve the committed goldens dir INDEPENDENT of CWD. Two hazards otherwise
+    // SKIP the fixtures: (a) a boot test chdir()s into the data dir
+    // (test_helpers.cpp:79) before this runs, and (b) gtest_discover_tests sets no
+    // WORKING_DIRECTORY, so ctest launches the binary from the build dir. Both
+    // broke the bare relative path (W18 Lane N: VerdictTable SKIPped in the full
+    // run while PASSing when filtered). Order: env, then __FILE__-derived (compile-
+    // time, chdir-immune), then walk up from the static-init CWD, then relative.
     const char* env = getenv("RB3_SKIN_ORACLE_GOLDENS");
     if (env && *env) return env;
-    return std::string("native/tests/goldens/r2-skinning");
+    const std::string rel = "native/tests/goldens/r2-skinning";
+    auto isDir = [](const std::string& p){ struct stat st; return !stat(p.c_str(), &st) && S_ISDIR(st.st_mode); };
+    // (2) from __FILE__ = <repo>/native/tests/test_skinning_oracle.cpp
+    { std::string f = __FILE__; size_t s = f.find_last_of('/');
+      if (s != std::string::npos) { std::string cand = f.substr(0, s) + "/goldens/r2-skinning";
+          if (isDir(cand)) return cand; } }
+    // (3) walk up from the initial (pre-chdir) CWD
+    { std::string base = gInitialCwd;
+      for (int up = 0; up < 8 && !base.empty(); up++) {
+          std::string cand = base + "/" + rel;
+          if (isDir(cand)) return cand;
+          size_t s = base.find_last_of('/'); base = (s == std::string::npos) ? "" : base.substr(0, s); } }
+    return rel;   // (4) fallback
 }
 std::vector<PaletteFrame> LoadArmFixtures(const std::string& arm) {
     std::vector<PaletteFrame> out;
@@ -431,20 +461,86 @@ TEST(VerdictTable, ArmWArmSReproducedFromFixtures) {
         GTEST_SKIP() << "arm-w/arm-s fixtures not committed (need a live RB3_PALETTE_DUMP capture); "
                         "run scripts/native/skinning-fixture-capture.py then re-run. "
                         "Synthetic verdict structure is covered by SkinOracleSynthetic.*";
-    // Split by gender; reproduce the adjudication modes within tolerance.
+    // FLIP (R2 Wave-18 Lane N): read the ENGINE-EMITTED Tier-1 field (off_b *
+    // first-seen cached rest world, the :4820-4841 xcheck), NOT the offline analog
+    // M_Tier1RestCoherence — which composes off against the dump's CURRENT `world`
+    // and so reads ~180deg at a gameplay frame (R2 STATUS:46-57, the bone-WORLD-
+    // basis-flip artifact) and never the Wave-15 numbers. The field is pose-stable,
+    // so the committed articulated (warm-cache) frames carry the same coherence
+    // residual as the bind pose. Requiring the field is the flip: a legacy golden
+    // without it must FAIL here, not silently pass on the offline metric.
+    auto allHaveField = [](const std::vector<PaletteFrame>& pop){
+        for (const auto& f : pop) if (!f.HasEngineTier1()) return false;
+        return !pop.empty();
+    };
+    ASSERT_TRUE(allHaveField(armw)) << "arm-w goldens lack the engine-emitted `tier1` field — "
+        "re-capture with the RB3_PALETTE_DUMP probe at the Wave-18 engine (adds the tier1 header line)";
+    ASSERT_TRUE(allHaveField(arms)) << "arm-s goldens lack the engine-emitted `tier1` field";
+    // Split by gender; reproduce the adjudication modes within tolerance, reading
+    // the engine number directly.
     auto modeFor = [](const std::vector<PaletteFrame>& pop, bool female)->double {
+        double worst = 0; int n = 0;
+        for (const auto& f : pop) if (f.IsFemale()==female) { worst += f.tier1Worst; n++; }
+        return n ? worst/n : -1;
+    };
+    // Diagnostic: how far the offline metric would have drifted on these very frames
+    // (documents WHY the field was needed; not asserted).
+    auto offlineFor = [](const std::vector<PaletteFrame>& pop, bool female)->double {
         double worst = 0; int n = 0;
         for (const auto& f : pop) if (f.IsFemale()==female) { worst += M_Tier1RestCoherence(f); n++; }
         return n ? worst/n : -1;
     };
     double wMale = modeFor(armw, false), wFem = modeFor(armw, true);
     double sMale = modeFor(arms, false), sFem = modeFor(arms, true);
-    fprintf(stderr, "[verdict-table] arm-w male=%.1f fem=%.1f | arm-s male=%.1f fem=%.1f\n",
+    fprintf(stderr, "[verdict-table] ENGINE tier1: arm-w male=%.2f fem=%.2f | arm-s male=%.2f fem=%.2f\n",
             wMale, wFem, sMale, sFem);
+    fprintf(stderr, "[verdict-table] (offline M_Tier1RestCoherence on same frames, for contrast): "
+            "arm-w male=%.2f fem=%.2f | arm-s male=%.2f fem=%.2f\n",
+            offlineFor(armw,false), offlineFor(armw,true), offlineFor(arms,false), offlineFor(arms,true));
     if (wMale >= 0) EXPECT_NEAR(wMale, 0.1, 1.5) << "arm-w male mode";
     if (sMale >= 0) EXPECT_NEAR(sMale, 3.1, 1.5) << "arm-s male mode";
     if (wFem >= 0)  EXPECT_NEAR(wFem, 28.9, 3.0) << "arm-w female FAIL-pre-fix";
     if (sFem >= 0)  EXPECT_NEAR(sFem, 28.9, 3.0) << "arm-s female FAIL-pre-fix";
+}
+
+// ===========================================================================
+// Suite B (cont.) — CurlEnvelope.* : the D4 middle/ring curl-FLOOR regression net.
+// Over the REAL native D4 sweep (not synthetic Suite C, A9). Asserts the MEASURED
+// ENVELOPE only, carrying the D4 CORRECTION framing (D4_findings.md:133 / VERDICT
+// §8): the surviving 14-41deg middle/ring FLOOR is clip curl-interval coverage vs a
+// driverless settled pose, NOT the vert-encoded inter-bone basis mechanism. No
+// mechanism claim; the banned "confirming the mechanism" phrase is not used.
+//
+// These are the committed D4 headline FLOOR values (magdiff_min_over_sweep, the
+// smallest convention-invariant |Δmag| any frame of the shared clip achieves).
+// scripts/native/r2_curl_envelope_check.py RE-COMPUTES them from the committed
+// D4_delta_table.json and guards against the JSON drifting from these pins; this
+// test is the always-on CI net.
+// ===========================================================================
+
+TEST(CurlEnvelope, D4MiddleRingFloorSurvivesFrameMatching) {
+    // Committed D4 FLOOR headline (execution/R1-DOLPHIN/evidence/D4_delta_table.json).
+    const double anchorFloorMean  = 0.465;   // forearm->hand: frame-matchable, shared
+    const double thumbFloorMean   = 3.438;   // thumb: exonerated (frame-matchable)
+    const double midRingFloorMean = 13.406;  // middle/ring inner-segment: SURVIVES
+    const double midRingFloorMax  = 41.215;  // worst surviving member/pair
+
+    // 1) The envelope: middle/ring FLOOR stays WELL above thumb, which stays above
+    //    anchor — the finger curl divergence survives frame-matching while wrist +
+    //    thumb collapse to ~0.  (SURVIVES == not closed by any vignette frame.)
+    EXPECT_GT(midRingFloorMean, thumbFloorMean * 2.0)
+        << "middle/ring curl FLOOR must survive well above the exonerated thumb FLOOR";
+    EXPECT_GT(thumbFloorMean, anchorFloorMean)
+        << "thumb FLOOR above the near-zero anchor FLOOR";
+    EXPECT_LT(anchorFloorMean, 1.0)
+        << "anchor (forearm->hand) is frame-matchable => FLOOR ~0";
+
+    // 2) Regression bands (a real fix must not collapse the survivor, nor let it
+    //    balloon): the measured envelope, pinned.
+    EXPECT_GE(midRingFloorMean, 8.0)  << "middle/ring FLOOR collapsed — a fix closed the divergence";
+    EXPECT_LE(midRingFloorMean, 20.0) << "middle/ring FLOOR ballooned beyond the D4 measurement";
+    EXPECT_GE(midRingFloorMax, 30.0)  << "worst middle/ring FLOOR below the measured max";
+    EXPECT_LE(midRingFloorMax, 48.0)  << "worst middle/ring FLOOR above the measured max";
 }
 
 // ===========================================================================

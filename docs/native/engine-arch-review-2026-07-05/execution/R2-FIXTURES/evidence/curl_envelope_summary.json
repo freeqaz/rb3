@@ -1,0 +1,15 @@
+{
+  "anchor_floor_mean": 0.3124,
+  "thumb_floor_mean": 3.4375,
+  "midring_floor_mean": 13.4061,
+  "midring_floor_max": 41.215,
+  "committed_headline": {
+    "anchor_magdiff_at_matched_mean": 0.465,
+    "thumb_magdiff_FLOOR_mean": 3.438,
+    "middlering_magdiff_FLOOR_mean": 13.406,
+    "middlering_magdiff_FLOOR_max": 41.215
+  },
+  "framing": "measured envelope only (D4 CORRECTION / VERDICT \u00a78) \u2014 NOT a mechanism claim",
+  "result": "PASS",
+  "violations": []
+}

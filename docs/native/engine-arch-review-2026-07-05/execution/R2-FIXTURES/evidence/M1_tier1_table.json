@@ -1,0 +1,61 @@
+{
+  "artifact": "R2 M1 Tier-1 rest-coherence table (engine-emitted field, Wave-18 Lane N)",
+  "engine_head": "49ca0d6d820a992fa9d56c8082f10dd54aa3e08d",
+  "field": "tier1 = max_b angle(off_b * FIRST-SEEN cached rest world, I), deg (RB3_HANDS_ATTACH_PROBE :4820-4841 xcheck; pose-stable). NEW RB3_PALETTE_DUMP header key.",
+  "provenance": "scripts/native/skinning-fixture-capture.py --arm <arm> (RB3_FIXED_CLOCK=1); arm-w also sets SHARD_RATIO_DBG=1 so the SHARD_GUARD_OFF-gated diagnostic block still emits the dump.",
+  "arms": {
+    "arm-w": {
+      "env": "RB3_NO_HEAD_REBIND=1 RB3_NO_SKIN_CLAMP=1 SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1",
+      "engine_tier1_by_gender": {
+        "male": 0.056,
+        "female": 28.883
+      },
+      "wave15_verdict": {
+        "male": 0.1,
+        "female": 28.9
+      }
+    },
+    "arm-s": {
+      "env": "RB3_HANDS_SHELL_FIX=1",
+      "engine_tier1_by_gender": {
+        "male": 3.131,
+        "female": 28.918
+      },
+      "wave15_verdict": {
+        "male": 3.1,
+        "female": 28.9
+      }
+    },
+    "good-body": {
+      "env": "{} (default) escapeartist body meshes (coherent reference)",
+      "engine_tier1_by_mesh": {
+        "escapeartist_resource.mesh": 0.43,
+        "escapeartist_skin.1.mesh": 27.277
+      }
+    },
+    "bad-torn": {
+      "env": "RB3_HANDS_AUTHORED_REPOINT=1 (A3 carve-out; capture-harness only)",
+      "engine_tier1_by_gender": {},
+      "note": "Wave-16 spike-fan: Tier-1 reads GREEN (~3) but M_BlendSpread 20-33"
+    }
+  },
+  "verdict_table_result": {
+    "test": "VerdictTable.ArmWArmSReproducedFromFixtures",
+    "reads": "engine-emitted tier1 field (flip from SKIP)",
+    "measured": {
+      "arm-w": {
+        "male": 0.06,
+        "female": 28.88
+      },
+      "arm-s": {
+        "male": 3.13,
+        "female": 28.92
+      }
+    },
+    "offline_metric_contrast": {
+      "arm-s male": 61.95,
+      "note": "off*current-world drifts at gameplay; the engine cached-rest field does not"
+    },
+    "status": "PASS (reproduces the Wave-15 verdict table within tolerance)"
+  }
+}

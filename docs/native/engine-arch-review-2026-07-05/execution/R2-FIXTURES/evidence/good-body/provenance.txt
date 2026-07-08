@@ -1,8 +1,12 @@
 arm=good-body
-engine_head=04651e1252f1a294c9f3ebc56da3ab4ae612e566
+engine_head=49ca0d6d820a992fa9d56c8082f10dd54aa3e08d
 engine_status:
  M src/platform/FxSendNative.cpp
+ M src/platform/Rnd_Wgpu_RB3.cpp
 
-cmd=/home/free/code/milohax/dc3-decomp/venv/bin/python3 /home/free/code/milohax/rb3/scripts/native/keyboard-to-gameplay.py --bin /home/free/code/milohax/rb3/native/build-native/rb3-native --song-downs 3 --game-burst 8 --burst-interval 0.3 --out /home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/R2-FIXTURES/evidence/good-body/shots --verbose
+arm_env={}
+mesh=escapeartist
+palette_dump_env=RB3_PALETTE_DUMP=escapeartist RB3_PALETTE_DUMP_DIR=/home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/R2-FIXTURES/evidence/good-body/dumps RB3_PALETTE_DUMP_EVERY=40 RB3_PALETTE_DUMP_MAXFRAMES=6 RB3_PALETTE_DUMP_TAG=good-body
+cmd=/home/free/code/milohax/dc3-decomp/venv/bin/python3 /home/free/code/milohax/rb3/scripts/native/keyboard-to-gameplay.py --bin native/build-r2/rb3-native --song-downs 3 --game-burst 15 --burst-interval 0.3 --out /home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/R2-FIXTURES/evidence/good-body/shots --verbose
 rc=0
 dumps=12

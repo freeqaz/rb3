@@ -1,0 +1,7 @@
+arm=arm-s
+fixtures=4
+source_dumps=18
+palette_hands_naked_mesh_0x5637e7e729a0_f1.txt
+palette_hands_naked_mesh_0x5637e8171c40_f1.txt
+palette_hands_naked_mesh_0x5637e85e9d40_f1.txt
+palette_hands_naked_mesh_0x5637e7e729a0_f2.txt

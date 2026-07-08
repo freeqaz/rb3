@@ -1,5 +1,16 @@
 arm=good-body  role=known-GOOD (coherent reference)
 mesh=escapeartist_resource.mesh / escapeartist_skin.1.mesh  nb=20,27
-env={} (default)  engine_head=753ed2014200b40d82ad83ffb815de9c1d4ce875
-M_BlendSpread over all frames: [0.581 .. 2.962]  (coherent — bounded even under gameplay articulation)
-fixtures=12
+env={} (default)  engine_head=e69a35f (Wave-18 Tier-1 field)
+recaptured=Wave-18 Lane N (F3): fresh provenance (arm_env + palette_dump_env in
+  provenance.txt), md5-DISTINCT gameplay screenshots (the prior 4 committed shots
+  were one repeated black md5), and the engine-emitted `tier1` header line present.
+M_BlendSpread over all frames: [0.581 .. 2.980]  (coherent — VALID-separates bad-torn, margin 6.9x)
+engine tier1 (off*first-seen-rest): escapeartist_resource 0.43deg / escapeartist_skin.1 27.28deg
+  (skin's rest-incoherence is orthogonal to its bounded BLEND — the Wave-16 lesson)
+fixtures=6
+palette_escapeartist_resource_mesh_0x559858fcf000_f1.txt
+palette_escapeartist_skin_1_mesh_0x55985f5f0b40_f1.txt
+palette_escapeartist_resource_mesh_0x559858fcf000_f2.txt
+palette_escapeartist_skin_1_mesh_0x55985f5f0b40_f2.txt
+palette_escapeartist_resource_mesh_0x559858fcf000_f3.txt
+palette_escapeartist_skin_1_mesh_0x55985f5f0b40_f3.txt

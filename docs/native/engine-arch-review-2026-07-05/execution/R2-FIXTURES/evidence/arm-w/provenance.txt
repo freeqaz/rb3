@@ -1,0 +1,12 @@
+arm=arm-w
+engine_head=49ca0d6d820a992fa9d56c8082f10dd54aa3e08d
+engine_status:
+ M src/platform/FxSendNative.cpp
+ M src/platform/Rnd_Wgpu_RB3.cpp
+
+arm_env={'RB3_NO_HEAD_REBIND': '1', 'RB3_NO_SKIN_CLAMP': '1', 'SHARD_GUARD_OFF': '1', 'SHARD_RATIO_DBG': '1'}
+mesh=hands_naked
+palette_dump_env=RB3_PALETTE_DUMP=hands_naked RB3_PALETTE_DUMP_DIR=/home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/R2-FIXTURES/evidence/arm-w/dumps RB3_PALETTE_DUMP_EVERY=40 RB3_PALETTE_DUMP_MAXFRAMES=6 RB3_PALETTE_DUMP_TAG=arm-w
+cmd=/home/free/code/milohax/dc3-decomp/venv/bin/python3 /home/free/code/milohax/rb3/scripts/native/keyboard-to-gameplay.py --bin native/build-r2/rb3-native --song-downs 3 --game-burst 15 --burst-interval 0.3 --out /home/free/code/milohax/rb3/docs/native/engine-arch-review-2026-07-05/execution/R2-FIXTURES/evidence/arm-w/shots --verbose
+rc=0
+dumps=18

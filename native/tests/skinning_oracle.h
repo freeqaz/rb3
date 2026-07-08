@@ -61,9 +61,19 @@ struct SkinVert {
 struct PaletteFrame {
     std::string mesh, owner, armTag;
     int frame = -1, nb = 0, rebound = 0;
+    // Engine-emitted Tier-1 rest-coherence field (R2 Wave-18 Lane N; NEW header
+    // key `tier1`). Value = max_b angle(off_b * FIRST-SEEN cached rest world, I),
+    // the RB3_HANDS_ATTACH_PROBE :4820-4841 xcheck quantity — pose-STABLE because
+    // it composes the constant bind offset against a rest world cached at first-
+    // seen pointer identity, NOT off_b * the dump's current `world` field (which
+    // the offline M_Tier1RestCoherence reads ~180deg at a gameplay frame). Absent
+    // (-1) on legacy goldens captured before the field existed.
+    double tier1Worst = -1.0;
+    int tier1Count5 = -1, tier1Recap = -1, tier1WorstBone = -1, tier1Cold = -1;
     std::vector<BoneRec> bones;
     std::vector<SkinVert> verts;
     bool IsFemale() const { return nb == 40; }   // nb: 38=male, 40=female (analysis-side gender key)
+    bool HasEngineTier1() const { return tier1Worst >= 0.0; }
 };
 
 // ---------------------------------------------------------------------------

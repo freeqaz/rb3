@@ -41,12 +41,25 @@ ARM_ENV = {
     "good-body":   {},
     "bad-ceiling": {},
     "bad-torn":    {"RB3_HANDS_AUTHORED_REPOINT": "1"},   # A3 carve-out (known-bad only)
-    "arm-w":       {"RB3_NO_HEAD_REBIND": "1", "RB3_NO_SKIN_CLAMP": "1", "SHARD_GUARD_OFF": "1"},
+    # arm-w sets SHARD_GUARD_OFF, which (Rnd_Wgpu_RB3.cpp:4321) gates the ENTIRE
+    # skinned-mesh diagnostic block — INCLUDING the RB3_PALETTE_DUMP — behind
+    # `!SHARD_GUARD_OFF || SHARD_RATIO_DBG`. Without SHARD_RATIO_DBG=1 the dump
+    # never fires (0 hands_naked dumps; W18 Lane N finding — the reason Wave-15's
+    # arm-w numbers were never palette-dump-reproducible). SHARD_RATIO_DBG=1 runs
+    # the diagnostic block while `guardActive=false` keeps the DROP disabled, so
+    # arm-w's guard-off render behaviour is preserved AND the dump is captured.
+    "arm-w":       {"RB3_NO_HEAD_REBIND": "1", "RB3_NO_SKIN_CLAMP": "1", "SHARD_GUARD_OFF": "1", "SHARD_RATIO_DBG": "1"},
     "arm-s":       {"RB3_HANDS_SHELL_FIX": "1"},
 }
 # per-arm mesh selector (good-body dumps the torso/body; the rest dump appendages).
 ARM_MESH = {
-    "good-body":   "polple,body,torso,shirt,pant",   # body meshes; adjust after a first dump lists names
+    # good-body = the COHERENT known-GOOD reference (escapeartist body meshes, nb
+    # 20/27, M_BlendSpread bounded 0.58-2.96). A NARROW selector matters: a broad
+    # body selector dumps 400+ files/burst, and the synchronous dump I/O stalls the
+    # headless GPU readback -> all-black screenshots (W18 Lane N: F3's byte-identical
+    # frames were partly this). escapeartist is a deterministic band character under
+    # RB3_FIXED_CLOCK, so this reproduces the original golden's mesh identity.
+    "good-body":   "escapeartist",
     "bad-ceiling": "hands_naked,finger,glove",
     "bad-torn":    "hands_naked,finger,glove",
     "arm-w":       "hands_naked",
@@ -97,14 +110,51 @@ def run_arm(arm, binpath, mesh_override, downs, burst, interval, maxframes):
         print(f"[fixture-capture] provenance record failed: {e}")
     return rc, dumps
 
+def _nb_of(path):
+    try:
+        with open(path) as f:
+            for line in f:
+                if line.startswith("nb "):
+                    return int(line.split()[1])
+    except Exception:
+        pass
+    return -1
+
 def curate(arm, dumps, maxkeep):
-    """Copy a curated subset of the dumps into the committed goldens dir."""
+    """Copy a curated subset of the dumps into the committed goldens dir.
+
+    Round-robins across owners (distinct hands meshes) so BOTH genders (nb=38
+    male / nb=40 female) land in the goldens — the VerdictTable splits by gender
+    and a male-only set silently drops the female mode. Prefers warm-cache dumps
+    (dump_index>0, tier1 cold=0) so the committed frames demonstrate the engine
+    Tier-1 field is pose-STABLE under articulation, not just at the bind frame.
+    """
     if not dumps:
         print(f"[fixture-capture] arm={arm}: no dumps, nothing to curate")
         return
     gdir = os.path.join(REPO, "native", "tests", "goldens", "r2-skinning", arm)
     os.makedirs(gdir, exist_ok=True)
-    keep = dumps[:maxkeep]
+    # group by owner (the "_<ptr>_" component of palette_<mesh>_<ptr>_fN.txt)
+    from collections import OrderedDict
+    by_owner = OrderedDict()
+    for d in dumps:
+        base = os.path.basename(d)
+        # owner ptr is the token before the final _fN.txt
+        parts = base.rsplit("_", 2)   # [prefix, '0xPTR', 'fN.txt']
+        owner = parts[1] if len(parts) == 3 else base
+        by_owner.setdefault(owner, []).append(d)
+    # within each owner prefer warm-cache frames (fN with N>0) first
+    for o in by_owner:
+        by_owner[o].sort(key=lambda p: (os.path.basename(p).rsplit("_", 1)[-1] == "f0.txt",
+                                        os.path.basename(p)))
+    # round-robin across owners so genders interleave
+    keep = []
+    queues = [q for q in by_owner.values()]
+    while len(keep) < maxkeep and any(queues):
+        for q in queues:
+            if q and len(keep) < maxkeep:
+                keep.append(q.pop(0))
+        queues = [q for q in queues if q]
     for d in keep:
         shutil.copy(d, gdir)
     with open(os.path.join(gdir, "MANIFEST.txt"), "w") as f:
