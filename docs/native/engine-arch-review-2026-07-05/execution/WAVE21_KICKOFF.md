@@ -6,9 +6,50 @@ Engine pin `6e6387c`. TWELVE defaults ON. **FIX WAVE** — real flag-gated imple
 default-OFF; coordinator-only default decisions at close-out (a hands default-ON flip would
 need extraordinary matched-frame evidence given this bug's history).
 
-## COORDINATOR ACCEPTANCE (<pending review>)
+## COORDINATOR ACCEPTANCE (from `WAVE21_REVIEW.md`, rb3 `12b4c389` — DISPATCH-WITH-AMENDMENTS)
 
-_To be filled from `WAVE21_REVIEW.md`._
+**A1–A10 adopted verbatim and BINDING; the review file overrides this kickoff wherever they
+differ.** The make-or-break surgery (A1) is folded into the reframed §"decisive question"
+below. Headlines:
+
+- **A1 (central hope REFRAMED):** the "differently-resolved instance" premise is DEAD —
+  Wave-20 measured `distinctFromOwnFind` 205×False (the merge remap lands on the SAME
+  instance Poll-`Find()` returns). The real surviving distinctions are **(1) the
+  rebake/clamp DRAW REGIME** and **(2) whole-graph `ReplaceRefs` scope**. Lane FIX
+  pointer-verifies its landing instance vs Poll-Find (lint 1).
+- **A2 (the actual experimental variable):** under Part 1, own==bound hand meshes hit the
+  `RebindHeadHandsAtRest` `boundRebakeOff` MISS (:1831-1852; `sNoBoundRebake` default-ON) →
+  mesh never flagged `mNativeBonesRebound` → **no seed-R rebake, authored offsets survive,
+  fling-clamp/V24 guard STAYS ACTIVE.** This regime (own-bound + clamp-active + authored
+  offset) is distinct from dead cell #1 (seed-R rebake), the 8th cell (repoint,
+  clamp-exempt), AND FULL-rebind. Lane FIX must charter the intended regime AND DUMP the
+  draw-time composition (offsets + flags per slot, R2 palette-dump machinery) — discharges E4.
+- **A3 (new gates):** zero `MILO_ASSERT(mine->Dir()==this, 0xAB8)` crashes (:4316 fail-fast
+  `Find`), full boot-to-gameplay all 4 members flag-ON; texture-integrity across ALL members
+  (char_shared.milo itself carries `dummy_torso.tex`/`feet_skin.mat`/`torso_naked.mat` —
+  strings-verified).
+- **A4:** in the SAME commit, update the stale :4406-4428 shim NOTE per errata E10; state its
+  2026-06-06 "scoped shim" dead-end was the OPPOSITE scoping (palettes-only; char_shared
+  stayed kReplace) — not this wave's arm.
+- **A5 (Part-2 banned-cell discriminator):** BoneOffsetAt/verts/weights BYTE-IDENTICAL
+  before/after Part 2 (dumped); pose writes ONLY bone local/rest transforms; provenance
+  signature moves via `own_rest`, not `off`. Spec must address absolute-SET clip semantics
+  (a rest write is overwritten by any driven channel — state WHEN it applies) and define B
+  with a PER-ASSET (hands/gloves/nails) Tier-1 ≈0 post-condition (gloves 60-69°, nails ~170°
+  have their OWN binds — one rest pose cannot serve all).
+- **A6:** Part 2 dispatches ONLY on a DISCRIM reading consistent with L2-a for its target
+  population — never on Part-1 visuals alone (E12).
+- **A7 (DISCRIM L2-b call):** L2-b = per-bone Tier-1 coherent at draw (engine `e69a35f`
+  field) AND visual tear at matched frames; the two-adjacent-bone inter-bone metric is
+  COMPARATIVE vs the matched flag-OFF arm, not a standalone threshold (raw inter-bone
+  divergence is just articulation). Per-member gender/visual attribution required.
+- **A8 (mitten control + third outcome):** E1 arms run mitten-OFF pairs (`RB3_HANDS_MITTEN_OFF`)
+  ALONGSIDE mitten-ON (both Wave-20 arms were mitten-ON — the mitten MASKS finger tear, E8).
+  THIRD pre-authorized outcome added: **female-only fix ships per-gender-scoped, males stay
+  on the shipped default** (borderline-acceptable via mitten) — coordinator decision.
+- **A9:** wext is DESCRIPTIVE ONLY, never a gate (VERDICT §6.4) — explicit in both briefs.
+- **A10:** cite HANDS-FIX §Dolphin-fallback for its INSTRUMENT spec only; do NOT inherit its
+  "will confirm the reskin conclusion" framing.
 
 - **Hazard note:** engine tree carries uncommitted `M FxSendNative.cpp`; rb3 tree carries
   `native/src/rb3_session_trace.cpp` — never stage either.
@@ -34,24 +75,36 @@ _To be filled from `WAVE21_REVIEW.md`._
    already rebinds hands and already shards them ("for study only", :1237). So the
    torso-vs-hands discriminator is *half-answered in the tree*: torso tolerates the
    per-member basis mismatch; thin multi-bone hand geo tears under it.
-2. That FULL-rebind / 8th-cell / shim-off path re-points via `Find()` at **Poll** time. The
-   retail `sBoneMergeDir` remap re-points during **merge (load)** — a *different time, to a
-   differently-resolved instance*. **The faithful Layer-1 fix is NOT equivalent to
-   RB3_SKEL_REBIND_FULL** and may land on a correctly-posed instance where FULL-rebind does
-   not. This is the central untested hope of the wave — so the FIX lane must implement the
-   ACTUAL retail remap restoration, not reuse the FULL-rebind approximation.
+2. **[REFRAMED per review A1 — the original "different instance" hope is REFUTED.]** The
+   retail `sBoneMergeDir` remap and FULL-rebind BOTH resolve the bone by name in the same
+   character dir, and Wave-20 measured that they land on the SAME instance
+   (`distinctFromOwnFind` 205×False). What the faithful remap ACTUALLY does differently is
+   **(1) the rebake/clamp draw regime** — own==bound hand meshes hit the
+   `RebindHeadHandsAtRest` `boundRebakeOff` MISS (:1831-1852), so the mesh is never flagged
+   rebound → no seed-R rebake, authored offsets survive, and the fling-clamp/V24 guard stays
+   ACTIVE (unlike the 8th cell / FULL-rebind, which disable the clamp) — and **(2)
+   whole-graph `ReplaceRefs`** (TransParent hierarchy, drivers, weight-setters), where
+   FULL-rebind touches only mesh bone slots. **That own-bound + clamp-active + authored-offset
+   regime has never been drawn or measured** — it is the wave's real untested hope. So the FIX
+   lane must implement the ACTUAL retail remap restoration (not reuse RB3_SKEL_REBIND_FULL,
+   which flags-rebound and disables the clamp) AND dump the draw-time composition (A2).
 
 ## The decisive question this wave answers
 
-**Under a FAITHFUL Layer-1 fix (retail per-member binding restored via the merge remap), are
-MALE hands coherent or torn — matched-frame, gender-split?**
-- **Coherent** (arm-S `own`≈B predicts this) ⇒ Layer 1 largely fixes males; only females
-  need a Layer-2 gender-pose (tractable, torso-pattern). The flagship is completable NOW.
-- **Torn** (Lane-N shim-off suggests this) ⇒ the residual is the L2-b animated inter-bone
+**Under a FAITHFUL Layer-1 fix (retail per-member binding + the clamp-active/authored-offset
+draw regime above), are MALE hands coherent or torn — matched-frame, gender-split, mitten-OFF?**
+- **Coherent** ⇒ the faithful remap's draw regime fixes males where the 8th cell/FULL-rebind
+  did not; only females need a Layer-2 gender-pose (tractable, torso-pattern). The flagship is
+  completable NOW.
+- **Torn with basis coherent (Tier-1 ≈0)** ⇒ the residual is the L2-b animated inter-bone
   blend tear — the same *animated* question R5 walled (articulated Wii GT unobtainable,
   CharClipDrivers=0). Honest outcome: Layer 1 is a real separable regression-fix that
   **cannot ship alone** (flings), and the remaining half is blocked on the R5 wall or the
   banned reskin. A sharp characterization, not a failure to paper over.
+- **Middle outcome (review A8):** males already borderline-acceptable on the shipped default
+  (seed-R ceiling-hand MASKED by mitten default-ON), so a **female-only, per-gender-scoped**
+  fix may ship even if males need L2-b. Male coherence decides the MECHANISM verdict, not
+  necessarily shipping.
 
 Either way Wave 21 converts the flagship from "closed GT-D, patched" to a **named,
 gender-split, mechanism-decided** state — and possibly ships the fix.
