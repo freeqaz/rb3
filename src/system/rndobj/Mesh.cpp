@@ -6,6 +6,7 @@
 #include "math/Vec.h"
 #include "math/strips/Striper.h"
 #include "obj/Data.h"
+#include "obj/Dir.h" // Wave-20 Lane N: ObjectDir Name()/Dir() for LOADBIND_RESOLVE probe
 #include "obj/ObjMacros.h"
 #include "obj/ObjPtr_p.h"
 #include "obj/Object.h"
@@ -1004,6 +1005,35 @@ void RndMesh::PostLoad(BinStream &bs) {
                 nullct++;
         fprintf(stderr, "[BONE_LOAD_DBG] mesh='%s' loaded=%d null=%d\n",
                 Name() ? Name() : "?", (int)mBones.size(), nullct);
+    }
+    // Wave-20 Lane N Probe E (A4 — parse-time name-resolution null hypothesis).
+    // `bs >> mBones` above just resolved every bone ObjPtr by name via the
+    // FindObject descent (the parse-time share layer, CHAR_SKINNING doc ~:536-556).
+    // For HAND meshes, dump the dir each bone resolved TO at parse time: this is
+    // the load event that DECIDES binding — it names which ObjectDir instance
+    // (shared preloaded skeleton root vs a per-member dir) answers the hand-mesh
+    // bone names. owningDir->Dir()==nil => a root (shared/preloaded). Env
+    // RB3_LOADBIND_PROBE (shared with the BandCharacter probes) + name-scoped so
+    // it fires only for the appendage meshes. Default-OFF; Wii byte-identical.
+    if (::getenv("RB3_LOADBIND_PROBE") && !mBones.empty()) {
+        const char *mn = Name() ? Name() : "?";
+        bool hand = strstr(mn, "hand") || strstr(mn, "Hand") ||
+                    strstr(mn, "finger") || strstr(mn, "nail") ||
+                    strstr(mn, "glove");
+        if (hand) {
+            for (int bi = 0; bi < (int)mBones.size(); bi++) {
+                RndTransformable *bt = mBones[bi].mBone;
+                if (!bt) continue;
+                // dirIsRoot = the resolved dir has no parent dir (a shared/preloaded
+                // root). obj/Dir.h included above for the complete ObjectDir type.
+                ObjectDir *od = bt->Dir();
+                fprintf(stderr,
+                    "[LOADBIND_RESOLVE] mesh='%s' slot=%d bone='%s' bonePtr=%p "
+                    "resolvedDir=%p resolvedDirName='%s' dirIsRoot=%d\n",
+                    mn, bi, bt->Name() ? bt->Name() : "?", (void *)bt, (void *)od,
+                    od && od->Name() ? od->Name() : "?", (od && !od->Dir()) ? 1 : 0);
+            }
+        }
     }
 #endif
 #ifdef MILO_DEBUG

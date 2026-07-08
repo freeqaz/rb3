@@ -70,6 +70,115 @@ ObjectDir *sInstrumentDir;
 ObjectDir *sInstResourceDir;
 ObjectDir *sToDir;
 
+#ifdef HX_NATIVE
+// ===================== Wave-20 Lane N load-bind audit probe ==================
+// AUDIT-ONLY, default-OFF, HX_NATIVE (Wii build byte-identical by construction).
+// Env RB3_LOADBIND_PROBE=1 enables all logging below. This instruments the
+// 2026-06-06 causal chain on the CURRENT build: the three BandCharacter::Filter
+// remap branches (:4182 sCharSharedDir / :4188 sInstrumentDir / :4202
+// sBoneMergeDir — the VERDICT §1 "never-firing" claim, never before counted),
+// the FilterSubdir merge action, the OnInstallFilter static-dir values, and the
+// pristine bone binding at the entry of both rebind functions. A claim of "0"
+// on any branch is a COUNTED zero (lint 8): the counters print at every
+// OnInstallFilter and are dumped by NativeLoadBindDumpCounters at boot markers.
+//
+// RB3_LOADBIND_NOSHIM=1 (separate flag) disables ONLY the FilterSubdir
+// kMerge->kReplace override (:4280) for the shim-reconciliation A/B arm; probe
+// logging is independent of it.
+namespace {
+int gLoadBindProbe = -1;   // -1 unread, 0 off, 1 on
+int gLoadBindNoShim = -1;
+inline bool LoadBindProbeOn() {
+    if (gLoadBindProbe < 0) gLoadBindProbe = ::getenv("RB3_LOADBIND_PROBE") ? 1 : 0;
+    return gLoadBindProbe != 0;
+}
+inline bool LoadBindNoShim() {
+    if (gLoadBindNoShim < 0) gLoadBindNoShim = ::getenv("RB3_LOADBIND_NOSHIM") ? 1 : 0;
+    return gLoadBindNoShim != 0;
+}
+// Filter remap branch hit counters. Index: 0=sCharSharedDir(:4182),
+// 1=sInstrument/InstResource(:4188), 2=sBoneMergeDir(:4202 outer-if entered),
+// 3=sBoneMergeDir ReplaceRefs ACTUALLY fired (:4207 found!=0).
+long gFilterBranchHits[4] = { 0, 0, 0, 0 };
+long gFilterCallTotal = 0;      // every Filter() call (denominator)
+long gFilterBoneMergeDirNull = 0; // times sBoneMergeDir was null at Filter time
+} // namespace
+
+// Classify a dir relative to the member: is it the SHARED preloaded root
+// (parent==nil AND matches one of the shared static dirs / skeleton.milo names),
+// the member's OWN dir tree, or OTHER. Pointer-only, cheap.
+static const char *NativeClassifyOwningDir(ObjectDir *dir, ObjectDir *member) {
+    if (!dir) return "NULL";
+    if (dir == member) return "OWN_MEMBER";
+    // Walk up the member's own subdir/parent chain: if dir is reachable as the
+    // member itself or a descendant we call it OWN_MEMBER. Shared roots are
+    // parent==nil ObjectDirs not owned by the member.
+    if (dir->Dir() == member) return "OWN_MEMBER";
+    if (!dir->Dir()) return "SHARED_ROOT"; // a root dir (preloaded / share=true)
+    return "OTHER";
+}
+
+// Probe D: dump the PRISTINE bone binding of the hand/torso meshes at the ENTRY
+// of a rebind function, FIRST-TOUCH only (a set keyed by member/mesh de-dups).
+// Per bone slot emits: slot index, bone name, bound trans pointer, its Dir()
+// identity + name, and owningDirClass (OWN_MEMBER vs SHARED_ROOT). This is the
+// native A10-row source: the mesh->BoneTransAt(b)->Dir() is the answer to "which
+// skeleton instance does this hand mesh's bone resolve to". Hooked at ENTRY so it
+// reads the binding BEFORE the rebind mutates it (A2). `hook` labels which rebind
+// entry fired. Torso mesh included as the calibration/control row.
+static std::set<std::string> gLoadBindDumpSeen;
+static void NativeLoadBindDumpMeshes(BandCharacter *self, const char *hook) {
+    if (!LoadBindProbeOn()) return;
+    std::vector<RndMesh *> targets;
+    self->NativeCollectSkinnedMeshes(targets);
+    const char *member = self->Name() ? self->Name() : "?";
+    const char *gender = "other";
+    for (std::vector<RndMesh *>::iterator mi = targets.begin(); mi != targets.end();
+         ++mi) {
+        RndMesh *mesh = *mi;
+        const char *mn = mesh->Name() ? mesh->Name() : "?";
+        // scope: hand/finger/nail/glove meshes + the four torso controls
+        std::string ln(mn);
+        for (size_t i = 0; i < ln.size(); i++) {
+            char c = ln[i];
+            if (c >= 'A' && c <= 'Z') ln[i] = (char)(c + 32);
+        }
+        bool hand = ln.find("hand") != std::string::npos ||
+                    ln.find("finger") != std::string::npos ||
+                    ln.find("nail") != std::string::npos ||
+                    ln.find("glove") != std::string::npos;
+        bool torso = ln.find("trackjacket") != std::string::npos ||
+                     ln.find("vestdenim") != std::string::npos ||
+                     ln.find("plaidshirt") != std::string::npos ||
+                     ln.find("shred") != std::string::npos;
+        if (!hand && !torso) continue;
+        std::string key = std::string(member) + "/" + mn;
+        if (gLoadBindDumpSeen.count(key)) continue; // FIRST-TOUCH only
+        gLoadBindDumpSeen.insert(key);
+        int nb = mesh->NumBones();
+        fprintf(stderr,
+            "[LOADBIND_MESH] hook='%s' member='%s' gender=%s mesh='%s' meshPtr=%p "
+            "class=%s numBones=%d rebound=%d\n",
+            hook, member, gender, mn, (void *)mesh, hand ? "HAND" : "TORSO", nb,
+            (int)mesh->mNativeBonesRebound);
+        for (int b = 0; b < nb; b++) {
+            RndTransformable *bound = mesh->BoneTransAt(b);
+            if (!bound || !bound->Name()) continue;
+            ObjectDir *owningDir = bound->Dir();
+            RndTransformable *own = self->Find<RndTransformable>(bound->Name(), false);
+            fprintf(stderr,
+                "[LOADBIND_SLOT] hook='%s' member='%s' mesh='%s' slot=%d bone='%s' "
+                "boundPtr=%p owningDir=%p owningDirName='%s' owningDirClass=%s "
+                "ownFindPtr=%p distinct=%d\n",
+                hook, member, mn, b, bound->Name(), (void *)bound, (void *)owningDir,
+                owningDir && owningDir->Name() ? owningDir->Name() : "?",
+                NativeClassifyOwningDir(owningDir, self),
+                (void *)own, (own && own != bound) ? 1 : 0);
+        }
+    }
+}
+#endif
+
 const char *BandIntensityString(int num) {
     if (num != 0) {
         int intensity = num & 0x7F000;
@@ -1103,6 +1212,13 @@ void BandCharacter::RebindOutfitBonesToOwnSkeleton() {
     static int sDisabled = -1;
     if (sDisabled < 0) sDisabled = getenv("RB3_NO_SKEL_REBIND") ? 1 : 0;
     if (sDisabled) return;
+#ifdef HX_NATIVE
+    // Wave-20 Lane N Probe D: entry dump (first-touch per mesh). This rebind runs
+    // AFTER Character::Poll() (:575), so its entry snapshot is a later
+    // load-event view than RebindHeadHandsAtRest's; the de-dup set shares state so
+    // a mesh already dumped by the head rebind is not re-dumped here.
+    NativeLoadBindDumpMeshes(this, "RebindOutfitBonesToOwnSkeleton");
+#endif
     if (mNativeReboundOnce) return; // fully rebound: never scan again
 
     bool probe = getenv("SKEL_REBIND_PROBE") != 0;
@@ -1255,6 +1371,13 @@ void BandCharacter::RebindHeadHandsAtRest() {
     static int sDisabled = -1;
     if (sDisabled < 0) sDisabled = getenv("RB3_NO_HEAD_REBIND") ? 1 : 0;
     if (sDisabled) return;
+#ifdef HX_NATIVE
+    // Wave-20 Lane N Probe D: dump pristine hand/torso binding at the ENTRY of
+    // this rebind, first-touch per mesh, BEFORE any mutation below (A2). Runs
+    // even when mNativeHeadReboundOnce is already set so a late-streamed mesh's
+    // first appearance is still captured; de-dup keyed by member/mesh.
+    NativeLoadBindDumpMeshes(this, "RebindHeadHandsAtRest");
+#endif
     if (mNativeHeadReboundOnce) return;
     bool probe = getenv("HEAD_REBIND_PROBE") != 0;
 
@@ -4179,7 +4302,16 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
         }
         unk630.push_back(dynamic_cast<OutfitConfig *>(o1));
     }
+#ifdef HX_NATIVE
+    if (LoadBindProbeOn()) {
+        ++gFilterCallTotal;
+        if (!sBoneMergeDir) ++gFilterBoneMergeDirNull;
+    }
+#endif
     if (o1->Dir() == sCharSharedDir) {
+#ifdef HX_NATIVE
+        if (LoadBindProbeOn()) ++gFilterBranchHits[0];
+#endif
         Hmx::Object *mine = Find<Hmx::Object>(o1->Name(), true);
         MILO_ASSERT(mine->Dir() == this, 0xAB8);
         ReplaceRefs(o1, mine);
@@ -4190,6 +4322,9 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
         if (rt) {
             Hmx::Object *found = FindObject(o1->Name(), false);
             if (found) {
+#ifdef HX_NATIVE
+                if (LoadBindProbeOn()) ++gFilterBranchHits[1];
+#endif
                 if (rt->TransParent()) {
                     dynamic_cast<RndTransformable *>(found)->SetLocalXfm(rt->LocalXfm());
                 }
@@ -4200,11 +4335,27 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
     }
     if (!(o1->Dir() == sOutfitDir || o1->Dir() == sResourceDir || o1->Dir() == sToDir)) {
         if (o1->Dir() == sBoneMergeDir) {
+#ifdef HX_NATIVE
+            if (LoadBindProbeOn()) {
+                ++gFilterBranchHits[2]; // outer sBoneMergeDir match (:4202) entered
+                if (strnicmp(o1->Name(), "bone_", 5) == 0)
+                    fprintf(stderr,
+                        "[LOADBIND_BR2] member='%s' o1='%s' o1Dir=%p sBoneMergeDir=%p "
+                        "isTransformable=%d\n",
+                        Name() ? Name() : "?", o1->Name() ? o1->Name() : "?",
+                        (void *)o1->Dir(), (void *)sBoneMergeDir,
+                        dynamic_cast<RndTransformable *>(o1) ? 1 : 0);
+            }
+#endif
             RndTransformable *rt = dynamic_cast<RndTransformable *>(o1);
             if (rt) {
                 Hmx::Object *found = FindObject(o1->Name(), false);
-                if (found)
+                if (found) {
+#ifdef HX_NATIVE
+                    if (LoadBindProbeOn()) ++gFilterBranchHits[3]; // ReplaceRefs FIRED
+#endif
                     ReplaceRefs(o1, found);
+                }
             }
         }
         return kIgnore;
@@ -4277,8 +4428,32 @@ MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir)
     // docs/native/CHAR_SKINNING_DEFORM_INVESTIGATION.md.
     MergeFilter::Action act =
         DefaultSubdirAction(o1, (Subdirs)mFileMerger->mFilesPending.front()->mSubdirs);
+    MergeFilter::Action baseAct = act;
+    bool overrode = false;
     if (act == MergeFilter::kMerge && o1 && !o1->mStoredFile.empty()) {
-        act = MergeFilter::kReplace;
+        // Wave-20 Lane N shim-reconciliation arm: RB3_LOADBIND_NOSHIM disables the
+        // kMerge->kReplace override so the retail (kMerge) action stands. White
+        // textures acceptable — we read binding, not pixels. Default (flag unset)
+        // keeps the shipped shim untouched (byte-identical to pre-Wave-20).
+        if (!LoadBindNoShim()) {
+            act = MergeFilter::kReplace;
+            overrode = true;
+        }
+    }
+    if (LoadBindProbeOn()) {
+        const char *actName = (act == MergeFilter::kReplace) ? "kReplace"
+                              : (act == MergeFilter::kMerge)   ? "kMerge"
+                              : (act == MergeFilter::kKeep)    ? "kKeep"
+                              : (act == MergeFilter::kIgnore)  ? "kIgnore"
+                                                               : "k?";
+        fprintf(stderr,
+            "[LOADBIND_SUBDIR] member='%s' subdir='%s' storedFile='%s' storedEmpty=%d "
+            "baseAct=%d -> act=%s overrode=%d noshim=%d\n",
+            Name() ? Name() : "?",
+            (o1 && o1->Name()) ? o1->Name() : "?",
+            (o1 && !o1->mStoredFile.empty()) ? o1->mStoredFile.c_str() : "(empty)",
+            (o1 && o1->mStoredFile.empty()) ? 1 : 0,
+            (int)baseAct, actName, overrode ? 1 : 0, LoadBindNoShim() ? 1 : 0);
     }
     return act;
 #else
@@ -4352,8 +4527,56 @@ DataNode BandCharacter::OnInstallFilter(DataArray *da) {
             }
         }
     }
+#ifdef HX_NATIVE
+    if (LoadBindProbeOn()) {
+        // Probe C: the five static dirs that the Filter remap branches compare
+        // against, per install, with names + owning-dir class. Plus a running
+        // dump of the branch hit counters (so a counted-0 is visible per install).
+        fprintf(stderr,
+            "[LOADBIND_INSTALL] member='%s' sym='%s' | "
+            "sBoneMergeDir=%p(%s,cls=%s) sCharSharedDir=%p(%s,cls=%s) "
+            "sInstrumentDir=%p(%s,cls=%s) sInstResourceDir=%p(%s,cls=%s) "
+            "sResourceDir=%p(%s,cls=%s) sOutfitDir=%p(%s) sToDir=%p\n",
+            Name() ? Name() : "?", da->Sym(5).Str(),
+            (void *)sBoneMergeDir, sBoneMergeDir && sBoneMergeDir->Name() ? sBoneMergeDir->Name() : "?",
+            NativeClassifyOwningDir(sBoneMergeDir, this),
+            (void *)sCharSharedDir, sCharSharedDir && sCharSharedDir->Name() ? sCharSharedDir->Name() : "?",
+            NativeClassifyOwningDir(sCharSharedDir, this),
+            (void *)sInstrumentDir, sInstrumentDir && sInstrumentDir->Name() ? sInstrumentDir->Name() : "?",
+            NativeClassifyOwningDir(sInstrumentDir, this),
+            (void *)sInstResourceDir, sInstResourceDir && sInstResourceDir->Name() ? sInstResourceDir->Name() : "?",
+            NativeClassifyOwningDir(sInstResourceDir, this),
+            (void *)sResourceDir, sResourceDir && sResourceDir->Name() ? sResourceDir->Name() : "?",
+            NativeClassifyOwningDir(sResourceDir, this),
+            (void *)sOutfitDir, sOutfitDir && sOutfitDir->Name() ? sOutfitDir->Name() : "?",
+            (void *)sToDir);
+        fprintf(stderr,
+            "[LOADBIND_COUNTERS] afterInstall member='%s' calls=%ld br0_charShared=%ld "
+            "br1_instrument=%ld br2_boneMergeEntered=%ld br3_boneMergeReplaced=%ld "
+            "boneMergeDirNull=%ld\n",
+            Name() ? Name() : "?", gFilterCallTotal, gFilterBranchHits[0],
+            gFilterBranchHits[1], gFilterBranchHits[2], gFilterBranchHits[3],
+            gFilterBoneMergeDirNull);
+    }
+#endif
     return DataNode(0);
 }
+
+#ifdef HX_NATIVE
+// Wave-20 Lane N: dump the cumulative Filter remap branch hit counters. Called
+// from the load-bind boot markers so a COUNTED zero on the :4202 sBoneMergeDir
+// branch is visible (lint 8). Global-linkage so the HTTP/boot hook can call it.
+void NativeLoadBindDumpCounters(const char *marker) {
+    if (!LoadBindProbeOn()) return;
+    fprintf(stderr,
+        "[LOADBIND_COUNTERS] marker='%s' calls=%ld br0_charShared=%ld "
+        "br1_instrument=%ld br2_boneMergeEntered=%ld br3_boneMergeReplaced=%ld "
+        "boneMergeDirNull=%ld\n",
+        marker ? marker : "?", gFilterCallTotal, gFilterBranchHits[0],
+        gFilterBranchHits[1], gFilterBranchHits[2], gFilterBranchHits[3],
+        gFilterBoneMergeDirNull);
+}
+#endif
 
 DataNode BandCharacter::OnPreClear(DataArray *da) {
     Symbol sym = da->Sym(2);
