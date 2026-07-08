@@ -108,3 +108,22 @@ Guard-tag string check confirms the A/B binaries differ exactly by the four guar
 
 ## Gate-change requests to Lane F/T1 files (coordinator folds)
 _(none yet)_
+
+---
+
+## ERRATA (Wave-19 close-out review F2 — supersede the framing above)
+
+- **The N=30 A/B is not, by itself, statistically decisive** (P(30/30 GREEN | p≈1/30 residual)
+  ≈ 0.36; Fisher vs 29/30 RED ≈ 0.5). The LOAD-BEARING proof of the exit is deterministic:
+  the guards REDIRECT the attributed draws (delta forced to 0 by construction on the guarded
+  sites) and the one divergent PREGUARD boot attributes exactly to two guarded sites. The
+  N=30 run is corroboration, not the proof.
+- Rate reconciliation: Wave-18 observed ~1/10 divergent boots at delta=+16; this lane's fresh
+  PREGUARD observed ~1/30 at delta≈1. Both are timing-dependent window-landing rates of the
+  same consumer set (different boots/build; the +16 vs +1 magnitude difference is
+  window-population, not a different mechanism) — treat rates as environment-specific, never
+  as a universal constant. Wave-20's WHITE re-grade must gate on the GUARDED build (mechanism-
+  backed), not on any assumed rate.
+- Evidence hygiene: the per-PC attribution of the divergent boot lives in the M4 commit
+  message — recorded here: both draws attribute to guarded sites (see commit `8a7e42bf`);
+  and the `wr_n10`-named evidence files under `evidence/` actually hold the N=30 runs.

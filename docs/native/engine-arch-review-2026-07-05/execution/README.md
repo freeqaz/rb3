@@ -666,3 +666,38 @@ axis, W0.3d part-b.
   lineup + reviewer-judged wide frames); 4→8 lights; web-build confirmation tail gate.
 - Parked (review): CharClipDrivers=0 root-cause — remains the closure's reopen route, not a
   charter.
+
+## Wave 19 results (2026-07-08, gen-2 instrument wave — 9-agent workflow: per tool Opus plan → Fable review → Opus implement)
+
+**All three OPTIONS §6 tools SHIPPED (default-OFF instruments, no flips) and the WHITE
+re-grade precondition is now satisfiable.** Engine `beb89e5` → `6e6387c` (regen 379 clean).
+Close-out review `WAVE19_CLOSEOUT_REVIEW.md` (`2b2f0bb7`): **ACCEPT** — all gates real,
+fail-reds fired; F1-F4 wording errata appended to the lane STATUS docs at close-out.
+
+| Tool | Status | Highlights |
+|---|---|---|
+| §6 T1 — frame-timeline tracer + wash v2 | ✅ (rb3 ×6, engine `ce22beb`) | `RB3_LOADDET_TIMELINE` markers (LW-1 ReadDone arrival + songMs from the HTTP poll site per A3 ruling) + `loaddet_gate.py --timeline` with frameAssign/songClock/emitTimeline axes (PIE-stable keys 61/61 across ASLR; R4 `order_sig` byte-untouched). **Wash co-sampler v2** (per-frame join + midrank AUC) proved its fail-red by REFUSING the Wave-18 F1 degenerate dataset (verdict DEGENERATE). **Attribution output (errata'd wording): the frame-assignment residual exists WITHOUT injected jitter** (control-arm divergence at JITTER=0) — ambient thread actors drive it; jitter proven not-necessary (not proven no-effect; n=1/dose). This routes T3: pin ambient actors; jitter-reproduction = NO-GO route. |
+| §6 T2 — world-cam ROI provenance | ✅ (engine `ad01ca6`+`515f617`, rb3 ×5) | `RecordDrawProv` skinned-pose branch: rectKind=3 boneRects from re-derived bone worlds (the review-A1 route — no palette tap), owner scope hook, `uidump_query.py --roi` with bones_in_roi. 306/306 skinned draws localized, 0 sphere fallbacks; G1 contrast real (RED sphere arm provably mislocates 302 rects); flag-off 792 byte-identical + Character.o Wii-inert. **M5 production smoke NAMED FOREARM-FLOAT: player3's right forearm/hand chain** (gloves_resource + clearcoat sleeve; bone_R-foreArm/foreTwist1/2/hand; boneFallback=0). Errata F4: the fix charter's FIRST discriminator = own-vs-shared skeleton binding (outfit-mesh RebindOutfitBones family) before any pose investigation. |
+| §6.5 W-ISO — venue consumer isolation + capture lints | ✅ (rb3 ×4, zero engine) | 4 enclosing-function guards at the review-A4 sites (LightPresetManager :294-covering scope; Crowd scoped to OnIterateFrac only; zero Rand.cpp edits per A5) + NEW `capture_lints.py` (selftest 4/4) wired into `white_regrade.py`. EXIT: PREGUARD 29/30 RED → guarded 30/30 GREEN; R-A clean (no fifth consumer, divergent boot attributes exactly to guarded sites). Errata F2: the deterministic redirect is the load-bearing proof (N=30 corroborates); divergence rates are environment-specific — Wave-20 gates on the GUARDED build, mechanism-backed. G3 delta 0.0 all touched units; seam-OFF inert. **The Wave-18 WHITE VOID precondition is now satisfiable.** |
+
+**Coordinator actions:** review-seeded plan checkpoints (the pre-dispatch WAVE19_REVIEW
+`fb1f00e5` landed 1 min after workflow launch — its A1/A2 spec corrections reached the plan
+agents via their check-first checkpoints); regen ×1; pin `beb89e5`→`6e6387c` (`bd5a2eab`);
+gates on final pin: drawlog 792 canonical PASS, lineup PASS, rb3-tests 116/0; F1-F4 errata
+appended. Cross-lane `rb3_http_handlers.cpp` co-edit verified no-clobber. TWELVE defaults
+unchanged.
+
+### Wave 20 menu (from `WAVE19_CLOSEOUT_REVIEW.md`)
+
+- **WHITE re-grade cash-in — GO** (prereq: fix `r4m4_capture.multi_capture` sweep to ≥5
+  distinct songMs; entry gate on the GUARDED build, mechanism-backed, N≥30 discipline +
+  capture_lints).
+- **T3 — GO in PINNING mode / NO-GO for jitter-reproduction**: residual actors = non-loader
+  threads (HTTP-poll songMs + audio clock; ThreadCall drains inline under the seam, native
+  AsyncFile synchronous). Gate = all-3-axes collapse at N≥6; honest NO-GO exit if songClock
+  proves wall-clock-fundamental.
+- **FOREARM-FLOAT fix charter** — binding-check FIRST (own-vs-shared skeleton for player3's
+  right-arm outfit meshes), then pose only if binding exonerated.
+- Half-lanes: N-tail bad-torn tier1 recapture; R3 v1 walk gap.
+- Conditional filler only: W2.4 BandPatchMesh (memory re-land clauses), 4→8 lights, web-build
+  tail gate.

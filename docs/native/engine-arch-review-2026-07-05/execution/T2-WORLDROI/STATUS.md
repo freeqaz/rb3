@@ -72,3 +72,13 @@ No conflict with WAVE19_REVIEW A1 (its region re-scope + step-0 cache check are 
 
 ## Hazard discipline
 Never staged: engine `src/platform/FxSendNative.cpp`; rb3 `native/src/rb3_session_trace.cpp`.
+
+---
+
+## ERRATA (Wave-19 close-out review F4 — charter routing note)
+
+The M5 "POSE-placement float" reading is supported (boneRects derive from `bt->WorldXfm()`,
+invBind-independent; boneFallback=0) but "pose" does NOT yet exclude a wrong-skeleton PALETTE
+BINDING — gloves/clearcoat are outfit meshes, exactly the `RebindOutfitBonesToOwnSkeleton`
+family. **The FOREARM-FLOAT fix charter's FIRST discriminator must be own-vs-shared skeleton
+binding for player3's right-arm chain meshes**, before any pose/animation investigation.

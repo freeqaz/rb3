@@ -124,3 +124,21 @@ never staged T2's work. Engine classjson committed alone (never staged the dirty
 - `execution/R4-M4/wash_cosample.py` — v2 rewrite
 - engine `src/platform/NativeCompatFlags.classification.json` — `RB3_LOADDET_TIMELINE` row
 - `Rand.{h,cpp}` — owned per A5, **left unmodified** (emitTimeline from existing tap)
+
+---
+
+## ERRATA (Wave-19 close-out review `WAVE19_CLOSEOUT_REVIEW.md` F1/F3 — supersede the wording above)
+
+- **Gate-2 "DOSE-INDEPENDENT" is overstated.** The evidence is n=1 injected boot per dose vs 3
+  controls (5 boots total), and shows a monotone +~100-frame shift 2000→20000 at all 4
+  checkpoints (inside the ambient envelope). The defensible claim: **jitter is proven NOT
+  NECESSARY for the frame-assignment residual** (control-arm divergence at JITTER=0: 177/457
+  name disagreement + gate-1 6/6 seam-ON divergence) — it is NOT proven to have no effect.
+  The T3 consequence is UNCHANGED (the residual exists without injection; T3 must pin ambient
+  actors, and jitter-reproduction is a NO-GO route). The jitter knob itself is live on the
+  OFF-arm (`ThreadCall_Native.cpp:38-52` fires at `WorkerMain:99`; the worker carries
+  DataLoader parses, `DataFile.cpp:786`).
+- **Test-count scope note:** the "10 pre-existing GPU teardown failures" are
+  ENVIRONMENT-CONDITIONAL (same suite reads 116/0 on the final pin in the other Wave-19 lanes
+  and the coordinator's close-out run). The flag-inert A/B (identical failure set ON vs OFF)
+  remains valid.
