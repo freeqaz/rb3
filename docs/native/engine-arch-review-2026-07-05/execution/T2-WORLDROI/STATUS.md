@@ -40,7 +40,9 @@ No conflict with WAVE19_REVIEW A1 (its region re-scope + step-0 cache check are 
 - **M1** — DONE (GREEN). `evidence/M1-coverage.md` + `evidence/green-skinned-prov-frame1873.json`.
   306/306 skinned → rectKind:3 positioned bboxes naming real bones; boneFallback path exercised (6 draws).
   G4 flag-OFF golden 792 canonical PASS + fail-red reads RED.
-- **M2** — owner-scope hook + batch_objdiff evidence (in progress).
+- **M2** — DONE (GREEN). `evidence/M2-owner-scope.md`. owner=player0-3 + named crowd (band+3D
+  crowd via Crowd.cpp:574 dispatch), distinct per member. B8: `Character.o` byte-identical
+  (HX_NATIVE native-only; DrawShowing 98.2% pre-existing register-swap residual, unchanged).
 - **M3** — query script bone/owner reporting + coverage count.
 - **M4** — gates G1–G4 + classjson append.
 - **M5** — FOREARM-FLOAT production smoke (triage only).

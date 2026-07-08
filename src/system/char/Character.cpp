@@ -28,6 +28,35 @@
 #include "utl/Str.h"
 #include "utl/Symbols.h"
 
+#ifdef HX_NATIVE
+// T2-WORLDROI (Wave 19): world-cam OWNER draw-scope (engine-owned, game-fed via
+// milo-native-engine/src/platform/RB3DrawLogDebug.h). Forward-declared because the
+// engine src/platform dir is NOT on the game include path (same pattern as the
+// shipped Text.cpp/UILabel prov hooks). Push/pop are no-ops (one cached branch)
+// unless RB3_DRAWLOG_PROV. kind: 0=panel, 1=owner. `active` only when the name is
+// non-empty, so an unnamed character does not overwrite the enclosing owner. Every
+// mesh drawn under this character (band member OR crowd) then snapshots
+// scopeOwner=<Character::Name()> in RecordDrawProv. SPATIAL provenance axis (which
+// owner drew a pixel) — NOT the frame-assignment timing axis. Wii/matching build
+// never compiles this (byte-identical — see the batch_objdiff evidence).
+extern void RB3DrawScopePush(int kind, const char *name);
+extern void RB3DrawScopePop(int kind);
+namespace {
+struct RB3ProvOwnerScope {
+    int kind;
+    bool active;
+    RB3ProvOwnerScope(int k, const char *n) : kind(k), active(n && n[0]) {
+        if (active)
+            RB3DrawScopePush(k, n);
+    }
+    ~RB3ProvOwnerScope() {
+        if (active)
+            RB3DrawScopePop(kind);
+    }
+};
+} // namespace
+#endif
+
 INIT_REVS(Character)
 
 Character *gCharMe;
@@ -289,6 +318,9 @@ void Character::DrawLod(int lod) {
 CharEyes *Character::GetEyes() { return Find<CharEyes>("CharEyes.eyes", false); }
 
 void Character::DrawShowing() {
+#ifdef HX_NATIVE
+    RB3ProvOwnerScope _provOwner(1 /*owner*/, Name());  // no-op unless RB3_DRAWLOG_PROV
+#endif
     START_AUTO_TIMER("char_draw");
     if (mDebugDrawInterestObjects) {
         CharEyes *eyes = GetEyes();
