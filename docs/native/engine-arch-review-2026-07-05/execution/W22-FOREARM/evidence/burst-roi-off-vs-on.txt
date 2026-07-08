@@ -1,0 +1,21 @@
+PRIMARY GATE: player3 gloves/clearcoat above-head-strip (y<300) draws, OFF vs ON
+frame         skinned    OFF     ON
+dl_00.json        306      0      0
+dl_01.json        307      0      6
+dl_02.json        304      0      0
+dl_03.json        305      0      0
+dl_04.json        305      0      0
+dl_05.json        244      0      0
+dl_06.json        245      0      0
+dl_07.json        292      0      0
+dl_08.json        285      0      0
+dl_09.json        295      0      0
+dl_10.json        111      8      8
+dl_11.json        132      0      0
+dl_12.json        132      0      0
+dl_13.json        132      0      0
+dl_14.json        111     10     10
+dl_15.json        171     10     10
+TOTAL                     28     34
+
+VERDICT: float NOT reduced (ON>=OFF); appears ONLY in low-skinned transition/cut frames (skinned<200), NEVER in steady gameplay (skinned>250). Fix ineffective: no distinct animating foreArm instance to repoint to (own==bound at draw).
