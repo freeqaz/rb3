@@ -1,0 +1,12 @@
+  [1] safe_json_dump BAD  -> RAISED: F10: refusing to write non-finite value nan at key path $.x (+0 more) to /home/free/tmp/caplint_selftest__z1oz2x4/t.json. Sanitize (drop/None the field) first.
+  [1] safe_json_dump GOOD -> wrote /home/free/tmp/caplint_selftest__z1oz2x4/t.json round-trips=True
+  [1] PASS (NaN raises, finite writes)
+  [2] refuse(refinish,graded) -> RAISED: F2: a --refinish run (rows rebuilt from disk, not live boots) may not emit a graded verdict. --refinish is a crash-recovery finisher for non-verdict inspection only; re-capture live boots for a verdict.
+  [2] PASS (refinish+graded raises, others pass)
+  [3] partition_black_frames([{'mean_luma': 0.0}, {'mean_luma': 0.5}]) -> kept=[{'mean_luma': 0.5}] excluded=[{'mean_luma': 0.0}]
+  [3] boundary (0.4798 legit / 0.05 at-T / NaN) -> kept=[{'mean_luma': 0.4798}] excluded_n=2
+  [3] PASS (T=0.05: luma<=T & NaN excluded, 0.4798 kept)
+  [4] attempt_disclosure(12,10,[...]) -> {'attempts': 12, 'captured': 10, 'discarded': 2, 'discarded_reasons': ['overshoot', 'no-engage']}
+  [4] PASS
+
+SELFTEST 4/4 PASS
