@@ -701,3 +701,51 @@ unchanged.
 - Half-lanes: N-tail bad-torn tier1 recapture; R3 v1 walk gap.
 - Conditional filler only: W2.4 BandPatchMesh (memory re-land clauses), 4→8 lights, web-build
   tail gate.
+
+## Wave 20 — HANDS ROOT-CAUSE (owner redirect: "figure out the actual root cause — is it a bug in decomp code?")
+
+Owner redirected the Wave-20 menu below into a root-cause zoom-out on the hands flagship
+bug. Three AUDIT-ONLY Opus lanes (kickoff `67187eed`, pre-dispatch review `7538830c`
+DISPATCH-WITH-AMENDMENTS A1–A11, synthesis `145150d6`, close-out review `d1e3faf0`
+ACCEPT-WITH-ERRATA E1–E12, errata `6d49499e`). Zero fixes/flips/pin-bumps; probes
+default-OFF; drawlog-792 green; GT-D closure untouched (static/load-time only).
+
+| Lane | Result |
+|---|---|
+| **W — Wii load-truth (Dolphin patched-disc)** | Built a new `WiiMesh`-binding reader (`milo-trace tools/wii_mesh_binding.py`). **Wii hand meshes bind OWN_MEMBER** (per-member `skeleton_unshared.milo`); SHARED_ROOT=0 in every reachable state; determinism-checked, pointer-deref only. Walled: gameplay LOADING wall → only 6/38 hand bones bound (member 0), no female member (Guest lineup all-male) — the *class* (OWN vs SHARED) is unambiguous (parse-time-fixed), per-slot finger/female basis is not in hand. |
+| **N — native load-path trace** | On today's build, hand bones bind the **SHARED magnet** at parse-time name resolution. The three remap branches COUNTED: `:4202` sBoneMergeDir + `:4182` sCharSharedDir = **0 fires** shipped (VERDICT §1's "never-firing" is now a counted zero). **Our HX_NATIVE white-texture `FilterSubdir` shim (kMerge→kReplace) is the direct cause** — it kReplaces every on-disk resource subdir incl. skeleton-bearing `char_shared.milo`, and kReplace'd subdirs are never iterated through `Filter`. Shim-OFF: br2 fires **31,488/member**, binding flips to per-member (matches Wii). Supersedes the 2026-06-06 "shim-off didn't change binding" record for hand meshes (that arm measured torso-at-draw). |
+| **D — decomp-fidelity audit** | **The chain is FAITHFUL — zero semantic bugs.** `BandCharacter::Filter` (95.6%), `ObjectDir::PreLoad` (100%, the kInlineCached read), LoadSubDir/PostLoadInlined/ReplaceRefs/OnInstallFilter/FileMerger — every sub-100% diff is regalloc/scheduling/SDA-reloc noise; the sBoneMergeDir remap branch is structurally present + correct. Answers "is it a bug in decomp code?" → **No.** |
+
+**Root cause (synthesis, errata-corrected):**
+- **Layer 1 (PROVEN, durable):** native binds the shared male-bind magnet because our own
+  white-texture shim suppresses the retail per-member bone remap (counted 0 vs 31,488); the
+  decomp is faithful; Wii binds per-member. A **native-introduced load-path regression**,
+  not a decomp defect and not the origin of the fling (which predates the shim).
+- **Layer 2 (necessity PROVEN, mechanism OPEN):** per-member binding alone still flings, so
+  it is necessary but not sufficient. WHICH dead composition the shim-off arm reproduces
+  (`inv(R)·L_own` default vs `inv(B)·L_own` 8th-cell) is undetermined (draw-time offsets not
+  dumped). The "gender-posed rest basis is the missing ingredient" is a **leading candidate
+  (L2-a)**, not proven — arm S's male `own`≈B (3.1°) is counter-evidence for males; only the
+  female ~29° gender-gap is committed. L2-a vs L2-b (blend-tear) unseparated.
+
+**Wave-21 fix charter:** two-part load-path change, **landable only together** (Layer-1-alone
+flings worse): (1) scope the shim to leave `char_shared.milo` at retail kMerge (restore the
+remap) OR add a targeted post-merge re-point — **+ a mandatory char-texture-integrity gate**
+(E11: restoring kMerge may reintroduce white textures); (2) pose the per-member skeleton to
+the gender bind — conditioned on a step-1 **torso-vs-hands discriminator** (why does
+`RebindOutfitBonesToOwnSkeleton` work for torso but hand-to-own tears?) that decides L2-a vs
+L2-b and must explain arm S's male null. The 8 dead cells + reskin stay banned (a Layer-1-only
+landing = the dead class by the back door). Substrate note: the Wii finger/female basis to
+fully separate L2-a/L2-b is walled on the headless Dolphin rig — Wave-21's discriminator is
+native-side.
+
+### Wave 21 menu
+- **HANDS Layer-1+Layer-2 fix (FLAGSHIP)** — the two-part charter above; step-1 torso-vs-hands
+  discriminator FIRST (native-side, no Wii articulation needed), then the shim-scope +
+  gender-pose fix gated on G-FIX-E1 (both genders, ceiling-hand + spike-fan gone) + texture
+  integrity + drawlog-792 + batch_objdiff baseline.
+- **Deferred from the Wave-20 menu (owner redirect):** WHITE re-grade cash-in (prereq: fix
+  `r4m4_capture.multi_capture` ≥5 distinct songMs, entry on the GUARDED build); T3 pinning
+  mode (all-3-axes collapse at N≥6, honest NO-GO if songClock is wall-clock-fundamental);
+  FOREARM-FLOAT fix (binding-check first, player3 right-arm outfit meshes).
+- Half-lanes: N-tail bad-torn tier1 recapture; R3 v1 walk gap.
