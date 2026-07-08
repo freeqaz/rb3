@@ -145,3 +145,17 @@ batch_objdiff==baseline on any touched src/system unit + gameplay A/B.
 - `forearm-fling-burst03.png` / `forearm-playing.png` — the exploded arm/hand spike-fan visual
 
 Checkpoint: `/tmp/wave23-checkpoints/FOREARM.json`.
+
+---
+## ERRATA (Wave-23 close-out review `45f81795`, ERRATA-F1) — HEADLINE RETRACTED
+**DRIVER NAMED is retracted to DRIVER CANDIDATE.** The y>50 instrument ALSO fires on legitimate
+stage-mark placement (in-song HI events are guitar_body-driven, pre-y already >50); **upperArm
+logged MORE HI events (29,559) than foreArm (28,758)** and jumps identically at onset; player3's
+forearm settles LOW mid-vignette. So "PERSISTENT every clip frame" and "localized to the forearm
+chain" BOTH FAIL — **W22's transition-only characterization is RESTORED** pending a same-frame
+multi-bone ANATOMICAL probe (child-parent distance > bone length) that reproduces the W22
+divergence AND correlates it with a spike-fan capture. What HELD UP: BandRetargetVignette really
+wires IK onto the flinging bones (`sIkfs`); pose-not-skinning; bilateral; freeze-class refuted;
++ an un-followed lead — CROSSED member↔clip pairings fling, the one MATCHED pairing settles sane.
+Severity stays MED. Wave-24 = FOREARM-RECON FIRST (anatomical trigger + crossed-pairing lead);
+do NOT dispatch a BandRetargetVignette/BandIKEffector fix on W23 evidence.

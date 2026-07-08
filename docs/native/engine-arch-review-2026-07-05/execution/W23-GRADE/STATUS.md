@@ -126,3 +126,13 @@ C8-excluded. → S4 stays deferred/authored, no new action from GRADE.
 - `evidence/`: 6 discriminator-arm PNGs + 2 camera-phase PNGs, `washprobe_venueprobe_digest.txt`,
   `neon_sign_materials.txt`, `contrast_metric.txt`
 - checkpoint `/tmp/wave23-checkpoints/GRADE.json` (verdict = (c))
+
+---
+## ERRATA (Wave-23 close-out review `45f81795`, ERRATA-G1, G2)
+- G1: the "2.6:1 pre-fix" comparison uses the WRONG baseline — wave-5's verified POST-fix
+  contrast was 6.8:1 (render-polish PLAN.md:256). Current peak phase 6.88 MATCHES it; the 5.26
+  arm-window sits below it (phase variance). Verdict (c) UNCHANGED on the corrected yardstick.
+- G2: "SWEEP caught the worst phase" is UNSUPPORTED (settle_150/500 measure LOWER contrast than
+  baseline — phase *variance* is proven, not a "worst"). The neon-plate 2.33-vs-0.98 relative gap
+  on IDENTICAL assets is an OPEN native rendering difference (deprioritized), NOT "authored-faithful"
+  — logged as an open observation, not a Wave-24 lane.

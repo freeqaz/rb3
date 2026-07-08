@@ -84,3 +84,12 @@ single engine fix restores the sv3_a vignette walkers and any other per-Characte
 (and likely relates to the count-in thin-geo shard residual). Must A/B the gameplay WorldCrowd
 capture (shared read path) before landing. Verify with `{rb3_crowd_census}` → expect `vert>0`
 and non-empty `animating`.
+
+---
+## ERRATA (Wave-23 close-out review `45f81795`, ERRATA-C1)
+The vert=0 census metric reads `mVerts` ONLY; on HX_NATIVE compressed meshes keep `mVerts` empty
+BY DESIGN and draw from `mNumCompressedVerts` (rb3_render_mesh.cpp:126,455). No positive control
+was run. **"Loads with 0 vertices" is therefore UNCONFIRMED as the root cause** — downgraded to
+CANDIDATE. Confirmed facts: 0 crowd body draws (drawlog) + `gAltRev<3` on these meshes (Mesh.cpp:1116).
+Wave-24 STEP 0 = re-census with `mNumCompressedVerts` + a band-mesh positive control BEFORE
+touching the loader.

@@ -805,3 +805,28 @@ Owner: *"keep pushing through the visual bugs we can find."* Kickoff `26893122`�
 3. **FOREARM pose-driver** — DISCOVERY-scoped lane (upgraded from parked by ERR-2), HARD STOP before fix code, binding closed; find what poses `bone_R-foreArm` high on camera cuts (walk-on/count-in freeze class `67e87ae1`?).
 4. **S5** now-bar/combo glow (needs driven-combo capture).
 5. Defer S3 (no GT) / S4 (authored, C8+hands overlap).
+
+## Wave 23 — VISUAL PUSH cont.: 2 discriminators + 1 discovery (no fixes shipped, 2 engine bugs teed up)
+
+Owner: *"keep pushing."* Kickoff `97f50c4a`→acceptance `44bfce23` (pre-review `1cdff0ec` A1-A9,
+re-anchored GRADE mechanism + CROWD target), close-out review `45f81795`
+(GRADE/CROWD ACCEPT-WITH-ERRATA, FOREARM REVISE). Engine pin `4a72845`→`694e1de` (probe flags),
+census 389. Discriminator-first discipline paid off — no speculative fixes; two engine bugs
+precisely located + handed to Wave 24. (FOREARM re-dispatched standalone after a workflow error.)
+
+| Lane | Result |
+|---|---|
+| **GRADE — hub wash** | **(c) authored/no-fix.** Venue-light non-engagement REFUTED (`RB3_WASH_PROBE` engaged=1 every hub environ; venue-OFF is BRIGHTER). Wash = authored lit neon signs + camera-phase. Contrast 6.88:1 peak MATCHES wave-5's post-fix 6.8:1 (ERRATA-G1: prior "2× the 2.6:1" used the wrong pre-fix baseline) → holds. OPEN observation (ERRATA-G2): neon-plate relative gap 2.33 vs 0.98 on identical assets = an unexplained native rendering diff, deprioritized. No code (`3af48f67`). |
+| **CROWD — hub vignette walkers absent** | **HANDED OFF (candidate root cause).** Re-anchored to `sv3_a.milo` (NOT WorldCrowd, NOT main_hub). The 8 crowd Characters LOAD/show/pose/poll but 0 body-mesh DRAWS + `gAltRev<3`. ERRATA-C1: the "0 verts" metric read `mVerts` only — HX_NATIVE compressed meshes keep `mVerts` empty BY DESIGN (`mNumCompressedVerts`), no positive control → root cause is CANDIDATE. Wave-24 step 0 = re-census w/ `mNumCompressedVerts` + band control. Read-only recon func, no fix (`0fad6137`). |
+| **FOREARM — pose-driver (DISCOVERY)** | **DRIVER CANDIDATE (headline retracted).** Named suspect = band vignette clips via `BandRetargetVignette` IK (`sIkfs` verified onto the flinging bones). BUT ERRATA-F1: the y>50 probe also catches legit stage-placement; **upperArm flung MORE than foreArm (29,559 vs 28,758)** → NOT forearm-localized, NOT "persistent"; W22 transition-only framing RESTORED. Un-followed LEAD: crossed member↔clip pairings fling, matched pairing settles sane. Probe-only edit (`%30`→event-triggered, HX_NATIVE inert, drawlog-792 PASS, `94dfe32e`). |
+
+### Wave 24 menu (from `WAVE23_CLOSEOUT_REVIEW.md` Q6)
+1. **FOREARM-RECON FIRST** (probe-only, ~1 day): same-frame pelvis+upperArm+foreArm+hand ANATOMICAL
+   trigger (child-parent distance > bone length), correlate a spike-fan screenshot to probe lines,
+   split walk-on/steady/cut windows, chase the CROSSED-vs-MATCHED clip-pairing lead. THEN choose
+   IK-not-constraining / clip-decode / transition-class. **Do NOT dispatch a BandRetargetVignette/
+   BandIKEffector fix on W23 evidence.**
+2. **CROWD-RECON → engine fix** (highest fix EV): re-census w/ `mNumCompressedVerts` + band control;
+   if compressed=0 confirmed → scoped RndMesh `gAltRev<3` skinned-decode fix, MANDATORY gameplay
+   WorldCrowd A/B (branch-scoped to keep the protected oracle hot path untouched).
+3. **S5 combo-glow confirm** (small). 4. S3/S4 deferred/authored. Open: GRADE neon-plate residual.
