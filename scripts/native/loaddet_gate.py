@@ -117,6 +117,16 @@ def boot_measure(binpath, arm_env, k_frames, target_ms, log_path, diff="hard",
             except Exception: pass
         logf.close()
 
+    return parse_boot_log(log_path, k_frames, attrib)
+
+
+def parse_boot_log(log_path, k_frames, attrib=False):
+    """Parse a SINGLE boot log (the [LOADDET] markers) into the boot dict that
+    boot_measure returns. Shared by boot_measure (boots this harness launches)
+    and by the grade-external-logs mode (boots produced by white_ab/wash harnesses
+    that run RB3_LOADDET_ATTRIB=1 and redirect stderr into <prefix>.engine.log).
+    A2/F6: the WHITE/wash re-grade grades the EXACT measurement boots' OWN logs."""
+    result = {"ok": False, "reason": "?"}
     anchor_frame = None; g_anchor = None; reseed_fired = False
     frames = {}
     attrib_by_off = {}   # off -> {frame: draws}
@@ -165,6 +175,26 @@ def boot_measure(binpath, arm_env, k_frames, target_ms, log_path, diff="hard",
         "completes": completes if attrib else None,
     })
     return result
+
+
+def grade_external_logs(log_paths, k_frames):
+    """A2/F6 grade-external-logs mode: parse a set of ALREADY-PRODUCED boot logs
+    (the exact measurement boots) and run ledger_for_arm over them. Returns the
+    ledger dict (same schema as the ON-arm ledger). Boots that fail to parse are
+    surfaced as an ok=False row so a short/failed boot cannot silently pass.
+    The harness that CALLS this treats PRIMARY != PASS (stream axis < N/N) as VOID:
+    it must REFUSE to emit a WHITE/wash verdict, never discard-and-rerun."""
+    boots = []
+    for lp in log_paths:
+        b = parse_boot_log(lp, k_frames, attrib=True)
+        b["logPath"] = lp
+        boots.append(b)
+    arm = {"arm": "EXTERN", "boots": boots,
+           "ok": sum(1 for b in boots if b["ok"]), "n": len(boots)}
+    led = ledger_for_arm(arm, k_frames)
+    led["nLogs"] = len(log_paths)
+    led["nParsed"] = arm["ok"]
+    return led
 
 
 def run_arm(binpath, name, arm_env, n, k_frames, target_ms, out_dir, diff,
@@ -371,8 +401,23 @@ def main():
     ap.add_argument("--autohit", action="store_true")
     ap.add_argument("--attrib", action="store_true", help="M1 attribution table")
     ap.add_argument("--ledger", action="store_true", help="M3 per-axis ledger")
+    ap.add_argument("--grade-logs", nargs="+", default=None,
+                    help="A2/F6: grade already-produced boot logs (do NOT launch boots)")
+    ap.add_argument("--grade-out", default=None, help="write the external-log ledger JSON here")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
+
+    if a.grade_logs:
+        led = grade_external_logs(a.grade_logs, a.k)
+        print("==================== EXTERNAL-LOG LEDGER ====================")
+        print(json.dumps(led.get("summary", led), indent=2))
+        print(f"nLogs={led['nLogs']} nParsed={led['nParsed']} "
+              f"(VOID unless nParsed==nLogs AND stream=={led['nParsed']}/{led['nParsed']})")
+        outp = a.grade_out or os.path.join(a.out, f"ledger-extern-{a.tag}.json")
+        with open(outp, "w") as f:
+            json.dump(led, f, indent=2)
+        print(f"wrote {outp}")
+        return
     target_ms = (a.k + 60) * DT_MS
     jitter = {"RB3_LOADDET_JITTER": str(a.jitter)} if a.jitter > 0 else {}
     cap = a.attrib or a.ledger

@@ -1,0 +1,146 @@
+{
+  "validate": true,
+  "rows": [
+    {
+      "arm": "OFF",
+      "guard": "OFF",
+      "png": "/tmp/r4m4-white/wr_val_OFF_01.png",
+      "log": "/tmp/r4m4-white/wr_val_OFF_01.engine.log",
+      "frame": 3585,
+      "songms": 21003.5,
+      "class": "NEARBLACK",
+      "is_wash": false,
+      "mean_luma": 0.0,
+      "hi_frac": 0.0,
+      "mid_sat": NaN,
+      "low_sat": 0.0,
+      "high_sat": NaN,
+      "guard_engaged_hits": 19898
+    },
+    {
+      "arm": "OFF",
+      "guard": "OFF",
+      "png": "/tmp/r4m4-white/wr_val_OFF_02.png",
+      "log": "/tmp/r4m4-white/wr_val_OFF_02.engine.log",
+      "frame": 5095,
+      "songms": 21010.8,
+      "class": "NEUTRAL",
+      "is_wash": false,
+      "mean_luma": 0.5176064372062683,
+      "hi_frac": 12.275282118055555,
+      "mid_sat": 0.31574244430162224,
+      "low_sat": 0.1643189115518952,
+      "high_sat": 0.243329958189746,
+      "guard_engaged_hits": 27938
+    },
+    {
+      "arm": "OFF",
+      "guard": "OFF",
+      "png": "/tmp/r4m4-white/wr_val_OFF_03.png",
+      "log": "/tmp/r4m4-white/wr_val_OFF_03.engine.log",
+      "frame": 3690,
+      "songms": 21011.1,
+      "class": "NEARBLACK",
+      "is_wash": false,
+      "mean_luma": 0.0,
+      "hi_frac": 0.0,
+      "mid_sat": NaN,
+      "low_sat": 0.0,
+      "high_sat": NaN,
+      "guard_engaged_hits": 20431
+    }
+  ],
+  "ledger": {
+    "referenceBoot": 0,
+    "boots": [
+      {
+        "boot": 0,
+        "anchorFrame": 1963,
+        "axes": {
+          "count": {
+            "value": "16+2c25f3b1c7a7",
+            "pass": true
+          },
+          "order": {
+            "value": "794628df023d",
+            "pass": true
+          },
+          "stream": {
+            "value": 16,
+            "pass": true
+          },
+          "clock": {
+            "value": "span=300,anchor=1963",
+            "pass": true
+          }
+        },
+        "callerOrder": {
+          "value": "552c1181a0f0",
+          "pass": true
+        }
+      },
+      {
+        "boot": 1,
+        "anchorFrame": 2717,
+        "axes": {
+          "count": {
+            "value": "0+92e3e1b0eb7b",
+            "pass": false
+          },
+          "order": {
+            "value": "794628df023d",
+            "pass": true
+          },
+          "stream": {
+            "value": 0,
+            "pass": false
+          },
+          "clock": {
+            "value": "span=300,anchor=2717",
+            "pass": true
+          }
+        },
+        "callerOrder": {
+          "value": "a594af083b5c",
+          "pass": false
+        }
+      },
+      {
+        "boot": 2,
+        "anchorFrame": 2047,
+        "axes": {
+          "count": {
+            "value": "16+2d991c76a37e",
+            "pass": false
+          },
+          "order": {
+            "value": "794628df023d",
+            "pass": true
+          },
+          "stream": {
+            "value": 16,
+            "pass": true
+          },
+          "clock": {
+            "value": "span=300,anchor=2047",
+            "pass": true
+          }
+        },
+        "callerOrder": {
+          "value": "f79c21c4ac20",
+          "pass": false
+        }
+      }
+    ],
+    "summary": {
+      "count": "1/3",
+      "order": "3/3",
+      "stream": "2/3",
+      "clock": "3/3",
+      "callerOrder(info)": "1/3",
+      "PRIMARY": "FAIL"
+    },
+    "nLogs": 3,
+    "nParsed": 3
+  }
+}

@@ -1,0 +1,1287 @@
+{
+  "tag": "wash",
+  "bin": "native/build-agent-R4-M4/rb3-native",
+  "win": 30,
+  "thresholds": {
+    "bad_hi": 25.0,
+    "good_hi": 5.0
+  },
+  "off_boot": {
+    "guard": "OFF",
+    "shots": [
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 72.00672743055556,
+        "mean_luma": 0.8018490076065063,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 72.14095052083334,
+        "mean_luma": 0.8022031784057617,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 71.619140625,
+        "mean_luma": 0.7953575849533081,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 68.6531032986111,
+        "mean_luma": 0.7815746665000916,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 66.66069878472223,
+        "mean_luma": 0.7778966426849365,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 62.19325086805556,
+        "mean_luma": 0.7630451917648315,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 43.610568576388886,
+        "mean_luma": 0.7085222601890564,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 36.31011284722222,
+        "mean_luma": 0.6883415579795837,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 28.44769965277778,
+        "mean_luma": 0.6635209918022156,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 22.31684027777778,
+        "mean_luma": 0.6248035430908203,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 18.052083333333332,
+        "mean_luma": 0.5956392884254456,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 14.67013888888889,
+        "mean_luma": 0.5634673833847046,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 12.14236111111111,
+        "mean_luma": 0.5314199924468994,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 11.801323784722221,
+        "mean_luma": 0.5196254253387451,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 11.938910590277779,
+        "mean_luma": 0.5267921090126038,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 12.249131944444445,
+        "mean_luma": 0.5258485674858093,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 12.160481770833332,
+        "mean_luma": 0.5276174545288086,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 12.377278645833334,
+        "mean_luma": 0.5239927172660828,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 12.39529079861111,
+        "mean_luma": 0.5287251472473145,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 12.564019097222223,
+        "mean_luma": 0.5226571559906006,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 27.42013888888889,
+        "mean_luma": 0.6458170413970947,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 37.88878038194444,
+        "mean_luma": 0.6798184514045715,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 47.57042100694445,
+        "mean_luma": 0.7052812576293945,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 53.977864583333336,
+        "mean_luma": 0.7310346961021423,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 56.80164930555556,
+        "mean_luma": 0.7419167160987854,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 59.95345052083333,
+        "mean_luma": 0.7539644837379456,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 60.980143229166664,
+        "mean_luma": 0.7511063814163208,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 79.9755859375,
+        "mean_luma": 0.8075315952301025,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 81.0539279513889,
+        "mean_luma": 0.8112455010414124,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 81.13943142361111,
+        "mean_luma": 0.8151992559432983,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 80.97960069444444,
+        "mean_luma": 0.8098947405815125,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 80.97417534722223,
+        "mean_luma": 0.8129428625106812,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 80.81239149305556,
+        "mean_luma": 0.8113731741905212,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 81.07085503472223,
+        "mean_luma": 0.8158018589019775,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 81.00705295138889,
+        "mean_luma": 0.822181761264801,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 80.2783203125,
+        "mean_luma": 0.8122490048408508,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 79.17415364583333,
+        "mean_luma": 0.8117298483848572,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 77.57703993055556,
+        "mean_luma": 0.8127175569534302,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 75.0732421875,
+        "mean_luma": 0.8069766759872437,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 75.01106770833333,
+        "mean_luma": 0.8044801950454712,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 74.64442274305556,
+        "mean_luma": 0.8019294142723083,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 71.30143229166667,
+        "mean_luma": 0.7998796105384827,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 70.05295138888889,
+        "mean_luma": 0.7915074229240417,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 20909.3,
+        "frame": 5483,
+        "hi_frac": 65.97102864583333,
+        "mean_luma": 0.7805741429328918,
+        "class": "WHITE",
+        "fx_emit_win": 1210,
+        "light_changes_win": 102
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 60.76963975694445,
+        "mean_luma": 0.7688878178596497,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 42.20974392361111,
+        "mean_luma": 0.7104138731956482,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 35.2470703125,
+        "mean_luma": 0.6839640140533447,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 28.127929687499996,
+        "mean_luma": 0.6521446108818054,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 22.74099392361111,
+        "mean_luma": 0.6246262192726135,
+        "class": "NEUTRAL",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 37.197048611111114,
+        "mean_luma": 0.6860935688018799,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 40.16026475694445,
+        "mean_luma": 0.6871064305305481,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 43.1689453125,
+        "mean_luma": 0.6847307085990906,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 46.19509548611111,
+        "mean_luma": 0.6914063096046448,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 48.37923177083333,
+        "mean_luma": 0.6966607570648193,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 46.62293836805556,
+        "mean_luma": 0.692855179309845,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 47.013997395833336,
+        "mean_luma": 0.6864141225814819,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 38.789822048611114,
+        "mean_luma": 0.6666924357414246,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 32.9921875,
+        "mean_luma": 0.6496853232383728,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 28.74359809027778,
+        "mean_luma": 0.639144241809845,
+        "class": "WHITE",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 20.9638671875,
+        "mean_luma": 0.5946093797683716,
+        "class": "NEUTRAL",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36140.4,
+        "frame": 5527,
+        "hi_frac": 15.887044270833334,
+        "mean_luma": 0.5598704218864441,
+        "class": "NEUTRAL",
+        "fx_emit_win": 79145,
+        "light_changes_win": 65
+      }
+    ],
+    "phase_meta": {
+      "guard_hits": 30895,
+      "fx_offs": [
+        "0x6021ae",
+        "0x6023da",
+        "0x602411",
+        "0x602448",
+        "0x6024eb",
+        "0x602521",
+        "0x602aba",
+        "0x602b94",
+        "0x602bcb",
+        "0x602c46",
+        "0x602c7c",
+        "0x602cb3",
+        "0x602cea",
+        "0x602d43",
+        "0x602d9c",
+        "0x602e41",
+        "0x602e78",
+        "0x602eaf",
+        "0x602ee6",
+        "0x6031a7",
+        "0x6031f3",
+        "0x603262",
+        "0x60370d",
+        "0x603747",
+        "0x603781",
+        "0x6037be",
+        "0x604c05",
+        "0x604f9e",
+        "0x604fc2",
+        "0x60500f"
+      ],
+      "fx_syms": [
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1280",
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1281",
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1285",
+        "RndParticleSys::CreateParticles(float, float, Transform const&) @ src/system/rndobj/Part.cpp:1064",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:629",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:652",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:653",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:654",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:661",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:662",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:704",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:709",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:710",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:718",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:719",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:720",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:721",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:726",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:731",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:739",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:740",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:741",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:742",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:764",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:765",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:769",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:824",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:826",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:828",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:830"
+      ],
+      "n_attrib_offs": 61
+    },
+    "log": "/tmp/r4m4-wash/wash_off.engine.log",
+    "n_shots": 61
+  },
+  "separation(lint3)": {
+    "fx_emit_win": {
+      "n_bad": 47,
+      "n_good": 0,
+      "mean_bad": 24424.68085106383,
+      "mean_good": null,
+      "auc": NaN,
+      "mannwhitney_p": NaN,
+      "separates": false
+    },
+    "light_changes_win": {
+      "n_bad": 47,
+      "n_good": 0,
+      "mean_bad": 90.97872340425532,
+      "mean_good": null,
+      "auc": NaN,
+      "mannwhitney_p": NaN,
+      "separates": false
+    }
+  },
+  "instrument_validated": false,
+  "n_bad": 47,
+  "n_good": 0,
+  "on_boot": {
+    "guard": "ON",
+    "shots": [
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 12.356119791666668,
+        "mean_luma": 0.5181110501289368,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 12.38161892361111,
+        "mean_luma": 0.5182681083679199,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 11.544053819444445,
+        "mean_luma": 0.5121187567710876,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 11.63107638888889,
+        "mean_luma": 0.513790488243103,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 11.682725694444445,
+        "mean_luma": 0.5170493125915527,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 11.5068359375,
+        "mean_luma": 0.5128098130226135,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 32.592122395833336,
+        "mean_luma": 0.6706101894378662,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 46.47059461805556,
+        "mean_luma": 0.717907726764679,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 57.87727864583333,
+        "mean_luma": 0.7555041313171387,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 65.56412760416667,
+        "mean_luma": 0.7805426120758057,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 70.50010850694444,
+        "mean_luma": 0.7911877036094666,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 72.92664930555556,
+        "mean_luma": 0.7992358803749084,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 69.51280381944444,
+        "mean_luma": 0.7907252907752991,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 66.68804253472223,
+        "mean_luma": 0.7845398187637329,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 59.845052083333336,
+        "mean_luma": 0.759869396686554,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 57.26953125000001,
+        "mean_luma": 0.7553434371948242,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 49.823567708333336,
+        "mean_luma": 0.7311786413192749,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 48.413302951388886,
+        "mean_luma": 0.7287416458129883,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 51.44368489583333,
+        "mean_luma": 0.7370241284370422,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 55.86827256944444,
+        "mean_luma": 0.7511371970176697,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 60.74403211805556,
+        "mean_luma": 0.7643550634384155,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 63.01399739583333,
+        "mean_luma": 0.766710638999939,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 61.29687499999999,
+        "mean_luma": 0.7629159688949585,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 57.861653645833336,
+        "mean_luma": 0.7494364380836487,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 51.90288628472223,
+        "mean_luma": 0.7298352718353271,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 45.35232204861111,
+        "mean_luma": 0.7040862441062927,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 35.22081163194444,
+        "mean_luma": 0.6691730618476868,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 22.38693576388889,
+        "mean_luma": 0.6161169409751892,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 18.30132378472222,
+        "mean_luma": 0.5884118676185608,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 15.556966145833334,
+        "mean_luma": 0.5537625551223755,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 13.099500868055555,
+        "mean_luma": 0.5318722128868103,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 12.511284722222221,
+        "mean_luma": 0.5245465040206909,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 58.03721788194445,
+        "mean_luma": 0.750266432762146,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 61.481228298611114,
+        "mean_luma": 0.7568047642707825,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 61.874565972222214,
+        "mean_luma": 0.7649081945419312,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 57.62358940972222,
+        "mean_luma": 0.7547035217285156,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 48.02191840277778,
+        "mean_luma": 0.7282068133354187,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 32.611002604166664,
+        "mean_luma": 0.6671735048294067,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 21.528971354166668,
+        "mean_luma": 0.6101596355438232,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 15.655924479166666,
+        "mean_luma": 0.5541020631790161,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 12.659613715277779,
+        "mean_luma": 0.5307586193084717,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 12.678276909722221,
+        "mean_luma": 0.5214838981628418,
+        "class": "NEUTRAL",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 61.39355468749999,
+        "mean_luma": 0.7683057188987732,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 20912.6,
+        "frame": 5504,
+        "hi_frac": 69.07953559027777,
+        "mean_luma": 0.7914360761642456,
+        "class": "WHITE",
+        "fx_emit_win": 1610,
+        "light_changes_win": 100
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 71.24989149305556,
+        "mean_luma": 0.7976989150047302,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 69.9091796875,
+        "mean_luma": 0.7919219732284546,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 72.81825086805556,
+        "mean_luma": 0.7950009703636169,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 69.87261284722223,
+        "mean_luma": 0.7906137704849243,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 67.11946614583333,
+        "mean_luma": 0.7869829535484314,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 50.74858940972222,
+        "mean_luma": 0.739292323589325,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 45.9248046875,
+        "mean_luma": 0.7156234383583069,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 41.99858940972222,
+        "mean_luma": 0.7021433711051941,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 41.058919270833336,
+        "mean_luma": 0.6876252293586731,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 42.536458333333336,
+        "mean_luma": 0.6888837814331055,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 41.970377604166664,
+        "mean_luma": 0.6836236119270325,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 37.32042100694444,
+        "mean_luma": 0.6598352193832397,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 34.41351996527778,
+        "mean_luma": 0.6529263257980347,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 33.5927734375,
+        "mean_luma": 0.6464745402336121,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 28.067382812500004,
+        "mean_luma": 0.6253140568733215,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 21.43999565972222,
+        "mean_luma": 0.594129204750061,
+        "class": "NEUTRAL",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      },
+      {
+        "songms": 36506.8,
+        "frame": 5548,
+        "hi_frac": 70.65993923611111,
+        "mean_luma": 0.7922781109809875,
+        "class": "WHITE",
+        "fx_emit_win": 80106,
+        "light_changes_win": 65
+      }
+    ],
+    "phase_meta": {
+      "guard_hits": 31007,
+      "fx_offs": [
+        "0x6021ae",
+        "0x6023da",
+        "0x602411",
+        "0x602448",
+        "0x6024eb",
+        "0x602521",
+        "0x602aba",
+        "0x602b94",
+        "0x602bcb",
+        "0x602c46",
+        "0x602c7c",
+        "0x602cb3",
+        "0x602cea",
+        "0x602d43",
+        "0x602d9c",
+        "0x602e41",
+        "0x602e78",
+        "0x602eaf",
+        "0x602ee6",
+        "0x6031a7",
+        "0x6031f3",
+        "0x603262",
+        "0x60370d",
+        "0x603747",
+        "0x603781",
+        "0x6037be",
+        "0x604c05",
+        "0x604f9e",
+        "0x604fc2",
+        "0x60500f"
+      ],
+      "fx_syms": [
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1280",
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1281",
+        "RndParticleSys::CheckBursts(float) @ src/system/rndobj/Part.cpp:1285",
+        "RndParticleSys::CreateParticles(float, float, Transform const&) @ src/system/rndobj/Part.cpp:1064",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:629",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:652",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:653",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:654",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:661",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:662",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:704",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:709",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:710",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:718",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:719",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:720",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:721",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:726",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:731",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:739",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:740",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:741",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:742",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:764",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:765",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:769",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:824",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:826",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:828",
+        "RndParticleSys::InitParticle(float, RndParticle*, Transform const*, PartOverride&) @ src/system/rndobj/Part.cpp:830"
+      ],
+      "n_attrib_offs": 61
+    },
+    "log": "/tmp/r4m4-wash/wash_on.engine.log",
+    "n_shots": 61
+  },
+  "guard_effect": {
+    "guard_hits_OFF": 30895,
+    "guard_hits_ON": 31007,
+    "mean_hi_OFF": 48.691945227117486,
+    "mean_hi_ON": 44.04086442679873,
+    "note": "lint 8: guard branch-entry hit-count on both arms proves the guard code ran; any near-zero delta is not 'guard absent'."
+  }
+}
