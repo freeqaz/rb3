@@ -88,6 +88,8 @@ ObjectDir *sToDir;
 namespace {
 int gLoadBindProbe = -1;   // -1 unread, 0 off, 1 on
 int gLoadBindNoShim = -1;
+int gHandsBindFix = -1;
+int gBindFixDump = -1;
 inline bool LoadBindProbeOn() {
     if (gLoadBindProbe < 0) gLoadBindProbe = ::getenv("RB3_LOADBIND_PROBE") ? 1 : 0;
     return gLoadBindProbe != 0;
@@ -95,6 +97,54 @@ inline bool LoadBindProbeOn() {
 inline bool LoadBindNoShim() {
     if (gLoadBindNoShim < 0) gLoadBindNoShim = ::getenv("RB3_LOADBIND_NOSHIM") ? 1 : 0;
     return gLoadBindNoShim != 0;
+}
+// Wave-21 Lane FIX Part 1 (RB3_HANDS_BINDFIX, default-OFF): SCOPE the white-texture
+// FilterSubdir shim so the skeleton-bearing subdirs take the RETAIL kMerge (restoring
+// the sBoneMergeDir per-member bone remap, :4337) while the texture palette subdir
+// (colorpalettes.milo) + outfit *_resource.milo subdirs KEEP the shim's kReplace
+// (white-texture fix preserved). Distinct from RB3_LOADBIND_NOSHIM (which flips EVERY
+// subdir, reintroducing white textures — the Wave-20 measurement substrate only).
+inline bool HandsBindFixOn() {
+    if (gHandsBindFix < 0) gHandsBindFix = ::getenv("RB3_HANDS_BINDFIX") ? 1 : 0;
+    return gHandsBindFix != 0;
+}
+inline bool BindFixDumpOn() {
+    if (gBindFixDump < 0) gBindFixDump = ::getenv("RB3_BINDFIX_DUMP") ? 1 : 0;
+    return gBindFixDump != 0;
+}
+// Which subdir must STAY kReplace to keep the white-texture fix while restoring the
+// retail per-member bone remap. The white-texture regression is caused by DRAINING the
+// base skin/cloth texture PALETTE that many sibling milos reference concurrently:
+// colorpalettes.milo. The retail sBoneMergeDir bone remap (:4337) re-points hand meshes
+// to their PER-MEMBER bone instance; it fires on bone_*.mesh whose o1->Dir()==
+// sBoneMergeDir (SHARED_ROOT). MEASURED (Wave-21, br2/br3 counters): the remap fires
+// 31,488x/member ONLY when char_shared.milo AND the outfit *_resource.milo subdirs BOTH
+// take retail kMerge (char_shared recurses into its nested ../skeleton.milo where the
+// bones live; the outfit mergers share the same skeleton) — un-shimming char_shared
+// alone (outfits kReplace) OR outfits alone (char_shared kReplace) each yields br2=0.
+// So RB3_HANDS_BINDFIX un-shims EVERYTHING EXCEPT colorpalettes.milo. char_shared's own
+// skin materials + dummy textures are NOT drained by its kMerge: they hit the :4311
+// o1->Dir()==sCharSharedDir branch in Filter -> ReplaceRefs + kIgnore (ref-swapped,
+// never MOVED), so restoring char_shared's kMerge does not reintroduce the white cascade
+// (verified: 0 dummy_torso.tex misses). RB3_BINDFIX_KEEPCS=1 additionally keeps
+// char_shared on kReplace — an A/B knob that DISABLES the remap (br2=0), kept only to
+// re-demonstrate the mechanism. Match by mStoredFile suffix.
+inline bool IsSharedPaletteSubdir(ObjectDir *o1) {
+    if (!o1 || o1->mStoredFile.empty()) return false;
+    const char *p = o1->mStoredFile.c_str();
+    size_t n = std::strlen(p);
+    static int sKeepCharShared = -1;
+    if (sKeepCharShared < 0)
+        sKeepCharShared = ::getenv("RB3_BINDFIX_KEEPCS") ? 1 : 0;
+    const char *cp = "/colorpalettes.milo";
+    size_t cpl = std::strlen(cp);
+    if (n >= cpl && std::strcmp(p + (n - cpl), cp) == 0) return true;
+    if (sKeepCharShared) {
+        const char *cs = "/char_shared.milo";
+        size_t sl = std::strlen(cs);
+        if (n >= sl && std::strcmp(p + (n - sl), cs) == 0) return true;
+    }
+    return false;
 }
 // Filter remap branch hit counters. Index: 0=sCharSharedDir(:4182),
 // 1=sInstrument/InstResource(:4188), 2=sBoneMergeDir(:4202 outer-if entered),
@@ -1842,6 +1892,48 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 // just posed THIS bone): at rest the composed skin is identity ->
                 // coherent; as the bone animates the verts follow. No repoint
                 // needed (already bound to it).
+                // A2 (Wave-21 Lane FIX): under RB3_HANDS_BINDFIX the per-member bone
+                // remap has re-pointed hand meshes onto their own instance, so
+                // own==bound here and (sNoBoundRebake default-ON) this is the
+                // boundRebakeOff MISS: the mesh is NEVER flagged mNativeBonesRebound,
+                // so no seed-R rebake runs, the AUTHORED offset survives, and the
+                // engine fling-clamp/V24 guard STAYS ACTIVE. That is the untested
+                // draw regime this wave measures — NOT dead cell #1 (seed-R rebake),
+                // NOT the 8th cell (RB3_HANDS_AUTHORED_REPOINT: repoint + clamp-exempt),
+                // NOT FULL-rebind. RB3_BINDFIX_DUMP names the per-slot composition so
+                // the flag-ON regime is not a black box (discharges E4).
+                bool bfHandMesh = false;
+                if (BindFixDumpOn() && mn) {
+                    std::string ln(mn);
+                    for (size_t i = 0; i < ln.size(); i++) {
+                        char c = ln[i];
+                        if (c >= 'A' && c <= 'Z') ln[i] = (char)(c + 32);
+                    }
+                    bfHandMesh = ln.find("hand") != std::string::npos ||
+                                 ln.find("finger") != std::string::npos ||
+                                 ln.find("nail") != std::string::npos ||
+                                 ln.find("glove") != std::string::npos;
+                }
+                if (BindFixDumpOn() && bfHandMesh) {
+                    Transform sk;
+                    Multiply(mesh->BoneOffsetAt(b), own->WorldXfm(), sk);
+                    static std::map<std::string, int> sBfSeen;
+                    std::string k = std::string(Name() ? Name() : "?") + "/" +
+                                    (mn ? mn : "?") + "/" + bname;
+                    if (sBfSeen[k]++ % 240 == 0)
+                        fprintf(stderr,
+                            "[BINDFIX_COMPOSE] member='%s' mesh='%s' bone='%s' own=%p "
+                            "bound=%p distinct=%d authoredOff.ang=%.1f "
+                            "off*ownWorld.ang=%.1f boundRest.ang=%.1f rebound=%d "
+                            "regime=boundRebakeOff-miss(clamp-active,authored-survive)\n",
+                            Name() ? Name() : "?", mn ? mn : "?", bname.c_str(),
+                            (void *)own, (void *)bound, (own != bound) ? 1 : 0,
+                            NativeRotAngleVsIdentityDeg(mesh->BoneOffsetAt(b).m),
+                            NativeRotAngleVsIdentityDeg(sk.m),
+                            NativeRotAngleVsIdentityDeg(
+                                NativeCharSpaceRestXfm(bound).m),
+                            (int)mesh->mNativeBonesRebound);
+                }
                 if (sNoBoundRebake || rp == mNativeRestPose.end()) {
                     miss++;
                     if (!missBone) {
@@ -4415,27 +4507,58 @@ MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir)
     // fresh per member (kInlineCached, 4 distinct instances) but the OUTFIT meshes never
     // bind to it — they bind to the shared skeleton.milo root. The female member
     // (player1, trackjacket: inverse-binds baked for the FEMALE bind) therefore lands on
-    // the male-bind shared skeleton and flings ~20u (skinPos=(19.8,3.8,0.4)). PROVEN
-    // dead-ends: scoping this shim to kInlineNever palettes (outfits kMerge) — band
-    // still binds the shared root, female still flung; full shim-off (retail kMerge) —
-    // same shared root + white textures; pruning char_shared's `../skeleton.milo`
-    // subdir — strips ALL outfit bones (they had already consolidated onto it). The
-    // faithful fix must un-share `char/main/skeleton.milo` for the band at the
-    // name-resolution / share layer (broad, high-risk; would also touch the crowd) AND
-    // pose each per-member skeleton to its outfit's gender bind (skeleton_unshared.milo
-    // is itself male-bind; the gender pose comes from the outfit/clip). The renderer
-    // fling clamp (RB3_NO_SKIN_CLAMP) is the shipped fix. See
-    // docs/native/CHAR_SKINNING_DEFORM_INVESTIGATION.md.
+    // the male-bind shared skeleton and flings ~20u (skinPos=(19.8,3.8,0.4)).
+    //
+    // WAVE-20/21 CORRECTION (errata E10; supersedes the two dead-end claims that used
+    // to live in this NOTE). Two of the old "PROVEN dead-ends" were re-measured or
+    // mis-scoped:
+    //  * "full shim-off (retail kMerge) = same shared root" is SUPERSEDED. Wave-20
+    //    Lane N counted the branch hits: with the shim OFF the sBoneMergeDir bone
+    //    remap (:4337) fires 31,488x/member (0 with the shim ON), and hand meshes flip
+    //    to PER-MEMBER binding (4 distinct instances, distinctFromOwnFind 205xFalse =
+    //    bound==own). The shim was SUPPRESSING the retail per-member remap, not landing
+    //    on the same shared root. (The 2026-06-06 "same shared root" reading measured
+    //    torso upArmPtr at DRAW time; Wave-20 measured hand meshes at rebind ENTRY -
+    //    different population.) The catch: shim-off ALSO whites-out textures AND the
+    //    per-member hands still visually FLING (Layer 2 - per-member binding is
+    //    necessary but not sufficient; W20-SYNTHESIS).
+    //  * the 2026-06-06 "scoped shim" dead-end (palettes kReplace, outfits kMerge) is
+    //    close in FORM to RB3_HANDS_BINDFIX (Wave-21) but was evaluated by DRAW-time
+    //    torso binding (upArmPtr) and read "still binds the shared root" — Wave-20 shows
+    //    that reading measured a different population than the HAND meshes at rebind
+    //    entry, and never counted the sBoneMergeDir remap. RB3_HANDS_BINDFIX un-shims
+    //    everything EXCEPT the two shared-palette subdirs (colorpalettes.milo +
+    //    char_shared.milo) so the OUTFIT+skeleton mergers restore the per-member remap;
+    //    the Wave-21 gates MEASURE whether that faithful draw regime fixes the hands
+    //    (it may still be Layer-2-insufficient — see IsSharedPaletteSubdir/HandsBindFixOn
+    //    above and the W21-FIX STATUS).
+    // The renderer fling clamp (RB3_NO_SKIN_CLAMP) + mitten (RB3_HANDS_MITTEN) are the
+    // shipped mitigations. See docs/native/CHAR_SKINNING_DEFORM_INVESTIGATION.md and
+    // docs/native/engine-arch-review-2026-07-05/execution/W20-SYNTHESIS/SYNTHESIS.md.
     MergeFilter::Action act =
         DefaultSubdirAction(o1, (Subdirs)mFileMerger->mFilesPending.front()->mSubdirs);
     MergeFilter::Action baseAct = act;
     bool overrode = false;
+    bool bindFixExempt = false;
     if (act == MergeFilter::kMerge && o1 && !o1->mStoredFile.empty()) {
         // Wave-20 Lane N shim-reconciliation arm: RB3_LOADBIND_NOSHIM disables the
         // kMerge->kReplace override so the retail (kMerge) action stands. White
         // textures acceptable — we read binding, not pixels. Default (flag unset)
         // keeps the shipped shim untouched (byte-identical to pre-Wave-20).
-        if (!LoadBindNoShim()) {
+        //
+        // Wave-21 Lane FIX Part 1 (RB3_HANDS_BINDFIX, default-OFF): SCOPED variant —
+        // the shim keeps its kReplace ONLY for the two shared texture-PALETTE subdirs
+        // (colorpalettes.milo + char_shared.milo, whose concurrent draining causes the
+        // white-texture cascade) and EXEMPTS everything else (outfit *_resource.milo +
+        // skeleton*.milo) to retail kMerge. This restores the sBoneMergeDir per-member
+        // bone remap (:4337) — MEASURED (Wave-21): the remap is driven by the OUTFIT
+        // resource mergers (which share ../skeleton.milo), so un-shimming ONLY the
+        // skeleton subdirs yields br2=0; the outfits must also merge. Palettes staying
+        // kReplace keeps the white-texture fix intact. Unlike NOSHIM (which flips
+        // colorpalettes too, whiting textures), this is a faithful per-member restore.
+        if (HandsBindFixOn() && !IsSharedPaletteSubdir(o1)) {
+            bindFixExempt = true; // retail kMerge stands (only palettes stay kReplace)
+        } else if (!LoadBindNoShim()) {
             act = MergeFilter::kReplace;
             overrode = true;
         }
@@ -4448,12 +4571,15 @@ MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir)
                                                                : "k?";
         fprintf(stderr,
             "[LOADBIND_SUBDIR] member='%s' subdir='%s' storedFile='%s' storedEmpty=%d "
-            "baseAct=%d -> act=%s overrode=%d noshim=%d\n",
+            "baseAct=%d -> act=%s overrode=%d noshim=%d bindfix=%d sharedPalette=%d "
+            "bindFixExempt=%d\n",
             Name() ? Name() : "?",
             (o1 && o1->Name()) ? o1->Name() : "?",
             (o1 && !o1->mStoredFile.empty()) ? o1->mStoredFile.c_str() : "(empty)",
             (o1 && o1->mStoredFile.empty()) ? 1 : 0,
-            (int)baseAct, actName, overrode ? 1 : 0, LoadBindNoShim() ? 1 : 0);
+            (int)baseAct, actName, overrode ? 1 : 0, LoadBindNoShim() ? 1 : 0,
+            HandsBindFixOn() ? 1 : 0, IsSharedPaletteSubdir(o1) ? 1 : 0,
+            bindFixExempt ? 1 : 0);
     }
     return act;
 #else
