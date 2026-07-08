@@ -59,17 +59,26 @@ DRAW (not just rest). Yet it is **visually torn** (finger-spike fan, `crop_armRE
 reproducing the HANDS-FIX Wave-16 visual refutation. This is the **L2-b empirical shape**
 (A7): per-bone Tier-1 COHERENT at draw AND visual tear.
 
-### 3. The tear is INVISIBLE to the inter-bone joint metric (= the R5 wall, confirmed native)
-Comparative TIER2 EXACT-joint, AUTHORED_REPOINT vs matched flag-OFF, MALE 330 matched
-frames: **median paired delta +0.00u** (max +8.4u, a single transient at one extreme
-pose). The torn arm's joints attach essentially IDENTICALLY to the coherent flag-OFF
-ceiling-hand. The visible tear lives in the mesh SHELL / weight-blend *between*
-coherently-attached joints, which the inter-bone joint metric cannot see. This reproduces
-**R5 VERDICT §0 item 4** exactly: bone-world/joint-attach metrics cannot separate the
-offset-class arms; the animated tear is the half that required articulated Wii ground truth
-and was **closed WITHOUT it (GT-D)**. DISCRIM cannot break that wall from the native side —
-the tear is real and visible but the coherent-basis-yet-torn signature is precisely the
-walled animated question.
+### 3. The joint metric UNDER-reads the tear (= the R5 wall, confirmed native)
+Comparative TIER2 EXACT-joint, AUTHORED_REPOINT vs matched flag-OFF (MALE 330 / FEMALE 114
+matched frames):
+- **MALE: median paired delta +0.00u**, but **15% of frames exceed +4u** (up to +8.4u),
+  concentrated on the DISTAL finger bones (`ringfinger02`, `middlefinger03`) at high-curl
+  poses. So there IS a real, animated, finger-level inter-bone divergence — but it is small
+  (≤8u) and intermittent (15% of frames).
+- **FEMALE: 0% of frames exceed +2u** — the joint metric reads essentially no separation,
+  yet the female hand is equally visually torn.
+
+The joint-point metric therefore **under-reads the tear by orders of magnitude**: the
+visible finger-spike fan is a mesh-SHELL / weight-blend divergence *between*
+coherently-attached joints (the joint POINTS barely move; the geometry spanning them
+shears). This reproduces **R5 VERDICT §0 item 4** exactly: bone-world/joint-attach metrics
+cannot faithfully gate the offset-class arms; the animated shell tear is the half that
+required articulated Wii ground truth and was **closed WITHOUT it (GT-D)**. DISCRIM cannot
+break that wall from the native side — the tear is real and visible, the small finger-level
+joint divergence confirms it is genuinely animated, but the coherent-basis-yet-torn
+signature (basis 3.1°, joints ≈coherent, shell torn) is precisely the walled animated
+question.
 
 ## Explaining the arm-S male 3.1° null vs the draw-frame tear (charter mandate)
 arm-S read `own`≈B (3.1°) at Poll-cadence FRESHNESS captures — i.e. the coherent-at-rest

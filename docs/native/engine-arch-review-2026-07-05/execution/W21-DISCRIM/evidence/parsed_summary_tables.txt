@@ -93,3 +93,11 @@
 [jeans]
   TIER2 joint-attach worst(u): n=1434 min=0.0 med=17.8 max=32.8   bone(mode)=bone_R-thigh.mesh
   TIER2 EXACT-joint(u):        n=1434 min=0.0 med=0.0 max=0.0
+
+########## COMPARATIVE TIER2 EXACT-joint: AUTHORED_REPOINT vs matched flag-OFF ##########
+# (rest-free pose-tracking inter-bone joint metric; the tear is a SHELL/weight-blend
+#  phenomenon that this joint-POINT metric under-reads)
+MALE:   matched=330  delta>2u:50(15%)  delta>4u:48(15%)  repoint-exactjoint>2u:50(15%)
+        median paired delta +0.00u, max +8.4u; worst on distal fingers ringfinger02/middlefinger03
+FEMALE: matched=114  delta>2u:0(0%)   delta>4u:0(0%)   repoint-exactjoint>2u:0(0%)
+        (female hand equally torn visually yet joint metric reads ~no separation)
