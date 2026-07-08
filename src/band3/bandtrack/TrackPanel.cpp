@@ -615,6 +615,21 @@ void TrackPanel::Poll() {
                 mainPerformer->GetNumStarsFloat(), TheGame->mProperties.mPlayStarSfx
             );
         }
+#ifdef HX_NATIVE
+        // W22-HUD star-fill diagnostic (env-gated; no behavior change). Logs the
+        // score + star inputs the scoreboard is being fed, to determine whether
+        // SetNumStars ever receives a rising f natively (A5 hypothesis (a)).
+        if (getenv("RB3_HUD_STAR_DBG")) {
+            static int sDbgN = 0;
+            if ((sDbgN++ & 15) == 0) {
+                MILO_LOG(
+                    "HUD_STAR_DBG: showStars=%d numStarsF=%.3f score=%d\n",
+                    (int)TheGame->mProperties.mShowStars,
+                    mainPerformer->GetNumStarsFloat(),
+                    (int)mainPerformer->GetAccumulatedScore());
+            }
+        }
+#endif
         unk61 = !unk61;
     }
     Performer *mainPerformer = TheGame->GetMainPerformer();

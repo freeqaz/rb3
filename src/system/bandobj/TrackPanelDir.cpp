@@ -325,7 +325,26 @@ void TrackPanelDir::ConfigureTracks(bool b) {
                         }
                     }
                 };
-                neutralizeAnchor(Find<RndTransAnim>("scoreboard_to_top.tnm", false));
+                // W22-HUD (A4): RE-SCOPE of K9. The K9 A/B boot proved that
+                // neutralizing the scoreboard's right.grp anchor is WRONG — it
+                // drives the score pill from top-RIGHT (score-pill center x=1124,
+                // 88% width, matching the Wii `yt_qRagnZCIMzk_gameplay_guitar`
+                // ground truth) to MID-SCREEN (x=578, 45% width). Retail
+                // single-player renders the scoreboard TOP-RIGHT, not top-center,
+                // so K9's original premise was inverted for the scoreboard.
+                //
+                // RB3_HUD_SCOREBOARD_TOPRIGHT (default-OFF, opt-in) makes K9 skip
+                // the scoreboard-anchor neutralization so the plate keeps its
+                // authored top-right position (raw V22). The applause-meter and
+                // mtv anchors are left untouched: in single-player
+                // TrackPanel::ShowApplauseMeter()==false so applause_meter.grp is
+                // hidden (see the SetShowing(b15) below), making their
+                // neutralization visually inert either way. Coordinator flips the
+                // default at close-out (cf RB3_HUB_TICKER_YFIX, 512a1bde).
+                static const bool sScoreboardTopRight =
+                    !!getenv("RB3_HUD_SCOREBOARD_TOPRIGHT");
+                if (!sScoreboardTopRight)
+                    neutralizeAnchor(Find<RndTransAnim>("scoreboard_to_top.tnm", false));
                 neutralizeAnchor(Find<RndTransAnim>("applause_meter_to_top.tnm", false));
                 neutralizeAnchor(Find<RndTransAnim>("mtv_overlay_to_top.tnm", false));
             }
