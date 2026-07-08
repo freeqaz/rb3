@@ -45,7 +45,10 @@ No conflict with WAVE19_REVIEW A1 (its region re-scope + step-0 cache check are 
   (HX_NATIVE native-only; DrawShowing 98.2% pre-existing register-swap residual, unchanged).
 - **M3** — DONE (GREEN). `evidence/M3-coverage.md` + `M3-uidump_query-roi.txt`. uidump_query.py
   --roi names mesh/owner/bones/mat/pass; coverage N=304 rectKind:3, M=0 sphere-fallback.
-- **M4** — gates G1–G4 + classjson append.
+- **M4** — DONE (ALL GREEN). `evidence/M4-gates.md` + `evidence/gates/`. G1 known-answer contrast
+  (GREEN names 106 mesh+bone in band ROI; RED sphere mislocates → 0 — vindicates B3), G2 disjoint
+  corner (0 leaked owners), G3 hand ROI names hands/gloves + finger bones, G4 golden 792 canonical
+  PASS. classjson row `RB3_PROV_SKIN_SPHERE` appended (E6, no regen).
 - **M5** — FOREARM-FLOAT production smoke (triage only).
 
 ## Flags (both default-OFF; no default flips)

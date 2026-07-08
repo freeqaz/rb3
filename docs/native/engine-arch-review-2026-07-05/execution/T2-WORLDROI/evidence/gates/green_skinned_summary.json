@@ -1,0 +1,3945 @@
+{
+ "frame": 1800,
+ "skinned": 303,
+ "rows": [
+  {
+   "mesh": "jp80_strings.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    524.8,
+    345.4,
+    9.1,
+    139.3
+   ],
+   "boneFallback": 0,
+   "nbones": 10
+  },
+  {
+   "mesh": "jp80_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    530.1,
+    505.0,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "greaserjacket_resource.1.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    961.3,
+    341.1,
+    25.1,
+    49.1
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "motorcycleboots_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    906.4,
+    469.6,
+    110.1,
+    52.8
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "tightdistressedpants_resource.1.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    634.1,
+    481.6,
+    22.0,
+    21.4
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "tightdistressedpants_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    906.4,
+    370.4,
+    95.8,
+    152.0
+   ],
+   "boneFallback": 0,
+   "nbones": 9
+  },
+  {
+   "mesh": "greaserjacket_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    855.5,
+    304.9,
+    139.7,
+    104.9
+   ],
+   "boneFallback": 0,
+   "nbones": 29
+  },
+  {
+   "mesh": "fauxhawk_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    644.4,
+    324.8,
+    15.5,
+    42.8
+   ],
+   "boneFallback": 0,
+   "nbones": 7
+  },
+  {
+   "mesh": "male_piercings_combo07.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    964.3,
+    281.5,
+    36.4,
+    67.2
+   ],
+   "boneFallback": 0,
+   "nbones": 33
+  },
+  {
+   "mesh": "eyebrows15_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    983.3,
+    281.5,
+    17.5,
+    2.9
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "greaserjacket_skin.2.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    857.4,
+    304.9,
+    137.8,
+    85.2
+   ],
+   "boneFallback": 0,
+   "nbones": 21
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    964.3,
+    281.5,
+    36.4,
+    67.2
+   ],
+   "boneFallback": 0,
+   "nbones": 33
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    984.9,
+    285.2,
+    10.4,
+    1.6
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    986.4,
+    299.9,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    987.3,
+    297.3,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    982.8,
+    296.2,
+    3.1,
+    1.9
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "tightdistressedpants_skin.2.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    927.7,
+    405.9,
+    52.8,
+    63.8
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "tightdistressedpants_skin.3.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    948.6,
+    390.2,
+    28.9,
+    19.6
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "hands_naked.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    836.1,
+    315.3,
+    126.3,
+    50.7
+   ],
+   "boneFallback": 0,
+   "nbones": 38
+  },
+  {
+   "mesh": "telebass_strings.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    525.4,
+    349.0,
+    8.1,
+    145.9
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "telebass_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    528.2,
+    505.0,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "modavengerboots_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    327.6,
+    455.4,
+    75.8,
+    42.6
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "jumpsuitshorts_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    364.1,
+    378.4,
+    27.7,
+    7.2
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "hippyfringe_resource.2.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    361.5,
+    334.1,
+    29.5,
+    16.8
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "hippyfringe_resource.1.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    652.4,
+    406.7,
+    92.7,
+    281.1
+   ],
+   "boneFallback": 9,
+   "nbones": 13
+  },
+  {
+   "mesh": "hippyfringe_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    549.1,
+    367.6,
+    216.2,
+    320.1
+   ],
+   "boneFallback": 14,
+   "nbones": 40
+  },
+  {
+   "mesh": "ladyfro_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    371.8,
+    323.0,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "female_eyebrows_06_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    360.6,
+    328.5,
+    17.5,
+    4.5
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "hippyfringe_skin.2.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    360.2,
+    323.0,
+    33.9,
+    62.6
+   ],
+   "boneFallback": 0,
+   "nbones": 15
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    360.2,
+    323.0,
+    32.7,
+    28.0
+   ],
+   "boneFallback": 0,
+   "nbones": 39
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    364.9,
+    329.2,
+    10.3,
+    1.0
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    372.4,
+    338.1,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    371.8,
+    336.4,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    372.2,
+    332.7,
+    0.3,
+    4.4
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "jumpsuitshorts_skin.2.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    327.6,
+    378.4,
+    75.8,
+    119.5
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "femalerings_jem.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    399.0,
+    258.4,
+    48.7,
+    9.3
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "hands_naked.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    390.6,
+    252.7,
+    60.2,
+    58.7
+   ],
+   "boneFallback": 0,
+   "nbones": 40
+  },
+  {
+   "mesh": "bonesandspikes_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    704.6,
+    358.9,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "mic_stand.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    704.6,
+    358.9,
+    17.7,
+    224.6
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "nailboots_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    584.2,
+    487.3,
+    146.0,
+    97.0
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "jeansripped_resource.1.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    643.9,
+    436.8,
+    39.5,
+    72.7
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "jeansripped_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    594.4,
+    417.3,
+    118.1,
+    167.0
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "escapeartist_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    635.8,
+    306.6,
+    66.4,
+    131.4
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "powermullet_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    654.9,
+    328.9,
+    0.8,
+    50.2
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "powermullet_resource.1.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    654.9,
+    328.9,
+    0.6,
+    38.7
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "eyebrows1_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    659.0,
+    289.0,
+    23.4,
+    1.7
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "cast_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    639.7,
+    348.7,
+    62.4,
+    68.6
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "escapeartist_skin.1.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    635.8,
+    301.4,
+    66.4,
+    136.5
+   ],
+   "boneFallback": 0,
+   "nbones": 27
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    659.5,
+    289.0,
+    24.5,
+    83.0
+   ],
+   "boneFallback": 0,
+   "nbones": 33
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    664.3,
+    292.4,
+    13.8,
+    0.1
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    671.3,
+    309.3,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    671.0,
+    305.8,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    671.6,
+    307.0,
+    1.8,
+    1.3
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "jeansripped_skin.2.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    627.5,
+    417.3,
+    55.9,
+    92.1
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "hands_naked.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    629.3,
+    276.6,
+    77.7,
+    130.0
+   ],
+   "boneFallback": 0,
+   "nbones": 38
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.4.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    693.0,
+    511.5,
+    7.5,
+    112.7
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.3.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    693.0,
+    560.2,
+    16.0,
+    74.0
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    578.7,
+    412.7,
+    255.0,
+    269.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    571.2,
+    412.7,
+    262.5,
+    269.8
+   ],
+   "boneFallback": 0,
+   "nbones": 23
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.5.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "shell_3band_swirl.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "shell_3band_swirl.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "shell_3band_swirl.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "logo.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    693.0,
+    560.2,
+    16.0,
+    64.0
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "thighboots_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    561.5,
+    381.9,
+    141.3,
+    47.2
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "gloves_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    758.5,
+    276.0,
+    13.7,
+    13.8
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "gloves_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    601.0,
+    281.3,
+    170.6,
+    71.8
+   ],
+   "boneFallback": 0,
+   "nbones": 40
+  },
+  {
+   "mesh": "bikinistockings_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    678.3,
+    363.8,
+    24.5,
+    19.2
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "clearcoat_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    618.0,
+    294.3,
+    123.0,
+    88.7
+   ],
+   "boneFallback": 0,
+   "nbones": 25
+  },
+  {
+   "mesh": "clearcoat_shirt.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    678.4,
+    317.9,
+    33.7,
+    64.6
+   ],
+   "boneFallback": 0,
+   "nbones": 16
+  },
+  {
+   "mesh": "clearcoat_resource.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    691.6,
+    334.5,
+    9.0,
+    16.8
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "clearcoat_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    618.0,
+    294.3,
+    123.0,
+    88.7
+   ],
+   "boneFallback": 0,
+   "nbones": 25
+  },
+  {
+   "mesh": "visor_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    636.2,
+    350.3,
+    59.9,
+    133.5
+   ],
+   "boneFallback": 9,
+   "nbones": 9
+  },
+  {
+   "mesh": "female_eyebrows_09_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    702.0,
+    322.3,
+    13.1,
+    5.4
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "clearcoat_skin.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    630.9,
+    294.3,
+    110.2,
+    88.7
+   ],
+   "boneFallback": 0,
+   "nbones": 23
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    680.5,
+    317.9,
+    34.6,
+    33.4
+   ],
+   "boneFallback": 0,
+   "nbones": 39
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    703.4,
+    323.4,
+    7.5,
+    2.7
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    701.7,
+    330.8,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    703.0,
+    329.6,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    702.0,
+    326.1,
+    0.4,
+    3.9
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "bikinistockings_skin.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    610.8,
+    381.9,
+    91.9,
+    13.9
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "gloves_skin.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    614.4,
+    286.9,
+    144.1,
+    55.3
+   ],
+   "boneFallback": 0,
+   "nbones": 9
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    636.7,
+    435.7,
+    129.6,
+    41.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body03.mesh",
+   "owner": "crowd_female03",
+   "rectKind": 3,
+   "rect": [
+    596.6,
+    386.1,
+    165.4,
+    257.0
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    552.1,
+    427.9,
+    161.5,
+    33.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body04.mesh",
+   "owner": "crowd_female04",
+   "rectKind": 3,
+   "rect": [
+    569.2,
+    380.0,
+    166.5,
+    250.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    518.4,
+    445.2,
+    158.3,
+    69.1
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    518.4,
+    445.2,
+    158.3,
+    69.1
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    518.4,
+    445.2,
+    158.3,
+    69.1
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    518.4,
+    445.2,
+    158.3,
+    69.1
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    518.4,
+    445.2,
+    158.3,
+    69.1
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    518.4,
+    445.2,
+    158.3,
+    69.1
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    518.4,
+    445.2,
+    158.3,
+    69.1
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body03.mesh",
+   "owner": "crowd_male03",
+   "rectKind": 3,
+   "rect": [
+    590.7,
+    389.2,
+    143.4,
+    253.1
+   ],
+   "boneFallback": 0,
+   "nbones": 18
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    584.4,
+    447.9,
+    150.3,
+    71.4
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body02.mesh",
+   "owner": "crowd_female02",
+   "rectKind": 3,
+   "rect": [
+    598.0,
+    377.0,
+    125.9,
+    254.2
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    557.0,
+    450.6,
+    163.6,
+    66.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    557.0,
+    450.6,
+    163.6,
+    66.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    557.0,
+    450.6,
+    163.6,
+    66.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    557.0,
+    450.6,
+    163.6,
+    66.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    557.0,
+    450.6,
+    163.6,
+    66.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    557.0,
+    450.6,
+    163.6,
+    66.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    557.0,
+    450.6,
+    163.6,
+    66.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body02.mesh",
+   "owner": "crowd_male02",
+   "rectKind": 3,
+   "rect": [
+    571.7,
+    366.8,
+    143.1,
+    294.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    544.5,
+    418.7,
+    161.6,
+    39.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    544.5,
+    418.7,
+    161.6,
+    39.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    544.5,
+    418.7,
+    161.6,
+    39.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    544.5,
+    418.7,
+    161.6,
+    39.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    544.5,
+    418.7,
+    161.6,
+    39.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    544.5,
+    418.7,
+    161.6,
+    39.5
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "male_crowd_body04.mesh",
+   "owner": "crowd_male04",
+   "rectKind": 3,
+   "rect": [
+    570.7,
+    374.8,
+    176.6,
+    279.8
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    601.4,
+    454.0,
+    138.9,
+    48.2
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "female_crowd_body01_lod02.mesh",
+   "owner": "crowd_female01",
+   "rectKind": 3,
+   "rect": [
+    614.3,
+    375.0,
+    114.7,
+    260.2
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    553.2,
+    418.8,
+    145.5,
+    71.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    553.2,
+    418.8,
+    145.5,
+    71.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    553.2,
+    418.8,
+    145.5,
+    71.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    553.2,
+    418.8,
+    145.5,
+    71.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    553.2,
+    418.8,
+    145.5,
+    71.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    553.2,
+    418.8,
+    145.5,
+    71.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "clap.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    553.2,
+    418.8,
+    145.5,
+    71.9
+   ],
+   "boneFallback": 0,
+   "nbones": 12
+  },
+  {
+   "mesh": "male_crowd_body01.mesh",
+   "owner": "crowd_male01",
+   "rectKind": 3,
+   "rect": [
+    567.4,
+    376.9,
+    175.3,
+    252.7
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "fingernails_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    836.1,
+    342.4,
+    86.3,
+    18.0
+   ],
+   "boneFallback": 0,
+   "nbones": 10
+  },
+  {
+   "mesh": "femaleearrings_peacock.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    639.6,
+    360.4,
+    31.5,
+    7.5
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "ladyfro_toplayer_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    371.8,
+    323.0,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "fingernails_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    390.9,
+    252.7,
+    59.9,
+    18.2
+   ],
+   "boneFallback": 0,
+   "nbones": 10
+  },
+  {
+   "mesh": "fingernails_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    629.3,
+    276.6,
+    77.7,
+    130.0
+   ],
+   "boneFallback": 0,
+   "nbones": 10
+  },
+  {
+   "mesh": "jp80_strings.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    524.8,
+    345.4,
+    9.1,
+    139.3
+   ],
+   "boneFallback": 0,
+   "nbones": 10
+  },
+  {
+   "mesh": "jp80_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    530.1,
+    505.0,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "greaserjacket_resource.1.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    961.3,
+    341.1,
+    25.1,
+    49.1
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "motorcycleboots_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    906.4,
+    469.6,
+    110.1,
+    52.8
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "tightdistressedpants_resource.1.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    634.1,
+    481.6,
+    22.0,
+    21.4
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "tightdistressedpants_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    906.4,
+    370.4,
+    95.8,
+    152.0
+   ],
+   "boneFallback": 0,
+   "nbones": 9
+  },
+  {
+   "mesh": "greaserjacket_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    855.5,
+    304.9,
+    139.7,
+    104.9
+   ],
+   "boneFallback": 0,
+   "nbones": 29
+  },
+  {
+   "mesh": "fauxhawk_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    644.4,
+    324.8,
+    15.5,
+    42.8
+   ],
+   "boneFallback": 0,
+   "nbones": 7
+  },
+  {
+   "mesh": "male_piercings_combo07.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    964.3,
+    281.5,
+    36.4,
+    67.2
+   ],
+   "boneFallback": 0,
+   "nbones": 33
+  },
+  {
+   "mesh": "eyebrows15_resource.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    983.3,
+    281.5,
+    17.5,
+    2.9
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "greaserjacket_skin.2.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    857.4,
+    304.9,
+    137.8,
+    85.2
+   ],
+   "boneFallback": 0,
+   "nbones": 21
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    964.3,
+    281.5,
+    36.4,
+    67.2
+   ],
+   "boneFallback": 0,
+   "nbones": 33
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    984.9,
+    285.2,
+    10.4,
+    1.6
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    986.4,
+    299.9,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    987.3,
+    297.3,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    982.8,
+    296.2,
+    3.1,
+    1.9
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "tightdistressedpants_skin.2.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    927.7,
+    405.9,
+    52.8,
+    63.8
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "tightdistressedpants_skin.3.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    948.6,
+    390.2,
+    28.9,
+    19.6
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "hands_naked.mesh",
+   "owner": "player0",
+   "rectKind": 3,
+   "rect": [
+    836.1,
+    315.3,
+    126.3,
+    50.7
+   ],
+   "boneFallback": 0,
+   "nbones": 38
+  },
+  {
+   "mesh": "telebass_strings.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    525.4,
+    349.0,
+    8.1,
+    145.9
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "telebass_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    528.2,
+    505.0,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "modavengerboots_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    327.6,
+    455.4,
+    75.8,
+    42.6
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "jumpsuitshorts_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    364.1,
+    378.4,
+    27.7,
+    7.2
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "hippyfringe_resource.2.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    361.5,
+    334.1,
+    29.5,
+    16.8
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "hippyfringe_resource.1.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    652.4,
+    406.7,
+    92.7,
+    281.1
+   ],
+   "boneFallback": 9,
+   "nbones": 13
+  },
+  {
+   "mesh": "hippyfringe_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    549.1,
+    367.6,
+    216.2,
+    320.1
+   ],
+   "boneFallback": 14,
+   "nbones": 40
+  },
+  {
+   "mesh": "ladyfro_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    371.8,
+    323.0,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "female_eyebrows_06_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    360.6,
+    328.5,
+    17.5,
+    4.5
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "hippyfringe_skin.2.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    360.2,
+    323.0,
+    33.9,
+    62.6
+   ],
+   "boneFallback": 0,
+   "nbones": 15
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    360.2,
+    323.0,
+    32.7,
+    28.0
+   ],
+   "boneFallback": 0,
+   "nbones": 39
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    364.9,
+    329.2,
+    10.3,
+    1.0
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    372.4,
+    338.1,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    371.8,
+    336.4,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    372.2,
+    332.7,
+    0.3,
+    4.4
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "jumpsuitshorts_skin.2.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    327.6,
+    378.4,
+    75.8,
+    119.5
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "femalerings_jem.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    399.0,
+    258.4,
+    48.7,
+    9.3
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "hands_naked.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "rect": [
+    390.6,
+    252.7,
+    60.2,
+    58.7
+   ],
+   "boneFallback": 0,
+   "nbones": 40
+  },
+  {
+   "mesh": "bonesandspikes_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    704.6,
+    358.9,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "mic_stand.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    704.6,
+    358.9,
+    17.7,
+    224.6
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "nailboots_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    584.2,
+    487.3,
+    146.0,
+    97.0
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "jeansripped_resource.1.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    643.9,
+    436.8,
+    39.5,
+    72.7
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "jeansripped_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    594.4,
+    417.3,
+    118.1,
+    167.0
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "escapeartist_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    635.8,
+    306.6,
+    66.4,
+    131.4
+   ],
+   "boneFallback": 0,
+   "nbones": 20
+  },
+  {
+   "mesh": "powermullet_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    654.9,
+    328.9,
+    0.8,
+    50.2
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "powermullet_resource.1.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    654.9,
+    328.9,
+    0.6,
+    38.7
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "eyebrows1_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    659.0,
+    289.0,
+    23.4,
+    1.7
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "cast_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    639.7,
+    348.7,
+    62.4,
+    68.6
+   ],
+   "boneFallback": 0,
+   "nbones": 8
+  },
+  {
+   "mesh": "escapeartist_skin.1.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    635.8,
+    301.4,
+    66.4,
+    136.5
+   ],
+   "boneFallback": 0,
+   "nbones": 27
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    659.5,
+    289.0,
+    24.5,
+    83.0
+   ],
+   "boneFallback": 0,
+   "nbones": 33
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    664.3,
+    292.4,
+    13.8,
+    0.1
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    671.3,
+    309.3,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    671.0,
+    305.8,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    671.6,
+    307.0,
+    1.8,
+    1.3
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "jeansripped_skin.2.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    627.5,
+    417.3,
+    55.9,
+    92.1
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "hands_naked.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "rect": [
+    629.3,
+    276.6,
+    77.7,
+    130.0
+   ],
+   "boneFallback": 0,
+   "nbones": 38
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.4.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    693.0,
+    511.5,
+    7.5,
+    112.7
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.3.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    693.0,
+    560.2,
+    16.0,
+    74.0
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    578.7,
+    412.7,
+    255.0,
+    269.8
+   ],
+   "boneFallback": 0,
+   "nbones": 22
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    571.2,
+    412.7,
+    262.5,
+    269.8
+   ],
+   "boneFallback": 0,
+   "nbones": 23
+  },
+  {
+   "mesh": "ludvista_smallclub_resource.5.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "shell_3band_swirl.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "shell_3band_swirl.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "shell_3band_swirl.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    644.2,
+    456.9,
+    119.6,
+    167.3
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "logo.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    693.0,
+    560.2,
+    16.0,
+    64.0
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "thighboots_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    561.5,
+    381.9,
+    141.3,
+    47.2
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "gloves_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    758.5,
+    276.0,
+    13.7,
+    13.8
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "gloves_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    601.0,
+    281.3,
+    170.6,
+    71.8
+   ],
+   "boneFallback": 0,
+   "nbones": 40
+  },
+  {
+   "mesh": "bikinistockings_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    678.3,
+    363.8,
+    24.5,
+    19.2
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "clearcoat_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    618.0,
+    294.3,
+    123.0,
+    88.7
+   ],
+   "boneFallback": 0,
+   "nbones": 25
+  },
+  {
+   "mesh": "clearcoat_shirt.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    678.4,
+    317.9,
+    33.7,
+    64.6
+   ],
+   "boneFallback": 0,
+   "nbones": 16
+  },
+  {
+   "mesh": "clearcoat_resource.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    691.6,
+    334.5,
+    9.0,
+    16.8
+   ],
+   "boneFallback": 0,
+   "nbones": 3
+  },
+  {
+   "mesh": "clearcoat_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    618.0,
+    294.3,
+    123.0,
+    88.7
+   ],
+   "boneFallback": 0,
+   "nbones": 25
+  },
+  {
+   "mesh": "visor_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    636.2,
+    350.3,
+    59.9,
+    133.5
+   ],
+   "boneFallback": 9,
+   "nbones": 9
+  },
+  {
+   "mesh": "female_eyebrows_09_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    702.0,
+    322.3,
+    13.1,
+    5.4
+   ],
+   "boneFallback": 0,
+   "nbones": 6
+  },
+  {
+   "mesh": "clearcoat_skin.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    630.9,
+    294.3,
+    110.2,
+    88.7
+   ],
+   "boneFallback": 0,
+   "nbones": 23
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    680.5,
+    317.9,
+    34.6,
+    33.4
+   ],
+   "boneFallback": 0,
+   "nbones": 39
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    703.4,
+    323.4,
+    7.5,
+    2.7
+   ],
+   "boneFallback": 0,
+   "nbones": 2
+  },
+  {
+   "mesh": "lowerteeth.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    701.7,
+    330.8,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "upperteeth.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    703.0,
+    329.6,
+    0.0,
+    0.0
+   ],
+   "boneFallback": 0,
+   "nbones": 1
+  },
+  {
+   "mesh": "tongue.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    702.0,
+    326.1,
+    0.4,
+    3.9
+   ],
+   "boneFallback": 0,
+   "nbones": 4
+  },
+  {
+   "mesh": "bikinistockings_skin.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    610.8,
+    381.9,
+    91.9,
+    13.9
+   ],
+   "boneFallback": 0,
+   "nbones": 5
+  },
+  {
+   "mesh": "gloves_skin.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "rect": [
+    614.4,
+    286.9,
+    144.1,
+    55.3
+   ],
+   "boneFallback": 0,
+   "nbones": 9
+  }
+ ]
+}

@@ -1,0 +1,205 @@
+{
+ "G1": {
+  "pass": true,
+  "green_skinned_in_roi": 117,
+  "red_skinned_in_roi": 0,
+  "green_named_mesh+bone": 106,
+  "red_named_mesh+bone": 0,
+  "green_example": {
+   "mesh": "hippyfringe_resource.mesh",
+   "owner": "player1",
+   "rectKind": 3,
+   "bones": [
+    "bone_L-foreTwist1.mesh",
+    "bone_L-foreArm.mesh",
+    "bone_torso_hippyfringe-r3-02.mesh",
+    "bone_torso_hippyfringe-r3-01.mesh",
+    "bone_L-foreTwist2.mesh",
+    "bone_L-hand.mesh",
+    "bone_torso_hippyfringe-r2-03.mesh",
+    "bone_torso_hippyfringe-r2-02.mesh",
+    "bone_torso_hippyfringe-r2-01.mesh"
+   ],
+   "boneFallback": 14,
+   "rect": [
+    549.1,
+    367.6,
+    216.2,
+    320.1
+   ]
+  },
+  "red_rectKinds": []
+ },
+ "G2": {
+  "pass": true,
+  "band_owners": [
+   "crowd_female02",
+   "crowd_female03",
+   "crowd_female04",
+   "crowd_male01",
+   "crowd_male02",
+   "crowd_male03",
+   "crowd_male04",
+   "player1",
+   "player2",
+   "player3"
+  ],
+  "corner_skinned_owners": [],
+  "leaked_band_owners_into_corner": []
+ },
+ "G3": {
+  "pass": true,
+  "hand_hits": [
+   {
+    "mesh": "cast_resource.mesh",
+    "owner": "player2",
+    "rectKind": 3,
+    "bones": [
+     "bone_L-upperArm.mesh",
+     "bone_L-foreArm.mesh",
+     "bone_L-foreTwist1.mesh"
+    ],
+    "boneFallback": 0,
+    "rect": [
+     639.7,
+     348.7,
+     62.4,
+     68.6
+    ]
+   },
+   {
+    "mesh": "escapeartist_skin.1.mesh",
+    "owner": "player2",
+    "rectKind": 3,
+    "bones": [
+     "bone_L-deltoid.mesh",
+     "bone_R-deltoid.mesh",
+     "bone_R-collar.mesh",
+     "bone_R-foreArm.mesh",
+     "bone_R-foreTwist1.mesh",
+     "bone_R-hand.mesh",
+     "bone_L-foreTwist1.mesh",
+     "bone_R-shoulderTwist3.mesh",
+     "bone_R-foreTwist2.mesh",
+     "bone_R-upperArm.mesh",
+     "bone_spine3.mesh",
+     "bone_R-shoulderTwist4.mesh",
+     "bone_R-shoulderTwist2.mesh",
+     "bone_L-foreArm.mesh",
+     "bone_L-upperArm.mesh",
+     "bone_L-shoulderTwist2.mesh",
+     "bone_L-shoulderTwist3.mesh",
+     "bone_L-shoulderTwist4.mesh",
+     "bone_neck.mesh",
+     "bone_L-collar.mesh"
+    ],
+    "boneFallback": 0,
+    "rect": [
+     635.8,
+     301.4,
+     66.4,
+     136.5
+    ]
+   },
+   {
+    "mesh": "hands_naked.mesh",
+    "owner": "player2",
+    "rectKind": 3,
+    "bones": [
+     "bone_R-foreTwist1.mesh",
+     "bone_R-middlefinger01.mesh",
+     "bone_R-foreArm.mesh",
+     "bone_R-foreTwist2.mesh",
+     "bone_R-index01.mesh",
+     "bone_R-thumb01.mesh",
+     "bone_R-hand.mesh",
+     "bone_R-thumb02.mesh",
+     "bone_L-thumb03.mesh"
+    ],
+    "boneFallback": 0,
+    "rect": [
+     629.3,
+     276.6,
+     77.7,
+     130.0
+    ]
+   },
+   {
+    "mesh": "gloves_resource.mesh",
+    "owner": "player3",
+    "rectKind": 3,
+    "bones": [
+     "bone_R-middlefinger02.mesh",
+     "bone_R-foreTwist2.mesh",
+     "bone_R-foreArm.mesh",
+     "bone_R-thumb02.mesh",
+     "bone_R-pinky01.mesh",
+     "bone_R-foreTwist1.mesh",
+     "bone_R-index03.mesh",
+     "bone_R-index01.mesh",
+     "bone_R-thumb01.mesh",
+     "bone_R-hand.mesh",
+     "bone_R-thumb03.mesh",
+     "bone_R-middlefinger01.mesh",
+     "bone_R-middlefinger03.mesh",
+     "bone_R-pinky-base.mesh",
+     "bone_R-ringfinger03.mesh",
+     "bone_R-index02.mesh",
+     "bone_R-ringfinger02.mesh",
+     "bone_R-pinky02.mesh",
+     "bone_R-pinky03.mesh",
+     "bone_R-ringfinger01.mesh",
+     "bone_R-ringfinger-base.mesh",
+     "bone_L-hand.mesh",
+     "bone_L-foreTwist1.mesh",
+     "bone_L-foreTwist2.mesh",
+     "bone_L-foreArm.mesh"
+    ],
+    "boneFallback": 0,
+    "rect": [
+     601.0,
+     281.3,
+     170.6,
+     71.8
+    ]
+   },
+   {
+    "mesh": "clearcoat_resource.mesh",
+    "owner": "player3",
+    "rectKind": 3,
+    "bones": [
+     "bone_neck.mesh",
+     "bone_R-shoulderTwist2.mesh",
+     "bone_L-collar.mesh",
+     "bone_R-collar.mesh",
+     "bone_head.mesh",
+     "bone_R-foreTwist2.mesh",
+     "bone_R-upperArm.mesh",
+     "bone_R-hand.mesh",
+     "bone_R-foreArm.mesh",
+     "bone_R-foreTwist1.mesh",
+     "bone_spine2.mesh",
+     "bone_spine1.mesh",
+     "bone_spine3.mesh",
+     "bone_L-foreTwist2.mesh",
+     "bone_L-upperArm.mesh",
+     "bone_L-foreTwist1.mesh",
+     "bone_L-foreArm.mesh",
+     "bone_R-shoulderTwist4.mesh",
+     "bone_R-shoulderTwist3.mesh",
+     "bone_L-shoulderTwist3.mesh",
+     "bone_L-shoulderTwist2.mesh",
+     "bone_L-shoulderTwist4.mesh"
+    ],
+    "boneFallback": 0,
+    "rect": [
+     618.0,
+     294.3,
+     123.0,
+     88.7
+    ]
+   }
+  ],
+  "note": "B5: hand meshes/finger bones on a coherent frame; wrist-level accepted"
+ }
+}
