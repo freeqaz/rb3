@@ -749,3 +749,40 @@ native-side.
   mode (all-3-axes collapse at N≥6, honest NO-GO if songClock is wall-clock-fundamental);
   FOREARM-FLOAT fix (binding-check first, player3 right-arm outfit meshes).
 - Half-lanes: N-tail bad-torn tier1 recapture; R3 v1 walk gap.
+
+## Wave 21 — HANDS FLAGSHIP FIX ATTEMPT → L2-b R5-WALL (honest, no ship)
+
+The two-part load-path fix from the Wave-20 charter. Kickoff `c4ed750e`→acceptance `664d5014`
+(pre-review `12b4c389` DISPATCH-WITH-AMENDMENTS A1-A10, reframing the hope from "different
+instance" — refuted — to "different rebake/clamp draw regime"), synthesis-by-lanes, close-out
+review `4dff4820` ACCEPT-WITH-ERRATA (ERR-1..8), errata applied. Both Opus lanes reached the
+**third pre-authorized outcome: L2-b for BOTH genders = the R5-walled animated tear.**
+
+| Lane | Result |
+|---|---|
+| **FIX — the 2-part fix** | Part 1 `RB3_HANDS_BINDFIX` (default-OFF, `BandCharacter.cpp` `24c2ac1c`): scopes the white-texture shim so char_shared.milo + outfit resources take retail kMerge (restoring the sBoneMergeDir remap, br2=31,488/member) while colorpalettes.milo keeps kReplace. Gates: crash 0/4-members-boot PASS, texture-integrity PASS (0 white cascade), drawlog-792 PASS, batch_objdiff==baseline PASS. **But hand meshes bind at PARSE (upstream of the merge remap) so BINDFIX draw output == flag-OFF byte-for-byte** — no hand-visual change. G-FIX-E1 FAIL-to-fix (expected). Part 2 (gender-pose) correctly NOT dispatched (DISCRIM read L2-b). |
+| **DISCRIM — the L2-a/L2-b decider** | Gender-split, draw-frame, mitten-controlled. **Both genders L2-b:** the only coherent-basis regime (Tier-1 3.1° count=0 every draw frame, both genders — the female 28.9° gap dissolves) is the BANNED 8th cell, and it is VISUALLY TORN. The tear is a mesh-shell/weight-blend divergence between coherently-attached joints (joints ≈0.1u, shell shears) — invisible to every bone-level metric (males 15% frames ≤8.4u, females 0% >2u yet equally torn) = the R5 §0-item-4 signature. Torso fail-red PASS. arm-S male 3.1° rest-null explained (rest-coherent, defect is animated). |
+
+**Verdict:** hands are **terminal — doubly walled** (R5 GT-D + this native-side gender-split
+mechanism decision). No non-banned, non-walled lever remains: every reachable coherent-basis
+regime is measured torn; a parse-time un-share lands in the same torn family and is
+unverifiable without articulated Wii GT (CharClipDrivers=0); the fallback post-merge re-point
+is refuted by measurement (ERR-7). Mitten (default-ON) is the answer. `RB3_HANDS_BINDFIX` kept
+default-OFF as a documented partial (real load-topology+texture restore, substrate for any
+future un-share). **Key record correction (ERR-1/E13): the Wave-20 "restore per-member binding
+via the merge remap" claim is CONTRADICTED — hands bind at parse; the remap is a no-op for
+them. The Layer-1 shim-suppression finding stands; only its causal link to hand binding is
+withdrawn.** Engine pin `6e6387c`→`be70ca8` (flag classification only). TWELVE defaults ON.
+
+### Wave 22 menu (from `WAVE21_CLOSEOUT_REVIEW.md` Q7)
+- **Hands: CLOSED — do not re-charter.** Mitten is the answer. Optional falsifier only =
+  CLOSURE follow-up #2 (root-cause `CharClipDrivers=0` → articulated capture); do NOT spend a
+  lane by default.
+- **FOREARM-FLOAT fix (recommended first)** — player3 right-arm outfit meshes; binding-check
+  first (own-vs-shared, the RebindOutfitBonesToOwnSkeleton family); absorb the Wave-21
+  mitten-OFF "arguably worse" observations if they prove forearm-level.
+- **WHITE re-grade cash-in** (prereq: fix `r4m4_capture.multi_capture` ≥5 distinct songMs;
+  entry on the GUARDED build, mechanism-backed, N≥30 + capture_lints).
+- **T3 pinning mode** (all-3-timeline-axes collapse at N≥6; honest NO-GO if songClock is
+  wall-clock-fundamental).
+- Half-lanes: N-tail bad-torn tier1 recapture; R3 v1 walk gap.

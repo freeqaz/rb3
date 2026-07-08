@@ -136,3 +136,13 @@ NAMED WALL, which the charter pre-authorizes as an accepted outcome.
   where `<arm flag>` ∈ {`` , `RB3_HANDS_BINDFIX=1`, `RB3_LOADBIND_NOSHIM=1`,
   `RB3_HANDS_AUTHORED_REPOINT=1`}.
 - Checkpoint: `/tmp/wave21-checkpoints/DISCRIM.json`.
+
+---
+## ERRATA (Wave-21 close-out ERR-3, ERR-4)
+- ERR-3: ":77 reproduces R5 VERDICT §0 item 4 EXACTLY" → reproduces the §0-item-4 signature
+  CLASS (joint-level metrics cannot gate the shell tear). Precision: the EXACT-joint metric
+  is offset-aware and under-reads IN PRACTICE (males 15% frames ≤8.4u, females 0% >2u), which
+  is distinct from item 4's IN-PRINCIPLE bone-world blindness. Same conclusion (walled), tighter claim.
+- ERR-4: the committed female 28.9° TIER1 is the FRESHNESS-capture figure; the same arm reads
+  42.6° at DRAW (parsed_summary_tables.txt:14). Both dissolve to 3.1° under authored-repoint —
+  nothing in the verdict turns on which figure.

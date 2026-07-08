@@ -100,3 +100,12 @@ visual gate. Lane W's Wii basis capture (A7) is the piece needed to close it.
   the shipped default is the **seed-R rebake + mitten-ON**. Both A/B arms here were mitten-ON,
   so the coherent-vs-flung asymmetry is a genuine **binding-topology** effect, not clamp/
   mitten mediation.
+
+---
+## ERRATA (Wave-21 close-out ERR-2)
+The causal chain's "the merge's sBoneMergeDir remap that WOULD re-point them" (:36-37) is
+**SUPERSEDED by Wave 21**: under the scoped BINDFIX the remap FIRES (br2=31,488/member) and
+does NOT re-point hand `mBones` — they resolved at parse to the shared instance, so
+ReplaceRefs is a no-op for them. See W21-FIX/STATUS + WAVE21_CLOSEOUT_REVIEW ERR-1/E13. The
+NOSHIM per-member flip measured here is a full-un-shim parse-topology side effect, mechanism
+unpinned — do NOT read it as "the remap restores per-member hand binding."

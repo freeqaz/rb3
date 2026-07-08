@@ -119,3 +119,14 @@ correctly NOT dispatched). wext cited nowhere as a gate (A9). No default flips, 
 - `e11_texture_{OFF,ON}.txt` — texture-integrity summaries (0 white cascade both arms).
 - Full run log: `/tmp/rb3-kbd2game-33911.log`.
 - Checkpoint: `/tmp/wave21-checkpoints/FIX.json`.
+
+---
+## ERRATA (Wave-21 close-out ERR-5, ERR-7)
+- ERR-5: the committed `hand_mesh_slots_sharedroot.log` holds 30 player0 rows; the 199/199
+  full-lineup census was observed in the uncommitted /tmp run. Read the finding as "30/30
+  committed SHARED_ROOT + 199/199 observed"; the W20 205-slot population is the same class
+  (all SHARED_ROOT), differing only by lineup/mesh-set, not by binding class.
+- ERR-7 (banned-cell hygiene): the kickoff's Part-1 FALLBACK (targeted post-merge re-point)
+  was intentionally NOT run — its draw regime IS the measured NOSHIM/REPOINT family (per-member
+  own==bound; catastrophic at rebound=0, coherent-but-torn at rebound=1). Refuted by
+  measurement, not an untried in-charter lever.

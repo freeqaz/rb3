@@ -205,3 +205,14 @@ proven at the necessity level (per-member binding alone still fails) and OPEN at
 mechanism level (L2-a gender-pose vs L2-b blend-tear undetermined; female gender-gap
 committed, male case counter-indicated). Wave 21 lands Layer 1 + Layer 2 together or not at
 all, with the torso-precedent discriminator deciding Layer 2's shape.
+
+- **E13 (Wave-21 close-out ERR-1 — Layer-1 causal correction, load-bearing):** §Layer-1's
+  "binding flips to per-member — exactly matching Wii's topology" and the Wave-21 charter's
+  "Restore per-member binding via the scoped shim/remap" are **CONTRADICTED by Wave 21**:
+  hand-mesh `mBones` bind at PARSE time to the resident shared instance, and
+  `ReplaceRefs(o1→found)` is a structural NO-OP for them (BINDFIX fires br2=31,488 == full
+  shim-off, yet hands stay `SHARED_ROOT`). The Wave-20 NOSHIM per-member flip was a
+  FULL-un-shim parse/merge-topology side effect (mechanism unpinned), NOT the remap acting on
+  hand meshes. **Restoring the merge remap does NOT restore per-member hand binding.** The
+  Layer-1 shim-suppression finding (the remap IS suppressed, textures ARE the reason) stands;
+  only its causal link to *hand binding* is withdrawn — hands are decided upstream at parse.

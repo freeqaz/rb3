@@ -100,10 +100,15 @@ inline bool LoadBindNoShim() {
 }
 // Wave-21 Lane FIX Part 1 (RB3_HANDS_BINDFIX, default-OFF): SCOPE the white-texture
 // FilterSubdir shim so the skeleton-bearing subdirs take the RETAIL kMerge (restoring
-// the sBoneMergeDir per-member bone remap, :4337) while the texture palette subdir
-// (colorpalettes.milo) + outfit *_resource.milo subdirs KEEP the shim's kReplace
-// (white-texture fix preserved). Distinct from RB3_LOADBIND_NOSHIM (which flips EVERY
-// subdir, reintroducing white textures — the Wave-20 measurement substrate only).
+// the sBoneMergeDir per-member bone remap, :4337). ERR-6 (Wave-21 close-out): ONLY the
+// texture palette subdir colorpalettes.milo keeps the shim's kReplace — char_shared.milo
+// AND the outfit *_resource.milo subdirs take retail kMerge (both are needed for the remap
+// to fire; see authoritative note below). NOTE the remap firing does NOT re-point hand
+// meshes (they bind at PARSE, upstream — WAVE21_CLOSEOUT ERR-1/E13); this is a faithful
+// load-topology restore with no hand-visual effect, kept default-OFF. Distinct from
+// RB3_LOADBIND_NOSHIM (flips EVERY subdir incl. colorpalettes → white textures; Wave-20
+// substrate only) and from the pre-existing DISTINCT flag RB3_HANDS_BIND_FIX (:1991, an
+// older rest-pose-reuse experiment — NOT this flag; name-collision hazard, do not confuse).
 inline bool HandsBindFixOn() {
     if (gHandsBindFix < 0) gHandsBindFix = ::getenv("RB3_HANDS_BINDFIX") ? 1 : 0;
     return gHandsBindFix != 0;
@@ -1988,6 +1993,9 @@ void BandCharacter::RebindHeadHandsAtRest() {
                     // oracle (offset'=meshWorld*inv(rest), HANDS_BIND_ORACLE_PERTURB)
                     // fail-reds a wrong basis, and S3 measures whether this actually
                     // clears the drop without re-introducing the 200-460u tripwire.
+                    // NB (ERR-6): RB3_HANDS_BIND_FIX (underscore) is this OLDER rest-pose-reuse
+                    // experiment — DISTINCT from Wave-21's RB3_HANDS_BINDFIX (no underscore,
+                    // the shim-scope load-topology flag at :107). Name-collision hazard; keep separate.
                     static int sHandsBindFix = -1;
                     if (sHandsBindFix < 0)
                         sHandsBindFix = getenv("RB3_HANDS_BIND_FIX") ? 1 : 0;
@@ -4547,10 +4555,13 @@ MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir)
         // keeps the shipped shim untouched (byte-identical to pre-Wave-20).
         //
         // Wave-21 Lane FIX Part 1 (RB3_HANDS_BINDFIX, default-OFF): SCOPED variant —
-        // the shim keeps its kReplace ONLY for the two shared texture-PALETTE subdirs
-        // (colorpalettes.milo + char_shared.milo, whose concurrent draining causes the
-        // white-texture cascade) and EXEMPTS everything else (outfit *_resource.milo +
-        // skeleton*.milo) to retail kMerge. This restores the sBoneMergeDir per-member
+        // ERR-6 (Wave-21 close-out): the shim keeps its kReplace ONLY for colorpalettes.milo
+        // (the one palette subdir whose concurrent draining causes the white-texture
+        // cascade); char_shared.milo is EXEMPTED to retail kMerge by default (its own skin
+        // materials survive via the :4311 sCharSharedDir kIgnore branch — 0 dummy_torso.tex
+        // misses). char_shared stays kReplace ONLY under the RB3_BINDFIX_KEEPCS A/B knob.
+        // EXEMPTS everything else (char_shared + outfit *_resource.milo + skeleton*.milo)
+        // to retail kMerge. This restores the sBoneMergeDir per-member
         // bone remap (:4337) — MEASURED (Wave-21): the remap is driven by the OUTFIT
         // resource mergers (which share ../skeleton.milo), so un-shimming ONLY the
         // skeleton subdirs yields br2=0; the outfits must also merge. Palettes staying
