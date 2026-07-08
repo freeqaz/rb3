@@ -48,6 +48,10 @@
 // crowd-origin position-dump tool ({rb3_pos_dump}): walk the live object tree and
 // emit world positions for crowd members + band gear + static props. See
 // docs/native/crowd-origin/PLAN.md §2.
+#include "char/Character.h"          // W23 CROWD: sv3_a crowd Character actors (census)
+#include "char/CharDriver.h"         // W23 CROWD: CharDriver::FirstPlayingClip (branch d)
+#include "char/CharClip.h"           // W23 CROWD: CharClip::Name (playing-clip name)
+#include "math/Sphere.h"             // Sphere (MakeWorldSphere)
 #include "world/Crowd.h"             // WorldCrowd, CharData::Char3D::unk0 (per-member xfm)
 #include "world/Dir.h"               // WorldDir::mCrowds (live ObjPtrList<WorldCrowd>), TheWorld
 #include "bandobj/BandDirector.h"    // TheBandDirector->mVenue.Dir() = live per-song venue WorldDir
@@ -947,6 +951,132 @@ static DataNode RB3DtaPosDump(DataArray *) {
 }
 
 // ---------------------------------------------------------------------------
+// W23 CROWD lane discriminator: census the shell-vignette (sv3_a) street-crowd
+// Character actors BY NAME in the LIVE tree — the walkers SWEEP S1 says retail
+// draws down the center street and native does not. These are NOT WorldCrowd
+// (`strings sv3_a | grep -c WorldCrowd` == 0), so rb3_pos_dump lumps them under
+// "prop" with no showing/pollstate/clip signal. This tool reports, per crowd
+// Character (name begins `crowd_`, or whose dir path contains streetslomo/
+// vignette), the four discriminator fields:
+//   show=<0|1>      RndDrawable::Showing()   (branch b: loaded-but-not-drawn)
+//   poll=<state>    Character::GetPollState() (kCharPolled==3 => in the poll set)
+//   frz=<0|1>       mFrozen                   (branch d: driver frozen)
+//   drv=<0|1>       GetDriver()!=NULL
+//   clip=<name>     driver FirstPlayingClip() (branch d: never-animated => none)
+//   sph=<cx,cy,cz,r> MakeWorldSphere          (branch c: mis-posed/off-screen)
+// READ-ONLY. HX_NATIVE-only (native harness tool); no engine edit, no pin bump,
+// Wii-neutral. Reuses the same resident-root walk as rb3_pos_dump.
+// ---------------------------------------------------------------------------
+static std::string sCrowdCensus;
+static DataNode RB3DtaCrowdCensus(DataArray *) {
+    const bool verbose = ::getenv("CROWD_CENSUS_VERBOSE") != nullptr;
+
+    // Same roots pos_dump walks: sMainDir, world_panel LoadedDir, resident milos.
+    static const char *kResidentDirMilos[] = {
+        "world/world.milo", "world/shared/director.milo", "world/shared/chars.milo",
+    };
+    const int kMaxRoots = 12;
+    ObjectDir *roots[kMaxRoots] = {nullptr};
+    const char *rootTags[kMaxRoots] = {nullptr};
+    int nroots = 0;
+    if (ObjectDir::sMainDir) {
+        roots[nroots] = ObjectDir::sMainDir; rootTags[nroots] = "sMainDir"; nroots++;
+        if (UIPanel *wp = ObjectDir::sMainDir->Find<UIPanel>("world_panel", true)) {
+            if (ObjectDir *wd = wp->LoadedDir()) {
+                roots[nroots] = wd; rootTags[nroots] = "world_panel"; nroots++;
+            }
+        }
+    }
+    for (size_t i = 0; i < sizeof(kResidentDirMilos) / sizeof(kResidentDirMilos[0]); ++i) {
+        DirLoader *dl = DirLoader::Find(FilePath(kResidentDirMilos[i]));
+        if (dl && dl->IsLoaded() && nroots < kMaxRoots) {
+            if (ObjectDir *d = dl->GetDir()) {
+                roots[nroots] = d; rootTags[nroots] = kResidentDirMilos[i]; nroots++;
+            }
+        }
+    }
+
+    int total = 0, showing = 0, polled = 0, driven = 0, animating = 0;
+    int onscreen = 0;  // sphere center is finite & radius > 0
+    std::set<const Hmx::Object *> seen;
+    for (int ri = 0; ri < nroots; ++ri) {
+        for (ObjDirItr<Character> it(roots[ri], true); it; ++it) {
+            Character *c = it;
+            if (!seen.insert(c).second) continue;
+            const char *nm = c->Name() ? c->Name() : "?";
+            // Scope to the shell-vignette crowd actors: name-gated `crowd_` (the
+            // sv3_a crowd_male0N / crowd_female0N) OR dir named for the vignette.
+            ObjectDir *dir = c->Dir();
+            const char *dnm = (dir && dir->Name()) ? dir->Name() : "";
+            bool isCrowd = (::strncmp(nm, "crowd_", 6) == 0) ||
+                           (::strstr(dnm, "streetslomo") != nullptr) ||
+                           (::strstr(dnm, "vignette") != nullptr);
+            if (!isCrowd) continue;
+            total++;
+
+            bool sh = c->Showing();
+            if (sh) showing++;
+            Character::PollState ps = c->GetPollState();
+            if (ps == Character::kCharPolled) polled++;
+            CharDriver *drv = c->GetDriver();
+            if (drv) driven++;
+            const char *clipNm = "-";
+            if (drv) {
+                CharClip *pc = drv->FirstPlayingClip();
+                if (pc) { animating++; clipNm = pc->Name() ? pc->Name() : "?"; }
+            }
+            Sphere sph;
+            float cx = 0, cy = 0, cz = 0, rad = 0;
+            bool haveSph = c->MakeWorldSphere(sph, false);
+            if (haveSph) { cx = sph.center.x; cy = sph.center.y; cz = sph.center.z; rad = sph.radius; }
+            if (haveSph && rad > 0.0f) onscreen++;
+
+            // Branch-b/d refinement: count RndMesh under this Character and how
+            // many are Showing + carry verts. A char that is Showing() but whose
+            // body meshes are all hidden / vert-less produces no skinned draw.
+            int meshCount = 0, meshShowing = 0, meshVerts = 0;
+            const bool meshDump = ::getenv("CROWD_CENSUS_MESHES") != nullptr;
+            for (ObjDirItr<RndMesh> mit(c, true); mit; ++mit) {
+                meshCount++;
+                if (mit->Showing()) meshShowing++;
+                int nv = (int)mit->Verts().size();
+                if (nv > 0) meshVerts++;
+                if (meshDump && verbose) {
+                    // GeomOwner tells us whether a 0-vert mesh is a proxy whose
+                    // geometry lives in another mesh (owner != self) vs a genuine
+                    // load-failure/empty mesh (owner == self, nv == 0).
+                    RndMesh *go = mit->GeomOwner();
+                    const char *mn = mit->Name() ? mit->Name() : "?";
+                    const char *gon = (go && go != (RndMesh *)mit && go->Name()) ? go->Name() : "self";
+                    fprintf(stderr,
+                            "[CROWDMESH] char=%s mesh='%s' show=%d bones=%d verts=%d geomOwner=%s ownerVerts=%d\n",
+                            nm, mn, mit->Showing() ? 1 : 0, mit->NumBones(), nv, gon,
+                            go ? (int)go->Verts().size() : -1);
+                }
+            }
+
+            if (verbose) {
+                fprintf(stderr,
+                        "[CROWDCENSUS] name=%s dir=%s show=%d poll=%d drv=%d "
+                        "clip=%s sph=%.1f,%.1f,%.1f,r=%.1f mesh=%d/%d show=%d vert=%d\n",
+                        nm, dnm[0] ? dnm : "?", sh ? 1 : 0, (int)ps,
+                        drv ? 1 : 0, clipNm, cx, cy, cz, rad,
+                        meshShowing, meshCount, meshShowing, meshVerts);
+            }
+        }
+    }
+    if (verbose) ::fflush(stderr);
+
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "crowdcensus roots=%d crowd_chars=%d showing=%d polled=%d driven=%d "
+             "animating=%d onscreen=%d",
+             nroots, total, showing, polled, driven, animating, onscreen);
+    sCrowdCensus = buf;
+    return DataNode(sCrowdCensus.c_str());
+}
+
+// ---------------------------------------------------------------------------
 // Deterministic "force band closeup" harness hooks (converge-2026-06-20).
 //
 // The native build registers NO `band_director` DTA accessor and TheBandDirector
@@ -1013,6 +1143,7 @@ void RB3HttpRegisterDtaFuncs() {
     DataRegisterFunc(Symbol("rb3_force_shot"), RB3DtaForceShot);            // NEW
     DataRegisterFunc(Symbol("rb3_director_disable"), RB3DtaDirectorDisable);  // NEW
     DataRegisterFunc(Symbol("rb3_cur_shot"), RB3DtaCurShot);               // NEW
+    DataRegisterFunc(Symbol("rb3_crowd_census"), RB3DtaCrowdCensus);       // W23 CROWD
 }
 
 // ---------------------------------------------------------------------------
