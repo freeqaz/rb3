@@ -49,7 +49,11 @@ No conflict with WAVE19_REVIEW A1 (its region re-scope + step-0 cache check are 
   (GREEN names 106 mesh+bone in band ROI; RED sphere mislocates → 0 — vindicates B3), G2 disjoint
   corner (0 leaked owners), G3 hand ROI names hands/gloves + finger bones, G4 golden 792 canonical
   PASS. classjson row `RB3_PROV_SKIN_SPHERE` appended (E6, no regen).
-- **M5** — FOREARM-FLOAT production smoke (triage only).
+- **M5** — DONE (triage only, no fix). `evidence/M5-forearm-float-triage.md` + query JSON + frame
+  crop. NAMED: FOREARM-FLOAT = player3's right forearm/hand (`gloves_resource.mesh` +
+  `clearcoat_resource.mesh` sleeve; bones `bone_R-foreArm`/`bone_R-foreTwist1/2`/`bone_R-hand`),
+  floating above the band heads. boneFallback=0 → a POSE-placement float, distinct from the
+  finger-level mitten/clamp class (actionable lead for a future fix charter).
 
 ## Flags (both default-OFF; no default flips)
 | Flag | Default | Role |

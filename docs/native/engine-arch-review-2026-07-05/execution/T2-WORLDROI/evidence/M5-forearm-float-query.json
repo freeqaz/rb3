@@ -1,0 +1,220 @@
+{
+ "frame": 1701,
+ "top_strip_roi": [
+  620.0,
+  278.0,
+  140.0,
+  34.0
+ ],
+ "note": "top-center floating strip ABOVE the band heads (heads start y~307); the topmost draws are the FOREARM-FLOAT",
+ "hits": [
+  {
+   "mesh": "gloves_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    626.8,
+    284.0,
+    89.0,
+    27.1
+   ],
+   "bones_in_roi": [
+    "bone_R-middlefinger02.mesh",
+    "bone_R-foreTwist2.mesh",
+    "bone_R-foreArm.mesh",
+    "bone_R-thumb02.mesh",
+    "bone_R-pinky01.mesh",
+    "bone_R-foreTwist1.mesh",
+    "bone_R-index03.mesh",
+    "bone_R-index01.mesh",
+    "bone_R-thumb01.mesh",
+    "bone_R-hand.mesh",
+    "bone_R-thumb03.mesh",
+    "bone_R-middlefinger01.mesh",
+    "bone_R-middlefinger03.mesh",
+    "bone_R-pinky-base.mesh",
+    "bone_R-ringfinger03.mesh",
+    "bone_R-index02.mesh",
+    "bone_R-ringfinger02.mesh",
+    "bone_R-pinky02.mesh",
+    "bone_R-pinky03.mesh",
+    "bone_R-ringfinger01.mesh",
+    "bone_R-ringfinger-base.mesh",
+    "bone_L-thumb02.mesh",
+    "bone_L-hand.mesh",
+    "bone_L-middlefinger02.mesh",
+    "bone_L-pinky02.mesh",
+    "bone_L-pinky-base.mesh",
+    "bone_L-index01.mesh",
+    "bone_L-thumb01.mesh",
+    "bone_L-thumb03.mesh",
+    "bone_L-foreTwist1.mesh",
+    "bone_L-foreTwist2.mesh",
+    "bone_L-pinky01.mesh",
+    "bone_L-middlefinger03.mesh",
+    "bone_L-middlefinger01.mesh",
+    "bone_L-foreArm.mesh",
+    "bone_L-ringfinger02.mesh",
+    "bone_L-pinky03.mesh",
+    "bone_L-ringfinger03.mesh",
+    "bone_L-ringfinger01.mesh",
+    "bone_L-ringfinger-base.mesh"
+   ]
+  },
+  {
+   "mesh": "gloves_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    705.8,
+    287.2,
+    13.8,
+    4.7
+   ],
+   "bones_in_roi": [
+    "bone_L-index03.mesh",
+    "bone_L-hand.mesh",
+    "bone_L-index01.mesh",
+    "bone_L-index02.mesh"
+   ]
+  },
+  {
+   "mesh": "gloves_skin.2.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    636.8,
+    288.2,
+    69.2,
+    23.0
+   ],
+   "bones_in_roi": [
+    "bone_R-foreTwist2.mesh",
+    "bone_R-foreTwist1.mesh",
+    "bone_R-hand.mesh",
+    "bone_R-pinky-base.mesh",
+    "bone_R-ringfinger-base.mesh",
+    "bone_L-hand.mesh",
+    "bone_L-pinky-base.mesh",
+    "bone_L-foreTwist1.mesh",
+    "bone_L-foreTwist2.mesh"
+   ]
+  },
+  {
+   "mesh": "clearcoat_resource.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    636.8,
+    297.0,
+    60.8,
+    71.6
+   ],
+   "bones_in_roi": [
+    "bone_R-foreTwist2.mesh",
+    "bone_R-hand.mesh",
+    "bone_R-foreArm.mesh",
+    "bone_R-foreTwist1.mesh",
+    "bone_L-foreTwist2.mesh",
+    "bone_L-foreTwist1.mesh",
+    "bone_L-foreArm.mesh"
+   ]
+  },
+  {
+   "mesh": "clearcoat_resource.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    636.8,
+    297.0,
+    60.8,
+    71.6
+   ],
+   "bones_in_roi": [
+    "bone_R-foreTwist2.mesh",
+    "bone_R-hand.mesh",
+    "bone_R-foreArm.mesh",
+    "bone_R-foreTwist1.mesh",
+    "bone_L-foreTwist2.mesh",
+    "bone_L-foreTwist1.mesh",
+    "bone_L-foreArm.mesh"
+   ]
+  },
+  {
+   "mesh": "clearcoat_skin.1.mesh",
+   "owner": "player3",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    650.4,
+    297.0,
+    47.2,
+    71.6
+   ],
+   "bones_in_roi": [
+    "bone_R-foreTwist2.mesh",
+    "bone_R-foreArm.mesh",
+    "bone_R-foreTwist1.mesh",
+    "bone_L-foreTwist2.mesh",
+    "bone_L-foreTwist1.mesh",
+    "bone_L-foreArm.mesh"
+   ]
+  },
+  {
+   "mesh": "eyebrows1_resource.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    626.4,
+    307.4,
+    11.2,
+    5.3
+   ],
+   "bones_in_roi": [
+    "bone_R-brow1.mesh",
+    "bone_R-brow2-eyeshape.mesh",
+    "bone_R-brow3-eyeshape.mesh"
+   ]
+  },
+  {
+   "mesh": "head.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    626.6,
+    307.5,
+    20.0,
+    44.8
+   ],
+   "bones_in_roi": [
+    "bone_R-lid.mesh",
+    "bone_R-brow1.mesh",
+    "bone_brow-mid.mesh",
+    "bone_R-brow3.mesh",
+    "bone_R-brow2.mesh"
+   ]
+  },
+  {
+   "mesh": "eyes.mesh",
+   "owner": "player2",
+   "rectKind": 3,
+   "boneFallback": 0,
+   "rect": [
+    629.8,
+    309.5,
+    6.6,
+    2.7
+   ],
+   "bones_in_roi": [
+    "bone_R-eye.mesh"
+   ]
+  }
+ ]
+}
