@@ -1,0 +1,8 @@
+{
+ "confirmed_live": true,
+ "visual_max_consec_diff": 25.97,
+ "charbone_instances": 992,
+ "charbone_movers_gt0p5u": 0,
+ "charbone_maxmove_u": 0,
+ "interpretation": "SCENE LIVE but BAND SKELETON STATIC (visual advances, 0 bone motion)"
+}

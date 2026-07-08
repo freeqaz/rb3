@@ -1,0 +1,78 @@
+{
+ "lane": "V (VISCAP)",
+ "key": "VISCAP",
+ "wave": 18,
+ "session_task": "Wave-18 Lane V",
+ "spec": "execution/WAVE18_KICKOFF.md Lane V + R5-HANDS-ENDGAME/VERDICT.md \u00a74 (D5 followup #2: visually-guided gameplay nav); gates G-D5-1..4 + G5'",
+ "verdict": "BOX EXHAUSTED (priced). NO articulated Wii capture obtained. Per VERDICT \u00a74 branch table fallback row ('D5 box exhausted, no articulated capture -> GT-D CLOSURE \u00a73.4, pre-authorized') and kickoff A1. NO BRANCH LETTER ASSIGNABLE. This lane REPORTS the priced exhaustion; the coordinator executes GT-D closure.",
+ "headline": "The visually-guided nav wall D5 hit was SOLVED (reached confirmed-live gameplay by sight). The REAL wall is deeper and now proven: the Wii Bank-8 debug patched-disc boot does NOT drive band CharBone skeleton animation in ANY reachable state INCLUDING live gameplay. No articulated ground truth exists in the CharBone-world representation the entire D2/D3/D4/interbone_framematch join requires.",
+ "what_was_built": {
+  "result": "visually-guided nav rig WORKS (the capability D5 priced FEASIBLE but did not build)",
+  "components": "Xvfb :91 + Dolphin -p x11 -v Vulkan (dual RTX3090) + guitar-extension Wiimote->FIFO + F9 screenshots via xdotool + wait-stable single-tap nav; on the D2 Bank-8 patched-disc boot",
+  "cleared_prompts": "By SIGHT, cleared the exact prompt flow D5 could NOT clear blind (Null video): CHOOSE PROFILE->GUEST, 'Use Guest? YES', Guitar nav-help CONTINUE, 'Calibrate? -> SKIP FOR NOW'. Then main hub -> PLAY NOW -> QUICKPLAY -> CHOOSE SONGS -> RANDOM SONG -> GUITAR -> EASY -> LOADING -> live gameplay.",
+  "reached": [
+   "main_hub band lineup (rooftop vignette)",
+   "live gameplay x2 songs (The Beautiful People/Marilyn Manson; Bohemian Rhapsody/Queen)"
+  ],
+  "landed_in": "milo-trace tools/wii_visgame_capture.py (session/gpcap/gpmotion subcommands); scripts/analysis/v18_hand_classify.py (VERDICT branch-table classifier, ready if a capture is ever obtained)"
+ },
+ "articulation": {
+  "result": "NONE in any reachable state (overshell[D5] / main_hub / live gameplay)",
+  "oracle": "oracle-INDEPENDENT: per-CharBone world-transform motion over a dwell + per-finger inter-bone relRot span. Live vignette/performance => fingers curl => span>=15deg (G-D5-1). Static/bind => span~0.",
+  "main_hub": {
+   "finger_relRot_span_deg_over_10p5s": 0.0,
+   "note": "BYTE-IDENTICAL to D2/D4 settled/bind pose (mid01->02=24.366, mid02->03=17.732, ring01->02=26.126, hand->mid01=5.404, hand->ring01=7.428, thumb01->02=23.562). A7 hub-vignette route: idle body-sway only, NO finger articulation (confirms VERDICT \u00a74 'main_hub vignette UNCONFIRMED it even finger-articulates')."
+  },
+  "gameplay": {
+   "scene_confirmed_live": true,
+   "scene_visual_max_consec_diff": 25.97,
+   "charbone_instances": 992,
+   "charbone_world_movers_gt0p5u": 0,
+   "charbone_maxmove_u": 0.0,
+   "finger_relRot_span_deg": 0.0,
+   "note": "During CONFIRMED-LIVE gameplay (note highway + venue lights + title card provably advancing; game loop live; MEM2 heap@0x92000000 chunk changes between reads), 0/992 CharBone WORLD transforms move. Reproduced across unlimited-speed (session2, incl. with strumming input) and the clean gpmotion probe. The picked chain equals the bind pose (24.37deg) identically across all frames.",
+   "confound_speed_audio": "Attempted a normal-speed(1.0x)+Cubeb-audio reboot to exclude anim/song-clock starvation; that capture landed during a BLACK LOADING screen (8s settle insufficient at 1.0x) so it was INCONCLUSIVE for gameplay. The DECISIVE unconfounded evidence is the UNLIMITED-speed gpmotion run where the scene was PROVEN live (visual diff 25.97) yet 0 bone motion \u2014 animation is not speed/audio-gated (gems scroll = clock runs; bones still static)."
+  },
+  "corroborating": {
+   "active_player_clip_drivers": 0,
+   "note": "census of CharClipDrivers -> resident player clips is 0-active at EVERY reachable state (reproduces D4/D5 red baseline at overshell AND at hub AND at gameplay). No CharClipDriver drives the band bones.",
+   "also_static": "exo_*, target_*, bone_head/jaw/spine all static (0 motion) too; CharServoBone VT (0x80c05d60) has 0 resident instances at gameplay.",
+   "instrument_validity": "the SAME CharBone read correctly returns the validated bind pose (D2/D4-cross-checked) and memory is proven live -> not a stale/dead read; the bones genuinely hold bind."
+  }
+ },
+ "why_this_matters_vs_native": "The native port (D3_delta_table_gameplay.json) reads the SAME CharBone-world inter-bone representation during gameplay and DOES get animated finger curl (native mid01->02 = 54-99deg across members). So CharBone worlds ARE the animation-bearing transform the whole campaign's join uses. The Wii side being static there means the join's Wii half is unobtainable IN THE REQUIRED REPRESENTATION.",
+ "gates": {
+  "G-D5-1_capture_validity": "FAIL (correct red arm): no LIVE band-driven CharBone motion; finger swing 0deg (need >=15deg); this is the mandated fail-red, now demonstrated even at confirmed-live GAMEPLAY, not just the D2 frozen overshell.",
+  "G-D5-2_noise_band": "N/A - no articulated captures to derive ep_noise.",
+  "G-D5-3_join_validity": "N/A - no new articulated Wii capture to join/red-team.",
+  "G-D5-4_decision_mechanicalness": "GT-D by the pre-registered fallback row; no D5 JSON to classify. scripts/analysis/v18_hand_classify.py stands ready to classify mechanically IF a capture is ever obtained.",
+  "G5prime_palette_separation": "out of scope (GT-A-only forensic; coordinator lane)."
+ },
+ "branch_letter": "NONE - no branch letter assignable (A1 exhaustion). Coordinator executes GT-D CLOSURE \u00a73.4 (pre-authorized VERDICT \u00a74 + kickoff A1) with the \u00a78 clamp-corrected residual statement; no further discriminator lanes.",
+ "priced_paths_forward": {
+  "gameplay_nav_visual": {
+   "status": "BUILT + EXHAUSTED for articulation",
+   "note": "D5 priced this FEASIBLE and named gameplay 'the reliable finger-articulation source'. Lane V built it and reached confirmed-live gameplay, but the Wii band CharBone skeleton is static there too. Empirical correction to the VERDICT/D5 prior: gameplay is NOT a reachable articulation source on this Bank-8 debug patched-disc boot."
+  },
+  "root_cause_lead_out_of_box": {
+   "status": "UNBUDGETED - a NEW investigation, not a V re-price",
+   "note": "WHY the Wii band CharBone skeleton stays at bind (active CharClipDrivers=0 everywhere) is the real open question: candidates = (a) debug build stubs band performance anim; (b) Guest-profile / patched-disc boot does not initialize the band director's performance-clip assignment; (c) performance anim gated on a subsystem not running headless. Resolving it could unlock the capture but is a distinct scoped item for the coordinator."
+  },
+  "alternative_ground_truth": {
+   "status": "out of this box",
+   "note": "If articulated Wii ground truth is ever needed, a route that makes CharClipDrivers active on the band (e.g. a different boot/mode that runs the director, or a save-state from a real console session with the band performing) would be required; none is reachable within this lane."
+  }
+ },
+ "process_lint_compliance": {
+  "lint3_no_unvalidated_oracle": "exhaustion called on the oracle-INDEPENDENT CharBone-world motion test (0/992 movers) + confirmed-live scene, NOT on the pointer-chase driver census (flagged unvalidated on positives). Input liveness verified (taps change shell state).",
+  "lint7_evidence_committed": "V_exhaustion.json + V_findings.md + nav/gameplay screenshots + gpmotion.json + capture JSONs under execution/R5-HANDS-ENDGAME/evidence/ and VISCAP/.",
+  "lint10_tools_before_fixes": "the visual nav rig + articulation detector + broad motion scan + gpmotion live-confirm probe were all built and fired before any capture/branch claim. No fix attempted (A6: V stops at branch letter)."
+ },
+ "instance_hygiene": "instance-scoped -u /tmp/dolphin-v18 + own Xvfb :91; pgid-only teardown; other lanes' Dolphin instances untouched; NO default flips, NO pin bumps, NO engine/game-source edits.",
+ "reproduction": [
+  "cd /home/free/code/milohax/milo-trace",
+  "V18_DISPLAY=:91 D2_USERDIR=/tmp/dolphin-v18 python3 tools/wii_visgame_capture.py gpmotion   # boot->nav->confirm-live->measure visual+bone motion",
+  "# => confirmed_live=True, scene visual diff ~26, charbone_movers=0/992 (band skeleton static in live gameplay)",
+  "python3 tools/wii_visgame_capture.py session   # full nav->capture->pause-noise (capture_gp.json span 0.0)"
+ ]
+}
