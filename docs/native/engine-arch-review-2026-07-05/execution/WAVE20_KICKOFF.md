@@ -7,9 +7,45 @@ we're patching around but there are answers if we are smart."*
 Engine pin `6e6387c`. TWELVE defaults ON. **AUDIT WAVE — zero fixes, zero flips, zero pin
 bumps; probes flag-gated default-OFF only.**
 
-## COORDINATOR ACCEPTANCE (<pending review>)
+## COORDINATOR ACCEPTANCE (from `WAVE20_REVIEW.md`, rb3 `7538830c` — DISPATCH-WITH-AMENDMENTS)
 
-_To be filled from `WAVE20_REVIEW.md`._
+**A1–A11 adopted verbatim and BINDING on the lane briefs; read the review file, it
+overrides this kickoff wherever they differ.** Headlines:
+
+- **A1 (Lane N reframe):** charter = *verify + complete the 2026-06-06 causal chain*
+  (CHAR_SKINNING doc ~:894–1040), NOT discover-from-scratch. Suspicion order FLIPPED:
+  (b) parse-time name-resolution share FIRST, (a) shim SECOND. The shim A/B arm is a
+  RECONCILIATION of the recorded shim-off negative (pre-registered: UNCHANGED topology ⇒
+  shim exonerated; CHANGED ⇒ 2026-06-06 record superseded).
+- **A2/A3/A4 (Lane N):** pristine-binding dump hooks ENTRY of `RebindHeadHandsAtRest`
+  (:1254, Poll :527) + `RebindOutfitBonesToOwnSkeleton` (:1102, :575), per mesh,
+  first-touch — a single end-of-load sweep is INSUFFICIENT. Hit counters on ALL THREE
+  remap branches (:4182 sCharSharedDir, :4188 sInstrumentDir, :4202 sBoneMergeDir) +
+  per-merge FilterSubdir action log. All probes `#ifdef HX_NATIVE` + env-gated
+  default-OFF. VERDICT §1's ":4159-4181" anchor is STALE — do not propagate.
+- **A5/A6/A7 (Lane W):** wii_bone_dirboot.py reads CharBone only — the lane BUILDS a new
+  mesh-binding reader (RndMesh 0x80c235a8 / RndTransformable 0x80c2a1b4 / ObjectDir
+  0x80bb8ad4 vtable census; empirical Bank-8 offset derivation, G2-style validation;
+  pointer-deref ONLY). Capture main_hub AND live gameplay. Fail-reds: UNRESOLVED ≠
+  SHARED, MESH_ABSENT loud, GENDER-GAP row. A7: per slot also record the bound trans's
+  world+local matrices (= the Wii-side basis B) for the A11 discharge.
+- **A8/A9 (Lane D):** batch_objdiff gate first; semantic audit ONLY the sub-100
+  shortlist: `BandCharacter::Filter` 95.60 (priority 1), `ObjDirPtr<ObjectDir>::__as`
+  95.17, `ReplaceRefs` 98.79, `OnInstallFilter` 99.11, `ObjectDir::LoadSubDir` 99.39,
+  `ObjectDir::PostLoadInlined` 99.80. 100% functions (incl. `ObjectDir::PreLoad` = the
+  kInlineCached handling, FileMerger chain, `FindObject`, `DirLoader::Find`) get
+  FAITHFUL-BY-MATCH rows free. BandCharacter has NO DC3 analog → Bank-8 asm +
+  bank_divergence gate; DC3 valid for obj/Dir, obj/Utl, char/FileMerger.
+  SEMANTIC-SUSPECT requires exact mismatching instructions cited.
+- **A10 (join schema, blessed):** one row per (platform, state, member, mesh, boneSlot);
+  fields platform/state/member/memberGender/mesh/boneSlotIndex/boneName/
+  status{RESOLVED|UNRESOLVED|MESH_ABSENT}/owningDirName/
+  owningDirClass{OWN_MEMBER|SHARED_ROOT|OTHER}/owningDirInstanceId(opaque)/boneCount.
+  Per-SLOT rows mandatory (native pathology is slot-mixed 8/46).
+- **A11 (synthesis obligation — coordinator, NOT lanes):** before any Wave-21 fix
+  charter, name what the Wii-loaded object has that the VISUAL-refuted 8th cell
+  (`inv(B)·L_own(t)`) lacked, from A7/A10 data. Lane W makes static-binding claims ONLY;
+  GT-D closure + reopen condition untouched.
 
 - **Hazard note:** engine tree carries uncommitted `M FxSendNative.cpp`; rb3 tree carries
   `native/src/rb3_session_trace.cpp` — never stage either.
