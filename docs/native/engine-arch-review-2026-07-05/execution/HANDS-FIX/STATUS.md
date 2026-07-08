@@ -98,6 +98,14 @@ remains the shipped mitigation.
 
 ## Pre-registered Dolphin fallback (VERDICT §5) — NOT executable in-lane
 
+> **ANNOTATION (Wave-18 GT-D closure, R5 CLOSURE.md record-hygiene item 3):** the
+> paragraph below is OBSOLETE. milo-trace gained a turnkey Wii bone-world capture in
+> Wave 17 (D2 patched-disc boot + `wii_bone_dirboot.py`, then `wii_visgame_capture.py`)
+> — the capture ran, through live gameplay. What proved unobtainable is band CharBone
+> ANIMATION on that substrate (see `R5-HANDS-ENDGAME/evidence/V_findings.md`). Also per
+> `R5-HANDS-ENDGAME/VERDICT.md` §8: do not cite this file's "genuine fix is an engine
+> reskin" line.
+
 The fallback (capture `bone_R-middlefinger03` / `bone_R-hand` `WorldXfm` on real Wii
 via Dolphin + `../milo-trace`, diff vs native `own`) is **blocked**: `../milo-trace`
 is a project SKELETON (its README: "almost everything is a documented stub with TODO
