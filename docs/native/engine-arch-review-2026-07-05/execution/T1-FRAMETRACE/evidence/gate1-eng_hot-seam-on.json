@@ -1,0 +1,308 @@
+{
+  "nBoots": 6,
+  "referenceBoot": 0,
+  "window": [
+    0,
+    4804
+  ],
+  "ladderStepMs": 2000.0,
+  "boots": [
+    {
+      "boot": 0,
+      "logPath": "/tmp/t1-gate1/timeline-gate1-eng_hot-seam-on-boot0.log",
+      "window": [
+        0,
+        4804
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "74effe39cfa4",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": true
+        },
+        "songClock": {
+          "sig": "1f5639619aa7",
+          "samples": 4804,
+          "positiveSamples": 3560,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": true
+        },
+        "emitTimeline": {
+          "sig": "453d81429952",
+          "events": 35924,
+          "void": false,
+          "matchesRef": true
+        }
+      }
+    },
+    {
+      "boot": 1,
+      "logPath": "/tmp/t1-gate1/timeline-gate1-eng_hot-seam-on-boot1.log",
+      "window": [
+        0,
+        4967
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "d5799ea4eba8",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "912c444b5ff0",
+          "samples": 4967,
+          "positiveSamples": 3731,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "97142698dd30",
+          "events": 36801,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    },
+    {
+      "boot": 2,
+      "logPath": "/tmp/t1-gate1/timeline-gate1-eng_hot-seam-on-boot2.log",
+      "window": [
+        0,
+        4789
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "2d6bcdf165b7",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "44b3993d9cae",
+          "samples": 4789,
+          "positiveSamples": 3724,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "6a17afaf5041",
+          "events": 35669,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    },
+    {
+      "boot": 3,
+      "logPath": "/tmp/t1-gate1/timeline-gate1-eng_hot-seam-on-boot3.log",
+      "window": [
+        0,
+        4894
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "9bc874d23763",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "63779858ae1a",
+          "samples": 4894,
+          "positiveSamples": 3735,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "e37228828d71",
+          "events": 35726,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    },
+    {
+      "boot": 4,
+      "logPath": "/tmp/t1-gate1/timeline-gate1-eng_hot-seam-on-boot4.log",
+      "window": [
+        0,
+        4777
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "3333e8833552",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "ff4daa2a790f",
+          "samples": 4777,
+          "positiveSamples": 3686,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "e5dfcab68d15",
+          "events": 36791,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    },
+    {
+      "boot": 5,
+      "logPath": "/tmp/t1-gate1/timeline-gate1-eng_hot-seam-on-boot5.log",
+      "window": [
+        0,
+        4711
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "52ea63a80082",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "512dbaddbb61",
+          "samples": 4711,
+          "positiveSamples": 3609,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "c3365cb114fd",
+          "events": 34099,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    }
+  ],
+  "summary": {
+    "frameAssign": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 6,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        722,
+        722,
+        722,
+        722,
+        722,
+        722
+      ],
+      "samples": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "songClock": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 6,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "samples": [
+        4804,
+        4967,
+        4789,
+        4894,
+        4777,
+        4711
+      ]
+    },
+    "emitTimeline": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 6,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        35924,
+        36801,
+        35669,
+        35726,
+        36791,
+        34099
+      ],
+      "samples": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "assertDiverge": [
+    "emitTimeline",
+    "songClock"
+  ],
+  "divergedAxes": [
+    "emitTimeline",
+    "songClock"
+  ],
+  "identicalAxes": [],
+  "voidAxes": [],
+  "blind": false,
+  "armEnv": {
+    "RB3_VENUE_AMBIENT_FLOOR": "0.55",
+    "RB3_VENUE_AMBIENT_CLAMP": "1.0",
+    "RB3_VENUE_POINT_EXPOSURE": "2.5",
+    "RB3_VENUE_DIR_EXPOSURE": "2.5",
+    "RB3_LOADDET_JITTER": "200",
+    "RB3_LOAD_DETERMINISM": "1"
+  },
+  "seam": "ON",
+  "meta": {
+    "date": "2026-07-08",
+    "bin": "native/build-T1/rb3-native",
+    "regime": "eng_hot",
+    "assertDiverge": [
+      "emitTimeline",
+      "songClock"
+    ],
+    "n": 6,
+    "jitter": 200
+  }
+}

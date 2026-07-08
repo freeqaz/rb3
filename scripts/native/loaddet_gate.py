@@ -589,6 +589,56 @@ def timeline_from_logs(log_paths, k_frames, win_lo=None, win_hi=None,
     return g
 
 
+def _name_frames(boot):
+    """Per completion/arrival NAME -> sorted list of frames it landed on (in this
+    boot). The frameAssign axis at the element granularity gate-2 asserts on."""
+    nf = {}
+    for (fr, kind, name) in (boot.get("completes") or []):
+        nf.setdefault(f"{kind}:{name}", []).append(fr)
+    for (fr, name) in (boot.get("fileArrivals") or []):
+        nf.setdefault(f"file:{name}", []).append(fr)
+    return {k: sorted(v) for k, v in nf.items()}
+
+
+def injection_differential(control_boots, injected_boot, win_lo=None, win_hi=None):
+    """Gate-2 (R2): OFF-arm differential. A NAMED frameAssign element (a specific
+    completion/arrival name) must move IN the injected boot (higher jitter) while the
+    controls agree on it — proving the instrument RESPONDS to the induced mechanism,
+    not ambient noise. Returns the named moves + the control-consensus check."""
+    ctrl_nf = [_name_frames(b) for b in control_boots]
+    inj_nf = _name_frames(injected_boot)
+    # names present in every control AND the injected boot
+    common = set(inj_nf)
+    for nf in ctrl_nf:
+        common &= set(nf)
+    named_moves = []
+    control_disagreements = 0
+    for name in sorted(common):
+        ctrl_frames = [tuple(nf[name]) for nf in ctrl_nf]
+        consensus = ctrl_frames[0]
+        controls_agree = all(cf == consensus for cf in ctrl_frames)
+        inj_frames = tuple(inj_nf[name])
+        if not controls_agree:
+            control_disagreements += 1
+            continue
+        if inj_frames != consensus:
+            named_moves.append({
+                "name": name,
+                "control_frames": list(consensus),
+                "injected_frames": list(inj_frames),
+                "delta_first": (inj_frames[0] - consensus[0]) if inj_frames and consensus else None,
+            })
+    return {
+        "n_common_names": len(common),
+        "n_named_moves": len(named_moves),
+        "n_control_disagreements": control_disagreements,
+        "named_moves": named_moves,
+        # gate-2 PASS: >=1 element moves in injected, AND the controls are internally
+        # consistent on the moved elements (a move against a noisy control is void).
+        "responds": len(named_moves) >= 1,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bin", default=os.path.join(REPO, "native", "build-agent-R4", "rb3-native"))
@@ -625,8 +675,48 @@ def main():
     ap.add_argument("--off-arm", action="store_true",
                     help="T1 R1 OFF-arm: RB3_LOAD_DETERMINISM UNSET (seam off) so all "
                          "three axes should DIVERGE under jitter+contention.")
+    ap.add_argument("--injection", action="store_true",
+                    help="T1 gate-2 (R2): OFF-arm injection differential. Runs "
+                         "--n control boots at --ctrl-jitter and 1 injected boot at "
+                         "--inj-jitter; asserts a NAMED frameAssign element moves in "
+                         "the injected boot while controls agree.")
+    ap.add_argument("--ctrl-jitter", type=int, default=0)
+    ap.add_argument("--inj-jitter", type=int, default=2000)
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
+
+    if a.injection:
+        # OFF-arm always (R2): worker jitter shifts data:<name>@frame directly;
+        # seam-ON it fires inline on main and cannot move the completion frame.
+        eng = dict(wd_arms_eng_hot())
+        target_ms = (a.k + 60) * DT_MS
+        def _boot(jit, lp):
+            env = dict(eng); env["RB3_LOADDET_JITTER"] = str(jit)
+            r = boot_measure(a.bin, env, a.k, target_ms, lp, diff=a.diff,
+                             verbose=a.verbose, autohit=a.autohit, timeline=True)
+            r["logPath"] = lp; return r
+        controls = []
+        for i in range(a.n):
+            controls.append(_boot(a.ctrl_jitter,
+                            os.path.join(a.out, f"inj-{a.tag}-ctrl{i}.log")))
+        injected = _boot(a.inj_jitter, os.path.join(a.out, f"inj-{a.tag}-injected.log"))
+        diff = injection_differential(controls, injected)
+        diff["meta"] = {"date": time.strftime("%Y-%m-%d"), "bin": a.bin,
+                        "seam": "OFF", "ctrl_jitter": a.ctrl_jitter,
+                        "inj_jitter": a.inj_jitter, "n_controls": a.n,
+                        "carrier": "frameAssign (data:name completion frame)"}
+        outp = a.grade_out or os.path.join(a.out, f"gate2-injection.json")
+        with open(outp, "w") as f:
+            json.dump(diff, f, indent=2, allow_nan=False)
+        print("==================== GATE-2 INJECTION (OFF-arm) ====================")
+        print(f"common names={diff['n_common_names']}  named moves={diff['n_named_moves']}  "
+              f"control disagreements={diff['n_control_disagreements']}")
+        for nm in diff["named_moves"][:12]:
+            print(f"  MOVED {nm['name']}: ctrl={nm['control_frames']} -> inj={nm['injected_frames']} "
+                  f"(dfirst={nm['delta_first']})")
+        print(f"RESPONDS (>=1 named move, controls agree): {diff['responds']}")
+        print(f"wrote {outp}")
+        return
 
     if a.timeline:
         assert_axes = tuple(x.strip() for x in a.assert_diverge.split(",") if x.strip())
