@@ -82,3 +82,14 @@ native default run.
 - evidence/hx_native_ifdef_enumeration.md — every HX_NATIVE block classified.
 - evidence/Filter_full_listing.md — full 484-instr objdiff listing for Filter.
 - Checkpoint: /tmp/wave20-checkpoints/D.json.
+
+---
+## ERRATA (close-out review `d1e3faf0`, E9 + E10)
+- E10 — STATUS:61-62 "the 2026-06-06 record proved shim-off does NOT change skeleton binding
+  topology" is **SUPERSEDED intra-wave by Lane N**: shim-off DOES change hand-mesh rest-entry
+  binding (br2 0→31,488/member; 205/205 slots flip to the member's own instance). The
+  2026-06-06 record stands only for its torso-`upArmPtr`-at-draw measurement, a different
+  population.
+- E9 — the FilterSubdir shim is NOT "semantics-preserving": it is a DELIBERATE semantics-
+  CHANGING divergence (the Layer-1 mechanism Lane N indicts) — intentional, not a decomp
+  defect. Only the ReplaceRefs LP64 reimpl is semantics-preserving.

@@ -92,3 +92,11 @@ visual gate. Lane W's Wii basis capture (A7) is the piece needed to close it.
 - `evidence/a10_native_table.md`, `evidence/branch_hitcount_table.md`
 - `evidence/control_shimON_gameplay.png` (coherent), `evidence/noshim_shimOFF_gameplay.png` (flung)
 - `evidence/boot_commands.md` (regen)
+
+---
+## ERRATA (close-out review `d1e3faf0`, E8)
+- Banned-shorthand correction (R5 VERDICT §8.3): "shipped clamp/head-rebind then holds it"
+  (:32) and "hands coherent (clamp holds)" (:50) — the clamp SKIPS rebound band-hand meshes;
+  the shipped default is the **seed-R rebake + mitten-ON**. Both A/B arms here were mitten-ON,
+  so the coherent-vs-flung asymmetry is a genuine **binding-topology** effect, not clamp/
+  mitten mediation.

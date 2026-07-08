@@ -143,3 +143,65 @@ rebind behavior) that does not depend on Wii articulation.
   control vs shim-off gameplay PNGs, probes in `BandCharacter.cpp`/`Mesh.cpp`).
 - Lane D: `W20-DECOMPAUDIT/` (STATUS verdict table, per_function_diagnose,
   hx_native_ifdef_enumeration, Filter_full_listing).
+
+---
+
+## ERRATA (Wave-20 close-out review `d1e3faf0`, E1–E12 — append-only, binding)
+
+The body above overstates Layer 2's mechanism and compresses a few Layer-1 facts. These
+corrections govern; where they conflict with the body, THEY win. Layer 1's core result
+(counted 0-vs-31,488 remap suppression + OWN-vs-SHARED topology flip + decomp-faithful)
+survived adversarial re-derivation unchanged.
+
+- **E1 (§Layer 1 table, Wii column):** "hand-mesh bone binding … 60/60" is loose — only
+  **6/60 committed rows are hand-mesh** (`hands_naked.mesh`, member 0 only; the other 54
+  are jacket/jeans/strap outfit meshes; rows span members 0/1/2, member 3 absent). Hand-
+  specific Wii evidence = those 6 bones + one non-reproducible 38-bone `drivinggloves`→OWN
+  sighting. The class result (OWN, SHARED_ROOT=0) holds; the row count is outfit-wide.
+- **E2:** "exactly matching Wii's topology" → matches at the A10 `owningDirClass` level on
+  every *reachable* row; full 38-slot per-slot uniformity on Wii is **walled**, and slot-
+  mixing is a real failure mode (native 8/46, HANDS-ADJ §1).
+- **E3:** "native-introduced regression" is fair for the **load-path topology only**, NOT
+  for the hand visuals — the female fling predates the shim (2026-06-05) and worsens with
+  the shim off.
+- **E4 (§Layer 2, the key correction):** the "shim-off = the 8th cell's `inv(B)·L_own`"
+  identity is NOT established. Lane N measured binding at rebind ENTRY; the shim-off arm set
+  no banned flag, so the default seed-R rebake still ran → draw-time composition is
+  plausibly `inv(R)·L_own` (**dead cell #1, the default**), not the 8th cell. Draw-time
+  offsets were never dumped. **What is proven: per-member topology alone fails the visual
+  gate. Which dead cell it reproduces is undetermined.**
+- **E5:** the 87.2° is `angle(B·inv(R))` for the SetDeformation-time **transient seed R**
+  (provenance expressly open, HANDS-ADJ §2) — NOT a measured rest basis of the fresh
+  per-member skeleton. And **arm S measured the male `own` ≈ B (3.1°, 1038 blocks) during
+  play** — standing counter-evidence to the L2-a story for males. The only committed
+  gender-basis gap is the **female ~29°** (authored female offsets vs the shared male bind).
+- **E6:** "gender/bind-posed rest basis IS the missing sufficient ingredient — corroborated
+  three ways" → it is the **leading CANDIDATE (L2-a)**; sufficiency is untested and arm S's
+  male 3.1° contradicts it for males. The Wave-21 step-1 discriminator (torso-vs-hands,
+  native-side) decides L2-a vs L2-b and must explain the male null.
+- **E7:** "On Wii the outfit/clip poses each per-member skeleton to its gender" is an
+  unevidenced Wii-animation assertion (substrate CharClipDrivers=0) → restate as: IF the
+  Wii object reaches a gender-correct rest basis, some Wii-side mechanism poses it —
+  hypothesis, not observed. (Does not trip the GT-D reopen condition.)
+- **E8 (banned shorthand):** "the shipped clamped state" → the shipped default is the
+  **seed-R rebake + mitten-ON**; the clamp SKIPS rebound band-hand meshes (R5 VERDICT §8.3).
+  Both Wave-20 arms were mitten-ON, so the coherent-vs-flung asymmetry is a genuine
+  **topology** effect, not clamp/mitten mediation.
+- **E9:** the FilterSubdir shim is NOT "semantics-preserving" — it is a DELIBERATE
+  semantics-changing divergence (the Layer-1 mechanism itself), intentional, not a decomp
+  defect. Only the ReplaceRefs LP64 reimpl is semantics-preserving.
+- **E11:** "separable in principle" is a Wave-21 HYPOTHESIS, not established — the chartered
+  skeleton-scoped shim arm was never run, and `char_shared.milo` carries palette content, so
+  restoring its kMerge may reintroduce white textures. Wave-21 gate list ADDS: char-texture
+  integrity on the scoped-shim arm (no white-texture regression).
+- **E12:** the Wave-21 charter's part 2 ("pose to B") presumes L2-a; if the step-1
+  discriminator lands L2-b, part 2 is the wrong shape → re-charter. Reskin stays banned
+  (R5 §8.4/§5) regardless.
+
+**Net after errata:** the durable, proven Wave-20 result is **Layer 1** — native binds the
+shared male-bind magnet because our white-texture shim suppresses the retail per-member
+bone remap (counted), the decomp is faithful, and Wii binds per-member. **Layer 2** is
+proven at the necessity level (per-member binding alone still fails) and OPEN at the
+mechanism level (L2-a gender-pose vs L2-b blend-tear undetermined; female gender-gap
+committed, male case counter-indicated). Wave 21 lands Layer 1 + Layer 2 together or not at
+all, with the torso-precedent discriminator deciding Layer 2's shape.
