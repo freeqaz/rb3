@@ -156,3 +156,28 @@ Secondary observations (reported, not verdict-bearing under VOID):
 ELEVEN defaults ON; refuted flags UNSET; NO default flips / pin bumps / engine edits;
 never staged `FxSendNative.cpp` or `rb3_session_trace.cpp`; pgid-only cleanup; own build
 dir; evidence committed.
+
+---
+
+## CORRECTIONS (Wave-18 close-out review `WAVE18_CLOSEOUT_REVIEW.md`, F1-F3 — SUPERSEDE the claims above)
+
+- **F1 (HIGH): the wash co-sampler "VALIDATED, AUC 0.000, WHITE=particle-lulls" claim is
+  WITHDRAWN.** The review refuted it from `evidence/wash_natural.json` itself: the 89
+  "per-frame" samples collapse to **2 covariate clusters** (the join is per-BURST-stale, not
+  per-frame); all 7 BAD frames share `fx_emit_win=1290` with 53/82 GOOD frames; the AUC 0.000
+  is a tie-handling artifact in `wash_cosample.py:127` (argsort ranks without midranks —
+  midrank-corrected AUC ≈ 0.32; the identical p=0.058 for both signals betrays the
+  degeneracy). Status downgraded to: **instrument BUILT, validation FAILED** — v2 must fix
+  the per-frame join AND use midrank AUC before any separation claim. The particle-lull
+  hypothesis is unproven, not disproven.
+- **F2: the graded N=10 came through `--refinish` crash recovery** — all 20 rows have
+  `frame/songms: null`, so the first-frame-crossing property is unverifiable for this run;
+  all-black frames (luma 0.0) were counted as hi_frac=0 lighting data. Reproduce-first
+  12.43 → 13.81 excluding them; the VOID/HELD verdict is unchanged either way.
+- **F3: "+16 fully attributed" overstates by ±1** — the per-site deltas sum to +15, and this
+  STATUS vs the evidence md disagree on the +1's owner (CharInterest vs LightPresetManager).
+  The four named venue-path sites stand; the exact split of the residual +1 does not.
+- (Unchanged by the review: the VOID→HELD verdict, the four venue-consumer attributions as a
+  set, and the ON-arm 10/10-stream-matched-yet-spreading discrimination — the wave's core
+  finding. Naming note per F9: "W0.3d part-b" here means the FRAME-ASSIGNMENT TIMING axis —
+  R4's ledger `order` axis is already 10/10.)

@@ -629,3 +629,40 @@ marker, superseded first-instance evidence deleted in favor of committed aggrega
 - **Deferred:** 4→8 lights; W2.4 BandPatchMesh (twice-burned, same blend machinery as the hands
   endgame — do not run concurrently with the D5 branch); web-build confirmation rides as a tail
   gate on the next flip wave, not a lane.
+
+## Wave 18 results (2026-07-08, cash-in wave — 4 lanes + coordinator GT-D closure + E1 flip)
+
+**THE HANDS SAGA IS CLOSED (GT-D, honest no-articulated-ground-truth label) and its mitigation
+SHIPPED — defaults now TWELVE.** Engine `49ca0d6` → `beb89e5`. Close-out review:
+`WAVE18_CLOSEOUT_REVIEW.md` (`a9694de4`) — "the wave's three big calls stand"; F1-F5
+corrections applied at close-out (STATUS/CLOSURE addenda + registry pass).
+
+| Item | Status | Highlights |
+|---|---|---|
+| V — VISCAP | ✅ instrument / ❌ capture → **exhaustion per A1** | The visually-guided rig (Xvfb + Vulkan + screenshot-driven nav + guitar-ext Wiimote) SOLVED D5's wall — cleared the profile flow by sight, reached live gameplay on 2 songs. Substrate wall proven: **the Bank-8 debug patched boot never animates band CharBones** (0/992 worlds move in confirmed-live gameplay; `CharClipDrivers=0` everywhere; reads proven live). G-D5-1 fails everywhere → no branch letter assignable. Branch-table classifier committed for any future capture. |
+| Coordinator — **GT-D CLOSURE** | ✅ (`CLOSURE.md`, `5d1cc39f` + post-flip addendum) | Closure-honesty condition genuinely met (blind AND sighted routes exhausted). Statics externally exonerated ≤0.65°; residual statement clamp-corrected; reopen condition pre-registered (CharClipDrivers=0 root-cause — parked, per review "uncosted substrate archaeology"). NEW backlog key **FOREARM-FLOAT**: the persistent top-center floating forearm-family structure (unchanged OFF→ON) + drummer E1 coverage gap — recorded so they are NOT misfiled against the closed family. |
+| M — R5-MITTEN → **FLIPPED default-ON** | ✅ (engine `4b8a809`, flip `403ff00`, opt-out `RB3_HANDS_MITTEN_OFF`) | Render-side hands-scoped palette blend toward wrist-rigid past a 45°→90° rotation-to-wrist ramp (16.4% of finger-draws, extreme-pose tail only; α=0 below 45° → coherent frames untouched by construction). **Coordinator E1 on burst_08/12/45 OFF/ON pairs: finger spike-fans collapse to attached hands, both genders.** Flag-OFF byte-identical (792). Honest class: workaround. |
+| W — R4-M4 WHITE/wash | ✅ verdict with corrections | **WHITE = VOID → HELD substrate-blocked, with numbers** (A2 void semantics honored — the harness refused): OFF-arm ledger 1/10, ~+15/16 gRand draws attributed to 4 venue-path consumers R4-M1 missed (CharClipDriver, WorldCrowd::OnIterateFrac — Fisher-Yates PROVEN live —, CharInterest/LightPresetManager ±1); ON-arm **10/10 stream-matched yet hi_frac 9.5→65.4** → WHITE's driver is a NON-gRand frame-timing axis (owner: W0.3d part-b, scoped per review F9 to frame-assignment timing). `RB3_LOADDET_SEED` subordinated. **F1 correction: the wash co-sampler's "VALIDATED, AUC 0.000, WHITE=particle-lulls" claim is WITHDRAWN** (per-burst-stale join + tie-handling artifact; midrank AUC ≈0.32) — instrument BUILT, validation FAILED, v2 must fix the join + midranks. `loaddet_gate.py --grade-logs` landed; two Wave-10 capture confounds fixed. |
+| N — R2-NET | ✅ (engine `e69a35f`, rb3 `10b7caea`) | Engine-emitted Tier-1 field (the `:4820-4841` xcheck quantity via a first-seen rest cache; header-key-only format) → **VerdictTable SKIP → real measured PASS** reproducing Wave-15 exactly (0.06°/3.13° male, 28.88°/28.92° female); the offline analog drifts to 62° under articulation. FINDING: `SHARD_GUARD_OFF` gates the whole diagnostic block incl. the palette dump (why arm-w was never dump-reproducible). Good-body re-captured (md5-distinct shots; broad-selector dump I/O was the black-frame cause). Curl-envelope assertion landed. rb3-tests 116/0. |
+
+**Coordinator actions:** GT-D closure executed + post-flip addendum; E1 mitten flip (twelfth
+default); F1-F5 review corrections (W STATUS corrections block, CLOSURE addendum, F4 registry
+pass incl. companion-knob classification); pin `49ca0d6`→`beb89e5` (three engine landings:
+Tier-1 field, mitten+flip, registry); regen 377 clean; gates on final pin: drawlog 792
+canonical PASS, lineup PASS, rb3-tests 116/0. Cross-link (review F6): Lane M's 85%-pixel
+cross-process control corroborates Lane W's stream-matched render-timeline variance — same
+axis, W0.3d part-b.
+
+### Wave 19 menu (from `WAVE18_CLOSEOUT_REVIEW.md`)
+
+- **PRIMARY: venue-path consumer isolation** (4 named sites) → makes the WHITE precondition
+  satisfiable → **re-run the WHITE re-grade** on the then-clean ledger.
+- **W0.3d part-b, scoped to the frame-assignment-timing axis** (the named WHITE driver; R4's
+  ledger `order` axis is already 10/10 — do not confuse), with the wash co-sampler v2 join-fix
+  (per-frame join + midrank AUC) folded in.
+- **N-tail:** bad-torn tier1 golden re-capture + any registry stragglers.
+- **R3 v1 walk gap** (instanced rows + overshell authored-side join).
+- Conditional: W2.4 BandPatchMesh (ONLY under the memory's re-land clauses: patch-bearing
+  lineup + reviewer-judged wide frames); 4→8 lights; web-build confirmation tail gate.
+- Parked (review): CharClipDrivers=0 root-cause — remains the closure's reopen route, not a
+  charter.

@@ -81,3 +81,23 @@ closure's falsifier triggers and GT-A/B/C resumes where the branch table left of
   CORRECTION blocks) → `R5-HANDS-ENDGAME/VERDICT.md` (decision C + §8) →
   `evidence/D5_findings.md` + `evidence/V_findings.md` + `V_exhaustion.json` (the
   exhaustion pair) → this closure.
+
+---
+
+## POST-FLIP ADDENDUM (Wave-18 close-out, review F5)
+
+- The item-1 conditional above is RESOLVED: `RB3_HANDS_MITTEN` shipped **default-ON**
+  (coordinator E1 on the burst_08/12/45 OFF/ON pairs; engine `403ff00`, opt-out
+  `RB3_HANDS_MITTEN_OFF`). The operative residual is therefore the mitten-ON variant:
+  fingers degrade toward rigid-hand at extreme poses; hand stays attached and moving.
+- Correction to the §Accepted-residual wording: "no mesh tearing on the shipped default"
+  was too strong for the PRE-mitten default — Lane M's own OFF-arm bursts show
+  spike-webbing/tear-class geometry. Post-flip, the mitten collapses the finger-level
+  members of that class; the statement holds for the SHIPPED (mitten-ON) default.
+- **Out-of-scope residuals, recorded here so they are NOT misfiled against this closed
+  family** (new backlog key **FOREARM-FLOAT**): (1) the persistent top-center floating
+  flesh-colored structure in the burst_08/12 frames — unchanged OFF→ON, i.e. NOT
+  finger-level; consistent with the Wave-9 "disconnected floating forearm" sighting —
+  forearm/prop-level, never triaged as its own item; (2) the mitten E1 evidence has no
+  DRUMMER close-up coverage. Both are open observations for a future wave, distinct from
+  the closed hands-finger family.
