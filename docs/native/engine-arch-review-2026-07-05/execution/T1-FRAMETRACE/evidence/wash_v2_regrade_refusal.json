@@ -1,0 +1,28 @@
+{
+  "verdict": "DEGENERATE",
+  "instrument_validated": false,
+  "n_shots": 89,
+  "covariate_distinct": {
+    "fx_emit_win": 2,
+    "light_changes_win": 2,
+    "songms": 2,
+    "frame": 2
+  },
+  "outcome_distinct": {
+    "hi_frac": 87,
+    "mean_luma": 89,
+    "class": 3
+  },
+  "refused": {
+    "fx_emit_win": 2,
+    "light_changes_win": 2,
+    "songms": 2,
+    "frame": 2
+  },
+  "n_min_distinct": 5,
+  "black_excluded": 0,
+  "note": "degenerate covariate(s): each has < 5 distinct values across the joined shots (stale/collapsed join). No separation claim computed \u2014 v1's false instrument_validated is mechanically prevented.",
+  "source": "docs/native/engine-arch-review-2026-07-05/execution/R4-M4/evidence/wash_natural.json",
+  "mode": "regrade",
+  "capture_lints": "scripts/native/capture_lints.py"
+}
