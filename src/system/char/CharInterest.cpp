@@ -124,6 +124,12 @@ bool CharInterest::IsMatchingFilterFlags(int mask) {
 float CharInterest::ComputeScore(
     const Vector3 &v1, const Vector3 &v2, const Vector3 &v3, float f, int i, bool b
 ) {
+#ifdef HX_NATIVE
+    // R4 (Wave 19, W-ISO): score-jitter draw onto the isolated "charinterest" stream
+    // (eng_hot venue-path divergent, R4-M4 attribution, spread +/-1). Inert when the
+    // seam is off.
+    RB3LoadDetRedirect _detInterest("charinterest");
+#endif
     float score = -0.99f;
     int r = 1;
     int catFlags = mCategoryFlags;

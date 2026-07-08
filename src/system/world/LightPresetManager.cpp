@@ -273,6 +273,13 @@ void LightPresetManager::SetLighting(Symbol s, bool b) {
 }
 
 LightPreset *LightPresetManager::PickRandomPreset(Symbol s) {
+#ifdef HX_NATIVE
+    // R4 (Wave 19, W-ISO): preset-pick draw onto the isolated "lightpreset" stream
+    // (eng_hot venue-path divergent, R4-M4 attribution, spread 1). Function-scope
+    // covers BOTH the :286 RB3_BOOTRNG_PROBE branch and the :294 shipping draw. Inert
+    // when the seam is off.
+    RB3LoadDetRedirect _detPreset("lightpreset");
+#endif
     int count = mPresets[s].size();
     if (count == 0) {
         return 0;

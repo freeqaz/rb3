@@ -1214,6 +1214,13 @@ void WorldCrowd::Force3DCrowd(bool force) {
 }
 
 DataNode WorldCrowd::OnIterateFrac(DataArray *da) {
+#ifdef HX_NATIVE
+    // R4 (Wave 19, W-ISO): Fisher-Yates shuffle draws onto the isolated "crowditer"
+    // stream (eng_hot venue-path divergent, R4-M4 attribution, spread 7). Inert when
+    // the seam is off. Scoped to OnIterateFrac only — Crowd.cpp:810/812 color-palette
+    // draws were NOT attributed and are left on gRand.
+    RB3LoadDetRedirect _detCrowdIter("crowditer");
+#endif
     START_AUTO_TIMER("crowd_iter");
     Character *chars[64];
     if (mCharacters.empty()) {

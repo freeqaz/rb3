@@ -20,6 +20,12 @@ CharClipDriver::CharClipDriver(
     : mPlayFlags(clip->PlayFlags()), mBlendWidth(blendwidth), mTimeScale(1.0f), mDBeat(0),
       mAdvanceBeat(0), mClip(owner, clip), mNext(next), mNextEvent(-1),
       mPlayMultipleClips(multclips) {
+#ifdef HX_NATIVE
+    // R4 (Wave 19, W-ISO): ctor beat-offset draw onto the isolated "charclip" stream
+    // (eng_hot venue-path divergent, R4-M4 attribution, spread 8). Inert when the seam
+    // is off.
+    RB3LoadDetRedirect _detClip("charclip");
+#endif
     if (mask & 0xF0U)
         CharClip::SetDefaultLoopFlag(mPlayFlags, mask & 0xF0U);
     if (mask & 0xFU)
