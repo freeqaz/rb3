@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 377  
-**By class:** diagnostic=1, feature=14, perf=9, probe=110, tuning=2, unknown=148, workaround=93  
+**Total flags:** 379  
+**By class:** diagnostic=1, feature=14, perf=9, probe=112, tuning=2, unknown=148, workaround=93  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 72
 
 | name | class | default | owner | faithful-status | sites |
@@ -209,6 +209,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_LOADDET_ATTRIB` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_LOADDET_JITTER` | probe | off | load/determinism | n/a: TEST-ONLY worker-latency jitter for the A-S2 load-determinism fail-red, default-OFF. When set to a positive integer N, the engine ThreadCall worker thread sleeps a pseudo-random 0..N microseconds before each job dispatch, amplifying the worker<->main allocation-order race so the OFF-arm gRand spread reproduces reliably under contention (and the seam-ON arm must still collapse 10/10). Worker-thread only; main thread untouched, so it only perturbs completion timing. getenv parsed once, 0/unset => no-op, flag-OFF byte-identical [ThreadCall_Native.cpp WorkerMain] | 1 |
 | `RB3_LOADDET_PROBE` | probe | off | render/determinism | n/a: Wave-12 W0.3d-b A-S1 attribution instrument — per-frame gRand draw-count + per-dir load-completion frame streams (H-TIMING vs H-ORDER vs H-RESEED); read rb3-side (Rand/DirLoader/DataFile/RunOneFrame taps) | 1 |
+| `RB3_LOADDET_TIMELINE` | probe | off | render/determinism | n/a: Wave-19 T1 frame-timeline tracer (attribution mode) — gates the NEW per-frame filearrive + songms markers so existing RB3_LOADDET_PROBE consumers (R4 ledger/order axis, white_regrade, wash v1) keep a byte-identical marker stream; read rb3-side (Loader/http_handlers/loaddet probe taps). Default-OFF, presence-read; ATTRIBUTION-only, no pinning (that is T3) | 1 |
 | `RB3_LOADER_BUDGET_MS` | perf | off | load/perf | n/a: Loader frame-drain budget in ms (default 8; huge value restores unbudgeted drain-to-completion). See project_incremental_load_perf memory. | 2 |
 | `RB3_LOADER_MIN_YIELD_MS` | perf | off | load/perf | n/a: min yield interval for synchronous loader/stream drain in ms (default 16; 0 restores per-slice yield). See project_incremental_load_perf memory. | 2 |
 | `RB3_LOADER_READAHEAD` | perf | off | load/perf | n/a: loader pipeline read-ahead depth (default 6; 0 disables). HX_NATIVE-only. See project_incremental_load_perf memory. | 1 |
@@ -281,6 +282,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PREWARM_NEXT` | perf | off | load/perf | n/a: from:to screen prewarm-pair spec string (default main_hub_screen:song_select_screen). Asset prewarm scheduling, no draw/logic change. See project_incremental_load_perf memory. | 1 |
 | `RB3_PREWARM_SCREENS` | perf | off | load/perf | n/a: UI screen/panel asset prewarm+adopt (web default-ON opt-out via '0'; native default-OFF opt-in). No correctness dependency at the adopt site. See project_incremental_load_perf memory. | 4 |
 | `RB3_PROGRESSIVE_SHARPEN` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_PROV_SKIN_SPHERE` | probe | off | render/ui-forensics | n/a: Wave-19 T2-WORLDROI A/B control — forces skinned draws back to the legacy rectKind=1 sphere fallback (the R3 v1 world-cam blindness) so the new rectKind=3 skinned-pose bbox can be diffed against it (gate G1). Test-only; default preserves the rectKind=3 skinned-pose bbox + boneRects. Implies/requires RB3_DRAWLOG_PROV. SPATIAL provenance axis, not the frame-assignment timing axis. | 1 |
 | `RB3_READAHEAD_DEBUG` | probe | off | load/perf | n/a: reports loader queueDepth/kicked counts to show whether dependency milos enqueue deep enough for read-ahead to matter; zero cost when off, does not change scheduling [Loader.cpp:540] | 1 |
 | `RB3_RECOMPUTE_OFFSETS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_REFRACTION_FIX_OFF` | workaround | on | render/refraction | not-live: song_select bottom_square_refraction cull fix default-ON; =set restores baseline draw | 1 |
