@@ -6,9 +6,54 @@ Parent: `WAVE21_CLOSEOUT_REVIEW.md` Q7 (hands CLOSED; FOREARM-FLOAT first) + own
 Engine pin `be70ca8`. TWELVE defaults ON. **FIX + DISCOVERY wave** — flag-gated fixes
 default-OFF; coordinator-only default decisions at close-out.
 
-## COORDINATOR ACCEPTANCE (<pending review>)
+## COORDINATOR ACCEPTANCE (from `WAVE22_REVIEW.md`, rb3 `08d62a96` — DISPATCH-WITH-AMENDMENTS)
 
-_To be filled from `WAVE22_REVIEW.md`._
+**A1–A9 adopted verbatim and BINDING; the review file overrides this kickoff wherever they
+differ.** Two kickoff factual errors corrected: (1) "the torso rebind already handles arm
+geometry" is FALSE (`RebindOutfitBonesToOwnSkeleton` whitelist `BandCharacter.cpp:1300-1305`
+= trackjacket|vestdenim|plaidshirt|shred ONLY — gloves/clearcoat are NEVER rebound); (2) the
+HUD classes live in `src/system/bandobj/` (BandScoreboard/BandStarDisplay/StarDisplay), NOT
+band3 UI. Headlines:
+
+- **A1 (FOREARM binding-first = LEADING hypothesis, not just a guard):** gloves/clearcoat
+  plausibly still bind the shared static magnet (the char-skinning-deform class). Step 0 =
+  ONE boot, ZERO code: `RB3_LOADBIND_PROBE=1 SKEL_REBIND_PROBE=1`, for player3 ×
+  {gloves_resource.mesh, clearcoat_resource.mesh} × slots {bone_R-foreArm, foreTwist1/2,
+  bone_R-hand}: log `BoneTransAt(b)` (ptr+dir+world) vs `Find(name,false)` on player3's dir
+  (the `own!=bound` test the rebind loop runs at `:1316-1322`). bound≠own AND bound-world
+  elevated ⇒ BINDING BUG (arm-scoped rebind fix); bound==own ⇒ exonerated, go pose.
+- **A2 (hands-closure guardrail — MANDATORY):** `gloves_resource` binds R+L FINGER bones, so
+  a wholesale gloves rebind = de-facto hands re-charter (the TORN regime). (i) clearcoat may
+  be whitelisted mesh-level; (ii) gloves must be BONE-SLOT-scoped — rebind ONLY
+  bone_R-foreArm/foreTwist1/foreTwist2/bone_R-hand (+ L twins if measured equally wrong),
+  NEVER finger-named slots; (iii) NO edits in RebindHeadHandsAtRest or the mitten path; NEVER
+  set RB3_SKEL_REBIND_FULL; (iv) E1 includes a hand-region crop asserting finger rendering
+  UNCHANGED vs flag-OFF (mitten-ON default); (v) success = float removal ONLY, no
+  hands-articulation language; CLOSURE cited only as the backlog key.
+- **A3 (FOREARM gate):** frame-exact matched pairs are unattainable (Wave-19 residual). PRIMARY
+  gate = burst-ROI numeric via `t2_worldroi_burst.py` (RB3_FIXED_CLOCK=1 RB3_DRAWLOG_PROV=1):
+  flag-ON shows ZERO player3 gloves/clearcoat draws in the above-heads strip WHILE those
+  meshes still draw nonzero intersecting player3's body (anti-"fixed by disappearing").
+  SECONDARY = R-foreArm vs L-foreArm world symmetry. E1 = human review of burst PAIRS.
+- **A4 (HUD step 0 — prime suspect, one boot before code):** `RB3_APPLY_HANDLER_FIX_OFF=1`
+  (ledger:101, K9 = DEFAULT-ON "single-player scoreboard/applause right/left.grp
+  x-translation neutralization") A/Bs the mid-screen score bug. If confirmed, the fix is a
+  RE-SCOPE of K9, not a new anchor constant.
+- **A5 (HUD anchors + GT):** score feed `TrackPanel.cpp:113`/`:607-618` (star gated on
+  `mShowStars`/`show_stars`); display `BandScoreboard.cpp:15`/`:38`; star fill
+  `BandStarDisplay.cpp:16` (`sweep.mnm` SetFrame(1,1) + full.trig + stars_offset.tnm)/`:78`.
+  Primary retail GT = Wii `yt_qRagnZCIMzk_gameplay_{guitar,drums,drums_starpower}` (1280×720;
+  drums_starpower = FILLED 5-star oracle); wikipedia shot demoted to layout-tertiary.
+- **A6 (HUD grants + gates):** HUD writes `src/system/bandobj/` (Wii-matched) → same
+  Wii-inertness obligations as FOREARM: `#ifdef HX_NATIVE` + `batch_objdiff==baseline` +
+  `rb3-tests 116/0`. Star-fill oracle = drive past 1.0 stars via the jump-to-end harness
+  (`song-end-test.py` pattern), assert fill draws appear; score-position E1 = drawlog-bbox
+  (scoreboard center in right-third/top-band vs the Wii guitar shot).
+- **A7/A8 (SWEEP):** exclusion grep = NATIVE_COMPAT_LEDGER default-on rows + README "defaults
+  now" lines + fixed `512a1bde`/`9a7c40eb` + C8/venue/offline-chrome; RE-CAPTURE (don't trust
+  the partial `/tmp/visdiff-20260702`). Trust table: Wii shots primary, camera-of-TV
+  (`yt_qSRJ8HHPXzM_*`) NEVER pixel-diffed; diff layout/presence, not color.
+- **A9:** both fix lanes CHECKPOINT the discriminator/A-B verdict before writing fix code.
 
 - **Hazard note:** engine tree carries uncommitted `M FxSendNative.cpp`; rb3 tree carries
   `native/src/rb3_session_trace.cpp` — never stage either. Hands are CLOSED — no lane may
