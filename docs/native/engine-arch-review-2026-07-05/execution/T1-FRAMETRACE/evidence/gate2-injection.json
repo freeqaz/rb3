@@ -1,0 +1,109 @@
+{
+  "jitter_2000": {
+    "n_common_names": 457,
+    "n_named_moves": 0,
+    "n_control_disagreements": 177,
+    "named_moves": [],
+    "songclock_envelope": {
+      "checkpoints": [
+        {
+          "cp": 5000,
+          "ctrl_min": 2723,
+          "ctrl_max": 2971,
+          "injected": 2773,
+          "where": "inside"
+        },
+        {
+          "cp": 10000,
+          "ctrl_min": 3314,
+          "ctrl_max": 3579,
+          "injected": 3375,
+          "where": "inside"
+        },
+        {
+          "cp": 15000,
+          "ctrl_min": 4026,
+          "ctrl_max": 4262,
+          "injected": 4084,
+          "where": "inside"
+        },
+        {
+          "cp": 20000,
+          "ctrl_min": 4469,
+          "ctrl_max": 4702,
+          "injected": 4529,
+          "where": "inside"
+        }
+      ],
+      "n": 4,
+      "later_outside": 0,
+      "earlier_outside": 0,
+      "inside": 4,
+      "responds": false
+    },
+    "responds": false,
+    "attribution": "HONEST-NEGATIVE: RB3_LOADDET_JITTER at the worker-dispatch granularity is NOT distinguishable from the ambient boot-to-boot scheduling-noise floor (controls disagree at JITTER=0; injected sits inside the control songClock envelope, dose-independent). Attribution for T3: the frame-assignment timing residual is driven by ambient thread scheduling, NOT the jitter knob. Instrument responsiveness is established by gate-1's per-frame divergence detection; gate-2 correctly refuses to manufacture a mechanism-response where none is distinguishable (lint 3).",
+    "meta": {
+      "seam": "OFF",
+      "ctrl_jitter": 0,
+      "inj_jitter": 2000,
+      "n_controls": 3,
+      "carrier": "frameAssign named-move + songClock envelope",
+      "bin": "native/build-T1/rb3-native"
+    }
+  },
+  "jitter_20000": {
+    "n_common_names": 457,
+    "n_named_moves": 0,
+    "n_control_disagreements": 177,
+    "named_moves": [],
+    "songclock_envelope": {
+      "checkpoints": [
+        {
+          "cp": 5000,
+          "ctrl_min": 2723,
+          "ctrl_max": 2971,
+          "injected": 2880,
+          "where": "inside"
+        },
+        {
+          "cp": 10000,
+          "ctrl_min": 3314,
+          "ctrl_max": 3579,
+          "injected": 3476,
+          "where": "inside"
+        },
+        {
+          "cp": 15000,
+          "ctrl_min": 4026,
+          "ctrl_max": 4262,
+          "injected": 4184,
+          "where": "inside"
+        },
+        {
+          "cp": 20000,
+          "ctrl_min": 4469,
+          "ctrl_max": 4702,
+          "injected": 4629,
+          "where": "inside"
+        }
+      ],
+      "n": 4,
+      "later_outside": 0,
+      "earlier_outside": 0,
+      "inside": 4,
+      "responds": false
+    },
+    "responds": false,
+    "attribution": "HONEST-NEGATIVE: RB3_LOADDET_JITTER at the worker-dispatch granularity is NOT distinguishable from the ambient boot-to-boot scheduling-noise floor (controls disagree at JITTER=0; injected sits inside the control songClock envelope, dose-independent). Attribution for T3: the frame-assignment timing residual is driven by ambient thread scheduling, NOT the jitter knob. Instrument responsiveness is established by gate-1's per-frame divergence detection; gate-2 correctly refuses to manufacture a mechanism-response where none is distinguishable (lint 3).",
+    "meta": {
+      "seam": "OFF",
+      "ctrl_jitter": 0,
+      "inj_jitter": 20000,
+      "n_controls": 3,
+      "carrier": "frameAssign named-move + songClock envelope",
+      "bin": "native/build-T1/rb3-native"
+    }
+  },
+  "conclusion": "DOSE-INDEPENDENT HONEST-NEGATIVE: neither jitter=2000 nor jitter=20000 produced a frame-assignment move distinguishable from the ambient floor. RB3_LOADDET_JITTER is NOT the frame-assignment driver -> T3 attribution: pin/reproduce ambient thread scheduling, not the worker-jitter knob. Instrument responsiveness proven by gate-1 (per-frame divergence detection)."
+}

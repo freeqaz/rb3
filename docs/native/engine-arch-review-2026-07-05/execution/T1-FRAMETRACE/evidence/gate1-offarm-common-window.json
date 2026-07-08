@@ -1,0 +1,191 @@
+{
+  "nBoots": 3,
+  "referenceBoot": 0,
+  "window": [
+    0,
+    2800
+  ],
+  "ladderStepMs": 2000.0,
+  "boots": [
+    {
+      "boot": 0,
+      "logPath": "/tmp/t1-offarm/timeline-offarm-eng_hot-boot0.log",
+      "window": [
+        0,
+        2800
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "88775b8c6861",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": true
+        },
+        "songClock": {
+          "sig": "74c4c8029a43",
+          "samples": 2801,
+          "positiveSamples": 1863,
+          "crossings": 9,
+          "void": false,
+          "matchesRef": true
+        },
+        "emitTimeline": {
+          "sig": "c535b4cc6adb",
+          "events": 21284,
+          "void": false,
+          "matchesRef": true
+        }
+      }
+    },
+    {
+      "boot": 1,
+      "logPath": "/tmp/t1-offarm/timeline-offarm-eng_hot-boot1.log",
+      "window": [
+        0,
+        2800
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "21e796b8ca22",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "26a8e0eb0299",
+          "samples": 2801,
+          "positiveSamples": 1742,
+          "crossings": 2,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "166b52853a72",
+          "events": 14585,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    },
+    {
+      "boot": 2,
+      "logPath": "/tmp/t1-offarm/timeline-offarm-eng_hot-boot2.log",
+      "window": [
+        0,
+        2800
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "518efe3920ed",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "278a6fe95a14",
+          "samples": 2801,
+          "positiveSamples": 1770,
+          "crossings": 2,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "627fd071994a",
+          "events": 14468,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    }
+  ],
+  "summary": {
+    "frameAssign": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 3,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        722,
+        722,
+        722
+      ],
+      "samples": [
+        null,
+        null,
+        null
+      ]
+    },
+    "songClock": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 3,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        null,
+        null,
+        null
+      ],
+      "samples": [
+        2801,
+        2801,
+        2801
+      ]
+    },
+    "emitTimeline": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 3,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        21284,
+        14585,
+        14468
+      ],
+      "samples": [
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "assertDiverge": [
+    "frameAssign",
+    "songClock",
+    "emitTimeline"
+  ],
+  "divergedAxes": [
+    "frameAssign",
+    "songClock",
+    "emitTimeline"
+  ],
+  "identicalAxes": [],
+  "voidAxes": [],
+  "blind": false,
+  "nLogs": 3,
+  "logPaths": [
+    "/tmp/t1-offarm/timeline-offarm-eng_hot-boot0.log",
+    "/tmp/t1-offarm/timeline-offarm-eng_hot-boot1.log",
+    "/tmp/t1-offarm/timeline-offarm-eng_hot-boot2.log"
+  ],
+  "meta": {
+    "date": "2026-07-08",
+    "bin": "/home/free/code/milohax/rb3/native/build-agent-R4/rb3-native",
+    "regime": "eng_hot",
+    "assertDiverge": [
+      "frameAssign",
+      "songClock",
+      "emitTimeline"
+    ],
+    "n": 10,
+    "jitter": 200
+  }
+}

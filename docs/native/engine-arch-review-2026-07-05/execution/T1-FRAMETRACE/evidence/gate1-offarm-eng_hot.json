@@ -1,0 +1,193 @@
+{
+  "nBoots": 3,
+  "referenceBoot": 0,
+  "window": [
+    0,
+    2896
+  ],
+  "ladderStepMs": 2000.0,
+  "boots": [
+    {
+      "boot": 0,
+      "logPath": "/tmp/t1-offarm/timeline-offarm-eng_hot-boot0.log",
+      "window": [
+        0,
+        2896
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "88775b8c6861",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": true
+        },
+        "songClock": {
+          "sig": "92e941a0c12d",
+          "samples": 2896,
+          "positiveSamples": 1958,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": true
+        },
+        "emitTimeline": {
+          "sig": "84516b0a2804",
+          "events": 22172,
+          "void": false,
+          "matchesRef": true
+        }
+      }
+    },
+    {
+      "boot": 1,
+      "logPath": "/tmp/t1-offarm/timeline-offarm-eng_hot-boot1.log",
+      "window": [
+        0,
+        4670
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "21e796b8ca22",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "cd385b74d106",
+          "samples": 4670,
+          "positiveSamples": 3611,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "630009d03ffe",
+          "events": 34964,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    },
+    {
+      "boot": 2,
+      "logPath": "/tmp/t1-offarm/timeline-offarm-eng_hot-boot2.log",
+      "window": [
+        0,
+        4681
+      ],
+      "framesVoid": false,
+      "axes": {
+        "frameAssign": {
+          "sig": "518efe3920ed",
+          "events": 722,
+          "completes": 710,
+          "arrivals": 12,
+          "void": false,
+          "matchesRef": false
+        },
+        "songClock": {
+          "sig": "353764d2c5c7",
+          "samples": 4681,
+          "positiveSamples": 3650,
+          "crossings": 10,
+          "void": false,
+          "matchesRef": false
+        },
+        "emitTimeline": {
+          "sig": "f56205419a0d",
+          "events": 34938,
+          "void": false,
+          "matchesRef": false
+        }
+      }
+    }
+  ],
+  "summary": {
+    "frameAssign": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 3,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        722,
+        722,
+        722
+      ],
+      "samples": [
+        null,
+        null,
+        null
+      ]
+    },
+    "songClock": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 3,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        null,
+        null,
+        null
+      ],
+      "samples": [
+        2896,
+        4670,
+        4681
+      ]
+    },
+    "emitTimeline": {
+      "verdict": "DIVERGE",
+      "distinctSigs": 3,
+      "anyVoid": false,
+      "allVoid": false,
+      "events": [
+        22172,
+        34964,
+        34938
+      ],
+      "samples": [
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "assertDiverge": [
+    "frameAssign",
+    "songClock",
+    "emitTimeline"
+  ],
+  "divergedAxes": [
+    "frameAssign",
+    "songClock",
+    "emitTimeline"
+  ],
+  "identicalAxes": [],
+  "voidAxes": [],
+  "blind": false,
+  "armEnv": {
+    "RB3_VENUE_AMBIENT_FLOOR": "0.55",
+    "RB3_VENUE_AMBIENT_CLAMP": "1.0",
+    "RB3_VENUE_POINT_EXPOSURE": "2.5",
+    "RB3_VENUE_DIR_EXPOSURE": "2.5",
+    "RB3_LOADDET_JITTER": "200"
+  },
+  "seam": "OFF",
+  "meta": {
+    "date": "2026-07-08",
+    "bin": "native/build-T1/rb3-native",
+    "regime": "eng_hot",
+    "assertDiverge": [
+      "frameAssign",
+      "songClock",
+      "emitTimeline"
+    ],
+    "n": 3,
+    "jitter": 200
+  }
+}
