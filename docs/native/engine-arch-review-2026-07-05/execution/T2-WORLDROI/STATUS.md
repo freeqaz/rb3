@@ -55,6 +55,15 @@ No conflict with WAVE19_REVIEW A1 (its region re-scope + step-0 cache check are 
   floating above the band heads. boneFallback=0 → a POSE-placement float, distinct from the
   finger-level mitten/clamp class (actionable lead for a future fix charter).
 
+## CLOSE-OUT (ALL GREEN) — `evidence/CLOSEOUT.md`
+- Full rb3-tests: **116 PASSED, 0 FAILED**, 7 skipped (external fixtures).
+- Flag-OFF drawlog golden 792 canonical **PASS** on the final build + fail-red reads RED.
+- G3 batch_objdiff on `system/char/Character`: no regression (DrawShowing 98.2% = pre-edit;
+  HX_NATIVE native-only so `Character.o` byte-identical).
+- Commits — engine: `ad01ca6` (skinned branch), `515f617` (classjson). rb3: `4259d4ae` (serialize
+  + probe), `fd9e3af3` (owner scope), `116fcfe0` (query), `69a246aa` (gates), `ba253bdb` (M5 triage).
+- No default flips, no pin bump (coordinator close-out).
+
 ## Flags (both default-OFF; no default flips)
 | Flag | Default | Role |
 |---|---|---|
