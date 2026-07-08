@@ -938,6 +938,17 @@ void FileLoader::LoadFile() {
             mBuffer = nullptr;
         }
         RELEASE(mFile);
+#ifdef HX_NATIVE
+        // Wave-19 T1 (Lane F) frame-assignment timing tracer: log the sim frame on
+        // which this async FileLoader's bytes arrived (ReadDone->DoneLoading flip).
+        // RB3_LOADDET_TIMELINE, default-OFF, probe-only, additive — no behavioural
+        // change. Mirrors DirLoader.cpp:742-744. NOTE mFile is RELEASE'd above; use
+        // the base-class Loader::mFile FilePath (as DebugText() does at :929).
+        {
+            extern void RB3LoadDetFileArrive(const char *);
+            RB3LoadDetFileArrive(Loader::mFile.c_str());
+        }
+#endif
         mState = &FileLoader::DoneLoading;
     }
 }

@@ -1030,6 +1030,16 @@ void RB3HttpServerPoll(int frame) {
         if (ma) songMs = ma->GetTime();
     }
 
+    // Wave-19 T1 (Lane F) songClock axis: sample the audio clock per frame at this
+    // clean, main-thread, post-RunOneFrame site (A3 option-b; NEVER touches the dirty
+    // rb3_session_trace.cpp). Gated internally on RB3_LOADDET_TIMELINE (default-OFF);
+    // keys on gRB3TraceFrame so it shares the one frame axis. Behind the RB3_HTTP
+    // guard above -> songClock requires RB3_HTTP=1 (disclosed).
+    {
+        extern void RB3LoadDetSongMs(float);
+        RB3LoadDetSongMs(songMs);
+    }
+
     TheRB3HttpServer->NotifyFrame(frame, screen, songMs);
     TheRB3HttpServer->ProcessCommands();
 }

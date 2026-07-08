@@ -64,6 +64,21 @@ namespace {
         return sLoadDetOn == 1;
     }
 
+    // Wave-19 T1 (Lane F) FRAME-ASSIGNMENT TIMING tracer, attribution mode.
+    // Separate cached flag RB3_LOADDET_TIMELINE, default-OFF, so the NEW per-frame
+    // filearrive/songms markers do NOT perturb the marker stream that R4's ledger
+    // (order axis), white_regrade, and wash v1 parse when they run with only
+    // RB3_LOADDET_PROBE=1 — a byte-identical stream for every existing consumer.
+    // NOTE (naming box): these markers feed the frameAssign/songClock axes, which
+    // bind each event to its frame index; that is a DIFFERENT thing from R4's
+    // completion-SEQUENCE order axis (already 10/10). See loaddet_gate.py --timeline.
+    int sTimelineOn = -1;  // -1 = unread, 0 = off, 1 = on
+    inline bool TimelineOn() {
+        if (sTimelineOn < 0)
+            sTimelineOn = getenv("RB3_LOADDET_TIMELINE") ? 1 : 0;
+        return sTimelineOn == 1;
+    }
+
     // Per-frame caller-PC -> gRand-draw count, flushed and cleared at each frame
     // boundary. std::map keeps the flush order stable (address-sorted) so boot A
     // vs boot B diff cleanly per caller. Main-thread only (the RandomInt/Float
@@ -144,5 +159,43 @@ void RB3LoadDetComplete(const char *name, const char *kind) {
         return;
     fprintf(stderr, "[LOADDET] complete frame=%d gdraw=%lu kind=%s name=%s\n",
             gRB3TraceFrame, RB3GRandDrawCount(), kind, name ? name : "?");
+}
+
+// ---------------------------------------------------------------------------
+// Wave-19 T1 (Lane F) — FRAME-ASSIGNMENT TIMING markers (attribution only).
+// Gated on the NEW RB3_LOADDET_TIMELINE flag (NOT PROBE/ATTRIB) so existing
+// consumers see a byte-identical stream (§2.1). Distinct keywords `filearrive`
+// and `songms` — neither matches loaddet_gate.py's COMPLETE_RE/ATTRIB_RE, so the
+// order axis and attrib parse are untouched. Both key on gRB3TraceFrame (the one
+// frame axis, current under RB3_FIXED_CLOCK; see R4 A-2: RB3HttpServerPoll runs
+// post-RunOneFrame at App.cpp:909, same-iteration frame equality).
+// ---------------------------------------------------------------------------
+
+// An async FileLoader observed its bytes-arrival flip (ReadDone true ->
+// DoneLoading) on the current sim frame. `name` is the loader FilePath. On native
+// AsyncFile is synchronous (AsyncFile_Native.cpp:77 _ReadDone()==true) so the flip
+// fires the same poll the read issued; the run-to-run frame variance is queue-issue
+// timing, a SECONDARY/completeness frameAssign signal (the primary carrier under
+// jitter is the DataLoader "data" completion). Covers only the ReadDone arrival
+// path; the open-fail (Loader.cpp:924) and LoadStream (:1016) DoneLoading entries
+// are known-uncovered (R6.1) — frameAssign is not total-arrival coverage.
+void RB3LoadDetFileArrive(const char *name) {
+    if (!TimelineOn())
+        return;
+    fprintf(stderr, "[LOADDET] filearrive frame=%d gdraw=%lu name=%s\n",
+            gRB3TraceFrame, RB3GRandDrawCount(), name ? name : "?");
+}
+
+// Per-frame audio-clock sample. `ms` is the null-guarded
+// MasterAudio::GetTime() (-1 until a song is live). Sampled at the clean
+// RB3HttpServerPoll site (rb3_http_handlers.cpp, A3 option-b — never touches the
+// dirty rb3_session_trace.cpp). Frame key is gRB3TraceFrame, NOT the caller's
+// frame arg, so songms shares the one frame axis. This is the songClock axis
+// source; it sits behind the RB3_HTTP guard, so songClock requires RB3_HTTP=1
+// (R4 c) and a 0-sample songClock is "no signal", never PASS.
+void RB3LoadDetSongMs(float ms) {
+    if (!TimelineOn())
+        return;
+    fprintf(stderr, "[LOADDET] songms frame=%d ms=%.1f\n", gRB3TraceFrame, ms);
 }
 #endif
