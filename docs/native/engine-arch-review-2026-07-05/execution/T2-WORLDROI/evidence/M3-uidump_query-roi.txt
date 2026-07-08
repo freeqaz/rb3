@@ -1,0 +1,304 @@
+[uidump-query] ROI [540.0, 310.0, 60.0, 160.0]: matched=136 lastWriter#=135 provAvailable=True
+[uidump-query]   #0 pass0(depth=Clear) blend=3 z=1 rect=[555.6, 335.7, 8.2, 124.7] rectKind=3 skinned=True mesh='jp80_strings.mesh' mat='guitar_jp80_string.mat' panel='' owner='player0'
+[uidump-query]         bones=['bone_bridge.mesh', 'bone_vibrate_hi.mesh', 'bone_bend_string04.mesh', 'bone_bend_string01.mesh', 'bone_bend_string02.mesh', 'bone_bend_string03.mesh', 'bone_nut.mesh', 'bone_vibrate_low.mesh', 'bone_bend_string05.mesh', 'bone_bend_string06.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #19 pass0(depth=Clear) blend=3 z=1 rect=[556.3, 338.9, 7.1, 130.7] rectKind=3 skinned=True mesh='telebass_strings.mesh' mat='bass_telebass_string.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_bridge.mesh', 'bone_vibrate_low.mesh', 'bone_bend_string02.mesh', 'bone_nut.mesh', 'bone_vibrate_hi.mesh', 'bone_bend_string04.mesh', 'bone_bend_string03.mesh', 'bone_bend_string05.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #25 pass0(depth=Clear) blend=1 z=1 rect=[577.2, 355.6, 193.6, 287.2] rectKind=3 skinned=True mesh='hippyfringe_resource.mesh' mat='torso_hippyfringe_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-foreTwist2.mesh', 'bone_L-hand.mesh', 'bone_L-thumb01.mesh'] boneFallback=14
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #39 pass0(depth=Clear) blend=1 z=1 rect=[538.3, 465.3, 175.5, 40.7] rectKind=3 skinned=True mesh='nailboots_resource.mesh' mat='feet_nailboots_swap.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-ankle.mesh', 'bone_R-knee.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #41 pass0(depth=Clear) blend=1 z=1 rect=[538.3, 400.3, 175.5, 105.6] rectKind=3 skinned=True mesh='jeansripped_resource.mesh' mat='legs_jeansripped_swap.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-ankle.mesh', 'bone_R-knee.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #42 pass0(depth=Clear) blend=1 z=1 rect=[581.9, 327.9, 63.9, 91.7] rectKind=3 skinned=True mesh='escapeartist_resource.mesh' mat='torso_escapeartist_swap.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-deltoid.mesh', 'bone_R-collar.mesh', 'bone_R-shoulderTwist3.mesh', 'bone_R-upperArm.mesh', 'bone_R-shoulderTwist4.mesh', 'bone_R-shoulderTwist2.mesh', 'bone_head.mesh', 'bone_neck.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #45 pass0(depth=Clear) blend=1 z=1 rect=[564.8, 333.3, 15.0, 4.9] rectKind=3 skinned=True mesh='eyebrows1_resource.mesh' mat='eyebrows.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_L-brow3-eyeshape.mesh', 'bone_L-brow2-eyeshape.mesh', 'bone_L-brow1.mesh', 'bone_R-brow1.mesh', 'bone_R-brow2-eyeshape.mesh', 'bone_R-brow3-eyeshape.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=21 matColor=[0, 0, 0, 1]
+[uidump-query]   #47 pass0(depth=Clear) blend=1 z=1 rect=[581.9, 329.5, 70.4, 90.1] rectKind=3 skinned=True mesh='escapeartist_skin.1.mesh' mat='torso_naked.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-deltoid.mesh', 'bone_R-collar.mesh', 'bone_R-foreArm.mesh', 'bone_R-foreTwist1.mesh', 'bone_R-shoulderTwist3.mesh', 'bone_R-upperArm.mesh', 'bone_R-shoulderTwist4.mesh', 'bone_R-shoulderTwist2.mesh', 'bone_neck.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #48 pass0(depth=Clear) blend=1 z=1 rect=[565.1, 327.9, 49.2, 38.2] rectKind=3 skinned=True mesh='head.mesh' mat='head_naked.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_liptop_left.mesh', 'bone_R-lid.mesh', 'bone_head.mesh', 'bone_L-brow1.mesh', 'bone_L-lipcorner.mesh', 'bone_R-brow1.mesh', 'bone_liptop_mid.mesh', 'bone_L-cheek.mesh', 'bone_L-brow3.mesh', 'bone_brow-mid.mesh', 'bone_R-collar.mesh', 'bone_L-brow2.mesh', 'bone_L-eyelid-low.mesh', 'bone_L-cheek2.mesh', 'bone_liptop_right.mesh', 'bone_R-brow3.mesh', 'bone_R-brow2.mesh', 'bone_R-lipcorner.mesh', 'bone_R-crease.mesh', 'bone_R-cheek.mesh', 'bone_R-nose.mesh', 'bone_R-cheek2.mesh', 'bone_lowlip_left.mesh', 'bone_jaw.mesh', 'bone_lowlip_right.mesh', 'bone_lowlip_mid.mesh', 'bone_L-crease.mesh', 'bone_L-nose.mesh', 'bone_R-eyelid-low.mesh', 'bone_L-lid.mesh', 'bone_neck.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=24 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #49 pass0(depth=Clear) blend=1 z=1 rect=[569.7, 333.8, 8.9, 1.6] rectKind=3 skinned=True mesh='eyes.mesh' mat='eyes.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_L-eye.mesh', 'bone_R-eye.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=25 matColor=[1, 1, 1, 1]
+[uidump-query]   #50 pass0(depth=Clear) blend=1 z=1 rect=[582.6, 342.8, 0.0, 0.0] rectKind=3 skinned=True mesh='lowerteeth.mesh' mat='teeth.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_lowerteeth-base.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=26 matColor=[0.9961, 1, 0.9373, 1]
+[uidump-query]   #51 pass0(depth=Clear) blend=1 z=1 rect=[580.8, 341.4, 0.0, 0.0] rectKind=3 skinned=True mesh='upperteeth.mesh' mat='teeth.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_upperteeth-base.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=27 matColor=[0.9961, 1, 0.9373, 1]
+[uidump-query]   #52 pass0(depth=Clear) blend=1 z=1 rect=[582.3, 335.6, 2.0, 4.9] rectKind=3 skinned=True mesh='tongue.mesh' mat='tongue.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_tongue1.mesh', 'bone_tongue3.mesh', 'bone_tongue2.mesh', 'bone_tongue4.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=28 matColor=[0.3529, 0.1725, 0.1333, 1]
+[uidump-query]   #53 pass0(depth=Clear) blend=1 z=1 rect=[583.3, 400.3, 92.1, 67.9] rectKind=3 skinned=True mesh='jeansripped_skin.2.mesh' mat='legs_skin.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-knee.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #61 pass0(depth=Clear) blend=1 z=1 rect=[595.0, 397.3, 236.8, 240.8] rectKind=3 skinned=True mesh='ludvista_smallclub_resource.mesh' mat='ludvista_misc.mat' panel='' owner='player3'
+[uidump-query]         bones=['bone_hihat_rot.mesh', 'bone_hihat_bottom_rot.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #67 pass0(depth=Clear) blend=1 z=1 rect=[583.7, 361.9, 128.4, 47.0] rectKind=3 skinned=True mesh='thighboots_resource.mesh' mat='feet_thighboots_swap.mat' panel='' owner='player3'
+[uidump-query]         bones=['bone_R-ankle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #89 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='room_ceiling_low.mesh' mat='beam_wood.mat' panel='' owner=''   # <- STATIC non-skinned: still legacy rectKind=1 full-viewport (out of T2 scope)
+[uidump-query]   #119 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='stage.1_subin.mesh' mat='stage_front.mat' panel='' owner=''   # <- STATIC non-skinned: still legacy rectKind=1 full-viewport (out of T2 scope)
+[uidump-query]   #135 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='room_ceiling_low.1.mesh' mat='room_ceiling.mat' panel='' owner=''   # <- STATIC non-skinned: still legacy rectKind=1 full-viewport (out of T2 scope)
+[uidump-query]   #163 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #164 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #165 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #166 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #167 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #168 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #169 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #170 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #171 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #172 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #173 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #174 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #175 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #176 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #177 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #178 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #179 pass0(depth=Clear) blend=1 z=1 rect=[578.3, 413.2, 179.0, 17.6] rectKind=3 skinned=True mesh='clap.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #180 pass0(depth=Clear) blend=1 z=1 rect=[593.8, 366.0, 156.0, 228.4] rectKind=3 skinned=True mesh='female_crowd_body04.mesh' mat='female_crowd_body04.mat' panel='' owner='crowd_female04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #214 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #215 pass0(depth=Clear) blend=1 z=1 rect=[542.9, 442.2, 145.7, 26.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #216 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #217 pass0(depth=Clear) blend=1 z=1 rect=[542.9, 442.2, 145.7, 26.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #218 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #219 pass0(depth=Clear) blend=1 z=1 rect=[542.9, 442.2, 145.7, 26.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #220 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #221 pass0(depth=Clear) blend=1 z=1 rect=[542.9, 442.2, 145.7, 26.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #222 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #223 pass0(depth=Clear) blend=1 z=1 rect=[542.9, 442.2, 145.7, 26.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #224 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #225 pass0(depth=Clear) blend=1 z=1 rect=[542.9, 442.2, 145.7, 26.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #226 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #227 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #228 pass0(depth=Clear) blend=1 z=1 rect=[542.9, 442.2, 145.7, 26.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-index01.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #229 pass0(depth=Clear) blend=1 z=1 rect=[567.1, 371.8, 165.2, 236.7] rectKind=3 skinned=True mesh='male_crowd_body02.mesh' mat='male_crowd_body02.mat' panel='' owner='crowd_male02'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #230 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #231 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #232 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #233 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #234 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #235 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #236 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #237 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #238 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #239 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #240 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #241 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #242 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #243 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #244 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #245 pass0(depth=Clear) blend=1 z=1 rect=[566.4, 436.0, 135.4, 54.2] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #246 pass0(depth=Clear) blend=1 z=1 rect=[584.3, 356.6, 127.3, 262.1] rectKind=3 skinned=True mesh='male_crowd_body04.mesh' mat='male_crowd_body04.mat' panel='' owner='crowd_male04'
+[uidump-query]         bones=['bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #263 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #264 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #265 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #266 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #267 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #268 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #269 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #270 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #271 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #272 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #273 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #274 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #275 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #276 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #277 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #278 pass0(depth=Clear) blend=1 z=1 rect=[571.1, 412.5, 177.8, 36.9] rectKind=3 skinned=True mesh='clap.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-index02.mesh', 'bone_L-thumb01.mesh', 'bone_L-index01.mesh', 'bone_L-thumb02.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #279 pass0(depth=Clear) blend=1 z=1 rect=[582.0, 364.8, 163.6, 229.7] rectKind=3 skinned=True mesh='male_crowd_body01.mesh' mat='male_crowd_body01.mat' panel='' owner='crowd_male01'
+[uidump-query]         bones=['bone_L-thumb01.mesh', 'bone_L-hand.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=4 matColor=[1, 1, 1, 1]
+[uidump-query]   #338 pass0(depth=Clear) blend=3 z=1 rect=[555.6, 335.7, 8.2, 124.7] rectKind=3 skinned=True mesh='jp80_strings.mesh' mat='guitar_jp80_string.mat' panel='' owner='player0'
+[uidump-query]         bones=['bone_bridge.mesh', 'bone_vibrate_hi.mesh', 'bone_bend_string04.mesh', 'bone_bend_string01.mesh', 'bone_bend_string02.mesh', 'bone_bend_string03.mesh', 'bone_nut.mesh', 'bone_vibrate_low.mesh', 'bone_bend_string05.mesh', 'bone_bend_string06.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #357 pass0(depth=Clear) blend=3 z=1 rect=[556.3, 338.9, 7.1, 130.7] rectKind=3 skinned=True mesh='telebass_strings.mesh' mat='bass_telebass_string.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_bridge.mesh', 'bone_vibrate_low.mesh', 'bone_bend_string02.mesh', 'bone_nut.mesh', 'bone_vibrate_hi.mesh', 'bone_bend_string04.mesh', 'bone_bend_string03.mesh', 'bone_bend_string05.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #363 pass0(depth=Clear) blend=1 z=1 rect=[577.2, 355.6, 193.6, 287.2] rectKind=3 skinned=True mesh='hippyfringe_resource.mesh' mat='torso_hippyfringe_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-foreTwist2.mesh', 'bone_L-hand.mesh', 'bone_L-thumb01.mesh'] boneFallback=14
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #377 pass0(depth=Clear) blend=1 z=1 rect=[538.3, 465.3, 175.5, 40.7] rectKind=3 skinned=True mesh='nailboots_resource.mesh' mat='feet_nailboots_swap.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-ankle.mesh', 'bone_R-knee.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #379 pass0(depth=Clear) blend=1 z=1 rect=[538.3, 400.3, 175.5, 105.6] rectKind=3 skinned=True mesh='jeansripped_resource.mesh' mat='legs_jeansripped_swap.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-ankle.mesh', 'bone_R-knee.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #380 pass0(depth=Clear) blend=1 z=1 rect=[581.9, 327.9, 63.9, 91.7] rectKind=3 skinned=True mesh='escapeartist_resource.mesh' mat='torso_escapeartist_swap.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-deltoid.mesh', 'bone_R-collar.mesh', 'bone_R-shoulderTwist3.mesh', 'bone_R-upperArm.mesh', 'bone_R-shoulderTwist4.mesh', 'bone_R-shoulderTwist2.mesh', 'bone_head.mesh', 'bone_neck.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #383 pass0(depth=Clear) blend=1 z=1 rect=[564.8, 333.3, 15.0, 4.9] rectKind=3 skinned=True mesh='eyebrows1_resource.mesh' mat='eyebrows.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_L-brow3-eyeshape.mesh', 'bone_L-brow2-eyeshape.mesh', 'bone_L-brow1.mesh', 'bone_R-brow1.mesh', 'bone_R-brow2-eyeshape.mesh', 'bone_R-brow3-eyeshape.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=21 matColor=[0, 0, 0, 1]
+[uidump-query]   #385 pass0(depth=Clear) blend=1 z=1 rect=[581.9, 329.5, 70.4, 90.1] rectKind=3 skinned=True mesh='escapeartist_skin.1.mesh' mat='torso_naked.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-deltoid.mesh', 'bone_R-collar.mesh', 'bone_R-foreArm.mesh', 'bone_R-foreTwist1.mesh', 'bone_R-shoulderTwist3.mesh', 'bone_R-upperArm.mesh', 'bone_R-shoulderTwist4.mesh', 'bone_R-shoulderTwist2.mesh', 'bone_neck.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #386 pass0(depth=Clear) blend=1 z=1 rect=[565.1, 327.9, 49.2, 38.2] rectKind=3 skinned=True mesh='head.mesh' mat='head_naked.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_liptop_left.mesh', 'bone_R-lid.mesh', 'bone_head.mesh', 'bone_L-brow1.mesh', 'bone_L-lipcorner.mesh', 'bone_R-brow1.mesh', 'bone_liptop_mid.mesh', 'bone_L-cheek.mesh', 'bone_L-brow3.mesh', 'bone_brow-mid.mesh', 'bone_R-collar.mesh', 'bone_L-brow2.mesh', 'bone_L-eyelid-low.mesh', 'bone_L-cheek2.mesh', 'bone_liptop_right.mesh', 'bone_R-brow3.mesh', 'bone_R-brow2.mesh', 'bone_R-lipcorner.mesh', 'bone_R-crease.mesh', 'bone_R-cheek.mesh', 'bone_R-nose.mesh', 'bone_R-cheek2.mesh', 'bone_lowlip_left.mesh', 'bone_jaw.mesh', 'bone_lowlip_right.mesh', 'bone_lowlip_mid.mesh', 'bone_L-crease.mesh', 'bone_L-nose.mesh', 'bone_R-eyelid-low.mesh', 'bone_L-lid.mesh', 'bone_neck.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=24 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #387 pass0(depth=Clear) blend=1 z=1 rect=[569.7, 333.8, 8.9, 1.6] rectKind=3 skinned=True mesh='eyes.mesh' mat='eyes.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_L-eye.mesh', 'bone_R-eye.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=25 matColor=[1, 1, 1, 1]
+[uidump-query]   #388 pass0(depth=Clear) blend=1 z=1 rect=[582.6, 342.8, 0.0, 0.0] rectKind=3 skinned=True mesh='lowerteeth.mesh' mat='teeth.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_lowerteeth-base.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=26 matColor=[0.9961, 1, 0.9373, 1]
+[uidump-query]   #389 pass0(depth=Clear) blend=1 z=1 rect=[580.8, 341.4, 0.0, 0.0] rectKind=3 skinned=True mesh='upperteeth.mesh' mat='teeth.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_upperteeth-base.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=27 matColor=[0.9961, 1, 0.9373, 1]
+[uidump-query]   #390 pass0(depth=Clear) blend=1 z=1 rect=[582.3, 335.6, 2.0, 4.9] rectKind=3 skinned=True mesh='tongue.mesh' mat='tongue.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_tongue1.mesh', 'bone_tongue3.mesh', 'bone_tongue2.mesh', 'bone_tongue4.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=28 matColor=[0.3529, 0.1725, 0.1333, 1]
+[uidump-query]   #391 pass0(depth=Clear) blend=1 z=1 rect=[583.3, 400.3, 92.1, 67.9] rectKind=3 skinned=True mesh='jeansripped_skin.2.mesh' mat='legs_skin.mat' panel='' owner='player2'
+[uidump-query]         bones=['bone_R-knee.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #399 pass0(depth=Clear) blend=1 z=1 rect=[595.0, 397.3, 236.8, 240.8] rectKind=3 skinned=True mesh='ludvista_smallclub_resource.mesh' mat='ludvista_misc.mat' panel='' owner='player3'
+[uidump-query]         bones=['bone_hihat_rot.mesh', 'bone_hihat_bottom_rot.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #405 pass0(depth=Clear) blend=1 z=1 rect=[583.7, 361.9, 128.4, 47.0] rectKind=3 skinned=True mesh='thighboots_resource.mesh' mat='feet_thighboots_swap.mat' panel='' owner='player3'
+[uidump-query]         bones=['bone_R-ankle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]

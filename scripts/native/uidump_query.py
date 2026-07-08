@@ -143,6 +143,18 @@ def authored_index(uidata):
                 idx.setdefault(o.get("name", ""), o)
     return idx
 
+def _rect_isect(r, roi):
+    return (r and len(r) == 4 and
+            r[0] < roi[0] + roi[2] and r[0] + r[2] > roi[0] and
+            r[1] < roi[1] + roi[3] and r[1] + r[3] > roi[1])
+
+def bones_in_roi(prov, roi):
+    """T2-WORLDROI: bone Name()s whose per-bone screen sub-rect intersects the ROI
+    (rectKind==3 skinned draws only). Narrows the mesh-level hit to which BONE(s)
+    drew the queried pixels — the SPATIAL provenance axis, not any timing axis."""
+    return [br.get("bone", "") for br in prov.get("boneRects", [])
+            if _rect_isect(br.get("rect"), roi)]
+
 def print_roi(doc, authored, roi):
     draws = doc.get("draws", [])
     lw = doc.get("lastWriter", -1)
@@ -151,10 +163,15 @@ def print_roi(doc, authored, roi):
         p = d.get("prov", {})
         auth = authored.get(p.get("mesh", "")) or authored.get(p.get("owner", ""))
         mark = "  <== LAST WRITER" if k == lw else ""
+        kind = p.get("rectKind")
         log(f"  #{d.get('i')} pass{p.get('pass')}(depth={p.get('passDepthLoad')}) "
             f"blend={d.get('blend')} z={d.get('zmode')} rect={p.get('rect')} "
+            f"rectKind={kind} skinned={d.get('skinned')} "
             f"mesh={p.get('mesh')!r} mat={p.get('mat')!r} panel={p.get('panel')!r} "
             f"owner={p.get('owner')!r}{mark}")
+        if kind == 3:
+            bones = bones_in_roi(p, roi)
+            log(f"        bones={bones} boneFallback={p.get('boneFallback')}")
         if auth:
             log(f"        authored: showing={auth.get('showing')} order={auth.get('drawOrder')} "
                 f"matColor={(auth.get('mat') or {}).get('color')}")

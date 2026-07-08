@@ -43,7 +43,8 @@ No conflict with WAVE19_REVIEW A1 (its region re-scope + step-0 cache check are 
 - **M2** — DONE (GREEN). `evidence/M2-owner-scope.md`. owner=player0-3 + named crowd (band+3D
   crowd via Crowd.cpp:574 dispatch), distinct per member. B8: `Character.o` byte-identical
   (HX_NATIVE native-only; DrawShowing 98.2% pre-existing register-swap residual, unchanged).
-- **M3** — query script bone/owner reporting + coverage count.
+- **M3** — DONE (GREEN). `evidence/M3-coverage.md` + `M3-uidump_query-roi.txt`. uidump_query.py
+  --roi names mesh/owner/bones/mat/pass; coverage N=304 rectKind:3, M=0 sphere-fallback.
 - **M4** — gates G1–G4 + classjson append.
 - **M5** — FOREARM-FLOAT production smoke (triage only).
 
