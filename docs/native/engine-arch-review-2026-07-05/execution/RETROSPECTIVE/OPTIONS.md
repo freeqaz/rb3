@@ -289,3 +289,241 @@ WHITE guard and dispatch the wash per-FX co-sampling instrument on the now-quiet
 ≈9 of 15 waves of re-derivation. Waves 17–19 spend ~4–5 lane-waves buying the three
 instruments that close them, against a backlog (hands verification, ROWFIX, WHITE, wash,
 BandPatchMesh) where every remaining item is inside those instruments' coverage.
+
+---
+
+## 6. Second-generation instrument builds (post-Wave-18)
+
+**Appended 2026-07-08, after the Wave-18 close-out.** The §2 gen-1 builds all shipped and
+did their jobs (#1 Dolphin probe → R1/D2-D5+VISCAP, #2 skinning oracle → R2+N-tier1,
+#3 uidump → R3, #4 determinism seam → R4, PRIMARY 10/10): the hands family is CLOSED
+(GT-D + mitten default-ON, twelve defaults), and the gRand-position noise floor is dead.
+This section ranks the instruments the **post-Wave-18 open-problem ledger** needs, same
+discipline as §2: per build — the diagnosis question it answers (killer query), a design
+sketch grounded in existing seams, a validation gate WITH its fail-red demonstration,
+estimated cost, and primary consumers. Grounding record: `WAVE18_CLOSEOUT_REVIEW.md`
+(F1–F10), `R4-M4/STATUS.md` incl. its CORRECTIONS block, `R5-MITTEN/STATUS.md`,
+`R5-HANDS-ENDGAME/CLOSURE.md` post-flip addendum, `R3-UIDUMP/STATUS.md` +
+`docs/native/uidump-forensics.md`, `R4-DETERMINISM/{STATUS,LEDGER}.md`.
+
+### 6.0 The demand side — what is actually open
+
+1. **WHITE, VOID → HELD substrate-blocked** (`R4-M4/STATUS.md`): two independent blockers.
+   (a) The ledger precondition is unsatisfiable on eng_hot until the four named venue-path
+   gRand consumers are isolated (`CharClipDriver.cpp:62`, `Crowd.cpp:1234` OnIterateFrac,
+   `CharInterest.cpp:172`, `LightPresetManager.cpp:286` — sum "within ±1" per review F3).
+   (b) Even ledger-PASS boots don't resolve: **10/10 stream-matched boots spread hi_frac
+   9.5→65.4** — a NON-gRand axis. Same boots show `InitParticle` per-boot draws
+   [2505,1755,2509] on its private stream, `[WASHPROBE] SCENE engaged` swinging
+   19898–27938, and songMs 21003 landing at frame 3585 vs 5095. Emission-count swing and
+   timeline-length swing are ONE observation (review, Lane W verdict paragraph).
+2. **Wash co-sampler: BUILT, validation FAILED** (F1). The 89 "per-frame" co-samples
+   collapsed to 2 covariate clusters (per-burst-stale join); AUC 0.000 was an
+   argsort-without-midranks tie artifact (midrank ≈0.32). The particle-lull hypothesis is
+   unproven, not disproven. v2's charter is pre-written by F1: per-frame join + midrank AUC.
+3. **FOREARM-FLOAT** (CLOSURE.md post-flip addendum): persistent top-center floating
+   forearm-family structure, unchanged OFF→ON (not finger-level; W9/W10 lineage), plus the
+   drummer E1 coverage gap. Currently triage-able only by eyeballs: the R3 killer query is
+   UI-cam-shaped — world-cam skinned draws get sphere-fallback near-full-viewport rects
+   (`rectKind=1`) and no owner scope, so a world ROI query cannot discriminate.
+4. **The standing visual-gate noise floor is now the timing axis.** Twice corroborated
+   independently: Lane W's stream-matched spread (above) and Lane M's control — two
+   identical flag-OFF boots diff 48–93% of pixels, median 85%, at nearest-songMs pairs
+   (`R5-MITTEN/STATUS.md` gate 2). Every future matched-frame E1 and per-boot photometric
+   gate sits on this floor until it is pinned or attributed-around.
+5. Gen-1 completion tails, already chartered on the Wave-19 menu (not §6 builds): venue
+   consumer isolation (R4-pattern reuse), R3-WALK (instanced rows + overshell authored
+   join), N-tail bad-torn golden.
+
+> **Naming discipline (review F9, binding for every charter below):** the open axis is
+> **FRAME-ASSIGNMENT TIMING** — *which frame* async work lands on and *what each frame's
+> consumers emit*. It is NOT R4's ledger `order` axis (DirLoader/DataLoader completion
+> SEQUENCE at boot), which already PASSES 10/10 (`R4-DETERMINISM/LEDGER.md`). A lane that
+> re-proves boot-loader sequence determinism has failed its charter.
+
+### 6.1 Rank order
+
+| Rank | Build | One-line justification |
+|---|---|---|
+| **T1** | Frame-timeline tracer, **attribution mode** (with co-sampler v2 folded in) | Names the owner of WHITE-at-fixed-stream + wash; the ledger extension every future per-boot gate cites; all evidence already points here |
+| **T2** | World-cam ROI provenance (skinned-aware) | Makes FOREARM-FLOAT triage one query instead of a lane; cheapest build (both halves' plumbing exists); highest residual-bug-area coverage |
+| **T3** | Frame-timeline **pinning mode** (conditional GO/NO-GO from T1's attribution) | Kills the 85%-pixel noise floor for harness captures IF T1 names a pin-able mechanism set; do not fund before T1 reports |
+| — | Wave-19 PRIMARY support (white_regrade hardening + shared capture lints) | Not a build — folded into the W-ISO lane charter (§6.5) |
+
+**Demoted/rejected** (§6.6): standalone nondeterminism-tolerant visual gate (candidate T2
+of the kickoff list — the structural half already exists as `lineup-gate.py`; the timing
+half IS T3); standalone wash co-sampler v2 (candidate T3 — folded into T1, same instrument
+surface); full record/replay for the timing axis (overkill vs the ledger+pin);
+CharClipDrivers=0 archaeology (stays parked, unchanged from the Wave-18 review).
+
+### 6.2 T1 — Frame-timeline tracer, attribution mode ("loaddet-for-time")
+
+**Killer query:** *for boot B, which async completions landed on which frame, what did each
+frame's divergent consumers emit, and — diffed across N boots — which is the FIRST
+frame-divergent event upstream of the divergent visual outcome?* Concretely: why do 10/10
+stream-matched boots land songMs 21003 on frame 3585 vs 5095, and which completion/emission
+divergence precedes the 4/10 WHITE frames?
+
+**Design sketch (existing seams, in dependency order):**
+- **Event ledger, per frame.** Extend the `[LOADDET]` marker family + `loaddet_gate.py`
+  (`parse_boot_log`/`grade_external_logs`/`ledger_for_arm` — the R4 pattern to replicate)
+  with a per-frame timeline record: (i) loader completion → **frame index** (the existing
+  DirLoader/DataLoader `[LOADDET]` complete markers already carry kind:name — add the frame
+  key); (ii) off-thread I/O completion → frame (the LW-1/ThreadCall seam — this is the
+  mechanism W0.3b left open: `LoadMgr::Poll` already drains-to-empty under
+  `RB3_FIXED_CLOCK` on BOTH arms (`src/system/utl/Loader.cpp:622,729`), so queue drain is
+  pinned; what still varies is *which frame the bytes arrive*, i.e. when a blocked loader
+  becomes drainable); (iii) per-frame per-tag private-stream draw counts (the
+  `RB3LoadDetStream` tags from R4-M2 — `rb3_loaddet_probe.cpp` already does per-frame attrib
+  flush; add the per-frame counter dump so `InitParticle [2505,1755,2509]` becomes per-frame
+  rows, not per-boot totals); (iv) per-frame songMs sample + the `[WASHPROBE] SCENE
+  engaged`-class state transitions (the songMs↔frame join F1's v2 needs).
+- **Stable keys.** kind:name strings where they exist (as R4's `order` axis); return
+  addresses as module-relative offsets resolved offline via the existing
+  `resolve_offsets`/addr2line path — PIE/ASLR-stable by construction.
+- **Ledger axes (new, cited from THIS build the way LEDGER.md axes are cited):**
+  `frameAssign` (completion-event → frame-index sequence md5), `songClock` (songMs↔frame
+  map over the gate window), `emitTimeline` (per-frame per-tag emission-count sequence md5).
+  All graded per boot vs a reference boot by `loaddet_gate.py --timeline`, VOID semantics
+  inherited verbatim from A2/F6 (grade the exact measurement boots' own logs; never
+  discard-and-rerun).
+- **Co-sampler v2 folded in (the F1 correction, verbatim):** `wash_cosample.py` v2 joins
+  covariates per FRAME from the timeline record (not the stale poll window), **asserts ≥N
+  distinct covariate values per run** (the lint that would have refused the F1 run), and
+  uses midrank AUC/U. Add the light-POSITION amplitude signal only AFTER the join fix —
+  F1's ordering requirement.
+
+**Validation gate + fail-red:** (1) instrument-detects-the-axis: N=6 seam-ON boots under
+`RB3_LOADDET_JITTER=200` must show `frameAssign`/`emitTimeline` DIVERGING (the axis is real
+— today's evidence says it will; if 6/6 match, the instrument is blind → RED, rebuild);
+(2) fail-red by injection: a deliberate one-boot `RB3_LOADDET_JITTER` bump (or an injected
+sleep in the I/O worker) must flip the ledger axis RED for that boot; (3) co-sampler v2
+must REFUSE the committed `R4-M4/evidence/wash_natural.json` (2-cluster degenerate data →
+the ≥N-distinct assert fires) — the regression test that the F1 failure class is caught
+mechanically; (4) flag-OFF: 0 `[LOADDET]` lines on a normal boot + drawlog 792 byte-identical
+(G2 pattern). **Cost:** ~1 lane (harness + markers; no default-path behavior change — all
+inside the existing `RB3_LOADDET_*` opt-in family). **Primary consumers:** wash v2
+separation claim (first consumer, in-lane); WHITE re-grade interpretation (W-ISO reads the
+timeline to name which divergent completion precedes WHITE frames); T3's GO/NO-GO pricing;
+any future per-boot visual gate's noise-floor citation.
+
+### 6.3 T2 — World-cam ROI provenance (extend R3 beyond UI-cam, skinned-aware)
+
+**Killer query:** *given a pixel ROI on a gameplay/band frame (the top-center FOREARM-FLOAT
+structure), which mesh — and which BONE and owning character member — drew it, with what
+material/pass state?* One query replaces the eyeball-lineage triage that filed (and nearly
+misfiled) the floating structure.
+
+**Design sketch:** the drawlog-prov sidecar already captures 100% of `BandRnd::DrawMesh`
+draws including world draws (`R3-UIDUMP/STATUS.md` coverage note) — the gaps are exactly
+two: (a) **rects for skinned meshes are useless** (`rectKind=1` sphere fallback →
+near-full-viewport; CPU verts, where kept, are bind-pose — the drawn pose comes from GPU
+skinning); (b) **no owner scope for world draws** (the M2 hooks are Text/UILabel/PanelDir).
+Both have live plumbing: the mitten pre-pass already composes every band bone's skin
+matrix CPU-side per draw (`Rnd_Wgpu_RB3.cpp:3752-4009`, `skin` per bone) — transform each
+bone's bind position by its composed skin matrix → per-draw skinned point cloud → tight
+screen bbox (`rectKind=3`, "skinned-pose bbox") + a per-bone sub-rect list so the ROI
+intersect returns *bones*, not just the mesh. Owner scope: one game-side hook in the
+character/WorldInstance draw path (the `rb3_char_probe` per-slot machinery already knows
+member identity) feeding the existing `scope` mechanism. Extend `uidump_query.py --roi`
+to print `mesh / bone(s) / owner / mat / pass` for world draws.
+
+**Validation gate + fail-red:** (1) retrodiction (the R3 discipline): reproduce a
+burst_08-class band close-up natively (patch-lineup-capture protocol), ROI-query the
+top-center structure — v1 behavior (sphere rects) returns an undiscriminated draw set =
+the documented RED baseline; the build must narrow to a bounded set naming a
+forearm-family mesh + bone; (2) negative control: a corner/background ROI must return a
+DISJOINT owner set (guards against "everything matches everywhere" — the exact v1
+blindness); (3) known-answer check: ROI on a fretting hand names a hand mesh + finger/wrist
+bones consistent with `IsBandHandMesh`/`HandBoneRole` classification; (4) flag-OFF drawlog
+792 byte-identical (prov remains default-OFF). **Cost:** ~1 lane, the cheapest build here —
+both halves are joins over existing state, no new capture machinery. **Primary consumers:**
+FOREARM-FLOAT triage (turns the backlog key into a named mesh/bone/owner in one run);
+the drummer E1 coverage gap (add a drummer close-up burst to the standard E1 protocol and
+ROI-verify his hands — closes review F5c's thin spot without reopening the family);
+every future skinning/world visual report; venue-lighting polish lanes (per-draw pass/mat
+provenance under world.cam).
+
+### 6.4 T3 — Frame-timeline pinning mode (conditional; GO/NO-GO priced by T1)
+
+**Killer query:** *can two seam-ON boots produce IDENTICAL frame timelines — so that
+matched-frame captures compare pixel-for-pixel and N=10-per-arm photometric gates collapse
+to small-N?* This is the only path to retiring the 85%-pixel cross-process floor
+(`R5-MITTEN` gate-2 caveat) for harness captures.
+
+**Design sketch (candidate mechanisms — T1's attribution CHOOSES among these; do not
+commit to one in the charter):** all opt-in under the existing
+`RB3_FIXED_CLOCK && RB3_LOAD_DETERMINISM` harness seam, never shipping-path:
+(a) **synchronous-I/O-under-seam** — force the LW-1 off-thread reads synchronous when the
+seam is active, so completion frame == request frame (the web MEMFS-sync precedent;
+simplest, likely sufficient given W0.3b already pinned queue drain); (b) **frame-end I/O
+barrier** — under the seam, block at frame end until all I/O issued this frame completes;
+(c) **quantized virtual latency** — deliver completions at a fixed frame offset from
+request (most faithful-to-async, most machinery). Grade with T1's ledger; keep R4's
+disposition (opt-in harness, classjson PARTIAL until PRIMARY).
+
+**Validation gate + fail-red:** PRIMARY = **10/10 boots identical on T1's
+`frameAssign` + `songClock` + `emitTimeline` axes** under `--jitter 200` (the exact shape
+of R4's PRIMARY, one axis family over); fail-red = OFF-arm under identical jitter diverges
+(reuses T1's gate-1 evidence as the standing RED); then the cash-in demonstration: two
+pinned boots' matched-frame screenshots at a pinned songMs diff <5% of pixels where the
+unpinned control diffed 85% (Lane M's number as the before/after). Secondary: director-cam
+cuts + clip phase (the two confounds `frame_pairing_note.txt` names) either pin for free
+under the timeline or get named as residual axes with owners — NOT silently absorbed.
+**Cost:** ~1 lane IF T1 prices mechanism (a) or (b) as sufficient; NO-GO if T1's
+attribution shows the divergence is dominated by something none of the three mechanisms
+reach (e.g. GPU/driver-side timing) — in that case write the NO-GO with numbers and stop;
+the distributional-gate protocol (N/arm + midrank stats) remains the standing fallback.
+**Primary consumers:** WHITE re-grade at small N; matched-frame E1s for every future
+render flip (the class the mitten had to fall back to skinned-output/visual gates for);
+`white_regrade.py`/`lineup-gate.py` pinned-capture modes; BandPatchMesh W2.4's re-land
+gate (patch-bearing lineup captures become comparable across runs).
+
+### 6.5 Wave-19 PRIMARY support — explicitly NOT a build
+
+The Wave-19 PRIMARY (venue-path consumer isolation → WHITE re-grade) needs **nothing
+architecturally new**: the four sites take the R4-M2 `RB3LoadDetRedirect` one-line scoped
+guards (tags `charclip`, `crowditer`, `charinterest`, `lightpreset`), graded by the
+existing ledger, G3 Wii-match inertness re-run on touched units. What it DOES need, folded
+into that lane's charter rather than chartered separately: the **white_regrade hardening**
+the review mandated — no `--refinish` provenance for a graded run (F2), luma≈0 frames
+excluded from hi_frac (mirroring the mid_sat rule; 12.43→13.81 restatement precedent),
+attempt/retry counts disclosed (the overshoot-discard survivorship note), per-boot
+frame/songms committed, `allow_nan=False` in every dump (F10) — plus extracting those as a
+shared `capture_lints.py` so the next harness inherits them instead of re-growing F2/F7/F10.
+Half a day of harness work riding an already-chartered lane.
+
+### 6.6 Rejected / demoted, with the cheaper alternative
+
+- **Standalone "nondeterminism-tolerant visual gate" — DO NOT BUILD.** The structural
+  half already exists and is proven: `scripts/native/lineup-gate.py` (segA bbox/solidity +
+  ratioB shard ratios + countC probe counts, numeric layers gate, image layer advisory)
+  plus `scripts/analysis/visual_diff.py --perceptual`; the memory-recorded caveat that
+  drop/ratio-class gates were blind to patch-shard corruption is exactly why segA exists.
+  The photometric/timing half is not a new gate — it is T3 (pinned captures) with the
+  distributional N-per-arm protocol (`white_regrade.py` + midrank stats) as the fallback.
+  Building a third comparison framework would duplicate both and still sit on the timing
+  floor. Cheaper alternative: T3 + one integration pass adding a `--pinned` capture mode
+  to the two existing gates.
+- **Standalone wash co-sampler v2 — DEMOTED into T1** (§6.2). It is the same instrument
+  surface (per-frame covariate ledger); v2 without T1's per-frame timeline would have to
+  rebuild exactly the join it needs, and F1 proves what happens when the join is assumed
+  rather than built. It survives as T1's first consumer AND its validation gate 3.
+- **Full record/replay for the timing axis (milo-trace-M3-style) — DEFER,** same verdict
+  as §3's "full milo-trace" entry: T1's ledger + T3's pin cover every named consumer;
+  full capture pays only if a future family needs cross-frame causal replay, and it can
+  be priced then against a working T1.
+- **CharClipDrivers=0 root-cause — STAYS PARKED** (unchanged from the Wave-18 review):
+  uncosted substrate archaeology whose payoff mechanically reopens a family the campaign
+  just closed honestly; it remains the closure's pre-registered reopen route, not a build.
+
+### 6.7 Sequencing note
+
+T1 and T2 are independent (different lanes, different files — T1 is harness+markers, T2 is
+prov sidecar+hooks) and can run concurrently with the Wave-19 PRIMARY (which touches
+`Rand.cpp` consumers, not the probe/prov surfaces). T3 must NOT be chartered in the same
+wave as T1 — its GO/NO-GO and mechanism choice are T1 outputs, and pre-committing to a
+pinning mechanism repeats the W12 "part-b landed"-ambiguity failure the R4 ledger was
+built to prevent. Expected shape: Wave 19 = PRIMARY (W-ISO + hardening) ∥ T1 ∥ T2;
+Wave 20 = WHITE re-grade cash-in + T3 (or its priced NO-GO) + the FOREARM-FLOAT triage
+query as T2's first production run.
