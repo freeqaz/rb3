@@ -1,0 +1,95 @@
+########## ARM: OFF ##########
+
+=== MALE(nb=38)  blocks=983 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=983 min=87.3 med=87.3 max=87.3
+  TIER1 count(>5deg):          n=983 min=34.0 med=34.0 max=34.0
+  TIER1 xcheck(invOff-restW):  n=983 min=87.3 med=87.3 max=87.3
+  TIER2 joint-attach worst(u): n=983 min=11.0 med=55.6 max=106.5   bone(mode)=bone_R-hand.mesh
+  TIER2 EXACT-joint(u):        n=983 min=0.0 med=0.1 max=3.0
+  TIER2 palette exactWorst(u): n=983 min=0.0 med=3.1 max=10.4
+  wext(descriptive only):      n=983 min=49.9 med=79.0 max=100.6
+  rebound:                     [1]
+
+=== FEMALE(nb=40)  blocks=505 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=505 min=42.6 med=42.6 max=42.6
+  TIER1 count(>5deg):          n=505 min=36.0 med=36.0 max=36.0
+  TIER1 xcheck(invOff-restW):  n=505 min=42.6 med=42.6 max=42.6
+  TIER2 joint-attach worst(u): n=505 min=13.1 med=30.1 max=82.6   bone(mode)=bone_R-thumb01.mesh
+  TIER2 EXACT-joint(u):        n=505 min=0.0 med=0.0 max=5.1
+  TIER2 palette exactWorst(u): n=505 min=0.0 med=5.1 max=8.6
+  wext(descriptive only):      n=505 min=35.6 med=60.1 max=74.6
+  rebound:                     [1]
+
+########## ARM: BINDFIX ##########
+
+=== MALE(nb=38)  blocks=920 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=920 min=87.3 med=87.3 max=87.3
+  TIER1 count(>5deg):          n=920 min=34.0 med=34.0 max=34.0
+  TIER1 xcheck(invOff-restW):  n=920 min=87.3 med=87.3 max=87.3
+  TIER2 joint-attach worst(u): n=920 min=11.0 med=55.8 max=106.2   bone(mode)=bone_R-hand.mesh
+  TIER2 EXACT-joint(u):        n=920 min=0.0 med=0.1 max=3.0
+  TIER2 palette exactWorst(u): n=920 min=0.0 med=3.4 max=10.4
+  wext(descriptive only):      n=920 min=51.5 med=77.8 max=100.6
+  rebound:                     [1]
+
+=== FEMALE(nb=40)  blocks=472 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=472 min=42.6 med=42.6 max=42.6
+  TIER1 count(>5deg):          n=472 min=36.0 med=36.0 max=36.0
+  TIER1 xcheck(invOff-restW):  n=472 min=42.6 med=42.6 max=42.6
+  TIER2 joint-attach worst(u): n=472 min=13.4 med=30.1 max=82.6   bone(mode)=bone_R-thumb01.mesh
+  TIER2 EXACT-joint(u):        n=472 min=0.0 med=0.0 max=5.5
+  TIER2 palette exactWorst(u): n=472 min=0.0 med=4.9 max=8.6
+  wext(descriptive only):      n=472 min=35.6 med=60.0 max=78.0
+  rebound:                     [1]
+
+########## ARM: NOSHIM ##########
+
+=== MALE(nb=38)  blocks=974 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=974 min=3.1 med=140.5 max=179.9
+  TIER1 count(>5deg):          n=974 min=0.0 med=8.0 max=8.0
+  TIER1 xcheck(invOff-restW):  n=974 min=3.1 med=140.5 max=180.0
+  TIER2 joint-attach worst(u): n=974 min=0.3 med=114.9 max=216.8   bone(mode)=bone_L-index01.mesh
+  TIER2 EXACT-joint(u):        n=974 min=0.0 med=50.7 max=150.5
+  TIER2 palette exactWorst(u): n=974 min=0.0 med=65.8 max=150.5
+  wext(descriptive only):      n=974 min=80.3 med=103.5 max=188.5
+  rebound:                     [0]
+
+=== FEMALE(nb=40)  blocks=501 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=501 min=3.1 med=143.6 max=180.0
+  TIER1 count(>5deg):          n=501 min=0.0 med=6.0 max=6.0
+  TIER1 xcheck(invOff-restW):  n=501 min=3.1 med=143.6 max=180.0
+  TIER2 joint-attach worst(u): n=501 min=0.6 med=141.8 max=188.4   bone(mode)=bone_R-ringfinger-base.mesh
+  TIER2 EXACT-joint(u):        n=501 min=0.0 med=86.7 max=148.5
+  TIER2 palette exactWorst(u): n=501 min=0.0 med=109.1 max=149.7
+  wext(descriptive only):      n=501 min=56.1 med=131.7 max=170.8
+  rebound:                     [0]
+
+########## ARM: REPOINT ##########
+
+=== MALE(nb=38)  blocks=996 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=996 min=3.1 med=3.1 max=3.1
+  TIER1 count(>5deg):          n=996 min=0.0 med=0.0 max=0.0
+  TIER1 xcheck(invOff-restW):  n=996 min=3.1 med=3.1 max=3.1
+  TIER2 joint-attach worst(u): n=996 min=2.4 med=75.7 max=114.1   bone(mode)=bone_R-ringfinger02.mesh
+  TIER2 EXACT-joint(u):        n=996 min=0.0 med=0.0 max=8.4
+  TIER2 palette exactWorst(u): n=996 min=0.0 med=8.1 max=9.0
+  wext(descriptive only):      n=996 min=49.0 med=81.5 max=104.6
+  rebound:                     [1]
+
+=== FEMALE(nb=40)  blocks=511 meshes=['hands_naked.mesh'] ===
+  TIER1 own-vs-B worst(deg):   n=511 min=3.1 med=3.1 max=3.1
+  TIER1 count(>5deg):          n=511 min=0.0 med=0.0 max=0.0
+  TIER1 xcheck(invOff-restW):  n=511 min=3.1 med=3.1 max=3.1
+  TIER2 joint-attach worst(u): n=511 min=0.6 med=46.2 max=87.0   bone(mode)=bone_R-middlefinger03.mesh
+  TIER2 EXACT-joint(u):        n=511 min=0.0 med=0.0 max=8.8
+  TIER2 palette exactWorst(u): n=511 min=0.0 med=5.9 max=9.1
+  wext(descriptive only):      n=511 min=41.3 med=62.4 max=77.7
+  rebound:                     [1]
+
+########## TORSO good-body fail-red ##########
+[jacket]
+  TIER2 joint-attach worst(u): n=1365 min=0.2 med=34.8 max=89.6   bone(mode)=bone_spine3.mesh
+  TIER2 EXACT-joint(u):        n=1365 min=0.0 med=0.1 max=0.3
+[jeans]
+  TIER2 joint-attach worst(u): n=1434 min=0.0 med=17.8 max=32.8   bone(mode)=bone_R-thigh.mesh
+  TIER2 EXACT-joint(u):        n=1434 min=0.0 med=0.0 max=0.0
