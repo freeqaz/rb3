@@ -1,13 +1,55 @@
 # Wave 18 — Kickoff (cash-in wave: D5 funded follow-on + R4 M4 + R2 net-tightening)
 
-**Author:** coordinator. **Status:** DRAFT — for Fable pre-dispatch review.
+**Author:** coordinator. **Status:** REVIEWED (Fable, `WAVE18_REVIEW.md` rb3 `c20701a0`) —
+dispatch-with-amendments, ALL adopted below.
 Parent: `execution/README.md` (Wave 17 results + Wave 18 menu) + `WAVE17_CLOSEOUT_REVIEW.md` +
 `R5-HANDS-ENDGAME/VERDICT.md` (branch table BINDING). Engine pin `49ca0d6`. ELEVEN defaults ON.
 
-## COORDINATOR ACCEPTANCE (<pending review>)
+## COORDINATOR ACCEPTANCE (2026-07-08) — BINDING
 
-_To be filled from `WAVE18_REVIEW.md`._
-
+- **A0 (basis correction):** V-over-GT-D is justified by the VERDICT's OWN closure-honesty
+  condition (§3: GT-D is honest only when ground truth is *unobtainable in budget*; D5's own
+  exhaustion report prices the visually-guided path FEASIBLE on this box; falsifier #4
+  anticipated exactly this). Pre-authorization removed permission, not mandated execution.
+- **A1 (BLOCKING, Lane V — hard stop made mechanical):** end-of-box without BOTH a
+  G-D5-1-passing capture AND an assigned branch letter — **including indeterminate/partial
+  captures (e.g. <3 frames or swing <15° per the VERDICT power-floor row)** — IS exhaustion →
+  coordinator executes GT-D. No re-pricing loop. Exhaustion-report contract (D5-style):
+  machine JSON + states reached/screenshots/articulation spans/failing stage/price + the
+  explicit sentence "no branch letter assignable". Gameplay captures use the ε_noise-via-pause
+  mechanism.
+- **A2 (BLOCKING, Lane W — F6 verbatim):** the precondition is "ledger PASS 10/10 **on the
+  exact measurement boots**, otherwise the measurement is **VOID**" (the harness must REFUSE to
+  emit a verdict) — NOT discard-and-rerun, which masks seam regressions and biases the sample.
+  Integration scoped: the white/wash boots themselves run `RB3_LOADDET_ATTRIB=1` and the ledger
+  is graded from THOSE boots' logs (grade-external-logs mode) — never from separate
+  `loaddet_gate.py` boots.
+- **A3 (HIGH, Lane W — reproduce-first):** the seam pins ONE trajectory (hardcoded
+  `Seed(0x5EED)`, `Rand.cpp:61`, no seed knob) and reroutes WHITE-implicated consumers → NO
+  comparisons to Wave-10/11 absolute numbers. First gate = reproduce the phenomenon under the
+  seam (WHITE-fix validity gate `mean(hi_frac|OFF) ≥ 15`); on failure the item is HELD
+  substrate-blocked and the follow-up is a coordinator item (`RB3_LOADDET_SEED` knob — outside
+  W's writable set).
+- **A4/A5 (MEDIUM, Lane N):** the Tier-1 field emits the **`:4820-4841` xcheck quantity**
+  (off × the first-seen cached rest world from the `RB3_HANDS_ATTACH`-gated `sHaRest` cache),
+  NOT off×WorldXfm (that re-derives the ~180° offline artifact the SKIP exists to avoid).
+  Probe block is at **`:5003-5106`** (re-derive by symbol; the kickoff's :4736 was stale).
+  Dump format: NEW header-key line only (parser ignores unknown keys); NEVER extend `bone`/`v`
+  lines (strict sscanf would reject every committed golden). Flipping the SKIP requires
+  arm-w/arm-s captures (flags verified registered) + the VerdictTable test edit. D3/D4 scripts
+  are NOT palette-dump consumers (kickoff claim withdrawn).
+- **A6 (MEDIUM, answers R-D):** Lane V STOPS at the branch letter. GT-A palette forensics is
+  the VERDICT's own separately-boxed lane AND depends on Lane N's good-body re-capture — a
+  coordinator-dispatched follow-up, not a V stage. The kickoff's "no ordering constraints"
+  claim is corrected: V(GT-A follow-up) → gated on N(F3).
+- **A7 (LOW, Lane V):** hub-vignette route first but timeboxed ~20% of the box and
+  articulation-DETECTOR-gated (articulation there is UNCONFIRMED) before committing.
+- **A8 (LOW, Lane N):** F3 completion = md5-DISTINCT screenshots + M1 JSON provenance.
+- **A9 (LOW, Lane N):** the curl assertion lives with the real-fixture suite, NOT synthetic
+  Suite C.
+- **A10 (record):** Lane D5 executed after the Wave-17 close-out — stamped Wave 18.
+- **R-B protocol (Lane W):** N=10/arm, existing G1a decision rule unchanged, early-stop at N=5
+  only under near-zero within-arm spread AND ledger 5/5.
 - **Hazard note:** engine tree carries the long-standing uncommitted `M FxSendNative.cpp`
   (concurrent audio work) — never stage it. rb3 tree carries other agents' uncommitted
   `native/src/rb3_session_trace.cpp` — never stage it.
