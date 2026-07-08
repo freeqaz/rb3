@@ -58,9 +58,26 @@ tb = _load("tonal_band_sat", os.path.join(
 wd = _load("white_discriminate", os.path.join(WF, "white_discriminate.py"))
 lg = _load("loaddet_gate", os.path.join(NSCR, "loaddet_gate.py"))
 cap = _load("r4m4_capture", os.path.join(HERE, "r4m4_capture.py"))
+# Wave-19 W-ISO: shared capture-discipline lints (F2/F7/F10 + attempt disclosure).
+cl = _load("capture_lints", os.path.join(NSCR, "capture_lints.py"))
 
 K_FRAMES = 300
 WASH_ENGAGED_RE = re.compile(r"\[WASHPROBE\] SCENE .*engaged=1")
+
+
+def _nan_to_none(o):
+    """W-ISO F10 companion: convert the KNOWN sentinel NaNs (mid_sat/high_sat
+    'no mid-band pixels' on near-black frames; empty-population means) + any Inf to
+    JSON null so cl.safe_json_dump emits valid JSON. safe_json_dump then strict-checks
+    and raises on anything non-finite that survived — the backstop against an
+    UNINTENDED value silently becoming bare `NaN` (the legacy wr_n10.json defect)."""
+    if isinstance(o, float):
+        return None if (o != o or o in (float("inf"), float("-inf"))) else o
+    if isinstance(o, dict):
+        return {k: _nan_to_none(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_nan_to_none(v) for v in o]
+    return o
 
 
 def seam_env(guard_on):
@@ -83,6 +100,7 @@ def capture_arm(binpath, guard_on, n, target_ms, overshoot_ms, rawdir, tag):
     arm = "ON" if guard_on else "OFF"
     rows = []
     attempts = 0
+    discarded_reasons = []  # W-ISO: overshoot/no-engage survivorship (attempt disclosure)
     while len(rows) < n and attempts < n * 4:
         attempts += 1
         pref = os.path.join(rawdir, f"{tag}_{arm}_{attempts:02d}")
@@ -90,6 +108,7 @@ def capture_arm(binpath, guard_on, n, target_ms, overshoot_ms, rawdir, tag):
                                   song_downs=4)
         png = r.get("png")
         if png is None:
+            discarded_reasons.append(r.get("reason"))
             print(f"  [{arm} #{attempts}] skip: {r.get('reason')}")
             continue
         info = r["songms"]
@@ -109,7 +128,9 @@ def capture_arm(binpath, guard_on, n, target_ms, overshoot_ms, rawdir, tag):
         print(f"  [{arm} #{attempts}] {m['wash_class']:9s} hi={m['hi_frac']:6.2f} "
               f"mid_sat={bands['mid_sat']:.3f} lum={m['mean_luma']:.3f} "
               f"guardHits={guard_hits} ms={info:.0f}")
-    return rows
+    # W-ISO: disclose attempt/discard survivorship alongside the rows (§6.5).
+    disclosure = cl.attempt_disclosure(attempts, len(rows), discarded_reasons)
+    return rows, disclosure
 
 
 def grade(rows):
@@ -166,6 +187,10 @@ def main():
     ap.add_argument("--early-stop", action="store_true",
                     help="permit N=5 early-stop when within-arm hi_frac sd<0.5 both arms + ledger 5/5")
     a = ap.parse_args()
+    # W-ISO F2: a --refinish disk-rebuilt run may not emit a graded verdict. --validate
+    # is a non-verdict cleanliness inspection, so --refinish --validate stays allowed;
+    # --refinish for the two-arm verdict path is the banned combination.
+    cl.refuse_refinish_for_grade(a.refinish, is_graded=not a.validate)
     os.makedirs(a.out, exist_ok=True)
     os.makedirs(a.raws, exist_ok=True)
     overshoot = a.songms + a.overshoot
@@ -173,8 +198,11 @@ def main():
     if a.validate:
         n = min(a.n, 3)
         print(f"== VALIDATE: OFF arm N={n}, checking capture-drive ledger cleanliness ==")
-        rows = capture_arm(a.bin, False, n, a.songms, overshoot, a.raws, a.tag + "_val")
+        rows, disclosure = capture_arm(a.bin, False, n, a.songms, overshoot, a.raws,
+                                       a.tag + "_val")
         led = grade(rows)
+        # F7: split near-black frames out of the population (disclosed, not dropped).
+        kept, excluded_black = cl.partition_black_frames(rows)
         print("\nLEDGER (OFF validate):")
         print(json.dumps(led.get("summary", led), indent=2))
         deltas = [b["axes"]["stream"]["value"] for b in led["boots"]]
@@ -184,18 +212,26 @@ def main():
         clean = (led["nParsed"] == n and led["summary"]["stream"] == f"{n}/{n}")
         print(f"\nCAPTURE-DRIVE LEDGER-CLEAN: {clean} "
               f"(stream={led['summary']['stream']})")
-        json.dump({"validate": True, "rows": rows, "ledger": led},
-                  open(os.path.join(a.out, f"{a.tag}_validate.json"), "w"), indent=2)
+        print(f"attempt-disclosure: {disclosure} "
+              f"excluded_black={len(excluded_black)}")
+        cl.safe_json_dump(_nan_to_none(
+            {"validate": True, "rows": rows, "ledger": led,
+             "attempt_disclosure": disclosure,
+             "excluded_black": excluded_black, "kept_frames": len(kept)}),
+            os.path.join(a.out, f"{a.tag}_validate.json"))
         return 0 if clean else 2
 
     # ---- full re-grade: both arms ----
     if a.refinish:
+        # Unreachable for a graded run: F2 refuses --refinish without --validate above.
+        # Retained for a hypothetical future non-verdict refinish inspection path.
         off = rebuild_rows(a.raws, a.tag, "OFF", a.n)
         on = rebuild_rows(a.raws, a.tag, "ON", a.n)
+        off_disc = on_disc = cl.attempt_disclosure(0, len(off), ["refinish-from-disk"])
         print(f"refinish: rebuilt {len(off)} OFF + {len(on)} ON rows from {a.raws}")
     else:
-        off = capture_arm(a.bin, False, a.n, a.songms, overshoot, a.raws, a.tag)
-        on = capture_arm(a.bin, True, a.n, a.songms, overshoot, a.raws, a.tag)
+        off, off_disc = capture_arm(a.bin, False, a.n, a.songms, overshoot, a.raws, a.tag)
+        on, on_disc = capture_arm(a.bin, True, a.n, a.songms, overshoot, a.raws, a.tag)
 
     led_off = grade(off)
     led_on = grade(on)
@@ -213,11 +249,16 @@ def main():
     on_deltas = sorted(set(b["axes"]["stream"]["value"] for b in led_on["boots"]))
     cross_arm_match = (off_deltas == on_deltas and len(off_deltas) == 1)
 
-    off_hi = [r["hi_frac"] for r in off]
-    on_hi = [r["hi_frac"] for r in on]
+    # W-ISO F7: split near-black (luma<=0.05) frames out of the hi_frac population,
+    # the luma sibling of the mid_sat==nan all-black rule below. Disclosed via
+    # result["excluded_black"], never silently averaged in.
+    off_kept, off_black = cl.partition_black_frames(off)
+    on_kept, on_black = cl.partition_black_frames(on)
+    off_hi = [r["hi_frac"] for r in off_kept]
+    on_hi = [r["hi_frac"] for r in on_kept]
     # mid_sat is nan on all-black frames (no mid-band pixels) — exclude those
-    off_mid = [r["mid_sat"] for r in off if r["mid_sat"] == r["mid_sat"]]
-    on_mid = [r["mid_sat"] for r in on if r["mid_sat"] == r["mid_sat"]]
+    off_mid = [r["mid_sat"] for r in off_kept if r["mid_sat"] == r["mid_sat"]]
+    on_mid = [r["mid_sat"] for r in on_kept if r["mid_sat"] == r["mid_sat"]]
     mean = lambda xs: st.mean(xs) if xs else float("nan")
 
     result = {
@@ -236,6 +277,12 @@ def main():
                                "ON": [r["guard_engaged_hits"] for r in on]},
         "white_count": {"OFF": sum(1 for r in off if r["class"] == "WHITE"),
                         "ON": sum(1 for r in on if r["class"] == "WHITE")},
+        # W-ISO F7: near-black frames excluded from the hi_frac/mid_sat means (disclosed).
+        "excluded_black": {"OFF": off_black, "ON": on_black,
+                           "OFF_n": len(off_black), "ON_n": len(on_black),
+                           "thresh": cl.BLACK_LUMA_THRESH},
+        # W-ISO: capture attempt/discard survivorship (§6.5).
+        "attempt_disclosure": {"OFF": off_disc, "ON": on_disc},
     }
 
     # ---- verdict logic ----
@@ -277,9 +324,22 @@ def main():
                 "(lint 8: guard code ran). The A/B is now decisive (stream-matched), not confounded.")
 
     outp = os.path.join(a.out, f"{a.tag}.json")
-    json.dump(result, open(outp, "w"), indent=2)
-    json.dump(led_off, open(os.path.join(a.out, f"{a.tag}-ledger-off.json"), "w"), indent=2)
-    json.dump(led_on, open(os.path.join(a.out, f"{a.tag}-ledger-on.json"), "w"), indent=2)
+    # W-ISO F10: convert the KNOWN sentinel NaNs (mid_sat/high_sat "no mid-band pixels"
+    # on near-black frames; empty-population means) to JSON null so the output is valid,
+    # then strict-dump. safe_json_dump raises on any NaN/Inf that survived the scrub — the
+    # backstop against an UNINTENDED non-finite value silently becoming bare `NaN` (the
+    # exact defect in the legacy wr_n10.json). This replaces the pre-existing bare-NaN emit.
+    def _nan_to_none(o):
+        if isinstance(o, float):
+            return None if o != o or o in (float("inf"), float("-inf")) else o
+        if isinstance(o, dict):
+            return {k: _nan_to_none(v) for k, v in o.items()}
+        if isinstance(o, list):
+            return [_nan_to_none(v) for v in o]
+        return o
+    cl.safe_json_dump(_nan_to_none(result), outp)
+    cl.safe_json_dump(_nan_to_none(led_off), os.path.join(a.out, f"{a.tag}-ledger-off.json"))
+    cl.safe_json_dump(_nan_to_none(led_on), os.path.join(a.out, f"{a.tag}-ledger-on.json"))
 
     print("\n==================== WHITE RE-GRADE ====================")
     print(f"OFF: hi={mean(off_hi):.2f}(sd {within_sd(off,'hi_frac'):.2f}) mid={mean(off_mid):.3f} "

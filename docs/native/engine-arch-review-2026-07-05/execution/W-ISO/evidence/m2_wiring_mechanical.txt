@@ -1,0 +1,35 @@
+# W-ISO M2 — white_regrade.py <- capture_lints wiring (mechanical exit, PLAN_REVIEW AM-4)
+# Date: 2026-07-08T03:29:27Z
+
+== py_compile ==
+COMPILE OK
+
+== F2 refusal: --refinish WITHOUT --validate refuses BEFORE any boot ==
+    raise CaptureLintError(
+capture_lints.CaptureLintError: F2: a --refinish run (rows rebuilt from disk, not live boots) may not emit a graded verdict. --refinish is a crash-recovery finisher for non-verdict inspection only; re-capture live boots for a verdict.
+
+== F2/F10 mechanical checks (no boot) ==
+F2 refinish+validate  -> ALLOWED
+F2 live graded        -> ALLOWED
+F10 sentinel NaN -> null, strict allow_nan=False round-trip OK
+F10 fail-red FIRES: F10: refusing to write non-finite value nan at key path $.arms.OFF[1].INJECTED (
+
+== disclosure fields wired into result dict (grep) ==
+71:    JSON null so cl.safe_json_dump emits valid JSON. safe_json_dump then strict-checks
+132:    disclosure = cl.attempt_disclosure(attempts, len(rows), discarded_reasons)
+193:    cl.refuse_refinish_for_grade(a.refinish, is_graded=not a.validate)
+205:        kept, excluded_black = cl.partition_black_frames(rows)
+216:              f"excluded_black={len(excluded_black)}")
+217:        cl.safe_json_dump(_nan_to_none(
+219:             "attempt_disclosure": disclosure,
+220:             "excluded_black": excluded_black, "kept_frames": len(kept)}),
+230:        off_disc = on_disc = cl.attempt_disclosure(0, len(off), ["refinish-from-disk"])
+254:    # result["excluded_black"], never silently averaged in.
+255:    off_kept, off_black = cl.partition_black_frames(off)
+256:    on_kept, on_black = cl.partition_black_frames(on)
+281:        "excluded_black": {"OFF": off_black, "ON": on_black,
+285:        "attempt_disclosure": {"OFF": off_disc, "ON": on_disc},
+329:    # then strict-dump. safe_json_dump raises on any NaN/Inf that survived the scrub — the
+340:    cl.safe_json_dump(_nan_to_none(result), outp)
+341:    cl.safe_json_dump(_nan_to_none(led_off), os.path.join(a.out, f"{a.tag}-ledger-off.json"))
+342:    cl.safe_json_dump(_nan_to_none(led_on), os.path.join(a.out, f"{a.tag}-ledger-on.json"))
