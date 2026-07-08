@@ -1,0 +1,378 @@
+
+===== ROI[right_edge_avatar] = (1080, 360, 200, 300) =====
+[uidump-query] ROI [1080.0, 360.0, 200.0, 300.0]: matched=59 lastWriter#=58 provAvailable=True
+[uidump-query]   #0 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='background_subwaystation.mesh' mat='subway_station.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.349, 0.4078, 0.5333, 1]
+[uidump-query]   #2 pass0(depth=Clear) blend=1 z=1 rect=[410.2, 308.7, 694.8, 411.3] rectKind=1 skinned=False mesh='guitarcase_closed_01.mesh' mat='guitarcase_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #6 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_01.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #9 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_02.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #14 pass0(depth=Clear) blend=3 z=1 rect=[308.6, 0.0, 971.4, 720.0] rectKind=1 skinned=False mesh='back_border05.mesh' mat='back_border.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9961, 0.898, 0.7569, 0.35]
+[uidump-query]   #17 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='pole_01.mesh' mat='subwaymetal_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #19 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1144.8, 720.0] rectKind=1 skinned=False mesh='pole_03.mesh' mat='subwaymetal_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #25 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='kaleida_.mesh' mat='kaleida.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 0.7412, 0.3843, 0.1]
+[uidump-query]   #29 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 614.2] rectKind=1 skinned=False mesh='lightstrip_01.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #30 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 656.8] rectKind=1 skinned=False mesh='lightstrip_02.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #33 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_windows.mesh' mat='subwaytrain_windows.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.6]
+[uidump-query]   #38 pass0(depth=Clear) blend=3 z=1 rect=[208.7, 0.0, 1071.3, 720.0] rectKind=1 skinned=False mesh='graphitti_path.mesh' mat='graphitti_path.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.15]
+[uidump-query]   #40 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 489.2] rectKind=1 skinned=False mesh='shadow_01.mesh' mat='shadow_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.8]
+[uidump-query]   #75 pass0(depth=Clear) blend=1 z=1 rect=[1057.6, 627.6, 110.7, 92.4] rectKind=3 skinned=True mesh='modavengerboots_resource.mesh' mat='feet_modavengerboots_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_R-ankle.mesh', 'bone_L-knee.mesh', 'bone_L-ankle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #76 pass0(depth=Clear) blend=1 z=1 rect=[1040.6, 443.8, 67.1, 15.5] rectKind=3 skinned=True mesh='jumpsuitshorts_resource.mesh' mat='legs_jumpsuitshorts_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-thigh.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #79 pass0(depth=Clear) blend=1 z=1 rect=[1034.5, 310.0, 70.6, 67.0] rectKind=3 skinned=True mesh='hippyfringe_resource.2.mesh' mat='torso_hippyfringe_neck.mat' panel='' owner='player1'
+[uidump-query]         bones=[] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #82 pass0(depth=Clear) blend=1 z=1 rect=[1030.7, 269.7, 81.6, 189.7] rectKind=3 skinned=True mesh='hippyfringe_skin.2.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-thigh.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #83 pass0(depth=Clear) blend=1 z=1 rect=[1022.9, 231.3, 87.7, 145.6] rectKind=3 skinned=True mesh='head.mesh' mat='head_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-clavicle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=24 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #88 pass0(depth=Clear) blend=1 z=1 rect=[1040.6, 443.8, 127.7, 276.2] rectKind=3 skinned=True mesh='jumpsuitshorts_skin.2.mesh' mat='legs_skin.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-thigh.mesh', 'bone_R-ankle.mesh', 'bone_L-knee.mesh', 'bone_L-ankle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #89 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 496.8, 253.0, 26.8] rectKind=3 skinned=True mesh='femalerings_jem.mesh' mat='femalerings_jem.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-index01.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=30 matColor=[1, 1, 1, 1]
+[uidump-query]   #90 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 398.9, 262.4, 143.0] rectKind=3 skinned=True mesh='hands_naked.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-foreTwist1.mesh', 'bone_L-pinky01.mesh', 'bone_L-middlefinger02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-middlefinger01.mesh', 'bone_L-foreTwist2.mesh', 'bone_L-index01.mesh', 'bone_L-pinky03.mesh', 'bone_L-thumb03.mesh', 'bone_L-middlefinger03.mesh', 'bone_L-ringfinger03.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-index03.mesh', 'bone_L-pinky-base.mesh', 'bone_L-pinky02.mesh', 'bone_L-ringfinger-base.mesh', 'bone_L-ringfinger01.mesh', 'bone_L-ringfinger02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=31 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #92 pass0(depth=Clear) blend=1 z=1 rect=[788.6, 603.2, 299.1, 116.8] rectKind=3 skinned=True mesh='motorcycleboots_resource.mesh' mat='feet_motorcycleboots_swap.mat' panel='' owner='player0'
+[uidump-query]         bones=[] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #111 pass0(depth=Clear) blend=3 z=1 rect=[988.7, 492.4, 260.7, 49.6] rectKind=3 skinned=True mesh='fingernails_resource.mesh' mat='fingernails.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-pinky03.mesh', 'bone_L-thumb03.mesh', 'bone_L-middlefinger03.mesh', 'bone_L-ringfinger03.mesh', 'bone_L-index03.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.5]
+[uidump-query]   #114 pass0(depth=Clear) blend=1 z=1 rect=[788.6, 603.2, 299.1, 116.8] rectKind=3 skinned=True mesh='motorcycleboots_resource.mesh' mat='feet_motorcycleboots_swap.mat' panel='' owner='player0'
+[uidump-query]         bones=[] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #130 pass0(depth=Clear) blend=1 z=1 rect=[1057.6, 627.6, 110.7, 92.4] rectKind=3 skinned=True mesh='modavengerboots_resource.mesh' mat='feet_modavengerboots_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_R-ankle.mesh', 'bone_L-knee.mesh', 'bone_L-ankle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #131 pass0(depth=Clear) blend=1 z=1 rect=[1040.6, 443.8, 67.1, 15.5] rectKind=3 skinned=True mesh='jumpsuitshorts_resource.mesh' mat='legs_jumpsuitshorts_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-thigh.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #134 pass0(depth=Clear) blend=1 z=1 rect=[1034.5, 310.0, 70.6, 67.0] rectKind=3 skinned=True mesh='hippyfringe_resource.2.mesh' mat='torso_hippyfringe_neck.mat' panel='' owner='player1'
+[uidump-query]         bones=[] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #137 pass0(depth=Clear) blend=1 z=1 rect=[1030.7, 269.7, 81.6, 189.7] rectKind=3 skinned=True mesh='hippyfringe_skin.2.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-thigh.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #138 pass0(depth=Clear) blend=1 z=1 rect=[1022.9, 231.3, 87.7, 145.6] rectKind=3 skinned=True mesh='head.mesh' mat='head_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-clavicle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=24 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #143 pass0(depth=Clear) blend=1 z=1 rect=[1040.6, 443.8, 127.7, 276.2] rectKind=3 skinned=True mesh='jumpsuitshorts_skin.2.mesh' mat='legs_skin.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-thigh.mesh', 'bone_R-ankle.mesh', 'bone_L-knee.mesh', 'bone_L-ankle.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #144 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 496.8, 253.0, 26.8] rectKind=3 skinned=True mesh='femalerings_jem.mesh' mat='femalerings_jem.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-index01.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=30 matColor=[1, 1, 1, 1]
+[uidump-query]   #145 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 398.9, 262.4, 143.0] rectKind=3 skinned=True mesh='hands_naked.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-foreTwist1.mesh', 'bone_L-pinky01.mesh', 'bone_L-middlefinger02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-middlefinger01.mesh', 'bone_L-foreTwist2.mesh', 'bone_L-index01.mesh', 'bone_L-pinky03.mesh', 'bone_L-thumb03.mesh', 'bone_L-middlefinger03.mesh', 'bone_L-ringfinger03.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-index03.mesh', 'bone_L-pinky-base.mesh', 'bone_L-pinky02.mesh', 'bone_L-ringfinger-base.mesh', 'bone_L-ringfinger01.mesh', 'bone_L-ringfinger02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=31 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #180 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='header_list_bg.mesh' mat='header_list_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.5]
+[uidump-query]   #181 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function_setlist.mat' panel='song_select' owner=''
+[uidump-query]   #182 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #183 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #184 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #185 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #186 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #187 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #188 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #189 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #190 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #191 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #192 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #236 pass1(depth=Load) blend=3 z=0 rect=[890.8, 137.4, 389.2, 274.8] rectKind=1 skinned=False mesh='bone_album.mesh' mat='bone_album_group.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0]
+[uidump-query]   #238 pass1(depth=Load) blend=3 z=0 rect=[792.8, 0.0, 487.2, 462.6] rectKind=1 skinned=False mesh='album_frame01.mesh' mat='album_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #241 pass1(depth=Load) blend=3 z=0 rect=[835.5, 0.0, 444.5, 404.7] rectKind=1 skinned=False mesh='album.mesh' mat='album.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #242 pass1(depth=Load) blend=7 z=0 rect=[187.6, 438.3, 1092.4, 133.7] rectKind=1 skinned=False mesh='header_song_bg_refraction01.mesh' mat='header_song_bg_refract.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.1804, 0.1804, 0.1804, 1]
+[uidump-query]   #243 pass1(depth=Load) blend=6 z=0 rect=[0.0, 454.5, 1280.0, 265.5] rectKind=1 skinned=False mesh='header_song_etched_art_color01.mesh' mat='header_song_bg_etched_art_color.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0.502, 0.7]
+[uidump-query]   #244 pass1(depth=Load) blend=3 z=0 rect=[0.0, 430.0, 1280.0, 290.0] rectKind=1 skinned=False mesh='header_song_etched_art01.mesh' mat='album_etched_art_shadow.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.007843, 0.007843, 0.007843, 0.5556]
+[uidump-query]   #245 pass1(depth=Load) blend=4 z=0 rect=[220.3, 438.3, 1059.7, 133.7] rectKind=1 skinned=False mesh='header_song_bg01.mesh' mat='header_song_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.8196, 0.8196, 0.8196, 0.15]
+[uidump-query]   #251 pass1(depth=Load) blend=1 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller_refract.mesh' mat='connect_controller_refract.mat' panel='overshell_dir' owner=''
+[uidump-query]   #252 pass1(depth=Load) blend=4 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller02.mesh' mat='connect_controller02.mat' panel='overshell_dir' owner=''
+[uidump-query]   #253 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='dimmer.mesh' mat='dimmer.mat' panel='overshell_dir' owner=''
+[uidump-query]   #278 pass1(depth=Load) blend=3 z=0 rect=[483.0, 205.4, 773.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot2' owner=''
+[uidump-query]   #282 pass1(depth=Load) blend=3 z=0 rect=[779.0, 205.4, 501.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot3' owner=''
+[uidump-query]   #283 pass1(depth=Load) blend=3 z=0 rect=[860.5, 511.9, 419.5, 208.1] rectKind=1 skinned=False mesh='mucha_pattern.mesh' mat='mucha_pattern01.mat' panel='slot3' owner=''
+[uidump-query]   #285 pass1(depth=Load) blend=3 z=0 rect=[909.3, 546.6, 370.7, 173.4] rectKind=1 skinned=False mesh='bottom_bg.mesh' mat='bottom_bg.mat' panel='slot3' owner=''  <== LAST WRITER
+
+===== ROI[avatar_hand_right] = (1180, 420, 100, 140) =====
+[uidump-query] ROI [1180.0, 420.0, 100.0, 140.0]: matched=41 lastWriter#=40 provAvailable=True
+[uidump-query]   #0 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='background_subwaystation.mesh' mat='subway_station.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.349, 0.4078, 0.5333, 1]
+[uidump-query]   #6 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_01.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #9 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_02.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #14 pass0(depth=Clear) blend=3 z=1 rect=[308.3, 0.0, 971.7, 720.0] rectKind=1 skinned=False mesh='back_border05.mesh' mat='back_border.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9961, 0.898, 0.7569, 0.35]
+[uidump-query]   #17 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='pole_01.mesh' mat='subwaymetal_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #25 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='kaleida_.mesh' mat='kaleida.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 0.7412, 0.3843, 0.1]
+[uidump-query]   #29 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 614.3] rectKind=1 skinned=False mesh='lightstrip_01.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #30 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 656.9] rectKind=1 skinned=False mesh='lightstrip_02.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #33 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_windows.mesh' mat='subwaytrain_windows.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.6]
+[uidump-query]   #38 pass0(depth=Clear) blend=3 z=1 rect=[208.2, 0.0, 1071.8, 720.0] rectKind=1 skinned=False mesh='graphitti_path.mesh' mat='graphitti_path.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.15]
+[uidump-query]   #40 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 489.3] rectKind=1 skinned=False mesh='shadow_01.mesh' mat='shadow_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.8]
+[uidump-query]   #89 pass0(depth=Clear) blend=1 z=1 rect=[986.7, 496.9, 253.1, 26.8] rectKind=3 skinned=True mesh='femalerings_jem.mesh' mat='femalerings_jem.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-index01.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=30 matColor=[1, 1, 1, 1]
+[uidump-query]   #90 pass0(depth=Clear) blend=1 z=1 rect=[986.7, 399.0, 262.5, 142.9] rectKind=3 skinned=True mesh='hands_naked.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-pinky01.mesh', 'bone_L-middlefinger02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-middlefinger01.mesh', 'bone_L-foreTwist2.mesh', 'bone_L-index01.mesh', 'bone_L-pinky03.mesh', 'bone_L-thumb03.mesh', 'bone_L-middlefinger03.mesh', 'bone_L-ringfinger03.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-index03.mesh', 'bone_L-pinky-base.mesh', 'bone_L-pinky02.mesh', 'bone_L-ringfinger-base.mesh', 'bone_L-ringfinger01.mesh', 'bone_L-ringfinger02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=31 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #111 pass0(depth=Clear) blend=3 z=1 rect=[988.4, 492.5, 260.8, 49.4] rectKind=3 skinned=True mesh='fingernails_resource.mesh' mat='fingernails.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-pinky03.mesh', 'bone_L-thumb03.mesh', 'bone_L-middlefinger03.mesh', 'bone_L-ringfinger03.mesh', 'bone_L-index03.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.5]
+[uidump-query]   #144 pass0(depth=Clear) blend=1 z=1 rect=[986.7, 496.9, 253.1, 26.8] rectKind=3 skinned=True mesh='femalerings_jem.mesh' mat='femalerings_jem.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-index01.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=30 matColor=[1, 1, 1, 1]
+[uidump-query]   #145 pass0(depth=Clear) blend=1 z=1 rect=[986.7, 399.0, 262.5, 142.9] rectKind=3 skinned=True mesh='hands_naked.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_L-pinky01.mesh', 'bone_L-middlefinger02.mesh', 'bone_L-hand.mesh', 'bone_L-index02.mesh', 'bone_L-middlefinger01.mesh', 'bone_L-foreTwist2.mesh', 'bone_L-index01.mesh', 'bone_L-pinky03.mesh', 'bone_L-thumb03.mesh', 'bone_L-middlefinger03.mesh', 'bone_L-ringfinger03.mesh', 'bone_L-thumb01.mesh', 'bone_L-thumb02.mesh', 'bone_L-index03.mesh', 'bone_L-pinky-base.mesh', 'bone_L-pinky02.mesh', 'bone_L-ringfinger-base.mesh', 'bone_L-ringfinger01.mesh', 'bone_L-ringfinger02.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=31 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #180 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='header_list_bg.mesh' mat='header_list_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.5]
+[uidump-query]   #181 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function_setlist.mat' panel='song_select' owner=''
+[uidump-query]   #182 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #183 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #184 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #185 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #186 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #187 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #188 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #189 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #190 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #191 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #192 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #238 pass1(depth=Load) blend=3 z=0 rect=[792.8, 0.0, 487.2, 462.6] rectKind=1 skinned=False mesh='album_frame01.mesh' mat='album_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #242 pass1(depth=Load) blend=7 z=0 rect=[187.6, 438.3, 1092.4, 133.7] rectKind=1 skinned=False mesh='header_song_bg_refraction01.mesh' mat='header_song_bg_refract.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.1804, 0.1804, 0.1804, 1]
+[uidump-query]   #243 pass1(depth=Load) blend=6 z=0 rect=[0.0, 454.5, 1280.0, 265.5] rectKind=1 skinned=False mesh='header_song_etched_art_color01.mesh' mat='header_song_bg_etched_art_color.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0.502, 0.7]
+[uidump-query]   #244 pass1(depth=Load) blend=3 z=0 rect=[0.0, 430.0, 1280.0, 290.0] rectKind=1 skinned=False mesh='header_song_etched_art01.mesh' mat='album_etched_art_shadow.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.007843, 0.007843, 0.007843, 0.5556]
+[uidump-query]   #245 pass1(depth=Load) blend=4 z=0 rect=[220.3, 438.3, 1059.7, 133.7] rectKind=1 skinned=False mesh='header_song_bg01.mesh' mat='header_song_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.8196, 0.8196, 0.8196, 0.15]
+[uidump-query]   #251 pass1(depth=Load) blend=1 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller_refract.mesh' mat='connect_controller_refract.mat' panel='overshell_dir' owner=''
+[uidump-query]   #252 pass1(depth=Load) blend=4 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller02.mesh' mat='connect_controller02.mat' panel='overshell_dir' owner=''
+[uidump-query]   #253 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='dimmer.mesh' mat='dimmer.mat' panel='overshell_dir' owner=''
+[uidump-query]   #278 pass1(depth=Load) blend=3 z=0 rect=[483.0, 205.4, 773.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot2' owner=''
+[uidump-query]   #282 pass1(depth=Load) blend=3 z=0 rect=[779.0, 205.4, 501.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot3' owner=''
+[uidump-query]   #283 pass1(depth=Load) blend=3 z=0 rect=[860.5, 511.9, 419.5, 208.1] rectKind=1 skinned=False mesh='mucha_pattern.mesh' mat='mucha_pattern01.mat' panel='slot3' owner=''
+[uidump-query]   #285 pass1(depth=Load) blend=3 z=0 rect=[909.3, 546.6, 370.7, 173.4] rectKind=1 skinned=False mesh='bottom_bg.mesh' mat='bottom_bg.mat' panel='slot3' owner=''  <== LAST WRITER
+
+===== ROI[stray_red_bar] = (845, 120, 30, 240) =====
+[uidump-query] ROI [845.0, 120.0, 30.0, 240.0]: matched=45 lastWriter#=44 provAvailable=True
+[uidump-query]   #0 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='background_subwaystation.mesh' mat='subway_station.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.349, 0.4078, 0.5333, 1]
+[uidump-query]   #2 pass0(depth=Clear) blend=1 z=1 rect=[410.0, 308.7, 694.8, 411.3] rectKind=1 skinned=False mesh='guitarcase_closed_01.mesh' mat='guitarcase_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #5 pass0(depth=Clear) blend=1 z=1 rect=[150.9, 344.7, 752.9, 375.3] rectKind=1 skinned=False mesh='seating_02.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #6 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_01.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #7 pass0(depth=Clear) blend=1 z=4 rect=[660.1, 0.0, 332.7, 347.4] rectKind=1 skinned=False mesh='side_brand_panel01.mesh' mat='side_brand_panel02.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #9 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_02.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #14 pass0(depth=Clear) blend=3 z=1 rect=[308.3, 0.0, 971.7, 720.0] rectKind=1 skinned=False mesh='back_border05.mesh' mat='back_border.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9961, 0.898, 0.7569, 0.35]
+[uidump-query]   #17 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='pole_01.mesh' mat='subwaymetal_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #19 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1144.6, 720.0] rectKind=1 skinned=False mesh='pole_03.mesh' mat='subwaymetal_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #25 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='kaleida_.mesh' mat='kaleida.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 0.7412, 0.3843, 0.1]
+[uidump-query]   #29 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 614.2] rectKind=1 skinned=False mesh='lightstrip_01.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #30 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 656.8] rectKind=1 skinned=False mesh='lightstrip_02.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #33 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_windows.mesh' mat='subwaytrain_windows.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.6]
+[uidump-query]   #38 pass0(depth=Clear) blend=3 z=1 rect=[208.3, 0.0, 1071.7, 720.0] rectKind=1 skinned=False mesh='graphitti_path.mesh' mat='graphitti_path.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.15]
+[uidump-query]   #40 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 489.2] rectKind=1 skinned=False mesh='shadow_01.mesh' mat='shadow_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.8]
+[uidump-query]   #180 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='header_list_bg.mesh' mat='header_list_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.5]
+[uidump-query]   #181 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function_setlist.mat' panel='song_select' owner=''
+[uidump-query]   #182 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #183 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #184 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #185 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #186 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #187 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #188 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #189 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #190 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #191 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #192 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #193 pass1(depth=Load) blend=3 z=0 rect=[828.1, 246.8, 57.9, 27.4] rectKind=0 skinned=False mesh='' mat='Pentatonic_Hub(5_00)4x.mat' panel='song_select' owner=''
+[uidump-query]   #202 pass1(depth=Load) blend=1 z=0 rect=[0.0, 0.0, 1046.0, 598.1] rectKind=1 skinned=False mesh='ml_highlight_glasstopp.mesh' mat='ml_highlight_glasstop.mat' panel='song_select' owner=''
+[uidump-query]   #221 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1070.8, 720.0] rectKind=1 skinned=False mesh='highlight_main.mesh' mat='highlight_main.mat' panel='song_select' owner=''
+[uidump-query]   #222 pass1(depth=Load) blend=7 z=0 rect=[187.6, 147.7, 1092.4, 133.7] rectKind=1 skinned=False mesh='header_song_bg_refraction.mesh' mat='header_song_bg_refract.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.1804, 0.1804, 0.1804, 1]
+[uidump-query]   #223 pass1(depth=Load) blend=6 z=0 rect=[0.0, 0.0, 1280.0, 264.1] rectKind=1 skinned=False mesh='header_song_etched_art_color.mesh' mat='header_song_bg_etched_art_color.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0.502, 0.7]
+[uidump-query]   #224 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 273.8] rectKind=1 skinned=False mesh='header_song_etched_art.mesh' mat='album_etched_art_shadow.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.007843, 0.007843, 0.007843, 0.5556]
+[uidump-query]   #225 pass1(depth=Load) blend=4 z=0 rect=[220.3, 147.7, 1059.7, 133.7] rectKind=1 skinned=False mesh='header_song_bg.mesh' mat='header_song_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.8196, 0.8196, 0.8196, 0.15]
+[uidump-query]   #226 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 233.1] rectKind=1 skinned=False mesh='line_details03.mesh' mat='line03.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.3412, 0.3412, 0.3412, 1]
+[uidump-query]   #237 pass1(depth=Load) blend=3 z=0 rect=[852.2, 0.0, 427.8, 253.3] rectKind=1 skinned=False mesh='bone_album_group.mesh' mat='bone_album_group.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0]
+[uidump-query]   #238 pass1(depth=Load) blend=3 z=0 rect=[792.8, 0.0, 487.2, 462.6] rectKind=1 skinned=False mesh='album_frame01.mesh' mat='album_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #240 pass1(depth=Load) blend=3 z=1 rect=[0.0, 105.8, 1024.7, 31.4] rectKind=1 skinned=False mesh='header_song_shadow.mesh' mat='header_song_shadow.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.5]
+[uidump-query]   #241 pass1(depth=Load) blend=3 z=0 rect=[835.5, 0.0, 444.5, 404.7] rectKind=1 skinned=False mesh='album.mesh' mat='album.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #251 pass1(depth=Load) blend=1 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller_refract.mesh' mat='connect_controller_refract.mat' panel='overshell_dir' owner=''
+[uidump-query]   #252 pass1(depth=Load) blend=4 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller02.mesh' mat='connect_controller02.mat' panel='overshell_dir' owner=''
+[uidump-query]   #253 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='dimmer.mesh' mat='dimmer.mat' panel='overshell_dir' owner=''
+[uidump-query]   #278 pass1(depth=Load) blend=3 z=0 rect=[483.0, 205.4, 773.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot2' owner=''
+[uidump-query]   #282 pass1(depth=Load) blend=3 z=0 rect=[779.0, 205.4, 501.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot3' owner=''  <== LAST WRITER
+
+===== ROI[diffdot_panel] = (900, 380, 300, 200) =====
+[uidump-query] ROI [900.0, 380.0, 300.0, 200.0]: matched=60 lastWriter#=59 provAvailable=True
+[uidump-query]   #0 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='background_subwaystation.mesh' mat='subway_station.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.349, 0.4078, 0.5333, 1]
+[uidump-query]   #2 pass0(depth=Clear) blend=1 z=1 rect=[410.5, 308.4, 694.6, 411.6] rectKind=1 skinned=False mesh='guitarcase_closed_01.mesh' mat='guitarcase_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #5 pass0(depth=Clear) blend=1 z=1 rect=[151.4, 344.4, 752.7, 375.6] rectKind=1 skinned=False mesh='seating_02.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #6 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_01.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #9 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_02.mesh' mat='subwaytrain_interior.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #14 pass0(depth=Clear) blend=3 z=1 rect=[308.8, 0.0, 971.2, 720.0] rectKind=1 skinned=False mesh='back_border05.mesh' mat='back_border.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9961, 0.898, 0.7569, 0.35]
+[uidump-query]   #17 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='pole_01.mesh' mat='subwaymetal_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #19 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1144.8, 720.0] rectKind=1 skinned=False mesh='pole_03.mesh' mat='subwaymetal_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #25 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='kaleida_.mesh' mat='kaleida.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 0.7412, 0.3843, 0.1]
+[uidump-query]   #29 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 613.9] rectKind=1 skinned=False mesh='lightstrip_01.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #30 pass0(depth=Clear) blend=1 z=1 rect=[0.0, 0.0, 1280.0, 656.6] rectKind=1 skinned=False mesh='lightstrip_02.mesh' mat='white.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9255, 0.9255, 0.9255, 1]
+[uidump-query]   #33 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='subwaytrain_windows.mesh' mat='subwaytrain_windows.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.6]
+[uidump-query]   #38 pass0(depth=Clear) blend=3 z=1 rect=[209.3, 0.0, 1070.7, 720.0] rectKind=1 skinned=False mesh='graphitti_path.mesh' mat='graphitti_path.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.15]
+[uidump-query]   #40 pass0(depth=Clear) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 488.9] rectKind=1 skinned=False mesh='shadow_01.mesh' mat='shadow_01.mat' panel='' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.8]
+[uidump-query]   #76 pass0(depth=Clear) blend=1 z=1 rect=[1040.8, 443.5, 67.1, 15.5] rectKind=3 skinned=True mesh='jumpsuitshorts_resource.mesh' mat='legs_jumpsuitshorts_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_pelvis.mesh', 'bone_L-thigh.mesh', 'bone_R-thigh.mesh', 'bone_spine1.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #82 pass0(depth=Clear) blend=1 z=1 rect=[1030.9, 269.4, 81.6, 189.6] rectKind=3 skinned=True mesh='hippyfringe_skin.2.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_pelvis.mesh', 'bone_spine2.mesh', 'bone_spine3.mesh', 'bone_spine1.mesh', 'bone_R-thigh.mesh', 'bone_L-thigh.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #88 pass0(depth=Clear) blend=1 z=1 rect=[1040.8, 443.5, 127.7, 276.5] rectKind=3 skinned=True mesh='jumpsuitshorts_skin.2.mesh' mat='legs_skin.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_pelvis.mesh', 'bone_L-thigh.mesh', 'bone_R-thigh.mesh', 'bone_L-knee.mesh', 'bone_R-knee.mesh', 'bone_spine1.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #89 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 496.5, 253.3, 26.7] rectKind=3 skinned=True mesh='femalerings_jem.mesh' mat='femalerings_jem.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_R-index01.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=30 matColor=[1, 1, 1, 1]
+[uidump-query]   #90 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 398.6, 262.7, 142.8] rectKind=3 skinned=True mesh='hands_naked.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_R-middlefinger02.mesh', 'bone_R-hand.mesh', 'bone_R-foreTwist2.mesh', 'bone_R-foreTwist1.mesh', 'bone_R-middlefinger01.mesh', 'bone_R-ringfinger02.mesh', 'bone_R-thumb02.mesh', 'bone_R-middlefinger03.mesh', 'bone_L-foreTwist1.mesh', 'bone_R-pinky02.mesh', 'bone_R-pinky-base.mesh', 'bone_R-pinky03.mesh', 'bone_R-pinky01.mesh', 'bone_R-thumb03.mesh', 'bone_R-thumb01.mesh', 'bone_R-index03.mesh', 'bone_R-index01.mesh', 'bone_R-index02.mesh', 'bone_R-ringfinger-base.mesh', 'bone_R-ringfinger03.mesh', 'bone_R-ringfinger01.mesh', 'bone_L-foreTwist2.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=31 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #94 pass0(depth=Clear) blend=1 z=1 rect=[736.8, 403.6, 288.0, 316.4] rectKind=3 skinned=True mesh='tightdistressedpants_resource.mesh' mat='tightdistressed_jeans_swap.mat' panel='' owner='player0'
+[uidump-query]         bones=[] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #111 pass0(depth=Clear) blend=3 z=1 rect=[988.7, 492.3, 261.1, 49.2] rectKind=3 skinned=True mesh='fingernails_resource.mesh' mat='fingernails.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_R-middlefinger03.mesh', 'bone_R-pinky03.mesh', 'bone_R-thumb03.mesh', 'bone_R-index03.mesh', 'bone_R-ringfinger03.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0.5]
+[uidump-query]   #116 pass0(depth=Clear) blend=1 z=1 rect=[736.8, 403.6, 288.0, 316.4] rectKind=3 skinned=True mesh='tightdistressedpants_resource.mesh' mat='tightdistressed_jeans_swap.mat' panel='' owner='player0'
+[uidump-query]         bones=[] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #131 pass0(depth=Clear) blend=1 z=1 rect=[1040.8, 443.5, 67.1, 15.5] rectKind=3 skinned=True mesh='jumpsuitshorts_resource.mesh' mat='legs_jumpsuitshorts_swap.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_pelvis.mesh', 'bone_L-thigh.mesh', 'bone_R-thigh.mesh', 'bone_spine1.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #137 pass0(depth=Clear) blend=1 z=1 rect=[1030.9, 269.4, 81.6, 189.6] rectKind=3 skinned=True mesh='hippyfringe_skin.2.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_pelvis.mesh', 'bone_spine2.mesh', 'bone_spine3.mesh', 'bone_spine1.mesh', 'bone_R-thigh.mesh', 'bone_L-thigh.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #143 pass0(depth=Clear) blend=1 z=1 rect=[1040.8, 443.5, 127.7, 276.5] rectKind=3 skinned=True mesh='jumpsuitshorts_skin.2.mesh' mat='legs_skin.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_pelvis.mesh', 'bone_L-thigh.mesh', 'bone_R-thigh.mesh', 'bone_L-knee.mesh', 'bone_R-knee.mesh', 'bone_spine1.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=-1 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #144 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 496.5, 253.3, 26.7] rectKind=3 skinned=True mesh='femalerings_jem.mesh' mat='femalerings_jem.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_R-index01.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=30 matColor=[1, 1, 1, 1]
+[uidump-query]   #145 pass0(depth=Clear) blend=1 z=1 rect=[987.0, 398.6, 262.7, 142.8] rectKind=3 skinned=True mesh='hands_naked.mesh' mat='torso_naked.mat' panel='' owner='player1'
+[uidump-query]         bones=['bone_R-middlefinger02.mesh', 'bone_R-hand.mesh', 'bone_R-foreTwist2.mesh', 'bone_R-foreTwist1.mesh', 'bone_R-middlefinger01.mesh', 'bone_R-ringfinger02.mesh', 'bone_R-thumb02.mesh', 'bone_R-middlefinger03.mesh', 'bone_L-foreTwist1.mesh', 'bone_R-pinky02.mesh', 'bone_R-pinky-base.mesh', 'bone_R-pinky03.mesh', 'bone_R-pinky01.mesh', 'bone_R-thumb03.mesh', 'bone_R-thumb01.mesh', 'bone_R-index03.mesh', 'bone_R-index01.mesh', 'bone_R-index02.mesh', 'bone_R-ringfinger-base.mesh', 'bone_R-ringfinger03.mesh', 'bone_R-ringfinger01.mesh', 'bone_L-foreTwist2.mesh'] boneFallback=0
+[uidump-query]         authored: showing=True order=31 matColor=[0.9098, 0.8667, 0.702, 1]
+[uidump-query]   #180 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='header_list_bg.mesh' mat='header_list_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0, 0.5]
+[uidump-query]   #181 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function_setlist.mat' panel='song_select' owner=''
+[uidump-query]   #182 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #183 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='function.mat' panel='song_select' owner=''
+[uidump-query]   #184 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #185 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #186 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #187 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #188 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #189 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='header.mat' panel='song_select' owner=''
+[uidump-query]   #190 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #191 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_dark.mat' panel='song_select' owner=''
+[uidump-query]   #192 pass1(depth=Load) blend=3 z=1 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='bg.mesh' mat='song_disc_light.mat' panel='song_select' owner=''
+[uidump-query]   #196 pass1(depth=Load) blend=3 z=0 rect=[886.0, 365.1, 32.8, 32.8] rectKind=0 skinned=False mesh='' mat='icons_tour.mat' panel='song_select' owner=''
+[uidump-query]   #198 pass1(depth=Load) blend=3 z=0 rect=[886.0, 446.8, 32.8, 32.8] rectKind=0 skinned=False mesh='' mat='icons_tour.mat' panel='song_select' owner=''
+[uidump-query]   #202 pass1(depth=Load) blend=1 z=0 rect=[0.0, 0.0, 1046.0, 598.1] rectKind=1 skinned=False mesh='ml_highlight_glasstopp.mesh' mat='ml_highlight_glasstop.mat' panel='song_select' owner=''
+[uidump-query]   #221 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1070.8, 720.0] rectKind=1 skinned=False mesh='highlight_main.mesh' mat='highlight_main.mat' panel='song_select' owner=''
+[uidump-query]   #236 pass1(depth=Load) blend=3 z=0 rect=[890.8, 137.4, 389.2, 274.8] rectKind=1 skinned=False mesh='bone_album.mesh' mat='bone_album_group.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 0]
+[uidump-query]   #238 pass1(depth=Load) blend=3 z=0 rect=[792.8, 0.0, 487.2, 462.6] rectKind=1 skinned=False mesh='album_frame01.mesh' mat='album_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #241 pass1(depth=Load) blend=3 z=0 rect=[835.5, 0.0, 444.5, 404.7] rectKind=1 skinned=False mesh='album.mesh' mat='album.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[1, 1, 1, 1]
+[uidump-query]   #242 pass1(depth=Load) blend=7 z=0 rect=[187.6, 438.3, 1092.4, 133.7] rectKind=1 skinned=False mesh='header_song_bg_refraction01.mesh' mat='header_song_bg_refract.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.1804, 0.1804, 0.1804, 1]
+[uidump-query]   #243 pass1(depth=Load) blend=6 z=0 rect=[0.0, 454.5, 1280.0, 265.5] rectKind=1 skinned=False mesh='header_song_etched_art_color01.mesh' mat='header_song_bg_etched_art_color.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0, 0, 0.502, 0.7]
+[uidump-query]   #244 pass1(depth=Load) blend=3 z=0 rect=[0.0, 430.0, 1280.0, 290.0] rectKind=1 skinned=False mesh='header_song_etched_art01.mesh' mat='album_etched_art_shadow.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.007843, 0.007843, 0.007843, 0.5556]
+[uidump-query]   #245 pass1(depth=Load) blend=4 z=0 rect=[220.3, 438.3, 1059.7, 133.7] rectKind=1 skinned=False mesh='header_song_bg01.mesh' mat='header_song_bg.mat' panel='song_select' owner=''
+[uidump-query]         authored: showing=True order=-1 matColor=[0.8196, 0.8196, 0.8196, 0.15]
+[uidump-query]   #251 pass1(depth=Load) blend=1 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller_refract.mesh' mat='connect_controller_refract.mat' panel='overshell_dir' owner=''
+[uidump-query]   #252 pass1(depth=Load) blend=4 z=0 rect=[0.0, 180.0, 1280.0, 540.0] rectKind=1 skinned=False mesh='connect_controller02.mesh' mat='connect_controller02.mat' panel='overshell_dir' owner=''
+[uidump-query]   #253 pass1(depth=Load) blend=3 z=0 rect=[0.0, 0.0, 1280.0, 720.0] rectKind=1 skinned=False mesh='dimmer.mesh' mat='dimmer.mat' panel='overshell_dir' owner=''
+[uidump-query]   #278 pass1(depth=Load) blend=3 z=0 rect=[483.0, 205.4, 773.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot2' owner=''
+[uidump-query]   #279 pass1(depth=Load) blend=3 z=0 rect=[602.0, 511.9, 450.5, 208.1] rectKind=1 skinned=False mesh='mucha_pattern.mesh' mat='mucha_pattern01.mat' panel='slot2' owner=''
+[uidump-query]   #281 pass1(depth=Load) blend=3 z=0 rect=[657.7, 546.6, 316.8, 173.4] rectKind=1 skinned=False mesh='bottom_bg.mesh' mat='bottom_bg.mat' panel='slot2' owner=''
+[uidump-query]   #282 pass1(depth=Load) blend=3 z=0 rect=[779.0, 205.4, 501.0, 514.6] rectKind=1 skinned=False mesh='bg_shadow02.mesh' mat='bg_shadow03.mat' panel='slot3' owner=''
+[uidump-query]   #283 pass1(depth=Load) blend=3 z=0 rect=[860.5, 511.9, 419.5, 208.1] rectKind=1 skinned=False mesh='mucha_pattern.mesh' mat='mucha_pattern01.mat' panel='slot3' owner=''
+[uidump-query]   #285 pass1(depth=Load) blend=3 z=0 rect=[909.3, 546.6, 370.7, 173.4] rectKind=1 skinned=False mesh='bottom_bg.mesh' mat='bottom_bg.mat' panel='slot3' owner=''  <== LAST WRITER
+
+DONE
