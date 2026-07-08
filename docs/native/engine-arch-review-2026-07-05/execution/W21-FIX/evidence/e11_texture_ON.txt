@@ -1,0 +1,5 @@
+# E11 texture-integrity summary — arm=ON (RB3_HANDS_BINDFIX )
+# skin/dummy/naked white-cascade misses: 0
+# any char/main texture miss: 0
+# total couldn't-find (any): 0
+# --- subdir actions ---

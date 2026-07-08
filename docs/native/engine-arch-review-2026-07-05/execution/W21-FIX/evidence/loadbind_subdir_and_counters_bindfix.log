@@ -1,0 +1,60 @@
+[LOADBIND_COUNTERS] afterInstall member='main' calls=0 br0_charShared=0 br1_instrument=0 br2_boneMergeEntered=0 br3_boneMergeReplaced=0 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=519 br0_charShared=5 br1_instrument=0 br2_boneMergeEntered=492 br3_boneMergeReplaced=492 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=1042 br0_charShared=10 br1_instrument=0 br2_boneMergeEntered=984 br3_boneMergeReplaced=984 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=1592 br0_charShared=15 br1_instrument=0 br2_boneMergeEntered=1476 br3_boneMergeReplaced=1476 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=2105 br0_charShared=20 br1_instrument=0 br2_boneMergeEntered=1968 br3_boneMergeReplaced=1968 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=2627 br0_charShared=25 br1_instrument=0 br2_boneMergeEntered=2460 br3_boneMergeReplaced=2460 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=3132 br0_charShared=30 br1_instrument=0 br2_boneMergeEntered=2952 br3_boneMergeReplaced=2952 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=3637 br0_charShared=35 br1_instrument=0 br2_boneMergeEntered=3444 br3_boneMergeReplaced=3444 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=4144 br0_charShared=40 br1_instrument=0 br2_boneMergeEntered=3936 br3_boneMergeReplaced=3936 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=4665 br0_charShared=45 br1_instrument=0 br2_boneMergeEntered=4428 br3_boneMergeReplaced=4428 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=5214 br0_charShared=50 br1_instrument=0 br2_boneMergeEntered=4920 br3_boneMergeReplaced=4920 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_COUNTERS] afterInstall member='main' calls=5766 br0_charShared=55 br1_instrument=0 br2_boneMergeEntered=5412 br3_boneMergeReplaced=5412 boneMergeDirNull=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/char_shared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/char/main/shared/colorpalettes.milo' storedEmpty=0 baseAct=0 -> act=kReplace overrode=1 noshim=0 bindfix=1 sharedPalette=1 bindFixExempt=0
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
+[LOADBIND_SUBDIR] member='main' subdir='' storedFile='char/main/skeleton_unshared.milo' storedEmpty=0 baseAct=0 -> act=kMerge overrode=0 noshim=0 bindfix=1 sharedPalette=0 bindFixExempt=1
