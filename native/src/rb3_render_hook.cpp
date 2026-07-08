@@ -146,6 +146,42 @@ public:
                       std::strstr(bn, "thumb") || std::strstr(bn, "finger"));
     }
 
+    // RB3_HANDS_MITTEN (Wave-18 Lane M): band-only, hands-scoped mitten-fallback
+    // asset-name classifiers. The engine owns all mitten math; these answer only
+    // the RB3 name questions. BAND scope is enforced here by excluding crowd/extras
+    // mesh names (crowd rebind is load-bearing).
+    bool IsBandHandMesh(const char* nm) override {
+        if (!nm) return false;
+        if (std::strstr(nm, "crowd") || std::strstr(nm, "extra")) return false;
+        return std::strstr(nm, "hands_naked") || std::strstr(nm, "gloves") ||
+               std::strstr(nm, "fingernails");
+    }
+    // Hand-bone role. Wrist = the "bone_?-hand" chain root; runtime bone names
+    // carry a ".mesh"/".quat" suffix (e.g. "bone_R-hand.mesh"), while the prop
+    // bones are "bone_?-hand_fret/_mic/_pegs/..." — so the wrist is exactly
+    // "-hand" followed by '.' or end-of-string (NOT '_'). Finger bones are the
+    // index/middle/ring/pinky/thumb chains.
+    int HandBoneRole(const char* bn) override {
+        if (!bn) return 0;
+        const char* h = std::strstr(bn, "-hand");
+        if (h) {
+            char after = h[5]; // char right after "-hand"
+            if (after == '.' || after == '\0') return 1; // wrist
+        }
+        if (std::strstr(bn, "index") || std::strstr(bn, "middle") ||
+            std::strstr(bn, "ring") || std::strstr(bn, "pinky") ||
+            std::strstr(bn, "thumb") || std::strstr(bn, "finger"))
+            return 2; // finger
+        return 0;
+    }
+    // Hand-bone side from the "bone_L-" / "bone_R-" name convention.
+    int HandBoneSide(const char* bn) override {
+        if (!bn) return 0;
+        if (std::strstr(bn, "_L-")) return -1;
+        if (std::strstr(bn, "_R-")) return 1;
+        return 0;
+    }
+
     // Per-draw material-classification policy (W1.7 B7–B13). Each field is a
     // relocated RB3 asset-name classification from RB3BuildMaterialUniforms; the
     // engine keeps the uniform math and only applies WHICH class the hook returns,

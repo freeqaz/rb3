@@ -1,0 +1,6 @@
+[MITTEN_WRIST] mesh='gloves_resource.mesh' bone='bone_L-hand.mesh' side=L dir='char/char/main/skeleton_unshared.milo' rebound=1
+[MITTEN_WRIST] mesh='gloves_resource.mesh' bone='bone_R-hand.mesh' side=R dir='char/char/main/skeleton_unshared.milo' rebound=1
+[MITTEN_WRIST] mesh='gloves_skin.2.mesh' bone='bone_L-hand.mesh' side=L dir='char/char/main/skeleton_unshared.milo' rebound=1
+[MITTEN_WRIST] mesh='gloves_skin.2.mesh' bone='bone_R-hand.mesh' side=R dir='char/char/main/skeleton_unshared.milo' rebound=1
+[MITTEN_WRIST] mesh='hands_naked.mesh' bone='bone_L-hand.mesh' side=L dir='char/char/main/skeleton_unshared.milo' rebound=1
+[MITTEN_WRIST] mesh='hands_naked.mesh' bone='bone_R-hand.mesh' side=R dir='char/char/main/skeleton_unshared.milo' rebound=1

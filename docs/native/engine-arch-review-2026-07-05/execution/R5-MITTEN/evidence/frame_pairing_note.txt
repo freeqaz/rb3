@@ -1,0 +1,16 @@
+E1 MATCHED-FRAME PAIRS (default config TH 45/90), songMs-nearest across two runs:
+  OFF_burst_08 songMs=25665  <-> ON_burst_08 songMs=25696  (male guitarist, right)
+  OFF_burst_12 songMs=27558  <-> ON_burst_12 songMs=27568  (band wide)
+  OFF_burst_23 songMs=32554  <-> ON_burst_23 songMs=32534  (male singer close-up, mic hand)
+  OFF_burst_45 songMs=42545  <-> ON_burst_45 songMs=42484  (FEMALE singer close-up, drumstick hand)
+  OFF_burst_50 songMs=44910  <-> ON_burst_50 songMs=44821  (band wide, female + male)
+
+DETERMINISM CAVEAT (why these are songMs-matched pairs, not a pixel-diff gate):
+  The band render is NON-DETERMINISTIC across process runs (director camera cuts +
+  per-member clip phase). Control: two independent OFF runs diff 48-93% of pixels
+  (median 85%) at nearest-songMs pairs -- HIGHER than any OFF-vs-ON signal. So a
+  cross-run pixel diff CANNOT isolate the mitten's effect; the E1 judgment is VISUAL
+  on framing/pose-matched pairs (the Wave-16 method). Per R5-HANDS-ENDGAME/VERDICT
+  par.8, bone-world/pixel gates are blind to this class; the valid gates are
+  SKINNED-OUTPUT (trigger rate) + VISUAL (these pairs).
+

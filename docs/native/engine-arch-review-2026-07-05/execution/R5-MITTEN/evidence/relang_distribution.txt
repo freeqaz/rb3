@@ -1,0 +1,38 @@
+relAng-to-wrist distribution (default-config probe run, n=22572 throttled samples)
+  min=0.0 p10=6.0 p50=21.8 p90=62.0 p99=108.8 max=134.1
+  ramp TH_LO=45 TH_HI=90 deg; measured trigger rate 16.4% of finger-draws
+per-bone max relAng-to-wrist:
+  bone_L-index01.mesh            max=45.4
+  bone_L-index02.mesh            max=70.8
+  bone_L-index03.mesh            max=115.0
+  bone_L-middlefinger01.mesh     max=62.1
+  bone_L-middlefinger02.mesh     max=49.5
+  bone_L-middlefinger03.mesh     max=98.2
+  bone_L-pinky-base.mesh         max=13.0
+  bone_L-pinky01.mesh            max=70.4
+  bone_L-pinky02.mesh            max=109.1
+  bone_L-pinky03.mesh            max=134.1
+  bone_L-ringfinger-base.mesh    max=13.0
+  bone_L-ringfinger01.mesh       max=72.5
+  bone_L-ringfinger02.mesh       max=67.6
+  bone_L-ringfinger03.mesh       max=118.4
+  bone_L-thumb01.mesh            max=44.0
+  bone_L-thumb02.mesh            max=59.6
+  bone_L-thumb03.mesh            max=101.0
+  bone_R-index01.mesh            max=76.2
+  bone_R-index02.mesh            max=54.9
+  bone_R-index03.mesh            max=127.4
+  bone_R-middlefinger01.mesh     max=107.9
+  bone_R-middlefinger02.mesh     max=60.0
+  bone_R-middlefinger03.mesh     max=84.2
+  bone_R-pinky-base.mesh         max=13.0
+  bone_R-pinky01.mesh            max=103.6
+  bone_R-pinky02.mesh            max=53.8
+  bone_R-pinky03.mesh            max=93.3
+  bone_R-ringfinger-base.mesh    max=13.0
+  bone_R-ringfinger01.mesh       max=96.2
+  bone_R-ringfinger02.mesh       max=65.4
+  bone_R-ringfinger03.mesh       max=74.5
+  bone_R-thumb01.mesh            max=52.4
+  bone_R-thumb02.mesh            max=59.6
+  bone_R-thumb03.mesh            max=80.4
