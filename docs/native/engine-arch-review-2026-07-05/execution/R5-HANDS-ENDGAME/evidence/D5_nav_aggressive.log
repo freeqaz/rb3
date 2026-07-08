@@ -1,0 +1,57 @@
+no D2 dolphin running (userdir /tmp/dolphin-d2 )
+[nav] booting DirectoryBlob /home/free/tmp/wave17-d2/disc/sys/main.dol (pipe input /tmp/dolphin-d2/Pipes/rb3ctl)
+[nav] game inited (~36s): TheBandDirector=0x92c24a3c CharBoneVT=992
+[nav] baseline: drivers=12 resident_players=0 active=0 (expect 0 = D4 red baseline)
+[nav] pipe open; driving nav schedule…
+[nav] step  0 tap=START   drivers=12 players=0 active=0
+[nav] step  1 tap=START   drivers=12 players=0 active=0
+[nav] step  2 tap=START   drivers=12 players=0 active=0
+[nav] step  3 tap=A       drivers=12 players=0 active=0
+[nav] step  4 tap=A       drivers=12 players=0 active=0
+[nav] step  5 tap=D_DOWN  drivers=12 players=0 active=0
+[nav] step  6 tap=A       drivers=12 players=0 active=0
+[nav] step  7 tap=A       drivers=12 players=0 active=0
+[nav] step  8 tap=A       drivers=12 players=0 active=0
+[nav] step  9 tap=A       drivers=12 players=0 active=0
+[nav] step 10 tap=START   drivers=12 players=0 active=0
+[nav] step 11 tap=A       drivers=18 players=0 active=0
+[nav] step 12 tap=A       drivers=18 players=0 active=0
+[nav] step 13 tap=D_DOWN  drivers=18 players=0 active=0
+[nav] step 14 tap=A       drivers=18 players=0 active=0
+[nav] step 15 tap=A       drivers=18 players=0 active=0
+[nav] step 16 tap=START   drivers=18 players=0 active=0
+[nav] step 17 tap=A       drivers=18 players=0 active=0
+[nav] step 18 tap=A       drivers=18 players=0 active=0
+[nav] step 19 tap=D_DOWN  drivers=18 players=0 active=0
+[nav] step 20 tap=A       drivers=18 players=8 active=0
+[nav] step 21 tap=A       drivers=18 players=8 active=0
+[nav] step 22 tap=START   drivers=18 players=8 active=0
+[nav] step 23 tap=A       drivers=18 players=8 active=0
+[nav] step 24 tap=A       drivers=18 players=8 active=0
+[nav] step 25 tap=D_DOWN  drivers=18 players=8 active=0
+[nav] step 26 tap=A       drivers=18 players=0 active=0
+[nav] step 27 tap=A       drivers=18 players=0 active=0
+[nav] step 28 tap=START   drivers=12 players=0 active=0
+[nav] step 29 tap=A       drivers=12 players=8 active=0
+[nav] step 30 tap=A       drivers=12 players=8 active=0
+[nav] step 31 tap=D_DOWN  drivers=12 players=8 active=0
+[nav] step 32 tap=A       drivers=12 players=8 active=0
+[nav] step 33 tap=A       drivers=12 players=8 active=0
+[nav] step 34 tap=A       drivers=12 players=8 active=0
+[nav] step 35 tap=A       drivers=12 players=8 active=0
+[nav] step 36 tap=A       drivers=12 players=8 active=0
+[nav] step 37 tap=A       drivers=12 players=8 active=0
+[nav] step 38 tap=A       drivers=12 players=8 active=0
+[nav] step 39 tap=A       drivers=12 players=8 active=0
+[nav] step 40 tap=A       drivers=12 players=8 active=0
+[nav] step 41 tap=A       drivers=12 players=8 active=0
+[nav] step 42 tap=A       drivers=12 players=8 active=0
+[nav] step 43 tap=A       drivers=12 players=8 active=0
+[nav] step 44 tap=A       drivers=12 players=8 active=0
+[nav] step 45 tap=A       drivers=12 players=8 active=0
+[nav] step 46 tap=A       drivers=12 players=8 active=0
+[nav] step 47 tap=A       drivers=12 players=8 active=0
+[nav] step 48 tap=A       drivers=12 players=8 active=0
+[nav] step 49 tap=A       drivers=12 players=8 active=0
+wrote /tmp/d5-nav.json
+VERDICT: nav exhausted schedule WITHOUT live vignette drivers (box exhaustion candidate; see nav_log).

@@ -1,0 +1,13 @@
+[cn] cold boot
+[nav] game inited (~36s): TheBandDirector=0x92c24c1c CharBoneVT=992
+[cn] init census: (0, 12, 0) baseline fingers pinned at mid01_02= 24.37
+[cn] liveness START#0 census=(0, 12, 0)
+[cn] liveness START#1 census=(0, 18, 0)
+[cn] INPUT REGISTERS ON THIS BOOT: True
+[cn] seq0 D_DOWN  census=(0, 18, 0) dΔ=0.00 mid01_02=24.37
+[cn] seq1 A       census=(0, 18, 0) dΔ=0.00 mid01_02=24.37
+[cn] seq2 A       census=(0, 18, 8) dΔ=0.00 mid01_02=24.37
+[cn] seq3 A       census=(0, 18, 8) dΔ=0.00 mid01_02=24.37
+[cn] seq4 A       census=(0, 18, 8) dΔ=0.00 mid01_02=24.37
+[cn] 20s end dwell, sampling motion
+[cn] MAX finger span end dwell: 0 => STATIC

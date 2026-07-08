@@ -1,0 +1,75 @@
+{
+ "lane": "D5",
+ "key": "R5-HANDS-ENDGAME",
+ "wave": 18,
+ "session_task": "#102",
+ "spec": "execution/R5-HANDS-ENDGAME/VERDICT.md \u00a74 (D5 articulated Wii capture; gates G-D5-1..4 + G5')",
+ "verdict": "BOX EXHAUSTED (priced). No articulated Wii capture obtained. Per VERDICT \u00a74 branch table, 'D5 box exhausted, no articulated capture \u2192 GT-D CLOSURE \u00a73.4 (pre-authorized)'. This lane REPORTS the priced exhaustion; the coordinator executes closure (not declared here).",
+ "boot": {
+  "result": "GO",
+  "detail": "D2 patched-disc Bank-8 debug DOL under retail apploader boots to ui/overshell in ~36s; Bank-8 map valid by construction (992 __vt__8CharBone hits, TheTaskMgr=0x80bb9f98, TheBandDirector live). Reproduces D2/D4.",
+  "tool": "milo-trace tools/wii_bone_dirboot.py boot-check"
+ },
+ "input_injection": {
+  "result": "WORKS",
+  "mechanism": "Dolphin 'Pipe' ControllerInterface: emulated Wii Remote (WiimoteNew.ini Source=1) mapped to FIFO <userdir>/Pipes/rb3ctl; PRESS/RELEASE <token> written to the FIFO. Cribbed from the concurrent r1b lane's config + rb3 docs/native/c8-ground-truth-2026-07-01/t2-dolphin-oracle.md.",
+  "proof": "On 3 independent clean boots, taps demonstrably change shell state: START tap \u2192 CharDriver instances 12\u219218; A taps \u2192 resident playerN CharClips 0\u21928. Input is registered by the running instance (not a no-op).",
+  "landed_in": "milo-trace tools/wii_bone_dirboot.py (setup_input/Pad/cmd_nav; `nav` subcommand)"
+ },
+ "articulation": {
+  "result": "NONE reachable via blind pipe navigation",
+  "oracle": "oracle-INDEPENDENT bone-motion test (does NOT rely on the CharClipDriver census): capture the hand chain repeatedly and measure per-finger relRot magnitude span. Live vignette \u21d2 fingers curl \u21d2 span \u226515\u00b0 (G-D5-1). Static/bind \u21d2 span \u22480\u00b0.",
+  "measurement": {
+   "finger_relRot_pinned_deg": {
+    "L-hand->L-middlefinger01": 5.4,
+    "L-middlefinger01->L-middlefinger02": 24.37,
+    "L-middlefinger02->L-middlefinger03": 17.73,
+    "L-hand->L-ringfinger01": 7.43,
+    "L-ringfinger01->L-ringfinger02": 26.13,
+    "L-ringfinger02->L-ringfinger03": 5.74
+   },
+   "identity_to_D2_D4": "These are BYTE-IDENTICAL to D2_wii_bones.json / D4 stored Wii chain (D4_findings.md slot2 Wii |relRot|: mid01\u219202=24.37, mid02\u219203=17.73, ring01\u219202=26.13, hand\u2192mid01=5.40, hand\u2192ring01=7.43, ring02\u219203=5.74). The reachable Wii band hand == the D2/D4 SETTLED pose \u2014 no new pose obtained.",
+   "span_dwell_11s": 0.0,
+   "span_dwell_20s": 0.0,
+   "span_paired_1p5s": 0.0,
+   "taps_attempted": "~60 across 3 clean boots (aggressive 50-tap schedule + two precise documented short sequences)"
+  }
+ },
+ "census": {
+  "result": "0 active playerN CharClipDrivers at EVERY reachable state",
+  "detail": "Reproduces the D4 red baseline (D4_wii_drivers.json active_player_clip_drivers=0) at overshell AND at the loaded-band state. The census is a pointer-chase heuristic and unvalidated on a positive (OPTIONS \u00a74 lint 3) \u2014 but the exhaustion conclusion does NOT rest on it: the oracle-independent bone-motion test (0\u00b0 span) is decisive that the hands genuinely do not move."
+ },
+ "reachable_states": "overshell family only. Best reached: 18 CharDrivers / 8 resident playerN clips \u2014 IDENTICAL to D4's frozen ui/overshell census (18/8/0-active). The guest-profile \u2192 'Use Guest? YES' \u2192 nav-help CONTINUE prompts could not be cleared reliably BLIND (Null video), so main_hub (band-lineup vignette) was never cleanly entered; the 8 resident clips are the band pre-loaded BEHIND the un-cleared prompt flow, not a playing hub vignette.",
+ "gates": {
+  "G-D5-1_capture_validity": "FAIL (this is the correct RED-ARM behavior): no member with a LIVE playerN CharClipDriver; 0 matched frames; mr-pair swing 0\u00b0 (need \u226515\u00b0). The D5 harness FAILS LOUDLY on the frozen/static state exactly as G-D5-1's fail-red demo mandates (D4_wii_drivers.json 0-active IS the red baseline). Instrument is behaving as designed; the world-state is absent.",
+  "G-D5-2_noise_band": "N/A \u2014 no held-(clip,frame) captures exist to derive \u03b5_noise.",
+  "G-D5-3_join_validity": "N/A \u2014 no new Wii capture to re-run the join/red-team on.",
+  "G-D5-4_decision_mechanicalness": "Branch is GT-D by the pre-registered fallback row ('D5 box exhausted, no articulated capture \u2192 CLOSURE \u00a73.4'); no D5 JSON to feed the classifier.",
+  "G5prime_palette_separation": "Out of scope for this lane (a GT-A-only forensic stretch over R2 palette dumps)."
+ },
+ "priced_paths_forward": {
+  "cheap_blind_pipe_nav": {
+   "status": "EXHAUSTED",
+   "note": "This is the exact path the VERDICT \u00a73 assumed cheap ('the ONLY missing piece is a Wii capture while a hand-animating clip driver is live'). Built + validated the pipe-nav instrument; it reaches only the overshell family, where the band is pre-loaded but frozen in bind/settled pose. No blind-reachable state animates the hands."
+  },
+  "expensive_visual_gameplay_nav": {
+   "status": "FEASIBLE on this box but exceeds the D5 ~1-lane-wave hard box",
+   "requirements": "Xvfb + a GPU video backend (Vulkan on the box's render nodes) + xdotool F9 screenshots (all present) to navigate WITH SIGHT; a Wii-Remote GUITAR EXTENSION mapping (to START a song); and a deliberate ~8-screen gameplay sequence (profile\u2192PLAY NOW\u2192QUICKPLAY\u2192CHOOSE SONGS\u2192song\u2192instrument\u2192difficulty\u2192gameplay, per t2-dolphin-oracle.md \u00a72). Gameplay is the reliable finger-articulation source. This is a dedicated lane-wave build-out; it would still be the Bank-8 map-valid boot (this lane's unique value).",
+   "concurrent_overlap": "The r1b lane is running the RETAIL disc blind (video_backend=Null) + GDB stub, bare Wiimote (no guitar) \u2014 it faces the SAME blind-nav wall and has not produced an articulated capture either."
+  },
+  "main_hub_vignette": {
+   "status": "UNCONFIRMED reachable/animating on the debug boot",
+   "note": "Even if main_hub were cleanly entered, it is unverified that the debug-DOL hub band finger-articulates (vs idle body sway only). Gameplay remains the surest articulation source."
+  }
+ },
+ "reproduction": {
+  "cmds": [
+   "cd /home/free/code/milohax/milo-trace",
+   "tools/wii_bone_dirboot.py boot-check           # GO: Bank-8 map live",
+   "tools/wii_bone_dirboot.py drivers --out /tmp/drv.json   # 0 active (D4 red baseline)",
+   "tools/wii_bone_dirboot.py nav --out /tmp/nav.json       # pipe-input nav; exhausts w/o live drivers",
+   "# oracle-independent articulation check: two `bones` dumps N s apart \u2192 0\u00b0 finger span"
+  ],
+  "note": "Disc dir /home/free/tmp/wave17-d2/disc (out of repo; provenance D2_boot_apploader_patch.md). Instance-scoped by -u /tmp/dolphin-d2; pgid-only teardown; r1b (/tmp/r1b-user) never touched."
+ }
+}

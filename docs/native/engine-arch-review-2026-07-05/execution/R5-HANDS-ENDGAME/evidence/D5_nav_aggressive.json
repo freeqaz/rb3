@@ -1,0 +1,366 @@
+{
+ "side": "wii",
+ "cmd": "nav",
+ "build": "bank8_debug_dol_on_retail_disc(patched_apploader)",
+ "baseline_active": 0,
+ "reached_live_drivers": false,
+ "active_drivers": [],
+ "nav_log": [
+  {
+   "tap": null,
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 0,
+   "tap": "START",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 1,
+   "tap": "START",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 2,
+   "tap": "START",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 3,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 4,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 5,
+   "tap": "D_DOWN",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 6,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 7,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 8,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 9,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 10,
+   "tap": "START",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 11,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 12,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 13,
+   "tap": "D_DOWN",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 14,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 15,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 16,
+   "tap": "START",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 17,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 18,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 19,
+   "tap": "D_DOWN",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 20,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 8
+  },
+  {
+   "step": 21,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 8
+  },
+  {
+   "step": 22,
+   "tap": "START",
+   "active": 0,
+   "drivers": 18,
+   "players": 8
+  },
+  {
+   "step": 23,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 8
+  },
+  {
+   "step": 24,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 8
+  },
+  {
+   "step": 25,
+   "tap": "D_DOWN",
+   "active": 0,
+   "drivers": 18,
+   "players": 8
+  },
+  {
+   "step": 26,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 27,
+   "tap": "A",
+   "active": 0,
+   "drivers": 18,
+   "players": 0
+  },
+  {
+   "step": 28,
+   "tap": "START",
+   "active": 0,
+   "drivers": 12,
+   "players": 0
+  },
+  {
+   "step": 29,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 30,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 31,
+   "tap": "D_DOWN",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 32,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 33,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 34,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 35,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 36,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 37,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 38,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 39,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 40,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 41,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 42,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 43,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 44,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 45,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 46,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 47,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 48,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  },
+  {
+   "step": 49,
+   "tap": "A",
+   "active": 0,
+   "drivers": 12,
+   "players": 8
+  }
+ ]
+}
