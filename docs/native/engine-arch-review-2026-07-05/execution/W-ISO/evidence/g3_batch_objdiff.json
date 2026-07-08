@@ -1,0 +1,13 @@
+{
+  "gate": "M5 G3 — Wii/MWCC match-build inertness of the four #ifdef HX_NATIVE guards",
+  "date": "2026-07-08",
+  "method": "batch_objdiff on the four EDITED functions (current tree, guards present) vs committed report.json baseline. MWCC never defines HX_NATIVE, so the guards are invisible to the match build; match% must be UNCHANGED from baseline (not necessarily 100% — these are pre-existing partial matches).",
+  "results": [
+    {"symbol": "__ct__14CharClipDriverFPQ23Hmx6ObjectP8CharClipifP14CharClipDriverffb", "unit": "main/system/char/CharClipDriver", "with_guard_pct": 99.46, "baseline_pct": 99.46, "delta": 0.0, "inert": true},
+    {"symbol": "OnIterateFrac__10WorldCrowdFP9DataArray", "unit": "main/system/world/Crowd", "with_guard_pct": 96.90, "baseline_pct": 96.90, "delta": 0.0, "inert": true},
+    {"symbol": "ComputeScore__12CharInterestFRC7Vector3RC7Vector3RC7Vector3fib", "unit": "main/system/char/CharInterest", "with_guard_pct": 92.25, "baseline_pct": 92.25, "delta": 0.0, "inert": true},
+    {"symbol": "PickRandomPreset__18LightPresetManagerF6Symbol", "unit": "main/system/world/LightPresetManager", "with_guard_pct": 99.79, "baseline_pct": 99.79, "delta": 0.0, "inert": true}
+  ],
+  "verdict": "PASS — every touched unit's edited function is byte-identical to baseline (delta 0.0 on all four). The batch_objdiff REAL_DIFF/BORDERLINE labels reflect the functions' pre-existing residual mismatch vs the target (they were never 100%), NOT the guard. No guard leaked out of #ifdef HX_NATIVE — a fail-red here would show as a match% DELTA from baseline, which is 0.0 on all four.",
+  "fail_red": "structural: a guard leaking outside #ifdef HX_NATIVE would (a) fail the MWCC build (batch_objdiff builds first) or (b) shift the match% from baseline. Neither occurred."
+}

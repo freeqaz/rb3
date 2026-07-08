@@ -1,0 +1,31 @@
+# W-ISO M6 — flag-OFF inertness + regression gates (AM-6.3: "inert", not byte-identical;
+# the native binary compiles in the guard ctor, so byte-identity is M5's Wii property)
+# Date: 2026-07-08 (worktree .claude/worktrees/w-iso, clean-engine .wt-w-iso @beb89e5)
+
+== [LOADDET] inertness on a seam-OFF boot ==
+Boot: RB3_FIXED_CLOCK=1 (only) via drawlog-golden --fixed-clock — RB3_LOAD_DETERMINISM NOT set,
+so the seam is OFF: RB3LoadDetStream() returns NULL, sDetRedirect stays NULL, the four guard
+ctors are a no-op save/restore (one predicted-not-taken branch each), RB3ReseedGRandAtAnchor
+early-returns.
+  [LOADDET] lines in seam-OFF boot log: 0
+  [LOADDET] reseed/redirect isolation lines: 0
+=> zero isolation effect flag-OFF.
+
+== drawlog-golden (flag-OFF, canonical-order, GREEN guarded binary) ==
+  PASS (canonical-order): live capture matches golden (792 draws)
+  (268 known-residual divergences within bound, non-blocking — pre-existing, not from W-ISO)
+  DRAWLOG_EXIT=0
+=> the four guards do NOT perturb the 792-canonical draw log with the seam off.
+
+== rb3-tests (flag-OFF gtest convergence suite, GREEN guarded binary, shares rb3-native sources) ==
+  [==========] 123 tests from 23 test suites ran.
+  [  PASSED  ] 116 tests.
+  [  SKIPPED ] 7 tests  (real-path fixtures not dumped — pre-existing, unrelated to W-ISO)
+  [  FAILED  ] 0 tests.
+  Process exit 139 = SIGSEGV at "Global test environment tear-down" AFTER the summary printed
+  — the known rb3-tests engine-singleton teardown artifact (documented pre-existing), not a test
+  failure and unreachable by a flag-OFF-inert RAII guard. 0 FAIL is the gate; met.
+
+VERDICT: flag-OFF inert confirmed on all three axes (LOADDET zero, drawlog 792 match, rb3-tests
+0 FAIL). Combined with M5 G3 (Wii match build byte-identical), the four guards are inert on every
+non-seam path.

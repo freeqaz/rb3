@@ -49,15 +49,62 @@ include needed.
 
 ---
 
-## Progress
+## Progress — ALL MILESTONES COMPLETE
 
-- [ ] M1 — capture_lints.py + selftest
-- [ ] M2 — wire white_regrade.py
-- [ ] PREGUARD RED (N=10, pre-guard binary)
-- [ ] M3 — four isolation guards
-- [ ] M4 — EXIT gate GREEN (stream 10/10)
-- [ ] M5 — G3 batch_objdiff
-- [ ] M6 — flag-OFF inert + rb3-tests + drawlog
+- [x] M1 — capture_lints.py + selftest 4/4 (commit `14f96575`)
+- [x] M2 — wire white_regrade.py (commit `8ee9f6bd`; mechanical exit met — F2+F10 refusals fire)
+- [x] PREGUARD RED — N=30, stream **29/30 RED** (evidence/iso_ledger_n10_PREGUARD.json)
+- [x] M3 — four isolation guards (commit `801faf3c`; worktree GREEN + main repo identical)
+- [x] M4 — EXIT GREEN: N=30 stream **30/30**, all deltas 0 (evidence/iso_ledger_n10.json)
+- [x] M5 — G3 batch_objdiff: delta 0.0 vs baseline on all four (Wii-inert). evidence/g3_batch_objdiff.json
+- [x] M6 — flag-OFF inert: 0 [LOADDET] seam-OFF; drawlog-golden 792 match; rb3-tests 116 PASS/0 FAIL.
+      evidence/m6_default_boot.txt
+
+## EXIT RESULT (BINDING) — A/B decisive
+
+Clean-engine worktree A/B, N=30/arm, same eng_hot seam regime, binaries differ ONLY by the four guards:
+
+| arm | guards | ledger stream axis | per-boot postAnchorDelta |
+|---|---|---|---|
+| PREGUARD | absent | **29/30 (RED)** | 29×0, 1×1 (distinct=[0,1], NOT invariant) |
+| GREEN | present | **30/30 (PASS)** | 30×0 (boot-invariant) |
+
+The PREGUARD divergent boot's in-window gRand-reaching draws attribute to
+`CharInterest::ComputeScore:172` (4) + `LightPresetManager::PickRandomPreset:286` (1) — two of
+the four guarded consumers. **R-A residual CLEAN** (attributed post-anchor PCs MINUS the union of
+9 isolated sites = my 4 + R4-M2's 5 = empty; no fifth consumer, no R-A round needed, AM-3
+subtraction applied). The fail-red is the PREGUARD binary reproducing stream < 30/30; the seam-OFF
+alternate fail-red was struck per AM-2b. The Wave-18 WHITE re-grade VOID precondition (eng_hot
+OFF-arm ledger stream 10/10) is now SATISFIABLE.
+
+Note on divergence rarity (ASSUMPTION-D borne out): the stream divergence is rare/timing-dependent
+(~1/30 boots land venue draws in [anchor,anchor+300]); N=10 under-samples it (a fresh N=10 sample
+caught 0 divergent boots → misleading 10/10), so both arms were run at N=30 for a reliable RED. The
+guard MECHANISM is deterministic (sDetRedirect!=NULL → draw bypasses gRand); the statistical A/B is
+the load-bearing proof.
+
+## Commits
+- rb3 `14f96575` — M1 capture_lints.py
+- rb3 `8ee9f6bd` — M2 white_regrade.py wiring
+- rb3 `801faf3c` — M3 four isolation guards
+- rb3 `<this commit>` — iso_ledger_gate.py + all evidence + STATUS
+- engine: NONE (rb3-side only; pin `beb89e5` NOT bumped)
+
+## KEY FINDING — the stream divergence is RARE (regime detail, not a lane blocker)
+
+The eng_hot OFF-arm stream-axis divergence is timing-dependent and RARE: only ~1/10 boots
+land the four venue consumers' draws inside the fixed post-anchor window `[anchor, anchor+300]`
+(committed baseline `wr_n10-ledger-off.json`: stream **1/10**, per-boot deltas
+`[16,0,0,0,0,0,0,0,0,0]`; reference boot = boots[0], so the axis reds only when the sample
+contains MIXED deltas). A fresh N=10 PREGUARD sample happened to catch **zero** divergent boots
+(all deltas 0 → a misleading 10/10). This is exactly ASSUMPTION-D / the rare-divergence trap the
+plan flagged. Mitigation: capture **N=30** for both arms so the ~10% event reliably appears in
+PREGUARD (RED) while the guarded GREEN arm forces every delta to 0 (redirect is deterministic:
+`sDetRedirect != NULL` → draw bypasses gRand). The guard mechanism is deterministic; the
+STATISTICAL A/B (PREGUARD@30 mixed-delta RED vs GREEN@30 all-zero) is the load-bearing proof.
+
+Guard-tag string check confirms the A/B binaries differ exactly by the four guards
+(GREEN has charclip/crowditer/charinterest 0→1; PREGUARD backup lacks them).
 
 ## Gate-change requests to Lane F/T1 files (coordinator folds)
 _(none yet)_
