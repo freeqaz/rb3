@@ -281,20 +281,37 @@ void RB3HttpServer::HandleDrawLog(Command& cmd) {
             const RB3DrawProv& p = prov[i];
             const char* dl = p.passDepthLoadOp == 0 ? "Clear"
                            : p.passDepthLoadOp == 1 ? "Load" : "none";
+            // T2-WORLDROI (Wave 19): the prov object stays OPEN here (closing brace
+            // appended after the optional boneRects, per plan B7.2) so rectKind==3
+            // skinned rows carry per-bone screen sub-rects + the bind-pose fallback
+            // count without disturbing every other row's field order.
             snprintf(buf, sizeof(buf),
                      ",\n      \"prov\": { \"mesh\":\"%s\", \"mat\":\"%s\", \"cam\":\"%s\", "
                      "\"trans\":\"%s\", \"panel\":\"%s\", \"owner\":\"%s\", "
                      "\"matColor\":[%.4g,%.4g,%.4g,%.4g], \"boundColor\":[%.4g,%.4g,%.4g,%.4g], "
                      "\"rect\":[%.1f,%.1f,%.1f,%.1f], \"rectKind\":%u, "
-                     "\"pass\":%u, \"passDepthLoad\":\"%s\" }",
+                     "\"pass\":%u, \"passDepthLoad\":\"%s\", \"boneFallback\":%d",
                      RB3JsonEscape(p.meshName).c_str(), RB3JsonEscape(p.matName).c_str(),
                      RB3JsonEscape(p.camName).c_str(), RB3JsonEscape(p.transParent).c_str(),
                      RB3JsonEscape(p.scopePanel).c_str(), RB3JsonEscape(p.scopeOwner).c_str(),
                      p.matColor[0], p.matColor[1], p.matColor[2], p.matColor[3],
                      p.boundColor[0], p.boundColor[1], p.boundColor[2], p.boundColor[3],
                      p.rect[0], p.rect[1], p.rect[2], p.rect[3], (unsigned)p.rectKind,
-                     (unsigned)p.passIdx, dl);
+                     (unsigned)p.passIdx, dl, p.boneFallback);
             json += buf;
+            if (p.rectKind == 3 && !p.boneRects.empty()) {
+                json += ", \"boneRects\":[";
+                for (size_t k = 0; k < p.boneRects.size(); ++k) {
+                    const RB3ProvBoneRect& br = p.boneRects[k];
+                    snprintf(buf, sizeof(buf),
+                             "%s{\"bone\":\"%s\",\"rect\":[%.1f,%.1f,%.1f,%.1f]}",
+                             k ? "," : "", RB3JsonEscape(br.bone).c_str(),
+                             br.rect[0], br.rect[1], br.rect[2], br.rect[3]);
+                    json += buf;
+                }
+                json += "]";
+            }
+            json += " }";                   // close prov object
         }
         json += " }";                   // close draw (byte-identical to old "] }" when no prov)
     };
