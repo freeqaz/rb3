@@ -696,8 +696,31 @@ void BandCharacter::Poll() {
 #ifdef HX_NATIVE
             if (banim) {
                 static int frameCt = 0;
-                // throttle: print at most every ~30 frames to keep logs readable
-                bool emit = (frameCt++ % 30) == 0;
+                // W23-FOREARM (A7): the old ((frameCt++ % 30)==0) time-throttle MISSES
+                // the sparse in-song band-closeup camera-cut frames where bone_R-foreArm
+                // flings to world y ~ +182 (the exploded arm/hand spike-fan). Amend to
+                // EVENT-TRIGGERED emission so we catch the driver identity AT the fling:
+                // emit when the probed bone's world-y exceeds BAND_ANIM_YTHRESH (default
+                // 50) OR the bone moved a large amount this Poll. A rare heartbeat
+                // (%120) keeps the log alive on quiet frames so absence-of-event is
+                // legible. Probe-only, HX_NATIVE + BAND_ANIM_PROBE env-gated => inert by
+                // default (drawlog-golden proves byte-identical with the env unset).
+                int frameNo = frameCt++;
+                Vector3 bonePost(0, 0, 0);
+                if (probeBone) bonePost = probeBone->WorldXfm().v;
+                float moved = 0.0f;
+                {
+                    Vector3 d;
+                    Subtract(bonePost, bonePre, d);
+                    moved = Length(d);
+                }
+                float yThresh = 50.0f;
+                const char *ytEnv = getenv("BAND_ANIM_YTHRESH");
+                if (ytEnv && ytEnv[0]) yThresh = (float)atof(ytEnv);
+                bool eventHi = probeBone &&
+                    (bonePost.y > yThresh || bonePre.y > yThresh || moved > yThresh);
+                bool heartbeat = (frameNo % 120) == 0;
+                bool emit = eventHi || heartbeat;
                 if (emit) {
                     const char *myName = Name() ? Name() : "?";
                     CharDriver *drv = mDriver;
@@ -705,19 +728,13 @@ void BandCharacter::Poll() {
                     CharClip *clip = drv ? drv->FirstPlayingClip() : nullptr;
                     CharDriver *u454 = unk454;
                     CharClip *u454clip = u454 ? u454->FirstPlayingClip() : nullptr;
-                    Vector3 bonePost(0, 0, 0);
-                    if (probeBone) bonePost = probeBone->WorldXfm().v;
-                    float moved = 0.0f;
-                    {
-                        Vector3 d;
-                        Subtract(bonePost, bonePre, d);
-                        moved = Length(d);
-                    }
                     fprintf(stderr,
-                        "[BAND_ANIM] member='%s' grp='%s' mDriver=%p clipType='%s' "
+                        "[BAND_ANIM] evt=%s frame=%d ythresh=%.1f "
+                        "member='%s' grp='%s' mDriver=%p clipType='%s' "
                         "FirstPlaying=%p clip='%s' | unk454=%p u454clip='%s' bones=%p | "
                         "bonePtr=%p "
                         "bone='%s' pre=(%.4f,%.4f,%.4f) post=(%.4f,%.4f,%.4f) moved=%.6f\n",
+                        eventHi ? "HI" : "beat", frameNo, yThresh,
                         myName, mGroupName[0] ? mGroupName : "(none)", (void *)drv,
                         drv ? drv->ClipType().Str() : "?", (void *)fp,
                         clip ? (clip->Name() ? clip->Name() : "?") : "(none)",
