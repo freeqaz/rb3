@@ -5,13 +5,16 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 389  
-**By class:** diagnostic=1, feature=14, perf=9, probe=119, tuning=2, unknown=148, workaround=96  
+**Total flags:** 396  
+**By class:** diagnostic=1, feature=14, perf=9, probe=123, tuning=2, unknown=151, workaround=96  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 73
 
 | name | class | default | owner | faithful-status | sites |
 |---|---|---|---|---|---|
+| `BAND_ANIM_ANAT` | unknown | unknown | unclassified | n/a | 1 |
 | `BAND_ANIM_BONE` | probe | off | char/anim | n/a: names the bone BAND_ANIM_PROBE samples (defaults to bone_R-upperArm.mesh); only read when BAND_ANIM_PROBE is active, never alters Poll() [BandCharacter.cpp:507] | 1 |
+| `BAND_ANIM_CHAIN` | unknown | unknown | unclassified | n/a | 1 |
+| `BAND_ANIM_CHAIN_HZ` | unknown | unknown | unclassified | n/a | 1 |
 | `BAND_ANIM_PROBE` | probe | off | char/anim | n/a: per-frame trace of the band animation chain (driver presence, playing clip, named bone worldPos pre/post Character::Poll) to localize why the on-stage skeleton fails to move; substring-matches a member's dir name or '*' [BandCharacter.cpp:497] | 1 |
 | `BAND_ANIM_YTHRESH` | probe | off | skinning/char | probe: Wave-23 FOREARM discovery — world-y threshold (default 50) for the event-triggered BAND_ANIM_PROBE emit; inert unless BAND_ANIM_PROBE set | 1 |
 | `BONE_CLEAR_DBG` | probe | off | skinning | n/a: logs any CopyBones(0) that wipes a non-empty bone list off a mesh, to catch post-load bone clears [Mesh.cpp:1156] | 1 |
@@ -35,9 +38,13 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `CHAR_DBG` | probe | off | render/char-material | n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-because-unbound vs RTT-composite-never-painted); game BandDirector.cpp logs the re-run LoadCharacters() call (aliases VENUE_DBG) [RB3MaterialBinder.cpp:292; BandDirector.cpp:713] | 2 |
 | `CHAR_PROBE_DUMP` | unknown | off | unclassified | n/a | 1 |
 | `CLOCK_DBG` | probe | off | ui/hud | n/a: logs TrackDir::DrawShowing's real-time delta and y-per-second scroll multiplier for a track-panel HUD overlay [TrackDir.cpp:302] | 1 |
+| `CROWD_CENSUS_DRAWS` | probe | off | world/crowd | probe: W24-RECON crowd census draw-count reporting (read-only) | 1 |
 | `CROWD_CENSUS_MESHES` | probe | off | world/crowd | probe: Wave-23 CROWD recon — verbosity/scope for the read-only rb3_crowd_census DTA func (sv3_a vignette crowd actor census) | 1 |
 | `CROWD_CENSUS_VERBOSE` | probe | off | world/crowd | probe: Wave-23 CROWD recon — verbose per-mesh census output (read-only) | 1 |
+| `CROWD_DRAW_DBG` | probe | off | world/crowd | probe: W24-RECON crowd draw-path trace (mDraws → DrawMesh) | 1 |
+| `CROWD_POSCTRL` | probe | off | world/crowd | probe: W24-RECON positive-control arm (band-mesh vert-field comparison vs crowd meshes) | 1 |
 | `CROWD_REBIND_PROBE` | probe | off | render/crowd | n/a: verbose companion to RebindCrowdCharBonesToOwnSkeleton (the default-ON RB3_NO_CROWD_REBIND workaround) — read-only diagnostic flag, does not itself change the rebind [Crowd.cpp:936] | 1 |
+| `CROWD_SUBMIT_DBG` | probe | off | world/crowd | probe: W24-RECON engine SubmitDraw trace for crowd meshes (Rnd_Wgpu_RB3, inert unless env set) | 1 |
 | `DC3_AUDIO_GAIN` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_DUMP_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_DUMP_SECONDS` | unknown | unknown | unclassified | n/a | 1 |
