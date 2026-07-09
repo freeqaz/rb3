@@ -58,11 +58,71 @@ void CharIKHand::Poll() {
                 const char* pname = tp_parent ? tp_parent->Name() : "(null)";
                 fprintf(stderr,
                     "[IK_TGT] ikhand='%s' hand='%s' wpos=(%.1f,%.1f,%.1f) "
-                    "tgt='%s' twpos=(%.1f,%.1f,%.1f) d=%.1f parent='%s'\n",
+                    "tgt='%s' twpos=(%.1f,%.1f,%.1f) d=%.1f parent='%s' "
+                    "w=%.3f reach=%.2f\n",
                     Name(), trans->Name(), hp.x, hp.y, hp.z,
-                    tname, tp.x, tp.y, tp.z, d, pname);
+                    tname, tp.x, tp.y, tp.z, d, pname, charWeight, mAAPlusBB);
                 sDbgCount++;
                 if (sDbgCount >= 200) break;
+            }
+        }
+    }
+    // W25-FOREARM discriminator (H-A/H-B/H-C): walk the FULL TransParent
+    // chain-to-root for BOTH the IK hand bone and the first far target bone,
+    // print each node's world pos and the terminal root object. If the two
+    // chains bottom out at DIFFERENT world roots (~100u apart) -> H-A/H-C
+    // (target parented in the wrong frame / mis-resolved proxy). If they share
+    // a root but the arm rest is already high pre-IK -> H-B. Gated, inert by
+    // default.
+    static int sRootCount = 0;
+    static const char* sRootDbg = getenv("IK_ROOTCMP");
+    if (sRootDbg && sRootCount < 40 && !mTargets.empty()) {
+        RndTransformable* tgt0 = 0;
+        for (ObjVector<IKTarget>::iterator it = mTargets.begin();
+             it != mTargets.end(); ++it) {
+            if (it->mTarget) { tgt0 = it->mTarget; break; }
+        }
+        if (tgt0) {
+            const Vector3& hp = trans->WorldXfm().v;
+            const Vector3& tp = tgt0->WorldXfm().v;
+            float dd = std::sqrt((tp.x-hp.x)*(tp.x-hp.x) + (tp.y-hp.y)*(tp.y-hp.y)
+                                 + (tp.z-hp.z)*(tp.z-hp.z));
+            if (dd > 50.0f) {
+                sRootCount++;
+                fprintf(stderr, "[IK_ROOTCMP] ikhand='%s' d=%.1f\n", Name(), dd);
+                // hand chain
+                RndTransformable* n = trans;
+                int depth = 0;
+                RndTransformable* handRoot = trans;
+                while (n && depth < 24) {
+                    const Vector3& w = n->WorldXfm().v;
+                    RndTransformable* par = n->TransParent();
+                    fprintf(stderr,
+                        "[IK_ROOTCMP]   HAND depth=%d node='%s' world=(%.2f,%.2f,%.2f) parent='%s'\n",
+                        depth, n->Name(), w.x, w.y, w.z, par ? par->Name() : "(root)");
+                    handRoot = n;
+                    if (!par) break;
+                    n = par; depth++;
+                }
+                // target chain
+                n = tgt0; depth = 0;
+                RndTransformable* tgtRoot = tgt0;
+                while (n && depth < 24) {
+                    const Vector3& w = n->WorldXfm().v;
+                    RndTransformable* par = n->TransParent();
+                    fprintf(stderr,
+                        "[IK_ROOTCMP]   TGT  depth=%d node='%s' world=(%.2f,%.2f,%.2f) parent='%s'\n",
+                        depth, n->Name(), w.x, w.y, w.z, par ? par->Name() : "(root)");
+                    tgtRoot = n;
+                    if (!par) break;
+                    n = par; depth++;
+                }
+                const Vector3& hr = handRoot->WorldXfm().v;
+                const Vector3& tr = tgtRoot->WorldXfm().v;
+                fprintf(stderr,
+                    "[IK_ROOTCMP]   ROOTS hand_root='%s' (%.2f,%.2f,%.2f) tgt_root='%s' (%.2f,%.2f,%.2f) same=%d\n",
+                    handRoot->Name(), hr.x, hr.y, hr.z,
+                    tgtRoot->Name(), tr.x, tr.y, tr.z, (handRoot == tgtRoot) ? 1 : 0);
             }
         }
     }
@@ -139,6 +199,82 @@ void CharIKHand::Poll() {
         quat.Set(tf.m);
     }
     Interp(mHand->WorldXfm().v, vec, charWeight, mWorldDst);
+#ifdef HX_NATIVE
+    // W25-FOREARM: reach-aware IK clamp (flag-gated, default-OFF). Wii object is
+    // byte-identical (whole block is #ifdef HX_NATIVE + env-gated). The in-song
+    // band-arm spike-fan is CharIKHand running at full weight toward an
+    // instrument-tip target that sits FAR beyond the arm's reachable radius
+    // (measured: target d=54-87u vs mAAPlusBB reach=20.3u). IKElbow then
+    // over-rotates the upperArm into the visible fan. This is NOT a member/frame
+    // resolution error (the target's chain-to-root shares the member root) and
+    // NOT a decomp infidelity (Poll math is faithful, bank_divergence=TRUST) — it
+    // is the IK being commanded past its kinematic limit.
+    //
+    // GRADUATED response, keyed on how far past reach the target is:
+    //   d <= reach            : reachable -> NO-OP (correct fret/strum/drum posing
+    //                           is untouched; this is the common in-tune case).
+    //   reach < d <= k*reach  : moderately far -> clamp mWorldDst onto the
+    //                           shoulder-centred reach sphere (radius mAAPlusBB).
+    //                           A real arm at a just-out-of-reach point extends
+    //                           straight toward it; this bounds the upperArm fling.
+    //   d > k*reach           : grossly unreachable (measured up to 273u vs 20u
+    //                           reach) -> the target is almost certainly a
+    //                           mis-authored / not-yet-resolved instrument tip;
+    //                           reaching it AT ALL only produces the screen-fan.
+    //                           Neutralise the IK displacement for this hand by
+    //                           targeting its CURRENT world pos (= leave the clip's
+    //                           own pose, the RB3_NO_IK-correct fallback) — but only
+    //                           for THIS pathological hand, keeping IK for the rest.
+    // k defaults to 2.0 (override RB3_IK_REACH_K). Shoulder pivot =
+    // mHand->TransParent()->TransParent() (upperArm world), matching the reach
+    // origin PullShoulder/IKElbow use. Whole block is #ifdef HX_NATIVE + env-gated
+    // (default-OFF) so the Wii object is byte-identical.
+    {
+        static int sReachClamp = -1;
+        static float sReachK = 2.0f;
+        if (sReachClamp < 0) {
+            sReachClamp = getenv("RB3_IK_REACH_CLAMP") ? 1 : 0;
+            const char *ke = getenv("RB3_IK_REACH_K");
+            if (ke) { float v = (float)atof(ke); if (v >= 1.0f) sReachK = v; }
+        }
+        if (sReachClamp && mMoveElbow && mAAPlusBB > 0.0f && mHand) {
+            RndTransformable *fa = mHand->TransParent();
+            RndTransformable *sh = fa ? fa->TransParent() : 0;
+            if (sh) {
+                const Vector3 &shoulder = sh->WorldXfm().v;
+                Vector3 toDst;
+                Subtract(mWorldDst, shoulder, toDst);
+                float distSq = LengthSquared(toDst);
+                float reach = mAAPlusBB;
+                if (distSq > reach * reach && distSq > 1e-8f) {
+                    float dist = std::sqrt(distSq);
+                    const char* sClampDbg = getenv("RB3_IK_CLAMP_DBG");
+                    static int sClampN = 0;
+                    const char *mode;
+                    if (dist > sReachK * reach) {
+                        // grossly unreachable: keep the clip pose (neutralise IK
+                        // displacement for this hand).
+                        mWorldDst = mHand->WorldXfm().v;
+                        mode = "skip";
+                    } else {
+                        // moderately far: clamp to the reach sphere.
+                        float scale = reach / dist;
+                        mWorldDst.x = shoulder.x + toDst.x * scale;
+                        mWorldDst.y = shoulder.y + toDst.y * scale;
+                        mWorldDst.z = shoulder.z + toDst.z * scale;
+                        mode = "clamp";
+                    }
+                    if (sClampDbg && sClampN < 300) {
+                        sClampN++;
+                        fprintf(stderr,
+                            "[IK_CLAMP] ikhand='%s' preDist=%.1f reach=%.2f mode=%s\n",
+                            Name(), dist, reach, mode);
+                    }
+                }
+            }
+        }
+    }
+#endif
     RndTransformable *parent1 = mHand->TransParent();
     if (!mMoveElbow)
         parent1 = 0;
