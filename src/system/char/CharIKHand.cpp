@@ -1,5 +1,6 @@
 #include "char/CharIKHand.h"
 #include <cstdlib>
+#include <cstring>
 #include "decomp.h"
 #include "math/Color.h"
 #include "math/Rot.h"
@@ -18,6 +19,73 @@ CharIKHand::CharIKHand()
       mConstrainWrist(0), mWristRadians(0.0f), mElbowCollide(this), mClockwise(0) {}
 
 CharIKHand::~CharIKHand() {}
+
+#ifdef HX_NATIVE
+// W26-PROP (default-OFF flag RB3_PROP_POSE): instrument-prop IK-target redirect.
+//
+// DISCRIMINATOR (STEP 0, evidence/step0-ikprop.log): the guitar/drum playing-hand
+// IK targets are *tip* bones (bone_pick_strum, bone_[RL]-tip_<piece>) whose parent
+// is a correctly-posed authored "at-hand" frame (bone_target_strum / bone_target_
+// <piece>), but the tip carries a large STATIC LocalXfm offset (|local|~48-51u,
+// e.g. bone_pick_strum LocalXfm.v=(2.28,-48.90,-15.29)) that the animation clip is
+// supposed to drive down to the strings/head each beat. On native that prop-bone
+// clip track is never bound, so the tip stays at its rest offset and flings the IK
+// target far past the arm's reach (d_hand~51u vs reach~20u) -> the RB3_IK_REACH_CLAMP
+// safety net then clip-poses the arm (dormant-IK look). The chain is CORRECT
+// (IK_ROOTCMP same=1); this is a CLIP-BINDING gap, not an attach/proxy gap.
+//
+// FIX: when the resolved IK target's TransParent is a `bone_target_*` frame that is
+// itself meaningfully CLOSER to the hand than the tip (proving the parent is the
+// correctly-posed at-hand frame and the tip's own local offset is the fault),
+// redirect the IK destination to that parent frame. This restores an in-reach IK
+// target (the clamp goes dormant) WITHOUT touching any target whose parent is not
+// already at the hand (the vocalist mic case, where the whole prop chain is
+// displaced, is deliberately NOT matched). Strictly scoped + default-OFF; the Wii
+// object is byte-identical (whole thing is #ifdef HX_NATIVE + env-gated).
+//
+// A5-i safety: this only ever fires when the *tip* target is out of reach
+// (d_tip_hand > d_parent_hand, and parent is closer) — it can never pull an
+// already-in-reach target away, because an in-reach tip is never redirected.
+static RndTransformable *sPropPoseRedirect(RndTransformable *tgt,
+                                           RndTransformable *hand, float reach) {
+    static int sOn = -1;
+    static int sDbg = 0;
+    if (sOn < 0) {
+        const char *e = getenv("RB3_PROP_POSE");
+        sOn = (e && e[0] != '0') ? 1 : 0;
+        sDbg = getenv("RB3_PROP_POSE_DBG") ? 1 : 0;
+    }
+    if (!sOn || !tgt || !hand)
+        return tgt;
+    RndTransformable *par = tgt->TransParent();
+    if (!par)
+        return tgt;
+    const char *pn = par->Name();
+    // Scope: parent must be an authored instrument at-hand target frame.
+    if (!pn || std::strncmp(pn, "bone_target_", 12) != 0)
+        return tgt;
+    const Vector3 &hp = hand->WorldXfm().v;
+    const Vector3 &tp = tgt->WorldXfm().v;
+    const Vector3 &pp = par->WorldXfm().v;
+    float dTip = (tp.x - hp.x) * (tp.x - hp.x) + (tp.y - hp.y) * (tp.y - hp.y)
+        + (tp.z - hp.z) * (tp.z - hp.z);
+    float dPar = (pp.x - hp.x) * (pp.x - hp.x) + (pp.y - hp.y) * (pp.y - hp.y)
+        + (pp.z - hp.z) * (pp.z - hp.z);
+    // Only redirect a tip that is OUT of reach AND whose parent is closer to the
+    // hand than the tip (the clip-binding-fling signature). An in-reach tip
+    // (dTip <= reach^2) is left untouched -> A5-i holds.
+    float r2 = reach > 0.0f ? reach * reach : 0.0f;
+    if (dTip <= r2 || dPar >= dTip)
+        return tgt;
+    if (sDbg) {
+        fprintf(stderr,
+            "[PROP_POSE] redirect tgt='%s' -> parent='%s' dTip=%.1f dPar=%.1f reach=%.1f\n",
+            tgt->Name() ? tgt->Name() : "?", pn,
+            std::sqrt(dTip), std::sqrt(dPar), reach);
+    }
+    return par;
+}
+#endif
 
 #pragma push
 #pragma dont_inline on
@@ -126,11 +194,70 @@ void CharIKHand::Poll() {
             }
         }
     }
+    // W26-PROP discriminator (A4): separate the (a) PARENT-CHAIN gap from the
+    // (c) CLIP-BINDING gap. IK_ROOTCMP already proved same=1 (roots match) —
+    // so the chain resolves to the correct member root, refuting the proxy-root
+    // gap. What remains: is the far target's LOCAL transform relative to its
+    // (correctly-posed) parent the thing that flings it out of reach? Dump the
+    // far bone's LocalXfm.v (offset from parent) + the parent's world + LocalXfm.
+    //   correct root, but far bone LocalXfm.v large        => clip-binding (c):
+    //       the prop bone's local rest is a static authored pose never animated
+    //       to the playing position (the parent tracks the hand, the tip does not).
+    //   parent world already far / root mismatch           => parent-chain (a).
+    static int sPropCount = 0;
+    static const char* sPropDbg = getenv("IK_PROP_DBG");
+    if (sPropDbg && sPropCount < 60 && !mTargets.empty()) {
+        RndTransformable* tgt0 = 0;
+        for (ObjVector<IKTarget>::iterator it = mTargets.begin();
+             it != mTargets.end(); ++it) {
+            if (it->mTarget) { tgt0 = it->mTarget; break; }
+        }
+        if (tgt0) {
+            const Vector3& hp = trans->WorldXfm().v;
+            const Vector3& tw = tgt0->WorldXfm().v;
+            float dd = std::sqrt((tw.x-hp.x)*(tw.x-hp.x) + (tw.y-hp.y)*(tw.y-hp.y)
+                                 + (tw.z-hp.z)*(tw.z-hp.z));
+            if (dd > 50.0f) {
+                sPropCount++;
+                const Vector3& tl = tgt0->LocalXfm().v;
+                float locLen = std::sqrt(tl.x*tl.x + tl.y*tl.y + tl.z*tl.z);
+                RndTransformable* par = tgt0->TransParent();
+                if (par) {
+                    const Vector3& pw = par->WorldXfm().v;
+                    const Vector3& pl = par->LocalXfm().v;
+                    // distance from PARENT world to the hand: if the parent is
+                    // AT the hand (small) but the tip is far, the fault is the
+                    // tip's LocalXfm (clip-binding) not the chain (attach).
+                    float pdd = std::sqrt((pw.x-hp.x)*(pw.x-hp.x) + (pw.y-hp.y)*(pw.y-hp.y)
+                                          + (pw.z-hp.z)*(pw.z-hp.z));
+                    fprintf(stderr,
+                        "[IK_PROP] ikhand='%s' hand='%s' hwpos=(%.1f,%.1f,%.1f) "
+                        "tgt='%s' d_hand=%.1f tgtLocal=(%.2f,%.2f,%.2f) |local|=%.1f "
+                        "parent='%s' pworld=(%.1f,%.1f,%.1f) pLocal=(%.2f,%.2f,%.2f) "
+                        "d_parent_hand=%.1f w=%.3f reach=%.2f\n",
+                        Name(), trans->Name(), hp.x, hp.y, hp.z,
+                        tgt0->Name(), dd, tl.x, tl.y, tl.z, locLen,
+                        par->Name(), pw.x, pw.y, pw.z, pl.x, pl.y, pl.z,
+                        pdd, charWeight, mAAPlusBB);
+                } else {
+                    fprintf(stderr,
+                        "[IK_PROP] ikhand='%s' tgt='%s' d_hand=%.1f "
+                        "tgtLocal=(%.2f,%.2f,%.2f) |local|=%.1f parent=(root) "
+                        "w=%.3f reach=%.2f\n",
+                        Name(), tgt0->Name(), dd, tl.x, tl.y, tl.z, locLen,
+                        charWeight, mAAPlusBB);
+                }
+            }
+        }
+    }
 #endif
     UpdateHand();
     if (mTargets.size() == 1) {
         RndTransformable *frontTrans = mTargets.front().mTarget;
         if (frontTrans) {
+#ifdef HX_NATIVE
+            frontTrans = sPropPoseRedirect(frontTrans, trans, mAAPlusBB);
+#endif
             vec = frontTrans->WorldXfm().v;
             if (mOrientation) {
                 Hmx::Matrix3 mtx;
@@ -171,6 +298,9 @@ void CharIKHand::Poll() {
              it++) {
             RndTransformable *itTrans = (*it).mTarget;
             if (itTrans) {
+#ifdef HX_NATIVE
+                itTrans = sPropPoseRedirect(itTrans, trans, mAAPlusBB);
+#endif
                 float curFloat = *locfloats;
                 const Transform &worldtf = itTrans->WorldXfm();
                 ScaleAddEq(vec, worldtf.v, curFloat / sumfloat);
@@ -199,6 +329,24 @@ void CharIKHand::Poll() {
         quat.Set(tf.m);
     }
     Interp(mHand->WorldXfm().v, vec, charWeight, mWorldDst);
+#ifdef HX_NATIVE
+    {
+        static const char *sDstDbg = getenv("RB3_PROP_DST_DBG");
+        static int sDstN = 0;
+        if (sDstDbg && sDstN < 120 && mHand) {
+            const Vector3 &hw = mHand->WorldXfm().v;
+            float dd = std::sqrt((mWorldDst.x - hw.x) * (mWorldDst.x - hw.x)
+                + (mWorldDst.y - hw.y) * (mWorldDst.y - hw.y)
+                + (mWorldDst.z - hw.z) * (mWorldDst.z - hw.z));
+            if (dd > 30.0f) {
+                sDstN++;
+                fprintf(stderr,
+                    "[PROP_DST] ikhand='%s' finger=%d dst_from_hand=%.1f reach=%.2f\n",
+                    Name(), mFinger ? 1 : 0, dd, mAAPlusBB);
+            }
+        }
+    }
+#endif
 #ifdef HX_NATIVE
     // W25-FOREARM: reach-aware IK clamp (flag-gated, default-OFF). Wii object is
     // byte-identical (whole block is #ifdef HX_NATIVE + env-gated). The in-song
