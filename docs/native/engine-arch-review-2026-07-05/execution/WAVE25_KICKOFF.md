@@ -6,9 +6,62 @@ acceptance tests — BINDING as written) + `WAVE23_CLOSEOUT_REVIEW.md` Q6.
 Engine pin `e6b3c64`. THIRTEEN defaults ON. **FIX wave** — flag-gated fixes default-OFF;
 coordinator-only default flips at close-out after E1. All lane agents = OPUS.
 
-## COORDINATOR ACCEPTANCE (<pending review>)
+## COORDINATOR ACCEPTANCE (from `WAVE25_REVIEW.md`, rb3 `232b8cc7` — DISPATCH-WITH-AMENDMENTS)
 
-_To be filled from `WAVE25_REVIEW.md`._
+**A1–A9 adopted verbatim and BINDING; the review file overrides this kickoff wherever they
+differ.** Both lanes faithfully execute W24-RECON; the amendments sharpen the two load-bearing
+spots (FOREARM G3 decision, CROWD leak vector) + correct stale anchors. Headlines:
+
+- **A1 (FOREARM — add sub-cause H-C):** the `:40` "300u" comment is prior CONTEXT (V26
+  crowd/extras residual + the V23 `BandWardrobe::SyncTransProxies` fix pattern), NOT a
+  contradiction (V26=crowd z≈300u, W24=band ~100u — two populations, same class; V32 proved Poll
+  was never tested in-song, so this is known-but-never-addressed). **H-C = target/TransProxy
+  RESOLUTION** (`bone_target_*` in `<inst>_resource.milo` reach the member via proxy/attach; a
+  mis-resolved proxy places them wrong with no chain-parenting error). Root-compare catches H-C
+  too but the FIX site differs from H-A. REQUIRED READING before fix: VENUE_RENDER.md V23 (:598),
+  V26 (:1070-1100,:1163-1171), V32 (:1175-1341). Note: uniform offset on hands AND feet ikhands
+  (ankle y≈173 vs pedal y≈108) ⇒ ONE root-frame error, mildly AGAINST H-B.
+- **A2 (FOREARM G3 — 3-case table, NOT flat baseline equality):** baselines to RECORD in STATUS
+  before any edit: unit `char/CharIKHand` **99.16526%**, `Poll__10CharIKHandFv` **96.127235%**,
+  `MeasureLengths` 81.355%. (1) native-only/HX_NATIVE fix → batch_objdiff MUST equal baseline
+  EXACTLY (any delta leaked into Wii → revert); (2) decomp-infidelity fix in shared code (the
+  CharHair-99.6%-hid-a-CFG-bug precedent) → UN-gated, match% **≥** baseline (improvement
+  expected, decrease FORBIDDEN), justified by `run_diff_inspect diagnose` showing CFG/semantic
+  (not regalloc) mismatch; (3) H-B → CharIKHand untouched, trivially baseline.
+- **A3 (FOREARM STEP 0):** include `run_diff_inspect mode=diagnose` on `Poll` AND audit
+  `MeasureLengths` (81.4% — it computes the very lengths the solver uses; a semantic bug there
+  stretches arms by construction) for CFG-class mismatch, gated by `bank_divergence.py`, BEFORE
+  concluding "faithful port, gate the fix".
+- **A4 (CROWD anchors — NOT the CharSync bring-up):** census shows `poll=3` (Characters ARE
+  polled) → it's clip START/RESOLUTION, in-scope. Anchors: `CharDriver::Enter` autoplay
+  (`src/system/char/CharDriver.cpp:157`, Play at :163), starved-replay :404-409
+  (`mDefaultPlayStarved` ctor-0/milo-:607), **`mDefaultClip.Load(bs,false,mClips):604` = PRIME
+  SUSPECT (silently nulls if `streetslomo_clips.milo` isn't merged into the driver's `mClips`)**,
+  `CHARDRV_PROBE:342`/`RB3_NO_CLIP:341`. FIRST action = extend CHARDRV_PROBE to print
+  `mDefaultClip`+`mClips` size. Decision tree: null-at-Enter → resolution/merge gap; set-but-
+  Enter-never-fires → vignette-dir flow gap; no-default-authored → find the DTA `{...play}`
+  trigger. Freeze secondary (`Character::Poll` mFrozen :248 / `BandCamShot::FreezeChar` :558) —
+  poll=3 argues against, log once.
+- **A5 (CROWD hand-off bound):** hand off ONLY if the WHOLE vignette Enter/flow machinery is
+  absent natively; the CharSync/CharCache blocked item is a DIFFERENT subsystem — do NOT attempt
+  a broad bring-up in this lane.
+- **A6 (CROWD near-black material — DEFER):** discriminator = post-fix `RB3_ISOLATE_MESH=crowd_body`
+  (engine `Rnd_Wgpu_RB3.cpp:2695`) max-pixel vs the recon 17/255 baseline. Figures form + value
+  rises → close as consequence. Figures form but still dark (<~40/255) → separate ENGINE-side
+  env/lighting fix (own flag, coordinator pin bump, DEFERRABLE to W26).
+- **A7 (CROWD leak vector — MANDATORY guardrail):** an un-scoped autoplay in shared
+  `CharDriver`/`Character` would fire on EVERY driver in the game (band, gameplay chars, WorldCrowd
+  drivers). The fix MUST be (a) in native-src/band3 flow, OR (b) if in shared char code, flag-gated
+  AND driver/dir-scoped (crowd_/streetslomo match) with a byte-identical `#else`. The mandatory
+  WorldCrowd A/B runs **flag-ON vs baseline** (OFF-only proves nothing).
+- **A8 (ownership split):** FOREARM owns `char/CharIKHand.cpp` + `bandobj/`; CROWD owns
+  `char/CharDriver.cpp` (probe-only unless A7-scoped) + `band3/` flow + `native-src`.
+- **A9 (stale anchors):** `BandCharacter.cpp:3829` is a one-shot `MeasureLengths()` resync (gated
+  `unk224 & 2`), NOT the per-frame poll loop (real path: `Character::Poll` → `RndDir::Poll` →
+  `mPolls` sorted at `Character::SyncObjects` :710-723); :3460/:3475 correct. rb3-tests 116/0
+  applies to the CROWD lane too.
+
+_(original kickoff placeholder retained below for provenance.)_
 
 - **Hazard note:** engine tree carries uncommitted `M FxSendNative.cpp`; rb3 tree carries
   `native/src/rb3_session_trace.cpp` — never stage either. CLOSURES (do NOT reopen): hands-finger
