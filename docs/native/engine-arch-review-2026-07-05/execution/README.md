@@ -830,3 +830,19 @@ precisely located + handed to Wave 24. (FOREARM re-dispatched standalone after a
    if compressed=0 confirmed → scoped RndMesh `gAltRev<3` skinned-decode fix, MANDATORY gameplay
    WorldCrowd A/B (branch-scoped to keep the protected oracle hot path untouched).
 3. **S5 combo-glow confirm** (small). 4. S3/S4 deferred/authored. Open: GRADE neon-plate residual.
+
+## Wave 25 — FIX: FOREARM spike-fan FIXED+FLIPPED (14th default) ∥ CROWD root-caused to async load-merge (partial)
+
+W24-RECON-confirmed bugs. Kickoff `7c791630`→acceptance `5a97db93` (pre-review `232b8cc7` A1-A9:
+H-C sub-cause, G3 3-case table, CROWD leak-vector guardrail), close-out review `0809e6ef`
+(FOREARM ACCEPT+FLIP YES, CROWD ACCEPT-WITH-ERRATA). Engine pin `e6b3c64`→`2088c68`, census 402.
+
+| Lane | Result |
+|---|---|
+| **FOREARM — CharIKHand (WIN, 14th default)** | **Spike-fan FIXED + FLIPPED default-ON (`RB3_IK_REACH_CLAMP`, opt-out `_OFF`).** Discriminator REFUTED H-A/H-C (target resolves to the correct member bone) + reframed H-B. Mechanism: IK weight=1 while the target sits d=54-273u away vs arm reach ~20u → over-rotates upperArm → fan. Fix = graduated reach-guard on `mWorldDst` (no-op in reach / clamp to reach-sphere / neutralize beyond k·reach). Match-neutral (all 20 CharIKHand fns == baseline, HX_NATIVE). Gates: in-song upperArm ratio 1.15 (vs OFF 34-85), drawlog-792, rb3-tests 116/0. Coordinator E1 PASS (`96f18e62`). Q1 RESOLVED: 20u reach is CORRECT (no length bug); far targets = mis-posed instrument-prop bones (Wave-26 tail). |
+| **CROWD — async load-merge (root-caused, partial)** | Recon theory REFUTED: the streetslomo clip DOES play + skin correctly for ~1.2s, then an **async load-merge at beat 2.4 (pollFrame 72) DESTROYS the playing clip** (`Replace(clip,NULL)`→`mFirst=NULL`) AND swaps `mClips` to a wrong sub-bank → `animating=0` forever. Same native async-interleaving class as the hands/load-order bugs. Partial `RB3_CROWD_CLIP_KEEP` (default-OFF, clipType=='crowd'-scoped, byte-identical #else, WorldCrowd A/B SAFE) recovers only bank-intact drivers — E-C2: ZERO of 8 as-observed → PROPHYLACTIC scaffolding for the W26 engine fix. Engine hand-off charter written (`b6a8980f`). |
+
+### Wave 26 menu (from `WAVE25_CLOSEOUT_REVIEW.md` Q7)
+1. **CROWD load-merge ENGINE fix (recon-first):** why does the sv3_a merge fire at beat 2.433 destroying the playing clip? PREFER suppress-duplicate-load or re-fire-play_clip over preservation surgery. Scoped away from the protected WorldCrowd oracle + proven-correct RndMesh loader. Acceptance = `animating>0` + 8 lit isolate figures + the deferred near-black material discriminator (isolate max-pixel vs 17/255) as follow-on.
+2. **Instrument-prop target-bone POSING (reframed FOREARM tail, MED EV):** the far IK targets are prop bones mis-posed natively (strum pick +50u z, fret 98-216u, mic-stand below floor + reach=0). Fixing prop posing restores genuine in-song IK (clamp becomes a dormant safety net) + likely retires the ≤4.2 vignette residual + drumstick splay. Same async/posing family.
+3. S5 combo-glow (third lane only if capacity).

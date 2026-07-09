@@ -5,9 +5,9 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 396  
-**By class:** diagnostic=1, feature=14, perf=9, probe=123, tuning=2, unknown=151, workaround=96  
-**Default-ON workarounds (the number §W5.3 must drive to 0):** 73
+**Total flags:** 402  
+**By class:** diagnostic=1, feature=14, perf=9, probe=125, tuning=3, unknown=151, workaround=99  
+**Default-ON workarounds (the number §W5.3 must drive to 0):** 74
 
 | name | class | default | owner | faithful-status | sites |
 |---|---|---|---|---|---|
@@ -34,7 +34,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `CHAIN_MTX` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHAIN_PROBE` | probe | off | skinning/chain | n/a: archaeological debug probe (chain sim investigation) | 1 |
 | `CHAIN_PROPTEST` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
-| `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 2 |
+| `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 8 |
 | `CHAR_DBG` | probe | off | render/char-material | n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-because-unbound vs RTT-composite-never-painted); game BandDirector.cpp logs the re-run LoadCharacters() call (aliases VENUE_DBG) [RB3MaterialBinder.cpp:292; BandDirector.cpp:713] | 2 |
 | `CHAR_PROBE_DUMP` | unknown | off | unclassified | n/a | 1 |
 | `CLOCK_DBG` | probe | off | ui/hud | n/a: logs TrackDir::DrawShowing's real-time delta and y-per-second scroll multiplier for a track-panel HUD overlay [TrackDir.cpp:302] | 1 |
@@ -61,6 +61,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `HEAD_REBIND_PROBE` | probe | off | skinning | n/a: verbose companion to RebindHeadHandsAtRest (the default-ON RB3_NO_HEAD_REBIND-gated rest-capture rebind); read-only, does not alter the rebind [BandCharacter.cpp:1219] | 1 |
 | `HOME` | unknown | unknown | unclassified | n/a | 1 |
 | `HUB_BAR_PROBE` | probe | off | ui/hub | n/a: archaeological debug probe | 2 |
+| `IK_ROOTCMP` | probe | off | char/ik | probe: Wave-25 FOREARM discriminator — walks the TransParent chain-to-root for IK hand + target bones (H-A/H-C refutation) | 1 |
 | `IK_SHARD_VERT` | probe | unknown | skinning | n/a: archaeological debug probe | 2 |
 | `IK_TGT_DBG` | probe | off | char/ik | n/a: reports IK hand world position + each target's name/pos/distance/parent chain for far (>50u) targets; investigative tool for the residual crowd hand-IK pose error, render-inert [CharIKHand.cpp:45] | 1 |
 | `INST_REBIND_PROBE` | probe | off | skinning | n/a: verbose companion to the instrument-strings rebind (RB3_NO_INST_REBIND/RB3_INST_STRINGS_MODE); read-only [BandCharacter.cpp:1551] | 1 |
@@ -143,6 +144,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_CLEAR_COLOR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_COMPOSE_MULT_OFF` | workaround | on | render/compose | not-live: composite-blend multiply-fallback default-ON (see project_c8_faces memory) | 1 |
 | `RB3_CROWD_BONE_PROBE` | probe | off | render/crowd | n/a: W2.3.S1 crowd bone-source seam characterization (owner vs own-bone SKIN_CLAMP extent; SHARED/SELF+POISON decision) | 1 |
+| `RB3_CROWD_CLIP_KEEP` | workaround | off | world/crowd | not-live DEFAULT-OFF partial (Wave-25): re-plays the snapshotted crowd walk clip on starvation after the sv3_a async load-merge destroys it. Recovers bank-intact drivers only (ZERO of 8 as-observed — female04 never Played) → PROPHYLACTIC scaffolding for the W26 engine load-merge fix; clipType=='crowd'-scoped + byte-identical #else (WorldCrowd oracle untouched). Removal criterion: delete if W26 lands the engine fix and this adds nothing. [CharDriver.cpp] | 1 |
 | `RB3_CROWD_DIM` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_CROWD_DIM_OFF` | workaround | on | render/crowd | not-live: crowd-dim heuristic default-ON | 1 |
 | `RB3_CROWD_IMPOSTER_OFF` | workaround | on | render/crowd | not-live: crowd impostor rendering default-ON | 1 |
@@ -210,6 +212,10 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_HUB_TEXT_CONTRAST` | workaround | off | ui/hub | not-live: W12 C1 focused-text contrast — clamps the focused hub highlight-bar material alpha (isUiHighlightOverlay, highlight_main/pattern) to hardware [0,1] in RB3MaterialBinder.cpp (Wii fixed-function blender clamps src alpha; native pulse anim drives it to ~3.56, over-brightening the bar under kBlendSrcAlpha). FAITHFUL correctness fix for the >1 alpha bug, but does NOT by itself pass the C1 focused-bar contrast gate (p60/p5>=2.0): the dominant wash is the postproc GRADE lifting the authored-dark focused glyphs (0.118) more than the bar (RB3_PP_OFF -> gate 2.20 PASS vs 1.95 graded) compounded by the bright bar compositing through the ~semi-transparent anti-aliased text; those live in the render/postproc path (escalated). flag-OFF byte-identical (getenv-cached) [RB3MaterialBinder.cpp] | 1 |
 | `RB3_HUD_SCOREBOARD_TOPRIGHT` | workaround | on | ui/hud | live DEFAULT-ON (Wave-22 close-out, opt-out RB3_HUD_SCOREBOARD_TOPRIGHT_OFF): makes K9 (RB3_APPLY_HANDLER_FIX_OFF) SKIP the scoreboard-anchor neutralization so the score plate keeps its authored TOP-RIGHT position, matching the Wii GT (yt_qRagnZCIMzk_gameplay_*). K9's top-center premise was config-reasoning never GT-backed. nPlayers==1-gated so no multiplayer regression; ConfigureTracks objdiff 100% (HX_NATIVE-only). E1-confirmed (score pill 88% width). [TrackPanelDir.cpp:344] | 1 |
 | `RB3_HUD_SCOREBOARD_TOPRIGHT_OFF` | workaround | off | ui/hud | live opt-out for RB3_HUD_SCOREBOARD_TOPRIGHT — restores K9's mid-screen scoreboard neutralization | 1 |
+| `RB3_IK_CLAMP_DBG` | probe | off | char/ik | probe: Wave-25 reach-clamp fire/skip counters + preDist distribution | 1 |
+| `RB3_IK_REACH_CLAMP` | workaround | on | char/ik | live DEFAULT-ON (Wave-25 close-out, opt-out RB3_IK_REACH_CLAMP_OFF): graduated IK reach-guard in CharIKHand::Poll — when the instrument-tip IK target sits beyond the arm's measured reach (mAAPlusBB), clamp mWorldDst onto the shoulder reach-sphere (reach<d<=k*reach) or neutralize IK to the clip pose (d>k*reach), instead of over-rotating the upperArm into a spike-fan. Fixes the exploded band arm/hand fan on closeup frames. 20u arm reach VERIFIED correct (leg-reach cross-check); the far targets are mis-posed instrument-prop bones (Wave-26 tail). Wii byte-identical (HX_NATIVE); batch_objdiff==baseline all 20 CharIKHand fns. E1-confirmed. [CharIKHand.cpp:233] | 1 |
+| `RB3_IK_REACH_CLAMP_OFF` | workaround | off | char/ik | live opt-out for RB3_IK_REACH_CLAMP — restores raw over-reach IK (spike-fan) | 1 |
+| `RB3_IK_REACH_K` | tuning | off | char/ik | tuning: reach-clamp k multiplier (default 2.0) — d>k*reach neutralizes IK to clip pose | 1 |
 | `RB3_INPUT_DEBUG` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_INPUT_VERB_TIMEOUT` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_INST_STRINGS_MODE` | workaround | off | skinning | not-live: selects instrument-strings native rebind mode (rigid=default / rebake=A/B); the inst-strings rebind itself is a native stand-in [BandCharacter.cpp:1548] | 1 |

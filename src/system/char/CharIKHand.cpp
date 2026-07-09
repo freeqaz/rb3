@@ -233,7 +233,15 @@ void CharIKHand::Poll() {
         static int sReachClamp = -1;
         static float sReachK = 2.0f;
         if (sReachClamp < 0) {
-            sReachClamp = getenv("RB3_IK_REACH_CLAMP") ? 1 : 0;
+            // Coordinator flip (Wave-25 close-out, E1-confirmed + review-endorsed):
+            // default-ON, opt-out-wins. Default now clamps over-reach IK;
+            // RB3_IK_REACH_CLAMP_OFF=1 (or RB3_IK_REACH_CLAMP=0) restores raw over-reach
+            // (spike-fan). 14th default-ON. Wii object byte-identical (HX_NATIVE).
+            if (getenv("RB3_IK_REACH_CLAMP_OFF")) sReachClamp = 0;
+            else {
+                const char *e = getenv("RB3_IK_REACH_CLAMP");
+                sReachClamp = (e && e[0] == '0') ? 0 : 1;
+            }
             const char *ke = getenv("RB3_IK_REACH_K");
             if (ke) { float v = (float)atof(ke); if (v >= 1.0f) sReachK = v; }
         }

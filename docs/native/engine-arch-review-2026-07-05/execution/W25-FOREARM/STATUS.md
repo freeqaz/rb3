@@ -109,3 +109,18 @@ committed build.
   + `IK_ROOTCMP` discriminator probe + `IK_CLAMP_DBG`/weight+reach fields on `IK_TGT_DBG`
   (all `#ifdef HX_NATIVE` + env-gated, byte-inert by default).
 - `docs/native/engine-arch-review-2026-07-05/execution/W25-FOREARM/{PLAN,STATUS}.md` + `evidence/`.
+
+---
+## ERRATA (Wave-25 close-out review `0809e6ef`, E-F1..E-F4) + FLIP
+- **FLIP:** RB3_IK_REACH_CLAMP flipped default-ON (opt-out RB3_IK_REACH_CLAMP_OFF) at close-out —
+  E1 PASS + review-endorsed. 14th default. Q1 RESOLVED: 20u arm reach is CORRECT (leg-reach
+  cross-check 38.33==38.5 measured; the "y≈209" was the exploded pose, not a normal hand), so
+  NO length bug — the clamp is a sound IK reach-guard. The far targets are instrument-PROP bones
+  mis-posed natively (Q7/Wave-26 tail).
+- E-F1: commit `80c7037b` (STATUS:103) is the pre-rebase hash; the landed commit is `96f18e62`.
+- E-F2: "upperArm 6.2u + foreArm 9.6u ≈ 16u" — segment figures are approximate; the logged
+  `mAAPlusBB=20.27` (from mLocalXfm lengths) is AUTHORITATIVE.
+- E-F3: the rootcmp "same=1 on every sample" is n=3 (3× same=1, 0× same=0) — true but thin.
+- E-F4: `mic_stand.ikhand` reach=0.00 (no 2-deep chain) is SKIPPED by the `mAAPlusBB > 0.0f`
+  guard (:240) → takes the pre-fix direct-set path, NOT a clamp regression; tracked as the
+  Q7 prop-posing item (Wave-26).

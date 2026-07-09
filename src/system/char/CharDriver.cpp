@@ -40,9 +40,12 @@ DECOMP_FORCEACTIVE(CharDriver, "%s %s, beat: %.2f")
 // ===========================================================================
 // W25-CROWD FIX support (flag RB3_CROWD_CLIP_KEEP, default OFF).
 // See src/system/char/CharDriver.cpp Poll() and docs/.../W25-CROWD/PLAN.md.
-// Per-crowd-driver snapshot of the ambient walk clip's bank + name taken at
+// Per-crowd-driver snapshot of the ambient walk clip's NAME (only) taken at
 // first Play, used to re-establish the loop after an async load-merge destroys
 // the playing clip and swaps the driver's mClips to a wrong sub-bank.
+// (E-C1: NAME only — the struct holds no bank ref; see CrowdKeepState below.)
+// (E-C3: gCrowdKeep() is never pruned on driver destruction — stale-key alias
+// risk when flag-ON; opportunistic W26 cleanup, harmless while default-OFF.)
 // ===========================================================================
 struct CrowdKeepState {
     std::string clipName; // name of the ambient clip (survives the clip's destruction)

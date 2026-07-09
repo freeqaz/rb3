@@ -99,3 +99,14 @@ out of the W25-CROWD lane's A7 (no un-scoped shared change) / A5 (no broad bring
   flag-gated partial re-arm (default-OFF, `clipType=='crowd'`-scoped, byte-identical `#else`).
 - `scripts/native/_w25_crowd_trace.py` — STEP-0 trace harness.
 - `docs/.../W25-CROWD/{PLAN.md, STATUS.md, evidence/*}`.
+
+---
+## ERRATA (Wave-25 close-out review `0809e6ef`, E-C1..E-C3)
+- E-C2 (SHARPEN): "recovers any crowd driver whose bank survived the merge intact" — in the
+  observed sv3_a repro that set is {crowd_female04}, which NEVER received `play_clip` and so has
+  NO snapshot → the re-arm provably recovers ZERO of the 8 drivers AS-OBSERVED. RB3_CROWD_CLIP_KEEP's
+  current value is PROPHYLACTIC SCAFFOLDING for the W26 engine fix (kept default-OFF through W26
+  with a removal criterion: delete if W26 lands the engine load-merge fix and the flag adds nothing).
+- E-C1: comments corrected in-code (snapshots the clip NAME only, not the bank).
+- E-C3: `gCrowdKeep()` is never pruned on driver destruction (stale-key alias risk flag-ON) —
+  noted in-code, opportunistic W26 cleanup (harmless while default-OFF).
