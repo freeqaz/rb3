@@ -52,7 +52,9 @@ static RndTransformable *sPropPoseRedirect(RndTransformable *tgt,
     static int sDbg = 0;
     if (sOn < 0) {
         const char *e = getenv("RB3_PROP_POSE");
-        sOn = (e && e[0] != '0') ? 1 : 0;
+        // E7 (W26 close-out): require a non-empty non-'0' value (RB3_PROP_POSE=""
+        // previously enabled). Default-OFF; unset (e==NULL) stays 0.
+        sOn = (e && e[0] && e[0] != '0') ? 1 : 0;
         sDbg = getenv("RB3_PROP_POSE_DBG") ? 1 : 0;
     }
     if (!sOn || !tgt || !hand)

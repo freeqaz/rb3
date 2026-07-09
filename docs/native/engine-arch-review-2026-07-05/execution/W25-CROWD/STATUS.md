@@ -110,3 +110,16 @@ out of the W25-CROWD lane's A7 (no un-scoped shared change) / A5 (no broad bring
 - E-C1: comments corrected in-code (snapshots the clip NAME only, not the bank).
 - E-C3: `gCrowdKeep()` is never pruned on driver destruction (stale-key alias risk flag-ON) —
   noted in-code, opportunistic W26 cleanup (harmless while default-OFF).
+
+---
+## ERRATA (Wave-26 close-out review `055992be`, E1-E5 — ROOT CAUSE SUPERSEDED)
+The W25 "async FileMerger load-merge at beat 2.433 destroys the crowd clip + swaps mClips to a
+player-only sub-bank" mechanism is **REFUTED by W26** (FMERGE_PROBE: 182 merge events, all
+band-wardrobe, ZERO crowd; CHARDRV_BT symbolized backtrace). The real kill is a **UI PANEL-UNLOAD
+teardown** on the splash→main_hub transition (UIManager::Poll → BandScreen::Enter →
+UIScreen::UnloadPanels → UIPanel::Unload → WorldDir::~WorldDir → CharClipSet::~CharClipSet →
+CharClip::~CharClip → Replace(clip,NULL) → CharDriver::Replace, UIScreen.cpp:570). NO merge and
+NO bank swap ever occurred — the "player-only sub-bank" was the SAME bank minus its 5 deleted
+crowd clips (nclips 11→8). `streetslomo_clips.milo` loads once at boot, never reloaded → no bank
+survives → RB3_CROWD_CLIP_KEEP can never fire. Real fix = W27 ui/world panel-residency (see
+W26-CROWD/STATUS). This supersedes the W25-CROWD headline + the b6a8980f engine-handoff charter.

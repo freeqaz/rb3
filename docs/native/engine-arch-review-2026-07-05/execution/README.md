@@ -846,3 +846,30 @@ H-C sub-cause, G3 3-case table, CROWD leak-vector guardrail), close-out review `
 1. **CROWD load-merge ENGINE fix (recon-first):** why does the sv3_a merge fire at beat 2.433 destroying the playing clip? PREFER suppress-duplicate-load or re-fire-play_clip over preservation surgery. Scoped away from the protected WorldCrowd oracle + proven-correct RndMesh loader. Acceptance = `animating>0` + 8 lit isolate figures + the deferred near-black material discriminator (isolate max-pixel vs 17/255) as follow-on.
 2. **Instrument-prop target-bone POSING (reframed FOREARM tail, MED EV):** the far IK targets are prop bones mis-posed natively (strum pick +50u z, fret 98-216u, mic-stand below floor + reach=0). Fixing prop posing restores genuine in-song IK (clamp becomes a dormant safety net) + likely retires the ≤4.2 vignette residual + drumstick splay. Same async/posing family.
 3. S5 combo-glow (third lane only if capacity).
+
+## Wave 26 — recon-first: 3 hypotheses tested, 0 survived as charted (no visible fixes; 2 root causes pinned)
+
+Kickoff `34811b9f`→acceptance `e56c8daa` (pre-review `3b402960` A1-A9), close-out review `055992be`
+ACCEPT-WITH-ERRATA (E1-E7). Engine pin `2088c68`→`8d0e5b0`, census 408. Discriminator discipline:
+no speculative fixes; the CROWD merge theory REFUTED, two deeper bugs precisely located.
+
+| Lane | Result |
+|---|---|
+| **CROWD — A1 REFUTED, W27 handoff** | The W25 "async load-merge destroys the clip" theory is **WRONG** (FMERGE_PROBE: 182 merges, all band-wardrobe, ZERO crowd; CHARDRV_BT backtrace). Real kill = a **UI PANEL-UNLOAD teardown** on splash→main_hub (WorldDir::~WorldDir → CharClipSet dtor → Replace(clip,NULL), UIScreen.cpp:570); no merge, no bank swap (nclips 11→8 = same bank minus 5 deleted crowd clips); streetslomo_clips.milo never reloaded → RB3_CROWD_CLIP_KEEP can never fire. Kill site is ui/world (outside lane grant) → W27. Probes + E-C3 prune landed (`5b7aabc5`). **SUPERSEDES the Wave-25 CROWD row above (E1-E5).** |
+| **PROP — clip-binding gap proven, partial** | Discriminator (IK_ROOTCMP same=1 refutes attach/proxy): the instrument TIP bones have a correctly-posed at-hand PARENT but the tip's static LocalXfm (~48-51u) is never driven by a clip natively → flings the IK target. `RB3_PROP_POSE` (default-OFF) redirects to the parent, drops target dist -44..-64%, but does NOT make the clamp dormant (E7: inferred mFinger re-projection, bypass-test in W27) + no visible arm change. Stays default-OFF scaffolding (`1498c400`). |
+| **GLOW — no-fix, S5 CLOSED faithful** | The combo/now-bar Nx glow is ALREADY faithful at ≥4x (montage-verified vs GT). `RB3_SMASHER_HALO` doesn't touch it (the combo ring is a HUD/StreakMeter UI-cam element, not game.cam). S5 conflated 3 elements. Keep RB3_SMASHER_HALO OFF, no code (`7b9068fc`). |
+
+**Close-out note (E6):** the coordinator's "unconditional crash-fix landed this wave" was a diff-hunk
+MISREAD — the CharDriver::~CharDriver mBones-alias UAF guard is PRE-EXISTING (`65892986`, 2026-05-27),
+shown as context. Ruled KEEP unconditional (real UAF, correct, Wii byte-identical). W26's only dtor
+change is the E-C3 gCrowdKeep prune (inert). Default-ON count unchanged at 14.
+
+### Wave 27 menu (from `WAVE26_CLOSEOUT_REVIEW.md` Q6 — ONE meaty lane)
+1. **CROWD ui/world panel-residency (the real crowd-walkers repair):** BINDING STEP 0 = Wii ground
+   truth — does main_hub RELOAD `streetslomo_clips.milo` or KEEP the vignette panel resident across
+   the splash→hub transition? Choose the lever (keep-resident vs reload+re-fire `play_clip`) from
+   that, not from a guess. Scoped to ui/world/vignette (NOT the protected WorldCrowd oracle). The
+   deferred near-black material rides as the acceptance follow-on. Charter tractability: MEDIUM
+   (shared ui/world blast radius — flag-gated + boot A/B).
+2. **PROP parked** (probe-only; W27 tail if capacity: bind the prop clip tracks + bypass-test mFinger).
+3. **No GLOW lane** (S5 closed).

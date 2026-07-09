@@ -99,3 +99,14 @@ stays the load-bearing safety net (NOT dormant, NOT removed).
   probe. All `#ifdef HX_NATIVE` + env-gated → Wii object byte-identical.
 - `docs/native/engine-arch-review-2026-07-05/execution/W26-PROP/{PLAN,STATUS}.md`,
   `run_prop_probe.py`, `evidence/`.
+
+---
+## ERRATA (Wave-26 close-out review `055992be`, E7)
+- The mFinger-feedback explanation for why the clamp can't go dormant is INFERRED, not
+  bypass-tested: strum median target distance actually 199.5→203.8 ON (marginally worse, not the
+  predicted large drop). The W27 charter must BYPASS-TEST the mFinger re-projection
+  (`Poll:319-330`) before concluding it's the blocker.
+- Env-parse nit FIXED (E7): `RB3_PROP_POSE=""` previously enabled the flag (`e[0] != '0'` is true
+  for `'\0'`); now requires a non-empty value (CharIKHand.cpp:55). Default-OFF unchanged.
+- The weight-loop still uses the UN-redirected tip LocalXfm — a known incompleteness of the
+  partial redirect (W27 item, alongside binding the prop clip tracks).

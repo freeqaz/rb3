@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 402  
-**By class:** diagnostic=1, feature=14, perf=9, probe=125, tuning=3, unknown=151, workaround=99  
+**Total flags:** 408  
+**By class:** diagnostic=1, feature=14, perf=9, probe=130, tuning=3, unknown=151, workaround=100  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 74
 
 | name | class | default | owner | faithful-status | sites |
@@ -34,6 +34,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `CHAIN_MTX` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHAIN_PROBE` | probe | off | skinning/chain | n/a: archaeological debug probe (chain sim investigation) | 1 |
 | `CHAIN_PROPTEST` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
+| `CHARDRV_BT` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — symbolized backtrace at CharDriver::Replace (pinned the UI panel-unload teardown as the clip-kill) | 1 |
 | `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 8 |
 | `CHAR_DBG` | probe | off | render/char-material | n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-because-unbound vs RTT-composite-never-painted); game BandDirector.cpp logs the re-run LoadCharacters() call (aliases VENUE_DBG) [RB3MaterialBinder.cpp:292; BandDirector.cpp:713] | 2 |
 | `CHAR_PROBE_DUMP` | unknown | off | unclassified | n/a | 1 |
@@ -52,6 +53,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `DC3_HTTP_PORT` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_NO_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
 | `DISPLAY` | unknown | unknown | unclassified | n/a | 5 |
+| `FMERGE_PROBE` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — FileMerger merge/clear event log (proved zero crowd merges → refuted the load-merge theory) | 1 |
 | `GAME_DBG` | probe | off | bandobj/flow | n/a: logs BandDirector::OnFileLoaded's sym/dir args and ReadyForMidiParsers' native venue-deferred gate inputs/result; the gate's own cond is computed independent of the getenv call [BandDirector.cpp:1265,834] | 2 |
 | `GEM_DBG` | probe | off | render/highway | n/a: dumps GemTrackDir::UpdateSurfaceTexture's mesh/mat/tex name state after the (unconditional) SetDiffuseTex call [GemTrackDir.cpp:393] | 1 |
 | `GEM_FORCE` | probe | unknown | render/highway | n/a: archaeological debug probe | 1 |
@@ -61,6 +63,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `HEAD_REBIND_PROBE` | probe | off | skinning | n/a: verbose companion to RebindHeadHandsAtRest (the default-ON RB3_NO_HEAD_REBIND-gated rest-capture rebind); read-only, does not alter the rebind [BandCharacter.cpp:1219] | 1 |
 | `HOME` | unknown | unknown | unclassified | n/a | 1 |
 | `HUB_BAR_PROBE` | probe | off | ui/hub | n/a: archaeological debug probe | 2 |
+| `IK_PROP_DBG` | probe | off | char/ik | probe: Wave-26 PROP discriminator — far-target LocalXfm + parent world + parent-to-hand distance (clip-binding vs attach/proxy) | 1 |
 | `IK_ROOTCMP` | probe | off | char/ik | probe: Wave-25 FOREARM discriminator — walks the TransParent chain-to-root for IK hand + target bones (H-A/H-C refutation) | 1 |
 | `IK_SHARD_VERT` | probe | unknown | skinning | n/a: archaeological debug probe | 2 |
 | `IK_TGT_DBG` | probe | off | char/ik | n/a: reports IK hand world position + each target's name/pos/distance/parent chain for far (>50u) targets; investigative tool for the residual crowd hand-IK pose error, render-inert [CharIKHand.cpp:45] | 1 |
@@ -305,6 +308,9 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PREWARM_NEXT` | perf | off | load/perf | n/a: from:to screen prewarm-pair spec string (default main_hub_screen:song_select_screen). Asset prewarm scheduling, no draw/logic change. See project_incremental_load_perf memory. | 1 |
 | `RB3_PREWARM_SCREENS` | perf | off | load/perf | n/a: UI screen/panel asset prewarm+adopt (web default-ON opt-out via '0'; native default-OFF opt-in). No correctness dependency at the adopt site. See project_incremental_load_perf memory. | 4 |
 | `RB3_PROGRESSIVE_SHARPEN` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_PROP_DST_DBG` | probe | off | char/ik | probe: Wave-26 PROP per-ikhand pre/post target-distance histogram (A5-i regression gate) | 1 |
+| `RB3_PROP_POSE` | workaround | off | char/ik | not-live DEFAULT-OFF partial (Wave-26): redirects an out-of-reach instrument IK tip target to its correctly-posed bone_target_* parent frame (clip-binding gap — the prop-bone clip track is unbound natively so the tip stays at its rest offset). Drops raw target distance -44..-64% but does NOT make RB3_IK_REACH_CLAMP dormant (engine mFinger re-projection, W27) and produces no visible arm change (clamp already clip-poses). Kept as pinned discriminator + first-half scaffolding; HX_NATIVE, byte-identical #else. [CharIKHand.cpp:49 sPropPoseRedirect] | 1 |
+| `RB3_PROP_POSE_DBG` | probe | off | char/ik | probe: Wave-26 PROP redirect trace (tgt->parent, dTip/dPar) | 1 |
 | `RB3_PROV_SKIN_SPHERE` | probe | off | render/ui-forensics | n/a: Wave-19 T2-WORLDROI A/B control — forces skinned draws back to the legacy rectKind=1 sphere fallback (the R3 v1 world-cam blindness) so the new rectKind=3 skinned-pose bbox can be diffed against it (gate G1). Test-only; default preserves the rectKind=3 skinned-pose bbox + boneRects. Implies/requires RB3_DRAWLOG_PROV. SPATIAL provenance axis, not the frame-assignment timing axis. | 1 |
 | `RB3_READAHEAD_DEBUG` | probe | off | load/perf | n/a: reports loader queueDepth/kicked counts to show whether dependency milos enqueue deep enough for read-ahead to matter; zero cost when off, does not change scheduling [Loader.cpp:540] | 1 |
 | `RB3_RECOMPUTE_OFFSETS` | unknown | unknown | unclassified | n/a | 1 |
