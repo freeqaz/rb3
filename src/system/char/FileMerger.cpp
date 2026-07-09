@@ -173,7 +173,41 @@ bool FileMerger::NeedsLoading(FileMerger::Merger &merger) {
     return merger.mLoaded != merger.mSelected || merger.unk29;
 }
 
+#ifdef HX_NATIVE
+// W26-CROWD STEP-0 discriminator (env FMERGE_PROBE, inert by default). Logs, for
+// each Merger queued by AppendLoader, the owning FileMerger path + the Merger name
+// + the PREVIOUS mLoaded FilePath and the NEW selected/loading FilePath. A1: the
+// beat-2.433 crowd-clip kill is a SECOND load through the SAME Merger slot; this
+// log decides DUP (mLoaded == mSelected, same file) vs LEGIT (different file, a
+// deferred selection). FMERGE_PROBE substring-matches the owning path (e.g.
+// "crowd", "streetslomo", "*" = all). HX_NATIVE + env-gated -> Wii byte-identical.
+static const char *gFMergeProbe() { return getenv("FMERGE_PROBE"); }
+static bool gFMergeMatch(const char *path) {
+    const char *p = gFMergeProbe();
+    if (!p)
+        return false;
+    if (p[0] == '*')
+        return true;
+    return path && path[0] && strstr(path, p) != nullptr;
+}
+#endif
+
 void FileMerger::AppendLoader(FileMerger::Merger &merger) {
+#ifdef HX_NATIVE
+    if (gFMergeProbe()) {
+        const char *ownerPath = PathName(this);
+        if (gFMergeMatch(ownerPath) || gFMergeMatch(merger.mName.Str())) {
+            fprintf(stderr,
+                "[FMERGE_APPEND] owner='%s' merger='%s' prevLoaded='%s' "
+                "newSelected='%s' unk29=%d preClear=%d proxy=%d\n",
+                ownerPath ? ownerPath : "?",
+                merger.mName.Str(),
+                merger.mLoaded.c_str() ? merger.mLoaded.c_str() : "",
+                merger.mSelected.c_str() ? merger.mSelected.c_str() : "",
+                (int)merger.unk29, (int)merger.mPreClear, (int)merger.mProxy);
+        }
+    }
+#endif
     merger.unk29 = false;
     for (std::list<Merger *>::iterator it = mFilesPending.begin();
          it != mFilesPending.end();
@@ -349,6 +383,24 @@ FileMerger::Merger *FileMerger::NotifyFileLoaded(Loader *l, ObjectDir *dir) {
     );
     MILO_ASSERT(l == mCurLoader, 0x1ED);
     Merger *m = mFilesPending.front();
+#ifdef HX_NATIVE
+    // W26-CROWD STEP-0: this Clear() is the kill site (A1 / FileMerger.cpp:30-52) —
+    // it deletes every object the slot's PREVIOUS load merged in before merging the
+    // newly completed load. Log the merger identity + old-vs-new FilePath so the
+    // beat-2.433 crowd-clip deletion is attributable to a specific slot.
+    if (gFMergeProbe()) {
+        const char *ownerPath = PathName(this);
+        if (gFMergeMatch(ownerPath) || gFMergeMatch(m->mName.Str())) {
+            fprintf(stderr,
+                "[FMERGE_CLEAR_MERGE] owner='%s' merger='%s' oldLoaded='%s' "
+                "loading='%s' nLoadedObjs=%d proxy=%d\n",
+                ownerPath ? ownerPath : "?", m->mName.Str(),
+                m->mLoaded.c_str() ? m->mLoaded.c_str() : "",
+                m->loading.c_str() ? m->loading.c_str() : "",
+                m->mLoadedObjects.size(), (int)m->mProxy);
+        }
+    }
+#endif
     m->Clear();
     if (!sDisableAll) {
         static Message msg("on_pre_merge", 0, 0, 0);

@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <execinfo.h> // W26-CROWD STEP-0 backtrace probe (CHARDRV_BT), inert by default
 #endif
 #include "CharClipDisplay.h"
 #include "char/CharBoneDir.h"
@@ -41,11 +42,28 @@ DECOMP_FORCEACTIVE(CharDriver, "%s %s, beat: %.2f")
 // W25-CROWD FIX support (flag RB3_CROWD_CLIP_KEEP, default OFF).
 // See src/system/char/CharDriver.cpp Poll() and docs/.../W25-CROWD/PLAN.md.
 // Per-crowd-driver snapshot of the ambient walk clip's NAME (only) taken at
-// first Play, used to re-establish the loop after an async load-merge destroys
-// the playing clip and swaps the driver's mClips to a wrong sub-bank.
+// first Play, used to try to re-establish the loop after the playing crowd clip
+// is destroyed.
 // (E-C1: NAME only — the struct holds no bank ref; see CrowdKeepState below.)
-// (E-C3: gCrowdKeep() is never pruned on driver destruction — stale-key alias
-// risk when flag-ON; opportunistic W26 cleanup, harmless while default-OFF.)
+// (E-C3: gCrowdKeep is now pruned on driver destruction below — no stale-key
+// alias risk when flag-ON.)
+//
+// W26-CROWD ROOT-CAUSE CORRECTION (STEP-0 discriminator, backtrace-proven):
+// the beat-2.433 crowd-clip kill is NOT a FileMerger merge/dup and does NOT swap
+// mClips to a "player-only sub-bank". It is a UI PANEL-UNLOAD teardown during the
+// splash->main_hub screen transition:
+//   UIManager::Poll -> BandScreen::Enter -> UIScreen::UnloadPanels
+//     -> UIPanel::Unload -> WorldDir::~WorldDir -> ... -> CharClipSet::~CharClipSet
+//        -> CharClip::~CharClip (crowd1.clp..crowd5.clip) -> ~Object
+//        -> Replace(clip,NULL) -> CharDriver::Replace -> DeleteClip.
+// After the teardown the drivers KEEP their shared `clips` ObjPtr but its crowd
+// clips are permanently GONE (nclips 11->8) and streetslomo_clips.milo is NEVER
+// reloaded. So `mClips->FindObject("crowdN.clp")` returns null and the re-arm
+// below can never fire in the observed repro. The real fix (keep the streetslomo
+// vignette world resident across the transition, or reload+re-trigger it) lives
+// in ui/UIScreen+UIPanel / world / the vignette DTA — OUTSIDE this lane's file
+// ownership (FileMerger.cpp + CharDriver.cpp). Kept default-OFF as scaffolding
+// with the E-C2 removal criterion still open (see STATUS.md).
 // ===========================================================================
 struct CrowdKeepState {
     std::string clipName; // name of the ambient clip (survives the clip's destruction)
@@ -85,6 +103,15 @@ CharDriver::~CharDriver() {
     // before the raw delete.
     if (mBones.Ptr() == (CharBonesObject *)mInternalBones)
         mBones = (CharBonesObject *)nullptr;
+    // E-C3: prune this driver's gCrowdKeep entry so a later CharDriver reusing the
+    // same heap address can't collide with a stale snapshot (alias risk when the
+    // RB3_CROWD_CLIP_KEEP flag is ON). Harmless while default-OFF.
+    {
+        std::map<const CharDriver *, CrowdKeepState> &m = gCrowdKeep();
+        std::map<const CharDriver *, CrowdKeepState>::iterator it = m.find(this);
+        if (it != m.end())
+            m.erase(it);
+    }
 #endif
     delete mInternalBones;
 }
@@ -816,12 +843,24 @@ void CharDriver::Replace(Hmx::Object *from, Hmx::Object *to) {
             ObjectDir *owndir = Dir();
             const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
             const char *ct = mClipType.Str();
-            if (dp[0] == '*' || (dn[0] && strstr(dn, dp)) || (ct && strstr(ct, dp)))
+            if (dp[0] == '*' || (dn[0] && strstr(dn, dp)) || (ct && strstr(ct, dp))) {
                 fprintf(stderr,
                     "[CHARDRV_REPLACE] dir='%s' clipType='%s' from='%s' to='%s' beat=%.3f\n",
                     dn[0] ? dn : "?", ct ? ct : "?",
                     from && from->Name() ? from->Name() : "?",
                     to && to->Name() ? to->Name() : "?", TheTaskMgr.Beat());
+                // W26-CROWD STEP-0: dump the native call chain that destroyed the
+                // crowd clip (CHARDRV_BT=1). Attributes the beat-2.433 kill to a
+                // specific deleter (DirLoader / milo reload / ObjectDir teardown),
+                // testing whether it is really FileMerger (A1) or something else.
+                if (getenv("CHARDRV_BT")) {
+                    void *bt[96];
+                    int n = backtrace(bt, 96);
+                    fprintf(stderr, "[CHARDRV_REPLACE_BT] from='%s' depth=%d\n",
+                        from && from->Name() ? from->Name() : "?", n);
+                    backtrace_symbols_fd(bt, n, 2);
+                }
+            }
         }
     }
 #endif
