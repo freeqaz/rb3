@@ -1045,26 +1045,113 @@ static DataNode RB3DtaCrowdCensus(DataArray *) {
                     // GeomOwner tells us whether a 0-vert mesh is a proxy whose
                     // geometry lives in another mesh (owner != self) vs a genuine
                     // load-failure/empty mesh (owner == self, nv == 0).
+                    // W24 STEP 0: also report the compressed-vert fields + faces,
+                    // matching the draw-gate metric in rb3_render_mesh.cpp:455
+                    //   hasGeom = owner->mFaces>0 && (mVerts>0 || mNumCompressedVerts>0)
+                    // ERRATA-C1: mVerts is empty BY DESIGN for compressed native
+                    // meshes; the true "has geometry" signal is comp>0 OR verts>0.
                     RndMesh *go = mit->GeomOwner();
+                    if (!go) go = (RndMesh *)mit;
                     const char *mn = mit->Name() ? mit->Name() : "?";
                     const char *gon = (go && go != (RndMesh *)mit && go->Name()) ? go->Name() : "self";
+                    int comp = go->mCompressedVerts ? (int)go->mNumCompressedVerts : 0;
+                    int compPtr = go->mCompressedVerts ? 1 : 0;
+                    int faces = (int)go->mFaces.size();
+                    int hasGeom = (faces > 0 && (go->mVerts.size() > 0 || go->mNumCompressedVerts > 0)) ? 1 : 0;
                     fprintf(stderr,
-                            "[CROWDMESH] char=%s mesh='%s' show=%d bones=%d verts=%d geomOwner=%s ownerVerts=%d\n",
-                            nm, mn, mit->Showing() ? 1 : 0, mit->NumBones(), nv, gon,
-                            go ? (int)go->Verts().size() : -1);
+                            "[CROWDMESH] char=%s mesh='%s' show=%d bones=%d verts=%d "
+                            "compPtr=%d comp=%d faces=%d hasGeom=%d geomOwner=%s ownerVerts=%d\n",
+                            nm, mn, mit->Showing() ? 1 : 0, mit->NumBones(), nv,
+                            compPtr, comp, faces, hasGeom, gon,
+                            go ? (int)go->mVerts.size() : -1);
                 }
             }
 
             if (verbose) {
+                // W24 STEP 0: report LOD count + proxy state. DrawShowing draws
+                // the selected LOD's Group; a Character with mLods.size()==0
+                // (a proxy whose LODs live in its master) draws only
+                // RndDir::DrawShowing() and never the LOD-group body meshes.
+                int nlods = (int)c->mLods.size();
+                bool isProxy = c->IsProxy();
+                FilePath &pf = c->ProxyFile();
+                const char *pfn = pf.empty() ? "-" : pf.c_str();
+                // RndDir::DrawShowing draws mDraws, populated by SyncDrawables
+                // ONLY when !IsSubDir(). A crowd proxy that is a sub-dir has an
+                // EMPTY mDraws -> RndDir::DrawShowing draws nothing, and lods=0
+                // means the LOD-group body draw is skipped too => zero draws.
+                RndDir *rd = static_cast<RndDir *>(c);
+                int ndraws = (int)rd->mDraws.size();
+                bool subdir = c->IsSubDir();
+                // Enumerate mDraws entries: name + class + showing. Tells us
+                // whether the body mesh (or a lodN.grp) is in the actual draw
+                // list, or whether only props are.
+                if (::getenv("CROWD_CENSUS_DRAWS")) {
+                    for (int di = 0; di < ndraws; ++di) {
+                        RndDrawable *dr = rd->mDraws[di];
+                        Hmx::Object *dobj = dynamic_cast<Hmx::Object *>(dr);
+                        fprintf(stderr, "  [CROWDDRAW] char=%s draw[%d]='%s' class=%s show=%d\n",
+                                nm, di,
+                                dobj && dobj->Name() ? dobj->Name() : "?",
+                                dobj ? dobj->ClassName().Str() : "?",
+                                dr->Showing() ? 1 : 0);
+                    }
+                }
                 fprintf(stderr,
                         "[CROWDCENSUS] name=%s dir=%s show=%d poll=%d drv=%d "
-                        "clip=%s sph=%.1f,%.1f,%.1f,r=%.1f mesh=%d/%d show=%d vert=%d\n",
+                        "clip=%s sph=%.1f,%.1f,%.1f,r=%.1f mesh=%d/%d show=%d vert=%d "
+                        "lods=%d isProxy=%d isSubDir=%d nDraws=%d proxyFile=%s\n",
                         nm, dnm[0] ? dnm : "?", sh ? 1 : 0, (int)ps,
                         drv ? 1 : 0, clipNm, cx, cy, cz, rad,
-                        meshShowing, meshCount, meshShowing, meshVerts);
+                        meshShowing, meshCount, meshShowing, meshVerts,
+                        nlods, isProxy ? 1 : 0, subdir ? 1 : 0, ndraws, pfn);
             }
         }
     }
+    // -----------------------------------------------------------------------
+    // W24 STEP 0 POSITIVE CONTROL (ERRATA-C1). Census meshes that DO render on
+    // HX_NATIVE so we know what a known-good mesh's (verts, comp, faces) triple
+    // looks like on this build. We walk the SAME roots and dump every mesh that
+    // passes the draw-gate hasGeom test (rb3_render_mesh.cpp:455). These are the
+    // band-player outfits + resident scene geometry that appear in the drawlog.
+    // Env: CROWD_POSCTRL=1 (verbose implied). Caps at 40 lines to avoid flood.
+    // -----------------------------------------------------------------------
+    if (::getenv("CROWD_POSCTRL") != nullptr) {
+        int posGeom = 0, posShown = 0, dumped = 0;
+        std::set<const Hmx::Object *> pseen;
+        for (int ri = 0; ri < nroots; ++ri) {
+            for (ObjDirItr<RndMesh> mit(roots[ri], true); mit; ++mit) {
+                RndMesh *m = mit;
+                if (!pseen.insert(m).second) continue;
+                RndMesh *go = m->GeomOwner();
+                if (!go) go = m;
+                int nv = (int)go->mVerts.size();
+                int comp = go->mCompressedVerts ? (int)go->mNumCompressedVerts : 0;
+                int faces = (int)go->mFaces.size();
+                bool hasGeom = faces > 0 && (nv > 0 || comp > 0);
+                if (!hasGeom) continue;
+                posGeom++;
+                bool sh = m->Showing();
+                if (sh) posShown++;
+                // Only dump the first 40 SHOWING geometry-bearing meshes (the
+                // ones that actually draw): that's the direct control set.
+                if (sh && dumped < 40) {
+                    const char *mn = m->Name() ? m->Name() : "?";
+                    const char *gon = (go != m && go->Name()) ? go->Name() : "self";
+                    fprintf(stderr,
+                            "[POSCTRL] mesh='%s' show=%d bones=%d verts=%d "
+                            "compPtr=%d comp=%d faces=%d hasGeom=1 geomOwner=%s\n",
+                            mn, sh ? 1 : 0, m->NumBones(), nv,
+                            go->mCompressedVerts ? 1 : 0, comp, faces, gon);
+                    dumped++;
+                }
+            }
+        }
+        fprintf(stderr, "[POSCTRL] summary geomBearing=%d showingGeom=%d dumped=%d\n",
+                posGeom, posShown, dumped);
+        ::fflush(stderr);
+    }
+
     if (verbose) ::fflush(stderr);
 
     char buf[256];

@@ -320,6 +320,18 @@ CharEyes *Character::GetEyes() { return Find<CharEyes>("CharEyes.eyes", false); 
 void Character::DrawShowing() {
 #ifdef HX_NATIVE
     RB3ProvOwnerScope _provOwner(1 /*owner*/, Name());  // no-op unless RB3_DRAWLOG_PROV
+    // W24-RECON CROWD probe (inert unless CROWD_DRAW_DBG set). Confirms whether
+    // Character::DrawShowing is even reached for the sv3_a crowd_* actors, and
+    // what LOD/screenSize it selects. Read-only stderr; Wii-neutral (HX_NATIVE).
+    if (::getenv("CROWD_DRAW_DBG")) {
+        const char* _nm = Name();
+        if (_nm && ::strncmp(_nm, "crowd_", 6) == 0) {
+            fprintf(stderr, "[CROWD_DRAW_DBG] DrawShowing char=%s lods=%d minLod=%d "
+                    "drawMode=%d rndDrawMode=%d showing=%d\n",
+                    _nm, (int)mLods.size(), mMinLod, (int)mDrawMode,
+                    TheRnd ? TheRnd->DrawMode() : -1, Showing() ? 1 : 0);
+        }
+    }
 #endif
     START_AUTO_TIMER("char_draw");
     if (mDebugDrawInterestObjects) {

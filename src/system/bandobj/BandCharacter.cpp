@@ -748,6 +748,125 @@ void BandCharacter::Poll() {
                 }
             }
 
+            // W24-FOREARM (T1): ANATOMICAL probe. Env BAND_ANIM_ANAT=1 (in addition
+            // to BAND_ANIM_PROBE member-select) enables a SAME-FRAME multi-bone
+            // stretch capture along the R/L arm chain. For each child bone we compute
+            //   authoredLen = |child->LocalXfm().v|   (rest local bone length; the
+            //                                           precedent is CharIKHand.cpp:357)
+            //   liveDist    = |child->WorldXfm().v - parent->WorldXfm().v|
+            //   ratio       = liveDist / authoredLen
+            // A child whose live parent->child distance exceeds 1.5x its authored bone
+            // length is anatomically DETACHED/STRETCHED (the exploded spike-fan). We
+            // emit evt=ANAT for the whole chain on the SAME frame (frameCt from the
+            // banim path is per-member; we snapshot a shared frame tag) so multi-bone
+            // numbers are co-temporal (the W23 flaw was cross-boot numbers). A %120
+            // heartbeat emits the per-member MAX ratio so "quiet" is provable.
+            // Probe-only, HX_NATIVE + env-gated => byte-inert with the env unset.
+            if (banim && getenv("BAND_ANIM_ANAT")) {
+                static int anatFrame = 0;
+                int aFrame = anatFrame++;
+                // W24 fix: emit the ENGINE frame (same source /api/health reports:
+                // Seconds(kRealTime)*60) so ANAT lines correlate to screenshot frame
+                // windows. aFrame alone is a private per-invocation counter (all 4
+                // members bump it), NOT the engine frame — the W23 correlation trap.
+                int engFrame = (int)(TheTaskMgr.Seconds(TaskMgr::kRealTime) * 60.0f);
+                // chain: parent-name, child-name pairs. We resolve each once/frame.
+                struct BonePair { const char *parent; const char *child; };
+                static const BonePair chain[] = {
+                    { "bone_pelvis.mesh",     "bone_spine1.mesh"     },
+                    { "bone_spine1.mesh",     "bone_spine2.mesh"     },
+                    { "bone_spine2.mesh",     "bone_spine3.mesh"     },
+                    { "bone_R-clavicle.mesh", "bone_R-upperArm.mesh" },
+                    { "bone_R-upperArm.mesh", "bone_R-foreArm.mesh"  },
+                    { "bone_R-foreArm.mesh",  "bone_R-hand.mesh"     },
+                    { "bone_L-clavicle.mesh", "bone_L-upperArm.mesh" },
+                    { "bone_L-upperArm.mesh", "bone_L-foreArm.mesh"  },
+                    { "bone_L-foreArm.mesh",  "bone_L-hand.mesh"     },
+                };
+                const int nChain = (int)(sizeof(chain) / sizeof(chain[0]));
+                const char *aName = Name() ? Name() : "?";
+                CharDriver *aDrv = mDriver;
+                CharClip *aClip = aDrv ? aDrv->FirstPlayingClip() : nullptr;
+                const char *aClipName =
+                    aClip ? (aClip->Name() ? aClip->Name() : "?") : "(none)";
+                const char *aClipType = aDrv ? aDrv->ClipType().Str() : "?";
+                bool heartbeatA = (aFrame % 120) == 0;
+                float maxRatio = -1.0f;
+                const char *maxBone = "(none)";
+                for (int ci = 0; ci < nChain; ci++) {
+                    RndTransformable *pB = Find<RndTransformable>(chain[ci].parent, false);
+                    RndTransformable *cB = Find<RndTransformable>(chain[ci].child, false);
+                    if (!pB || !cB) continue;
+                    float authoredLen = Length(cB->LocalXfm().v);
+                    Vector3 wp = pB->WorldXfm().v;
+                    Vector3 wc = cB->WorldXfm().v;
+                    Vector3 d;
+                    Subtract(wc, wp, d);
+                    float liveDist = Length(d);
+                    float ratio = (authoredLen < 0.01f)
+                        ? -1.0f
+                        : (liveDist / authoredLen);
+                    if (ratio > maxRatio) { maxRatio = ratio; maxBone = chain[ci].child; }
+                    bool detached = (ratio > 1.5f);
+                    if (detached) {
+                        fprintf(stderr,
+                            "[BAND_ANIM] evt=ANAT efr=%d frame=%d member='%s' clipType='%s' "
+                            "clip='%s' parent='%s' child='%s' authoredLen=%.4f "
+                            "liveDist=%.4f ratio=%.3f childWorld=(%.3f,%.3f,%.3f)\n",
+                            engFrame, aFrame, aName, aClipType, aClipName,
+                            chain[ci].parent, chain[ci].child,
+                            authoredLen, liveDist, ratio, wc.x, wc.y, wc.z);
+                    }
+                }
+                if (heartbeatA) {
+                    fprintf(stderr,
+                        "[BAND_ANIM] evt=ANATBEAT efr=%d frame=%d member='%s' clipType='%s' "
+                        "clip='%s' maxRatio=%.3f maxBone='%s'\n",
+                        engFrame, aFrame, aName, aClipType, aClipName, maxRatio, maxBone);
+                }
+                // One-shot per member: dump the ACTUAL TransParent chain from
+                // bone_R-hand.mesh up to root, with each node's world pos, so we can
+                // verify the assumed clavicle->upperArm->foreArm->hand parentage and
+                // whether the ratio metric is anatomically meaningful. Gated behind
+                // BAND_ANIM_CHAIN to keep the ANAT stream clean when not wanted.
+                static std::set<const void *> chainDumped;
+                const char *chainHzEnv = getenv("BAND_ANIM_CHAIN_HZ");
+                int chainHz = (chainHzEnv && chainHzEnv[0]) ? atoi(chainHzEnv) : 0;
+                bool chainPeriodic = chainHz > 0 && (aFrame % chainHz) == 0;
+                if ((getenv("BAND_ANIM_CHAIN") &&
+                     chainDumped.find((const void *)this) == chainDumped.end()) ||
+                    chainPeriodic) {
+                    chainDumped.insert((const void *)this);
+                    RndTransformable *leaf = Find<RndTransformable>("bone_R-hand.mesh", false);
+                    int guard = 0;
+                    for (RndTransformable *p = leaf; p && guard < 24;
+                         p = p->TransParent(), guard++) {
+                        Vector3 w = p->WorldXfm().v;
+                        Vector3 lv = p->LocalXfm().v;
+                        // is this bone registered in its parent's TransChildren list?
+                        // (if NOT, the parent's world xfm never propagates to it =>
+                        // stale/frozen world pos = spike-fan). read-only check.
+                        int inParentChildren = -1;
+                        RndTransformable *par = p->TransParent();
+                        if (par) {
+                            inParentChildren = 0;
+                            const std::vector<RndTransformable *> &kids =
+                                par->TransChildren();
+                            for (int ki = 0; ki < (int)kids.size(); ki++) {
+                                if (kids[ki] == p) { inParentChildren = 1; break; }
+                            }
+                        }
+                        fprintf(stderr,
+                            "[BAND_ANIM] evt=CHAIN efr=%d pf=%d member='%s' depth=%d node='%s' "
+                            "world=(%.3f,%.3f,%.3f) localLen=%.4f inParentKids=%d parent='%s'\n",
+                            engFrame, aFrame, aName, guard, p->Name() ? p->Name() : "?",
+                            w.x, w.y, w.z, Length(lv), inParentChildren,
+                            p->TransParent() && p->TransParent()->Name()
+                                ? p->TransParent()->Name() : "(root/null)");
+                    }
+                }
+            }
+
             // wave-08: now that Character::Poll() has posed the per-member skeleton
             // for THIS frame (the animated bones are live), repoint the outfit skin
             // meshes onto them. Runs once per member (mNativeReboundOnce); retries
