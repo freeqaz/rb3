@@ -6,9 +6,66 @@ hand-off charter) + `W25-FOREARM/STATUS.md` (the reframed prop-posing tail).
 Engine pin `2088c68`. FOURTEEN defaults ON. **FIX wave, recon-first** — flag-gated fixes
 default-OFF; coordinator-only default flips at close-out after E1. All lane agents = OPUS.
 
-## COORDINATOR ACCEPTANCE (<pending review>)
+## COORDINATOR ACCEPTANCE (from `WAVE26_REVIEW.md`, rb3 `3b402960` — DISPATCH-WITH-AMENDMENTS)
 
-_To be filled from `WAVE26_REVIEW.md`._
+**A1–A9 adopted verbatim and BINDING; the review file overrides this kickoff wherever they
+differ.** Two load-bearing corrections: the CROWD fix is RE-FIRE not suppress; the GLOW bug is
+likely one in-tree excluded halo pass. Headlines:
+
+- **A1 (CROWD — kill site pinned + preference INVERTED):** the beat-2.433 clip-kill is
+  `FileMerger::Merger::Clear()` (`char/FileMerger.cpp:30-52`) called unconditionally from
+  `NotifyFileLoaded` (`:343`) — a SECOND completed load through the SAME Merger slot deletes the
+  prior load's objects (→ the 7× `Object.cpp:131` Replace-to-null). The post-merge player-only
+  bank (zero crowd clips) = a DIFFERENT file = a LEGITIMATE deferred selection (dircut class,
+  `BandCharacter.cpp:3954-3997`), NOT a dup. **Expect RE-FIRE; choose SUPPRESS only if the STEP-0
+  FilePath log proves same-file** (then fix = FilePath compare/normalization). Native divergence =
+  completion TIMING (async organizer + `RB3_LOADER_BUDGET_MS`, `utl/Loader.cpp:571` lands the merge
+  mid-vignette where Wii finishes pre-beat-0), NOT code path. STEP 0: log Merger `mName` + prev
+  `mLoaded` + new `loading` FilePaths at `AppendLoader`/`NeedsLoading` (`:176`/`:165`) — extend the
+  existing `gNativeStartLoadTag` instrumentation, commit the log as the checkpointed discriminator.
+- **A2 (CROWD re-fire hook):** `on_post_merge` with `msg[2]==true` (`:397-406`, `mFilesPending.empty`)
+  OR next-frame `CharDriver::Poll` (the crash-proven shape); scope `mClipType==Symbol("crowd")`
+  (W25 A/B: gameplay = ZERO crowd CharDriver events → provably dormant); NEVER deref a foreign bank
+  in the merge frame (the W25 UAF). **PREFER composing with the existing RB3_CROWD_CLIP_KEEP re-arm:
+  fix the bank RESOLUTION (keep `mClips` resolving to a crowd-bearing bank), let the flag re-Play —
+  the engine fix may not need to touch play at all.** Do the E-C3 `gCrowdKeep` pruning.
+- **A3 (CROWD global-change guard):** any `NeedsLoading`/FilePath-compare change is GAME-GLOBAL
+  (closet, dircuts, song load) → flag-gated AND initially name-scoped, + a closet-or-gameplay boot
+  A/B BEYOND the menu drawlog-792 (which doesn't exercise dircut/closet mergers).
+- **A4 (PROP discriminator):** separate (a) parent-chain gap — `RndTransProxy::Sync`
+  (`rndobj/TransProxy.cpp:28-45`) silently `SetTransParent(0,0)` on a Find-miss (:44) leaving the
+  subtree in resource-local space (pick z=98≈local vs hand z=48.8; mic below floor) +
+  `BandCharacter::SyncObjects` (`:2905-2924`) reparents `bone_prop0-3`/`bone_mic_stand_bottom` only
+  if Find resolves — from (c) clip-binding gap (chain correct but LocalXfm never animated).
+  DUMP the full TransParent chain + world of `bone_pick_strum`/`bone_mic_stand_bottom`/fret targets
+  in-song BEFORE any fix: NULL/identity-rooted ⇒ attach/proxy gap; correct chain but static rest ⇒
+  binding. (`mInstDir` resolved `:328-333`, polled `:905`, excluded from skeleton rebind `:1102-1104`.)
+- **A5 (PROP regression gates — the load-bearing risk):** there is NO in-song population of
+  correctly-posed in-reach targets (all 98-273u); the REAL risk = a prop fix that brings a target
+  within reach but a few units WRONG re-engages full-weight IK, looking worse than the clip pose.
+  Gates: (i) per-ikhand pre/post target-distance histogram (reuse IK_TGT_DBG) — NO ikhand with
+  pre-fix `d ≤ reach` may move its target beyond epsilon; (ii) clamp-fire-count as a large RELATIVE
+  drop over a fixed capture (NOT absolute 0 — W25 intermittency); (iii) E1 judged per-instrument
+  closeup (fret hand ON neck, pick at strings, mic at mouth) — ratio gates alone can't distinguish
+  clip-pose from IK-pose. Bounded: the clamp stays default-ON, so worst case degrades to today, never
+  the spike-fan.
+- **A6 (PROP):** `mic_stand.ikhand` reach=0 is expected authored chain shape (not a 2-bone arm) —
+  do NOT modify `MeasureLengths` or extend the clamp to reach==0; the prop-pose fix covers it via
+  the direct-set path (mic-at-mouth E1 acceptance only).
+- **A7 (GLOW — likely in-tree root cause):** step 1 = `RB3_SMASHER_HALO=1` A/B
+  (`native/src/rb3_render_hook.cpp:285-309` — the native halo pass DELIBERATELY excludes
+  `gem_smasher_glow` unless this flag). If that closes S5, GLOW reduces to a flag-default decision +
+  E1, not a fix. Build streak via `autohit` (proven harness, `song-end-test.py:61`); NOTE direct
+  `set_multiplier` only updates the meter — ≥4x PeakState/glow needs `BandTrack::SetStreak`
+  (`BandTrack.cpp:328-345` → `GemTrackDir::PeakState:676`) or natural autohit build.
+- **A8 (ownership, ENFORCED):** `char/FileMerger.cpp` + `char/CharDriver.cpp` = CROWD only (reads
+  `gNativeStartLoadTag` output, does NOT edit BandCharacter.cpp); `bandobj/BandCharacter.cpp` +
+  `bandobj/BandWardrobe.cpp` + `rndobj/TransProxy.cpp` + `char/CharIKHand.cpp` (probes only) = PROP
+  only; `native/src/rb3_render_hook.cpp` = GLOW only.
+- **A9 (G3):** PROP's shared-engine edits pinned to case-1: byte-identical `#else`,
+  `batch_objdiff` == baseline EXACTLY (same standard as CROWD).
+
+_(original kickoff placeholder retained below for provenance.)_
 
 - **Hazard note:** engine tree carries uncommitted `M FxSendNative.cpp`; rb3 tree carries
   `native/src/rb3_session_trace.cpp` — never stage either. CLOSURES (do NOT reopen): hands-finger
