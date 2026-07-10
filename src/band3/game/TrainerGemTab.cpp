@@ -272,8 +272,8 @@ void TrainerGemTab::Draw(int i) {
         DrawStartFinish();
         break;
     case 4: {
-        Transform xfm = mGemTab->WorldXfm();
-        Transform orig = xfm;
+        Transform orig = mGemTab->WorldXfm();
+        Transform xfm = orig;
         unsigned int tickRange = unk54->GetEndTick() - unk54->GetStartTick();
         xfm.v.z -= 60.0f;
         mGemTab->SetWorldXfm(xfm);
