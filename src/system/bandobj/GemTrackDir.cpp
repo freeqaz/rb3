@@ -485,7 +485,7 @@ void GemTrackDir::SetupSmasherPlate() {
                     : Find<RndGroup>("smasher_fx.grp", true);
                 RndGroup *after = mSmasherPlate->Find<RndGroup>("after_gems.grp", false);
                 if (after)
-                    after->AddObject(grptoadd, 0);
+                    grptoadd->AddObject(after, 0);
                 RndGroup *keysback =
                     Find<RndGroup>("key_shift_stationary_back.grp", true);
                 RndGroup *keylanes =
