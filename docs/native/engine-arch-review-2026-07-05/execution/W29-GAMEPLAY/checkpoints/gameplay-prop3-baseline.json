@@ -1,0 +1,15 @@
+{
+  "stage": "prop3-baseline",
+  "buildSha": "95df30f29f83f33c4ca7e97fe6133c1075565dac",
+  "note": "Pre-fix flag-ON baseline reproducing W28 right_hand residual. Part C deletion already applied in-tree (inert flag-OFF, does not affect RB3_PROP_POSE_FULL run).",
+  "harness": "W26-PROP/run_prop_probe.py beastandtheharlot 18, RB3_PROP_POSE_FULL=1 RB3_IK_CLAMP_DBG=1 RB3_PROP_DST_DBG=1, reach clamp default-ON",
+  "log": "/tmp/wave29-prop-baseline-ON.log",
+  "analyzer_verdict": "FAIL",
+  "analyzer_exit": 1,
+  "focus_ikhands": {
+    "strum.ikhand":     {"skip": 0, "dst_n": 0,  "dst_med": null, "verdict": "PASS"},
+    "fret.ikhand":      {"skip": 0, "dst_n": 0,  "dst_med": null, "verdict": "PASS"},
+    "right_hand.ikhand":{"skip": 0, "dst_n": 8,  "dst_med": 31.4, "verdict": "FAIL"}
+  },
+  "residual": "right_hand (background drummer floor-tom): redirected at-hand parent frame sits ~31u from hand; 8 dst>30u entries at median 31.4u. Attributable to deferred piece (3): unbound prop-tip clip track."
+}

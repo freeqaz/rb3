@@ -1,0 +1,13 @@
+{
+  "stage": "micAB",
+  "buildSha": "5a430eea014cb7383545bf58f770d5cce2eecc31",
+  "question": "Does piece (1) (RB3_PROP_POSE_FULL mFinger re-projection break, global) damage the vocalist mic-hand pose? (E6 default-ON blocker)",
+  "verdict": "RETIRED (blocker not confirmed): piece (1) does NOT damage the vocalist mic-hand pose",
+  "evidence": {
+    "code_level": "mic.ikhand has mFinger==NULL (finger=0 in every [PROP_DST] row across OFF/BYPASS/ON) -> the 'if (mFinger && !sFingerBypass && !sPropPoseFull())' re-projection block is SKIPPED identically in OFF and ON. Piece (1) is a provable no-op for the actual mic hand.",
+    "mic_stand": "mic_stand.ikhand has mFinger (finger=1). Cross-run dst_from_hand: OFF~81u, FULL-ON~60u. BUT the piece-1-IMMUNE mic.ikhand shifted by the SAME proportion (OFF~75u -> ON~56u, ~-25%), so the shift is shared vocalist animation-phase variance across runs, NOT a piece-1-specific effect. mic_stand reach=0.00 (IK clamp dormant; never skipped/clamped in any run).",
+    "visual": "band-closeup-capture.py --member vocals --anchor-ms 26000 OFF vs ON: both verdict=PASS, pinned 6/6, 0 band drops. ON coop_v_n01 shows a coherent leaning singing pose (mic stand visible), no spike-fan / explosion / deformed hand."
+  },
+  "caveat": "Clears the vocalist mic-chain specifically (the E6(a) A/B). The broader default-ON decision + E6(b) 'scope the global mFinger break OR show it globally harmless' remains coordinator-owned; this lane shows it is harmless for the mic chain.",
+  "probe_cap_note": "E5 window-share confound is real: the shared per-process [PROP_DST] cap is consumed by the always-over-reaching guitar/drum hands in OFF, starving mic rows even at cap=6000; cap=30000 was needed to capture OFF mic_stand. Caps parameterized through existing RB3_PROP_DST_DBG/RB3_IK_CLAMP_DBG values (CA6, no new getenv)."
+}

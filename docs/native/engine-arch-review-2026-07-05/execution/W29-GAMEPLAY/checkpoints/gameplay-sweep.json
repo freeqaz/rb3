@@ -1,0 +1,16 @@
+{
+  "stage": "sweep",
+  "buildSha": "c4d2d46bda507f0ae455fafb7f4c2622ac4dacad",
+  "bounds": "CA7: seeds triaged FIRST; 0 NEW boot-to-song runs (reused coordinator /tmp/rb3-boot2song-verify seed captures + Part B vocalist closeups as 2nd angles); engine.log anomaly grep across all lane runs = 0 across FAIL-MSG/abort/MILO_NOTIFY/OOB/MILO_WARN.",
+  "seed1_guitarist_hands": {
+    "verdict": "CONFIRMED-mechanism (not a NEW bug): the guitarist's hands are not posed on the instrument in the default-OFF seed capture. Second angle gameplay_002 shows both arms hanging in a neutral/dormant pose. This is the W28-documented default-OFF PROP-hand state (IK reach-clamp skip -> keep idle clip pose). The fix RB3_PROP_POSE_FULL (W28 pieces 1+2) already produces hands-on-guitar for strum/fret; it is default-OFF pending the E6 blocker, which Part B helps retire for the mic chain.",
+    "retail_pair": "No exact retail band-closeup pair (retail shots are highway-cam). Second angle = gameplay_002 (same club venue).",
+    "proposed_wave30": "Coordinator default-ON decision for RB3_PROP_POSE_FULL (pieces 1+2), gated on completing E6(b) global-mFinger scoping; Part B retires the mic-chain half."
+  },
+  "seed2_green_faces": {
+    "verdict": "INCONCLUSIVE (no retail pair): two band members (bespectacled + long-haired) show strong green/olive faces under a purple hexagon venue (gameplay_006). Differential: the club-venue guitarist (gameplay_002) has a NORMAL tan face in the SAME run -> green is member/venue-position-specific, not a global wash. Green faces ALSO seen on the club-venue vocalist (Part B closeup). Suspected C8-faces char-env-lighting cause OR faithful green stage key-light.",
+    "retail_pair": "None available (retail screenshots are highway-cam, not band closeups).",
+    "proposed_wave30": "Obtain retail band-member closeup lighting ground truth; A/B char-env lighting vs stage key-light on the green-faced member models (C8-faces family)."
+  },
+  "log_anomalies": "0 across all classes in every lane run log."
+}
