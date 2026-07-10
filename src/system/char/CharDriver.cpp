@@ -163,41 +163,11 @@ float CharDriver::Display(float f) {
 }
 
 void CharDriver::Enter() {
-#ifdef HX_NATIVE
-    // W25-CROWD probe: capture mFirst BEFORE Clear() wipes it, so the ENTER
-    // probe below can report whether a live clip was playing at re-Enter.
-    CharClipDriver *sEnterMFirstAtEntry = mFirst;
-#endif
     Clear();
     mLastNode = 0;
     mOldBeat = kHugeFloat;
     mBeatScale = 1.0f;
     RndPollable::Enter();
-#ifdef HX_NATIVE
-    // W25-CROWD STEP 0: confirm CharDriver::Enter fires on the crowd proxy
-    // driver, and whether mDefaultClip is authored at that moment. Inert unless
-    // CHARDRV_PROBE set; matches by owning-dir name / clipType.
-    {
-        const char *dp = getenv("CHARDRV_PROBE");
-        if (dp) {
-            ObjectDir *owndir = Dir();
-            const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
-            const char *ct = mClipType.Str();
-            if (dp[0] == '*' || (dn[0] && strstr(dn, dp)) || (ct && strstr(ct, dp))) {
-                Hmx::Object *dc = mDefaultClip.Ptr();
-                static int gSeq = 0;
-                // NOTE: this probe runs AFTER Clear() at the top of Enter, so
-                // mFirst is already null here. mFirstAtEntry captured below.
-                fprintf(stderr,
-                    "[CHARDRV_ENTER] seq=%d this=%p dir='%s' clipType='%s' defClip=%p "
-                    "defName='%s' beat=%.3f mFirstAtEntry=%p\n",
-                    gSeq++, (void *)this, dn[0] ? dn : "?", ct ? ct : "?", (void *)dc,
-                    (dc && dc->Name()) ? dc->Name() : "-", TheTaskMgr.Beat(),
-                    (void *)sEnterMFirstAtEntry);
-            }
-        }
-    }
-#endif
     if (mDefaultClip)
         Play(DataNode(mDefaultClip), 1, -1.0f, kHugeFloat, 0.0f);
 }
@@ -475,13 +445,11 @@ void CharDriver::Poll() {
                         (void *)cl, (cl && cl->Name()) ? cl->Name() : "-", nclips,
                         (int)mApply);
                 }
-                // W25-CROWD lifecycle counters: how many frames this driver has
-                // mFirst set, a non-null FirstPlaying() (mBlendFrac>0), and is
-                // Starved(). Rolled-up print every 120 polls so we see the true
-                // duty-cycle rather than a %60 snapshot. Uses static maps keyed
-                // by `this` — probe-only, HX_NATIVE.
+                // W25-CROWD lifecycle counter: per-driver Poll frame count, keyed
+                // by `this` — feeds the CHARDRV_DIE pollFrame stamp. Probe-only,
+                // HX_NATIVE.
                 {
-                    static std::map<const CharDriver *, int> gFrames, gFirst, gPlaying, gStarved;
+                    static std::map<const CharDriver *, int> gFrames;
                     static std::map<const CharDriver *, void *> gPrevFirst;
                     int &fr = gFrames[this];
                     fr++;
@@ -528,13 +496,6 @@ void CharDriver::Poll() {
                             pn = toName;
                         }
                     }
-                    if (mFirst) gFirst[this]++;
-                    if (FirstPlaying()) gPlaying[this]++;
-                    if (Starved()) gStarved[this]++;
-                    if ((fr % 120) == 0)
-                        fprintf(stderr,
-                            "[CHARDRV_LIFE] dir='%s' frames=%d firstSet=%d playing=%d starved=%d\n",
-                            dn[0] ? dn : "?", fr, gFirst[this], gPlaying[this], gStarved[this]);
                 }
             }
         }
@@ -575,32 +536,6 @@ void CharDriver::Poll() {
         }
     }
     mOldBeat = f17;
-#ifdef HX_NATIVE
-    // W25-CROWD: one-shot report of the crowd driver's starved-replay wiring —
-    // mStarvedHandler symbol + the playFlags of the current mFirst (if any) —
-    // to determine WHICH starved-replay path (handler / 0x30 / 0x40 / default)
-    // is supposed to loop these ambient walk clips. Probe-only.
-    {
-        const char *dp = getenv("CHARDRV_PROBE");
-        if (dp) {
-            ObjectDir *owndir = Dir();
-            const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
-            const char *ct = mClipType.Str();
-            if (dp[0] == '*' || (dn[0] && strstr(dn, dp)) || (ct && strstr(ct, dp))) {
-                static std::set<const CharDriver *> seen;
-                if (Starved() && seen.insert(this).second) {
-                    const char *sh = mStarvedHandler.Null() ? "-" : mStarvedHandler.Str();
-                    fprintf(stderr,
-                        "[CHARDRV_STARVE] dir='%s' starvedHandler='%s' mFirst=%p "
-                        "firstFlags=0x%x defStarved=%d\n",
-                        dn[0] ? dn : "?", sh ? sh : "-", (void *)mFirst,
-                        mFirst ? (unsigned)mFirst->mPlayFlags : 0u,
-                        (int)mDefaultPlayStarved);
-                }
-            }
-        }
-    }
-#endif
     if (Starved() && !mStarvedHandler.Null()) {
         Dir()->Handle(Message(mStarvedHandler), true);
     }
@@ -780,36 +715,6 @@ void CharDriver::Replace(Hmx::Object *from, Hmx::Object *to) {
     RndHighlightable::Replace(from, to);
     CharWeightable::Replace(from, to);
     CharPollable::Replace(from, to);
-#ifdef HX_NATIVE
-    // W25-CROWD: does a Replace() drop the live walk clip on a crowd driver
-    // (async load-completion swapping the clip object out of the stack)? Probe.
-    {
-        const char *dp = getenv("CHARDRV_PROBE");
-        if (dp && mFirst) {
-            ObjectDir *owndir = Dir();
-            const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
-            const char *ct = mClipType.Str();
-            if (dp[0] == '*' || (dn[0] && strstr(dn, dp)) || (ct && strstr(ct, dp))) {
-                fprintf(stderr,
-                    "[CHARDRV_REPLACE] dir='%s' clipType='%s' from='%s' to='%s' beat=%.3f\n",
-                    dn[0] ? dn : "?", ct ? ct : "?",
-                    from && from->Name() ? from->Name() : "?",
-                    to && to->Name() ? to->Name() : "?", TheTaskMgr.Beat());
-                // W26-CROWD STEP-0: dump the native call chain that destroyed the
-                // crowd clip (CHARDRV_BT=1). Attributes the beat-2.433 kill to a
-                // specific deleter (DirLoader / milo reload / ObjectDir teardown),
-                // testing whether it is really FileMerger (A1) or something else.
-                if (getenv("CHARDRV_BT")) {
-                    void *bt[96];
-                    int n = backtrace(bt, 96);
-                    fprintf(stderr, "[CHARDRV_REPLACE_BT] from='%s' depth=%d\n",
-                        from && from->Name() ? from->Name() : "?", n);
-                    backtrace_symbols_fd(bt, n, 2);
-                }
-            }
-        }
-    }
-#endif
     if (mFirst)
         mFirst = mFirst->DeleteClip(from);
 }
@@ -866,44 +771,7 @@ BEGIN_LOADS(CharDriver)
         mTestClip.Load(bs, false, mClips);
     }
     if (gRev > 0xB) {
-#ifdef HX_NATIVE
-        // W28-CROWD E5 discriminator (A2b): capture the SERIALIZED default-clip
-        // NAME at load. The milo chunkstream only seeks FORWARD (peek+seek-back
-        // faults), so replicate ObjPtr::Load (ObjPtr_p.h:536-543) manually: read
-        // the name, resolve it against mClips (falling back to this->Dir() exactly
-        // as ObjPtr::Load's `if (!dir && mOwner) dir = mOwner->Dir()`), assign the
-        // resolved pointer into mDefaultClip. Stream is consumed identically to the
-        // real Load (one ReadString), so no behavioral divergence. Decides whether
-        // a NULL mDefaultClip on the crowd drivers is a native resolution gap or
-        // FAITHFUL data (empty serialized name). Gated under CHARDRV_PROBE.
-        const char *dp = getenv("CHARDRV_PROBE");
-        if (dp) {
-            ObjectDir *owndir = Dir();
-            const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
-            bool match = (dp[0] == '*') || !dn[0] || strstr(dn, dp);
-            if (match) {
-                char nameBuf[0x80];
-                bs.ReadString(nameBuf, 0x80);
-                ObjectDir *rdir = mClips.Ptr();
-                if (!rdir)
-                    rdir = Dir();
-                Hmx::Object *resolved =
-                    rdir ? rdir->FindObject(nameBuf, false) : nullptr;
-                mDefaultClip = resolved;
-                fprintf(stderr,
-                    "[CHARDRV_DEFCLIP] dir='%s' serialized='%s' resolved=%p "
-                    "clipsDir=%p'%s'\n",
-                    dn[0] ? dn : "?", nameBuf, (void *)mDefaultClip.Ptr(),
-                    (void *)rdir, (rdir && rdir->Name()) ? rdir->Name() : "-");
-            } else {
-                mDefaultClip.Load(bs, false, mClips);
-            }
-        } else {
-            mDefaultClip.Load(bs, false, mClips);
-        }
-#else
         mDefaultClip.Load(bs, false, mClips);
-#endif
     }
     if (gRev > 0xD)
         bs >> mDefaultPlayStarved;

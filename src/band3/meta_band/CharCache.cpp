@@ -3,8 +3,7 @@
 #include "bandobj/BandCharacter.h"
 #include "bandobj/BandWardrobe.h"
 #ifdef HX_NATIVE
-#include "char/FileMerger.h" // C13 probe: Find<FileMerger>("FileMerger.fm")
-#include <cstdlib>           // getenv (RB3_CHAR_PREVIEW)
+#include <cstdlib>           // getenv (RB3_NO_CHAR_PREVIEW)
 #endif
 #include "bandobj/PatchDir.h"
 #include "game/BandUser.h"
@@ -61,13 +60,6 @@ void CharCache::InitMe() {
         unk1c.LoadFile(
             FilePath("../world/shared/chars.milo"), false, true, kLoadFront, false
         );
-        for (int i = 0; i < 4; i++) {
-            BandCharacter *bc = GetCharacter(i);
-            FileMerger *fm = bc ? bc->Find<FileMerger>("FileMerger.fm", false) : nullptr;
-            MILO_LOG(
-                "C13_PROBE: player%d char=%p FileMerger.fm=%p\n", i, (void *)bc, (void *)fm
-            );
-        }
     }
 #else
     // world/shared/chars.milo is the band-member character preview cache. It opens
