@@ -133,3 +133,96 @@ requires (enumerate in PLAN before touching). Acceptance: with flag ON in-song, 
 track the strum/fret positions with clamp mode counts ~0 skip (matching the B column
 of W27's A/B) AND visible hand-on-instrument in captures. Same gates table as the main
 lane (batch_objdiff / drawlog flag-OFF / rb3-tests / boot A/B flag-ON).
+
+## COORDINATOR ACCEPTANCE — BINDING (adopts WAVE28_REVIEW.md `350d3ebc`, A1-A8 ALL)
+
+Where this block conflicts with the draft text above, THIS BLOCK WINS.
+
+1. **A1 ADOPTED — interleave recipe pinned + probe-line grant.** One boot, all three
+   env vars (`RB3_CROWD_PANEL_DBG=1 CHARDRV_PROBE=crowd CHARDRV_BT=1`), stderr to ONE
+   file — both probe families reach fd 2 unbuffered in call order (CHARDRV `fprintf`
+   direct; PANELDBG via `MILO_LOG→Debug::Print→OSReport→vfprintf` rvl_shims.cpp:30-35).
+   The lane MAY make two one-line probe edits adding `beat=%.3f` (`TheTaskMgr.Beat()`)
+   to the `UIScreen::UnloadPanels` marker and the `UIPanel::CheckUnload` UNLOAD line.
+   `src/system/ui/UIScreen.cpp` is added to owned files **probe-line-only**.
+2. **A2 ADOPTED — STEP-0 header corrected; two new probes specified.** Probes exist
+   for items 1 and 4 ONLY. Items 2-3 require two small additions inside owned
+   CharDriver.cpp, both gated under the EXISTING `CHARDRV_PROBE` env (no new getenv
+   names → no census growth):
+   (a) **mClips-swap detector (unsampled):** per-driver `gPrevClips` transition
+   detector in `Poll` (same pattern as `gPrevFirst`/`CHARDRV_DIE`, CharDriver.cpp:
+   529-537) logging `[CHARDRV_CLIPSWAP] dir=... from=%p'%s' to=%p'%s' beat=...`,
+   PLUS one line in `SetClips` (:294) to attribute between-poll swaps to their
+   caller (the copy path :285 is covered by the Poll detector). The %60-sampled
+   `[CHARDRV]` line (:502-516) is NOT sufficient — that sampling is why W27 could
+   not decide the swap question.
+   (b) **E5 serialized-name probe:** at LOADS (:923) capture the serialized
+   default-clip STRING (Tell/peek/Seek-back around `mDefaultClip.Load`, or an
+   HX_NATIVE-gated manual read+resolve replicating ObjPtr_p.h:536-543), logging
+   `[CHARDRV_DEFCLIP] dir=... serialized='%s' resolved=%p`.
+   Item 2's deliverable also folds in E3: per-driver `CHARDRV_PLAY` counts (why
+   `crowd_female04` never Plays).
+3. **A3 ADOPTED — lever A reworded (supersedes the draft).** Lever A = *"fix the
+   driver's clip-set BINDING so the resident streetslomo drivers resolve/hold the
+   RESIDENT `clips` copy — at whichever layer the STEP-0 ownership-chain dump names:
+   (i) `mClips` load-time resolution (`bs >> mClips` CharDriver.cpp:890 →
+   `ObjPtr::Load` ObjPtr_p.h:536-543 → owner-dir `FindObject` with first-match
+   subdir ORDER, Dir.cpp:531-542 — an ordering or dir-scoping fix is in-scope);
+   (ii) a post-load `mClips` swap (`SetClips` :294-297 / copy :285); or (iii) the
+   trigger's direct object reference (`MyFindClip` kDataObject branch :345-347,
+   which bypasses mClips entirely)."* play_clip-time re-resolution is a permissible
+   mechanism ONLY if the dump shows that is where Wii diverges. Carve-out and
+   fallback rails unchanged.
+4. **A4 ADOPTED — identity-check paths pinned.** `orig-assets/extracted/config/
+   vignettes.dta` dyn_file is campaign-conditional (:4-28; fresh save → `sv3_a`
+   deterministic) — the lane RECORDS which variant the boot loaded. Hub panel list:
+   `orig-assets/extracted/ui/main/main_hub.dta:744`. Milos: `orig-assets/extracted/
+   world/vignette/shell/gen/{sv3_a,sv3_b,sv8_a}.milo_xbox`, `ui/main/gen/
+   main_hub.milo_xbox`. Static top-level milo listing via `scripts/milo/mip_strip.py`
+   `parse_dir_entries` (:399-425) — nested payloads (streetslomo inside sv3_a) are
+   NOT statically listable; runtime `/api/dta/eval` dump is the pinned method, and
+   `PathName()` (Utl.cpp:30) prints a full ownership chain in one call. The single
+   retail hub screenshot (`images/retail-screenshots/yt_mhKNp9uAT48_menu_hub.png`)
+   proves figure PRESENCE only, never motion; decisive identity evidence = the
+   runtime dir dumps + milo/DTA listings, video `mhKNp9uAT48` optional corroboration.
+5. **A5 ADOPTED — flag renamed.** Lever-A flag = **`RB3_HUB_CROWD_CLIPBIND`**
+   (semantic collision: `*_CROWD_REBIND` is bone-rebind vocabulary owned by the
+   default-ON `RB3_NO_CROWD_REBIND` inside the protected oracle, Crowd.cpp:929-932).
+   `RB3_PROP_POSE_FULL` stands (collision-clean). Names chosen ONCE at the STEP-0
+   checkpoint; no mid-lane renames. Census rows + pin bump for any new getenv names
+   are coordinator-only at close-out (the A2 probes add NONE — gated under
+   CHARDRV_PROBE).
+6. **A6 ADOPTED — drawlog × carve-out rule + prewarm + lever-B target set.**
+   (i) Drawlog gate addendum: if the carve-out fires unflagged, an over-eps result
+   whose divergences are EXCLUSIVELY world-field crowd-name values with count=792
+   unchanged is the EXPECTED signature of a genuinely-animating crowd (the
+   recalibrated eps was derived from the FROZEN crowd) — escalate to coordinator for
+   countersign (coordinator re-derives eps at close-out); ANY count change or
+   non-crowd field → revert to flag-gated default-OFF. The lane NEVER edits the
+   sidecar. (ii) A10 prewarm boot reinstated: one run with `RB3_PREWARM_SCREENS=1`,
+   conditional on ANY ui/*.cpp edit including probe lines. (iii) Lever B acceptance
+   += the re-charter must NAME the acceptance target set (which chars/drivers
+   constitute "hub walkers") for subsequent waves' census.
+7. **A7 ADOPTED — evidence honesty hardened (three mechanics, all mandatory).**
+   (1) Raw logs are DELIVERABLES: gzip the full raw stderr of every evidentiary run
+   into `W28-CROWD-OWNER/evidence/raw/` (or, if genuinely too large, commit sha256 +
+   byte count + a durable non-/tmp copy path in STATUS). (2) STATUS carries a
+   per-log probe-count table: `grep -c` for EVERY probe tag emitted this wave
+   (CHARDRV_ENTER/CLEAR/PLAY/DIE/REPLACE/REPLACE_BT/POP/STARVE/LIFE/CLIPSWAP/DEFCLIP
+   + PANELDBG CheckLoad/CheckUnload/UNLOAD/UnloadPanels) — zeros and omitted rows
+   are mechanically visible. (3) Coordinator greps the RAW artifacts BEFORE
+   accepting any STATUS headline; excerpts are illustrations, never evidence.
+8. **A8 ADOPTED — PROP tail arbitration pre-ruled + numeric acceptance.**
+   (i) Ownership arbitration is pre-ruled for concurrency: `CharClip*.cpp` and
+   `CharDriver.cpp` writes belong to the CROWD lane THIS WAVE. The PROP tail may
+   NOT write either; if the tip-track binding fix requires it, the tail documents
+   the exact site + needed edit in its PLAN/checkpoint and DEFERS that piece
+   (defer-without-guilt) — CharIKHand.cpp-local work (mFinger feedback break +
+   redirect-before-weight-loop) proceeds regardless. (ii) Acceptance is numeric:
+   same harness/song/window as W27 (`W26-PROP/run_prop_probe.py`, beastandtheharlot
+   guitar/expert ~18s), flag-ON: strum/fret/right_hand **skip=0** and
+   `dst_from_hand` **0 entries >30u** (W27 B column: 0/64, 0/36, 0/56 skip/clamp),
+   plus visible hand-on-instrument in `/api/screenshot` captures; any quoted
+   medians computed by a committed script, not by hand (E6 lesson).
+
+Dispatch readiness per review: READY with A2+A3+A5+A7 folded in (done above).
