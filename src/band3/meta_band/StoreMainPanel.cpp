@@ -190,7 +190,7 @@ const char *StoreMainPanel::MarqueePath() const {
 }
 
 BEGIN_HANDLERS(StoreMainPanel)
-    HANDLE_EXPR(is_waiting_on_enum, mConfigData == 0)
+    HANDLE_EXPR(is_waiting_on_enum, mConfigData != 0)
     HANDLE_EXPR(marquee_path, MarqueePath())
     HANDLE_MESSAGE(MetadataLoadedMsg)
     HANDLE_SUPERCLASS(StoreArtLoaderPanel)
