@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 410  
-**By class:** compat=1, diagnostic=1, feature=14, perf=9, probe=132, tuning=3, unknown=151, workaround=99  
+**Total flags:** 415  
+**By class:** compat=2, diagnostic=1, feature=14, perf=9, probe=135, tuning=3, unknown=151, workaround=100  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 74
 
 | name | class | default | owner | faithful-status | sites |
@@ -34,8 +34,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `CHAIN_MTX` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHAIN_PROBE` | probe | off | skinning/chain | n/a: archaeological debug probe (chain sim investigation) | 1 |
 | `CHAIN_PROPTEST` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
-| `CHARDRV_BT` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — symbolized backtrace at CharDriver::Replace (pinned the UI panel-unload teardown as the clip-kill) | 2 |
-| `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 10 |
+| `CHARDRV_BT` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — symbolized backtrace at CharDriver::Replace (pinned the UI panel-unload teardown as the clip-kill) | 1 |
+| `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 6 |
 | `CHAR_DBG` | probe | off | render/char-material | n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-because-unbound vs RTT-composite-never-painted); game BandDirector.cpp logs the re-run LoadCharacters() call (aliases VENUE_DBG) [RB3MaterialBinder.cpp:292; BandDirector.cpp:713] | 2 |
 | `CHAR_PROBE_DUMP` | unknown | off | unclassified | n/a | 1 |
 | `CLOCK_DBG` | probe | off | ui/hud | n/a: logs TrackDir::DrawShowing's real-time delta and y-per-second scroll multiplier for a track-panel HUD overlay [TrackDir.cpp:302] | 1 |
@@ -118,6 +118,10 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_AUDIO_LAT_MAX_MS` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_AUDIO_LAT_MIN_MS` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_AUDIO_UNDERRUN_LOG` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_BANDPERF_BT` | probe | off | bandobj/perf | probe: symbolized backtrace on BANDPERF performance-clip-adjacent calls ([BANDPERF_STATE_BT]); W30 E2: commit an addr2line transcript alongside the raw gz — raw frames are unsymbolized offsets | 1 |
+| `RB3_BANDPERF_CLIPS` | probe | off | bandobj/perf | probe: one-shot clips-enumeration census of each band member's bound CharClipSet via public CharDriver::ClipDir() ([BANDPERF_CLIPS/_CLIPFLAGS]); W30 asset census proved performance clips RESIDENT (stand_rhythm_*=P/PM, stand_solo_*=PS) — the gap is selection, not loading | 1 |
+| `RB3_BANDPERF_PROBE` | probe | off | bandobj/perf | probe: Wave-30 BANDPERF call census — BandCharacter SetState/PlayGroup/OnSetPlay + BandCamShot::StartAnim selection-layer entry points ([BANDPERF_STATE/_SHOT/_CLIP]); KEEP — W31-SET-PLAY-DISPATCH acceptance instrument | 3 |
+| `RB3_BAND_PERF_FORCE_PLAY` | workaround | off | bandobj/perf | NON-FAITHFUL demo lever (Wave-30, default-OFF): forces resident idle-flagged clips to promote to play class P so rhythm/solo clips play in-song (OFF=0 -> ON=55 CHARDRV_PLAY census) — proves residency-vs-selection, NOT the faithful fix (that is the venue-mood set_play dispatch, W31). Side effect E3: sit-group SetState retrigger churn 16->4373. RETIRE at W31 close-out once the faithful dispatch lands (zombie-lever hazard per the E-C2 precedent) | 1 |
 | `RB3_BAND_SHARD_RATIOCAP` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BAND_SHARD_WORLDCAP` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BAND_SHARD_WORLDFLOOR` | unknown | unknown | unclassified | n/a | 1 |
@@ -150,7 +154,6 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_CROWD_DIM` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_CROWD_DIM_OFF` | workaround | on | render/crowd | not-live: crowd-dim heuristic default-ON | 1 |
 | `RB3_CROWD_IMPOSTER_OFF` | workaround | on | render/crowd | not-live: crowd impostor rendering default-ON | 1 |
-| `RB3_CROWD_PANEL_DBG` | probe | off | ui/panel | probe: Wave-27 CROWD STEP-0 discriminator — per-panel mLoadRefs CheckLoad/CheckUnload trace + Load/UnloadPanels call-site markers + PanelDir::Enter trigger census + BandScreen interstitial trace (proved sv3_panel RESIDENT across splash->main_hub; close-out E1 reinstated the W26 teardown mechanism sourced at the faithful splash-side sv8/splash panel unload). [UIPanel.cpp, UIScreen.cpp, PanelDir.cpp, BandScreen.cpp] | 5 |
 | `RB3_DATA` | unknown | unknown | unclassified | n/a | 6 |
 | `RB3_DRAWLOG` | probe | off | render/determinism | n/a: per-draw state-log ring capture (W0.3 draw-log golden harness) | 1 |
 | `RB3_DRAWLOG_DUMP` | probe | off | render/determinism | n/a: draw-log JSON dump path (W0.3 draw-log golden harness) | 1 |
@@ -308,11 +311,13 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PREWARM_NEXT` | perf | off | load/perf | n/a: from:to screen prewarm-pair spec string (default main_hub_screen:song_select_screen). Asset prewarm scheduling, no draw/logic change. See project_incremental_load_perf memory. | 1 |
 | `RB3_PREWARM_SCREENS` | perf | off | load/perf | n/a: UI screen/panel asset prewarm+adopt (web default-ON opt-out via '0'; native default-OFF opt-in). No correctness dependency at the adopt site. See project_incremental_load_perf memory. | 4 |
 | `RB3_PROGRESSIVE_SHARPEN` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_PROP_CENSUS_DBG` | probe | off | char/ik | probe: standing threshold-unbiased one-shot CharIKHand mFinger census ([PROP_CENSUS], logged independent of the 30u dst gate) — the instrument any future flip decision needs (CA5). E7 caveat: rows are name-keyed (root|ikhand); same-named ikhands across scene phases (hub walkers = player0-3) collapse — key by object pointer or state the caveat | 1 |
 | `RB3_PROP_DST_DBG` | probe | off | char/ik | probe: Wave-26 PROP per-ikhand pre/post target-distance histogram (A5-i regression gate) | 1 |
 | `RB3_PROP_FINGER_BYPASS` | probe | off | char/ik | probe: Wave-27 mFinger-bypass A/B — skips the CharIKHand::Poll mFinger re-projection to test W26-E7; CONFIRMED: over-reach 120-240u collapses to 21-25u (reach 20.3u), all gross-unreachable clamp skips vanish -> clamp effectively dormant. Kept as collapse-target reference for the eventual prop binding fix. [CharIKHand.cpp] | 1 |
-| `RB3_PROP_POSE` | workaround | off | char/ik | not-live DEFAULT-OFF partial (Wave-26): redirects an out-of-reach instrument IK tip target to its correctly-posed bone_target_* parent frame (clip-binding gap — the prop-bone clip track is unbound natively so the tip stays at its rest offset). Drops raw target distance -44..-64% but does NOT make RB3_IK_REACH_CLAMP dormant (engine mFinger re-projection, W27) and produces no visible arm change (clamp already clip-poses). Kept as pinned discriminator + first-half scaffolding; HX_NATIVE, byte-identical #else. [CharIKHand.cpp:49 sPropPoseRedirect] | 1 |
+| `RB3_PROP_POSE` | workaround | off | char/ik | not-live DEFAULT-OFF partial (Wave-26): redirects an out-of-reach instrument IK tip target to its correctly-posed bone_target_* parent frame (clip-binding gap — the prop-bone clip track is unbound natively so the tip stays at its rest offset). Drops raw target distance -44..-64% but does NOT make RB3_IK_REACH_CLAMP dormant (engine mFinger re-projection, W27) and produces no visible arm change (clamp already clip-poses). Kept as pinned discriminator + first-half scaffolding; HX_NATIVE, byte-identical #else. [CharIKHand.cpp:49 sPropPoseRedirect] W30: forced on by RB3_PROP_POSE_FULL's default-ON; the opt-in is only relevant under RB3_PROP_POSE_FULL_OFF. | 1 |
 | `RB3_PROP_POSE_DBG` | probe | off | char/ik | probe: Wave-26 PROP redirect trace (tgt->parent, dTip/dPar) | 1 |
-| `RB3_PROP_POSE_FULL` | compat | off | char/ik | compat fix (default-OFF, Wave-28): real prop-hand fix pieces 1+2 — (1) breaks the CharIKHand::Poll mFinger re-projection feedback (W27-proven collapse 120-240u -> 21-25u) and (2) redirects the IK target to its at-hand parent BEFORE the multi-target weight loop so blend weight and world agree; also forces the RB3_PROP_POSE redirect on. Outcome PARTIAL: strum/fret pass (skip=0, 0 dst>30u), right_hand 12-13 dst entries ~32-33u = deferred piece-3 (prop-tip clip-track binding) residual. Default-ON blockers (close-out E6): piece 1 is globally scoped — vocalist-mic A/B via RB3_PROP_FINGER_BYPASS required first. [CharIKHand.cpp] | 1 |
+| `RB3_PROP_POSE_FULL` | compat | on | char/ik | live DEFAULT-ON (Wave-30 close-out, 15th default; opt-out RB3_PROP_POSE_FULL_OFF or =0): real prop-hand fix pieces 1+2 — (1) breaks the CharIKHand::Poll mFinger re-projection feedback and (2) redirects the IK target to its at-hand parent BEFORE the multi-target weight loop so blend weight and world agree; also forces the RB3_PROP_POSE redirect on. Flipped on Lane-2 DECISION: FLIP-SAFE — threshold-unbiased [PROP_CENSUS] (16 ikhands / 11 finger=1) + songMs-matched A/B: every NON-PROP finger=1 chain equal-or-better on median AND max (player3 feet planted-closer 112/89->36/38u; vocalist hands/mic_stand improve). Residual shipping with ON: drummer right_hand med ~39u / max ~43u sustained (n~3.5k uncapped; the historical '8x31u' is the capped focus-probe view) — root cause = zero-performance-clip idle pose (W30 BAND-PERF-CLIP), expected to shrink when W31 lands the faithful set_play dispatch. Wii byte-identical (HX_NATIVE). [CharIKHand.cpp sPropPoseFull] | 1 |
+| `RB3_PROP_POSE_FULL_OFF` | compat | off | char/ik | live opt-out for RB3_PROP_POSE_FULL — restores the default-OFF prop-hand behavior (idle clip pose via RB3_IK_REACH_CLAMP; sPropPoseRedirect reverts to the RB3_PROP_POSE opt-in) | 1 |
 | `RB3_PROV_SKIN_SPHERE` | probe | off | render/ui-forensics | n/a: Wave-19 T2-WORLDROI A/B control — forces skinned draws back to the legacy rectKind=1 sphere fallback (the R3 v1 world-cam blindness) so the new rectKind=3 skinned-pose bbox can be diffed against it (gate G1). Test-only; default preserves the rectKind=3 skinned-pose bbox + boneRects. Implies/requires RB3_DRAWLOG_PROV. SPATIAL provenance axis, not the frame-assignment timing axis. | 1 |
 | `RB3_READAHEAD_DEBUG` | probe | off | load/perf | n/a: reports loader queueDepth/kicked counts to show whether dependency milos enqueue deep enough for read-ahead to matter; zero cost when off, does not change scheduling [Loader.cpp:540] | 1 |
 | `RB3_RECOMPUTE_OFFSETS` | unknown | unknown | unclassified | n/a | 1 |

@@ -998,3 +998,58 @@ Defaults: **14 ON, unchanged.**
 5. **`part:` verb tooling:** extend `rb3_game_input.cpp:1080-1085` beyond guitar
    (coordinator-owned file) so future sweeps can charter vocals/drums/keys runs.
    Riders: probe retirement (Q(e)), released flag names ledger (Q(e′)).
+
+## Wave 30 (2026-07-10) — PERF-CLIP MECHANISM NAMED (set_play stream dead in-song) + 15th DEFAULT (RB3_PROP_POSE_FULL) + concurrent visual pass
+
+Kickoff `988b6de7`, pre-review adopted `fdc4d628` (CA1-CA8; A2 caught an unattainable
+Path-B decider, A3 an unexecutable retirement charter, A5 a biased-census trap), lanes
+`3156c6b1` + `bafa0921`, close-out review `a6022dba` (both ACCEPT-WITH-ERRATA, E1-E7
+appended to lane STATUS docs), flip `9b0401ce`. Concurrent (non-workflow) Fable
+visual pass `85143cdf` using the W29 `boot-to-song.py` harness: findings F1-F8 in
+`W30-VISUAL-PASS/FINDINGS.md` (3 runs, 0 source changes).
+
+| Lane | Result |
+|---|---|
+| **BAND-PERF-CLIP — PARTIAL (mechanism named + proven; faithful fix rechartered to W31; E1-E4)** | The on-stage band never leaves IDLE because the performance-INTENSITY selector stream is dead in-song: the only in-song band-anim driver is `play_group` from `BandCamShot::StartAnim` DTA anim-scripts (BANDPERF_STATE_BT), which sets group stand/sit but leaves `mPlayFlags` at IR (0x1000); the ONLY intensity rewriter is `OnSetPlay` (`set_play`), which has NO C++ sender (venue-mood/DTA-authored) and fires natively only at beat 0 (census: 190×mask=2, exactly 4×mask=3 all at beat 0.000). Performance clips (`stand_rhythm_*`=P/PM, `stand_solo_*`=PS) ARE resident in the bound groups — NOT a loading gap — but `GetClip` only ever asks for IR. Proven by songMs-matched `--fixed-clock` A/B via default-OFF demo lever `RB3_BAND_PERF_FORCE_PLAY`: OFF=0 rhythm/solo `CHARDRV_PLAY` (reproduces W29 idle-only), ON=55 (49 at positive beats to 50.9, coordinator-recomputed from committed gz). Lever is NON-FAITHFUL (E3: sit-group SetState churn 16→4373) — kept default-OFF as the residency-vs-selection discriminator, RETIRE at W31 close-out. Gates: batch_objdiff SetState 99.08 / PlayMainClip 92.2 / StartAnim 100.0 all baseline-exact; drawlog 792; rb3-tests 116/0; Wii .o byte-identical. |
+| **PROP-DEFAULT-ON — LANDED, DECISION: FLIP-SAFE → 15th default FLIPPED (E5-E7)** | E6(b) discharged via Path A: threshold-unbiased `[PROP_CENSUS]` probe (RB3_PROP_CENSUS_DBG, CA5) enumerated 16 ikhands / 11 finger=1 (6 PROP, 5 NON-PROP: player3 feet, vocalist mic_stand + free hands); songMs-matched A/B shows EVERY non-prop chain equal-or-better on median AND max (feet 112/89→36/38u planted-closer; vocalist 118/76→78u; mic_stand 81→60u); `analyze_prop_ab.py --w30-census` → `W30 DECISION: FLIP-SAFE` exit 0 (coordinator-reproduced from committed gz). Coordinator flipped `RB3_PROP_POSE_FULL` default-ON (`9b0401ce`, opt-out `RB3_PROP_POSE_FULL_OFF`), post-flip gates all PASS (drawlog 792/308-residual, boot A/B both paths, rb3-tests 116/0, Poll 96.13 baseline-exact). E5: analyzer deciders were vacuous on empty parse (gz input → FLIP-SAFE exit 0) — guard landed (exit 2 `NO ROWS PARSED`). E6 (binding residual framing, in flip commit): drummer right_hand ships at med ~39u/max ~43u sustained (n≈3.5k uncapped); "8×31u" was the capped focus-probe view. E7: census is name-keyed (hub walkers collapse into player0-3 rows) — future censuses key by pointer or state the caveat. |
+
+**Visual pass (F1-F8, countersigned from evidence):** F1 prop spike-fans/crumpled
+cones = visual-blocker → hand fans RETIRED by the PROP flip (post-flip retest
+confirmed); kit cones + waist-level hub-walker fans remain (undriven prop meshes,
+W27(b) constant authored LocalXfm) → fold into W31 lane 1 acceptance. F2 translucent
+score pill + F3 white glyph class + F4 missing star-slot outlines → ONE
+HUD-material/texture-bind family lane (retail pairs exist for all three). F5
+patch-shard now has a deterministic on-camera repro (`coop_g_cg` closeup) — recorded,
+NOT chartered (two prior rewrites bisect-reverted; needs a fresh hypothesis). F6 hub
+night grade: DO NOT charter until reconciled with the held RB3_UI_POST_GRADE
+rationale. F7 cosmetic backlog; F8 not-a-finding pending settle-frame recapture.
+
+**Close-out rulings:** flip executed per Q(b) with the E6 framing verbatim;
+retirement per Q(d)/CA3 (CHARDRV_ENTER/REPLACE/REPLACE_BT/DEFCLIP/STARVE/LIFE,
+C13_PROBE, RB3_CROWD_PANEL_DBG; coordinator overrule: the `CHARDRV_BT` env SURVIVES —
+it also gates the KEEP-listed `CHARDRV_PLAY_BT`); KEEP `BANDPERF_*` (W31 acceptance
+instrument) + `RB3_PROP_CENSUS_DBG` (standing census tool); `RB3_BAND_PERF_FORCE_PLAY`
+retire-at-W31. Census regen after flip+retirement (410 → generator-truth; engine
+classjson edit ⇒ ONE pin bump — reviewer's "no pin bump" note superseded by the
+mechanism). Defaults: **15 ON.**
+
+### Wave 31 menu (from `WAVE30_CLOSEOUT_REVIEW.md` Q(f) — discriminator-first + checkpoint-before-fix + A7 raw-log mechanics + E4 verbatim-quote rule carried)
+1. **W31-SET-PLAY-DISPATCH (primary):** make the song-authored venue-mood stream
+   (`[play]`/`[intense]`/`[mellow]`/`[solo]`) dispatch `set_play` to BandCharacter
+   natively. Discriminator-first: (i) does the mood/venue event data exist parsed
+   natively (BandDirector-side census)? (ii) who should send it (DTA venue scripts vs
+   song.anim events)? Spans >1 system — expect a scoped multi-edit, not a one-line
+   lever. Acceptance: with the DEMO LEVER OFF, sustained rhythm/solo `CHARDRV_PLAY`
+   census (Lane-1 A/B rerun, OFF=W29-idle baseline); **no sit-group churn** (E3 bound:
+   ON-run `grp='sit'` BANDPERF_STATE same order as OFF, not thousands); F1 gameplay
+   retest — drumstick/prop-tip bones driven, cones/fans gone or explicitly re-scoped;
+   retire `RB3_BAND_PERF_FORCE_PLAY` at close-out.
+2. **W31-HUD-GLYPHS (secondary):** F2 (translucent score pill) + F3 (white glyph
+   class) + F4 (star-slot row) as ONE HUD material/texture-bind family lane; trace one
+   glyph end-to-end, fix the bind, verify the class across hub/song_select/overshell +
+   pill/star row vs retail pairs.
+3. **W31-EXIT-TRAP (small, hygiene):** the teardown SIGSEGV every wave's gates must
+   tolerate. Riders: F5 recorded-not-chartered; F6 needs UIGRADE reconciliation; F7/F8
+   backlog; `part:`-verb tooling coordinator-opportunistic (worth doing before W31
+   dispatch if cheap); hub-walker prop-fan residual tracked (may need walk-clip
+   prop-track scoping later).

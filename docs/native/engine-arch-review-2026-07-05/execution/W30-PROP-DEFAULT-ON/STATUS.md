@@ -192,3 +192,27 @@ touch `CharDriver.cpp` (READ-ONLY), Lane-1 surfaces, `rb3_session_trace.cpp`, en
   with maxes collapsing — far beyond the E5 animation-phase variance envelope; the one
   neutral case (vocalist left_hand +2.9u med) has its max collapse 198→81, so it is not
   a regression.
+
+
+---
+
+## Close-out errata (appended by coordinator from WAVE30_CLOSEOUT_REVIEW.md `a6022dba` — append-only)
+
+- **E5 (Lane 2 + analyzer, = coordinator Caveat A, widened).** The
+  `--w30-census`/`--w30-residual-baseline` deciders are vacuous on empty parse:
+  binary/.gz input → zero rows → `FLIP-SAFE` exit 0; AND a usage error exits 0.
+  RULING: coordinator applies a guard to
+  `W28-PROP-FIX/analyze_prop_ab.py` in place — exit 2 with `ERROR: NO ROWS PARSED`
+  when either log yields 0 census AND 0 dst rows in a w30 mode, and exit 2 on usage
+  error. Decision unaffected (lane + E1 ran gunzipped logs, tables populated).
+- **E6 (Lane 2, = coordinator Caveat B, residual framing).** On the UNCAPPED ON log
+  the drummer right_hand shows `dst_n=4130, dst_med=39.3` (lane's own A/B table:
+  med 39.0 / max 43.0 / n=3528 songMs-window) — the historical "8×31u residual" is
+  the CAPPED focus-probe view (cap120, W29-continuity), not the sustained magnitude.
+  Lane disclosed honestly (STATUS A/B table + bare-name note); the FLIP COMMIT must
+  use the Caveat-B framing verbatim (Q(b)).
+- **E7 (Lane 2, census identity).** Census rows are name-keyed (root|ikhand);
+  same-named ikhands across scene phases (hub walkers = player0-3 per W29) collapse.
+  "16 CharIKHands / 11 finger=1" = distinct name-keys over the window. Decision
+  unaffected (decider uses un-deduped per-bucket aggregates). BINDING: future ikhand
+  censuses either key by object pointer or state the name-key caveat.

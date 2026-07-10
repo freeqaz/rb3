@@ -152,3 +152,28 @@ lever are live and default-OFF; coordinator decides retention at close-out.
   lever; `<execinfo.h>` + `char/CharClip.h` includes (both in existing HX_NATIVE block).
 - `src/system/bandobj/BandCamShot.cpp` — `BANDPERF_SHOT` send-side probe (+`<cstdio>`).
 - `docs/native/engine-arch-review-2026-07-05/execution/W30-BAND-PERF-CLIP/**`.
+
+
+---
+
+## Close-out errata (appended by coordinator from WAVE30_CLOSEOUT_REVIEW.md `a6022dba` — append-only)
+
+- **E1 (Lane 1, bookkeeping).** STATUS says the STEP-0 checkpoints carry
+  `buildSha=fdc4d628`; the committed checkpoints actually record `85143cdf` (step-0,
+  docs-only delta vs fdc4d628) and `"bafa0921 + probes + lever"` (lever A/B — a tree
+  including Lane 2's default-OFF HX_NATIVE probes). Source-equivalent for every
+  surface under test; no soundness impact. Record, don't rerun.
+- **E2 (Lane 1, evidence durability).** The committed `BANDPERF_STATE_BT` frames are
+  unsymbolized `(+0x…)` offsets; the symbolized dispatch chain in STATUS came from
+  addr2line against the (uncommitted) run binary. The chain is consistent with the
+  code path and the mask census corroborates it, but it is not independently
+  re-derivable from the gz after a rebuild. Future BT evidence: commit one addr2line
+  transcript alongside the raw log.
+- **E3 (Lane 1, undisclosed lever side effect).** ON A/B shows a sit-group SetState
+  retrigger storm (`grp='sit'` 16→4373) under `RB3_BAND_PERF_FORCE_PLAY` — visible
+  in the A7 table (87→4444) but unexplained in STATUS. One more reason the lever is
+  demo-only; W31's faithful dispatch must NOT exhibit it (bound in Q(f)).
+- **E4 (Lane 1, weak screenshot).** `bandperf_ON_songMs11318.png` is a torso
+  closeup; "band member mid-performance" is technically met but the pair is weak
+  visual evidence. Accepted on the strength of the CHARDRV_PLAY census (0→55,
+  E1-reproduced), not the screenshots.

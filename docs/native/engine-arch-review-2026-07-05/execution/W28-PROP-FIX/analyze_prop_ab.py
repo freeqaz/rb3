@@ -147,12 +147,25 @@ def _kv(args):
     return out
 
 
+def _guard_rows(label, parsed):
+    # W30 close-out E5 guard: a .gz (or wrong) file parses as zero rows and the
+    # deciders would otherwise rule FLIP-SAFE vacuously. Refuse to rule on empty input.
+    clamp, dst, dc, cn = parsed
+    if not cn and not dst and not dc and not clamp:
+        print(f"ERROR: NO ROWS PARSED from {label} log (gzipped input? wrong path?) — "
+              f"gunzip first; deciders refuse to rule on empty input", file=sys.stderr)
+        return False
+    return True
+
+
 def w30_census(args):
     kv = _kv(args)
     if "OFF" not in kv or "ON" not in kv:
         print("usage: --w30-census OFF=off.log ON=on.log", file=sys.stderr)
         return 2
     off = parse(kv["OFF"]); on = parse(kv["ON"])
+    if not _guard_rows("OFF", off) or not _guard_rows("ON", on):
+        return 2
     off_clamp, off_dst, off_dc, off_cn = off
     on_clamp, on_dst, on_dc, on_cn = on
     census = dict(off_cn); census.update(on_cn)   # union; identical by construction
@@ -236,7 +249,10 @@ def w30_residual_baseline(args):
     if "ON" not in kv:
         print("usage: --w30-residual-baseline ON=on.log", file=sys.stderr)
         return 2
-    clamp, dst, _dc, _cn = parse(kv["ON"])
+    parsed = parse(kv["ON"])
+    if not _guard_rows("ON", parsed):
+        return 2
+    clamp, dst, _dc, _cn = parsed
     _print_table("ON", kv["ON"], clamp, dst)
 
     # Legacy bar (continuity with W29): strum/fret skip=0 & 0 dst>30u; verdict text.
