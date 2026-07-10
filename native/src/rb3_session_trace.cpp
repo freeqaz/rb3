@@ -787,12 +787,22 @@ void PushEvent(TraceEvent &e) {
     }
 }
 
+} // namespace
+
 // Snapshot the current song ms. RB3TraceSetSongMs stores the latest value
 // (Wave 2 wires the real GetBeatMaster()->GetAudio()->GetTime() chain into it);
 // < 0 => "not in a song" => the envelope omits `sm` (D2 §4.5).
+// NOTE: deliberately given EXTERNAL linkage (moved out of the anonymous
+// namespace above) — native/src/rb3_loaddet_probe.cpp declares it
+// `extern float CurrentSongMs();` and needs a visible symbol to link against.
+// Was previously stuck inside the anonymous namespace (internal linkage),
+// which built fine standalone but broke any other TU's `extern` declaration
+// at link time (undefined reference). Fixed 2026-07-07, unrelated to W4.3-C34.
 float CurrentSongMs() {
     return gRec.songMs;
 }
+
+namespace {
 
 int ParseIntEnv(const char *name, int def) {
     const char *v = std::getenv(name);
