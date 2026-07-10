@@ -159,3 +159,10 @@ docs/decomp/xenon-hardening/round3/evidence-systemnetwork.md
 docs/decomp/xenon-hardening/round3/evidence/pair-*.md
 docs/decomp/xenon-hardening/round3/judgments/
 docs/decomp/xenon-hardening/round3/round3-plans.json
+
+# Engine-arch-review wave evidence dumps (large per-wave PNG/log/gz/txt/json
+# capture artifacts kept on disk locally; the hand-written wave docs — STATUS.md,
+# PLAN.md, SWEEP.md, README.md outside evidence/ — stay tracked). Stripped from
+# history 2026-07-10 to keep the push small; force-add individual files if a
+# specific capture is worth publishing (git add -f <path>).
+docs/native/engine-arch-review-2026-07-05/execution/**/evidence/
