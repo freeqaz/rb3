@@ -122,6 +122,81 @@ clamp dormant with `RB3_PROP_POSE` ON? (b) enumerate whether any clip tracks exi
 the prop tip bones (`bone_pick_strum`, `bone_[RL]-tip_*`) in the band vignette clips.
 Checkpoint verdicts; deliver `W27-PROP-PROBE/STATUS.md`. No flags, no defaults.
 
-## COORDINATOR ACCEPTANCE
+## COORDINATOR ACCEPTANCE — BINDING (adopts WAVE27_REVIEW.md `cf94e168`, A1-A10 ALL)
 
-(to be filled after WAVE27_REVIEW.md)
+Where this block conflicts with the draft text above, THIS BLOCK WINS.
+
+1. **A1 ADOPTED — retention model corrected.** The draft's "UnloadPanels only unloads
+   panels the incoming screen does not reference" is WRONG and superseded.
+   `UIScreen::UnloadPanels` (UIScreen.cpp:570-576) unconditionally `CheckUnload()`s every
+   panel it loaded. Faithful retention = **refcount handshake ordering**: on a goto, the
+   outgoing screen's `Exit(to)` calls `to->LoadPanels()` FIRST (UIScreen.cpp:508, via
+   UI.cpp:686-689), the incoming screen's `Enter(from)` calls `from->UnloadPanels()`
+   LAST (UIScreen.cpp:414); shared panel objects never hit `mLoadRefs==0`
+   (UIPanel.cpp:47-59, UIPanel.h:63). STEP 0 probes **per-panel `mLoadRefs` transitions
+   + call order**, not reference sets.
+2. **A2 ADOPTED — STEP 0 reframed; Wii-GT hypothesis PRE-PINNED from data.** Splash
+   prefetches sv3 as an **interstitial** (`config/vignettes.dta:126-129` →
+   `InterstitialMgr::GetInterstitialsFromScreen` InterstitialMgr.cpp:38-67 →
+   `BandScreen` mExtraPanels `CheckLoad` BandScreen.cpp:64-73; released by
+   `BandScreen::Exit→UnloadInterstitials` BandScreen.cpp:20-24,75-77). `sv3_panel` is
+   ALSO in main_hub_screen's regular panel list (main_hub.dta:744); splash's list is
+   disjoint (sv8_panel+splash_panel, splash.dta:171). So Wii-GT = **RESIDENT across
+   splash→hub via interstitial→regular-panel refcount overlap; UNLOADED across
+   hub→song_select; re-loaded on return with re-evaluated randomized `dyn_file`**.
+   Wii-GT budget = timeboxed CONFIRMATION of this hypothesis only (≤2h). The BINDING
+   native question is now: **which panel/WorldDir owns the streetslomo CharClipSet
+   natively at boot, and where does its refcount hit 0?** Candidate divergence sites:
+   `BandScreen::LoadPanels` `kTransitionTo && PushDepth()==0` gate + MILO_ASSERT
+   (BandScreen.cpp:55-58); `TheBandUI.mShowVignettes` forcing `mAlwaysLoad=false`
+   (BandScreen.cpp:47-53); `InterstitialMgr` map/`mRandomSelection` resolution
+   (InterstitialMgr.cpp:43-63); splash's natively-parsed panel list containing
+   sv3_panel; boot path through `GotoScreenImpl` `mCurrentScreen==NULL` branch
+   (UI.cpp:688-689) or `CancelTransition` (UI.cpp:653-658). The W26 backtrace is
+   ambiguous between `UnloadPanels` and `UnloadInterstitials` (both thin CheckUnload
+   loops) — FIRST probe: one line naming panel + `mLoadRefs` at `UIPanel::CheckUnload`.
+   Checkpoint verdict enum += `interstitial-handshake-divergence`.
+3. **A3 ADOPTED — owned files EXTENDED** with `src/band3/meta_band/BandScreen.cpp`,
+   `src/band3/meta_band/InterstitialMgr.cpp`, and (narrow, read-mostly)
+   `src/band3/meta_band/BandUI.cpp`. NOT-owned list unchanged.
+4. **A4 ADOPTED — evidence locations pinned.** Primary DTA source = Xbox plaintext
+   `orig-assets/extracted/ui/**.dta` + `orig-assets/extracted/config/vignettes.dta`
+   (this IS what native runs). Wii-side is .dtb-only — byte-level cross-check WAIVED
+   as "Xbox-dta-as-proxy" unless trivially cheap. `streetslomo_clips` is a NESTED
+   subdir inside `sv3_a.milo` (no standalone file) — ownership questions answered via
+   native runtime dump (`/api/dta/eval`) or milo tooling, not ls/grep.
+5. **A5 ADOPTED — levers reworded.** Lever A = "restore the faithful interstitial→
+   panel refcount handshake across splash→hub SPECIFICALLY" (NO blanket residency —
+   Wii unloads sv3 across hub→song_select; `mAlwaysLoad` already defaults TRUE,
+   UIScreen.cpp:47). Lever B must re-evaluate the randomized `dyn_file`
+   (vignettes.dta:59-130, config/vignettes.dta:1-45), never hardcode `sv3_a.milo`.
+   The upstream native ordering/data-divergence fix is the **FAVORITE** outcome class.
+6. **A6 ADOPTED — carve-out vs drawlog ruling (binding).** If the faithful-restoration
+   carve-out fires (unflagged fix), re-run drawlog-golden flag-OFF: acceptable result =
+   **unchanged draw COUNT with only world-field crowd-pose value diffs** (the known
+   inherent jitter class) → land, record in STATUS, coordinator countersigns at
+   close-out. ANY other divergence (count change, non-crowd fields) → do NOT land
+   unflagged; fall back to flag-gated default-OFF and report. Re-baselining
+   drawlog-golden is coordinator-only, at close-out.
+7. **A7 ADOPTED — revisit gate sharpened.** Cycle main_hub→song_select→main_hub via
+   `/api/input` nav (fallback `/api/dta/eval {ui goto_screen main_hub_screen}`):
+   (i) assert `sv3_panel` `mLoadRefs` returns to its pre-cycle value (no monotonic
+   growth); (ii) re-run the crowd census (`animating>0` + lit figures) AFTER the
+   revisit — the fix must survive the reload path, not just the first transition.
+8. **A8 ADOPTED — flag naming.** `RB3_HUB_CROWD_RESIDENT` if lever A wins;
+   `RB3_HUB_CROWD_REFIRE` if lever B wins. Chosen ONCE at the STEP-0 checkpoint,
+   recorded there; no mid-lane renames. (Collision-checked clean.)
+9. **A9 ADOPTED — PROP tail kept, tightened.** (a) mFinger-bypass A/B (`CharIKHand::
+   Poll` ~:319-330): 30-minute timebox, checkpoint verdict FIRST. (b) prop-tip clip-
+   track enumeration: ≤half-day timebox; a NEGATIVE result is a valid checkpoint.
+   Plus two mechanical nits INSIDE CharIKHand.cpp: verify the E7 env-parse fix is
+   present (applied at W26 close-out — re-apply only if missing) and the multi-target
+   weight-loop comment nit from the W26 close-out review. No flags, no defaults.
+   **Coordinator election:** the tail runs CONCURRENTLY with W27-CROWD (disjoint
+   files, small timeboxes), not gated on remaining capacity.
+10. **A10 ADOPTED — prewarm rail added.** The owned ui files host the HX_NATIVE
+    screen-prewarm system (UIScreen.cpp:157-380; web default-ON). Run the boot A/B
+    once with `RB3_PREWARM_SCREENS=1` natively and do not regress the prewarm
+    adoption/evict invariants (UIScreen.cpp:225-262).
+
+Dispatch readiness per review: READY with A1+A2+A3 folded in (done above).
