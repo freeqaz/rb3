@@ -856,8 +856,9 @@ void ObjectDir::LoadSubDir(int i, const FilePath &fp, BinStream &bs, bool b) {
                 "%s trying to subdir self in slot %d, setting NULL", PathName(this), i
             );
             mSubDirs[i] = 0;
-        } else
-            mSubDirs[i].LoadFile(subdirpath, true, b, kLoadFront, true);
+            return;
+        }
+        mSubDirs[i].LoadFile(subdirpath, true, b, kLoadFront, true);
     }
 }
 
