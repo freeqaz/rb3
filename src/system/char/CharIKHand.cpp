@@ -46,6 +46,35 @@ CharIKHand::~CharIKHand() {}
 // A5-i safety: this only ever fires when the *tip* target is out of reach
 // (d_tip_hand > d_parent_hand, and parent is closer) — it can never pull an
 // already-in-reach target away, because an in-reach tip is never redirected.
+//
+// W28-PROP-FIX (default-OFF flag RB3_PROP_POSE_FULL): the REAL prop-hand fix,
+// combining the two CharIKHand-local pieces the W26/W27 probes pinned:
+//   (1) break the mFinger finger-compensation re-projection — W27 proved
+//       (RB3_PROP_FINGER_BYPASS A/B) that re-projecting the redirected destination
+//       back through the static-posed finger/pick bone re-flings it out of reach
+//       (over-reach 120-240u vs reach 20.3u); skip it so the redirect holds.
+//   (2) redirect the IK target to its at-hand parent frame BEFORE the multi-target
+//       weight loop, so each target's blend weight is derived from the in-reach
+//       (redirected) position rather than the un-redirected static tip LocalXfm
+//       (W27 comment nit at the weight loop). Under plain RB3_PROP_POSE the weight
+//       loop stays un-redirected (documented honest-partial); FULL makes weight and
+//       world position agree.
+// Piece (3) — binding/animating the prop-tip clip tracks (bone_pick_strum,
+// bone_[LR]-tip_*, which carry a constant authored LocalXfm, W27(b)) — lives in
+// CharDriver.cpp / CharClip*.cpp, which the W28 CROWD lane owns this wave (A8
+// arbitration). DEFERRED; the exact site + needed edit are enumerated in this
+// lane's PLAN.md. Pieces (1)+(2) are CharIKHand.cpp-local and proceed regardless.
+// Builds on the RB3_PROP_POSE scaffold; when FULL is ON the redirect is forced on
+// regardless of RB3_PROP_POSE. Whole thing is #ifdef HX_NATIVE + env-gated, so the
+// Wii object is byte-identical.
+static int sPropPoseFull() {
+    static int v = -1;
+    if (v < 0) {
+        const char *e = getenv("RB3_PROP_POSE_FULL");
+        v = (e && e[0] && e[0] != '0') ? 1 : 0;
+    }
+    return v;
+}
 static RndTransformable *sPropPoseRedirect(RndTransformable *tgt,
                                            RndTransformable *hand, float reach) {
     static int sOn = -1;
@@ -54,7 +83,8 @@ static RndTransformable *sPropPoseRedirect(RndTransformable *tgt,
         const char *e = getenv("RB3_PROP_POSE");
         // E7 (W26 close-out): require a non-empty non-'0' value (RB3_PROP_POSE=""
         // previously enabled). Default-OFF; unset (e==NULL) stays 0.
-        sOn = (e && e[0] && e[0] != '0') ? 1 : 0;
+        // W28-PROP-FIX: RB3_PROP_POSE_FULL forces the redirect on too.
+        sOn = ((e && e[0] && e[0] != '0') || sPropPoseFull()) ? 1 : 0;
         sDbg = getenv("RB3_PROP_POSE_DBG") ? 1 : 0;
     }
     if (!sOn || !tgt || !hand)
@@ -285,6 +315,15 @@ void CharIKHand::Poll() {
             RndTransformable *itTrans = (*it).mTarget;
             float itExtent = (*it).mExtent;
             if (itTrans) {
+#ifdef HX_NATIVE
+                // W28-PROP-FIX piece (2): under RB3_PROP_POSE_FULL redirect the
+                // target to its at-hand parent BEFORE deriving the blend weight, so
+                // weight and world position (redirected identically in the loop
+                // below) agree. sPropPoseRedirect is a deterministic fn of itTrans,
+                // so index alignment with the second loop's locfloats is preserved.
+                if (sPropPoseFull())
+                    itTrans = sPropPoseRedirect(itTrans, trans, mAAPlusBB);
+#endif
                 Vector3 vec(itTrans->LocalXfm().v);
                 if (itExtent > 0.0f) {
                     if (itExtent < -vec.z) {
@@ -339,7 +378,11 @@ void CharIKHand::Poll() {
         const char *e = getenv("RB3_PROP_FINGER_BYPASS");
         sFingerBypass = (e && e[0] && e[0] != '0') ? 1 : 0;
     }
-    if (mFinger && !sFingerBypass) {
+    // W28-PROP-FIX piece (1): RB3_PROP_POSE_FULL breaks the mFinger re-projection
+    // (same effect as the RB3_PROP_FINGER_BYPASS probe, now folded into the real
+    // fix). Once the target is redirected to the at-hand parent frame, re-projecting
+    // it back through the static-posed finger/pick bone re-flings it out of reach.
+    if (mFinger && !sFingerBypass && !sPropPoseFull()) {
 #else
     if (mFinger) {
 #endif
