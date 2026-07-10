@@ -401,7 +401,13 @@ void CharIKHand::Poll() {
     {
         static const char *sDstDbg = getenv("RB3_PROP_DST_DBG");
         static int sDstN = 0;
-        if (sDstDbg && sDstN < 120 && mHand) {
+        // W29-GAMEPLAY (CA6/E5): the per-process [PROP_DST] cap is parameterized
+        // through the EXISTING RB3_PROP_DST_DBG value (no new getenv name): a
+        // numeric value >1 raises the cap so mic/mic_stand rows are not starved by
+        // the guitar/drum over-reach window (E5 window-share confound). Default 120.
+        static int sDstCap = -1;
+        if (sDstCap < 0) { int v = sDstDbg ? atoi(sDstDbg) : 0; sDstCap = v > 1 ? v : 120; }
+        if (sDstDbg && sDstN < sDstCap && mHand) {
             const Vector3 &hw = mHand->WorldXfm().v;
             float dd = std::sqrt((mWorldDst.x - hw.x) * (mWorldDst.x - hw.x)
                 + (mWorldDst.y - hw.y) * (mWorldDst.y - hw.y)
@@ -474,6 +480,11 @@ void CharIKHand::Poll() {
                     float dist = std::sqrt(distSq);
                     const char* sClampDbg = getenv("RB3_IK_CLAMP_DBG");
                     static int sClampN = 0;
+                    // W29-GAMEPLAY (CA6/E5): cap parameterized through the EXISTING
+                    // RB3_IK_CLAMP_DBG value (no new getenv name); numeric >1 raises
+                    // the 300-line default so rates, not window shares, are compared.
+                    static int sClampCap = -1;
+                    if (sClampCap < 0) { int v = sClampDbg ? atoi(sClampDbg) : 0; sClampCap = v > 1 ? v : 300; }
                     const char *mode;
                     if (dist > sReachK * reach) {
                         // grossly unreachable: keep the clip pose (neutralise IK
@@ -488,7 +499,7 @@ void CharIKHand::Poll() {
                         mWorldDst.z = shoulder.z + toDst.z * scale;
                         mode = "clamp";
                     }
-                    if (sClampDbg && sClampN < 300) {
+                    if (sClampDbg && sClampN < sClampCap) {
                         sClampN++;
                         fprintf(stderr,
                             "[IK_CLAMP] ikhand='%s' preDist=%.1f reach=%.2f mode=%s\n",
