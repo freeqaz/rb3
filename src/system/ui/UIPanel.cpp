@@ -45,6 +45,15 @@ void UIPanel::SetTypeDef(DataArray *data) {
 }
 
 void UIPanel::CheckLoad() {
+#ifdef HX_NATIVE
+    // W27-CROWD STEP-0 probe (RB3_CROWD_PANEL_DBG): per-panel mLoadRefs transition,
+    // to trace the interstitial->regular-panel refcount handshake across the
+    // splash->main_hub transition and find where the streetslomo panel hits 0.
+    // Byte-inert to the decomp build (HX_NATIVE only) + env-gated; the shared
+    // statement below is left byte-identical (logs the post-increment value).
+    if (getenv("RB3_CROWD_PANEL_DBG"))
+        MILO_LOG("[PANELDBG] CheckLoad %s refs->%d\n", Name(), mLoadRefs + 1);
+#endif
     if (++mLoadRefs == 1)
         Load();
 }
@@ -54,6 +63,11 @@ void UIPanel::CheckUnload() {
         if (mState == kDown) {
             Handle(exit_complete_msg, false);
         }
+#ifdef HX_NATIVE
+        if (getenv("RB3_CROWD_PANEL_DBG"))
+            MILO_LOG("[PANELDBG] CheckUnload %s refs->%d%s\n", Name(), mLoadRefs - 1,
+                     (mLoadRefs - 1) == 0 ? " UNLOAD" : "");
+#endif
         if (--mLoadRefs == 0)
             Unload();
     }

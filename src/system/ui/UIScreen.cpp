@@ -555,6 +555,10 @@ void UIScreen::SetPanelActive(class UIPanel *panel, bool active) {
 void UIScreen::SetShowing(bool show) { mShowing = show; }
 
 void UIScreen::LoadPanels() {
+#ifdef HX_NATIVE
+    if (getenv("RB3_CROWD_PANEL_DBG"))
+        MILO_LOG("[PANELDBG] >> UIScreen::LoadPanels screen=%s\n", Name());
+#endif
     for (iterator it = mPanelList.begin(); it != mPanelList.end(); it++) {
         if (it->mAlwaysLoad || it->mPanel->IsReferenced()) {
             it->mPanel->CheckLoad();
@@ -568,6 +572,10 @@ void UIScreen::LoadPanels() {
 }
 
 void UIScreen::UnloadPanels() {
+#ifdef HX_NATIVE
+    if (getenv("RB3_CROWD_PANEL_DBG"))
+        MILO_LOG("[PANELDBG] >> UIScreen::UnloadPanels screen=%s\n", Name());
+#endif
     for (reverse_iterator it = mPanelList.rbegin(); it != mPanelList.rend(); it++) {
         if (it->mLoaded) {
             it->mPanel->CheckUnload();

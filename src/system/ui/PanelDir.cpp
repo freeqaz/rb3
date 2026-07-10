@@ -237,6 +237,22 @@ void PanelDir::DrawShowing() {
 
 void PanelDir::Enter() {
     RndDir::Enter();
+#ifdef HX_NATIVE
+    // W27-CROWD STEP-0 probe: which PanelDir Enters at the transition and what
+    // triggers it fires (the crowd walk is driven by vignette_start.trig). Env-
+    // gated, HX_NATIVE-only, byte-inert to the decomp build.
+    if (getenv("RB3_CROWD_PANEL_DBG")) {
+        const char *dn = Name() ? Name() : "?";
+        if (strstr(dn, "sv3") || strstr(dn, "streetslomo") || strstr(dn, "vignette")) {
+            MILO_LOG("[PANELDBG] PanelDir::Enter dir=%s nTriggers=%d\n", dn,
+                     (int)mTriggers.size());
+            FOREACH (it, mTriggers) {
+                MILO_LOG("[PANELDBG]    trigger=%s\n",
+                         (*it)->Name() ? (*it)->Name() : "?");
+            }
+        }
+    }
+#endif
     FOREACH (it, mTriggers) {
         (*it)->Enter();
     }

@@ -62,8 +62,18 @@ bool BandScreen::CheckIsLoaded() { return UIScreen::CheckIsLoaded(); }
 bool BandScreen::IsLoaded() const { return UIScreen::IsLoaded(); }
 
 void BandScreen::LoadInterstitials() {
+#ifdef HX_NATIVE
+    if (getenv("RB3_CROWD_PANEL_DBG"))
+        MILO_LOG("[PANELDBG] >> BandScreen::LoadInterstitials screen=%s showVignettes=%d\n",
+                 Name(), (int)TheBandUI.mShowVignettes);
+#endif
     if (TheBandUI.mShowVignettes) {
         TheBandUI.mInterstitialMgr->GetInterstitialsFromScreen(this, mExtraPanels);
+#ifdef HX_NATIVE
+        if (getenv("RB3_CROWD_PANEL_DBG"))
+            MILO_LOG("[PANELDBG]    interstitials resolved: %d panel(s)\n",
+                     (int)mExtraPanels.size());
+#endif
         FOREACH (it, mExtraPanels) {
             UIPanel *cur = *it;
             cur->CheckLoad();
@@ -73,6 +83,11 @@ void BandScreen::LoadInterstitials() {
 }
 
 void BandScreen::UnloadInterstitials() {
+#ifdef HX_NATIVE
+    if (getenv("RB3_CROWD_PANEL_DBG"))
+        MILO_LOG("[PANELDBG] >> BandScreen::UnloadInterstitials screen=%s count=%d\n",
+                 Name(), (int)mExtraPanels.size());
+#endif
     FOREACH_REVERSE(it, mExtraPanels) { (*it)->CheckUnload(); }
 }
 
