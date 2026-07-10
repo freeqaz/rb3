@@ -125,6 +125,59 @@ static RndTransformable *sPropPoseRedirect(RndTransformable *tgt,
 void CharIKHand::Poll() {
 #ifdef HX_NATIVE
     { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+    // W30-PROP-DEFAULT-ON (E6(b), CA5): threshold-unbiased one-shot mFinger
+    // census. Emitted for EVERY CharIKHand::Poll INDEPENDENT of dst_from_hand
+    // (unlike [PROP_DST], which only logs the 30u-gated over-reachers at :415 and
+    // is therefore biased — a census built from it = lane rejection). Deduped per
+    // (owning-character-root | ikhand name) so each distinct hand appears exactly
+    // once across the whole boot+song window. Answers the E6(b) question: which
+    // ikhands have mFinger != NULL (piece-1's GLOBAL re-projection break touches
+    // exactly these), and is each a prop chain (guitar/drum playing hand) or a
+    // non-prop chain (foot/mic/etc.) that the FULL flag must not regress. reach is
+    // computed locally (MeasureLengths' AA+BB) so the first-sighting row is not
+    // starved to 0. Env-gated (RB3_PROP_CENSUS_DBG); whole block is #ifdef
+    // HX_NATIVE + default-OFF -> Wii object byte-identical.
+    {
+        static const char *sCensusDbg = getenv("RB3_PROP_CENSUS_DBG");
+        if (sCensusDbg) {
+            static char sSeen[256][96];
+            static int sSeenN = 0;
+            const char *rootName = "(none)";
+            RndTransformable *rn = mHand;
+            for (int d = 0; rn && d < 32; ++d) {
+                RndTransformable *par = rn->TransParent();
+                if (!par) { rootName = rn->Name() ? rn->Name() : "(anon)"; break; }
+                rn = par;
+            }
+            const char *ikn = Name() ? Name() : "(anon)";
+            char key[96];
+            snprintf(key, sizeof(key), "%s|%s", rootName, ikn);
+            int found = 0;
+            for (int i = 0; i < sSeenN; ++i)
+                if (std::strcmp(sSeen[i], key) == 0) { found = 1; break; }
+            if (!found && sSeenN < 256) {
+                std::strncpy(sSeen[sSeenN], key, sizeof(sSeen[0]) - 1);
+                sSeen[sSeenN][sizeof(sSeen[0]) - 1] = '\0';
+                sSeenN++;
+                float reach = mAAPlusBB;
+                if (reach <= 0.0f && mHand && mHand->TransParent()
+                    && mHand->TransParent()->TransParent()) {
+                    reach = Length(mHand->mLocalXfm.v)
+                          + Length(mHand->TransParent()->mLocalXfm.v);
+                }
+                const char *handName = (mHand && mHand->Name()) ? mHand->Name() : "(none)";
+                const char *fingerName =
+                    (mFinger && mFinger->Name()) ? mFinger->Name() : "(none)";
+                RndTransformable *hp = mHand ? mHand->TransParent() : 0;
+                const char *handParent = (hp && hp->Name()) ? hp->Name() : "(none)";
+                fprintf(stderr,
+                    "[PROP_CENSUS] char='%s' ikhand='%s' finger=%d fingerName='%s' "
+                    "hand='%s' handParent='%s' ntargets=%d reach=%.2f\n",
+                    rootName, ikn, mFinger ? 1 : 0, fingerName,
+                    handName, handParent, (int)mTargets.size(), reach);
+            }
+        }
+    }
 #endif
     float charWeight = Weight();
     RndTransformable *trans = mHand;
@@ -414,9 +467,22 @@ void CharIKHand::Poll() {
                 + (mWorldDst.z - hw.z) * (mWorldDst.z - hw.z));
             if (dd > 30.0f) {
                 sDstN++;
+                // W30-PROP-DEFAULT-ON: append char='<root>' so the analyzer can
+                // separate the drummer right_hand/left_hand (prop, expected residual)
+                // from the vocalist right_hand/left_hand (non-prop, must-not-regress)
+                // — both otherwise collapse under the bare ikhand name. Root walk is
+                // the same as [PROP_CENSUS]; char appended at END so the legacy
+                // DST_RE (`ikhand=...finger=...dst_from_hand=...`) still matches.
+                const char *dRoot = "(none)";
+                RndTransformable *dn = mHand;
+                for (int dd2 = 0; dn && dd2 < 32; ++dd2) {
+                    RndTransformable *dp = dn->TransParent();
+                    if (!dp) { dRoot = dn->Name() ? dn->Name() : "(anon)"; break; }
+                    dn = dp;
+                }
                 fprintf(stderr,
-                    "[PROP_DST] ikhand='%s' finger=%d dst_from_hand=%.1f reach=%.2f\n",
-                    Name(), mFinger ? 1 : 0, dd, mAAPlusBB);
+                    "[PROP_DST] ikhand='%s' finger=%d dst_from_hand=%.1f reach=%.2f char='%s'\n",
+                    Name(), mFinger ? 1 : 0, dd, mAAPlusBB, dRoot);
             }
         }
     }
