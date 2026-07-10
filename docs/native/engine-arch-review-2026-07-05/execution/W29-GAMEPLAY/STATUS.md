@@ -167,3 +167,26 @@ PanelDir/ui (Lane 1), the `Crowd.cpp` oracle, RndMesh loader, `rb3_session_trace
 or engine `FxSendNative.cpp`. Every `CHARDRV_*` probe block left byte-identical (CA3).
 The `RB3_CROWD_CLIP_KEEP` census-row removal + regen + any pin bump are
 coordinator-only at close-out.
+
+---
+
+## ERRATA (appended at close-out from WAVE29_CLOSEOUT_REVIEW.md — append-only; lane text above unedited)
+
+- **E5 (minor — closeup pair not matched).** The committed
+  `vocalist_closeups/micAB_{OFF,ON}_coop_v_n01.png` are NOT a songMs-matched pair
+  (different camera moment/cut; score 347 vs 400; framing differs), so they do not
+  satisfy CA6's pairing clause as an A/B visual. The Part B verdict is unaffected
+  because it rests on the mFinger==NULL code-level no-op proof + the mic.ikhand
+  lockstep numeric control; the ON shot supports only "coherent pose, no spike-fan"
+  (ON-only sufficiency), and is to be cited as such.
+- **E6 (minor — baseline provenance).** gameplay-prop3-baseline.json carries
+  `buildSha=95df30f2` while the binary included the then-uncommitted Part C deletion
+  (== `5a430eea` content for CharDriver.cpp; the checkpoint's own note says so).
+  buildSha records HEAD, not tree state — acceptable this time (deletion is flag-OFF
+  inert); future checkpoints stamp a `git diff --stat` non-empty marker too.
+- **E7 (minor — census enumeration incomplete, not wrong).** STATUS.md:25-27 says the
+  band plays "only `stand_realtime_idle_*` and `exp_rocker_*`/`exp_banger_*`"; the raw
+  census also contains `still`(14), `idle_b_01/02`, `stand_around_05`,
+  `stand_idle_norm_c_*`, `Neutral_hi/lo`, `cam_ms_scream_irhn`, and hub-transit
+  `playerN_{f,m}` plays. The load-bearing claim — ZERO drum/tom/snare/hihat/groove/tip
+  clips (grep 0) — is verified.

@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 411  
-**By class:** compat=1, diagnostic=1, feature=14, perf=9, probe=132, tuning=3, unknown=151, workaround=100  
+**Total flags:** 410  
+**By class:** compat=1, diagnostic=1, feature=14, perf=9, probe=132, tuning=3, unknown=151, workaround=99  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 74
 
 | name | class | default | owner | faithful-status | sites |
@@ -34,7 +34,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `CHAIN_MTX` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHAIN_PROBE` | probe | off | skinning/chain | n/a: archaeological debug probe (chain sim investigation) | 1 |
 | `CHAIN_PROPTEST` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
-| `CHARDRV_BT` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — symbolized backtrace at CharDriver::Replace (pinned the UI panel-unload teardown as the clip-kill) | 1 |
+| `CHARDRV_BT` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — symbolized backtrace at CharDriver::Replace (pinned the UI panel-unload teardown as the clip-kill) | 2 |
 | `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 10 |
 | `CHAR_DBG` | probe | off | render/char-material | n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-because-unbound vs RTT-composite-never-painted); game BandDirector.cpp logs the re-run LoadCharacters() call (aliases VENUE_DBG) [RB3MaterialBinder.cpp:292; BandDirector.cpp:713] | 2 |
 | `CHAR_PROBE_DUMP` | unknown | off | unclassified | n/a | 1 |
@@ -147,7 +147,6 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_CLEAR_COLOR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_COMPOSE_MULT_OFF` | workaround | on | render/compose | not-live: composite-blend multiply-fallback default-ON (see project_c8_faces memory) | 1 |
 | `RB3_CROWD_BONE_PROBE` | probe | off | render/crowd | n/a: W2.3.S1 crowd bone-source seam characterization (owner vs own-bone SKIN_CLAMP extent; SHARED/SELF+POISON decision) | 1 |
-| `RB3_CROWD_CLIP_KEEP` | workaround | off | world/crowd | not-live DEFAULT-OFF partial (Wave-25): re-plays the snapshotted crowd walk clip on starvation after the sv3_a async load-merge destroys it. Recovers bank-intact drivers only (ZERO of 8 as-observed — female04 never Played) → PROPHYLACTIC scaffolding for the W26 engine load-merge fix; clipType=='crowd'-scoped + byte-identical #else (WorldCrowd oracle untouched). Removal criterion: delete if W26 lands the engine fix and this adds nothing. [CharDriver.cpp] | 1 |
 | `RB3_CROWD_DIM` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_CROWD_DIM_OFF` | workaround | on | render/crowd | not-live: crowd-dim heuristic default-ON | 1 |
 | `RB3_CROWD_IMPOSTER_OFF` | workaround | on | render/crowd | not-live: crowd impostor rendering default-ON | 1 |

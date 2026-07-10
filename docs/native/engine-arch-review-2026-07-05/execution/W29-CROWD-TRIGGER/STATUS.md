@@ -167,3 +167,30 @@ census/classjson/sidecar/golden edits. Did not write `CharDriver.cpp`/`CharClip*
 `CharIKHand.cpp`/`boot-to-song.py` (READ-ONLY / Lane 2's), the `Crowd.cpp:884-1000`
 oracle, or the RndMesh loader. Files added by this lane only:
 `scripts/native/_w29_crowd_trigger_boot.py` + this lane's docs/evidence.
+
+---
+
+## ERRATA (appended at close-out from WAVE29_CLOSEOUT_REVIEW.md — append-only; lane text above unedited)
+
+- **E1 (minor — leaf-chain cosmetics).** STATUS.md:53 and crowd-step0-i.json name the
+  streetslomo leaf as "PlayMainClip → `CharDriver::PlayGroup`", but the committed
+  symbolized backtrace (step0-play-backtraces-symbolized.txt:47-48) shows
+  `BandCharacter::PlayMainClip` → `CharDriver::Play` directly — no PlayGroup frame
+  (inlined or not on the path). The issuing-mechanism finding
+  (BandCamShot::StartAnim) is unaffected.
+- **E2 (minor — committed table artifact).** `evidence/probe-count-table.txt` row
+  `PANELDBG PanelDir::Enter 0` is a grep-pattern artifact (raw has
+  `[PANELDBG] PanelDir::Enter …` ×2; the literal pattern misses the bracket).
+  STATUS.md footnotes the correct count (2) but the committed table file itself
+  carries the misleading 0.
+- **E3 (note — epistemic basis).** The W28 filter-artifact claim is UNFALSIFIABLE
+  from W28's own raw log: under `CHARDRV_PROBE=crowd` the player0-3 lines are absent
+  BY CONSTRUCTION (recomputed: 0 `dir='player…'` lines of any kind in W28
+  step0-combined.log.gz). The claim rests on W29's `'*'` reproduction at `5a430eea`
+  plus the verified no-behavior delta c6ef7795→95df30f2 (engine be401ec→80e4c0f =
+  flags metadata only). Sound — recorded here explicitly.
+- **E4 (trivial).** crowd-step0-flag.json says "NativeCompatFlags.gen.inc (415 rows)";
+  the census is 411 classified rows (415 = raw file line count).
+- **E8 (process — recorded).** The self-reported `pkill -f` violation; blast radius
+  assessed LOW at close-out (all Lane 2 evidentiary runs rc=0, committed logs complete,
+  n=888-1381 rows). The pgid-only rule stays verbatim in every Wave-30 dispatch.

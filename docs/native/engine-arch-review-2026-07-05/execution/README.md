@@ -953,3 +953,48 @@ acceptance block verbatim, never paraphrase acceptance criteria.
    `RB3_PROP_FINGER_BYPASS`. Success = right_hand `dst_n→0` on the committed analyzer.
    Defer-without-guilt.
 3. No third lane. E-C2 must not survive W29 un-ruled again.
+
+## Wave 29 (2026-07-10) — CROWD CHAIN CLOSED (sixth narrative, decisive) + E-C2 removed + PROP scoping
+
+Kickoff `6c803adb` (+ coordinator pre-work: `scripts/native/boot-to-song.py` canonical
+gameplay harness, `CHARDRV_PLAY_BT` probe), pre-review adopted `95df30f2` (CA1-CA10;
+A1 caught the `part:vocals` overclaim pre-dispatch), lanes `c4d2d46b` +
+`5a430eea`/`0081bae7`/`147eb1b6`, close-out review `WAVE29_CLOSEOUT_REVIEW.md`
+(both lanes ACCEPT-WITH-ERRATA, E1-E8 appended to lane STATUS docs).
+
+| Lane | Result |
+|---|---|
+| **CROWD-TRIGGER — RECHARTER accepted, SIX-WAVE CROWD CHAIN CLOSED (E1-E4 minor)** | W28's premise REFUTED with the mechanism named: "zero PLAY after 2.433 / never triggered" was a `CHARDRV_PROBE=crowd` FILTER ARTIFACT (`_w28_crowd_step0_boot.py:47`; player0-3 lines absent BY CONSTRUCTION — E3 records the epistemic basis: W29 `'*'` reproduction at `5a430eea` + verified no-behavior delta c6ef7795→95df30f2). The REAL walkers are the 4 `player0-3` (`char/main/main.milo`) `main.drv` drivers: `mClips==streetslomo_clips.milo` (CLIPSWAP PathName-asserted), `playerN_{f,m}` plays at beat 2.433 + loop replays at 25.333, `playing=2209/2280` sustained, and screenshots show four textured mid-stride walkers matching retail (coordinator-verified inter-frame motion). Issuing mechanism = `BandCamShot::StartAnim()` (BandCamShot.cpp:357) via CameraManager inside WorldDir::Poll — the SAME camshot-anim path as the beat-0 cityscape plays; `nTriggers=0` reproduces but is a red herring (PanelDir UITrigger ≠ walk mechanism). The 8 `crowd_*` proxies idle FAITHFULLY (streetslomo_clips has only 8 playerN clips = 4 walkers × 2 genders; no crowd clips — the asset precludes them walking). CharCache/FileMerger NOT in the play path (W28-E1 cleared). No lever (would hack correct behavior); `RB3_VIGNETTE_TRIG_REPLAY` released unused. **Census ground truth corrected (Q(b), binding): any future crowd census targets the 4 player0-3 drivers with the mClips PathName pinned; measuring the crowd_* family re-enters the trap. DO NOT REOPEN without new evidence naming player0-3 explicitly.** Deferred verts=0/near-black thread MOOT (walkers have geometry and render). |
+| **GAMEPLAY — PARTIAL (E5-E8 minor)** | **Part C LANDED:** `RB3_CROWD_CLIP_KEEP` five-site scaffolding deleted from CharDriver.cpp (E-C2 ruling discharged); gates grep 0 / `CHARDRV_PLAY_BT` 1 / batch_objdiff `Play` 100.0% + `Poll` 93.54% baseline-exact; pre-W26 mBones UAF dtor guard KEPT unconditional. **Part B:** E6(a) vocalist-mic blocker RETIRED — `mic.ikhand` has `mFinger==NULL` (piece 1 provably no-op there; `finger=0` in every PROP_DST row) with the piece-1-immune mic hand as lockstep control for the cross-run variance; E6(b) global-mFinger scoping STILL GATES default-ON (Q(d): W30 needs a global finger=1 census + songMs-matched A/B, or piece 1 re-scoped to prop-chain ikhands). Probe caps parameterized through existing dbg envs (CA6, no new getenv). **Part A PARTIAL per CA2** (analyzer: `ACCEPTANCE (ON): FAIL — right_hand 8 dst>30u @31.4`, coordinator-reproduced from raw): piece-3 is INAPPLICABLE — raw census proves the on-stage band plays ONLY idle+expression clips (zero drum/groove/tip clips; drum tip AND parent bones static, 1 distinct twpos across the window), so there is no clip track to bind; the residual is blend geometry over an idle pose; floor-gaming declined (endorsed). Real driver = performance-clip SELECTION → W30 primary. **Part D:** SEED1 (dormant guitarist hands) = the KNOWN default-OFF PROP state, not a new bug — root cause is the same zero-performance-clip finding; SEED2 (green faces) DEFERRED, no retail closeup pair exists (member/position-specific, not global; C8 char-env vs stage-key-light undecided); all run logs 0-anomaly; exit-time teardown SIGSEGV = pre-existing exit-trap. |
+
+**Close-out rulings:** crowd chain **CLOSED** (Q(a)); corrected census ground truth
+binding (Q(b)); Part A label PARTIAL stands, W30 disposition = perf-clip selection
+(Q(c)); `RB3_PROP_POSE_FULL` default-ON **NOT YET** — E6(b) still gates (Q(d));
+probe retirement rider scheduled for W30 after the perf-clip lane's needs are known —
+KEEP PLAY/PLAY_BT/CLIPSWAP, RETIRE ENTER/REPLACE(_BT)/DEFCLIP/STARVE/LIFE/C13/
+CROWD_PANEL_DBG (Q(e)); `RB3_VIGNETTE_TRIG_REPLAY` released (Q(e′)). rb3-tests
+governing result = coordinator clean 116/0 at HEAD (Lane 1's 10 GPU SEGFAULTs =
+environmental/concurrent-run). Census 411→410 (E-C2 row removed), ONE pin bump.
+Defaults: **14 ON, unchanged.**
+
+### Wave 30 menu (from `WAVE29_CLOSEOUT_REVIEW.md` §7 — discriminator-first + checkpoint-before-fix + A7 raw-log mechanics + E4 verbatim-quote rule carried)
+1. **W30-BAND-PERF-CLIP (primary):** why do on-stage band members play only
+   idle+expression clips (zero instrument-performance clips — raw-proven)? Trace the
+   performance-clip selection layer (song events → BandDirector/BandPerformer →
+   BandCharacter::SetState/PlayGroup) with CHARDRV_PLAY/_BT + CLIPSWAP. This is Part
+   A's recharter AND the likely root of SEED1 (dormant hands exist because hand
+   placement falls entirely to IK against static props). Success = a named mechanism
+   (working-reference style) and either a landed default-OFF lever or an honest
+   recharter.
+2. **W30-PROP-DEFAULT-ON (decision lane):** discharge E6(b) per Q(d) (global finger=1
+   census + songMs-matched A/B, or piece 1 re-scoped to prop-chain ikhands) →
+   coordinator flips the 15th default. Note: the right_hand 8×31u residual ships with
+   ON either way — visually acceptable per W28/W29 closeups; say so in the flip commit.
+3. **Green-faces lane (BLOCKED on reference):** acquire a retail band-member closeup
+   lighting reference FIRST, then A/B char-env face lighting vs stage key-light on the
+   green-faced models (C8-faces family). Do not dispatch without the reference.
+4. **Exit-trap teardown SIGSEGV:** pre-existing exit-time crash (W0.3 S1); bounded,
+   well-reproduced, hygiene payoff for every future gate.
+5. **`part:` verb tooling:** extend `rb3_game_input.cpp:1080-1085` beyond guitar
+   (coordinator-owned file) so future sweeps can charter vocals/drums/keys runs.
+   Riders: probe retirement (Q(e)), released flag names ledger (Q(e′)).
