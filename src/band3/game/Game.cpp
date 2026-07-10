@@ -974,7 +974,7 @@ DataNode Game::OnMsg(const GameEndedMsg &msg) {
     } else {
         TheGamePanel->SetGameOver();
         mResult = msg.GetResult();
-        unk124 = msg->Float(3);
+        unk124 = msg.mData->Float(3);
         switch (mResult) {
         case kLost:
             TheGamePanel->Export(Message("game_lost"), true);
