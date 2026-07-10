@@ -8,6 +8,9 @@
 #include "os/Debug.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
+#ifdef HX_NATIVE
+#include "obj/Task.h" // W28-CROWD A1: beat stamp on the CheckUnload UNLOAD line
+#endif
 
 #ifdef HX_NATIVE
 // Defined in UIScreen.cpp (the prewarm hook owns the issued-loader set). Gate the
@@ -65,8 +68,9 @@ void UIPanel::CheckUnload() {
         }
 #ifdef HX_NATIVE
         if (getenv("RB3_CROWD_PANEL_DBG"))
-            MILO_LOG("[PANELDBG] CheckUnload %s refs->%d%s\n", Name(), mLoadRefs - 1,
-                     (mLoadRefs - 1) == 0 ? " UNLOAD" : "");
+            MILO_LOG("[PANELDBG] CheckUnload %s refs->%d%s beat=%.3f\n", Name(),
+                     mLoadRefs - 1, (mLoadRefs - 1) == 0 ? " UNLOAD" : "",
+                     TheTaskMgr.Beat());
 #endif
         if (--mLoadRefs == 0)
             Unload();

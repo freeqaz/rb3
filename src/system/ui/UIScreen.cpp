@@ -14,6 +14,9 @@
 #include <map>
 #include <string>
 #include <cstdlib>
+#ifdef HX_NATIVE
+#include "obj/Task.h" // W28-CROWD A1: beat stamp on the UnloadPanels marker
+#endif
 #endif
 
 typedef std::vector<PanelRef>::iterator iterator;
@@ -574,7 +577,8 @@ void UIScreen::LoadPanels() {
 void UIScreen::UnloadPanels() {
 #ifdef HX_NATIVE
     if (getenv("RB3_CROWD_PANEL_DBG"))
-        MILO_LOG("[PANELDBG] >> UIScreen::UnloadPanels screen=%s\n", Name());
+        MILO_LOG("[PANELDBG] >> UIScreen::UnloadPanels screen=%s beat=%.3f\n", Name(),
+                 TheTaskMgr.Beat());
 #endif
     for (reverse_iterator it = mPanelList.rbegin(); it != mPanelList.rend(); it++) {
         if (it->mLoaded) {

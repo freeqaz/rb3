@@ -25,6 +25,7 @@
 #include "obj/Task.h"
 #include "obj/Utl.h"
 #include "os/Debug.h"
+#include "utl/BinStream.h" // W28-CROWD A2(b): Tell/Seek/ReadString for the DEFCLIP peek
 #include "rndobj/Highlightable.h"
 #include "rndobj/Poll.h"
 #include "rndobj/Rnd.h"
@@ -292,6 +293,23 @@ void CharDriver::Transfer(const CharDriver &driver) {
 }
 
 void CharDriver::SetClips(ObjectDir *dir) {
+#ifdef HX_NATIVE
+    // W28-CROWD A2(a): attribute a between-poll mClips swap to its SetClips caller
+    // (the copy path :285 is covered by the Poll CLIPSWAP detector). Same tag so
+    // `grep -c CHARDRV_CLIPSWAP` counts both sources. Probe-only, HX_NATIVE, gated.
+    {
+        const char *dp = getenv("CHARDRV_PROBE");
+        if (dp && dir != mClips.Ptr()) {
+            ObjectDir *owndir = Dir();
+            const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
+            if (dp[0] == '*' || (dn[0] && strstr(dn, dp)))
+                fprintf(stderr,
+                    "[CHARDRV_CLIPSWAP] src=setclips dir='%s' old=%p new=%p'%s' beat=%.3f\n",
+                    dn[0] ? dn : "?", (void *)mClips.Ptr(), (void *)dir,
+                    (dir && dir->Name()) ? dir->Name() : "-", TheTaskMgr.Beat());
+        }
+    }
+#endif
     if (dir != mClips) {
         mLastNode = NULL_OBJ;
         mClips = dir;
@@ -533,6 +551,39 @@ void CharDriver::Poll() {
                                 "[CHARDRV_DIE] dir='%s' pollFrame=%d beat=%.3f (mFirst set->null)\n",
                                 dn[0] ? dn : "?", fr, TheTaskMgr.Beat());
                         pf = (void *)mFirst;
+                    }
+                    // W28-CROWD A2(a): UNSAMPLED mClips-swap detector. Logs every
+                    // time this driver's bound clip-set ObjPtr changes identity
+                    // between polls — the E4 "does mClips swap 11-set->8-set at the
+                    // beat-2.433 kill" question the %60-sampled [CHARDRV] line above
+                    // cannot decide. First transition (from=0x0) records the
+                    // initially-bound set, which names the owner the driver resolves
+                    // play_clip against.
+                    {
+                        static std::map<const CharDriver *, void *> gPrevClips;
+                        static std::map<const CharDriver *, std::string> gPrevClipsName;
+                        ObjectDir *curClips = mClips.Ptr();
+                        void *&pc = gPrevClips[this];
+                        std::string &pn = gPrevClipsName[this];
+                        const char *toName =
+                            (curClips && curClips->Name()) ? curClips->Name() : "-";
+                        if (pc != (void *)curClips) {
+                            // W28-CROWD item 2: capture the FULL ownership chain of
+                            // the driver and the newly-bound clip set (PathName ->
+                            // FindPathName walks the Dir() parents). std::string
+                            // copies dodge PathName's shared MakeString buffer.
+                            std::string drvPath = PathName(this);
+                            std::string clipsPath =
+                                curClips ? PathName(curClips) : "-";
+                            fprintf(stderr,
+                                "[CHARDRV_CLIPSWAP] src=poll dir='%s' from=%p'%s' "
+                                "to=%p'%s' beat=%.3f drvPath='%s' clipsPath='%s'\n",
+                                dn[0] ? dn : "?", pc, pn.empty() ? "-" : pn.c_str(),
+                                (void *)curClips, toName, TheTaskMgr.Beat(),
+                                drvPath.c_str(), clipsPath.c_str());
+                            pc = (void *)curClips;
+                            pn = toName;
+                        }
                     }
                     if (mFirst) gFirst[this]++;
                     if (FirstPlaying()) gPlaying[this]++;
@@ -920,7 +971,44 @@ BEGIN_LOADS(CharDriver)
         mTestClip.Load(bs, false, mClips);
     }
     if (gRev > 0xB) {
+#ifdef HX_NATIVE
+        // W28-CROWD E5 discriminator (A2b): capture the SERIALIZED default-clip
+        // NAME at load. The milo chunkstream only seeks FORWARD (peek+seek-back
+        // faults), so replicate ObjPtr::Load (ObjPtr_p.h:536-543) manually: read
+        // the name, resolve it against mClips (falling back to this->Dir() exactly
+        // as ObjPtr::Load's `if (!dir && mOwner) dir = mOwner->Dir()`), assign the
+        // resolved pointer into mDefaultClip. Stream is consumed identically to the
+        // real Load (one ReadString), so no behavioral divergence. Decides whether
+        // a NULL mDefaultClip on the crowd drivers is a native resolution gap or
+        // FAITHFUL data (empty serialized name). Gated under CHARDRV_PROBE.
+        const char *dp = getenv("CHARDRV_PROBE");
+        if (dp) {
+            ObjectDir *owndir = Dir();
+            const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
+            bool match = (dp[0] == '*') || !dn[0] || strstr(dn, dp);
+            if (match) {
+                char nameBuf[0x80];
+                bs.ReadString(nameBuf, 0x80);
+                ObjectDir *rdir = mClips.Ptr();
+                if (!rdir)
+                    rdir = Dir();
+                Hmx::Object *resolved =
+                    rdir ? rdir->FindObject(nameBuf, false) : nullptr;
+                mDefaultClip = resolved;
+                fprintf(stderr,
+                    "[CHARDRV_DEFCLIP] dir='%s' serialized='%s' resolved=%p "
+                    "clipsDir=%p'%s'\n",
+                    dn[0] ? dn : "?", nameBuf, (void *)mDefaultClip.Ptr(),
+                    (void *)rdir, (rdir && rdir->Name()) ? rdir->Name() : "-");
+            } else {
+                mDefaultClip.Load(bs, false, mClips);
+            }
+        } else {
+            mDefaultClip.Load(bs, false, mClips);
+        }
+#else
         mDefaultClip.Load(bs, false, mClips);
+#endif
     }
     if (gRev > 0xD)
         bs >> mDefaultPlayStarved;
