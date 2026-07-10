@@ -9,8 +9,10 @@
 #include <list>
 #include <set>
 #include <algorithm>
+#include <execinfo.h> // W30-BANDPERF STEP-0 backtrace probe (RB3_BANDPERF_BT), inert by default
 #include "rndobj/Mesh.h"
 #include "rndobj/Dir.h"
+#include "char/CharClip.h"
 #endif
 #include "bandobj/BandHeadShaper.h"
 #include "bandobj/BandWardrobe.h"
@@ -412,6 +414,44 @@ CharClipDriver *BandCharacter::PlayMainClip(int i, bool b) {
         if (!clipdir)
             return 0;
         else {
+#ifdef HX_NATIVE
+            // W30-BANDPERF STEP-0(ii): ASSET CENSUS — one-shot per bound clipdir,
+            // dump the mClips PathName + every resident CharClipGroup/CharClip name
+            // (CA8: via the public ClipDir() accessor, no CharDriver.cpp edit). Tells
+            // us whether instrument-performance groups (intense/mellow/groove…) are
+            // RESIDENT at all, or only idle/expression — the load-vs-select split.
+            if (getenv("RB3_BANDPERF_CLIPS")) {
+                static std::set<ObjectDir *> sSeenClipDirs;
+                int ngroups = 0;
+                for (ObjDirItr<CharClipGroup> gc(clipdir, false); gc != 0; ++gc)
+                    ngroups++;
+                // Only latch (cache) once the dir has been populated with groups —
+                // the pre-SyncObjects snapshot shows groups={} and must not poison
+                // the once-guard for the real gameplay clipdir.
+                if (ngroups > 0 && sSeenClipDirs.insert(clipdir).second) {
+                    fprintf(stderr,
+                        "[BANDPERF_CLIPS] char='%s' mClips='%s' groups={",
+                        Name() ? Name() : "?", PathName(clipdir));
+                    for (ObjDirItr<CharClipGroup> git(clipdir, false); git != 0; ++git)
+                        fprintf(stderr, "%s,", git->Name() ? git->Name() : "?");
+                    fprintf(stderr, "}\n");
+                    // Per-clip flags for clips in the CURRENTLY requested group —
+                    // idle vs performance is a flag-mask distinction, so the flags
+                    // reveal whether a higher-intensity mask COULD select a perf clip.
+                    CharClipGroup *cg = clipdir->Find<CharClipGroup>(mGroupName, false);
+                    if (cg) {
+                        fprintf(stderr, "[BANDPERF_CLIPFLAGS] grp='%s' :", mGroupName);
+                        for (ObjDirItr<CharClip> cit(clipdir, false); cit != 0; ++cit) {
+                            if (cit->InGroup(cg))
+                                fprintf(stderr, " %s=0x%x",
+                                    cit->Name() ? cit->Name() : "?",
+                                    (unsigned)cit->Flags());
+                        }
+                        fprintf(stderr, "\n");
+                    }
+                }
+            }
+#endif
             CharClipGroup *grp = clipdir->Find<CharClipGroup>(mGroupName, false);
             if (!grp) {
                 MILO_NOTIFY_ONCE(
@@ -429,6 +469,26 @@ CharClipDriver *BandCharacter::PlayMainClip(int i, bool b) {
                 } else if (streq(mGroupName, "realtime_idle")) {
                     mask = mask & 0xFFF80FFF | 0x1000;
                 }
+#ifdef HX_NATIVE
+                // W30-BANDPERF DEMONSTRATION lever (default-OFF, NON-FAITHFUL).
+                // STEP-0 proved: the on-stage band's mPlayFlags stays at IR (idle-
+                // realtime, 0x1000) all song because `set_play` — the only rewriter
+                // of the intensity mask — never fires in-song (no C++ sender; it is
+                // dispatched purely by the song's venue/mood DTA authoring, a native
+                // gap). The performance clips (stand_rhythm_* = P/PM, stand_solo_* =
+                // PS) ARE resident in the stand/sit group. This lever proves the gap
+                // is SELECTION not residency: when RB3_BAND_PERF_FORCE_PLAY is set and
+                // the requested mask is idle-class only (an idle bit in 0x7000, no
+                // Play bit in 0x78000), promote it to P (0x10000) so GetClip resolves
+                // a rhythm clip. It HARDCODES a fixed Play intensity and ignores the
+                // song-authored mood transitions — NOT the faithful fix (Wave-31
+                // recharter: dispatch the venue-mood set_play stream). Wii `.o` is
+                // byte-identical (mwcc never defines HX_NATIVE).
+                if (!invorc && (mask & 0x7000) != 0 && (mask & 0x78000) == 0
+                    && getenv("RB3_BAND_PERF_FORCE_PLAY")) {
+                    mask = mask & 0xFFF80FFF | 0x10000;
+                }
+#endif
                 CharClip *clp = 0;
                 if (mUseMicStandClips
                     || mInstrumentType == keyboard && ((i & 0xF) != 2) && !b) {
@@ -483,6 +543,15 @@ CharClipDriver *BandCharacter::PlayMainClip(int i, bool b) {
                                 );
                         }
                     }
+#ifdef HX_NATIVE
+                    // W30-BANDPERF: the clip actually selected for mGroupName +
+                    // mask — downstream confirmation of the CHARDRV_PLAY census.
+                    if (getenv("RB3_BANDPERF_PROBE"))
+                        fprintf(stderr,
+                            "[BANDPERF_CLIP] char='%s' grp='%s' clip='%s' mask=0x%x\n",
+                            Name() ? Name() : "?", mGroupName,
+                            clp->Name() ? clp->Name() : "?", (unsigned)mask);
+#endif
                     CharClipDriver *played = unk454->Play(clp, i, -1.0f, 1e+30f, 0.0f);
                     if ((i & 0xF) == 2)
                         mTeleported = true;
@@ -3868,6 +3937,28 @@ void BandCharacter::PlayGroup(
 
 CharClipDriver *
 BandCharacter::SetState(const char *cc, int playFlags, int mask, bool b4, bool b5) {
+#ifdef HX_NATIVE
+    // W30-BANDPERF STEP-0(i)/(iii): CALL CENSUS — every state/group request that
+    // reaches a band member in-song, UNFILTERED by character name (W29 lesson: the
+    // six-wave crowd chain died on a name filter). The group name `cc` is the
+    // load-bearing datum: only `realtime_idle`/face groups ⇒ the performance-group
+    // request is never issued (send-side gap); a performance group name that then
+    // fails to resolve ⇒ asset/loading gap. The BANDPERF_STATE_BT backtrace names
+    // the dispatcher (camshot vs DTA-script `set_play`, which has no C++ sender).
+    if (getenv("RB3_BANDPERF_PROBE")) {
+        fprintf(stderr,
+            "[BANDPERF_STATE] char='%s' grp='%s' flags=0x%x mask=%d beat=%.3f\n",
+            Name() ? Name() : "?", cc ? cc : "?", (unsigned)playFlags, mask,
+            TheTaskMgr.Beat());
+        if (getenv("RB3_BANDPERF_BT")) {
+            void *bt[96];
+            int n = backtrace(bt, 96);
+            fprintf(stderr, "[BANDPERF_STATE_BT] char='%s' grp='%s' depth=%d\n",
+                Name() ? Name() : "?", cc ? cc : "?", n);
+            backtrace_symbols_fd(bt, n, 2);
+        }
+    }
+#endif
     if (!streq(mGroupName, cc)) {
         strcpy(mGroupName, cc);
         b4 = true;

@@ -19,6 +19,7 @@
 #ifdef HX_NATIVE
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 #endif
 
 INIT_REVS(BandCamShot)
@@ -354,6 +355,19 @@ void BandCamShot::StartAnim() {
                 msg[2] = cur.mFastForward / FramesPerUnit();
                 msg[3] = Units();
                 msg[4] = cur.mForwardEvent;
+#ifdef HX_NATIVE
+                // W30-BANDPERF STEP-0(i)/(iii): SEND SIDE — the only C++ sender of
+                // play_group. Logs which anim_group each camera shot dispatches to
+                // each target char. If gameplay shots only ever send idle/face
+                // groups, the performance-group request never originates here (it
+                // would have to come from a DTA-script set_play with no C++ sender).
+                if (getenv("RB3_BANDPERF_PROBE")) {
+                    const char *cn = charObj->Name() ? charObj->Name() : "?";
+                    fprintf(stderr,
+                        "[BANDPERF_SHOT] shot='%s' char='%s' anim_group='%s'\n",
+                        Name() ? Name() : "?", cn, cur.mAnimGroup.Str());
+                }
+#endif
                 HandleType(msg);
                 if (cur.mEnvOverride) {
                     cache->unk8 = charObj->GetEnv();
