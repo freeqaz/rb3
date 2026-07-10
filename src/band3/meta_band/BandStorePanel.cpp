@@ -272,8 +272,11 @@ void BandStorePanel::ExitStore(StoreError err) const {
 BEGIN_HANDLERS(BandStorePanel)
     HANDLE_EXPR(get_request_prefix, "dlc_store")
     HANDLE_ACTION(request, Request(String(_msg->Str(2)), _msg->Int(3)))
-    HANDLE_ACTION(request_prev_chunk,
-                  (Request(String(mPrevChunkPath.c_str()), true), mStartBrowserAtBottom = true))
+    if (sym == request_prev_chunk) {
+        Request(String(mPrevChunkPath.c_str()), true);
+        mStartBrowserAtBottom = true;
+        return 0;
+    }
     HANDLE_ACTION(request_next_chunk, Request(String(mNextChunkPath.c_str()), true))
     HANDLE_EXPR(should_start_browser_at_bottom, mStartBrowserAtBottom)
     HANDLE_EXPR(request_in_progress, mMetadataLoader != 0 || !(TheStoreMetadata.mFlags & 8))
