@@ -489,11 +489,10 @@ bool BandSongMgr::IsSongUnplayable(int songID, BandUserMgr &mgr, bool bvar3) con
         bool b1 = false;
         bool b11 = true;
         if (i12 == 1) {
-            b1 = true;
-            if (!data->HasPart(guitar, false) && !data->HasPart(bass, false)) {
-                b1 = false;
-            }
-            if (!b1)
+            bool hasGuitarOrBass = data->HasPart(guitar, false) || data->HasPart(bass, false);
+            if (hasGuitarOrBass)
+                b1 = true;
+            if (!hasGuitarOrBass)
                 b11 = false;
         }
         if (i12 > 1) {
@@ -505,10 +504,11 @@ bool BandSongMgr::IsSongUnplayable(int songID, BandUserMgr &mgr, bool bvar3) con
             }
         }
         if (i7 == 1) {
-            if (data->HasPart(real_guitar, false) || data->HasPart(real_bass, false)) {
-                b11 = false;
-            } else
+            bool hasRealGuitarOrBass = data->HasPart(real_guitar, false) || data->HasPart(real_bass, false);
+            if (hasRealGuitarOrBass)
                 b1 = true;
+            if (!hasRealGuitarOrBass)
+                b11 = false;
         }
         if (i7 > 1) {
             if (!data->HasPart(real_guitar, false) || !data->HasPart(real_bass, false)) {
