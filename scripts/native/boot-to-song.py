@@ -15,9 +15,9 @@ USAGE
     # default: first playable song, guitar/expert, 30s in gameplay, shot every 2s
     python3 scripts/native/boot-to-song.py
 
-    # named song, vocals part, flag A/B, custom output dir
+    # named song, flag A/B, custom output dir
     python3 scripts/native/boot-to-song.py --song beastandtheharlot \
-        --part vocals --env RB3_PROP_POSE_FULL=1 --out /tmp/prop-on
+        --env RB3_PROP_POSE_FULL=1 --out /tmp/prop-on
 
     # keep the engine alive after reaching gameplay (prints port for /api pokes)
     python3 scripts/native/boot-to-song.py --keep
@@ -41,7 +41,10 @@ REPO = k.REPO
 NAV_TO_SELECT = ("@10:start,@30:confirm,"
                  "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn")
 GAMEPLAY_SONGMS = 2000.0
-PARTS = ["guitar", "bass", "drums", "vocals", "keys"]
+# The native part: input verb only supports 'guitar' today (rb3_game_input.cpp
+# rejects everything else). For eyes on other band members in gameplay, use
+# scripts/native/band-closeup-capture.py --member <vocals|drums|...> instead.
+PARTS = ["guitar"]
 
 
 def log(m): print(f"[boot2song] {m}", flush=True)
@@ -148,8 +151,14 @@ def main():
         time.sleep(1.0)
         snap("01_part_difficulty.png")
         log(f"committing {args.part}/{args.diff}")
-        k.verb(port, f"part:{args.part}"); time.sleep(1.0)
-        k.verb(port, f"diff:{args.diff}"); time.sleep(1.0)
+        st, body = k.verb(port, f"part:{args.part}")
+        if st != 200:
+            log(f"FAIL: part:{args.part} rejected: {body.strip()}"); return 1
+        time.sleep(1.0)
+        st, body = k.verb(port, f"diff:{args.diff}")
+        if st != 200:
+            log(f"FAIL: diff:{args.diff} rejected: {body.strip()}"); return 1
+        time.sleep(1.0)
         k.verb(port, "nofail"); time.sleep(0.3)
         if not args.no_autohit:
             k.verb(port, "autohit"); time.sleep(0.3)

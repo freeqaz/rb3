@@ -196,7 +196,82 @@ at close-out — the lane only reports the deletion.
    coordinator countersign, do NOT edit the sidecar), `rb3-tests` 116/0, prewarm boot
    `RB3_PREWARM_SCREENS=1` on any `ui/*.cpp` edit, boot A/B flag-ON.
 
-## COORDINATOR ACCEPTANCE
+## COORDINATOR ACCEPTANCE (adopted from WAVE29_REVIEW.md — WINS over all draft text above)
 
-*(appended after the Fable pre-dispatch review — the acceptance block WINS over any
-draft text above.)*
+Verdict was DISPATCH-WITH-AMENDMENTS (A1-A3 blocking, A4-A10 advisory). All ten
+findings are ADOPTED. A1/A2 countersigned by the coordinator at
+`rb3_game_input.cpp:1080-1085` and `analyze_prop_ab.py:21,86` before adoption.
+The CA1 script correction (boot-to-song.py `--part` guitar-only + fail-fast on
+rejected part:/diff: verbs) was applied by the COORDINATOR pre-dispatch in this
+commit; Lane 2 owns any further harness bugfixes per CA8.
+
+1. **CA1 (adopts A1(a)):** Part B = mic-chain A/B via `--part guitar` runs (vocalist
+   on stage regardless; W28 ON-run mic rows are the precedent) + `band-closeup-capture.py
+   --member vocals` closeups. Part D = guitar runs + `--member vocals`/`--member all`
+   closeups; NO non-guitar `part:` runs are chartered (engine supports only `guitar`,
+   rb3_game_input.cpp:1080-1085). `part:` verb extension = Wave-30 tooling candidate,
+   not this wave.
+2. **CA2 (adopts A2):** Part A bar, verbatim A8(ii): flag-ON "strum/fret/right_hand
+   **skip=0** and `dst_from_hand` **0 entries >30u**" — decided mechanically by the
+   committed `analyze_prop_ab.py` printing `ACCEPTANCE (ON): PASS` (exit 0). Any
+   other outcome is labeled **PARTIAL** with the numbers.
+3. **CA3 (adopts A3):** Part C deletion = the five-site table in WAVE29_REVIEW.md A3
+   (incl. the dtor prune block :107-115 and struct/map decl :42-84; the superseded
+   W26 root-cause comment :52-67 goes too). Gates, all three in STATUS:
+   `grep -c "RB3_CROWD_CLIP_KEEP\|gCrowdKeep\|CrowdKeepState"` == 0 in CharDriver.cpp;
+   `grep -c CHARDRV_PLAY_BT` == 1; batch_objdiff `Play`/`Poll` == baseline
+   (100.0 / 93.54). Census row + regen + pin bump coordinator-only at close-out.
+4. **CA4 — Lane 1 acceptance (verbatim, RECHARTER.md §W29 ACCEPTANCE TARGET SET):**
+   > 1. **Target drivers:** the 8 `char/crowd/crowd_{male,female}0N` `main.drv` CharDrivers,
+   >    while `main_hub_screen` is active and their `mClips` resolves to
+   >    `streetslomo_clips.milo` (assert the PathName, not just the count).
+   > 2. **Animating criterion:** each target driver has `CHARDRV_PLAY` of a `playerN_{f,m}`
+   >    clip AFTER beat 2.433 and `FirstPlaying() != NULL` (`animating > 0`) sustained on
+   >    main_hub — NOT the transient cityscape `crowd1-5` plays at beat 0.
+   > 3. **Do NOT** count the splash/cityscape crowd (crowd1-5, sv8) as main_hub walkers; it
+   >    correctly animates during splash and correctly dies at the transition. Any census that
+   >    measures `animating` at/around beat 2.433 without pinning `mClips==streetslomo_clips`
+   >    is measuring the wrong crowd (the W23 ambiguity that caused this supersession chain).
+
+   E2 carry: `playerN_{f,m}` remains a HYPOTHESIS until STEP-0(i) confirms the
+   mechanism; if the proven clip names differ, the target set updates WITH EVIDENCE
+   in STATUS. Lever-B-style honest re-charter at the STEP-0-named layer remains a
+   valid full success (W28 precedent).
+5. **CA5 (adopts A5):** Lane 1 flag name: matches the STEP-0-named layer's
+   vocabulary (expected `RB3_(SCENE|VIGNETTE)_TRIG*`), contains none of
+   `CLIPBIND|REBIND|CLIP_KEEP|CROWD_`, grep-0 against the 411-row
+   `NativeCompatFlags.gen.inc`, chosen ONCE at the STEP-0 checkpoint.
+6. **CA6 (adopts A6):** all A/B evidence runs use `--fixed-clock`; screenshot pairs
+   matched by nearest `songMs` (health.jsonl), never shot index. Lane 2 MAY
+   parameterize the E5 probe caps (CharIKHand.cpp, probe-only, no new getenv name).
+7. **CA7 (adopts A7):** Part D bounded: ≤3 boot runs + ≤2 closeup runs; seeds first;
+   ≤6 full findings entries; remainder = one-line Wave-30 candidates; NO fix code.
+   Part D stops while Parts A-C gates are unmet (fix work outranks findings-gathering).
+8. **CA8 — file-ownership matrix (binding):**
+
+   | surface | Lane 1 (CROWD-TRIGGER) | Lane 2 (GAMEPLAY) |
+   |---|---|---|
+   | `src/system/world/`, vignette/scene load, PanelDir/WorldDir eventanm/trigger | WRITE | — |
+   | `src/system/ui/` (only if STEP 0 names it; prewarm gate) | WRITE | — |
+   | `src/system/char/CharDriver.cpp`, `CharClip*.cpp` | READ-ONLY (probes exist) | WRITE (Parts A/C) |
+   | `src/system/char/CharIKHand.cpp` | READ-ONLY | WRITE |
+   | `scripts/native/boot-to-song.py` (+ its bugfixes) | READ-ONLY (may run) | WRITE |
+   | `scripts/native/` NEW files (distinct names) | ADD | ADD |
+   | `native/src/rb3_game_input.cpp` | — (coordinator-only) | — (coordinator-only) |
+   | protected: `Crowd.cpp:884-1000` oracle, RndMesh loader, sidecar/goldens, census/classjson, `native/CMakeLists.txt` pin, `rb3_session_trace.cpp`, engine `FxSendNative.cpp` | NO TOUCH | NO TOUCH |
+
+   **Serialization rule:** Lane 2's CharDriver.cpp commits (Parts A/C) must leave
+   every `CHARDRV_*` probe block byte-identical (CA3 grep gate) and may land at any
+   time — they are behavior-inert flag-OFF. Lane 1 records `git rev-parse HEAD` of
+   its build tree inside each STEP-0 checkpoint JSON so evidence↔binary provenance
+   survives concurrent Lane 2 lands. Both lanes: git ops under
+   `flock /tmp/rb3-git.lock`, stage BY PATH only.
+9. **CA9 (adopts A9/A10):** Lane 2 checkpoints at
+   `/tmp/wave29-checkpoints/gameplay-{prop3-baseline,micAB,sweep}.json` (check-first).
+   Dispatch prompts pin the post-review base SHA and QUOTE this block's bars verbatim
+   (E4 rule) — including CA2's analyzer line and CA4's three-item target set.
+10. **A8 precision note (adopted):** `CHARDRV_BT` is PRESENCE-checked — dispatch
+    prompts say "set `CHARDRV_BT`", not "`CHARDRV_BT=1`". A8 verified all Play paths
+    route through the probed overload (no bypass); the runtime `/api/dta/eval` dump
+    remains the pinned method for STEP-0(iii) (static milo listing is top-level-only,
+    `mip_strip.py:399`).
