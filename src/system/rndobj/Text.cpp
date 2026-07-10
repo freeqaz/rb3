@@ -1173,9 +1173,10 @@ void RndText::UpdateMesh(RndFont *font) {
     int i8 = 0x1F;
     if (mFixedLength == 0) {
         int i1 = meshInfo->displayableChars * 2;
+        int numVerts = meshInfo->displayableChars * 4;
         ResetFaces(mesh, i1);
         i8 |= 0xA0;
-        mesh->Verts().resize(i1 * 2, true);
+        mesh->Verts().resize(numVerts, true);
     } else if (!(mesh->GetMutable() & 0x1F) || mFixedLength * 4 != mesh->Verts().size()) {
         mesh->SetMutable(0x1F);
         ResetFaces(mesh, mFixedLength * 2);
