@@ -131,10 +131,10 @@ void WorldDir::Poll() {
     float deltas[4];
     AccumulateDeltas(deltas);
     bool b = true;
-    bool &_ref0 = mFirstPoll;
-    if (!_ref0 && !(TheRnd->ProcCmds() & kProcessPost))
+    bool &camMgr = mFirstPoll;
+    if (!camMgr && !(TheRnd->ProcCmds() & kProcessPost))
         b = false;
-    _ref0 = false;
+    camMgr = false;
 #ifdef HX_NATIVE
     // Force-poll transition vignette WorldDirs every frame. The retail kProcessPost
     // throttle (nominally ~1/3 frames, far lower in practice under TheLoadMgr
@@ -392,15 +392,16 @@ void WorldDir::SetCrowds(ObjVector<CamShotCrowd> &crowdvec) {
 #pragma auto_inline on
 void WorldDir::DrawShowing() {
     START_AUTO_TIMER("world_draw");
+    CameraManager &camMgr = mCameraManager;
     if (TheWorld) {
         if (Showing())
             DrawSplitWorld();
         return;
     } else {
         SetTheWorld(this);
-        CamShot *shot = mCameraManager.MiloCamera();
+        CamShot *shot = camMgr.MiloCamera();
         if (!shot)
-            shot = mCameraManager.CurrentShot();
+            shot = camMgr.CurrentShot();
         if (shot)
             shot = shot->CurrentShot();
         RndCam *cam2 = CamOverride();
@@ -464,7 +465,8 @@ void WorldDir::DrawShowing() {
         if (TheRnd->ProcCmds() & kProcessWorld && shot) {
             Spotlight *spot = shot->GlowSpot();
             if (spot && spot->Showing() && spot->Intensity() > 0) {
-                Hmx::Rect rect(0, 0, TheRnd->Width(), TheRnd->Height());
+                int rndWidth = TheRnd->Width();
+                Hmx::Rect rect(0, 0, rndWidth, TheRnd->Height());
                 Hmx::Color color(spot->Color());
                 color.alpha = 0.25f;
                 TheRnd->DrawRect(rect, color, mGlowMat, 0, 0);
@@ -516,6 +518,10 @@ bool WorldDir::DrawShowingBudget(float fff) {
     }
     return true;
 }
+DONT_INLINE float _outline_GetLastMs(Timer* _obj) {
+    return _obj->GetLastMs();
+}
+
 
 void WorldDir::DrawSplitWorld() {
     static Timer *worldTimer = AutoTimer::GetTimer("world");
@@ -524,10 +530,10 @@ void WorldDir::DrawSplitWorld() {
         return;
     }
     if (TheRnd->LastProcCmds() & kProcessWorld) {
-        mLastRndTimeWorld = worldTimer->GetLastMs();
+        mLastRndTimeWorld = _outline_GetLastMs(worldTimer);
     }
     if (TheRnd->LastProcCmds() & kProcessChar) {
-        mLastRndTimeChar = worldTimer->GetLastMs();
+        mLastRndTimeChar = _outline_GetLastMs(worldTimer);
     }
     if (TheRnd->ProcCmds() == kProcessPost)
         return;

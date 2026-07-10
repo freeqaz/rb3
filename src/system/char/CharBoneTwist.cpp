@@ -7,19 +7,20 @@ CharBoneTwist::CharBoneTwist() : mBone(this), mTargets(this) {}
 
 // fn_804B42D0 - poll
 void CharBoneTwist::Poll() {
-    if (!mBone || mTargets.size() == 0)
+    const ObjPtrList<RndTransformable> &targets = mTargets;
+    if (!mBone || targets.size() == 0)
         return;
     Vector3 v58;
     v58.Zero();
-    for (ObjPtrList<RndTransformable, ObjectDir>::iterator it = mTargets.begin();
-         it != mTargets.end();
+    for (ObjPtrList<RndTransformable, ObjectDir>::iterator it = targets.begin();
+         it != targets.end();
          ++it) {
         Vector3 v64((*it)->WorldXfm().v);
         Add(v64, v58, v58);
     }
-    Scale(v58, 1.0f / mTargets.size(), v58);
-    Transform tf48(mBone->WorldXfm());
+    Scale(v58, 1.0f / targets.size(), v58);
     Vector3 v70;
+    Transform tf48(mBone->WorldXfm());
     Subtract(v58, mBone->WorldXfm().v, v70);
     Vector3 v7c;
     Scale(tf48.m.x, Dot(tf48.m.x, v70), v7c);
@@ -32,11 +33,11 @@ void CharBoneTwist::Poll() {
     // products before any subtractions to prevent the compiler from emitting
     // fused fmsubs in place of the separate fmuls/fsubs the target uses.
     {
-        float y1 = tf48.m.x.y;
         float z2 = tf48.m.y.z;
+        float y1 = tf48.m.x.y;
         float x2 = tf48.m.y.x;
         float z1 = tf48.m.x.z;
-        float p_yz = y1 * z2;
+        float p_yz = z2 * y1;
         float p_yx = y1 * x2;
         float y2 = tf48.m.y.y;
         float p_zx = z1 * x2;

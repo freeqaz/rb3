@@ -590,14 +590,14 @@ void SongData::RestoreGems(int i1, int i2, int diff) {
 
 void SongData::TrimOverlappingGems(int i1, int i2, int diff) {
     GameGemList *backup_gems = mBackupTracks[i2]->mGems->GetDiffGemList(diff);
-    GameGemList *gems = mGemDBs[i1]->GetDiffGemList(diff);
-    std::vector<GameGem> &glist = gems->mGems;
+    std::vector<GameGem> &glist = mGemDBs[i1]->GetDiffGemList(diff)->mGems;
     std::vector<GameGem> &blist = backup_gems->mGems;
 
     glist.clear();
     glist.reserve(blist.size());
 
-    if (blist.size() == 0) {
+    int backupCount = blist.size();
+    if (backupCount == 0) {
         MILO_WARN("Empty track found for SongData::TrimOverlappingGems!");
         return;
     }
@@ -611,7 +611,7 @@ void SongData::TrimOverlappingGems(int i1, int i2, int diff) {
         // Group overlapping/close gems (within 10 ticks)
         while (next != blist.end() && abs(cur->mTick - next->mTick) < 10) {
             int nextDurTick = next->mDurationTicks;
-            if (nextDurTick < shortestDurationTick)
+            if ((int)nextDurTick < shortestDurationTick)
                 shortestDurationTick = nextDurTick;
             float nextDurMs = (float)next->mDurationMs;
             if (nextDurMs < shortestDurationMs)
@@ -628,7 +628,7 @@ void SongData::TrimOverlappingGems(int i1, int i2, int diff) {
             }
         }
 
-        if (shortestDurationTick < 0) return;
+        if (shortestDurationTick <= -1) return;
         if (shortestDurationMs < 0.0f) return;
         MILO_ASSERT(shortestDurationTick >= 0, 0x360);
         MILO_ASSERT(shortestDurationMs >= 0.0f, 0x361);

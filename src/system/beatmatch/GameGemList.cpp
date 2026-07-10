@@ -180,9 +180,9 @@ void GameGemList::SetGems(
     const std::vector<GameGem> &gems, int numLoops) {
     mGems.clear();
     mGems.reserve(numLoops * gems.size());
-    int tickOffset = 0;
     int tickShift = loopStartTick - startTick;
     int loopLen = loopEndTick - loopStartTick;
+    int tickOffset = 0;
     for (int i = 0; i < numLoops; i++) {
         for (unsigned int j = 0; j < gems.size(); j++) {
             GameGem gem = gems[j];

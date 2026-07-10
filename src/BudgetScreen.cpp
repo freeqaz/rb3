@@ -258,6 +258,7 @@ BudgetScreen::BudgetScreen()
       mWorstOnly(OptionBool("worst_only", false)), mWorstCpuPctile(0.0),
       mWorstGsPctile(0.0), mSampleCount(0) {
     TheSongMgr.AddSongs(SystemConfig("songs"));
+    char _slotpad[8]; (void)_slotpad;
     TheContentMgr->UnregisterCallback(&TheSongMgr, false);
 
     Symbol logFileSym("log_file");
@@ -274,8 +275,8 @@ BudgetScreen::BudgetScreen()
 
     Symbol dumpScsvSym("dump_scsv");
     int useSsv = SystemConfig()->FindArray(dumpScsvSym)->Int(1);
-    StandardStream::sReportLargeTimerErrors = false;
     gUseSsv = useSsv;
+    StandardStream::sReportLargeTimerErrors = false;
 }
 
 void BudgetScreen::Enter(UIScreen *screen) {

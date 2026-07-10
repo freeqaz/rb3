@@ -9,6 +9,7 @@
 
 // https://decomp.me/scratch/yZLdj
 SuperFormatString::SuperFormatString(const char *cc, const DataArray *da, bool b) {
+    LocaleGender gender;
     char param[8];
     char tempFmt[2048];
     char phInfo[64];
@@ -138,7 +139,6 @@ SuperFormatString::SuperFormatString(const char *cc, const DataArray *da, bool b
 
                         if (!node_bool) {
                             int sn_res = 0;
-                            LocaleGender gender;
                             LocaleNumber num;
                             int x;
                             switch (phType) {

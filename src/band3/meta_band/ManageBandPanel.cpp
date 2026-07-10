@@ -81,21 +81,23 @@ void ManageBandPanel::RefreshToStandinsState() {
 }
 
 void ManageBandPanel::RefreshAll() {
-    if (mProfile) {
-        LocalBandUser *pLocalUser = mProfile->GetAssociatedLocalBandUser();
+    bool keepSearching;
+    BandProfile * &profile = mProfile;
+    if (profile) {
+        LocalBandUser *pLocalUser = profile->GetAssociatedLocalBandUser();
         MILO_ASSERT(pLocalUser, 0xB3);
         mCharProvider->Reload(pLocalUser);
-        mStandInProvider->Reload(mProfile);
+        mStandInProvider->Reload(profile);
 
         mHistoryProvider->unk20 = Property(reward_vignettes, true)->Array(NULL);
         VignetteViewerProvider *histProv = mHistoryProvider;
-        AccomplishmentProgress &accProgress = mProfile->AccessAccomplishmentProgress();
+        AccomplishmentProgress &accProgress = profile->AccessAccomplishmentProgress();
         std::list<Symbol> &newRewardVignettes = accProgress.mNewRewardVignettes;
+        unsigned int numVignettes = histProv->unk20->Size();
         std::set<Symbol> &accomplishedVignettes = accProgress.unkb0;
-        int numVignettes = histProv->unk20->Size();
 
         histProv->mEntries.clear();
-        for (int i = 0; i < numVignettes; i++) {
+        for (int i = 0; (int)numVignettes > i; i++) {
             DataArray *arr = histProv->unk20->Array(i);
             Symbol vigName = arr->Sym(0);
             Symbol accName = arr->Sym(1);
@@ -108,11 +110,12 @@ void ManageBandPanel::RefreshAll() {
 
             if (isAccomplished) {
                 std::list<Symbol>::iterator it = newRewardVignettes.begin();
-                bool keepSearching;
                 do {
                     keepSearching = false;
-                    if (it != newRewardVignettes.end() && *it != accName) {
+                    if (it != newRewardVignettes.end()) {
+                        if (*it != accName) {
                         keepSearching = true;
+                    }
                     }
                     if (keepSearching)
                         ++it;
@@ -127,11 +130,11 @@ void ManageBandPanel::RefreshAll() {
             }
         }
 
-        TourBand *tourBand = mProfile->GetTourBand();
+        TourBand *tourBand = profile->GetTourBand();
         PatchDescriptor *logo = tourBand->GetLogo();
         if (logo && logo->patchType != 0) {
-            if (mProfile) {
-                LocalBandUser *pUser = mProfile->GetAssociatedLocalBandUser();
+            if (profile) {
+                LocalBandUser *pUser = profile->GetAssociatedLocalBandUser();
                 TheAccomplishmentMgr->EarnAccomplishment(pUser, acc_bandlogo);
             }
         }

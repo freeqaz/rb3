@@ -118,9 +118,10 @@ void ClipDistMap::GenerateDistEntry(
     if (entry.bones.size() != 0)
         return;
 
+    const float &blendWidth = mBlendWidth;
     entry.beat = beat;
 
-    float quarterBlend = mBlendWidth * 0.25f;
+    float quarterBlend = blendWidth * 0.25f;
     float facingBeat = entry.beat + 0.5f * quarterBlend;
     void *channel = clip->GetChannel("bone_facing.rotz");
     for (int k = 0; k < 4; k++) {
@@ -133,7 +134,7 @@ void ClipDistMap::GenerateDistEntry(
     }
 
     entry.bones.resize(mNumSamples * transes.size());
-    float step = mBlendWidth / (float)mNumSamples;
+    float step = blendWidth / (float)mNumSamples;
     float sampleBeat = entry.beat + 0.5f * step;
 
     int totalIdx = 0;
@@ -142,13 +143,12 @@ void ClipDistMap::GenerateDistEntry(
         meshes.Zero();
         clip->ScaleAdd(meshes, sampleBeat, 1.0f, 0.0f);
         meshes.PoseMeshes();
-        for (unsigned int t = 0; t < transes.size(); t++) {
-            Transform &xfm = transes[t]->WorldXfm();
+        for (unsigned int t = 0; t < transes.size(); t++, totalIdx++) {
+            const Transform &xfm = transes[t]->WorldXfm();
             Vector3 &bone = entry.bones[totalIdx];
             bone.x = xfm.v.x;
             bone.y = xfm.v.y;
             bone.z = xfm.v.z;
-            totalIdx++;
         }
         sampleBeat += step;
     }
@@ -332,16 +332,16 @@ bool ClipDistMap::FindBestNode(float maxError, float startBeat, float endBeat, N
         return false;
     }
     node.err = maxError;
-    const float &_ref0 = mAStart;
-    int startCol = (int)((startBeat - _ref0) * mSamplesPerBeat);
+    const float &blendWidth = mAStart;
+    int startCol = (int)((startBeat - blendWidth) * mSamplesPerBeat);
     startCol = startCol & ~(startCol >> 31);
-    int endCol = (int)((endBeat - _ref0) * mSamplesPerBeat);
+    int endCol = (int)((endBeat - blendWidth) * mSamplesPerBeat);
     int maxCol = endCol;
     if (mDists.mWidth < endCol) {
         maxCol = mDists.mWidth;
     }
     if (startCol < maxCol) do {
-        float curBeat = _ref0 + (float)startCol / (float)mSamplesPerBeat;
+        float curBeat = blendWidth + (float)startCol / (float)mSamplesPerBeat;
         int rowIdx = mDists.mHeight - 1;
         if (rowIdx >= 0) {
             do {
