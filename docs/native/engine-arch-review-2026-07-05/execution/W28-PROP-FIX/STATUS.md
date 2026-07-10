@@ -83,3 +83,44 @@ No default flips, no MILO_ENGINE_PIN bump, no census/classjson/drawlog-sidecar e
 the gameplay WorldCrowd/RndMultiMesh oracle, the RndMesh loader, hands/finger family, or
 concurrent agents' files. `RB3_PROP_POSE_FULL` is a NEW getenv name → census row + any
 pin bump are coordinator-only at close-out.
+
+---
+
+### Close-out errata (Wave-28 close-out review)
+- **E4 (label + misattributed quote):** the sentence quoted as A8 ("if pieces
+  (1)+(2) alone can't reach skip=0 without piece (3), report the honest partial
+  with the numbers — a valid outcome") appears NOWHERE in the WAVE28_KICKOFF.md
+  acceptance block or WAVE28_REVIEW.md. A8(i) authorizes the piece-3 DEFERRAL;
+  A8(ii)'s numeric bar (strum/fret/right_hand ALL skip=0 AND 0 dst>30u) is
+  unconditional and is NOT met — the committed analyzer itself exits FAIL
+  (right_hand 12-13 dst>30u entries). Lane outcome label is corrected to
+  **PARTIAL** (fix-landed pieces 1+2 default-OFF; strum/fret PASS, right_hand
+  FAIL on the dst bar). The numbers themselves reproduce exactly from the raw
+  logs; the deferral is legitimate; only the authorization framing was wrong.
+  Never quote acceptance text that cannot be grepped in the acceptance doc.
+- **E5 (probe-cap confound):** `[IK_CLAMP]` caps at 300 lines and `[PROP_DST]`
+  at 120 per process — all per-ikhand counts are within-window shares, not
+  rates. Cross-run row comparisons (mic/mic_stand rows appearing only in the ON
+  runs; left_foot dst 14→27) are partly window redistribution and are NOT
+  evidence of no-change elsewhere. "Whole-log skip 209→0" is likewise bounded by
+  the 300-line window (a skip after the 300th over-reach event would be
+  unlogged); the ~21-25u ON preDist medians make later skips unlikely, but the
+  wording overstates. Future prop A/Bs should raise/parameterize the caps or log
+  per-ikhand summary counters at exit.
+- **E6 (scope disclosure + default-ON blocker):** piece (1) is GLOBAL — with
+  FULL on, the mFinger re-projection is disabled for every mFinger ikhand,
+  including chains the redirect deliberately never matches (vocalist mic case),
+  whereas piece (2) is scoped via `bone_target_*` parents. Related, undisclosed
+  in STATUS: the ON runs change left/right_foot behavior (skip 24/23 → 0, clamp
+  29-30 at preDist ~50) — the redirect firing on drummer pedal contacts, same
+  fling class, plausibly correct but never called out. Acceptable while
+  default-OFF. BEFORE any default-ON: (a) A/B the vocalist/mic chain
+  specifically, and (b) either scope the mFinger break to hands whose target was
+  actually redirected this poll, or show the global break is harmless.
+  `RB3_PROP_FINGER_BYPASS` is retained precisely to isolate piece (1) for (a).
+
+**Coordinator note (attribution, appended with the errata):** the sentence E4 flags as
+misattributed was introduced by the COORDINATOR's dispatch prompt (a paraphrase that
+loosened the A8(ii) bar), not invented by the lane. The label correction to PARTIAL
+stands; the process lesson lands on the coordinator: dispatch prompts must quote the
+acceptance block verbatim or link it, never paraphrase acceptance criteria.

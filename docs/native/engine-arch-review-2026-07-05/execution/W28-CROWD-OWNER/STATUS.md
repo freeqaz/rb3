@@ -140,3 +140,31 @@ writes no fix code. NO default flips, NO pin bump, NO census edits, NO sidecar e
 - `src/system/ui/UIPanel.cpp` — `CheckUnload` UNLOAD line beat stamp (A1, HX_NATIVE).
 - `scripts/native/_w28_crowd_step0_boot.py` — STEP-0 boot harness.
 - `docs/.../W28-CROWD-OWNER/{PLAN.md, STATUS.md, RECHARTER.md, evidence/*}`.
+
+---
+
+### Close-out errata (Wave-28 close-out review)
+- **E1 (RECHARTER precision):** `C13_PROBE` "player0-3 FileMerger proxies" is
+  `src/band3/meta_band/CharCache.cpp:68` — the four **band-member CharCache
+  slots**, fired at boot (raw lines 206-209) BEFORE streetslomo_clips even loads
+  (line 419). Its connection to the streetslomo walker clips `playerN_f/m` is an
+  unvalidated name collision ("playerN" slots vs "playerN_f/m" clips) — the same
+  inference class that produced W26's mis-attribution. W29 must discriminate
+  (does the walk-trigger path go anywhere near CharCache?) before spending any
+  effort on this candidate surface.
+- **E2 (RECHARTER labeling):** "Walk clips (what SHOULD play)" — that
+  streetslomo's `playerN_f/m` are walk clips Wii drives via CharDriver
+  `play_clip` — is a strong HYPOTHESIS, not yet evidence: there is no Wii-side
+  trace or retail-motion ground truth for streetslomo's walkers (the single
+  retail screenshot proves presence only, per A4). The W29 step-0
+  cityscape-working-reference trace is the discriminator; the acceptance target
+  set stands, conditional on that trace confirming the mechanism.
+- **E3 (nit, A7 hygiene):** the raw log also contains 9 `[CHARDRV_APPLY]` lines
+  and sampled `[CHARDRV]` lines not in the probe-count table (they are not in
+  A7's enumerated tag list, so the letter of the gate was met). Both corroborate
+  the headline (all APPLY lines are cityscape clips pre-kill; none after 2.433).
+  The unexplained-count questions (ENTER=16 = 8 Enter + 8 re-Enter at 2.433;
+  STARVE=8 = one-shot per driver, 5 splash-side + 3 post-kill; UNLOAD=3 includes
+  the benign intro_movie_panel at beat 0.067) were resolved at close-out with no
+  contradiction. Raw stderr of the drawlog/rb3-tests gate runs was not committed
+  (deterministic re-runs; fine this wave, keep committing probe-run logs).

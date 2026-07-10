@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 410  
-**By class:** diagnostic=1, feature=14, perf=9, probe=132, tuning=3, unknown=151, workaround=100  
+**Total flags:** 411  
+**By class:** compat=1, diagnostic=1, feature=14, perf=9, probe=132, tuning=3, unknown=151, workaround=100  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 74
 
 | name | class | default | owner | faithful-status | sites |
@@ -35,7 +35,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `CHAIN_PROBE` | probe | off | skinning/chain | n/a: archaeological debug probe (chain sim investigation) | 1 |
 | `CHAIN_PROPTEST` | probe | unknown | skinning/chain | n/a: archaeological debug probe | 1 |
 | `CHARDRV_BT` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — symbolized backtrace at CharDriver::Replace (pinned the UI panel-unload teardown as the clip-kill) | 1 |
-| `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 8 |
+| `CHARDRV_PROBE` | probe | off | char/anim | n/a: confirms CharDriver::Poll runs and whether a clip is playing/applying, substring-matched by ClipType (or '*'); two sites (pre- and post-apply) [CharDriver.cpp:346,424] | 10 |
 | `CHAR_DBG` | probe | off | render/char-material | n/a: two independent print sites sharing a name — engine RB3MaterialBinder.cpp reports whether a skinned outfit mesh resolved a diffuse texture (untextured-because-unbound vs RTT-composite-never-painted); game BandDirector.cpp logs the re-run LoadCharacters() call (aliases VENUE_DBG) [RB3MaterialBinder.cpp:292; BandDirector.cpp:713] | 2 |
 | `CHAR_PROBE_DUMP` | unknown | off | unclassified | n/a | 1 |
 | `CLOCK_DBG` | probe | off | ui/hud | n/a: logs TrackDir::DrawShowing's real-time delta and y-per-second scroll multiplier for a track-panel HUD overlay [TrackDir.cpp:302] | 1 |
@@ -313,6 +313,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PROP_FINGER_BYPASS` | probe | off | char/ik | probe: Wave-27 mFinger-bypass A/B — skips the CharIKHand::Poll mFinger re-projection to test W26-E7; CONFIRMED: over-reach 120-240u collapses to 21-25u (reach 20.3u), all gross-unreachable clamp skips vanish -> clamp effectively dormant. Kept as collapse-target reference for the eventual prop binding fix. [CharIKHand.cpp] | 1 |
 | `RB3_PROP_POSE` | workaround | off | char/ik | not-live DEFAULT-OFF partial (Wave-26): redirects an out-of-reach instrument IK tip target to its correctly-posed bone_target_* parent frame (clip-binding gap — the prop-bone clip track is unbound natively so the tip stays at its rest offset). Drops raw target distance -44..-64% but does NOT make RB3_IK_REACH_CLAMP dormant (engine mFinger re-projection, W27) and produces no visible arm change (clamp already clip-poses). Kept as pinned discriminator + first-half scaffolding; HX_NATIVE, byte-identical #else. [CharIKHand.cpp:49 sPropPoseRedirect] | 1 |
 | `RB3_PROP_POSE_DBG` | probe | off | char/ik | probe: Wave-26 PROP redirect trace (tgt->parent, dTip/dPar) | 1 |
+| `RB3_PROP_POSE_FULL` | compat | off | char/ik | compat fix (default-OFF, Wave-28): real prop-hand fix pieces 1+2 — (1) breaks the CharIKHand::Poll mFinger re-projection feedback (W27-proven collapse 120-240u -> 21-25u) and (2) redirects the IK target to its at-hand parent BEFORE the multi-target weight loop so blend weight and world agree; also forces the RB3_PROP_POSE redirect on. Outcome PARTIAL: strum/fret pass (skip=0, 0 dst>30u), right_hand 12-13 dst entries ~32-33u = deferred piece-3 (prop-tip clip-track binding) residual. Default-ON blockers (close-out E6): piece 1 is globally scoped — vocalist-mic A/B via RB3_PROP_FINGER_BYPASS required first. [CharIKHand.cpp] | 1 |
 | `RB3_PROV_SKIN_SPHERE` | probe | off | render/ui-forensics | n/a: Wave-19 T2-WORLDROI A/B control — forces skinned draws back to the legacy rectKind=1 sphere fallback (the R3 v1 world-cam blindness) so the new rectKind=3 skinned-pose bbox can be diffed against it (gate G1). Test-only; default preserves the rectKind=3 skinned-pose bbox + boneRects. Implies/requires RB3_DRAWLOG_PROV. SPATIAL provenance axis, not the frame-assignment timing axis. | 1 |
 | `RB3_READAHEAD_DEBUG` | probe | off | load/perf | n/a: reports loader queueDepth/kicked counts to show whether dependency milos enqueue deep enough for read-ahead to matter; zero cost when off, does not change scheduling [Loader.cpp:540] | 1 |
 | `RB3_RECOMPUTE_OFFSETS` | unknown | unknown | unclassified | n/a | 1 |

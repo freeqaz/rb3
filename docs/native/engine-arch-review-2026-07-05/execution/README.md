@@ -913,3 +913,43 @@ stay strict); NO `--update` re-baseline, NO standing RED.
    tracks + redirect BEFORE the weight loop + break the mFinger feedback (collapse target
    proven by `RB3_PROP_FINGER_BYPASS`). Flag-gated default-OFF. Defer without guilt.
 3. No third lane. GLOW closed; E-C2 re-rule at W28 close-out.
+
+## Wave 28 — FIFTH (decisive, backtrace-anchored) CROWD narrative: the measured crowd was the SPLASH crowd; PROP real-fix pieces 1+2 landed (PARTIAL)
+
+Kickoff `b3793f51`→acceptance `1b30bda8` (pre-review `350d3ebc` A1-A8: CHARDRV_CLIPSWAP/
+DEFCLIP probes specified, lever-A layer corrected to load-order/ObjPtr/object-ref,
+flag renamed CLIPBIND, raw-logs-as-deliverables + probe-count table). Close-out review
+`348c8293` ACCEPT-WITH-ERRATA both lanes (E1-E6, all minor; every probe count and A/B
+number independently recomputed from the committed raw gz logs — the A7 mechanics
+demonstrably worked). Census 410→411 (RB3_PROP_POSE_FULL). No default flips (14 stand).
+
+| Lane | Result |
+|---|---|
+| **CROWD-OWNER — Lever B re-charter ACCEPTED (E1-E3 minor)** | STEP-0 (all 4 discriminators checkpointed BEFORE any fix, NO fix code written) resolves the five-wave supersession chain with DIRECT evidence: (i) symbolized `CHARDRV_REPLACE_BT` names the kill owner — `UIScreen::UnloadPanels(splash_screen)` → `sv8_panel` WorldDir dtor → `cityscape_clips.milo` CharClipSet dtor (FAITHFUL splash teardown); (ii) unsampled `CHARDRV_CLIPSWAP`+PathName proves the 8 walker figures are SHARED proxies (`char/crowd/crowd_{male,female}0N.milo`) bound to sv8 **cityscape** clips during splash, then **correctly rebound** to the RESIDENT sv3 **streetslomo** set at beat 2.433 — NO binding divergence at any A3 layer; (iii) `CHARDRV_DEFCLIP`: `serialized=''` ×8 → mDefaultClip==NULL is FAITHFUL data (W27 E5 lever dead); (iv) identity: **the crowd measured since W23 is the SPLASH crowd faithfully dying**; the real hub walk (`playerN_f/m` in streetslomo_clips, E2: hypothesis pending W29's working-reference trace) is NEVER TRIGGERED natively (`PanelDir::Enter streetslomo_ao nTriggers=0`, zero PLAY after 2.433). Gap = world/vignette scene-trigger layer, NOT CharDriver/CharClip/ui. RECHARTER.md names the W29 acceptance target set (PLAY of playerN_* after 2.433 + sustained animating>0 with `mClips` PathName-asserted == streetslomo_clips — any census not pinning the set measures the wrong crowd). E1: C13_PROBE lead is CharCache band-member slots (name-collision risk, discriminate first). Probes only, Wii .o byte-identical; `RB3_HUB_CROWD_CLIPBIND` reserved-not-used, name released (`c6ef7795`). |
+| **PROP-FIX — RB3_PROP_POSE_FULL landed default-OFF, outcome PARTIAL (E4-E6)** | Pieces 1+2 of the real prop-hand fix, CharIKHand-local: (1) break the mFinger re-projection feedback (folds W27's proven bypass into the fix); (2) redirect the target to its at-hand parent BEFORE the multi-target weight loop so weight and world agree. Flag-ON A/B (committed `analyze_prop_ab.py`, numbers reproduce exactly from raw gz): grossly-unreachable skip 209→0 (window-bounded per E5); strum + fret FULL PASS (skip=0 AND 0 dst>30u); right_hand (drummer floor-tom) **FAIL on the A8(ii) dst bar** (12-13 entries at ~32-33u, the deferred piece-3 residual) → label corrected fix-landed→**PARTIAL**. Guitarist closeup: IK spike-fan GONE, hand posed at the fretboard. Piece (3) (prop-tip clip-track binding) deferred per A8(i) arbitration with the exact site enumerated in PLAN.md — now unblocked for W29. E6 default-ON blockers recorded: piece (1) is globally scoped (vocalist-mic A/B required; undisclosed foot-chain change) — `RB3_PROP_FINGER_BYPASS` KEPT as the piece-1 isolator (`cec9d7e5`). |
+
+**Close-out rulings (Q8):** **E-C2 `RB3_CROWD_CLIP_KEEP` → REMOVE in W29** (the kill it
+guards is proven faithful; enabled it would zombie the splash crowd onto a destroyed set
+and mask the trigger gap — pure cross-attribution hazard now). `RB3_PROP_FINGER_BYPASS`
+KEPT until FULL default-flips. Coordinator process erratum (owned): the E4 misquote
+originated in the coordinator's dispatch prompt — dispatch prompts must quote the
+acceptance block verbatim, never paraphrase acceptance criteria.
+
+### Wave 29 menu (from `WAVE28_CLOSEOUT_REVIEW.md` Q8 — discriminator-first + checkpoint-before-fix + A7 raw-log mechanics carried unchanged)
+1. **W29-CROWD-TRIGGER (primary):** make the 8 hub walkers play `playerN_f/m` per the
+   RECHARTER target set. STEP 0 (blocking): (i) trace the WORKING reference — what
+   mechanism issues the beat-0 `play_clip crowd1-5` on the cityscape side (caller
+   backtrace on `CharDriver::Play`, PathName the scene object/eventanm/trig);
+   (ii) E1 discriminator — is CharCache/FileMerger in that path at all;
+   (iii) enumerate streetslomo's own `.trig`/`.eventanm`/scene-start objects (runtime
+   dump; static milo listing is top-level-only) and name why `nTriggers=0`. THEN one
+   lever at the layer STEP 0 names, flag-gated default-OFF unless the A6-class
+   carve-out fires with countersigned evidence. Acceptance = RECHARTER target set;
+   only then reopen the deferred verts=0/near-black thread. Owned: world/vignette +
+   PanelDir/eventanm surfaces; CharDriver/CharClip READ-ONLY (probes exist).
+2. *(optional tail, now unblocked)* **W29-PROP-3:** bind/animate the prop-tip clip
+   tracks (CharDriver/CharClip* free this wave — arbitration pre-ruled the reverse of
+   W28). Riders: E-C2 `RB3_CROWD_CLIP_KEEP` removal + the E6 vocalist-mic A/B via
+   `RB3_PROP_FINGER_BYPASS`. Success = right_hand `dst_n→0` on the committed analyzer.
+   Defer-without-guilt.
+3. No third lane. E-C2 must not survive W29 un-ruled again.
