@@ -70,8 +70,19 @@ CharIKHand::~CharIKHand() {}
 static int sPropPoseFull() {
     static int v = -1;
     if (v < 0) {
-        const char *e = getenv("RB3_PROP_POSE_FULL");
-        v = (e && e[0] && e[0] != '0') ? 1 : 0;
+        // Coordinator flip (Wave-30 close-out, Lane-2 DECISION: FLIP-SAFE — E6(b)
+        // discharged via threshold-unbiased [PROP_CENSUS] + songMs-matched A/B: no
+        // NON-PROP finger=1 chain regresses): default-ON, opt-out-wins, mirroring
+        // the RB3_IK_REACH_CLAMP pattern below. RB3_PROP_POSE_FULL_OFF=1 (or
+        // RB3_PROP_POSE_FULL=0) disables. 15th default-ON. Note: FULL default-ON
+        // also forces sPropPoseRedirect ON (pre-existing documented coupling; the
+        // opt-out restores the redirect to the RB3_PROP_POSE opt-in). Still inside
+        // #ifdef HX_NATIVE — Wii object byte-identical.
+        if (getenv("RB3_PROP_POSE_FULL_OFF")) v = 0;
+        else {
+            const char *e = getenv("RB3_PROP_POSE_FULL");
+            v = (e && e[0] == '0') ? 0 : 1;
+        }
     }
     return v;
 }
