@@ -153,13 +153,14 @@ void RockCentral::Poll() {
 #ifdef MILO_DEBUG
         if (mState - 1U > 2)
 #endif
-            if ((mState == 4 || mState == 0) && ThePlatformMgr.IsConnected()
-                && (Timer::CyclesToMs(mTime.mCycles) < mRetryTime && !IsLoginMandatory())
-                && (!mLoginBlocked
-                    && (!TheGamePanel || TheGamePanel->GetState() == UIPanel::kUnloaded)
-                )) {
-                mState = 1;
-                TheNet.GetServer()->Login();
+            if (mState == 4 || mState == 0) {
+                if (ThePlatformMgr.IsConnected()
+                    && (!(Timer::CyclesToMs(mTime.mCycles) < mRetryTime) || IsLoginMandatory())
+                    && !mLoginBlocked
+                    && (!TheGamePanel || TheGamePanel->GetState() == UIPanel::kUnloaded)) {
+                    mState = 1;
+                    TheNet.GetServer()->Login();
+                }
             } else {
                 MILO_FAIL("Bad Rock Central state");
             }
