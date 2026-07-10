@@ -856,7 +856,10 @@ void MemHandle::Unlock() {
 void MemFreeH(MemHandle *h) {
     // Only valid from main thread
     extern OSThread *gMainThreadID;
-    MILO_ASSERT(gMainThreadID == nullptr || gMainThreadID == OSGetCurrentThread(), 0xb42);
+    bool onMainThread = true;
+    if (gMainThreadID != nullptr && gMainThreadID != OSGetCurrentThread())
+        onMainThread = false;
+    MILO_ASSERT(onMainThread, 0xb42);
     if (h != nullptr) {
         MILO_ASSERT(h->mAlloc->mLockCount == 0, 0xb47);
         _MemFree(h->mAlloc);
