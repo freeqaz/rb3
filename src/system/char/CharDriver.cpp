@@ -38,51 +38,6 @@ INIT_REVS(CharDriver)
 
 DECOMP_FORCEACTIVE(CharDriver, "%s %s, beat: %.2f")
 
-#ifdef HX_NATIVE
-// ===========================================================================
-// W25-CROWD FIX support (flag RB3_CROWD_CLIP_KEEP, default OFF).
-// See src/system/char/CharDriver.cpp Poll() and docs/.../W25-CROWD/PLAN.md.
-// Per-crowd-driver snapshot of the ambient walk clip's NAME (only) taken at
-// first Play, used to try to re-establish the loop after the playing crowd clip
-// is destroyed.
-// (E-C1: NAME only — the struct holds no bank ref; see CrowdKeepState below.)
-// (E-C3: gCrowdKeep is now pruned on driver destruction below — no stale-key
-// alias risk when flag-ON.)
-//
-// W26-CROWD ROOT-CAUSE CORRECTION (STEP-0 discriminator, backtrace-proven):
-// the beat-2.433 crowd-clip kill is NOT a FileMerger merge/dup and does NOT swap
-// mClips to a "player-only sub-bank". It is a UI PANEL-UNLOAD teardown during the
-// splash->main_hub screen transition:
-//   UIManager::Poll -> BandScreen::Enter -> UIScreen::UnloadPanels
-//     -> UIPanel::Unload -> WorldDir::~WorldDir -> ... -> CharClipSet::~CharClipSet
-//        -> CharClip::~CharClip (crowd1.clp..crowd5.clip) -> ~Object
-//        -> Replace(clip,NULL) -> CharDriver::Replace -> DeleteClip.
-// After the teardown the drivers KEEP their shared `clips` ObjPtr but its crowd
-// clips are permanently GONE (nclips 11->8) and streetslomo_clips.milo is NEVER
-// reloaded. So `mClips->FindObject("crowdN.clp")` returns null and the re-arm
-// below can never fire in the observed repro. The real fix (keep the streetslomo
-// vignette world resident across the transition, or reload+re-trigger it) lives
-// in ui/UIScreen+UIPanel / world / the vignette DTA — OUTSIDE this lane's file
-// ownership (FileMerger.cpp + CharDriver.cpp). Kept default-OFF as scaffolding
-// with the E-C2 removal criterion still open (see STATUS.md).
-// ===========================================================================
-struct CrowdKeepState {
-    std::string clipName; // name of the ambient clip (survives the clip's destruction)
-};
-static std::map<const CharDriver *, CrowdKeepState> &gCrowdKeep() {
-    static std::map<const CharDriver *, CrowdKeepState> m;
-    return m;
-}
-static bool gCrowdClipKeepEnabled() {
-    static int g = -1;
-    if (g < 0) {
-        const char *e = getenv("RB3_CROWD_CLIP_KEEP");
-        g = (e && e[0] && e[0] != '0') ? 1 : 0;
-    }
-    return g != 0;
-}
-#endif
-
 CharDriver::CharDriver()
     : mBones(this), mClips(this), mFirst(0), mTestClip(this), mDefaultClip(this),
       mDefaultPlayStarved(0), mStarvedHandler(), mLastNode(0), mOldBeat(kHugeFloat),
@@ -104,15 +59,6 @@ CharDriver::~CharDriver() {
     // before the raw delete.
     if (mBones.Ptr() == (CharBonesObject *)mInternalBones)
         mBones = (CharBonesObject *)nullptr;
-    // E-C3: prune this driver's gCrowdKeep entry so a later CharDriver reusing the
-    // same heap address can't collide with a stale snapshot (alias risk when the
-    // RB3_CROWD_CLIP_KEEP flag is ON). Harmless while default-OFF.
-    {
-        std::map<const CharDriver *, CrowdKeepState> &m = gCrowdKeep();
-        std::map<const CharDriver *, CrowdKeepState>::iterator it = m.find(this);
-        if (it != m.end())
-            m.erase(it);
-    }
 #endif
     delete mInternalBones;
 }
@@ -419,22 +365,6 @@ CharClipDriver *CharDriver::Play(CharClip *clip, int i, float f1, float f2, floa
         mFirst =
             new CharClipDriver(this, clip, i, f1, mFirst, f2, f3, mPlayMultipleClips);
 #ifdef HX_NATIVE
-        // W25-CROWD FIX (RB3_CROWD_CLIP_KEEP): snapshot, per crowd driver, the
-        // bank (mClips) and clip NAME of the FIRST ambient walk clip it plays.
-        // A later async load-merge both destroys the playing clip AND swaps this
-        // driver's mClips ObjPtr to a wrong player-only sub-bank — but the
-        // W25-CROWD (RB3_CROWD_CLIP_KEEP): snapshot, per crowd driver, the NAME
-        // of the first ambient walk clip it plays. Keyed on the clip NAME prefix
-        // (crowd*) — precise to the crowd walk clips and independent of when
-        // mClipType is stamped 'crowd' (the merge sets that AFTER this initial
-        // play). Name-only (survives the clip's later destruction); consumed by
-        // the clipType=='crowd'-scoped re-arm in Poll (A7).
-        if (gCrowdClipKeepEnabled() && clip->Name() &&
-            strncmp(clip->Name(), "crowd", 5) == 0) {
-            CrowdKeepState &st = gCrowdKeep()[this];
-            if (st.clipName.empty())
-                st.clipName = clip->Name();
-        }
         // W25-CROWD: log each Play() on a crowd driver — clip name, flags, beat.
         // Tells us HOW OFTEN and at WHAT BEAT the vignette re-triggers a walk
         // clip (the loop cadence) vs. it only ever firing once at Enter.
@@ -687,54 +617,6 @@ void CharDriver::Poll() {
     if (Starved() && mDefaultClip && mDefaultPlayStarved) {
         Play(DataNode(mDefaultClip), 0x44, -1, kHugeFloat, 0);
     }
-#ifdef HX_NATIVE
-    // ---------------------------------------------------------------------
-    // W25-CROWD (flag RB3_CROWD_CLIP_KEEP, default OFF; scoped to
-    // clipType=='crowd' ONLY). Root cause (full evidence in W25-CROWD/STATUS.md
-    // + PLAN.md): the sv3_a hub crowd proxies are driven by a one-shot
-    // `play_clip` (kPlayLoop|kPlayRealTime walk, e.g. `crowd3.clp`) fired at
-    // boot, but a native async load-merge at ~beat 2.4 does TWO things:
-    //   (a) DESTROYS the playing clip object -> Hmx::Object::~Object ->
-    //       Replace(clip,NULL) -> CharDriver::Replace -> DeleteClip pops it ->
-    //       mFirst NULL; and
-    //   (b) swaps THIS driver's `mClips` ObjPtr to a wrong player-only sub-bank
-    //       that holds zero `crowd*` clips. The one crowd proxy that was never
-    //       triggered keeps its full crowd bank intact.
-    // These drivers author NO default clip / starved handler and kPlayLoop(0x20)
-    // is not a starved-replay branch, so nothing re-establishes the loop -> the
-    // skeleton is undriven -> the skin palette scrambles (RB3-native only).
-    //
-    // PARTIAL re-arm (the only lane-scoped, crash-safe recovery available):
-    // when a crowd driver is Starved with mFirst==NULL, re-resolve the ambient
-    // clip name snapshotted at first Play against THIS driver's OWN current
-    // (live ObjPtr) mClips and re-Play it looping/real-time. This recovers any
-    // crowd driver whose bank survived the merge intact. It does NOT recover the
-    // drivers whose mClips was swapped to a crowd-less sub-bank (defect (b)) —
-    // re-arming those requires reaching another bank, and every cross-driver /
-    // cached-pointer path proved to be a use-after-free against the active merge
-    // (proc SIGSEGV at beat 2.4). The clip-destruction + bank-swap is a native
-    // load-merge defect that must be fixed engine-side; see STATUS.md for the
-    // hand-off charter (that fix is out of this lane's A7/A5 scope).
-    //
-    // A7-safe: gated by clipType=='crowd' (UNIQUE to the 8 hub proxies — band
-    // players/extras are 'vignette', gameplay WorldCrowd has NO CharDriver at
-    // all), only this driver's own live ObjPtr bank is dereferenced, and the
-    // whole block is HX_NATIVE-only so the Wii object is byte-identical.
-    // mLastNode is NOT reused (it dangles at the destroyed clip).
-    if (gCrowdClipKeepEnabled() && mClipType == Symbol("crowd") && !mFirst &&
-        mClips && Starved()) {
-        std::map<const CharDriver *, CrowdKeepState>::iterator it =
-            gCrowdKeep().find(this);
-        if (it != gCrowdKeep().end() && !it->second.clipName.empty()) {
-            Hmx::Object *obj = mClips->FindObject(it->second.clipName.c_str(), false);
-            CharClip *amb = obj ? dynamic_cast<CharClip *>(obj) : nullptr;
-            if (amb) {
-                int flags = CharClip::kPlayLoop | CharClip::kPlayRealTime;
-                Play(amb, flags, -1.0f, kHugeFloat, 0.0f);
-            }
-        }
-    }
-#endif
     if (mFirst) {
 #ifdef HX_NATIVE
         // W25-CROWD: capture the moment PreEvaluate pops the looping crowd clip
