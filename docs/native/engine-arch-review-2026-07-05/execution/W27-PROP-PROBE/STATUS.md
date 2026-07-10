@@ -118,3 +118,16 @@ regardless of this lane; re-baselining is coordinator-only.
 
 ## Checkpoint
 `/tmp/wave27-checkpoints/PROP-PROBE.json` (written before cleanup; NEGATIVE (b) recorded).
+
+---
+
+## CLOSE-OUT ERRATA (append-only, from WAVE27_CLOSEOUT_REVIEW.md `09cca9e8`)
+
+**ERRATUM E6:** A-column medians as committed are not reproducible from
+`evidence/propA.log` (recompute: strum preDist med 165.6, fret 152.7, strum dst med
+154.2 vs quoted 199.9/184.3/188.5; right_hand exact; ALL skip/clamp counts and the B
+column reproduce exactly). Conclusion unaffected.
+
+**ERRATUM E7:** "(b) no clip track binds them" is a behavioral inference (constant
+LocalXfm); a constant-writing track is not structurally excluded. The mechanism
+conclusion (static tip offset flings the IK target) is unaffected.

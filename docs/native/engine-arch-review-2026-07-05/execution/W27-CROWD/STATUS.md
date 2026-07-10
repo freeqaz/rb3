@@ -125,3 +125,49 @@ NO flag added (no lever). NO default flips. NO pin bump.
 - `src/system/ui/PanelDir.cpp` — Enter PanelDir/trigger probe.
 - `src/band3/meta_band/BandScreen.cpp` — Load/UnloadInterstitials probe.
 - `docs/.../W27-CROWD/{PLAN.md, STATUS.md, evidence/*}`.
+
+---
+
+## CLOSE-OUT ERRATA (append-only, from WAVE27_CLOSEOUT_REVIEW.md `09cca9e8`)
+
+**ERRATUM E1 (close-out): the "ZERO teardown / ends naturally" claims are RETRACTED.**
+The raw probe logs of BOTH boot runs (`/tmp/w27-crowd/chardrv-boot.log:543-549`,
+`combined-boot.log:597-603`) contain seven `[CHARDRV_REPLACE] from='crowd1.clp'..
+'crowd5.clip' to='?'` events at beat 2.433 — `Replace(clip,NULL)`→`DeleteClip`, the
+W26 kill mechanism — immediately preceding the re-Enters; `mFirstAtEntry=(nil)`
+reflects the Replace having already emptied the stack. `CHARDRV_POP` (the natural-end
+probe on the only PreEvaluate-null path) fired 0 times in every log, and the played
+clips carried loop-class flags (0x222), so no natural end occurred. The committed
+`evidence/chardriver-state.log` excerpt omitted the REPLACE lines. CHARDRV_CLEAR=0
+stands but was never the kill path. W26's teardown mechanism REPRODUCES on this build.
+
+**ERRATUM E2:** the teardown source at the kill instant is the FAITHFUL splash-side
+panel unload: `panel-refcount-trace.log:555-557` shows `UnloadPanels
+screen=splash_screen` → `splash_panel refs->0 UNLOAD` → `sv8_panel refs->0 UNLOAD`
+inside the DIE frame (72), while sv3_panel stays resident. `crowd1-4.clp`,
+`crowd5.clip`, the `crowd_male/female` proxy names and `crowd_*_walking.mesh` are
+raw-string-present in `sv8_a.milo_xbox` and absent from `sv3_a.milo_xbox`'s raw
+strings (weak negative; nested streetslomo payload is packed). Leading candidate: the
+destroyed CharClipSet is owned by sv8_panel's WorldDir; W26 mis-attributed it to
+sv3/streetslomo. Whether each driver's `mClips` swaps 11-set→8-set at the kill, or the
+drivers were statically split across the two same-named `clips` sets, is not decidable
+from the %60-sampled logs.
+
+**ERRATUM E3:** "CHARDRV_DIE fires for all 8" → fires for **7**. `crowd_female04`
+never receives `CHARDRV_PLAY` at all (7 PLAY lines; `CHARDRV_LIFE firstSet=0`),
+matching W25's "one proxy never triggered" observation.
+
+**ERRATUM E4:** "supersedes BOTH W25 AND W26" is overbroad. W25 (merge/bank-swap)
+stays refuted. W26's panel-unload-teardown MECHANISM is REINSTATED (per E1); what this
+lane genuinely supersedes is W26's OWNER attribution (sv3/streetslomo → the splash-side
+panel per E2) and the W27 charter premise (no residency lever exists — sv3 is already
+resident). The "char-layer clip-replay divergence" root cause is replaced by:
+**clip-set ownership/binding divergence** — why do the crowd drivers' playing clips
+live in (or resolve against) a clip set torn down with the splash panels, and what
+drives the equivalent walkers on Wii main_hub?
+
+**ERRATUM E5:** the hand-off's "mDefaultClip resolution" lever is premature.
+`mDefaultClip` is serialized-only (`mDefaultClip.Load(bs,false,mClips)`, LOADS
+rev>0xB): if the data authors no name, NULL is faithful (Wii identical) and no
+resolution fix exists. W28 STEP-0 must log the serialized default-clip name for the
+crowd drivers before any driver-replay charter.

@@ -873,3 +873,43 @@ change is the E-C3 gCrowdKeep prune (inert). Default-ON count unchanged at 14.
    (shared ui/world blast radius — flag-gated + boot A/B).
 2. **PROP parked** (probe-only; W27 tail if capacity: bind the prop clip tracks + bypass-test mFinger).
 3. **No GLOW lane** (S5 closed).
+
+## Wave 27 — sv3 residency PROVEN (charter premise refuted); W26 teardown mechanism REINSTATED w/ owner corrected; PROP E7 confirmed
+
+Kickoff `6dc950ec`→acceptance `c0829acf` (pre-review `cf94e168` A1-A10: refcount-handshake
+model correction, Wii-GT pre-pinned via the sv3 INTERSTITIAL, band3 grant), close-out review
+`09cca9e8` ACCEPT-WITH-ERRATA both lanes (E1-E7; E1 headline-reversing). Engine pin
+`8d0e5b0`→(close-out bump), census 408→410. Fourth CROWD narrative correction — canonical
+record now per close-out Q1 (confidence HIGH, build drift RULED OUT — the W26↔W27 window is
+docs + 5 semantically-inert micro decomp commits + classjson-only pin).
+
+| Lane | Result |
+|---|---|
+| **CROWD — residency proven, mechanism reinstated (ERRATA E1-E5)** | STEP-0 discriminator PROVED `sv3_panel` is RESIDENT across splash→main_hub (interstitial→regular-panel refcount handshake `mLoadRefs` 1→2→1, faithful; A7 revisit cycle leak-free 1→2→1→0→1) — the W27 charter premise (ui/world residency lever) is REFUTED: the ui layer is already correct, no in-grant fix exists. BUT the lane's "zero teardown / clip ends naturally" substitute narrative was FALSIFIED at close-out by its own raw logs (E1): **seven `CHARDRV_REPLACE` kills of `crowd1-5.clp/clip` fire at beat 2.433** — the W26 `WorldDir::~WorldDir→CharClipSet dtor→Replace(clip,NULL)` mechanism REPRODUCES — sourced at the **FAITHFUL splash-side panel unload** (`splash_panel`+`sv8_panel` refs→0 in the kill frame, E2). Owner corrected: crowd clips/proxies/walk meshes are raw-string-present in `sv8_a.milo` (splash backdrop), not sv3_a's raw strings → W26 mis-attributed the destroyed clip set to sv3/streetslomo. Root cause reframed (E4): **clip-set ownership/binding divergence** (11-vs-8 same-named `clips` sets; do resident streetslomo drivers resolve against the splash-side copy?). E3: only 7 of 8 drivers ever Play (`crowd_female04` never triggered). E5: `mDefaultClip` is serialized-only — NULL may be faithful; W28 must log the serialized name first. Probes only (byte-inert, 7/7 fns 100% objdiff); no flag, no flips (`a1cf22f3`). |
+| **PROP-PROBE — E7 CONFIRMED + binding gap enumerated (minor errata E6-E7)** | (a) mFinger-bypass A/B **CONFIRMS W26-E7**: with `RB3_PROP_POSE` on, bypassing the `CharIKHand::Poll` mFinger re-projection collapses hand-IK over-reach ~120-240u → ~21-25u (reach 20.3u); ALL grossly-unreachable skip fires vanish (strum 46→0), clamp degrades to marginal boundary = effectively dormant. The mFinger finger-compensation feedback IS the blocker (was only inferred). (b) prop-tip clip-track enumeration NEGATIVE: `bone_pick_strum`/`bone_[LR]-tip_*` carry constant LocalXfm while `bone_target_*` parents animate (behavioral inference, E7-errata softened). Real fix needs BOTH prop-tip track binding AND breaking the mFinger feedback. `RB3_PROP_FINGER_BYPASS` probe kept default-OFF; E7 env-parse fix confirmed present; weight-loop comment nit applied (`6a07cc42`). |
+
+**Close-out rulings:** E-C2 (`RB3_CROWD_CLIP_KEEP` removal) **PARKED** — W27's removal
+rationale falsified by E1; re-rule at W28 close-out. **drawlog-golden ambient-RED** (both
+lanes concur: count=792 stable, 12-72 `field=world` crowd-pose divergences across
+identical-binary reruns, clean-HEAD statistically identical): ruling = recalibrate the
+per-name `fixedclock-residual.json` eps from N≥5 clean-tree runs (count/structural/non-world
+stay strict); NO `--update` re-baseline, NO standing RED.
+
+### Wave 28 menu (from `WAVE27_CLOSEOUT_REVIEW.md` Q6 — discriminator-first, checkpoint-before-fix BINDING)
+1. **W28-CROWD-OWNER (MEDIUM):** STEP 0 (≤1 day, probes exist): (i) interleave the beat-2.433
+   Replace BACKTRACE (`CHARDRV_BT`) with panel-unload markers → name the torn-down WorldDir
+   owner directly; (ii) dump owner `Dir()` chains of the 5 played clips, BOTH `clips` sets
+   (11 vs 8; does any driver's `mClips` swap at the kill?), and the 8 crowd char dirs;
+   (iii) E5: serialized default-clip name at CharDriver load; (iv) **Wii-GT identity check:**
+   are the `crowd_*` chars part of retail main_hub at all, or are the hub walkers
+   streetslomo's OWN (differently-named) chars — if the latter, every wave since W23 has been
+   measuring the SPLASH crowd. THEN one lever: (A) fix cross-panel clip resolution so
+   `play_clip` resolves the resident copies (faithful-restoration carve-out class, A6-style
+   drawlog ruling); or (B) the observed crowd is splash-owned and faithfully dies →
+   re-charter acceptance around streetslomo's own walkers (fold in the deferred `verts=0` /
+   near-black thread). NO fix code before the STEP-0 checkpoint (three consecutive
+   supersessions).
+2. *(optional tail if capacity)* **W28-PROP-FIX (MEDIUM):** bind/animate prop-tip clip
+   tracks + redirect BEFORE the weight loop + break the mFinger feedback (collapse target
+   proven by `RB3_PROP_FINGER_BYPASS`). Flag-gated default-OFF. Defer without guilt.
+3. No third lane. GLOW closed; E-C2 re-rule at W28 close-out.

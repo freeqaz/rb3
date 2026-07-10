@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 408  
-**By class:** diagnostic=1, feature=14, perf=9, probe=130, tuning=3, unknown=151, workaround=100  
+**Total flags:** 410  
+**By class:** diagnostic=1, feature=14, perf=9, probe=132, tuning=3, unknown=151, workaround=100  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 74
 
 | name | class | default | owner | faithful-status | sites |
@@ -151,6 +151,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_CROWD_DIM` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_CROWD_DIM_OFF` | workaround | on | render/crowd | not-live: crowd-dim heuristic default-ON | 1 |
 | `RB3_CROWD_IMPOSTER_OFF` | workaround | on | render/crowd | not-live: crowd impostor rendering default-ON | 1 |
+| `RB3_CROWD_PANEL_DBG` | probe | off | ui/panel | probe: Wave-27 CROWD STEP-0 discriminator — per-panel mLoadRefs CheckLoad/CheckUnload trace + Load/UnloadPanels call-site markers + PanelDir::Enter trigger census + BandScreen interstitial trace (proved sv3_panel RESIDENT across splash->main_hub; close-out E1 reinstated the W26 teardown mechanism sourced at the faithful splash-side sv8/splash panel unload). [UIPanel.cpp, UIScreen.cpp, PanelDir.cpp, BandScreen.cpp] | 5 |
 | `RB3_DATA` | unknown | unknown | unclassified | n/a | 6 |
 | `RB3_DRAWLOG` | probe | off | render/determinism | n/a: per-draw state-log ring capture (W0.3 draw-log golden harness) | 1 |
 | `RB3_DRAWLOG_DUMP` | probe | off | render/determinism | n/a: draw-log JSON dump path (W0.3 draw-log golden harness) | 1 |
@@ -309,6 +310,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_PREWARM_SCREENS` | perf | off | load/perf | n/a: UI screen/panel asset prewarm+adopt (web default-ON opt-out via '0'; native default-OFF opt-in). No correctness dependency at the adopt site. See project_incremental_load_perf memory. | 4 |
 | `RB3_PROGRESSIVE_SHARPEN` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_PROP_DST_DBG` | probe | off | char/ik | probe: Wave-26 PROP per-ikhand pre/post target-distance histogram (A5-i regression gate) | 1 |
+| `RB3_PROP_FINGER_BYPASS` | probe | off | char/ik | probe: Wave-27 mFinger-bypass A/B — skips the CharIKHand::Poll mFinger re-projection to test W26-E7; CONFIRMED: over-reach 120-240u collapses to 21-25u (reach 20.3u), all gross-unreachable clamp skips vanish -> clamp effectively dormant. Kept as collapse-target reference for the eventual prop binding fix. [CharIKHand.cpp] | 1 |
 | `RB3_PROP_POSE` | workaround | off | char/ik | not-live DEFAULT-OFF partial (Wave-26): redirects an out-of-reach instrument IK tip target to its correctly-posed bone_target_* parent frame (clip-binding gap — the prop-bone clip track is unbound natively so the tip stays at its rest offset). Drops raw target distance -44..-64% but does NOT make RB3_IK_REACH_CLAMP dormant (engine mFinger re-projection, W27) and produces no visible arm change (clamp already clip-poses). Kept as pinned discriminator + first-half scaffolding; HX_NATIVE, byte-identical #else. [CharIKHand.cpp:49 sPropPoseRedirect] | 1 |
 | `RB3_PROP_POSE_DBG` | probe | off | char/ik | probe: Wave-26 PROP redirect trace (tgt->parent, dTip/dPar) | 1 |
 | `RB3_PROV_SKIN_SPHERE` | probe | off | render/ui-forensics | n/a: Wave-19 T2-WORLDROI A/B control — forces skinned draws back to the legacy rectKind=1 sphere fallback (the R3 v1 world-cam blindness) so the new rectKind=3 skinned-pose bbox can be diffed against it (gate G1). Test-only; default preserves the rectKind=3 skinned-pose bbox + boneRects. Implies/requires RB3_DRAWLOG_PROV. SPATIAL provenance axis, not the frame-assignment timing axis. | 1 |

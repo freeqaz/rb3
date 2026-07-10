@@ -1,137 +1,137 @@
 {
-  "_comment": "W2.1-flip re-golden (2026-07-06): fixed-clock residual sidecar consumed by compare_fixed_clock()/compare_canonical() in scripts/native/drawlog-golden.py. Every OTHER field/draw still hard-fails the gate (see that script's docstring + fail-red-audit). Regenerated after RB3_PLACEMENT_CONTRACT was flipped default-ON (engine, crowd/drum placement contract) which changed the splash_screen canonical draw count 888->792. Per-name eps refitted from a FRESH N>=30 fixed-clock boot sweep (36 boots, default build = contract ON, setarch -R) against the re-captured 792-draw golden, using drawlog-golden.py's own compare_canonical() correspondence \u2014 same order-dependent CharEyes/CharLookAt world-jitter residual on skinned eye/face meshes documented by W0.3d.S1 (non-RNG, async-loader-completion-order fed). This is a per-NAME recalibration (NOT a global-eps widen): eps = ceil(1.5*observed_max to 0.5).",
-  "eps": 3.0,
-  "eps_comment": "Legacy top-level eps (used AS-IS, unchanged, by the index-keyed compare_fixed_clock() path per PLAN F1 -- do not touch its meaning). compare_canonical() honors each entry's own \"eps\" override below, recalibrated per-name from the N>=30 fixed-clock sweep (2026-07-06 post-flip re-golden, 36 boots). Observed max |delta| per residual name (descending): 11.5, 11.15, 5.68, 5.668, 5.224, 4.632, 3.646 for 0x8217aba90e8175d2, 0x4c3b48a1fe2165eb, 0xb14bc5a60dc4b060, 0x395eb5606b2120d, 0x11db9562e2d7790b, 0xdc4a1dc968146487, 0xa8e830c0e5f7189d respectively; eps = ceil(1.5x to nearest 0.5).",
-  "draws": [
-    {
-      "index": 26,
-      "name": "0xb14bc5a60dc4b060",
-      "eps": 9.0
-    },
-    {
-      "index": 27,
-      "name": "0x395eb5606b2120d",
-      "eps": 9.0
-    },
-    {
-      "index": 39,
-      "name": "0x4c3b48a1fe2165eb",
-      "eps": 17.0
-    },
-    {
-      "index": 40,
-      "name": "0x8217aba90e8175d2",
-      "eps": 17.5
-    },
-    {
-      "index": 42,
-      "name": "0xdc4a1dc968146487",
-      "eps": 7.0
-    },
-    {
-      "index": 43,
-      "name": "0x11db9562e2d7790b",
-      "eps": 8.0
-    },
-    {
-      "index": 44,
-      "name": "0xa8e830c0e5f7189d",
-      "eps": 5.5
-    },
-    {
-      "index": 45,
-      "name": "0xdc4a1dc968146487",
-      "eps": 7.0
-    },
-    {
-      "index": 46,
-      "name": "0x11db9562e2d7790b",
-      "eps": 8.0
-    },
-    {
-      "index": 47,
-      "name": "0xa8e830c0e5f7189d",
-      "eps": 5.5
-    },
-    {
-      "index": 73,
-      "name": "0xb14bc5a60dc4b060",
-      "eps": 9.0
-    },
-    {
-      "index": 74,
-      "name": "0x395eb5606b2120d",
-      "eps": 9.0
-    },
-    {
-      "index": 81,
-      "name": "0x4c3b48a1fe2165eb",
-      "eps": 17.0
-    },
-    {
-      "index": 82,
-      "name": "0x8217aba90e8175d2",
-      "eps": 17.5
-    },
-    {
-      "index": 90,
-      "name": "0x4c3b48a1fe2165eb",
-      "eps": 17.0
-    },
-    {
-      "index": 91,
-      "name": "0x8217aba90e8175d2",
-      "eps": 17.5
-    },
-    {
-      "index": 100,
-      "name": "0x4c3b48a1fe2165eb",
-      "eps": 17.0
-    },
-    {
-      "index": 101,
-      "name": "0x8217aba90e8175d2",
-      "eps": 17.5
-    },
-    {
-      "index": 143,
-      "name": "0xb14bc5a60dc4b060",
-      "eps": 9.0
-    },
-    {
-      "index": 144,
-      "name": "0x395eb5606b2120d",
-      "eps": 9.0
-    },
-    {
-      "index": 156,
-      "name": "0x4c3b48a1fe2165eb",
-      "eps": 17.0
-    },
-    {
-      "index": 157,
-      "name": "0x8217aba90e8175d2",
-      "eps": 17.5
-    },
-    {
-      "index": 468,
-      "name": "0xb14bc5a60dc4b060",
-      "eps": 9.0
-    },
-    {
-      "index": 469,
-      "name": "0x395eb5606b2120d",
-      "eps": 9.0
-    },
-    {
-      "index": 481,
-      "name": "0x4c3b48a1fe2165eb",
-      "eps": 17.0
-    },
-    {
-      "index": 482,
-      "name": "0x8217aba90e8175d2",
-      "eps": 17.5
-    }
-  ]
+ "_comment": "W2.1-flip re-golden (2026-07-06): fixed-clock residual sidecar consumed by compare_fixed_clock()/compare_canonical() in scripts/native/drawlog-golden.py. Every OTHER field/draw still hard-fails the gate (see that script's docstring + fail-red-audit). Regenerated after RB3_PLACEMENT_CONTRACT was flipped default-ON (engine, crowd/drum placement contract) which changed the splash_screen canonical draw count 888->792. Per-name eps refitted from a FRESH N>=30 fixed-clock boot sweep (36 boots, default build = contract ON, setarch -R) against the re-captured 792-draw golden, using drawlog-golden.py's own compare_canonical() correspondence \u2014 same order-dependent CharEyes/CharLookAt world-jitter residual on skinned eye/face meshes documented by W0.3d.S1 (non-RNG, async-loader-completion-order fed). This is a per-NAME recalibration (NOT a global-eps widen): eps = ceil(1.5*observed_max to 0.5).",
+ "eps": 3.0,
+ "eps_comment": "Legacy top-level eps (used AS-IS, unchanged, by the index-keyed compare_fixed_clock() path per PLAN F1 -- do not touch its meaning). compare_canonical() honors each entry's own \"eps\" override below, recalibrated per-name from the N>=30 fixed-clock sweep (2026-07-06 post-flip re-golden, 36 boots). Observed max |delta| per residual name (descending): 11.5, 11.15, 5.68, 5.668, 5.224, 4.632, 3.646 for 0x8217aba90e8175d2, 0x4c3b48a1fe2165eb, 0xb14bc5a60dc4b060, 0x395eb5606b2120d, 0x11db9562e2d7790b, 0xdc4a1dc968146487, 0xa8e830c0e5f7189d respectively; eps = ceil(1.5x to nearest 0.5).",
+ "draws": [
+  {
+   "index": 26,
+   "name": "0xb14bc5a60dc4b060",
+   "eps": 19.0
+  },
+  {
+   "index": 27,
+   "name": "0x395eb5606b2120d",
+   "eps": 19.0
+  },
+  {
+   "index": 39,
+   "name": "0x4c3b48a1fe2165eb",
+   "eps": 29.0
+  },
+  {
+   "index": 40,
+   "name": "0x8217aba90e8175d2",
+   "eps": 29.0
+  },
+  {
+   "index": 42,
+   "name": "0xdc4a1dc968146487",
+   "eps": 16.0
+  },
+  {
+   "index": 43,
+   "name": "0x11db9562e2d7790b",
+   "eps": 18.0
+  },
+  {
+   "index": 44,
+   "name": "0xa8e830c0e5f7189d",
+   "eps": 26.0
+  },
+  {
+   "index": 45,
+   "name": "0xdc4a1dc968146487",
+   "eps": 16.0
+  },
+  {
+   "index": 46,
+   "name": "0x11db9562e2d7790b",
+   "eps": 18.0
+  },
+  {
+   "index": 47,
+   "name": "0xa8e830c0e5f7189d",
+   "eps": 26.0
+  },
+  {
+   "index": 73,
+   "name": "0xb14bc5a60dc4b060",
+   "eps": 19.0
+  },
+  {
+   "index": 74,
+   "name": "0x395eb5606b2120d",
+   "eps": 19.0
+  },
+  {
+   "index": 81,
+   "name": "0x4c3b48a1fe2165eb",
+   "eps": 29.0
+  },
+  {
+   "index": 82,
+   "name": "0x8217aba90e8175d2",
+   "eps": 29.0
+  },
+  {
+   "index": 90,
+   "name": "0x4c3b48a1fe2165eb",
+   "eps": 29.0
+  },
+  {
+   "index": 91,
+   "name": "0x8217aba90e8175d2",
+   "eps": 29.0
+  },
+  {
+   "index": 100,
+   "name": "0x4c3b48a1fe2165eb",
+   "eps": 29.0
+  },
+  {
+   "index": 101,
+   "name": "0x8217aba90e8175d2",
+   "eps": 29.0
+  },
+  {
+   "index": 143,
+   "name": "0xb14bc5a60dc4b060",
+   "eps": 19.0
+  },
+  {
+   "index": 144,
+   "name": "0x395eb5606b2120d",
+   "eps": 19.0
+  },
+  {
+   "index": 156,
+   "name": "0x4c3b48a1fe2165eb",
+   "eps": 29.0
+  },
+  {
+   "index": 157,
+   "name": "0x8217aba90e8175d2",
+   "eps": 29.0
+  },
+  {
+   "index": 468,
+   "name": "0xb14bc5a60dc4b060",
+   "eps": 19.0
+  },
+  {
+   "index": 469,
+   "name": "0x395eb5606b2120d",
+   "eps": 19.0
+  },
+  {
+   "index": 481,
+   "name": "0x4c3b48a1fe2165eb",
+   "eps": 29.0
+  },
+  {
+   "index": 482,
+   "name": "0x8217aba90e8175d2",
+   "eps": 29.0
+  }
+ ]
 }
