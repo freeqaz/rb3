@@ -444,11 +444,24 @@ CharClipDriver *CharDriver::Play(CharClip *clip, int i, float f1, float f2, floa
                 ObjectDir *owndir = Dir();
                 const char *dn = (owndir && owndir->Name()) ? owndir->Name() : "";
                 const char *ct = mClipType.Str();
-                if (dp[0] == '*' || (dn[0] && strstr(dn, dp)) || (ct && strstr(ct, dp)))
+                if (dp[0] == '*' || (dn[0] && strstr(dn, dp)) || (ct && strstr(ct, dp))) {
                     fprintf(stderr,
                         "[CHARDRV_PLAY] dir='%s' clip='%s' flags=0x%x beat=%.3f\n",
                         dn[0] ? dn : "?", clip->Name() ? clip->Name() : "?", (unsigned)i,
                         TheTaskMgr.Beat());
+                    // W29-CROWD-TRIGGER STEP-0: dump the native call chain that
+                    // ISSUES a crowd play (CHARDRV_BT=1) — names the working
+                    // trigger mechanism (scene object / eventanm / trig) behind
+                    // the beat-0 cityscape crowd1-5 plays, so streetslomo's
+                    // missing equivalent can be identified at the same layer.
+                    if (getenv("CHARDRV_BT")) {
+                        void *bt[96];
+                        int n = backtrace(bt, 96);
+                        fprintf(stderr, "[CHARDRV_PLAY_BT] clip='%s' depth=%d\n",
+                            clip->Name() ? clip->Name() : "?", n);
+                        backtrace_symbols_fd(bt, n, 2);
+                    }
+                }
             }
         }
 #endif
