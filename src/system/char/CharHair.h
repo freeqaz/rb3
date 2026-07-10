@@ -15,7 +15,8 @@ class CharHair : public RndHighlightable, public CharPollable {
 public:
     struct Point {
         Point(Hmx::Object *o)
-            : bone(o), length(0.0f), collides(o), radius(0.0f), outerRadius(-1.0f) {
+            : bone(o), length(0.0f), collides(o), radius(0.0f), outerRadius(0.0f),
+              sideLength(-1.0f) {
             pos.Zero();
             force.Zero();
             lastFriction.Zero();
