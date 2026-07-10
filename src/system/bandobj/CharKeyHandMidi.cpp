@@ -160,6 +160,78 @@ bool CharKeyHandMidi::IsBlackKey(KeyboardKey key) {
     }
 }
 
+void CharKeyHandMidi::EndTest() {
+    if (mIKObject) {
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerThumb);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerIndex);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerMiddle);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerRing);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerPinky);
+    }
+}
+
+DataNode CharKeyHandMidi::OnFingersUp(DataArray *msg) {
+    const KeyboardKey& key = (KeyboardKey)msg->Int(2);
+    MILO_ASSERT(key > kNoKey && key <= kKeyC4, 0x65);
+    for (int i = 0; i < 5; i++) {
+        if (unk6c[i] == (KeyboardKey)(key - kNoKey)) {
+            UnkeyFinger((CharIKFingers::FingerNum)i);
+        }
+    }
+    std::remove(unk5c.begin(), unk5c.end(), (KeyboardKey)(key - kNoKey));
+    return 0;
+}
+
+DataNode CharKeyHandMidi::OnFingersDown(DataArray *msg) {
+    KeyboardKey key = (KeyboardKey)msg->Int(2);
+    MILO_ASSERT(key > kNoKey && key <= kKeyC4, 0x81);
+    unk5c.push_back((KeyboardKey)(key - kNoKey));
+    return 0;
+}
+
+CharIKFingers::FingerNum CharKeyHandMidi::DefaultSelectFinger(KeyboardKey key) {
+    for (int i = 1; i < 5; i++) {
+        if (unk6c[i] == 0) {
+            KeyFinger((CharIKFingers::FingerNum)i, key);
+            return (CharIKFingers::FingerNum)i;
+        }
+    }
+    if (unk6c[0] == 0) {
+        KeyFinger(CharIKFingers::kFingerThumb, key);
+        return CharIKFingers::kFingerThumb;
+    }
+    return CharIKFingers::kFingerNone;
+}
+
+bool CharKeyHandMidi::KeyFinger(CharIKFingers::FingerNum finger, KeyboardKey setToKey) {
+    if (!(finger >= 0 && finger < CharIKFingers::kFingerNone)) {
+        TheDebug.Notify(MakeString("CharKeyHandMidi: Trying to key non-existent finger"));
+        return false;
+    }
+    if ((unsigned int)(setToKey - 1) > 0x18) {
+        TheDebug.Notify(MakeString("CharKeyHandMidi: Trying to put finger on non-existent key"));
+        return false;
+    }
+    if (setToKey == unk6c[0]) return false;
+    if (setToKey == unk6c[1]) return false;
+    if (setToKey == unk6c[2]) return false;
+    if (setToKey == unk6c[3]) return false;
+    if (setToKey == unk6c[4]) return false;
+    mIKObject->SetFinger(unk4c[setToKey], unk54[setToKey], finger);
+    unk6c[finger] = setToKey;
+    unk68 = finger;
+    unk64 = setToKey;
+    unk74--;
+    return true;
+}
+
+void CharKeyHandMidi::UnkeyFinger(CharIKFingers::FingerNum finger) {
+    MILO_ASSERT(finger >= 0 && finger < CharIKFingers::kFingerNone, 0x16a);
+    mIKObject->ReleaseFinger(finger);
+    unk6c[finger] = 0;
+    unk74++;
+}
+
 #pragma fp_contract off
 void CharKeyHandMidi::Poll() {
     if (!mFirstSpot)
@@ -348,78 +420,6 @@ void CharKeyHandMidi::Poll() {
     unk5c.clear();
 }
 #pragma fp_contract on
-
-void CharKeyHandMidi::EndTest() {
-    if (mIKObject) {
-        mIKObject->ReleaseFinger(CharIKFingers::kFingerThumb);
-        mIKObject->ReleaseFinger(CharIKFingers::kFingerIndex);
-        mIKObject->ReleaseFinger(CharIKFingers::kFingerMiddle);
-        mIKObject->ReleaseFinger(CharIKFingers::kFingerRing);
-        mIKObject->ReleaseFinger(CharIKFingers::kFingerPinky);
-    }
-}
-
-DataNode CharKeyHandMidi::OnFingersUp(DataArray *msg) {
-    const KeyboardKey& key = (KeyboardKey)msg->Int(2);
-    MILO_ASSERT(kNoKey < key && key <= kKeyC4, 0x65);
-    for (int i = 0; i < 5; i++) {
-        if (unk6c[i] == (KeyboardKey)(key - kNoKey)) {
-            UnkeyFinger((CharIKFingers::FingerNum)i);
-        }
-    }
-    std::remove(unk5c.begin(), unk5c.end(), (KeyboardKey)(key - kNoKey));
-    return 0;
-}
-
-DataNode CharKeyHandMidi::OnFingersDown(DataArray *msg) {
-    KeyboardKey key = (KeyboardKey)msg->Int(2);
-    MILO_ASSERT(key > kNoKey && (bool)(key <= kKeyC4), 0x81);
-    unk5c.push_back((KeyboardKey)(key - kNoKey));
-    return 0;
-}
-
-CharIKFingers::FingerNum CharKeyHandMidi::DefaultSelectFinger(KeyboardKey key) {
-    for (int i = 1; i < 5; i++) {
-        if (unk6c[i] == 0) {
-            KeyFinger((CharIKFingers::FingerNum)i, key);
-            return (CharIKFingers::FingerNum)i;
-        }
-    }
-    if (unk6c[0] == 0) {
-        KeyFinger(CharIKFingers::kFingerThumb, key);
-        return CharIKFingers::kFingerThumb;
-    }
-    return CharIKFingers::kFingerNone;
-}
-
-bool CharKeyHandMidi::KeyFinger(CharIKFingers::FingerNum finger, KeyboardKey setToKey) {
-    if (!(finger >= 0 && finger < CharIKFingers::kFingerNone)) {
-        TheDebug.Notify(MakeString("CharKeyHandMidi: Trying to key non-existent finger"));
-        return false;
-    }
-    if ((unsigned int)(setToKey - 1) > 0x18) {
-        TheDebug.Notify(MakeString("CharKeyHandMidi: Trying to put finger on non-existent key"));
-        return false;
-    }
-    if (setToKey == unk6c[0]) return false;
-    if (setToKey == unk6c[1]) return false;
-    if (setToKey == unk6c[2]) return false;
-    if (setToKey == unk6c[3]) return false;
-    if (setToKey == unk6c[4]) return false;
-    mIKObject->SetFinger(unk4c[setToKey], unk54[setToKey], finger);
-    unk6c[finger] = setToKey;
-    unk68 = finger;
-    unk64 = setToKey;
-    unk74--;
-    return true;
-}
-
-void CharKeyHandMidi::UnkeyFinger(CharIKFingers::FingerNum finger) {
-    MILO_ASSERT(finger >= 0 && finger < CharIKFingers::kFingerNone, 0x16a);
-    mIKObject->ReleaseFinger(finger);
-    unk6c[finger] = 0;
-    unk74++;
-}
 
 SAVE_OBJ(CharKeyHandMidi, 0x2E3)
 
