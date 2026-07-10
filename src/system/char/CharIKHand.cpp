@@ -268,6 +268,15 @@ void CharIKHand::Poll() {
             }
         }
     } else {
+        // W27-PROP-PROBE nit (W26 close-out review ii): when the RB3_PROP_POSE
+        // redirect is active it is applied only to the world-accumulation loop
+        // below (:299-317, sPropPoseRedirect on itTrans), NOT to this weight loop,
+        // which still derives each target's blend weight from the UN-redirected
+        // tip LocalXfm (line below). That is acceptable for the discriminator /
+        // honest-partial redirect (weights are approximate) but would be wrong for
+        // a real fix — a genuine binding fix must redirect the target BEFORE
+        // computing its weight so weight and world position agree. (Comment-only;
+        // codegen-inert, Wii object byte-identical.)
         float startlocfloats[16];
         float *locfloats = startlocfloats;
         float sumfloat = 0.0f;
@@ -319,7 +328,21 @@ void CharIKHand::Poll() {
             Normalize(quat, quat);
     }
     RndTransformable *parent2 = 0;
+#ifdef HX_NATIVE
+    // W27-PROP-PROBE (a): env-gated bypass of the mFinger finger-compensation
+    // re-projection, to A/B-test the E7 inference that this re-projection is what
+    // keeps RB3_IK_REACH_CLAMP non-dormant even with RB3_PROP_POSE. Probe-only,
+    // default-OFF; when unset the condition is exactly `if (mFinger)` as on Wii,
+    // so the Wii object is byte-identical (whole gate is #ifdef HX_NATIVE).
+    static int sFingerBypass = -1;
+    if (sFingerBypass < 0) {
+        const char *e = getenv("RB3_PROP_FINGER_BYPASS");
+        sFingerBypass = (e && e[0] && e[0] != '0') ? 1 : 0;
+    }
+    if (mFinger && !sFingerBypass) {
+#else
     if (mFinger) {
+#endif
         Transform tf;
         tf.v = vec;
         MakeRotMatrix(quat, tf.m);
