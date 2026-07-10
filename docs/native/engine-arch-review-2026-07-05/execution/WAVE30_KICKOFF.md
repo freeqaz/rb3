@@ -191,3 +191,55 @@ E1 raw-grep countersign → adversarial close-out review → append-only errata 
 README results + Wave-31 menu (fold in W30-VISUAL-PASS candidates) → single census
 regen + at most ONE pin bump → PROP default flip iff Lane 2 says FLIP-* → memory →
 user summary.
+
+---
+
+## COORDINATOR ACCEPTANCE (adopted verbatim from WAVE30_REVIEW.md — BINDING, overrides any conflicting text above)
+
+- **CA1 (analyzer path).** Everywhere the kickoff says
+  `scripts/native/analyze_prop_ab.py`, read
+  `docs/native/engine-arch-review-2026-07-05/execution/W28-PROP-FIX/analyze_prop_ab.py`
+  (ownership-matrix row included). Lane 2 extends THAT file in place.
+- **CA2 (Path B decider).** Path B's mechanical decider is replaced by: extended
+  analyzer mode `--w30-residual-baseline` printing `ACCEPTANCE (W30-ON): PASS`
+  (exit 0) iff strum/fret rows have `skip=0 AND dst_n=0` AND right_hand has
+  `skip=0 AND dst_n <= 8 AND dst_med <= 33.0`. The legacy `ACCEPTANCE (ON):` line is
+  still printed/committed (expected: `FAIL` + `right_hand.ikhand: 8 dst>30u entries
+  (want 0)` — continuity with W29; any strum/fret regression or right_hand
+  worse-than-baseline = DO-NOT-FLIP). Both lines quoted in STATUS.
+- **CA3 (retirement executor).** The Q(e) probe retirement is **coordinator-executed
+  at close-out**, not Lane 1. Lane 1's rider duty reduces to a STATUS section
+  "retire-list probes used in STEP 0: <tags or none>". Coordinator retirement scope
+  (exhaustive): CharDriver.cpp (`CHARDRV_ENTER`, `CHARDRV_REPLACE`,
+  `CHARDRV_REPLACE_BT`, `CHARDRV_DEFCLIP`, `CHARDRV_STARVE`, `CHARDRV_LIFE`),
+  CharCache.cpp (`C13_PROBE`), UIPanel.cpp/UIScreen.cpp/PanelDir.cpp/BandScreen.cpp
+  (`RB3_CROWD_PANEL_DBG`). Gates: repo-wide `grep -rc <tag> src/` == 0 per retired
+  tag; batch_objdiff baseline-exact on every touched unit (not just Play/Poll);
+  KEEP-list (`CHARDRV_PLAY`, `CHARDRV_PLAY_BT`, `CHARDRV_CLIPSWAP`, live `BANDPERF_*`)
+  byte-identical.
+- **CA4 (Lane 1 surfaces).** Add `src/system/bandobj/BandCamShot.cpp` + `BandCamShot.h`
+  to Lane 1's owned surfaces, **probe-only** (`BANDPERF_*`, `#ifdef HX_NATIVE`,
+  byte-identical `#else`) unless STEP 0 names it as the lever layer — a lever there
+  needs the standard flag gate + Wii `.o` byte-identical proof. `CamShot.cpp` (world)
+  stays READ-ONLY. Matrix row updated accordingly.
+- **CA5 (census instrument).** Lane 2's Path A census MUST come from a
+  threshold-unbiased one-shot enumeration probe (`[PROP_CENSUS]` in CharIKHand.cpp,
+  logged independent of `dst_from_hand`; env-gated; reuse `RB3_PROP_DST_DBG` sentinel
+  or name `RB3_PROP_CENSUS_DBG`), NOT from `[PROP_DST]` rows (30u-gated at
+  CharIKHand.cpp:415). STATUS's census table cites the probe and the boot+song window;
+  a census derived from `[PROP_DST]` alone = lane rejection.
+- **CA6 (BandPerformer + script senders).** Lane 1 STEP 0(i) treats BandPerformer.cpp
+  as a negative check only (scoring-only, grep-proven); primary instrumentation =
+  BandCharacter receiving side (`OnPlayGroup`/`OnSetPlay`/`SetState`/`PlayGroup`) +
+  BandCamShot::StartAnim send side, with `BANDPERF_*` backtraces expected to surface
+  DTA-script dispatch (`set_play` has no C++ sender).
+- **CA7 (base SHA).** Lane dispatch prompts pin to the post-CA-adoption commit SHA
+  (named at dispatch), not `a77608aa`. Engine pin `17807afd…` unchanged; no pin bump
+  by lanes.
+- **CA8 (clips enumeration placement).** STEP 0(ii)'s clips-enumeration probe is
+  pre-authorized in BandCharacter.cpp via public `CharDriver::ClipDir()`
+  (CharDriver.h:64) — no CharDriver.cpp edit, no coordinator round-trip.
+
+All other kickoff text (menu fidelity, STEP-0 discriminators, A7 raw-log mechanics,
+checkpoint paths, pgid-only rule, git rules, bounds) verified consistent with the W29
+close-out and the code — dispatch once CA1-CA8 are adopted.
