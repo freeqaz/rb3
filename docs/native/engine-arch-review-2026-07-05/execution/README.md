@@ -1053,3 +1053,15 @@ mechanism). Defaults: **15 ON.**
    backlog; `part:`-verb tooling coordinator-opportunistic (worth doing before W31
    dispatch if cheap); hub-walker prop-fan residual tracked (may need walk-clip
    prop-track scoping later).
+
+### F6 adjudication note (coordinator, pre-W31 dispatch, per Q(f) rider)
+
+**F6 (hub night grade) is NOT the held/flipped `RB3_UI_POST_GRADE` residual.** UIGRADE
+governs the menu **UI-layer** grade exemption (FlushPostProcMidFrame at the venue→UI
+boundary; hub text ROI 1.95→2.20; song_select/partdiff grade-INERT) — it exempts UI
+from the venue grade, it does not author or apply the venue's own grade. F6 is the hub
+**3D scene** (world.cam) missing its authored night grade/bloom — retail's dark neon
+street vs native's flat bright daylight; F6's own text notes "menu text/UI itself is
+fine — this is the 3D scene behind the UI". Distinct mechanism, distinct layer.
+Charterable as its own probe-first item (is a ColorXfm/bloom/lightpreset authored in
+`main.milo` skipped on the hub world.cam?) in a future wave; NOT chartered in W31.
