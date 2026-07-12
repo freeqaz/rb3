@@ -1,0 +1,55 @@
+== V2: CONFIRM on coop_endgame_screen -> SIGSEGV (run2 engine.log, raw + symbolized top frames) ==
+
+-- symbolized (addr2line) --
+BandCharDesc::NameToDrumVenue(char const*)	/home/free/code/milohax/rb3/src/system/bandobj/BandCharDesc.cpp:587
+BandCharacter::SetTempoGenreVenue(Symbol, Symbol, char const*)	/home/free/code/milohax/rb3/src/system/bandobj/BandCharacter.cpp:3368
+BandWardrobe::OnUnloadVenue(DataArray*)	/home/free/code/milohax/rb3/src/system/bandobj/BandWardrobe.cpp:954
+BandWardrobe::Handle(DataArray*, bool)	/home/free/code/milohax/rb3/src/system/bandobj/BandWardrobe.cpp:912
+virtual thunk to BandWardrobe::Handle(DataArray*, bool)	/home/free/code/milohax/rb3/src/system/bandobj/BandWardrobe.cpp:?
+DataArray::Execute()	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:641
+Hmx::Object::HandleType(DataArray*)	/home/free/code/milohax/rb3/src/system/obj/Object.cpp:503
+UIPanel::Unload()	/home/free/code/milohax/rb3/src/system/ui/UIPanel.cpp:187
+
+-- raw --
+RB3 Native: frame 21476 complete
+RB3 Native: frame 21477 complete
+RB3 Native: frame 21478 complete
+RB3 Native: frame 21479 complete
+
+RB3 Native: caught SIGSEGV (signal 11) at (nil)
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x2d1911) [0x564bc3386911]
+/usr/lib/libc.so.6(+0x3e270) [0x7f496d63e270]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x953230) [0x564bc3a08230]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x9741fc) [0x564bc3a291fc]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xa1833b) [0x564bc3acd33b]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xa174dc) [0x564bc3acc4dc]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xa1a3cf) [0x564bc3acf3cf]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40ca68) [0x564bc34c1a68]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x41b15b) [0x564bc34d015b]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40c99a) [0x564bc34c199a]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40dddd) [0x564bc34c2ddd]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40e0b5) [0x564bc34c30b5]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x45a5b0) [0x564bc350f5b0]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x779878) [0x564bc382e878]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x778e38) [0x564bc382de38]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x783182) [0x564bc3838182]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x78260c) [0x564bc383760c]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xc87dfe) [0x564bc3d3cdfe]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x728845) [0x564bc37dd845]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xca1bc9) [0x564bc3d56bc9]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd54a24) [0x564bc3e09a24]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd553b4) [0x564bc3e0a3b4]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd0e253) [0x564bc3dc3253]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd0e03d) [0x564bc3dc303d]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd0dd96) [0x564bc3dc2d96]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd0db85) [0x564bc3dc2b85]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd534a3) [0x564bc3e084a3]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xca1bc0) [0x564bc3d56bc0]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xfb7e54) [0x564bc406ce54]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xfb8c9d) [0x564bc406dc9d]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xfb8965) [0x564bc406d965]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x2d1c6e) [0x564bc3386c6e]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x2d1307) [0x564bc3386307]
+/usr/lib/libc.so.6(+0x27741) [0x7f496d627741]
+/usr/lib/libc.so.6(__libc_start_main+0x89) [0x7f496d627879]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x2d1135) [0x564bc3386135]

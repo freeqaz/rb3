@@ -1,0 +1,81 @@
+== V3: overshell PLAY ON XBOX LIVE -> MILO_FAIL + formatter SIGSEGV (run3 engine.log, raw + symbolized) ==
+[STUB] first call to _ZN13NetworkSocket11GetHostNameEv
+
+RB3 Native: caught SIGSEGV (signal 11) at (nil)
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x2d1911) [0x55ee99c49911]
+/usr/lib/libc.so.6(+0x3e270) [0x7ff90903e270]
+/usr/lib/libc.so.6(+0x183c5c) [0x7ff909183c5c]
+/usr/lib/libc.so.6(+0x666d0) [0x7ff9090666d0]
+/usr/lib/libc.so.6(+0x8b85b) [0x7ff90908b85b]
+/usr/lib/libc.so.6(snprintf+0x96) [0x7ff909061526]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x496f3a) [0x55ee99e0ef3a]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x4d4f7f) [0x55ee99e4cf7f]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x4d42ac) [0x55ee99e4c2ac]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x4d3983) [0x55ee99e4b983]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x2e9c20) [0x55ee99c61c20]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd886dd) [0x55ee9a7006dd]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd7695b) [0x55ee9a6ee95b]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd7b67c) [0x55ee9a6f367c]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd656f0) [0x55ee9a6dd6f0]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd76f35) [0x55ee9a6eef35]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd674df) [0x55ee9a6df4df]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd65704) [0x55ee9a6dd704]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd65e67) [0x55ee9a6dde67]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd7713d) [0x55ee9a6ef13d]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd8281e) [0x55ee9a6fa81e]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40ca68) [0x55ee99d84a68]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x4248cb) [0x55ee99d9c8cb]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x3eda03) [0x55ee99d65a03]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40ddfd) [0x55ee99d85dfd]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40e0b5) [0x55ee99d860b5]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x41d500) [0x55ee99d95500]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40c99a) [0x55ee99d8499a]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x4248cb) [0x55ee99d9c8cb]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x3eda03) [0x55ee99d65a03]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x41b0c6) [0x55ee99d930c6]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40c99a) [0x55ee99d8499a]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x4248cb) [0x55ee99d9c8cb]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x3eda03) [0x55ee99d65a03]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40ddfd) [0x55ee99d85dfd]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0x40e0b5) [0x55ee99d860b5]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd8757f) [0x55ee9a6ff57f]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd80d61) [0x55ee9a6f8d61]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd8533e) [0x55ee9a6fd33e]
+/home/free/code/milohax/rb3/native/build-native/rb3-native(+0xd6a41f) [0x55ee9a6e241f]
+
+-- symbolized (addr2line, distinct frames) --
+RB3SignalHandler(int, siginfo_t*, void*)	/home/free/code/milohax/rb3/native/src/main_native.cpp:105
+FormatString::operator<<(String const&)	/home/free/code/milohax/rb3/src/system/utl/MakeString.cpp:312
+char const* MakeString<String, String, Symbol>(char const*, String, String, Symbol)	/home/free/code/milohax/rb3/native/../src/system/utl/MakeString.h:78
+Debug::Modal(bool&, char const*)	/home/free/code/milohax/rb3/src/system/os/Debug.cpp:377
+Debug::Fail(char const*)	/home/free/code/milohax/rb3/src/system/os/Debug.cpp:322
+DebugFailer::operator<<(char const*)	/home/free/code/milohax/rb3/native/../src/system/os/Debug.h:180
+OvershellSlotStateMgr::GetSlotState(OvershellSlotStateID)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlotState.cpp:182
+OvershellSlot::GenerateCurrentState()	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp:233
+OvershellSlot::UpdateState()	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp:1166
+OvershellPanel::UpdateAll()	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellPanel.cpp:490
+OvershellSlot::ShowState(OvershellSlotStateID)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp:306
+OvershellPanel::ResolveSlotStates()	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellPanel.cpp:?
+OvershellPanel::UpdateAll()	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellPanel.cpp:494
+OvershellPanel::BeginOverrideFlow(OvershellOverrideFlow)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellPanel.cpp:268
+OvershellSlot::AttemptRegisterOnline()	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp:?
+OvershellSlot::Handle(DataArray*, bool)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp:1912
+DataArray::Execute()	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:641
+DataNode::Evaluate() const	/home/free/code/milohax/rb3/src/system/obj/DataNode.cpp:61
+DataArray::Evaluate(int) const	/home/free/code/milohax/rb3/native/../src/system/obj/Data.h:510
+DataArray::ExecuteBlock(int)	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:922
+DataArray::ExecuteScript(int, Hmx::Object*, DataArray const*, int)	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:954
+DataSwitch(DataArray*)	/home/free/code/milohax/rb3/src/system/obj/DataFunc.cpp:807
+DataArray::Execute()	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:627
+DataNode::Evaluate() const	/home/free/code/milohax/rb3/src/system/obj/DataNode.cpp:61
+DataArray::Evaluate(int) const	/home/free/code/milohax/rb3/native/../src/system/obj/Data.h:510
+DataIfElse(DataArray*)	/home/free/code/milohax/rb3/src/system/obj/DataFunc.cpp:112
+DataArray::Execute()	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:627
+DataNode::Evaluate() const	/home/free/code/milohax/rb3/src/system/obj/DataNode.cpp:61
+DataArray::Evaluate(int) const	/home/free/code/milohax/rb3/native/../src/system/obj/Data.h:510
+DataArray::ExecuteBlock(int)	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:922
+DataArray::ExecuteScript(int, Hmx::Object*, DataArray const*, int)	/home/free/code/milohax/rb3/src/system/obj/DataArray.cpp:954
+OvershellSlotState::HandleMsg(Message const&)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlotState.cpp:157
+OvershellSlot::OnMsg(UIComponentSelectMsg const&)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp:1775
+OvershellSlot::Handle(DataArray*, bool)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp:2033
+OvershellPanel::SlotHandle(OvershellSlot*, Message const&)	/home/free/code/milohax/rb3/src/band3/meta_band/OvershellPanel.cpp:1589
