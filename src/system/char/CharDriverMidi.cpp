@@ -1,4 +1,10 @@
 #include "char/CharDriverMidi.h"
+#ifdef HX_NATIVE
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <set>
+#endif
 #include "obj/Msg.h"
 #include "char/CharClip.h"
 #include "char/CharClipGroup.h"
@@ -10,7 +16,12 @@
 INIT_REVS(CharDriverMidi)
 
 CharDriverMidi::CharDriverMidi()
-    : mParser(), mFlagParser(), mClipFlags(0), mBlendOverridePct(1.0f) {}
+    : mParser(), mFlagParser(), mClipFlags(0), mBlendOverridePct(1.0f) {
+#ifdef HX_NATIVE
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) fprintf(stderr, "[MIDIDRV_CTOR] CharDriverMidi created %p\n", (void *)this); }
+#endif
+}
 
 void CharDriverMidi::Enter() {
     unk89 = true;
@@ -23,6 +34,17 @@ void CharDriverMidi::Enter() {
         dynamic_cast<MsgSource *>(Dir()->FindObject(mFlagParser.Str(), true));
     if (msgFlagParser)
         msgFlagParser->AddSink(this);
+#ifdef HX_NATIVE
+    // W32-PROP-FAN read-only discriminator (default-OFF RB3_MIDIDRV_PROBE):
+    // is this instrument-MIDI driver BOUND (Enter ran) and did it find its
+    // parser MsgSource to sink onto? Answers branches (a0) not-bound vs
+    // (a)/(b) bound. Wii object byte-identical (#ifdef HX_NATIVE).
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) fprintf(stderr,
+          "[MIDIDRV_ENTER] drv='%s' parser='%s' found=%d flagParser='%s' ffound=%d\n",
+          PathName(this), mParser.Str(), msgParser ? 1 : 0,
+          mFlagParser.Str(), msgFlagParser ? 1 : 0); }
+#endif
 }
 
 void CharDriverMidi::Exit() {
@@ -36,7 +58,48 @@ void CharDriverMidi::Exit() {
         msgFlagParser->RemoveSink(this);
 }
 
-void CharDriverMidi::Poll() { CharDriver::Poll(); }
+#ifdef HX_NATIVE
+// W32-PROP-FAN branch-(b) STARVED fix (default-OFF flag RB3_MIDIDRV_ENTER_FIX):
+// the instrument-MIDI prop drivers (drum-hit / strum / fret .dmidi) are created
+// and per-frame POLLED (BandCharacter::Poll -> Character::Poll -> RndDir::Poll)
+// but their Enter() is never invoked natively (a char load-order gap: the drivers
+// are added to the char dir's mPolls AFTER the one-time Character::Enter ran, so
+// RndDir::Enter's mPolls loop misses them while RndDir::Poll picks them up every
+// frame). CharDriverMidi::Enter is what AddSink()s the driver onto its MIDI
+// parser MsgSource; with Enter skipped the driver never subscribes, OnMidiParser
+// never fires, the per-note hit/strum clip never plays, and the arm holds its
+// idle pose -> CharIKHand over-reaches the far drum/fret target -> prop-tip fan.
+// FIX: lazily run the missing Enter exactly once, on the first native Poll, for
+// any driver that was polled without being entered. Whole thing is #ifdef
+// HX_NATIVE + default-OFF -> Wii object byte-identical.
+static int sMidiEnterFix() {
+    static int v = -1;
+    if (v < 0) { const char *e = getenv("RB3_MIDIDRV_ENTER_FIX");
+        v = (e && e[0] && e[0] != '0') ? 1 : 0; }
+    return v;
+}
+// Native-only guard set (no struct member — Wii layout untouched).
+static std::set<const void *> &sMidiEnteredSet() {
+    static std::set<const void *> s;
+    return s;
+}
+#endif
+
+void CharDriverMidi::Poll() {
+#ifdef HX_NATIVE
+    if (sMidiEnterFix() && sMidiEnteredSet().insert(this).second) {
+        Enter();
+    }
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) { static char sSeen[64][96]; static int sN = 0;
+        const char *pn = PathName(this); int found = 0;
+        for (int i = 0; i < sN; ++i) if (!std::strcmp(sSeen[i], pn)) { found = 1; break; }
+        if (!found && sN < 64) { std::strncpy(sSeen[sN], pn, 95); sSeen[sN][95] = 0; sN++;
+          fprintf(stderr, "[MIDIDRV_POLL] drv='%s' dir='%s'\n", pn,
+                  Dir() && Dir()->Name() ? Dir()->Name() : "(nodir)"); } } }
+#endif
+    CharDriver::Poll();
+}
 
 void CharDriverMidi::PollDeps(
     std::list<Hmx::Object *> &changedBy, std::list<Hmx::Object *> &change
@@ -86,6 +149,10 @@ END_HANDLERS
 
 // fn_804C945C
 DataNode CharDriverMidi::OnMidiParser(DataArray *da) {
+#ifdef HX_NATIVE
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) fprintf(stderr, "[MIDIDRV_FEED] on=parser drv='%s'\n", PathName(this)); }
+#endif
     CharClip *clip;
     bool b = false;
     if (!unk89 && mDefaultClip)
@@ -110,11 +177,19 @@ DataNode CharDriverMidi::OnMidiParser(DataArray *da) {
 }
 
 DataNode CharDriverMidi::OnMidiParserFlags(DataArray *da) {
+#ifdef HX_NATIVE
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) fprintf(stderr, "[MIDIDRV_FEED] on=flags drv='%s'\n", PathName(this)); }
+#endif
     mClipFlags = da->Int(2);
     return 0;
 }
 
 DataNode CharDriverMidi::OnMidiParserGroup(DataArray *da) {
+#ifdef HX_NATIVE
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) fprintf(stderr, "[MIDIDRV_FEED] on=group drv='%s'\n", PathName(this)); }
+#endif
     const char *name = da->Str(2);
     CharClipGroup *grp = mClips->Find<CharClipGroup>(name, false);
     if (!grp) {

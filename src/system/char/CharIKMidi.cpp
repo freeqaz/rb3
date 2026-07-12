@@ -1,5 +1,8 @@
 #include "char/CharIKMidi.h"
 #include <cstdlib>
+#ifdef HX_NATIVE
+#include <cstdio>
+#endif
 #include "char/Char.h"
 #include "math/Rot.h"
 #include "math/Utl.h"
@@ -14,6 +17,10 @@ CharIKMidi::CharIKMidi()
     : mBone(this), mCurSpot(this), mNewSpot(this), mSpotChanged(0), mAnimBlender(this),
       mMaxAnimBlend(1.0f), mAnimFracPerBeat(0.0f), mAnimFrac(0.0f) {
     Enter();
+#ifdef HX_NATIVE
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) fprintf(stderr, "[MIDIDRV_CTOR] CharIKMidi created %p\n", (void *)this); }
+#endif
 }
 
 CharIKMidi::~CharIKMidi() {}
@@ -30,6 +37,15 @@ void CharIKMidi::Enter() {
 }
 
 void CharIKMidi::NewSpot(RndTransformable *t, float f) {
+#ifdef HX_NATIVE
+    // W32-PROP-FAN read-only discriminator: is this fret/IK-midi driver FED
+    // (new_spot messages arriving)? Names the driver + target spot. Default-OFF
+    // RB3_MIDIDRV_PROBE. Wii object byte-identical.
+    { static const char *p = getenv("RB3_MIDIDRV_PROBE");
+      if (p) fprintf(stderr, "[MIDIDRV_IKFEED] drv='%s' spot='%s' f=%.3f bone='%s'\n",
+          PathName(this), (t && t->Name()) ? t->Name() : "(null)", f,
+          (mBone.Ptr() && mBone->Name()) ? mBone->Name() : "(none)"); }
+#endif
     float f18 = f;
     if (mNewSpot != t) {
         if (!mNewSpot && f18 <= 0)
