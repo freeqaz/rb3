@@ -145,7 +145,8 @@ const unsigned int kBtnPageUp   = 1u << kPad_L1;
 const unsigned int kBtnPageDown = 1u << kPad_R1;
 
 bool sLibInit = false;     // JoypadInit ran (JoypadInitCommon done)
-bool sWebInputInit = false; // web JS listeners installed
+bool sWebInputInit = false; // web gameplay-key JS listeners installed
+bool sWebGuitarInit = false; // web USB-guitar (Gamepad API) JS installed
 
 // ── SESSION-TELEMETRY input tap helper ───────────────────────────────────────
 // Records one input edge into the trace at a SendButtonMessages(0, btns)
@@ -332,35 +333,256 @@ void InitWebGameplayKeys() {
     });
 }
 
+// Install the USB-guitar (Gamepad API) support once: a per-family default
+// mapping table, a device classifier, and gamepadconnected/disconnected
+// listeners that log what plugged in (users report unknowns via the console).
+//
+// Classification (checked in this order):
+//   guitar   — id matches /guitar|harmonix|santroller/i OR a known instrument
+//              vendor hex (12ba = PS3/Wii RB dongle, 1bad = Harmonix Xbox,
+//              0738 = MadCatz/RedOctane, 1430 = GH). Chrome id strings look
+//              like "Harmonix Guitar for Nintendo Wii (Vendor: 12ba Product:
+//              0100)", so the vendor substring match works.
+//   standard — mapping === "standard" (non-guitar; existing face-button path).
+//   unknown  — logged and ignored.
+//
+// Per-family button/axis indices are best-effort DEFAULTS derived from the
+// documented HID report order (santroller reverse-engineering docs); real
+// browsers renumber non-standard HID pads, so the exact indices vary by unit.
+// window.rb3GuitarMap (shallow-merged over the family default) lets a user fix
+// a mismatch from the console with no rebuild, and window._rb3GpDebug=1 prints
+// the raw pressed-button indices + non-idle axis values to calibrate it.
+void InitWebGuitar() {
+    if (sWebGuitarInit)
+        return;
+    sWebGuitarInit = true;
+    // NB: EM_ASM stringifies via the preprocessor, which splits on commas that
+    // are NOT inside parentheses — so JS object/array LITERALS ({a:1, b:2} /
+    // [x, y]) would be shredded into bogus macro args. Build every object with
+    // `new Object()` + property assignment and avoid comma'd array literals.
+    EM_ASM({
+        // Per-family default guitar mappings. The mapped bits (RIGHT side of the
+        // poll) are JoypadButton enum bits (green=1/R2, red=5/Circle,
+        // yellow=4/Tri, blue=6/X, orange=7/Square, star=8/Select,
+        // start=11/Start, strum up=12/DUp, down=14/DDown, dpad right=13/left=15).
+        // The indices HERE are the browser Gamepad API button/axis indices.
+        var F = new Object();
+        // PS3 / Wii Rock Band guitar dongle (12ba:0100, "Harmonix Guitar for
+        // Nintendo Wii"), non-standard mapping (gp.mapping === ""). HID button-bit
+        // order Y=0,G=1,R=2,B=3,O=4,pedal=5,select=8,start=9. Strum/d-pad ride the
+        // HID hat, which Chrome exposes as an extra axis (commonly axes[9]) with
+        // 8-step fractional values.
+        var ps = new Object();
+        ps.green=1; ps.red=2; ps.yellow=0; ps.blue=3; ps.orange=4;
+        ps.start=9; ps.select=8; ps.strumMode='hat'; ps.hatAxis=9;
+        ps.whammyAxis=0; ps.whammyInvert=false;
+        ps.tiltAxis=null; ps.tiltThreshold=0.5; ps.tiltButton=5;
+        F['ps3wii_rb'] = ps;
+        // Xbox 360 Rock Band guitar via xpad -> browser STANDARD mapping. Standard
+        // face buttons A=0 green, B=1 red, X=2 blue, Y=3 yellow, LB=4 orange; d-pad
+        // on buttons 12-15; whammy on right-stick X (axes[2]); tilt often axes[3].
+        var xi = new Object();
+        xi.green=0; xi.red=1; xi.yellow=3; xi.blue=2; xi.orange=4;
+        xi.start=9; xi.select=8; xi.strumMode='buttons';
+        xi.whammyAxis=2; xi.whammyInvert=false;
+        xi.tiltAxis=3; xi.tiltThreshold=0.5; xi.tiltButton=null;
+        F['xinput_rb'] = xi;
+        // Generic Guitar Hero PS3 guitar (12ba / 1430 / 0738). Same HID family as
+        // the RB dongle for our purposes.
+        var gh = new Object();
+        gh.green=1; gh.red=2; gh.yellow=0; gh.blue=3; gh.orange=4;
+        gh.start=9; gh.select=8; gh.strumMode='hat'; gh.hatAxis=9;
+        gh.whammyAxis=0; gh.whammyInvert=false;
+        gh.tiltAxis=null; gh.tiltThreshold=0.5; gh.tiltButton=5;
+        F['gh_ps3'] = gh;
+        window._rb3GuitarFamilies = F;
+        // Classify one Gamepad -> object with .kind and .family.
+        window._rb3ClassifyPad = function(gp) {
+            var id = (gp.id || '').toLowerCase();
+            var isGuitar = /guitar|harmonix|santroller/.test(id) ||
+                           /12ba|1bad|0738|1430/.test(id);
+            var r = new Object();
+            if (isGuitar) {
+                r.kind = 'guitar';
+                if (gp.mapping === 'standard') r.family = 'xinput_rb';
+                else if (/1430|guitar hero/.test(id)) r.family = 'gh_ps3';
+                else r.family = 'ps3wii_rb';
+                return r;
+            }
+            r.family = null;
+            r.kind = (gp.mapping === 'standard') ? 'standard' : 'unknown';
+            return r;
+        };
+        window.addEventListener('gamepadconnected', function(e) {
+            var gp = e.gamepad;
+            var c = window._rb3ClassifyPad(gp);
+            console.log('[rb3-guitar] connected idx=' + gp.index +
+                ' id="' + gp.id + '" mapping="' + gp.mapping + '"' +
+                ' buttons=' + gp.buttons.length + ' axes=' + gp.axes.length +
+                ' -> ' + c.kind + (c.family ? (' (' + c.family + ')') : ''));
+            if (c.kind === 'unknown')
+                console.log('[rb3-guitar] unknown device — set window.rb3GuitarMap' +
+                    ' and window._rb3GpDebug=1 to map it, and please report id above');
+        });
+        window.addEventListener('gamepaddisconnected', function(e) {
+            console.log('[rb3-guitar] disconnected idx=' + e.gamepad.index +
+                ' id="' + e.gamepad.id + '"');
+        });
+        console.log('[rb3-guitar] USB guitar support ready (Gamepad API)');
+    });
+}
+
 unsigned int ReadWebButtons() {
     return (unsigned int)EM_ASM_INT({ return window._rb3Keys || 0; });
 }
 
-// navigator.getGamepads() pad 0 -> JoypadButton bitmask (mirror engine
-// Joypad_Native.cpp GetWebGamepadButtons; standard-mapping face buttons).
+// navigator.getGamepads() -> JoypadButton bitmask. Prefers the first connected
+// guitar-classified pad (frets/strum/star/start/d-pad per the family or
+// window.rb3GuitarMap), decoding the HID hat from either an axis or buttons
+// 12-15, and stashing the whammy (0..1, 0=rest) in window._rb3GpWhammy for the
+// C++ side to read the SAME frame via ReadWebGamepadWhammy(). Tilt (axis
+// threshold or dedicated button) is OR'd in as bit 8 (kPad_Select / star). If
+// no guitar is present it falls back to the original standard-mapping
+// face-button handling on pad 0 (unchanged), leaving whammy at rest.
 unsigned int ReadWebGamepadButtons() {
     return (unsigned int)EM_ASM_INT({
         var gps = navigator.getGamepads ? navigator.getGamepads() : [];
-        var gp = gps[0];
-        if (!gp || !gp.connected) return 0;
-        var b = 0;
-        var btn = gp.buttons;
-        if (btn[0] && btn[0].pressed)  b |= (1 << 6);  // A  -> kPad_X
-        if (btn[1] && btn[1].pressed)  b |= (1 << 5);  // B  -> kPad_Circle
-        if (btn[2] && btn[2].pressed)  b |= (1 << 7);  // X  -> kPad_Square
-        if (btn[3] && btn[3].pressed)  b |= (1 << 4);  // Y  -> kPad_Tri
-        if (btn[4] && btn[4].pressed)  b |= (1 << 2);  // LB -> kPad_L1
-        if (btn[5] && btn[5].pressed)  b |= (1 << 3);  // RB -> kPad_R1
-        if (btn[6] && btn[6].value > 0.3) b |= (1 << 0); // LT -> kPad_L2
-        if (btn[7] && btn[7].value > 0.3) b |= (1 << 1); // RT -> kPad_R2
-        if (btn[8] && btn[8].pressed)  b |= (1 << 8);  // Back  -> kPad_Select
-        if (btn[9] && btn[9].pressed)  b |= (1 << 11); // Start -> kPad_Start
-        if (btn[12] && btn[12].pressed) b |= (1 << 12); // DUp
-        if (btn[13] && btn[13].pressed) b |= (1 << 14); // DDown
-        if (btn[14] && btn[14].pressed) b |= (1 << 15); // DLeft
-        if (btn[15] && btn[15].pressed) b |= (1 << 13); // DRight
-        return b;
+        // Decode a Chrome-style hat axis (8-step fractional, idle out of [-1,1]).
+        var decodeHat = function(v) {
+            var h = new Object();
+            h.up=false; h.down=false; h.left=false; h.right=false;
+            if (v >= -1.1 && v <= 1.1) {
+                var step = Math.round((v + 1) * 3.5); // -1..1 -> 0..7
+                // 0=up 1=up-right 2=right 3=down-right 4=down 5=down-left 6=left 7=up-left
+                if (step === 7 || step === 0 || step === 1) h.up = true;
+                if (step === 1 || step === 2 || step === 3) h.right = true;
+                if (step === 3 || step === 4 || step === 5) h.down = true;
+                if (step === 5 || step === 6 || step === 7) h.left = true;
+            }
+            return h;
+        };
+        // Find the first connected guitar-classified pad.
+        var guitar = null;
+        if (window._rb3ClassifyPad) {
+            for (var i = 0; i < gps.length; i++) {
+                var g = gps[i];
+                if (g && g.connected && window._rb3ClassifyPad(g).kind === 'guitar') {
+                    guitar = g;
+                    window._rb3GuitarFamily = window._rb3ClassifyPad(g).family;
+                    break;
+                }
+            }
+        }
+
+        if (!guitar) {
+            // No guitar: original standard-mapping face-button path on pad 0.
+            window._rb3GpWhammy = 0;
+            window._rb3GpTilt = 0;
+            var gp = gps[0];
+            if (!gp || !gp.connected) return 0;
+            var b = 0;
+            var btn = gp.buttons;
+            if (btn[0] && btn[0].pressed)  b |= (1 << 6);  // A  -> kPad_X
+            if (btn[1] && btn[1].pressed)  b |= (1 << 5);  // B  -> kPad_Circle
+            if (btn[2] && btn[2].pressed)  b |= (1 << 7);  // X  -> kPad_Square
+            if (btn[3] && btn[3].pressed)  b |= (1 << 4);  // Y  -> kPad_Tri
+            if (btn[4] && btn[4].pressed)  b |= (1 << 2);  // LB -> kPad_L1
+            if (btn[5] && btn[5].pressed)  b |= (1 << 3);  // RB -> kPad_R1
+            if (btn[6] && btn[6].value > 0.3) b |= (1 << 0); // LT -> kPad_L2
+            if (btn[7] && btn[7].value > 0.3) b |= (1 << 1); // RT -> kPad_R2
+            if (btn[8] && btn[8].pressed)  b |= (1 << 8);  // Back  -> kPad_Select
+            if (btn[9] && btn[9].pressed)  b |= (1 << 11); // Start -> kPad_Start
+            if (btn[12] && btn[12].pressed) b |= (1 << 12); // DUp
+            if (btn[13] && btn[13].pressed) b |= (1 << 14); // DDown
+            if (btn[14] && btn[14].pressed) b |= (1 << 15); // DLeft
+            if (btn[15] && btn[15].pressed) b |= (1 << 13); // DRight
+            return b;
+        }
+
+        // Guitar path: family default shallow-merged with a runtime override.
+        var base = window._rb3GuitarFamilies[window._rb3GuitarFamily] ||
+                   window._rb3GuitarFamilies['ps3wii_rb'];
+        var fam = base;
+        if (window.rb3GuitarMap) {
+            fam = new Object();
+            for (var k in base) fam[k] = base[k];
+            for (var k2 in window.rb3GuitarMap) fam[k2] = window.rb3GuitarMap[k2];
+        }
+        var btns = guitar.buttons;
+        var axes = guitar.axes;
+        var pb = function(idx) {
+            return (idx !== null && idx !== undefined &&
+                    btns[idx] && btns[idx].pressed);
+        };
+        var m = 0;
+        if (pb(fam.green))  m |= (1 << 1);   // kPad_R2     (green)
+        if (pb(fam.red))    m |= (1 << 5);   // kPad_Circle (red)
+        if (pb(fam.yellow)) m |= (1 << 4);   // kPad_Tri    (yellow)
+        if (pb(fam.blue))   m |= (1 << 6);   // kPad_X      (blue)
+        if (pb(fam.orange)) m |= (1 << 7);   // kPad_Square (orange)
+        if (pb(fam.start))  m |= (1 << 11);  // kPad_Start
+        if (pb(fam.select)) m |= (1 << 8);   // kPad_Select (star power)
+
+        // Strum + d-pad: hat axis OR discrete buttons 12-15, per family.
+        var hat;
+        if (fam.strumMode === 'hat') {
+            var hv = (fam.hatAxis !== null && fam.hatAxis !== undefined &&
+                      axes.length > fam.hatAxis) ? axes[fam.hatAxis] : 2;
+            hat = decodeHat(hv);
+        } else {
+            hat = new Object();
+            hat.up = pb(12); hat.down = pb(13); hat.left = pb(14); hat.right = pb(15);
+        }
+        if (hat.up)    m |= (1 << 12); // kPad_DUp    (strum up)
+        if (hat.down)  m |= (1 << 14); // kPad_DDown  (strum down)
+        if (hat.left)  m |= (1 << 15); // kPad_DLeft
+        if (hat.right) m |= (1 << 13); // kPad_DRight
+
+        // Whammy axis -> 0..1 (0 = rest). Browser signed axis -1..1 -> (v+1)/2.
+        var whammy01 = 0;
+        if (fam.whammyAxis !== null && fam.whammyAxis !== undefined &&
+            axes.length > fam.whammyAxis) {
+            whammy01 = (axes[fam.whammyAxis] + 1) / 2;
+            if (fam.whammyInvert) whammy01 = 1 - whammy01;
+        }
+        if (whammy01 < 0) whammy01 = 0;
+        if (whammy01 > 1) whammy01 = 1;
+
+        // Tilt (star power / overdrive): axis over threshold OR a button.
+        var tilt = false;
+        if (fam.tiltButton !== null && fam.tiltButton !== undefined && pb(fam.tiltButton))
+            tilt = true;
+        if (fam.tiltAxis !== null && fam.tiltAxis !== undefined &&
+            axes.length > fam.tiltAxis && axes[fam.tiltAxis] > (fam.tiltThreshold || 0.5))
+            tilt = true;
+        if (tilt) m |= (1 << 8); // kPad_Select (force_mercury route)
+
+        window._rb3GpWhammy = whammy01;
+        window._rb3GpTilt = tilt ? 1 : 0;
+
+        // Calibration aid: log raw pressed buttons + non-idle axes, on change.
+        if (window._rb3GpDebug) {
+            var pressed = [];
+            for (var bi = 0; bi < btns.length; bi++)
+                if (btns[bi] && btns[bi].pressed) pressed.push(bi);
+            var ax = [];
+            for (var ai = 0; ai < axes.length; ai++)
+                if (Math.abs(axes[ai]) > 0.15) ax.push(ai + ':' + axes[ai].toFixed(2));
+            var sig = pressed.join(',') + '|' + ax.join(',');
+            if (sig !== window._rb3GpDbgLast) {
+                window._rb3GpDbgLast = sig;
+                console.log('[rb3-guitar] fam=' + window._rb3GuitarFamily +
+                    ' btns[' + pressed.join(',') + '] axes[' + ax.join(',') + ']' +
+                    ' whammy=' + whammy01.toFixed(2) + ' tilt=' + (tilt ? 1 : 0));
+            }
+        }
+        return m;
     });
+}
+
+// Whammy for the guitar found in ReadWebGamepadButtons this frame: 0..1, 0=rest.
+double ReadWebGamepadWhammy() {
+    return EM_ASM_DOUBLE({ return window._rb3GpWhammy || 0; });
 }
 #endif // __EMSCRIPTEN__
 
@@ -558,10 +780,22 @@ void JoypadPoll() {
 
 #ifdef __EMSCRIPTEN__
     InitWebGameplayKeys();
+    InitWebGuitar();
+    // Order matters: ReadWebGamepadButtons() runs the poll that publishes
+    // window._rb3GpWhammy for the SAME frame; read it right after.
     btns = ReadWebButtons() | ReadWebGamepadButtons();
-    // Web whammy: Space is mapped to kPad_Start in InitWebInput; treating a held
-    // Start on a gameplay screen as whammy too is risky (it pauses), so for web
-    // v1 we leave whammy to its axis default (RX/LY untouched here). Documented.
+    // USB-guitar whammy (keyboard has none). wii_guitar cfg uses
+    // TRADITIONAL_WHAMMY_VAL -> GetWhammyBar = min(0, -(RX+1)/2), so RX=-1 at
+    // rest gives 0 (disengaged) and RX=+1 fully pressed gives -1 (engaged).
+    // Map whammy01 (0..1, 0=rest, from the guitar poll above; 0 when no guitar)
+    // to RX and clamp to [-1,1] (out-of-range whammy can MILO_ASSERT abort).
+    float whammy01 = (float)ReadWebGamepadWhammy();
+    if (whammy01 < 0.0f) whammy01 = 0.0f;
+    if (whammy01 > 1.0f) whammy01 = 1.0f;
+    float webRx = -1.0f + 2.0f * whammy01;
+    if (webRx < -1.0f) webRx = -1.0f;
+    if (webRx > 1.0f) webRx = 1.0f;
+    d->mSticks[1][0] = webRx; // RX (negative_rx / traditional whammy)
     (void)whammyHeld;
 #else
     GLFWwindow *w = gBandRnd.Gpu().Window();
