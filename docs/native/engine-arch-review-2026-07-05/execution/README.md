@@ -1133,3 +1133,76 @@ crops).
 7. **Carried/blocked:** F6 hub night grade BLOCKED on UIGRADE reconciliation
    (unchanged); F8 pending settle-frame recapture; SKEL/CROWD families CLOSED
    (Lane D STOP binding).
+
+## Wave 32 (2026-07-12) — WEB YELLOW-QUAD FIXED (root: ENTIRE render-hook policy family absent on web since W1) + PROP-FAN FIXED+FLIPPED (17th default) + F4 CLOSED NOT-A-BUG + arg-order sweep class EXHAUSTED
+
+Kickoff `WAVE32_KICKOFF.md` (pre-dispatch review WAVE32_REVIEW.md, A1–A14 ALL
+adopted at `30546499` = base SHA for all lanes), pre-E1 countersign `9eb50c3c`
+(raw-artifact re-derivation, PASS with two coverage flags), lanes `41d52acb`
+(A, STEP-0 + A2 STOP) + `3ed6118a`/engine `c0bc00a` (B) + `b0f6e3b7` (C,
+docs-only) + `ad0130f4` (D) + `d07738cb` (F7 rider, docs-only), close-out
+`69103c77` + engine `2ea8e34` (pin `24c4f95` → `2ea8e34`, census 418), review
+`WAVE32_CLOSEOUT_REVIEW.md` (all four lanes + rider ACCEPT).
+
+| Lane | Result |
+|---|---|
+| **WEB-YELLOW — ✅ FIXED at close-out (STEP-0 + model A2 STOP; root bigger than the charter)** | The floating yellow quad = the hub focused-menu highlight bar (`highlight_main.mesh`/`highlight_pattern.mesh`, skinned UI mesh) rendering at world ORIGIN because the per-focus placement policy never fires on web. Root is a **build-list divergence, not a code bug**: `native/CMakeLists.txt` excluded `rb3_render_hook.cpp` from the EMSCRIPTEN target since the W1 "clear-frame era" — so `GetGameRenderHook()==nullptr` on web and the **ENTIRE policy family (B1–B13 incl. the W31 F3 glyph fix) had been silently absent on web for ~30 waves**. Lane A named the four-link divergence chain file:line, then hit the A2 fence (mechanism (i) = Lane C's exclusive TU) and STOPPED with a checkpoint + fix proposal — the fence's first live exercise, honored exactly. Fix coordinator-executed at close-out (TU added to `RB3_WEB_NATIVE_GLUE`, parity restoration, no flag — build-level, three-tier N/A): quad GONE at `joined_default` on BOTH debug and release builds, highlight bar contained on the focused row and tracking focus both directions (A10 replay), native unaffected by construction (web-only source list) + drawlog-golden PASS (792, 287 known-residuals) + bounded boot rc=0 5/5. Evidence re-homed to `W32-WEB-YELLOW/evidence/coordinator-fix/`. Residue: web song_select/gameplay with the full family live untested beyond the hub → W33 rider. |
+| **PROP-FAN — ✅ FIXED + FLIPPED default-ON (17th; closes the floating-legs report's second half)** | Cleanest discriminator→fix arc of the campaign. E7 crop-pair debt discharged first (baseline census: drummer band-shards **1107** ratio 5.92, guitarist **843**/5.15, vocals 0). Discriminator per prop class (A8): branch **(b) STARVED** — drivers created + polled but **never Entered** (`CTOR 23 / ENTER 0 / POLL 17 / FEED 0`; mechanism: `RndDir::SyncObjects` rebuilds `mPolls` AFTER the one-time `Character::Enter`), so no AddSink → no MIDI events → no hit/strum clips → idle arm → CharIKHand over-reach → prop-tip fan. Fix on owned surface only (`CharDriverMidi.cpp`, HX_NATIVE, lazy one-time Enter on first Poll, no struct member): ENTER 0→21, OnMidiParser 0→**173**, drum-hit clips 0→**416**, drummer shards **1107→2** (residual = shoe mesh, SKEL family, left closed), guitarist **843→0**, fans visually gone; W31 set_play NON-REGRESSED (CHARDRV_PLAY 81/80, SETPLAY_SEND 26/26); Wii objdiff neutrality countersign-verified (Poll/Enter/ctor 100.0 raw). Shipped default-OFF, flip PROPOSED not self-granted; coordinator flipped at close-out: **`RB3_NO_MIDIDRV_ENTER_FIX` opt-out** (engine `2ea8e34`). Probe counts /tmp-only = countersign §2 flag, resolved by accepted-census ruling. |
+| **HUD-F2F4 — ✅ F2 named + chartered to W33; F4 CLOSED NOT-A-BUG (W30 premise refuted)** | Zero code, two checkpoints, both halves honest in opposite directions. **F2 (score pill): REAL BUG** — HEADMAT dump proves all three pill layers' textures BOUND; pixel proof shows native pill body == venue (backing contributes ~0) vs retail opaque dark; hypothesis: Wii refraction-material opacity does not derive from diffuse.a, native's generic unlit path multiplies by it. Lane refused the A11-violating render-hook tint AND the un-acked engine write; coordinator withheld engineAck (blend-semantics blast radius) → **W33-F2-PILL** with mandatory cross-screen sweep. **F4 (star row): FAITHFUL NON-BUG** — the W30 "retail always draws 5 slots" finding compared native-at-0-stars vs retail-at-4-stars, i.e. the exact A11 trap, retroactively found in our own evidence. Refuted both ways: BandStarDisplay progressive reveal is 100.0%-matched source retail runs; retail's own screenshots grow the row (2 stars=3 discs, 4=5); native matches at 0/1/3 stars (A11 over-satisfied, five states). Lint-4 registry sweep done pre-claim; `rb3_render_hook.cpp` grant held unused (git-clean, countersigned). |
+| **ARG-ORDER — ✅ honest negative: sweep class EXHAUSTED (0/1185, ruling: do NOT renew); 1 behavioral find KEPT** | A4 fresh report regen first; 1185 in-scope fuzzy ≥99 functions swept with a progressive classifier (605 naive → 0 strict; argscan7 cross-opcode 52, all noise: regalloc renames, scheduling, commutative operands, FPR cascades, string-pool offsets). **Zero clean-raw-100 arg-order landings** — the W31 "cheap, high-yield sweep class" thesis is REFUTED as a sweep; the lesson survives as a **behavioral investigation heuristic** (dead subsystem → check the dispatch path's ≥99% call sites), which is also how the one genuine find surfaced: `VocalTrackDir::SetRange` passed `SetFrame(1.0f, 0.0f)` where retail passes `(0.0f, 1.0f)` (lone blend=0.0 anomaly in a TU of blend=1.0f calls) — the pitch-window material anim silently dead on the from-chromatic tonic transition. Retail-byte-verified at the call site; TU stays raw 99.28 (pre-existing orthogonal FPR cascade, permuter-class) — strict-A5 tension FLAGGED transparently, coordinator adjudicated **KEPT** (call-site bytes retail-exact; match% is a means, not the end). A5 unit neutrality + the 99.28 independently countersigned. Ranked backlog routed (FPR cluster → permuter). |
+| **F7-CLIP rider — ✅ diagnosis complete; W33 charter drafted** | Q1: **nothing clips the character** — world.cam draws all on-screen; the "clip line" is the boundary between the list column (50% dimmer + opaque row quads) and the sidebar column (authored `header_list_bg.mesh` full-screen 50% dimmer ONLY). Q2: retail has a near-opaque sidebar panel (two photo sources); ours = **missing panel draw / asset gap** — every candidate backing mesh draws=0 (the `song_select_details` drill-in sub-panel never shows in quick-view), NOT depth/stencil. Correctly REUSED W4.3-C2/C2a (Wave 13) + re-confirmed with fresh drawlog/uidump; dead ends documented. Charter draft: **W33-F7-SIDEBAR-BACKING** — native backing quad, retail-proven faithful-restoration tier (default-ON + opt-out), non-goal: don't touch the global dimmer alpha. |
+
+**Close-out rulings:** Lane A fix = parity restoration (no flag); Lane B flip
+earned by ON-vs-OFF (three-tier faithful-restoration); Lane D KEPT ruling +
+"sweep class not renewable"; F4 CLOSED NOT-A-BUG; F2 → W33 charter. Shard
+probes retired per pre-kickoff disposition (`rb3_shardprobe_native.cpp`
+deleted, `RB3_SHARD_PROBE_SCENE/_OUT` rows removed); `RB3_MIDIDRV_PROBE` +
+`RB3_SETPLAY_PROBE` KEEP as acceptance instruments (retirement condition owed,
+W33). Census 418 (engine `2ea8e34`); ONE pin bump. Defaults: **17 ON**
+(`RB3_NO_MIDIDRV_ENTER_FIX` joins). A12 dispositions recorded: F8 carried NOT
+chartered (third wave unowned — charter or close in W33); E6 taxonomy debt now
+**THREE** default-ON fixes in class=workaround (HUB_HIGHLIGHT / BUTTON_GLYPH /
+MIDIDRV_ENTER opt-outs) distorting the §W5.3 metric — registry owner owes a
+fix-opt-out class. User-report dispositions: floating yellow square = FIXED
+(web, both builds); prop fans/floating-legs second half = FIXED (default-ON);
+score pill = real bug, chartered W33; star row = not a bug (faithful
+progressive reveal); song-select clipping = mechanism named (missing sidebar
+backing), fix chartered W33. New process lesson: the **stale-exclusion
+class** — a W1-era web source-list exclusion silently forked the web renderer
+for ~30 waves; W33 runs a one-time web/native source-list parity audit.
+Not-properly-closed list in the review §5 (top two: web full-policy validation
+beyond the hub — release users are already on the new build; Lane A leg-4
+native uidump control never captured).
+
+### Wave 33 menu (from `WAVE32_CLOSEOUT_REVIEW.md` §6 — discriminator-first + checkpoint-before-fix + A7 raw-log mechanics + E4 verbatim-quote rule carried)
+1. **W33-F2-PILL (chartered):** score-pill dark backing — engine
+   RB3MaterialBinder coverage handling (refraction-material opacity not from
+   diffuse.a). The one chartered engine blend-semantics change: MANDATORY
+   cross-screen material sweep before any flip, ON-vs-OFF retail-paired crops,
+   A11 (mechanism-named fix, no pill tint).
+2. **W33-F7-SIDEBAR-BACKING (rider's drafted charter):** native-only opaque
+   backing quad behind the song-select difficulty grid — retail-proven
+   faithful-restoration tier (default-ON + `RB3_NO_*`, earned by ON-vs-OFF),
+   append-only render-hook predicate, real-song-row focus (W31 heading trap),
+   drawlog-golden + list-column-unchanged acceptance. Non-goal: the global
+   `header_list_bg` dimmer alpha.
+3. **Web full-policy validation pass (cheap Sonnet rider — run FIRST):**
+   song_select + gameplay on web, debug AND release, now that the render-hook
+   family is live (F3 glyphs + B-family policies verified beyond the hub;
+   release users are already on this build). Closes review §5.2.
+4. **Web/native source-list parity audit (coordinator-cheap, one-time):** diff
+   the native vs EMSCRIPTEN source lists in `native/CMakeLists.txt`; every
+   intentional exclusion gets a current justification or gets removed (the
+   stale-exclusion class has bitten once).
+5. **E6 taxonomy fix (registry owner):** `fix-opt-out` class or §W5.3 metric
+   exclusion for the three default-ON fix opt-outs; one edit + single census
+   regen.
+6. **F8 settle-frame recapture:** charter as a micro-rider or close as
+   obsolete — third wave carried unowned.
+7. **Riders:** probe soak-retirement condition for `RB3_MIDIDRV_PROBE` +
+   `RB3_SETPLAY_PROBE`; Lane A leg-4 native `/api/uidump` hub-mesh control
+   capture (rides any lane that boots a native hub control).
+8. **Carried/blocked:** F5 patch-shard repro (needs fresh hypothesis + own
+   oracle); F6 hub grade BLOCKED on UIGRADE reconciliation; SKEL/CROWD
+   families CLOSED (STOPs binding); arg-order NOT renewable as a sweep (Lane D
+   ruling — behavioral-heuristic use only).
