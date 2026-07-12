@@ -234,6 +234,15 @@
     </div>
     <div id="console"></div>
 
+    <!-- Xbox 360 guitar (XUSB) support via WebUSB — for macOS/desktop Chrome,
+         where the OS has no XInput driver so navigator.getGamepads() stays null
+         and the built-in Gamepad-API guitar path can't see the device. This
+         module claims the guitar over WebUSB and exposes it as a synthetic
+         standard gamepad, so the existing C++ mapping consumes it unchanged.
+         Relative src so it works both at / and behind the /rb3/ proxy prefix.
+         No-ops in Firefox/Safari (no navigator.usb). -->
+    <script src="guitar-webusb.js"></script>
+
     <!-- Session-telemetry WEB EGRESS (Task F / D5 §7) lives in rb3_pre.js's
          "D5 — session-telemetry egress" IIFE block, NOT here. rb3_pre.js is wired
          as a --pre-js (native/CMakeLists.txt) so it is bundled into the deployed

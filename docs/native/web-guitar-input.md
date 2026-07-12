@@ -124,3 +124,103 @@ node _guitar-smoke.mjs --port 8421
 ```
 This proves the JS layer is alive; a full e2e gameplay pass with the fake guitar
 driving menus/notes is a separate verification step.
+
+## Xbox 360 guitars on macOS (WebUSB)
+
+Xbox 360 controllers (including the plastic guitars: Guitar Hero X-plorer, RB
+Xbox 360 guitars) are **not HID**. They speak Microsoft's proprietary **XUSB**
+protocol on a vendor-specific USB interface (class `0xFF`, subclass `0x5D`,
+protocol `0x01`). On **macOS there is no OS driver** for that interface, so
+`navigator.getGamepads()` stays all-null forever and the Gamepad-API path above
+can never see the device. On **Windows** XInput exposes it as a standard gamepad;
+on **Linux** the kernel `xpad` driver claims it and it likewise shows up as a
+normal gamepad — so on those platforms the ordinary Gamepad-API path already
+works and no WebUSB is needed.
+
+For the macOS gap, `native/web/guitar-webusb.js` (a page-level `<script>`, loaded
+from `index.html`) claims the guitar over **WebUSB** — which *can* open the raw
+vendor interface precisely because nothing else on macOS claims it — reads the
+interrupt-IN report stream, decodes it, and re-publishes the state as a
+**synthetic "standard" gamepad appended to `navigator.getGamepads()`**. It is
+shaped exactly like an xpad Xbox-360 RB guitar (`id` contains `1430`,
+`mapping: 'standard'`), so the existing C++ `xinput_rb` mapping consumes it with
+**zero wasm changes**. The engine's per-frame `getGamepads()` poll picks up the
+first guitar-classified pad as usual.
+
+**Chrome/Chromium desktop only** (WebUSB). Firefox/Safari have no `navigator.usb`,
+so the module silently no-ops there.
+
+### Connecting (user flow)
+
+1. A small **`🎸 Connect USB guitar`** button appears bottom-right (only when no
+   guitar is already present and WebUSB exists).
+2. Click it → Chrome's device chooser opens → pick **"Guitar Hero X-plorer"**
+   (or your Xbox-360 guitar). This gesture is required by WebUSB's
+   `requestDevice()`.
+3. The button hides and the guitar drives menus/gameplay immediately.
+
+**Auto-reconnect:** once authorized, the module re-attaches on every later page
+load via `navigator.usb.getDevices()` **without** another gesture (one-click-once,
+automatic thereafter), and re-attaches on replug via the `connect` event. The
+synthetic pad is torn down on `disconnect`.
+
+**Linux note:** if you run desktop Chrome on Linux, `claimInterface()` fails with
+`NetworkError`/`SecurityError` because `xpad` owns the device. The module reports
+a friendly message and bows out — the guitar is already a normal gamepad there,
+so use the Gamepad-API path (frets/strum work without the button).
+
+### Device filters
+
+`requestDevice()` filters on vendor only (not product), covering the XUSB-era
+guitar vendors: `0x1430` (RedOctane/GH), `0x1bad` (Harmonix-Xbox), `0x0738`
+(MadCatz). Other X360 guitars from these vendors share the report layout.
+
+### Packet layout (XUSB / X360 guitar, xboxdrv protocol)
+
+Input reports have `byte0 == 0x00`, `byte1 == 0x14` (other report types — LED
+status `0x01`/`0x03` — are skipped):
+
+| Field | Location | Notes |
+|---|---|---|
+| strum-up / dpad-up | byte2 `0x01` | → synthetic `buttons[12]` (kPad_DUp) |
+| strum-down / dpad-down | byte2 `0x02` | → `buttons[13]` (kPad_DDown) |
+| dpad-left | byte2 `0x04` | → `buttons[14]` |
+| dpad-right | byte2 `0x08` | → `buttons[15]` |
+| Start | byte2 `0x10` | → `buttons[9]` |
+| Back | byte2 `0x20` | → `buttons[8]` (star power) |
+| orange (LB) | byte3 `0x01` | → `buttons[4]` |
+| Guide | byte3 `0x04` | → `buttons[16]` |
+| green (A) | byte3 `0x10` | → `buttons[0]` |
+| red (B) | byte3 `0x20` | → `buttons[1]` |
+| blue (X) | byte3 `0x40` | → `buttons[2]` |
+| yellow (Y) | byte3 `0x80` | → `buttons[3]` |
+| whammy | int16 LE @ offset 10 | rest ≈ `-32768`, full ≈ `+32767`; normalized `(raw+32768)/65535` → `axes[2]` in `[-1..1]` so the C++ `(axes[2]+1)/2` recovers `[0..1]` |
+| tilt | int16 LE @ offset 12 | active when `raw > 8192` → `axes[3] = 1.0` (C++ threshold `> 0.5`) |
+
+The synthetic-pad button/axis indices above are exactly what the `xinput_rb`
+family in `rb3_joypad_native.cpp` reads (frets on standard face buttons, strum on
+buttons 12/13, whammy on `axes[2]`, tilt on `axes[3]`).
+
+> **Whammy rest polarity** is assumed to be `raw ≈ -32768` at rest / `+32767`
+> fully pressed (the common X360-guitar convention). If a real unit reads
+> inverted, flip the normalization in `decodePacket()` — verify against hardware.
+
+### Debug
+
+- `window._rb3GpDebug = 1` → logs raw packet hex on change (prefixed
+  `[rb3-guitar]`).
+- `window._rb3Xplorer = { connected, lastPacket, state }` → live inspection of
+  the synthetic pad.
+
+### Test
+
+`scripts/web/guitar-webusb-e2e-test.mjs` (Playwright) injects a fake
+`navigator.usb` (X-plorer `1430:4748`, one `0xFF/0x5D` interface with an
+interrupt-IN endpoint, scripted `transferIn` packets), auto-authorizes via
+`getDevices()`, and asserts: auto-claim, `xinput_rb` classification, green+strum
+reaching the engine chokepoint, whammy tracking, disconnect teardown, and a
+no-device regression (button visible, no synthetic pad, no JS errors). Run from
+`scripts/web/`:
+```bash
+node guitar-webusb-e2e-test.mjs --port 8421
+```

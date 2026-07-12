@@ -212,6 +212,9 @@ build_one() {
 
 # Shared, served from the root. index.html picks release/ or debug/ at runtime.
 cp "$NATIVE_DIR/web/index.html" "$DEPLOY_DIR/"
+# WebUSB Xbox-360-guitar shim (loaded by index.html via <script src>). Served
+# from the root like audio-worklet.js; relative path works behind the /rb3/ proxy.
+cp "$NATIVE_DIR/web/guitar-webusb.js" "$DEPLOY_DIR/"
 
 echo ""
 echo "Deployed to $DEPLOY_DIR"
