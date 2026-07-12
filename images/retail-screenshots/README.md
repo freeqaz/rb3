@@ -103,3 +103,57 @@ clean settled frame extracted. Static images were downloaded via `curl`/Python
 from the sources above. Web galleries checked that had NO usable in-game shots:
 MobyGames (cover art only), GameFAQs / Giant Bomb (bot-blocked), Nintendo Life
 (promo art + carousel only).
+
+---
+
+## RB3DX-on-Xenia captures  ← first-boot flow (photosensitivity / title / calibration) + main_hub-reached evidence
+
+New in `xenia/`. Headless reference frames captured from **Rock Band 3 Deluxe
+(RB3DX)** running under our **Xenia Xbox-360 emulator fork** (branch
+`headless-vulkan-linux`, HEAD `36d4528a5` + uncommitted in-tree diagnostics),
+`--gpu=vulkan` headless, 1280×720. These ground-truth screens the native/web
+port previously had NO retail pair for: the first-boot **calibration flow** and
+the RB3DX **photosensitivity / title** shells.
+
+**How reached:** the boot advances `intro_movie_screen → splash_screen (animated
+Deluxe title) → first_time_calibration → cal_welcome_screen → cal_audio_screen`
+with time-scripted input; screen labels come from the emulator's read-only
+`--rb3dx_ui_probe` sampler (reads `TheBandUI`→current `UIScreen` name each frame).
+The `main_hub_screen` frame was reached with the `--rb3dx_skip_calibration`
+diagnostic (primes `mHasSeenFirstTimeCalibration=1` so first boot routes past the
+uncompletable headless A/V-latency calibration straight to the hub).
+
+**Scanline caveat (important):** Xenia's headless frame readback raw-copies the
+**tiled** resolved frontbuffer, so any **3D-resolved scene** captures with a
+fine green/magenta 8-pixel scanline scramble (a 32-byte Xenos micro-tile
+readback artifact, NOT a render bug — the underlying scene is correct). **2D /
+menu-composited surfaces read clean.** Hence the calibration dialogs,
+photosensitivity text, and overshell chrome are crisp, while the animated
+title 3D backdrop and the `main_hub` night-street scene are scrambled. The
+`*_main_hub_loading_artifact.png` frame is included as **evidence that
+`main_hub_screen` is reached** (the "ROCK BAND 3 DELUXE" hub load + Player1
+overshell are visible through the scanlines) — it is NOT a clean color reference.
+A clean headless main_hub / gameplay capture is not currently possible: the hub
+3D scene load deterministically crashes the guest (SIGSEGV at guest PC
+`0x82BCEFE4`, ~30 s, 2/2 boots), so song-select and gameplay are unreached.
+
+| File | Screen | Clean? | Shows |
+|---|---|---|---|
+| `xenia/xenia_rb3dx_photosensitivity_warning.png` | (boot splash) | ✅ clean | RB3DX bilingual (EN/ES) photosensitivity warning + animated diamond logo. |
+| `xenia/xenia_rb3dx_splash_deluxe_title.png` | `splash_screen` | ⚠ 3D artifact | Animated "ROCK BAND 3 DELUXE" title shell (+ `RB3DX 1.1.0-nightly` build string); 3D backdrop scrambled. |
+| `xenia/xenia_rb3dx_first_time_calibration.png` | `first_time_calibration` | ✅ clean | First-boot "Want to Calibrate your system?" dialog — CALIBRATE SYSTEM / CONTINUE, over the Player1 overshell + CONNECT CONTROLLER footer. |
+| `xenia/xenia_rb3dx_cal_welcome.png` | `cal_welcome_screen` | ✅ clean | "CALIBRATE SYSTEM" intro — the three option icons (auto / TV / numeric) + filigree header band. |
+| `xenia/xenia_rb3dx_cal_audio.png` | `cal_audio_screen` | ✅ mostly | "AUDIO CALIBRATION" — "CURRENT DELAY IS 0 MS" (headless stalls here: interactive A/V-latency test can't complete with null audio). |
+| `xenia/xenia_rb3dx_main_hub_loading_artifact.png` | `main_hub_screen` | ❌ artifact | main_hub reached (hub load + Player1 overshell visible through the scanline scramble). Evidence-only. |
+
+**Labeled detail crops** (zoomed, for agents reading UI element detail):
+`xenia_rb3dx_crop_photosensitivity_en.png`, `..._crop_deluxe_diamond_logo.png`,
+`..._crop_firsttime_dialog.png`, `..._crop_firsttime_buttons.png`,
+`..._crop_overshell_player1.png`, `..._crop_calwelcome_header.png`,
+`..._crop_calwelcome_icons.png`, `..._crop_calaudio_header.png`,
+`..._crop_calaudio_delay.png`.
+
+Source: RB3DX `default.xex` (TitleID `0x45410914` v0.0.5.1) on Xenia fork
+`headless-vulkan-linux`, headless Vulkan, captured 2026-07 for the native/web
+port. Third-party copyrighted game frames kept solely as internal visual
+references (fair use); not game assets.
