@@ -138,6 +138,77 @@
         }
         #console .err { color: #c66; }
     </style>
+    <script>
+        // Path-prefix shim (2026-07-12): lets this exact build be served
+        // unmodified either at the server root (localhost:8421, the app
+        // server's native home) OR behind a reverse proxy mounted at a
+        // sub-path (e.g. https://home.freeqaz.com/rb3/). The game constructs
+        // root-absolute "/api/..." URLs in three places we don't want to
+        // touch (rb3_pre.js's telemetry egress, main_web.cpp's EM_ASM asset
+        // fetches, WebAssets.cpp's emscripten_fetch/sync XHR) — under a
+        // prefix those would resolve to the proxy's ROOT and 404. Instead we
+        // derive the mount base from the page's own URL and prefix just the
+        // "/api/" calls at the fetch/XHR/beacon layer, before any of that
+        // code runs. Everything else on the page (rb3-web.js, the wasm, the
+        // audio worklet) already uses paths relative to index.html, so it
+        // needs no help — this shim is the one thing standing between
+        // "works at /" and "works at /rb3/".
+        //
+        // base is "" at the server root (index.html or /), so the whole
+        // block is a no-op there — zero behavior change on localhost:8421.
+        var base = location.pathname.replace(/\/(index\.html)?$/, '');
+        if (base) {
+            window.__rb3UrlBase = base;
+
+            // Only touch our own root-absolute API surface; anything else
+            // (relative build assets, third-party URLs, non-string args)
+            // passes through untouched.
+            function rb3PrefixApi(url) {
+                if (typeof url === 'string' && url.indexOf('/api/') === 0) {
+                    return base + url;
+                }
+                return url;
+            }
+
+            var rb3Fetch = window.fetch;
+            window.fetch = function(input, init) {
+                return rb3Fetch.call(this, rb3PrefixApi(input), init);
+            };
+
+            var rb3XhrOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                var args = Array.prototype.slice.call(arguments);
+                args[1] = rb3PrefixApi(url);
+                return rb3XhrOpen.apply(this, args);
+            };
+
+            if (navigator.sendBeacon) {
+                var rb3SendBeacon = navigator.sendBeacon;
+                navigator.sendBeacon = function(url, data) {
+                    return rb3SendBeacon.call(navigator, rb3PrefixApi(url), data);
+                };
+            }
+
+            // Fourth call site, found during proxy validation (2026-07-12):
+            // rb3_movie_native.cpp's fullscreen-cinematic overlay
+            // (rb3_webmovie_create) builds "/api/file/<...>.webm" and assigns
+            // it straight to a <video>'s .src — a DOM property write, not a
+            // fetch/XHR/beacon call, so it slips past the three patches
+            // above. Under a prefix this 404s the intro/credits video.
+            // Patch the shared HTMLMediaElement.src setter (covers <video>
+            // and <audio>) the same way.
+            var rb3MediaSrcDesc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
+            if (rb3MediaSrcDesc && rb3MediaSrcDesc.set) {
+                Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+                    get: rb3MediaSrcDesc.get,
+                    set: function(url) {
+                        rb3MediaSrcDesc.set.call(this, rb3PrefixApi(url));
+                    },
+                    configurable: true
+                });
+            }
+        }
+    </script>
 </head>
 <body>
     <div id="canvas-container">
