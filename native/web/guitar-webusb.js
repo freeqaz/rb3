@@ -330,17 +330,18 @@
     try {
       await device.claimInterface(epInfo.interfaceNumber);
     } catch (e) {
-      // Linux: kernel xpad owns the interface. Bow out gracefully.
+      // NetworkError here means SOMETHING ELSE holds the device — most often
+      // another browser tab (WebUSB claims are exclusive per device), sometimes
+      // another app, or on Linux the kernel xpad driver (where the guitar
+      // already works as a normal gamepad, no WebUSB needed).
       var name = (e && e.name) || '';
-      if (name === 'NetworkError' || name === 'SecurityError') {
-        showStatus('This guitar is claimed by the OS driver. On Linux it should ' +
-          'already appear as a normal gamepad — no WebUSB needed.');
-        console.log(TAG + ' claimInterface failed (' + name + ') — OS owns the device; ' +
-          'use the normal gamepad path.');
-      } else {
-        showStatus('Could not claim the guitar: ' + (e && e.message ? e.message : name));
-        console.log(TAG + ' claimInterface error: ' + e);
-      }
+      var msg = (e && e.message) || '';
+      showStatus('Could not claim the guitar (' + name + (msg ? ': ' + msg : '') + '). ' +
+        'Close any other tab or app using it (game tabs, gamepad testers), ' +
+        'unplug/replug, then retry. On Linux, skip this button — the guitar ' +
+        'already works as a normal gamepad.');
+      console.log(TAG + ' claimInterface failed: ' + name + ' — ' + msg +
+        ' (exclusive claim: check for other tabs/apps holding the device)');
       try { await device.close(); } catch (e2) {}
       return;
     }
