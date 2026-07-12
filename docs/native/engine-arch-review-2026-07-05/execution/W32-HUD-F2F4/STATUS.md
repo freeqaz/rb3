@@ -117,3 +117,13 @@ disproves. **F4 is a faithful non-bug — NO code change.**
 - native/src/rb3_render_hook.cpp UNTOUCHED (git clean). No decomp TU touched -> no objdiff/drawlog gate needed.
 - Claims: /tmp/wave32-claims/W32-HUD-F2F4.txt (rb3_render_hook.cpp). F2 engine TU named:
   ../milo-native-engine/src/platform/RB3MaterialBinder.cpp (engineAckNeeded, not staged).
+
+## COORDINATOR ADJUDICATION (close-out, 2026-07-12)
+
+F2: engineAck NOT granted this wave — the proposed engine fix
+(RB3MaterialBinder coverage from color.alpha for the HUD backing) changes
+blend semantics with potential blast radius beyond the pill; chartered as
+**W33-F2-PILL** with mandatory ON-vs-OFF + cross-screen material sweep.
+F4: CLOSED — NOT A BUG. Progressive star reveal is faithful (BandStarDisplay
+100% matched; retail's own screenshots show the row growing). The W30 finding
+was an A11-trap (native-0-stars compared against retail-4-stars).

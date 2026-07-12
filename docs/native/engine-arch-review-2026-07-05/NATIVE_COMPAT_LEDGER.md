@@ -6,8 +6,8 @@
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
 **Total flags:** 418  
-**By class:** compat=2, diagnostic=1, feature=14, perf=9, probe=138, tuning=3, unknown=151, workaround=100  
-**Default-ON workarounds (the number §W5.3 must drive to 0):** 75
+**By class:** compat=2, diagnostic=1, feature=14, perf=9, probe=137, tuning=3, unknown=151, workaround=101  
+**Default-ON workarounds (the number §W5.3 must drive to 0):** 76
 
 | name | class | default | owner | faithful-status | sites |
 |---|---|---|---|---|---|
@@ -249,6 +249,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_MESH_VERBOSE` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_METAMUSIC_DBG` | probe | off | synth/metamusic | n/a: logs completion of the deferred stream-FX wiring (6 eq.send dirs) after RB3_METAMUSIC_SYNC's async PostLoad path drains [MetaMusic.cpp:415] | 1 |
 | `RB3_METAMUSIC_SYNC` | workaround | off | synth/metamusic | not-live: native async MetaMusic PostLoad default; =1 opt-in restores the original eager (blocking) PostLoad+wiring path | 1 |
+| `RB3_MIDIDRV_PROBE` | probe | off | char/driver | probe: W32-PROP-FAN read-only discriminator — logs .dmidi/.ikmidi driver lifecycle (CTOR/ENTER/POLL/FEED [MIDIDRV_*]) to prove the Enter-starvation mechanism. Diagnostic only | 8 |
 | `RB3_MOGG_CACHE_DBG` | unknown | off | unclassified | n/a | 1 |
 | `RB3_MOGG_CACHE_MB` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_MOGG_RANGE_OFF` | workaround | on | load/audio | not-live: Range-backed mogg streaming default-ON (see project_incremental_load_perf memory) | 2 |
@@ -274,6 +275,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_NO_IK` | probe | off | char | n/a: debug bisection disable of all Char IK Poll (hand/foot/head/fore-twist/neck/upper-twist/lookat/fingers/midi/slider); default-OFF, IK runs when absent [CharIKHand.cpp:27 +9 sites] | 10 |
 | `RB3_NO_INST_REBIND` | workaround | on | skinning | not-live: instrument-strings rest-basis rebind (RebindInstStringsToRestBasis) default-ON [BandCharacter.cpp:1540] | 1 |
 | `RB3_NO_MESH_CACHE` | workaround | on | render/mesh-cache | not-live: mesh cache default-ON (see project_songlib_web_crash_charpreview memory) | 1 |
+| `RB3_NO_MIDIDRV_ENTER_FIX` | workaround | on | char/driver | not-live: W32-PROP-FAN Enter-starvation fix default-ON — instrument-MIDI prop drivers (drum-hit/strum/fret .dmidi) were Polled but never Entered natively (added to mPolls after the one-time Character::Enter), so they never AddSink'd onto their MIDI parser: no hit/strum clips, idle arm, CharIKHand over-reach, prop-tip fans. Fix lazily Enters once on first native Poll. Earned by ON-vs-OFF: OnMidiParser 0->173, clips 0->416, drummer shards 1107->2, guitarist 843->0, set_play non-regressed. Opt-out restores the fan artifacts for A/B | 1 |
 | `RB3_NO_POSEMESHES` | probe | off | skinning | n/a: Q1 decisive-test disable of CharBonesMeshes::PoseMeshes (channel->LocalXfm writeback); default-OFF [CharBonesMeshes.cpp:103] | 1 |
 | `RB3_NO_PRECLEAR` | workaround | on | render/mesh-cache | not-live: pre-clear-before-draw workaround default-ON | 1 |
 | `RB3_NO_SETLIST_FIX` | workaround | on | ui/setlist | not-live: setlist fix default-ON (opt-out name) | 1 |
@@ -352,8 +354,6 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_SFX_CACHE_OFF` | workaround | on | audio/sfx | not-live: SFX decode cache default-ON | 1 |
 | `RB3_SFX_OGG_OFF` | workaround | on | audio/sfx | not-live: ogg-first SFX sidecar default-ON (see project_web_loadperf_findings memory) | 1 |
 | `RB3_SFX_PCM_DIR` | unknown | unknown | unclassified | n/a | 1 |
-| `RB3_SHARD_PROBE_OUT` | probe | off | char/skin | probe: output path selector for RB3_SHARD_PROBE_SCENE (JSON dump destination). Diagnostic only | 1 |
-| `RB3_SHARD_PROBE_SCENE` | probe | off | char/skin | probe: W31-HUBWALKER-SHARDS read-only distinct-TU shard census (native/src/rb3_shardprobe_native.cpp, A2-compliant) — per-mesh skin extent + bone attribution for the hub street population; produced the 34-row table behind the SKEL_FAMILY_STOP verdict. Scene selector | 1 |
 | `RB3_SHARPEN_CHUNK_KB` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SHARPEN_DBG` | unknown | off | unclassified | n/a | 2 |
 | `RB3_SHARPEN_PER_FRAME` | unknown | unknown | unclassified | n/a | 1 |

@@ -105,3 +105,16 @@ class.json under lock; no lane regen (coordinator regens once at close-out).
 - `src/system/char/CharDriverMidi.cpp` (fix + probe, HX_NATIVE)
 - `src/system/char/CharIKMidi.cpp` (probe only, HX_NATIVE)
 - engine `src/platform/NativeCompatFlags.classification.json` (2 flags appended)
+
+## COORDINATOR ACK + DEFAULT-ON FLIP (close-out, 2026-07-12)
+
+engineAck GRANTED (c0bc00a = class.json registration only, FxSendNative
+unstaged as required). Flip executed per the three-tier faithful-restoration
+rule, earned by the lane's same-build ON-vs-OFF evidence (countersign-verified
+census): `RB3_MIDIDRV_ENTER_FIX` opt-in REPLACED by default-ON with opt-out
+`RB3_NO_MIDIDRV_ENTER_FIX` (CharDriverMidi.cpp sMidiEnterFix), registry rows
+updated (engine 2ea8e34). Countersign's log-locality recommendation resolved
+by accepting the committed shard-census + clip-census quotes as the earn.
+Post-flip merged-tree gates: drawlog-golden PASS, bounded boot rc=0 5/5.
+`RB3_MIDIDRV_PROBE` classified (probe/off, kept as the family's acceptance
+instrument).

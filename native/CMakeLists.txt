@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "24c4f95c1dcb74474c9d5329b498d8f0e5074ada"
+set(MILO_ENGINE_PIN "2ea8e343cdc7c8ce680b093433f8b3d038e38b99"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -638,15 +638,8 @@ add_executable(rb3-native
     # target-wide MWCC compat flags like rb3_replay_capture.cpp. One exported entry
     # point (rb3bp_dump_bones) reached over the existing /api/call endpoint.
     ${CMAKE_SOURCE_DIR}/src/rb3_bonedump_native.cpp
-    # W31 Lane D (W31-HUBWALKER-SHARDS): read-only SHARD PROBE (RB3_SHARD_PROBE_OUT).
-    # STEP-0 discriminator instrument for the hub street-walker shard family — walks
-    # each player%d BandCharacter dir for skinned RndMesh, dumps per-mesh bound bones
-    # (name+pointer+WorldXfm+BoneOffset+deviation angle) + vertex-weight histogram +
-    # the driving CharClip's ListBones driven-track set. Includes decomp headers
-    # (rndobj/Mesh.h+Trans.h, bandobj/*, meta_band/CharCache.h, char/CharClip.h) so it
-    # rides the target-wide MWCC compat flags like rb3_bonedump_native.cpp. One
-    # exported entry point (rb3sp_dump_shards) reached over the /api/call endpoint.
-    ${CMAKE_SOURCE_DIR}/src/rb3_shardprobe_native.cpp
+    # (W31 Lane D shard probe rb3_shardprobe_native.cpp RETIRED at W32 close-out —
+    # SKEL_FAMILY_STOP verdict discharged its question; see W31-HUBWALKER STATUS.)
     # C2: save/profile/settings persistence (keystone). Host-FS blob store behind
     # IPersistBackend, backing ProfileMgr's self-contained global-options +
     # profile-0 GameplayOptions serializers. Bypasses the EXCLUDED Wii
@@ -816,13 +809,24 @@ set(RB3_WEB_LIFTED_ENGINE_SOURCES
 #   rb3_synth_native.cpp    — pulls miniaudio (native AudioDevice replaces it).
 #   rb3_stream_receiver_native.cpp — paired with synth.
 #   rb3_vorbis_poll_shim.cpp — vorbis poll shim (system libvorbis path).
-#   rb3_render_hook.cpp     — HamRenderHook glue (registers with engine); not
-#                             needed for clear-frame.
+#   (rb3_render_hook.cpp WAS filtered out here in the W1 clear-frame era —
+#    that exclusion silently disabled EVERY GameRenderHook policy on web
+#    (B1-B13: hub highlight placement, text/icon glyph routing, tail colours,
+#    highway shading, ...) while native ran them all, producing web-only
+#    render divergences like the W32 floating hub highlight quad at origin.
+#    Re-added to RB3_WEB_NATIVE_GLUE below, W32-WEB-YELLOW.)
 #   rb3_keychain_native.cpp — MOGG keychain (not needed for clear-frame).
 #   tomcrypt aes/crypt/ctr  — MOGG decryption C (not needed for clear-frame).
 # rb3_band_rnd.cpp is empty (BandRnd graduated to engine) and not in the source
 # list to begin with.
 set(RB3_WEB_NATIVE_GLUE
+    # W32-WEB-YELLOW: the GameRenderHook policy TU (self-registers gBandHook at
+    # static-init). Excluded since the W1 clear-frame era, which left
+    # GetGameRenderHook()==nullptr on web: hubBarPlacement never set, so the
+    # skinned hub highlight bar (highlight_main/highlight_pattern.mesh) fell to
+    # the world-origin path and drew as a static quad over the centre character
+    # (Rnd_Wgpu_RB3.cpp:3350/:3355). emcc-clean (std + rndobj headers only).
+    ${CMAKE_SOURCE_DIR}/src/rb3_render_hook.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_native_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_platform_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp

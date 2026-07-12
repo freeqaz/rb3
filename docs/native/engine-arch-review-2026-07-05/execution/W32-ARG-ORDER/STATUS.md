@@ -161,3 +161,15 @@ unchanged by this edit).
 - Landed: 1 behavioral fix (VocalTrackDir SetFrame), retail-byte-verified,
   sub-100 TU flagged (<= 10 cap). 0 clean raw-100 landings (class exhausted).
 - Claims file `/tmp/wave32-claims/W32-ARG-ORDER.txt` updated with VocalTrackDir.cpp.
+
+## COORDINATOR ADJUDICATION (close-out, 2026-07-12)
+
+`ad0130f4` (VocalTrackDir::SetRange SetFrame(0,1) restoration): **KEPT.** The
+A5 raw-100 gate exists to prevent fake matches; here the call-site bytes
+[140-147] match retail exactly, the residual is a pre-existing orthogonal FPR
+cascade (permuter-class), the fix is behavioral (re-enables the pitch-window
+material config anim on the from-chromatic tonic transition), and the
+disclosure was transparent. Port north-star: match% is a means, not the end.
+Headline finding ACCEPTED: the clean-raw-100 static arg-order sweep class is
+EXHAUSTED (0/1185) — do NOT renew as a sweep lane; future arg-order finds come
+from behavioral investigation (SyncProperty pattern), not signature scans.

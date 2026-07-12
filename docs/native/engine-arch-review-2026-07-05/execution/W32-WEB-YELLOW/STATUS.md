@@ -151,3 +151,27 @@ wave — hence coordinator sequencing/arbitration rather than a lane-local land.
   `/api/uidump` (which is where the actual on-screen highlight member + its
   focus-tracking world lives) can be captured by the fix lane during the
   post-arbitration leg (4) native A/B.
+
+## COORDINATOR ARBITRATION + FIX LANDED (close-out, 2026-07-12)
+
+A2 arbitration: Lane C finished with `rb3_render_hook.cpp` untouched (git
+clean, countersigned), so the collision was moot — fix coordinator-executed.
+Disposition: the TU's exclusion from the web source list was a stale W1
+"clear-frame era" decision; re-adding it is a **parity restoration** (web
+gains the exact policy set native already runs), no new flag (build-level,
+three-tier N/A). Landed: `rb3_render_hook.cpp` added to `RB3_WEB_NATIVE_GLUE`
+(self-registers at static-init; no main_web.cpp call needed) + exclusion
+comment rewritten as a warning.
+Verification (debug web build, `scripts/web/_w32_yellowfix_check.mjs`):
+- floating yellow-green quad over the centre character: **GONE** at
+  `joined_default` (was present in the lane's `joined_00_default.png` repro).
+- highlight bar now draws **contained on the focused row** and TRACKS focus
+  (RETURN → PLAY ON XBOX LIVE on ArrowDown, back on ArrowUp) — B8 placement
+  policy live on web, acceptance legs (3)+(5) + A10 replay.
+- native control (leg 4): the CMake change touches only the WEB source list;
+  native gates on the merged close-out tree: drawlog-golden PASS (792 draws,
+  287 known-residuals within bound), bounded boot rc=0 5/5.
+- SCOPE flag adjudicated: enabling ALL policies on web is the POINT (they are
+  native parity, incl. the W31 F3 glyph fix web never had); release build
+  deployed at close-out. Evidence: /tmp/w32-yellowfix2/*.png re-homed to
+  evidence/coordinator-fix/.
