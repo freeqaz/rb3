@@ -397,3 +397,17 @@ coordinator-cheap.
 
 _Author: Wave-32 Fable close-out reviewer. Read-only on code; this doc + the
 README results/menu section are the only writes._
+
+## Coordinator discharge addendum (post-review, 2026-07-12)
+
+§5 item (2) — web full-policy validation beyond the hub — DISCHARGED for
+song_select: release-build smoke (boot → Music Library, real rows focused)
+shows the policy family behaving correctly on web: focus highlight bar
+contained + row-tracking (B8), footer hint pills render F3 glyph ARTWORK
+(yellow pills, not white blobs — first time on web), overshell MENU chip
+glyph correct, no orphan quads. Evidence:
+`execution/W32-WEB-YELLOW/evidence/coordinator-fix/web_song_select_policies.png`.
+Remaining exposure: web GAMEPLAY under the policy family (tail colours,
+highway shading) — folded into the W33 web-validation rider with the
+source-list parity audit. §5 items (1) uidump cross-name, (3)-(9): carried as
+written into the Wave-33 menu.
