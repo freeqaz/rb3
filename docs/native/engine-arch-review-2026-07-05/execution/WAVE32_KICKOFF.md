@@ -194,3 +194,98 @@ earned flips, shard-probe retirement per disposition above, census regen
 WAVE32_CLOSEOUT_REVIEW.md via Fable reviewer, README results + Wave-33 menu,
 user report with all user-visible dispositions (yellow square, prop fans,
 score pill, stars, clipping).
+
+---
+
+# COORDINATOR ACCEPTANCE (BINDING) — A1–A14 adopted 2026-07-12
+
+`WAVE32_REVIEW.md` amendments A1–A8 (BLOCKING) and A9–A14 (ADVISORY) are ALL
+adopted. Where an amendment gives replacement text, that text SUPERSEDES the
+corresponding kickoff sentence above. Lanes read WAVE32_REVIEW.md in full;
+its rulings bind. **Base SHA for all lanes = this acceptance commit.**
+
+- **A1 (Lane A STEP-0 tooling):** superseded tools sentence — web side =
+  Playwright console capture + `window.rb3*` engineState exports
+  (`scripts/web/lib/core.mjs`) + screenshots; `menuhub-probe.mjs` /
+  `_fullboot*.mjs` are nav/boot patterns ONLY (their `[MENU_DBG]` engine hook
+  is retired — the dump will be empty against today's build). For draw-level
+  naming on web, Lane A adds its OWN env-gated default-OFF draw-time
+  mesh-name console probe in owned web glue (or a `window.*` export) —
+  `/api/drawlog` + `/api/uidump` do NOT exist on the web target
+  (`rb3_http_server.cpp` is native-only per the CMakeLists EMSCRIPTEN
+  branch). Native CONTROL: use the real `/api/uidump` + `/api/drawlog`
+  (RB3_HTTP) to enumerate the expected hub highlight/overshell mesh set,
+  then cross-name the web orphan against it.
+- **A2 (render-hook fence):** `native/src/rb3_render_hook.cpp` is Lane C
+  **exclusive-write** this wave. Lane A reads freely; if Lane A's named
+  divergence point lands in that TU (mechanism (i)), Lane A checkpoints
+  COORDINATOR-ACK-NEEDED and waits for arbitration — no concurrent writes.
+- **A3 (Lane D claim protocol, BINDING):** each lane writes its owned/claimed
+  TU list to `/tmp/wave32-claims/<lane>.txt` at start and updates it when
+  STEP-0 names new TUs. Before landing ANY fix, Lane D checks the union of
+  claim files plus this seed exclusion list:
+  `src/system/bandobj/BandDirector.cpp`, `src/system/bandobj/BandCharacter.cpp`,
+  `src/system/bandobj/OvershellDir.cpp`, `src/system/char/CharDriver*.cpp`,
+  `src/system/char/CharDriverMidi.cpp`, `src/system/char/CharIKMidi.cpp`,
+  `src/system/char/CharIKSliderMidi.cpp`, plus any TU named in another lane's
+  checkpoint. A candidate in a claimed/excluded TU goes to the ranked BACKLOG
+  with its verdict (coordinator may land at close-out) — it does NOT land
+  mid-wave.
+- **A4 (fresh report):** Lane D's FIRST action:
+  `tools/ninja-locked build/SZBE69_B8/report.json` on the base-SHA tree
+  BEFORE enumeration; quote the regen timestamp in STATUS. (The on-disk
+  report is 2026-07-10, pre-W31 — SyncProperty would be a phantom #1 hit.)
+- **A5 (Lane D gate, ruling adopted verbatim):** a swap that takes the
+  function to **raw 100.0% / verdict COMPLETE** is by construction what mwcc
+  compiled — semantic regression against retail is impossible; the gate is
+  self-verifying. Tightenings: (1) the gate is RAW 100.0 (COMPLETE), not
+  fuzzy-only; (2) **unit neutrality** — after each landing, run batch_objdiff
+  over the unit and quote that no sibling function regressed.
+- **A6 (at-limit source):** superseded skip sentence — "Skip functions the
+  orchestrator DB marks at_limit (`query_functions status='at_limit'`; check
+  `get_attempts` on each shortlisted symbol) and those on the docs/decomp
+  deep-dive AVOID lists (`docs/decomp/deep-dive-targets-2026-05-26.md`
+  §AVOID, `docs/decomp/analysis-20260530.md`)."
+- **A7 (Lane B surface, lint 9 re-earn):** superseded owned-surfaces —
+  "`src/system/char/CharDriverMidi.cpp` / `CharIKMidi.cpp` /
+  `CharIKSliderMidi.cpp` (exclusive-write); `src/band3/` sender TU(s) owned
+  ONLY AFTER STEP-0 derives and checkpoints their real names (no `src/band3/`
+  write before that checkpoint); BandCharacter.cpp read-only per A9."
+- **A8 (Lane B discriminator):** added branch **(a0) drivers not
+  bound/created natively** → fix legal under the same terms as (b) IFF the
+  root cause is a decomp/routing bug (check the dispatch path's ≥99%
+  functions FIRST — arg-order lesson); otherwise memo. The discriminator
+  verdict is rendered **per prop class** (sticks / neck / kit cones /
+  stick-fan guitar), pointer-keyed and matrix-relative per lints 1/2 — one
+  aggregate row is not acceptance.
+- **A9:** BandCharacter.cpp = read-only by default; coordinator arbitration
+  required for any write — no W32 lane owns it (it is on A3's exclusion list,
+  so Lane D cannot collide).
+- **A10 (Lane A anti-gaming):** the fix must act at the divergence point
+  named in acceptance leg (2) — a suppression keyed to position/size/screen
+  region rather than to the named orphan mechanism is NOT acceptance.
+  After-fix evidence must include a replay of the `options`→`joined_default`
+  transition showing the highlight lifecycle correct through it, both
+  directions of focus travel.
+- **A11 (Lane C anti-gaming):** F4 acceptance = captures at TWO matched
+  states with different earned counts (filled == earned AND dim == 5−earned
+  in BOTH, retail-paired). F2 fix must act on the mechanism the material dump
+  names (bind/blend/prelit), NOT a hardcoded pill tint; digits legible
+  white-on-dark per the retail pair.
+- **A12 (dropped items back on ledger):** close-out records dispositions for
+  **F8** (settle-frame recapture — carried, not chartered) and **E6**
+  (taxonomy: two default-ON fixes now sit in class=workaround inflating the
+  §W5.3 metric — owed to the registry owner: a fix-opt-out class or metric
+  exclusion).
+- **A13 (lints instantiated for W32):** lint 9 discharged by A7; lint 10 by
+  A1; lint 2 by A8. Additionally binding: **lint 4 for Lane C** — registry
+  sweep BEFORE any "engine drops X" mechanism claim, incl.
+  `RB3_HUB_TEXT_CONTRAST`, the W4.2 text floor, ROWFIX, SCOREBOARD_TOPRIGHT,
+  W2.7 FilterSubdir, and BOTH new default-ONs (`RB3_NO_HUB_HIGHLIGHT_FIX`,
+  `RB3_NO_BUTTON_GLYPH_FIX`); **lint 1 for Lane B** — all bone claims
+  matrix-relative + pointer-keyed; **lint 7 for all lanes** — evidence on
+  disk under `execution/W32-*/evidence/` (gitignored) + findings QUOTED in
+  tracked STATUS.md.
+- **A14:** Lane C engine commits: **never stage
+  `src/platform/FxSendNative.cpp`** (untouchable concurrent WIP in the
+  engine tree).
