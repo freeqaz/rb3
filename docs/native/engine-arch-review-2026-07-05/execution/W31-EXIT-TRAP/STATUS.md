@@ -74,3 +74,24 @@ Harness: shared `scripts/web/lib/core.mjs` (`launchBrowser`/`navigateTo`/
   crop_floating_square_playnow.png, crop_floating_square_career.png,
   hub_initial_options_panel.png, crop_player1_panel_clean.png,
   before/after_cancel_*.png raw captures.
+
+## STEP 0 RESULT + FIX (fix applied, verify in progress)
+- SYMBOLIZED BACKTRACE captured (evidence/step0_backtrace_symbolized.txt). rc=139 x5/5 baseline.
+- ROOT CAUSE: gBandRnd+1432 == BandRnd::mComposeDiffView. BandRnd::Shutdown() (run from Debug::Exit exit-callback, "BandRnd: Shutdown complete" prints) nulls every OTHER wgpu handle + mGpu.Shutdown() (-> "device lost reason 2"), but TWO late-added GPU-handle clusters were never added to Shutdown:
+    (1) compose / C8-RTT cluster (mComposeDiffView / mComposeShader / mComposeBGL / mComposePL / mComposeUB / mComposePipelines), Rnd_Wgpu_RB3.h:371-380;
+    (2) billboard-particle cluster (mPartShader / mPartTexBGL / mPartPL / mPartVB / mPartIB / mPartPipelines), Rnd_Wgpu_RB3.h:387-395.
+  A surviving handle (mComposeDiffView) transitively held the LAST strong ref to the Dawn Device/Adapter/Instance, so mGpu.Shutdown() (mDevice=nullptr) did NOT actually retire the device -- real teardown deferred to ~BandRnd during libc static-dtor phase (exit(0)) where dropping the last ref jumps into the torn-down libvulkan ICD -> SIGSEGV. Whole-class enumeration (gdb static member walk) confirmed these two are the ONLY unreleased GPU clusters; all others are covered by explicit nulls / mBloom.Terminate() / mHaloBloom.Terminate() / mPipelines.Terminate() / uniform-ring Release() / mGpu.Shutdown().
+- FIX: release BOTH clusters inside BandRnd::Shutdown() while Dawn is alive, ahead of mGpu.Shutdown(). Non-behavioral ordering fix; NO new flags. Engine-only (owned gfx teardown surface).
+- ITERATIVE PROOF: after the compose-only fix the bt MOVED (mComposeDiffView->~TextureView became mPartShader->~ShaderModule @+1536) -- direct evidence the compose leak was real and closed; then added the Part cluster.
+- VERIFY BLOCKED (transient, concurrent): rb3-native EXECUTABLE link blocked by Lane D untracked native/src/rb3_shardprobe_native.cpp:89 (Matrix3 vs Hmx::Matrix3 compile error) in the shared source tree. My engine change compiles clean into libmilo-engine.a. Waiting for Lane D fix, retrying.
+
+## RESULT — DONE (engine commit 0083bad)
+- FIX committed: milo-native-engine 0083bad "W31-EXIT-TRAP: release compose + particle GPU clusters in BandRnd::Shutdown()". Only src/platform/Rnd_Wgpu_RB3.cpp staged; FxSendNative.cpp left untouched.
+- PIN: NOT bumped by lane (charter rule). Coordinator must bump MILO_ENGINE_PIN b36bcfc -> 0083bad at close-out.
+- ACCEPTANCE (own tree, native/build-agent-W31-EXIT-TRAP):
+    * bounded non-HTTP 5-frame boot rc=0 -> 10/10 (baseline 139 5/5). Iterative proof: compose-only fix moved the bt from mComposeDiffView->~TextureView to mPartShader->~ShaderModule, then the particle-cluster add cleared it entirely.
+    * rb3-tests -> 116 PASSED / 7 SKIPPED (env-gated real-capture fixtures) / 0 FAILED.
+    * drawlog-golden.py --fixed-clock --bin <mine> -> PASS (frame=60 count=792; 281 known-residual divergences within bound, non-blocking).
+    * lineup-gate.py --bin <mine> -> PASS (img/segA/ratioB/countC/pin all PASS across coop_g_n03 x2 + coop_g_b x2).
+- A7: did NOT touch drawlog-golden.py:183-190,234-237 or song-end-test.py:269 (coordinator-owned tolerance removal, post-merge, now unblockable since rc=0 holds). No new flags (non-behavioral ordering fix). Lint 9 flavor-membership: Rnd_Wgpu_RB3.cpp compiles into rb3-native (gfx backend flavor=rb3) — verified by the successful build + boot.
+- RIDER (web yellow-highlight capture): DEFERRED as secondary Sonnet side-task; primary exit-trap deliverable complete.
