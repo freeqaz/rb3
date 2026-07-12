@@ -1065,3 +1065,71 @@ street vs native's flat bright daylight; F6's own text notes "menu text/UI itsel
 fine — this is the 3D scene behind the UI". Distinct mechanism, distinct layer.
 Charterable as its own probe-first item (is a ColorXfm/bloom/lightpreset authored in
 `main.milo` skipped on the hub world.cam?) in a future wave; NOT chartered in W31.
+
+## Wave 31 (2026-07-12) — SET-PLAY FIXED (decomp arg-order bug → SyncProperty 100%) + EXIT-TRAP KILLED (rc=0, tolerance removed) + F3 GLYPHS default-ON + hub-shard SKEL_FAMILY_STOP
+
+Kickoff `WAVE31_KICKOFF.md` (review `f9c6559d`, A1–A12 adopted; 3 user reports
+folded in after coordinator repro), pre-E1 countersign `b6828fd1` (raw-artifact
+re-derivation; one material gap named), lanes `a3916764`/`fa8b5d55` (A) +
+`8d46802c` (B, docs-only per A8) + engine `0083bad` (C) + `42d4a59a` (D probe TU),
+close-out `6ccc36e3` + engine `24c4f95` (pin `b36bcfc` → `24c4f95`, census
+415→418), review `WAVE31_CLOSEOUT_REVIEW.md` (all four lanes ACCEPT / ACCEPT-WITH-
+ERRATA, errata E1-E7).
+
+| Lane | Result |
+|---|---|
+| **SET-PLAY-DISPATCH — ✅ DONE (charter premise REFUTED: decomp bug, not missing feature; E1-E3, E7)** | The band's dead in-song mood stream was NOT a missing native dispatcher — the whole faithful chain (song.anim `<inst>_intensity` SymbolKeys → `BandDirector::SyncProperty` → `BandWardrobe::SendMessage` → CHAR_COMMON mood DTA → `OnSetPlay`) was present and pumped; it was silenced by a **source-level decomp arg-order bug**: 5 `SendMessage(mood, inst)` sites swapped to the correct `SendMessage(inst, mood)` (`BandDirector.cpp`, ONE TU). The residual r4↔r5 REGISTER_SWAP at exactly those 5 call sites WAS the bug — fix is **UNCONDITIONAL** (no flag; a gate would fork faithful behavior — disposition ACKED) and moves `SyncProperty` 99.96 → **100.0% Complete**. Acceptance all-PASS, countersigned from committed gz: rhythm/solo `CHARDRV_PLAY` 3→**80**, quartiles [25,16,20,19] (A3 4/4), 3 distinct intensities (play/idle/intense — not the lever re-badged), sit-churn 24→26 (A4 bound 160; the W30 lever did 16→4373), drummer `idle_play_*` 0→14 (per-driver key, E2). A5 cones/fans leg pre-agreed RE-SCOPED: perf clips are BODY clips; prop-tips = instrument-MIDI drivers = the F1 family (open debt, incl. E7 band-framing crop pairs). `RB3_BAND_PERF_FORCE_PLAY` demo lever RETIRED at close-out (E-C2 precedent; block deleted + registry row removed). |
+| **HUD-GLYPHS — ✅ F3 traced + LANDED default-ON at close-out; charter "one family" REFUTED (split memo); E4, E6** | STEP-0 traced F3 end-to-end: `buttons.mat` (button-prompt glyph atlas, 7150 draws/frame) is RGB artwork + alpha cell mask but lacks "icon" in its name → `useAlphaAsRGB` text path collapses every prompt to a solid white blob (footer pills, overshell MENU dot). A8 honored exactly (mechanism checkpoint, `engineAckNeeded`, ZERO lane code); fix landed coordinator-executed (`6ccc36e3`, rb3_render_hook.cpp predicate) — **default-ON, opt-out `RB3_NO_BUTTON_GLYPH_FIX`** (B8 opt-out precedent), earned by ON-vs-OFF captures on the merged tree (white lozenges OFF vs real glyph artwork ON). Charter's "ONE HUD material/texture-bind family" REFUTED: **F2 = pill-fill material/bind issue (MEDIUM, priced), F4 = star-row show-state, not a texture bind (LOW-MEDIUM, priced)** — both split to W32. Late-add difficulty-icons report adjudicated NOT-A-DEFECT (icons PRESENT on a focused song row; user saw a header/shortcut row's correct empty state). Soft gaps: two STATUS crop filenames drifted; F3 close-out evidence still in `/tmp` (re-home rider, W32). |
+| **EXIT-TRAP — ✅ DONE (root cause named, fixed, gates un-tolerated; countersign gap DISCHARGED)** | First-ever committed symbolized backtrace pinned the W0.3.S1 teardown SIGSEGV: `BandRnd::Shutdown()` never released two late-added GPU clusters (compose/C8-RTT + billboard-particle); surviving `mComposeDiffView` (== `gBandRnd+1432`) held the last Dawn device ref → real teardown deferred to static-dtor phase → SIGSEGV in the torn-down Vulkan ICD. Fix = release both clusters before `mGpu.Shutdown()` (engine `0083bad`, non-behavioral, NO flag), with an **iterative proof** (compose-only fix MOVED the bt to the particle cluster, then cleared). The countersign's one material gap (post-fix rc=0 10/10 had no committed artifact) DISCHARGED by coordinator re-derivation on the FINAL merged tree: bounded non-HTTP 5-frame boot **rc=0 10/10**; A7 executed — `drawlog-golden.py` rc-tolerance REMOVED (non-zero rc now FAILs as a regression; gate PASS frame=60 count=792, 264 known-residuals within bound); `song-end-test.py:269` keeps its crash-detection band (SIGABRT coverage unproven). **Rider WEB-YELLOW: CONFIRMED_ON_WEB** — the user's floating yellow square is a static detached quad at hub top-level (`joined_default`), does NOT track focus changes, web release build only, native clean (A9 deploy-freshness verified; stale-build dead). Capture-only per charter → W32 item 1. |
+| **HUBWALKER-SHARDS — ✅ diagnosis complete, verdict SKEL_FAMILY_STOP (BINDING; no fix, correctly)** | Diagnosis-only mandate honored: 34-row per-mesh per-bone pointer-keyed table (forehead cone = eyebrows/head/goatee/hair meshes → face bones, 648–780u); (ii) undriven-track hypothesis REFUTED (walk clips drive the bones, coherent live rotations); (iii) live-bone probe (A12) pins the basis error to the **SKEL seed-R rotation-basis class** (skinDet=1.0, coherent ~42°, all 33 face bones collapse to one apex ~290u — same class as R5's 87.2°). E7 census-trap payoff: CharCache player0-3 carry **0 skinned meshes** — the visible shards are on CROWD/EXTRAS street chars + outfit fringe, i.e. under TWO closed families (R5-HANDS-ENDGAME + W23-29 CROWD). **STOP is BINDING — no recharter without a new hypothesis** (lint 6, no 7th cell). Probe TU kept as reusable tooling (`RB3_SHARD_PROBE_SCENE/_OUT` registered). Collision lesson E5: the untracked WIP probe TU transiently broke Lane C's shared-tree link — new TUs in globbed dirs must compile clean before yielding. |
+
+**Close-out rulings:** Lane A unconditional-fix + Lane B default-ON dispositions
+ACKED — the flag rule is now three tiers (decomp-correctness → UNCONDITIONAL;
+retail-proven faithful restoration → default-ON + opt-out; uncertain → default-OFF
+opt-in). `RB3_BAND_PERF_FORCE_PLAY` retired; A7 tolerance removal landed
+coordinator-executed post-merge. Census 415→418 (−FORCE_PLAY,
++NO_BUTTON_GLYPH_FIX, +3 classified W31 probes); ONE pin bump (`24c4f95`).
+Defaults: **16 ON** (F3 buttons.mat colour-icon fix joins as the 16th,
+opt-out `RB3_NO_BUTTON_GLYPH_FIX`). User-report dispositions: floating legs =
+half FIXED (set_play body performance) / half re-scoped to F1 (prop tips);
+skin-tag forehead cones = SKEL family, closed families, STOP; floating yellow
+square = web-only CONFIRMED, W32. New audit lesson: **arg-order decomp bugs**
+(same-typed adjacent args, call-site REGISTER_SWAP residual at ≥99%) are a
+cheap, high-yield sweep class — one swapped SendMessage arg silenced a whole
+subsystem for 31 waves. Not-properly-closed list in the review §5 (F3 /tmp
+evidence re-home; SyncProperty batch_objdiff countersign; F1 band-framing
+crops).
+
+### Wave 32 menu (from `WAVE31_CLOSEOUT_REVIEW.md` §6 — discriminator-first + checkpoint-before-fix + A7 raw-log mechanics + E4 verbatim-quote rule carried)
+1. **W32-WEB-YELLOW (primary):** the hub floating highlight quad — user-visible,
+   rider-CONFIRMED on web, native clean. Entry hypothesis: highlight-mesh
+   instance surviving the `options`→`joined_default` overshell transition
+   (static screen-space quad, does not track focus). Candidate surfaces:
+   `src/system/bandobj/OvershellDir.cpp` / MainHubPanel highlight mesh + the
+   web-vs-native render-hook divergence (why web-only?). STEP-0: name the
+   quad's mesh/draw (uidump/drawlog on the web build) BEFORE any fix.
+2. **W32-PROP-FAN (F1 family):** undriven prop-tip bones — drumstick tips,
+   guitar neck, kit cones, magenta stick-fan guitar (instrument-MIDI drivers
+   `strum.dmidi`/`fret.ikmidi`/`right_hand.dmidi`) — the re-scoped second half
+   of the floating-legs user report. Opens with the E7 debt: matched-songMs
+   BAND-FRAMING crop pairs (boot-to-song closeup harness). Discriminator-first:
+   are the dmidi/ikmidi drivers bound and fed natively, or bound-and-starved?
+3. **W32-HUD-F2F4:** the two priced Lane-B split sub-charters — F2 score-pill
+   fill (MEDIUM: pill-mesh material dump → bind/blend fix) + F4 star-row
+   unearned-slot show-state (LOW-MEDIUM). Two mechanisms, two checkpoints; do
+   NOT re-merge into "one family" (hypothesis refuted W31).
+4. **F7 song-select right-edge clipping** (user-repeated ×2), incl. the
+   no-opaque-panel-behind-sidebar variant.
+5. **F5 patch-shard `coop_g_cg` repro:** recorded, deterministic; dispatch ONLY
+   with a fresh hypothesis + its own oracle (closeup gate is shard-blind; two
+   prior bisect-reverts).
+6. **Riders (coordinator-cheap):** (a) re-home F3 ON/OFF evidence from
+   `/tmp/w31-f3` into `W31-HUD-GLYPHS/evidence/`; (b) SyncProperty 100.0%
+   batch_objdiff countersign; (c) keep/retire decision for `RB3_SETPLAY_PROBE`
+   + `RB3_SHARD_PROBE_*` per the W30 probe-retirement discipline (SETPLAY
+   plausibly KEEP as acceptance instrument; shard probes' family is STOPPED);
+   (d) arg-order audit pilot — sweep ≥99% functions whose sole residual is a
+   call-site REGISTER_SWAP on same-typed args for swapped-argument decomp bugs.
+7. **Carried/blocked:** F6 hub night grade BLOCKED on UIGRADE reconciliation
+   (unchanged); F8 pending settle-frame recapture; SKEL/CROWD families CLOSED
+   (Lane D STOP binding).
