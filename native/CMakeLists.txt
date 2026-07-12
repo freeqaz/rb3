@@ -638,6 +638,15 @@ add_executable(rb3-native
     # target-wide MWCC compat flags like rb3_replay_capture.cpp. One exported entry
     # point (rb3bp_dump_bones) reached over the existing /api/call endpoint.
     ${CMAKE_SOURCE_DIR}/src/rb3_bonedump_native.cpp
+    # W31 Lane D (W31-HUBWALKER-SHARDS): read-only SHARD PROBE (RB3_SHARD_PROBE_OUT).
+    # STEP-0 discriminator instrument for the hub street-walker shard family — walks
+    # each player%d BandCharacter dir for skinned RndMesh, dumps per-mesh bound bones
+    # (name+pointer+WorldXfm+BoneOffset+deviation angle) + vertex-weight histogram +
+    # the driving CharClip's ListBones driven-track set. Includes decomp headers
+    # (rndobj/Mesh.h+Trans.h, bandobj/*, meta_band/CharCache.h, char/CharClip.h) so it
+    # rides the target-wide MWCC compat flags like rb3_bonedump_native.cpp. One
+    # exported entry point (rb3sp_dump_shards) reached over the /api/call endpoint.
+    ${CMAKE_SOURCE_DIR}/src/rb3_shardprobe_native.cpp
     # C2: save/profile/settings persistence (keystone). Host-FS blob store behind
     # IPersistBackend, backing ProfileMgr's self-contained global-options +
     # profile-0 GameplayOptions serializers. Bypasses the EXCLUDED Wii
