@@ -5,9 +5,9 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 415  
-**By class:** compat=2, diagnostic=1, feature=14, perf=9, probe=135, tuning=3, unknown=151, workaround=100  
-**Default-ON workarounds (the number §W5.3 must drive to 0):** 74
+**Total flags:** 418  
+**By class:** compat=2, diagnostic=1, feature=14, perf=9, probe=138, tuning=3, unknown=151, workaround=100  
+**Default-ON workarounds (the number §W5.3 must drive to 0):** 75
 
 | name | class | default | owner | faithful-status | sites |
 |---|---|---|---|---|---|
@@ -121,7 +121,6 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_BANDPERF_BT` | probe | off | bandobj/perf | probe: symbolized backtrace on BANDPERF performance-clip-adjacent calls ([BANDPERF_STATE_BT]); W30 E2: commit an addr2line transcript alongside the raw gz — raw frames are unsymbolized offsets | 1 |
 | `RB3_BANDPERF_CLIPS` | probe | off | bandobj/perf | probe: one-shot clips-enumeration census of each band member's bound CharClipSet via public CharDriver::ClipDir() ([BANDPERF_CLIPS/_CLIPFLAGS]); W30 asset census proved performance clips RESIDENT (stand_rhythm_*=P/PM, stand_solo_*=PS) — the gap is selection, not loading | 1 |
 | `RB3_BANDPERF_PROBE` | probe | off | bandobj/perf | probe: Wave-30 BANDPERF call census — BandCharacter SetState/PlayGroup/OnSetPlay + BandCamShot::StartAnim selection-layer entry points ([BANDPERF_STATE/_SHOT/_CLIP]); KEEP — W31-SET-PLAY-DISPATCH acceptance instrument | 3 |
-| `RB3_BAND_PERF_FORCE_PLAY` | workaround | off | bandobj/perf | NON-FAITHFUL demo lever (Wave-30, default-OFF): forces resident idle-flagged clips to promote to play class P so rhythm/solo clips play in-song (OFF=0 -> ON=55 CHARDRV_PLAY census) — proves residency-vs-selection, NOT the faithful fix (that is the venue-mood set_play dispatch, W31). Side effect E3: sit-group SetState retrigger churn 16->4373. RETIRE at W31 close-out once the faithful dispatch lands (zombie-lever hazard per the E-C2 precedent) | 1 |
 | `RB3_BAND_SHARD_RATIOCAP` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BAND_SHARD_WORLDCAP` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_BAND_SHARD_WORLDFLOOR` | unknown | unknown | unclassified | n/a | 1 |
@@ -259,6 +258,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_NOISE_OFF` | workaround | on | render/post | not-live: post-process noise approximation default-ON | 1 |
 | `RB3_NOTIFY_ALL` | probe | off | os/debug | n/a: console-verbosity toggle — restores every repeat of an engine NOTIFY diagnostic instead of the default per-message dedup; affects only diagnostic console output, not app logic/rendering [Debug.cpp:66] | 1 |
 | `RB3_NO_AV_CALIBRATION` | workaround | on | av/calibration | not-live: A/V calibration bypass default-ON | 1 |
+| `RB3_NO_BUTTON_GLYPH_FIX` | workaround | on | ui/glyphs | not-live: W31 F3 buttons.mat colour-icon fix default-ON — buttons.mat glyph atlas is RGB artwork + alpha cell mask; without the fix the alpha->RGB text path collapses every button prompt to a solid white blob (footer pills, overshell MENU dot). Opt-out disables, restoring the white-blob rendering for A/B. | 1 |
 | `RB3_NO_CLIP` | probe | off | char | n/a: debug bisection disable of CharDriver::Poll (clip driving); default-OFF, Poll runs normally when absent [CharDriver.cpp:341] | 1 |
 | `RB3_NO_CROWD_INTRO` | workaround | on | audio/crowd | not-live: native crowd_intro/venue_intro BinkClip mogg bridge default-ON; =set disables the intro synth bridge | 1 |
 | `RB3_NO_CROWD_REBIND` | workaround | on | render/crowd | not-live: crowd char-bone rebind-to-own-skeleton default-ON (W2.3 retained/load-bearing, ~24x shard-drop when disabled) [Crowd.cpp:932] | 1 |
@@ -348,9 +348,12 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_SCROLLBAR_THUMB_FIX_OFF` | workaround | on | ui/scrollbar | not-live: scrollbar thumb-position fix default-ON | 1 |
 | `RB3_SESSION_TRACE` | unknown | off | unclassified | n/a | 1 |
 | `RB3_SETLIST_DBG` | unknown | off | unclassified | n/a | 1 |
+| `RB3_SETPLAY_PROBE` | probe | off | bandobj/perf | probe: W31 read-only set_play mechanism instrument — [SETPLAY_KEYS] dumps the song.anim {guitar,bass,drum,mic,key}_intensity SymbolKeys resident on BandDirector::mPropAnim; [SETPLAY_SEND] logs each SyncProperty intensity SendMessage(inst, mood) dispatch. Diagnostic only, no behavior | 2 |
 | `RB3_SFX_CACHE_OFF` | workaround | on | audio/sfx | not-live: SFX decode cache default-ON | 1 |
 | `RB3_SFX_OGG_OFF` | workaround | on | audio/sfx | not-live: ogg-first SFX sidecar default-ON (see project_web_loadperf_findings memory) | 1 |
 | `RB3_SFX_PCM_DIR` | unknown | unknown | unclassified | n/a | 1 |
+| `RB3_SHARD_PROBE_OUT` | probe | off | char/skin | probe: output path selector for RB3_SHARD_PROBE_SCENE (JSON dump destination). Diagnostic only | 1 |
+| `RB3_SHARD_PROBE_SCENE` | probe | off | char/skin | probe: W31-HUBWALKER-SHARDS read-only distinct-TU shard census (native/src/rb3_shardprobe_native.cpp, A2-compliant) — per-mesh skin extent + bone attribution for the hub street population; produced the 34-row table behind the SKEL_FAMILY_STOP verdict. Scene selector | 1 |
 | `RB3_SHARPEN_CHUNK_KB` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SHARPEN_DBG` | unknown | off | unclassified | n/a | 2 |
 | `RB3_SHARPEN_PER_FRAME` | unknown | unknown | unclassified | n/a | 1 |

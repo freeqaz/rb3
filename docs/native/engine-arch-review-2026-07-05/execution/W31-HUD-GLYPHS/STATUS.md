@@ -86,3 +86,20 @@ mechanisms. F3 (the chartered anchor) is fully traced end-to-end with a named TU
 fix, but its fix TU (rb3_render_hook.cpp) is coordinator-sign-off-gated -> engineAckNeeded=true,
 NO code written. F2 and F4 each priced as separate sub-charters. Late-add difficulty icons = PRESENT
 (not a defect on a focused song row).
+
+## COORDINATOR ACK + F3 LANDED (close-out, 2026-07-12)
+
+A8 sign-off GRANTED. The F3 fix landed coordinator-executed in
+native/src/rb3_render_hook.cpp (predicate extension after B10), following the
+B8 opt-out precedent instead of the proposed opt-in flag: fix is **default-ON**
+with escape hatch `RB3_NO_BUTTON_GLYPH_FIX` (classification row default=on,
+engine 24c4f95). Default-ON earned by ON-vs-OFF song_select captures on the
+merged tree (song-select-capture.py, depth 0):
+- OFF (`RB3_NO_BUTTON_GLYPH_FIX=1`): footer hint pills + overshell MENU glyph =
+  featureless solid-white lozenges/dot (the F3 blob).
+- ON (default): real glyph artwork renders — yellow button pill on the footer
+  hint, play-arrow-in-circle on the overshell MENU chip. instrument_icons_* and
+  Pentatonic text paths unchanged (separate predicates).
+Evidence: /tmp/w31-f3/{on,off}/native_depth_00.png + crop_footer_{on,off}.png
+(hint TEXT differs between shots only by footer-carousel phase — Pentatonic
+path, not this fix). F2 and F4 remain split sub-charters for the W32 menu.

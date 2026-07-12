@@ -244,6 +244,17 @@ public:
         // be EXCLUDED from the alpha->RGB text path (else a solid white circle).
         if (matName && matName[0] && std::strstr(matName, "icon"))
             p.isColorIcon = true;
+        // W31 F3: buttons.mat (button-prompt glyph font) is ALSO a colour-icon
+        // atlas — RGB holds the glyph artwork ('+', RB button faces), alpha is
+        // only the cell mask — but its name lacks "icon", so it fell through to
+        // the alpha->RGB text path and every prompt collapsed to a solid white
+        // blob (footer pills, overshell MENU dot). Same exclusion as B10.
+        // Opt-out RB3_NO_BUTTON_GLYPH_FIX (statically cached once).
+        if (!p.isColorIcon && matName && matName[0] && std::strstr(matName, "buttons")) {
+            static int buttonFixOff = -1;
+            if (buttonFixOff < 0) buttonFixOff = std::getenv("RB3_NO_BUTTON_GLYPH_FIX") ? 1 : 0;
+            if (!buttonFixOff) p.isColorIcon = true;
+        }
         // B11: tail chain-select fret colour. Each sustain "tail" material shares
         // one gem_tails atlas + a WHITE base colour; the per-fret colour is driven
         // from the MATERIAL NAME (tail_green/red/...). When a known fret matches

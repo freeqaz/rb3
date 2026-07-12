@@ -131,3 +131,14 @@ NONE. No new flag, no class.json append, no default flip, no pin bump. The
 `RB3_SETPLAY_PROBE` diagnostic is read-only and env-presence-gated (not a
 persistent behavior flag). `RB3_BAND_PERF_FORCE_PLAY` retirement remains
 COORDINATOR-executed at close-out (not touched by this lane).
+
+## COORDINATOR ACK (close-out, 2026-07-12)
+
+UNCONDITIONAL-fix disposition ACKED as correct: the root cause was a decomp
+source bug (SyncProperty intensity SendMessage arg order), not a missing native
+feature — fixing it moves the Wii .o to 100.0% (Complete) AND restores in-song
+band performance natively. An HX_NATIVE gate would have been wrong (it would
+fork faithful behavior). RB3_BAND_PERF_FORCE_PLAY demo lever retired this
+close-out: lever block deleted from BandCharacter.cpp (HX_NATIVE-only, Wii .o
+untouched) + registry row removed (engine 24c4f95), per the E-C2 zombie-lever
+precedent.

@@ -471,26 +471,6 @@ CharClipDriver *BandCharacter::PlayMainClip(int i, bool b) {
                 } else if (streq(mGroupName, "realtime_idle")) {
                     mask = mask & 0xFFF80FFF | 0x1000;
                 }
-#ifdef HX_NATIVE
-                // W30-BANDPERF DEMONSTRATION lever (default-OFF, NON-FAITHFUL).
-                // STEP-0 proved: the on-stage band's mPlayFlags stays at IR (idle-
-                // realtime, 0x1000) all song because `set_play` — the only rewriter
-                // of the intensity mask — never fires in-song (no C++ sender; it is
-                // dispatched purely by the song's venue/mood DTA authoring, a native
-                // gap). The performance clips (stand_rhythm_* = P/PM, stand_solo_* =
-                // PS) ARE resident in the stand/sit group. This lever proves the gap
-                // is SELECTION not residency: when RB3_BAND_PERF_FORCE_PLAY is set and
-                // the requested mask is idle-class only (an idle bit in 0x7000, no
-                // Play bit in 0x78000), promote it to P (0x10000) so GetClip resolves
-                // a rhythm clip. It HARDCODES a fixed Play intensity and ignores the
-                // song-authored mood transitions — NOT the faithful fix (Wave-31
-                // recharter: dispatch the venue-mood set_play stream). Wii `.o` is
-                // byte-identical (mwcc never defines HX_NATIVE).
-                if (!invorc && (mask & 0x7000) != 0 && (mask & 0x78000) == 0
-                    && getenv("RB3_BAND_PERF_FORCE_PLAY")) {
-                    mask = mask & 0xFFF80FFF | 0x10000;
-                }
-#endif
                 CharClip *clp = 0;
                 if (mUseMicStandClips
                     || mInstrumentType == keyboard && ((i & 0xF) != 2) && !b) {

@@ -183,11 +183,11 @@ def load_residual(scene):
 def capture_fixed_clock(args, tag=""):
     """Bounded, non-HTTP boot under RB3_FIXED_CLOCK: MILO_MAX_FRAMES pins the
     absolute frame count, RB3_DRAWLOG_DUMP is read directly off disk after the
-    process exits (no HTTP round trip in the loop at all). Tolerates a
-    pre-existing, unrelated teardown SIGSEGV on bounded non-HTTP boots
-    (documented in W0.3.STATUS S1 — occurs with RB3_DRAWLOG off too, so it is
-    not from this seam) as long as the dump file was written with the expected
-    frame index before the crash."""
+    process exits (no HTTP round trip in the loop at all). A non-zero exit is a
+    FAIL: the W0.3.S1 bounded-boot teardown SIGSEGV was fixed in W31-EXIT-TRAP
+    (engine 0083bad — BandRnd::Shutdown() releases the compose + particle GPU
+    clusters), verified rc=0 10/10 on the merged tree; any recurrence is a
+    regression of that fix."""
     dump_path = os.path.join(tempfile.gettempdir(), f"rb3-drawlog-fixedclock-{os.getpid()}{tag.replace('[','_').replace(']','')}.json")
     if os.path.exists(dump_path):
         os.remove(dump_path)
@@ -232,9 +232,10 @@ def capture_fixed_clock(args, tag=""):
     # (post-increment past the Nth Poll), not N-1 — confirmed live (N=60 -> 60).
     expected_frame = args.frames
     if rc != 0:
-        log(f"[{label}] note: process exited rc={rc} (non-zero) — tolerated, this is the "
-            f"pre-existing bounded-boot teardown SIGSEGV documented in W0.3.STATUS S1, "
-            f"unrelated to RB3_DRAWLOG/RB3_FIXED_CLOCK; dump was written before teardown.")
+        log(f"[{label}] FAIL: process exited rc={rc} (non-zero). The bounded-boot "
+            f"teardown SIGSEGV was FIXED in W31-EXIT-TRAP (engine 0083bad); a non-zero "
+            f"exit here is a regression of that teardown-ordering fix.")
+        return None
     if d.get("frame") != expected_frame:
         log(f"[{label}] FAIL: dump frame={d.get('frame')} != expected {expected_frame} "
             f"(MILO_MAX_FRAMES={args.frames} - 1); capture did not reach the pinned frame.")
