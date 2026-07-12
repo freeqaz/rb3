@@ -266,6 +266,30 @@ bool BandDirector::PostProcsFromPresets(
 }
 
 void BandDirector::Poll() {
+#ifdef HX_NATIVE
+    // W31-SET-PLAY-DISPATCH one-shot diagnostic (read-only, default-OFF): confirm
+    // the per-song `song.anim` mood/intensity keys are RESIDENT in the loaded
+    // mPropAnim (bound at OnFileLoaded:1303). W31 proved the on-stage band leaving
+    // idle in-song is gated on BandDirector::SyncProperty routing the intensity
+    // key value to the correct band member (the arg-order fix below), NOT on any
+    // missing pump — OnSelectCamera already advances this anim in-song.
+    if (getenv("RB3_SETPLAY_PROBE") && mPropAnim && !mDisabled) {
+        static bool sEnum = false;
+        if (!sEnum) {
+            sEnum = true;
+            const char *props[] = { "guitar_intensity", "bass_intensity",
+                                    "drum_intensity", "mic_intensity",
+                                    "key_intensity", 0 };
+            for (const char **p = props; *p; p++) {
+                SymbolKeys *sk = dynamic_cast<SymbolKeys *>(
+                    mPropAnim->GetKeys(this, DataArrayPtr(Symbol(*p))));
+                fprintf(stderr,
+                    "[SETPLAY_KEYS] prop='%s' present=%d size=%d\n",
+                    *p, sk ? 1 : 0, sk ? (int)sk->size() : -1);
+            }
+        }
+    }
+#endif
     if (unke5) {
         if (mCurWorld) {
             mCurWorld->Poll();
@@ -879,6 +903,17 @@ bool BandDirector::ReadyForMidiParsers() {
 }
 
 void BandDirector::SendMessage(Symbol s1, Symbol s2) {
+#ifdef HX_NATIVE
+    // W31-SET-PLAY-DISPATCH probe (read-only, default-OFF). Logs every
+    // intensity/singalong routing dispatch so we can see whether the song.anim
+    // intensity keys are firing in-song and with which mood values. s1 is the
+    // name-match token, s2 the message type (BandWardrobe::SendMessage matches
+    // s1 against player_<inst>0 venue names and sends s2).
+    if (getenv("RB3_SETPLAY_PROBE"))
+        fprintf(stderr, "[SETPLAY_SEND] s1='%s' s2='%s' wardrobe=%p\n",
+                s1.mStr ? s1.mStr : "?", s2.mStr ? s2.mStr : "?",
+                (void *)TheBandWardrobe);
+#endif
     if (TheBandWardrobe)
         TheBandWardrobe->SendMessage(s1, s2, true);
 }
@@ -2105,14 +2140,14 @@ BEGIN_PROPSYNCS(BandDirector)
     SYNC_PROP(cam_postproc, mCamPostProc)
     SYNC_PROP_SET(cur_shot, mCurShot, )
     SYNC_PROP_SET(cur_world, mCurWorld, )
-    SYNC_PROP_SET(bass_intensity, Symbol("idle_realtime"), SendMessage(_val.Sym(), "bass"))
-    SYNC_PROP_SET(drum_intensity, Symbol("idle_realtime"), SendMessage(_val.Sym(), "drum"))
+    SYNC_PROP_SET(bass_intensity, Symbol("idle_realtime"), SendMessage("bass", _val.Sym()))
+    SYNC_PROP_SET(drum_intensity, Symbol("idle_realtime"), SendMessage("drum", _val.Sym()))
     SYNC_PROP_SET(
-        guitar_intensity, Symbol("idle_realtime"), SendMessage(_val.Sym(), "guitar")
+        guitar_intensity, Symbol("idle_realtime"), SendMessage("guitar", _val.Sym())
     )
-    SYNC_PROP_SET(mic_intensity, Symbol("idle_realtime"), SendMessage(_val.Sym(), "mic"))
+    SYNC_PROP_SET(mic_intensity, Symbol("idle_realtime"), SendMessage("mic", _val.Sym()))
     SYNC_PROP_SET(
-        keyboard_intensity, Symbol("idle_realtime"), SendMessage(_val.Sym(), "keyboard")
+        keyboard_intensity, Symbol("idle_realtime"), SendMessage("keyboard", _val.Sym())
     )
     SYNC_PROP_SET(
         part2_sing,
