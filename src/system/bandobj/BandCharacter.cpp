@@ -9,7 +9,9 @@
 #include <list>
 #include <set>
 #include <algorithm>
-#include <execinfo.h> // W30-BANDPERF STEP-0 backtrace probe (RB3_BANDPERF_BT), inert by default
+#ifndef __EMSCRIPTEN__
+#include <execinfo.h> // W30-BANDPERF STEP-0 backtrace probe (RB3_BANDPERF_BT), inert by default; glibc-only, absent under Emscripten musl
+#endif
 #include "rndobj/Mesh.h"
 #include "rndobj/Dir.h"
 #include "char/CharClip.h"
@@ -3950,6 +3952,7 @@ BandCharacter::SetState(const char *cc, int playFlags, int mask, bool b4, bool b
             "[BANDPERF_STATE] char='%s' grp='%s' flags=0x%x mask=%d beat=%.3f\n",
             Name() ? Name() : "?", cc ? cc : "?", (unsigned)playFlags, mask,
             TheTaskMgr.Beat());
+#ifndef __EMSCRIPTEN__
         if (getenv("RB3_BANDPERF_BT")) {
             void *bt[96];
             int n = backtrace(bt, 96);
@@ -3957,6 +3960,7 @@ BandCharacter::SetState(const char *cc, int playFlags, int mask, bool b4, bool b
                 Name() ? Name() : "?", cc ? cc : "?", n);
             backtrace_symbols_fd(bt, n, 2);
         }
+#endif
     }
 #endif
     if (!streq(mGroupName, cc)) {

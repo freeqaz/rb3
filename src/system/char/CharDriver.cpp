@@ -4,7 +4,9 @@
 #include <map>
 #include <set>
 #include <string>
-#include <execinfo.h> // W26-CROWD STEP-0 backtrace probe (CHARDRV_BT), inert by default
+#ifndef __EMSCRIPTEN__
+#include <execinfo.h> // W26-CROWD STEP-0 backtrace probe (CHARDRV_BT), inert by default; glibc-only, absent under Emscripten musl
+#endif
 #endif
 #include "CharClipDisplay.h"
 #include "char/CharBoneDir.h"
@@ -354,6 +356,7 @@ CharClipDriver *CharDriver::Play(CharClip *clip, int i, float f1, float f2, floa
                     // trigger mechanism (scene object / eventanm / trig) behind
                     // the beat-0 cityscape crowd1-5 plays, so streetslomo's
                     // missing equivalent can be identified at the same layer.
+#ifndef __EMSCRIPTEN__
                     if (getenv("CHARDRV_BT")) {
                         void *bt[96];
                         int n = backtrace(bt, 96);
@@ -361,6 +364,7 @@ CharClipDriver *CharDriver::Play(CharClip *clip, int i, float f1, float f2, floa
                             clip->Name() ? clip->Name() : "?", n);
                         backtrace_symbols_fd(bt, n, 2);
                     }
+#endif
                 }
             }
         }
