@@ -977,7 +977,7 @@ void VocalTrackDir::SetRange(float min, float max, int tonic, bool b) {
                 Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(1.0f, 1.0f);
                 tonicRef = 60;
             } else if (mTonic == -1) {
-                Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(1.0f, 0.0f);
+                Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(0.0f, 1.0f);
             }
             mTonic = tonic;
         }
