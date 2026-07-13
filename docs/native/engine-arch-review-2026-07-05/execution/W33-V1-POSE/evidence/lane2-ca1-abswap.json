@@ -1,0 +1,9 @@
+{
+  "lane": "W33-V1-POSE", "stage": "CA1-AB-reswap", "buildSha": "6186706e",
+  "verdict": "REFUTES set_play hypothesis",
+  "result": "Re-swap (5 intensity SendMessage args -> pre-W31 order) => 0 rhythm/sing_ext performance clips dispatched (band idle-only, pre-W31 state). Vignette explosion PERSISTS byte-identical: vignette|player2_f maxRatio=4.2 (ON) == 4.2 (OFF); world-Y max 194.1 == 194.1. Per CA1 'persisting = other layer'. Severe V1 = vignette-clip seed-R rotation-basis, set_play-INDEPENDENT.",
+  "evidence": ["docs/native/engine-arch-review-2026-07-05/execution/W33-V1-POSE/evidence/raw/ca1_ab_anat_comparison.txt",
+               "docs/.../W33-V1-POSE/evidence/raw/run5-anat_setplayON.engine.log.gz",
+               "docs/.../W33-V1-POSE/evidence/raw/run6-reswap_setplayOFF.engine.log.gz"],
+  "disposition": "RECHARTER: charter's set_play prime-suspect refuted; real mechanism = vignette-clip seed-R basis (closed SKEL/CharBones-basis family, out of lane fence). No fix landed (respects FAMILY-STOP + fence + W31)."
+}

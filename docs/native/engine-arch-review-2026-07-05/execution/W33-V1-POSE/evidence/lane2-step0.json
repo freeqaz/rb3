@@ -1,0 +1,15 @@
+{
+  "lane": "W33-V1-POSE",
+  "stage": "STEP-0-discriminators",
+  "buildSha": "6186706e",
+  "enginePin": "2ea8e34",
+  "verdict": "IN-PROGRESS",
+  "findings": {
+    "repro": "V1 reproduced in W31 committed evidence (bath_wide_poses_broken.png etc). Local gameplay 3D render is BLACK (max=0 px) in this environment (song_select 3D renders mean=74) => visual pose gating IMPOSSIBLE here (V4 render-infra/GPU-fallback, out of V1 scope). Used render-independent BAND_ANIM_PROBE/ANAT bone-anatomy probe instead.",
+    "clip_census": "set_play (W31) dispatches authored body performance clips to player0-3: stand_rhythm_ext_* (guitar/bass), stand_sing_ext_* (vocals), sit idle (drums). Correct DATA.",
+    "anat_discriminator": "run5-anat (BAND_ANIM_PROBE=* ANAT=1 CHAIN=1): severe upperArm detachment ratio up to 4.2 + world-Y flung to +194 occur under clipType='vignette' clips player2_f/player1_f/player3_m/player3_f (camera-cut vignette). guitar_body performance clips near-anatomical maxRatio=1.5 (heartbeat 1.3). => severe V1 = vignette-clip apply, NOT set_play performance dispatch.",
+    "basis_signature": "vignette clips authored in street-vignette space applied to on-stage band skeleton => seed-R rotation-basis family signature (upperArm splayed, folded). Same player0-3 drivers + player*_ clips as W29 hub walkers (which render fine in street space).",
+    "pending": "CA1 A/B re-swap to confirm set_play-exposed vs not; expect vignette explosions PERSIST under re-swap (=> other layer)."
+  },
+  "evidence": ["/tmp/w33v1/run5-anat/engine.log", "/tmp/w33v1/run1/engine.log"]
+}

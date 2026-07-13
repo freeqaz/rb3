@@ -1,0 +1,21 @@
+# CA1 A/B: ANAT detachment by clipType|clip (maxRatio, n events)
+# set_play ON = run5-anat (HEAD 6186706e); set_play OFF = run6-reswap (worktree, 5 intensity SendMessage args re-swapped to pre-W31 order)
+# Performance-clip dispatch proof: rhythm/sing_ext BANDPERF_CLIP count  ON=64  OFF=0
+
+## set_play ON
+  vignette|player2_f                         n=1705  maxRatio=4.2
+  vignette|player1_f                         n=31    maxRatio=2.0
+  vignette|player3_m                         n=160   maxRatio=1.9
+  vignette|player3_f                         n=786   maxRatio=1.8
+  guitar_body|stand_rhythm_ext_c_med_08      n=48    maxRatio=1.5
+
+## set_play OFF
+  vignette|player2_f                         n=1188  maxRatio=4.2
+  vignette|player1_f                         n=29    maxRatio=2.0
+  vignette|player3_m                         n=160   maxRatio=1.9
+  vignette|player3_f                         n=529   maxRatio=1.8
+  guitar_body|stand_idle_norm_c_med_01       n=30    maxRatio=1.5
+
+# HI-event world-Y fling (post.y of probe bone bone_R-upperArm):
+  set_play ON: n=16399 max=194.1 mean=99.4
+  set_play OFF: n=15555 max=194.1 mean=99.3

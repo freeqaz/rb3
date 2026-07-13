@@ -1,0 +1,34 @@
+# A7 probe-tag grep -c tables (grep -ac on UTF-8 logs)
+
+## run1 (/tmp/w33v1/run1/engine.log)
+  SETPLAY_KEYS               5
+  SETPLAY_SEND               12
+  BANDPERF_CLIPS\]           9
+  BANDPERF_CLIP\]            151
+  BANDPERF_STATE             136
+  BAND_ANIM\] evt=HI         0
+  BAND_ANIM\] evt=ANAT       0
+  BAND_ANIM\] evt=ANATBEAT   0
+  BAND_ANIM\] evt=CHAIN      0
+
+## run5-anat_ON (/tmp/w33v1/run5-anat/engine.log)
+  SETPLAY_KEYS               0
+  SETPLAY_SEND               0
+  BANDPERF_CLIPS\]           0
+  BANDPERF_CLIP\]            100
+  BANDPERF_STATE             101
+  BAND_ANIM\] evt=HI         16399
+  BAND_ANIM\] evt=ANAT       2730
+  BAND_ANIM\] evt=ANATBEAT   255
+  BAND_ANIM\] evt=CHAIN      36
+
+## run6-reswap_OFF (/tmp/w33v1/run6-reswap/engine.log)
+  SETPLAY_KEYS               0
+  SETPLAY_SEND               0
+  BANDPERF_CLIPS\]           0
+  BANDPERF_CLIP\]            112
+  BANDPERF_STATE             95
+  BAND_ANIM\] evt=HI         15555
+  BAND_ANIM\] evt=ANAT       1936
+  BAND_ANIM\] evt=ANATBEAT   234
+  BAND_ANIM\] evt=CHAIN      36
