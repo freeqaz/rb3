@@ -155,3 +155,71 @@ Bounds: ≤2 web builds, ≤6 capture sessions.
 E1 raw-grep countersign → adversarial close-out review → append-only errata →
 README results + Wave-34 menu (F2-PILL + F7-SIDEBAR lead; fold Xenia agent
 findings) → single census regen + ≤1 pin bump → memory → user summary.
+
+---
+
+## COORDINATOR ACCEPTANCE (adopted verbatim from WAVE33_REVIEW.md `50efa082` — BINDING, overrides conflicting text above)
+
+**CA1 (Lane 2, replaces STEP-0(i) flag-bisect).** The W31 set_play fix is
+UNCONDITIONAL (commit `a3916764`; no flag, no HX_NATIVE gate; ledger carries
+only the read-only probe `RB3_SETPLAY_PROBE`). A/B control = throwaway worktree
+(`tools/setup-worktree.sh`) with the 5 `SYNC_PROP_SET` intensity sites in
+`src/system/bandobj/BandDirector.cpp` (~`:2140-2153`;
+`{bass,drum,guitar,mic,keyboard}_intensity`) locally re-swapped to the pre-W31
+`SendMessage(_val.Sym(), "<inst>")` order — never committed, worktree deleted
+after. V1 vanishing under the re-swap = set_play-exposed; persisting = other
+layer.
+
+**CA2 (both lanes).** Drawlog gate invocation is exactly
+`python3 scripts/native/drawlog-golden.py --fixed-clock --canonical-order`;
+HEAD baseline (pre-verified 2026-07-13 at `3ad234fa`): **PASS, 792 draws**
+(known-residual count ~297, run-drifting, non-blocking). The plain
+`--fixed-clock` mode FAILS at HEAD (71-72 unexpected, pre-existing
+order-nondeterminism) — not a gate, not a lane regression, do not chase it.
+
+**CA3 (both lanes).** rb3-tests HEAD baseline: **123 ran / 116 passed /
+7 skipped / 0 failed**. Acceptance = same or better; any new FAIL/SKIP is
+lane-owned.
+
+**CA4 (Lane 1, V2).** Retail `sDrumVenueMappings__12BandCharDesc` = size
+**0x2C (11 pointers)** at `.data:0x80BE508C` (map + symbols.txt:56210); our
+table = 10 (`BandCharDesc.cpp:18-21`). Fix = append the `""` sentinel entry —
+unconditional decomp-data correction, no HX_NATIVE gate — WITHOUT adding a
+physical line (DECOMP_FORCEACTIVE `__LINE__` hazard at `:57/:358/:609`).
+Verify: `/data-diff` (objdiff `--include-data`) on the symbol reaches
+target-size/content agreement; `batch_objdiff` unit functions baseline-exact
+(`main/system/bandobj/BandCharDesc` 99.318756, `NameToDrumVenue` 100.0).
+Flow proof (boot → song → results → CONFIRM → shell) stands as chartered.
+
+**CA5 (Lane 1, unit baselines for touched TUs).** `main/system/os/Debug`
+**100.0**, `main/system/utl/MakeString` **100.0**,
+`main/band3/meta_band/OvershellSlotState` **100.0**,
+`main/system/bandobj/BandWardrobe` 99.50284, BandCharDesc 99.318756. Every
+100.0 unit must remain 100.0 (HX_NATIVE-gate native-behavior changes,
+byte-identical `#else`).
+
+**CA6 (ownership).** Lane 1 += `src/system/bandobj/BandWardrobe.cpp` (READ-ONLY
+for Lane 2); V3(b) file = `src/band3/meta_band/OvershellSlotState.cpp`
+(MILO_FAIL at `:181`). Symmetric handoff: if Lane 1's STEP-0 names
+`BandCharacter.cpp`/`src/system/char/*` as fix layer → STOP + HANDOFF note
+(mirror of Lane 2's existing rule). Lane 2 baseline for its owned TU:
+`main/system/bandobj/BandCharacter` 99.67018.
+
+**CA7 (web rider).** Use the deployed build (verified fresh vs HEAD:
+release+debug wasm 2026-07-12 08:26 + js `d699d837` deployed 21:48) — 0 builds
+expected. Novel surfaces graded: web GAMEPLAY (debug AND release) + debug
+song_select; release song_select cites the W32 addendum discharge rather than
+re-earning it. F3-glyph + B-family language matches W32 §6 item 3 verbatim —
+grade against that text.
+
+**CA8 (instruments).** STEP-0(ii) probe strings confirmed live at HEAD:
+`RB3_SETPLAY_PROBE` (`BandDirector.cpp:276,912` — `[SETPLAY_KEYS]`/
+`[SETPLAY_SEND]` tags), `RB3_BANDPERF_PROBE` (`BandCharacter.cpp:531,3930`),
+`RB3_BANDPERF_CLIPS` (`:425`), `RB3_BANDPERF_BT` (`:3936`, glibc-only). Probe
+retirement (W32 §5.6) deferred to W34 close-out (A9).
+
+---
+
+_Read-only review: no source edits; gates run were rb3-tests (×2), drawlog-golden
+(×3), one cmake rebuild under `/tmp/rb3-native-build.lock`. This document is the
+only write._
