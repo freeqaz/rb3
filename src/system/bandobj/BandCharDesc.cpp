@@ -18,7 +18,7 @@ BandCharDesc *gBandCharDescMe;
 const char *BandCharDesc::sDrumVenueMappings[] = { "small_club", "small_club", "arena",
                                                    "big_club",   "big_club",   "big_club",
                                                    "festival",   "big_club",   "video",
-                                                   "none" };
+                                                   "none",       "" };
 
 ObjectDir *BandCharDesc::GetPrefabs() { return gPrefabs; }
 

@@ -46,6 +46,7 @@
 #include "utl/Locale.h"    // Localize() free function (W4.5-GAMERTAG)
 #include "utl/Symbols4.h"  // extern Symbol player;
 #include "utl/MakeString.h"
+#include "os/NetworkSocket.h" // NetworkSocket::GetHostName (Wii SDK header resolves via native/src/revolution shim)
 #include <cstring>
 #include <cstdlib>
 #include <string>
@@ -124,6 +125,21 @@ const char *PlatformMgr::GetName(int pad) const {
         return nullptr;
     return MakeString("%s %d", Localize(player, 0), pad + 1);
 }
+
+// --- NetworkSocket::GetHostName: strong native def (Wave-33 V3(a)) ---
+// os/NetworkSocket_Stub.cpp is in MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE (its DC3-
+// shaped vtable doesn't match RB3), so GetHostName resolves to the WEAK no-op
+// trampoline in dta_link_stubs.s (__hmx_tramp_dta_125, `xorl %eax,%eax; ret`):
+// it returns a String whose return value was NEVER constructed. Debug::Modal
+// (os/Debug.cpp:377) formats this garbage String into the assert banner via
+// FormatString::operator<<(const String&) → str.c_str() (utl/MakeString.cpp:312)
+// → SIGSEGV. That masks EVERY assert routed through Debug::Modal (Wave-33 V3(a);
+// e.g. it hid the OvershellSlotState MILO_FAIL). Same weak-stub class as
+// PlatformMgr::GetName above. The Wii impl (os/NetworkSocket_Wii.cpp:82) returns
+// String(""); reproduce that faithful offline value so asserts DISPLAY. One
+// strong def wins over the weak stub and fixes every caller (Debug::Modal,
+// HolmesClient::* at HolmesClient.cpp:322/382).
+String NetworkSocket::GetHostName() { return String(""); }
 
 // --- TheContentMgr: native ContentMgr that scans the extracted song tree ---
 // `ContentMgr *TheContentMgr;` and its `= &TheWiiContentMgr` static initializer

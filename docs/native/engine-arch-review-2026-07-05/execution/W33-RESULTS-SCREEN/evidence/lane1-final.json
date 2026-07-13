@@ -1,0 +1,7 @@
+{"lane":"W33-RESULTS-SCREEN","stage":"FINAL","buildSha":"6186706e+edits","outcome":"LANDED",
+ "V2":"FIXED unconditional decomp-data (\"\" sentinel, line21 in-place); data-diff 93.07->100.0; NameToDrumVenue/DrumCallback 100.0; unit fuzzy 99.318756 baseline-exact",
+ "V3a":"FIXED strong native NetworkSocket::GetHostName()->String(\"\") in rb3_platform_native.cpp; assert banner+ConsoleName RENDER (SIGSEGV=0)",
+ "V3b":"DOCUMENTED-FAITHFUL (stubbed-online: OvershellSlotState 139 not registered; online out of scope); now displays honestly, not papered over",
+ "V5":"RESOLVED separate-mechanism: artist.lbl='Avenged Sevenfold' CORRECT; 'j0'/'GO' = <alt>j/G</alt> icon-glyph on Previous-Best lines (misread)",
+ "gates":"batch_objdiff 100/100; data-diff 100.0; drawlog PASS 792; rb3-tests 123/116/7/0",
+ "bootRuns":5}

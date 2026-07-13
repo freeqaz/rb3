@@ -1,0 +1,1 @@
+{"lane":"W33-RESULTS-SCREEN","stage":"V2-FIX","buildSha":"6186706e+edit","verdict":"FIXED — appended \"\" sentinel (line 21 in place, no line add)","evidence":{"data_diff":"93.07359 -> 100.0 (base_size 40->44, mismatch 0)","NameToDrumVenue":"100.0","unit_fuzzy":"99.318756 (baseline-exact CA4)","forceactive_lines":":57/:358/:609 preserved"}}

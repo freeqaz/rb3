@@ -1,0 +1,16 @@
+''                                                  <-  score.lbl
+''                                                  <-  score_opponent.lbl
+'0%'                                                <-  solo_percent.lbl
+'GOOD SOLO!'                                        <-  solo_rating.lbl
+'Avenged Sevenfold'                                 <-  artist.lbl
+'Beast and the Harlot'                              <-  song.lbl
+'High Score! Previous Best: 867,5309,000 (Top 17%)'  <-  highscore_2.lbl
+'Previous Best: <alt>j</alt> 0'                     <-  highscore_1.lbl
+'BAND HIGH SCORE'                                   <-  highscore_icon.lbl
+'BEAST AND THE HARLOT'                              <-  song.lbl
+''                                                  <-  solo_highscore2_label01.lbl
+'Previous Best: <alt>G</alt> 0'                     <-  solo_highscore1_label01.lbl
+''                                                  <-  solo_rank_label01.lbl
+'SOLO HIGH SCORE'                                   <-  highscore_icon.lbl
+''                                                  <-  solo_highscore1_label01.lbl
+''                                                  <-  songs.lbl

@@ -1,0 +1,15 @@
+{
+  "lane": "W33-RESULTS-SCREEN",
+  "stage": "STEP-0-V2-discriminator",
+  "buildSha": "6186706e",
+  "symbol": "NameToDrumVenue__12BandCharDescFPCc / sDrumVenueMappings__12BandCharDesc",
+  "verdict": "DECOMP-DIVERGENCE (lost sentinel) — retail table = 0x2C (11 ptrs), ours = 10; 11th entry = \"\" empty-string sentinel",
+  "evidence": {
+    "symbols_txt": "config/SZBE69_B8/symbols.txt:56210 size:0x2C",
+    "map": "orig/SZBE69_B8/files/band_r_wii.map:61104 00002c",
+    "data_diff_pre": "target_size=44 base_size=40 fuzzy=93.07 ; offset40 reloc target @21543 (distinct from @21542='none'), base missing",
+    "target_obj_bytes": "string pool: none@0x34 then 0x00 padding; 11th ptr points to empty string in zero region"
+  },
+  "fixLayer": "decomp-data correction (a): append \"\" sentinel to sDrumVenueMappings, unconditional, NO physical-line add (modify line 21 in place; DECOMP_FORCEACTIVE hazard at :57/:358/:609)",
+  "handoff": "none — no BandCharacter.cpp / char/* fix layer named for V2"
+}

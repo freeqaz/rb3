@@ -1,0 +1,33 @@
+W33-RESULTS-SCREEN raw-log grep -c table (build 6186706e + V2/V3a edits)
+(count via: grep -o <tag> | wc -l — forces explicit 0)
+
+--- w33-flow2/engine.log ---
+  APP FAILED                 0
+  ConsoleName:               0
+  OvershellSlotState         0
+  does not exist             0
+  attempt_register_online    0
+  SIGSEGV                    0
+
+--- w33-v3/engine.log ---
+  APP FAILED                 1
+  ConsoleName:               2
+  OvershellSlotState         4
+  does not exist             4
+  attempt_register_online    1
+  SIGSEGV                    0
+
+--- w33-v3a/engine.log ---
+  APP FAILED                 0
+  ConsoleName:               0
+  OvershellSlotState         0
+  does not exist             0
+  attempt_register_online    0
+  SIGSEGV                    0
+
+Notes:
+  flow2 = full flow proof (boot->song->results->CONFIRM->song_select shell); clean, 0 asserts.
+  v3    = overshell attempt_register_online (real Debug::Modal path): APP FAILED + ConsoleName
+          line RENDERED (GetHostName="" -> empty ConsoleName), SIGSEGV=0 => V3(a) fixed.
+  v3a   = {fail} via /api/dta/eval: caught by eval sigsetjmp guard BEFORE Modal (by design) => all 0
+          (documents why the overshell verb, not dta/eval, is required to test the formatter).
