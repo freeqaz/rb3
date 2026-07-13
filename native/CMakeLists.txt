@@ -38,20 +38,36 @@ set(DECOMP_FLAGS
     # mode. The engine's audio/threading TUs include <atomic>; the rb3-dta
     # obj/utl/os/math subset never did, so these only surface once rb3-native
     # pulls the engine's full source set. Mirror dc3-native's atomic-compat set.
-    -D__GNUC_STDC_INLINE__
-    -D__GCC_ATOMIC_TEST_AND_SET_TRUEVAL=1
-    -D__GCC_ATOMIC_BOOL_LOCK_FREE=2
-    -D__GCC_ATOMIC_CHAR_LOCK_FREE=2
-    -D__GCC_ATOMIC_WCHAR_T_LOCK_FREE=2
-    -D__GCC_ATOMIC_CHAR16_T_LOCK_FREE=2
-    -D__GCC_ATOMIC_CHAR32_T_LOCK_FREE=2
-    -D__GCC_ATOMIC_SHORT_LOCK_FREE=2
-    -D__GCC_ATOMIC_INT_LOCK_FREE=2
-    -D__GCC_ATOMIC_LONG_LOCK_FREE=2
-    -D__GCC_ATOMIC_LLONG_LOCK_FREE=2
-    -D__GCC_ATOMIC_POINTER_LOCK_FREE=2
+    # These __GCC_ATOMIC_*/__GNUC_STDC_INLINE__ defines are Linux/libstdc++-only
+    # and are appended conditionally below — macOS uses libc++ (needs neither),
+    # and there -fms-compatibility instead triggers a __builtin_va_list conflict
+    # handled by the APPLE branch.
     "SHELL:-include ${CMAKE_SOURCE_DIR}/src/mwcc_compat.h"
 )
+if(APPLE)
+    # macOS: -fms-compatibility changes __builtin_va_list from void* to char*,
+    # conflicting with the SDK/libc++ va_list typedef. Force-include <stdarg.h>
+    # so clang's definition wins first, then suppress the SDK's redefinition.
+    # Mirrors dc3-native/CMakeLists.txt's Darwin va_list workaround.
+    list(APPEND DECOMP_FLAGS -include stdarg.h -D_VA_LIST_T)
+else()
+    # Linux (libstdc++) only — GCC 15/16 <atomic>/<thread>/<mutex> + glibc
+    # <sys/cdefs.h> need the __GNUC__/__GCC_ATOMIC_* builtins clang drops in
+    # -fms-compatibility mode.
+    list(APPEND DECOMP_FLAGS
+        -D__GNUC_STDC_INLINE__
+        -D__GCC_ATOMIC_TEST_AND_SET_TRUEVAL=1
+        -D__GCC_ATOMIC_BOOL_LOCK_FREE=2
+        -D__GCC_ATOMIC_CHAR_LOCK_FREE=2
+        -D__GCC_ATOMIC_WCHAR_T_LOCK_FREE=2
+        -D__GCC_ATOMIC_CHAR16_T_LOCK_FREE=2
+        -D__GCC_ATOMIC_CHAR32_T_LOCK_FREE=2
+        -D__GCC_ATOMIC_SHORT_LOCK_FREE=2
+        -D__GCC_ATOMIC_INT_LOCK_FREE=2
+        -D__GCC_ATOMIC_LONG_LOCK_FREE=2
+        -D__GCC_ATOMIC_LLONG_LOCK_FREE=2
+        -D__GCC_ATOMIC_POINTER_LOCK_FREE=2)
+endif()
 
 # ============================================================================
 # milo-native-engine (shared LP64 engine) — consumed via add_subdirectory with
@@ -191,9 +207,52 @@ set(MILO_ENGINE_GPU_BACKEND rb3 CACHE STRING "RB3: BandRnd : Rnd GPU backend" FO
 # (find_package(glfw3) works out of the box); Dawn lives in the dc3 deps tree.
 # Default Dawn_DIR so a bare `cmake -B build-native` finds it (override with
 # -DDawn_DIR=... for a different Dawn install). Mirrors dc3-native's -DDawn_DIR.
+#
+# Platform note: the Linux Dawn (Vulkan backend) under ../dc3-decomp-deps is NOT
+# usable on macOS — macOS needs its OWN Metal-enabled Dawn build. On APPLE the
+# default therefore points at the per-user Dawn install location documented in
+# docs/native/MACOS_BUILD.md (~/dc3-deps/dawn); always overridable with -DDawn_DIR.
 if(NOT DEFINED Dawn_DIR)
-    set(Dawn_DIR "${REPO_ROOT}/../dc3-decomp-deps/dawn/lib/cmake/Dawn"
-        CACHE PATH "Path to Dawn's CMake package config")
+    if(APPLE)
+        set(Dawn_DIR "$ENV{HOME}/dc3-deps/dawn/lib/cmake/Dawn"
+            CACHE PATH "Path to macOS Metal Dawn's CMake package config")
+    else()
+        set(Dawn_DIR "${REPO_ROOT}/../dc3-decomp-deps/dawn/lib/cmake/Dawn"
+            CACHE PATH "Path to Dawn's CMake package config")
+    endif()
+endif()
+
+# ============================================================================
+# macOS (Apple Silicon / Intel) platform bring-up. Mirrors the proven
+# dc3-native APPLE block (dc3-decomp/native/CMakeLists.txt) — see
+# docs/native/MACOS_BUILD.md. ALL of this is inside if(APPLE); Linux is
+# untouched. The shared engine (add_subdirectory below) compiles its own
+# src/gfx/MetalSurface.mm (CAMetalLayer helper) but relies on the CONSUMER to
+# enable the OBJCXX language and link the Cocoa/Metal/QuartzCore frameworks —
+# exactly what dc3-native does. Dawn/glfw are linked PUBLIC by milo-engine and
+# carry most framework INTERFACE deps transitively; we list the frameworks
+# MetalSurface.mm needs explicitly (belt-and-suspenders, matches DC3).
+# ============================================================================
+if(APPLE)
+    # MetalSurface.mm is Objective-C++ — enable the language before the engine
+    # subdirectory adds it to libmilo-engine.a.
+    enable_language(OBJCXX)
+    # Homebrew (Apple Silicon default prefix) for glfw/libvorbis/libogg/zlib.
+    # Intel Homebrew lives at /usr/local; add both so either works.
+    foreach(_brew_prefix /opt/homebrew /usr/local)
+        if(EXISTS ${_brew_prefix}/include)
+            include_directories(SYSTEM ${_brew_prefix}/include)
+        endif()
+        if(EXISTS ${_brew_prefix}/lib)
+            link_directories(${_brew_prefix}/lib)
+        endif()
+    endforeach()
+    # Frameworks MetalSurface.mm (Cocoa/QuartzCore) + Dawn (Metal/IOKit) need.
+    set(RB3_APPLE_FRAMEWORKS
+        "-framework Cocoa"
+        "-framework IOKit"
+        "-framework Metal"
+        "-framework QuartzCore")
 endif()
 
 # W1 — Emscripten/web target wiring. When configured with `emcmake`, force the
@@ -393,6 +452,12 @@ function(rb3_configure_target tgt)
         if(ZLIB_FOUND)
             target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
         endif()
+        if(APPLE)
+            # Cocoa/IOKit/Metal/QuartzCore for MetalSurface.mm + Dawn Metal +
+            # glfw Cocoa. Mostly redundant with Dawn/glfw INTERFACE deps, but
+            # listed explicitly to match dc3-native and cover MetalSurface.mm.
+            target_link_libraries(${tgt} PRIVATE ${RB3_APPLE_FRAMEWORKS})
+        endif()
     endif()
     # The matched-fork has a handful of header-defined global non-inline objects
     # (sNullMicClientID, gKickAutoplay, gAvg/gSyncAvg, PollTheSplasher) that
@@ -402,7 +467,19 @@ function(rb3_configure_target tgt)
     # stubs that rb3-native gets via dta_link_stubs.s (omitted on web — the
     # missing_stubs.js / -sERROR_ON_UNDEFINED_SYMBOLS=0 pair handles UNRESOLVED
     # references, but only --allow-multiple-definition handles DUPLICATE ones).
-    target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
+    #
+    # macOS (Apple ld64) has no --allow-multiple-definition; the equivalent is
+    # -multiply_defined,suppress, which only the classic linker honors — hence
+    # -ld_classic. -undefined,dynamic_lookup mirrors GNU ld's tolerance of the
+    # unresolved refs the weak stubs would otherwise satisfy. Mirrors dc3-native.
+    if(APPLE)
+        target_link_options(${tgt} PRIVATE
+            -Wl,-ld_classic
+            -Wl,-undefined,dynamic_lookup
+            -Wl,-multiply_defined,suppress)
+    else()
+        target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
+    endif()
 endfunction()
 
 if(NOT EMSCRIPTEN)
