@@ -166,3 +166,8 @@ docs/decomp/xenon-hardening/round3/round3-plans.json
 # history 2026-07-10 to keep the push small; force-add individual files if a
 # specific capture is worth publishing (git add -f <path>).
 docs/native/engine-arch-review-2026-07-05/execution/**/evidence/
+
+# Python tooling env — uv-managed (venv is a local back-compat symlink -> .venv)
+.venv/
+/venv
+uv-cache/

@@ -1,0 +1,41 @@
+[project]
+name = "rb3-decomp-tooling"
+version = "0.1.0"
+description = "Python tooling for the Rock Band 3 (Wii) decompilation: orchestrator MCP, objdiff/Ghidra analysis, audio/visual verification."
+requires-python = ">=3.10"
+
+# Direct runtime deps of the RB3 decomp tooling (scripts/, tools/, orchestrator).
+# The heavy ML stack that used to live in the shared venv belongs to decomp-synth's
+# own env, NOT here. `lldb` (a few analysis scripts) is the system LLVM binding,
+# imported optionally/guarded — not a pip dependency.
+dependencies = [
+    # shared decomp-workflow core
+    "decomp-synth",        # editable path source below → pulls the tree-sitter trio
+    "mcp",                 # orchestrator MCP server (scripts/orchestrator)
+    "pydantic",
+    "python-dotenv",
+    "click",
+    "requests",
+    "pyghidra",            # Ghidra integration (tools/ghidra, bin/analyze-function)
+    "pyelftools",          # ELF parsing (analysis scripts)
+    "pcpp",                # C preprocessing
+    # rb3-specific
+    "numpy",
+    "scipy",               # audio_correlate / audio_verify / lineup metrics
+    "pillow",              # visual_diff, screenshot handling (PIL)
+    "pycryptodome",        # decrypt_mogg (Crypto)
+    "pytest",
+]
+
+[dependency-groups]
+# dev extras kept out of the default install
+dev = ["pytest"]
+
+[tool.uv.sources]
+# decomp-synth is a sibling checkout; consume it editable so classifier/diagnosis/
+# batch_triage/pattern_scan track the source. Pure-Python (tree-sitter only).
+decomp-synth = { path = "../decomp-synth", editable = true }
+
+# Not a packaged project — this pyproject only declares/locks tooling deps.
+[tool.uv]
+package = false
