@@ -18,6 +18,20 @@ Top-level sitemap for the RB3 decomp documentation. Mirrors the structure of [DC
 | [decomp/patterns/INDEX.md](decomp/patterns/INDEX.md) | MetroWorks CodeWarrior codegen pattern catalog — fixable patterns + ICF risks |
 | [decomp/objdiff-json-extensions.md](decomp/objdiff-json-extensions.md) | Fork-only objdiff-cli JSON: data-symbol diffs (`--include-data`, vtables/init data) and the instruction branch graph. See also the `/data-diff` skill. |
 
+## Knowledge Base (migrated agent-memory history)
+
+Completed/closed investigations, campaign narratives, and dead-end catalogs
+migrated out of the persistent agent-memory store into version control. See
+[knowledge/INDEX.md](knowledge/INDEX.md) for the full sitemap.
+
+| Doc | Description |
+|-----|-------------|
+| [knowledge/render-and-visual-history.md](knowledge/render-and-visual-history.md) | Render/visual fix history + engine-arch-review durable conclusions |
+| [knowledge/web-port-history.md](knowledge/web-port-history.md) | Emscripten/WASM web port, audio-fidelity, and load-perf history |
+| [knowledge/decomp-campaign-history.md](knowledge/decomp-campaign-history.md) | Decomp tooling/campaign narratives + completed native-port workstreams |
+| [knowledge/at-limit-catalog.md](knowledge/at-limit-catalog.md) | Functions/TUs stuck below 100% — known dead ends to avoid re-grinding |
+| [knowledge/infra-and-tooling-history.md](knowledge/infra-and-tooling-history.md) | Build/objdiff gotchas + assorted completed fixes |
+
 ## Sessions & Analysis
 
 Session logs and per-function decomp analyses live under [sessions/](sessions/):

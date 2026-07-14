@@ -1,0 +1,218 @@
+# At-Limit / Dead-End Catalog
+
+This catalog consolidates decomp functions, translation units (TUs), and function
+*families* where match% is stuck below 100% and repeated LLM/structural attempts
+have been confirmed dead ends — the residual is a MetroWorks compiler decision
+(register allocation, FPR/scheduler cascade, IPA folding, unroll-factor heuristic,
+etc.) that no source-level rewrite discovered so far can move, or moving it
+regresses other functions more than it helps. The purpose of this doc is to avoid
+re-grinding these targets from scratch. **None of these are permanent** — treat
+every entry as "stuck absent a new hypothesis," not "unfixable forever." If you
+have a genuinely new angle (a header refactor that's been cleared for a blast-radius
+A/B, a new permuter mutation class, a compiler-flag discovery), it's fine to retry
+and update this doc with the result. Otherwise, skip and move to other targets.
+
+## Per-TU / family dead-ends
+
+### Sub-85% structural sweep (2026-05-26)
+Fresh LLM agents gave each of these a genuine attempt; all confirmed permuter-class / not source-fixable that session (background permuter fleet may still crack them — that's its job).
+
+| Function | Unit | Ceiling | Why stuck |
+|---|---|---|---|
+| `BandCharDesc::ComputeDeformWeights` | bandobj/BandCharDesc | 76.5% | IPA keeps muscle/weight in callee-saved f30/f31 vs target spilling to stack; cascades frame size + 105 regswaps + loop-unroll factor |
+| `Dxt1Compress::PixelOffset` | rndobj/Dxt1Compress | 70.7% | `-O4,p` algebraically folds linear pixel-address math to one factored form (1 callee-saved reg) vs target's 2; identical output across all source variants |
+| `RndBitmap::PixelOffset` | rndobj/Bitmap | ~67% | IPA `lis/addi` static-table address preload at entry displaces mOrder reg, cascades 178+ swaps |
+| `StorePackedRanks::EndianFix` | meta/StorePackedMetadata | 72.1% | MWCC emits 2-step rlwimi for 10-bit bitfield assigns; target uses clrlslwi+srawi+or+rlwimi (9 extra insns) |
+| `DebugNotifyOncer::operator<<` | bandobj/VocalTrackDir | 82.8% | target IPA dead-return-value-elims (all call sites discard ret); ours preserves `mr r3,this`. Fn is `inline` in Debug.h (529 includers) — header edit unsafe |
+| `Spotlight::BuildNGCone` | world/Spotlight | 82.7% | rest is Mtx.h `Multiply` psq_/ps_ FPR cascade + `_savegpr_14`/`_15` count |
+| `GemTrack::UpdateShifts` | band3/bandtrack/GemTrack | 95.0% | IPA preloads inlined `Round()` 0.5f into callee-saved f31 vs target lazy-load; 1-reg cascade |
+| `CharIKSliderMidi::Poll` | char/CharIKSliderMidi | 95.8% | FPR alloc cascade from inlined Vec.h `Interp(Vector3)` + Mtx.h `Multiply` paired-singles asm |
+| `BandStorePanel::Poll` | band3/meta_band/BandStorePanel | 94.7% | CONFIRMED: adding a forwarding ctor + switching `Message` sites to `MetadataLoadedMsg` only moved +0.3pp; dominant `_savegpr_26` vs `_savegpr_27` regalloc diff unchanged. Plain callee-saved regalloc, not message-type driven — don't retry that angle |
+| `Rot::MakeScale` | math/Rot | 79.5% | IPA reuses f1=0.5 from `Length(m.z)` inline asm into `Length(m.x)` (target) vs ours reloading |
+| `RndLine::SetNumPoints` | rndobj/Line | 64.7% | `mPoints.resize()` → `_M_erase` copy-loop for 52-byte Point uses FPR lfs/stfs 2x-unroll (ours) vs target GPR lwz/stw 8x-unroll. Same template-codegen class as `Singer::PostLoad` below |
+| `CharBonesSamples::ReadCounts` | char/CharBonesSamples | 60.8% | Duff's-device unroll variant mismatch (target has dead-code 8-elem overflow-checked unroll) + IPA this-in-r24-vs-r30 cascade |
+| `CharIKFingers::CalculateHandDest` | char/CharIKFingers | ~79% | DUAL-CONFIRMED: LLM agent AND targeted beam_search (depth 4, width 8, 525 variants) both capped it; permuter's best (+0.38pp) was unfaithful no-op-cast noise, reverted. Root cause: Mtx.h Matrix3×Matrix3 `Multiply` psq_/ps_ cascade (620 FPR swaps) + `_savegpr_17`/`_18` |
+
+**Meta lessons from this sweep:**
+- **Low-% ≠ structural.** Big-room 60-65% functions often look like missing-logic targets but are pervasive STL-template copy-loop codegen mismatches (`resize`/`_M_erase` FPR-vs-GPR, Duff's-device factor) or an IPA regalloc cascade touching every instruction. Screen with m2c first: if source logic already matches and the diff is dominated by `_M_erase`/copy-loop/regswap noise, bail fast — it's the permuter fleet's job. Only commit to a low-% target when m2c shows a genuine logic gap.
+- Functions LLM-advanced into 78-84% sit below the batch_auto fleet's `--min-pct 85` floor and get skipped even though their residual is permuter-tractable (FPR/regalloc) — lower the floor to ~75 to capture them (e.g. `UtilDrawCigar`, `BinStream::WriteEndian/ReadEndian`, `CalculateHandDest`).
+- Escape hatch used successfully elsewhere in this sweep (NOT dead ends, for reference): leaf-struct copy-ctor inline-in-header trick when `_Copy_Construct<T>` exceeds MWCC's ~2KB IPA inline threshold (size-dependent — verify target's `_Copy_Construct<T>` size first); explicit `__declspec(noinline)` template specialization for FREE-FUNCTION stlport templates when the struct is below that threshold; DC3 logic-port for sub-70% non-math draw/geometry functions, incl. the `volatile float arr[2]` trick to force a value pair off callee-saved FPRs onto the stack.
+
+### Synth unit at-limit (StandardStream / ByteGrinder / VorbisReader)
+Hard ceiling confirmed across Sonnet (3 rounds × ~50 variants/fn) + Opus (~2,300 more variants, beam 6-8 × depth 3-5) — **~2,450 total permuter builds, 0 wins.** Don't re-attack from source unless a genuinely new pattern class arrives (e.g. rlwimi-fusion polarity, scheduler influence beyond decl-order).
+
+| Function | % | Root cause |
+|---|---|---|
+| `StandardStream::PollStream` | 96.67 | mThrottle preload hoist + mJumpFromSamples CSE in else-if branch — dataflow-driven scheduling |
+| `StandardStream::UpdateVolumes` | 97.53 | ClampEq min const load duplication — sdata2 constant-pool layout, TU-wide (Utl.h locked) |
+| `StandardStream::ConsumeData` | 99.21 | `lfs f0,0,r3` vs `lfsx f0,r4,r3` indexed addressing — MWCC strength-reduction over `src[j]+src++` |
+| `ByteGrinder::op3/op4/op5/op10/op13` | 95.28-99.05 | Scheduler interleaves `cntlzw→srwi` against `clrlslwi→rlwimi` byte-OR pair — independent ops |
+| `ByteGrinder::op5` | 95.28 | `bw\|(bw<<8)` always collapses to `rlwimi` peephole; target wanted `slwi+or` (3 vs 2 insns) |
+| `ByteGrinder::getRandomLong` | 99.29 | 2-instr stw order (mType@0x4 vs mValue.integer@0x0) — dataflow-driven, not source-order |
+| `VorbisReader::QueuedOutputSamples` | 91.67 | Timer.h `START_AUTO_TIMER` static-init guard (header locked) |
+| `VorbisReader::TryDecode` | 93.55 | 30-count r5↔r6 cascade from chained `START_AUTO_TIMER` macros |
+
+Escape hatch: none from source. These are MWCC scheduler/peephole/dataflow-CSE decisions. Permuter-class but **exhausted** — don't re-run the permuter here without a new mutation strategy.
+
+### Mesh.cpp — Vec.h/Mtx.h paired-singles FPR cascade
+13 of 15 non-100% functions in `src/system/rndobj/Mesh.cpp` are locked by the same class as below: `Vec.h`/`Mtx.h` `Multiply`/`Dot`/`Normalize`/`FastInvert` use `psq_l`/`ps_madds*` paired-singles intrinsics; inlining them cascades MWCC's FPR scheduling across the whole function. (Different mechanism than Part.cpp/CharHair.cpp below — those cascade from `.cpp`-local inline asm, this cascades from *header* inlines.) Editing Mtx.h/Vec.h is itself the dead end documented next.
+
+Affected: `GetDistanceToPlane` (87.1%), `OnSync` (90.5%), `CollideShowing` (97.0%), `MakeWorldSphere` (97.6%), `TransformNormal` (97.8%), `Vert` ctor (98.9%), `SetBone`/`UpdateSphere` (99.4%), `OnPointCollide` (99.6%), `CollidePlane` (99.6%), `OnUnitizeNormals` (99.7%), `PreLoad` (99.8%), `__rs` BinStream `Vert` (96.3%).
+
+Detector heuristic: objdiff shows `psq_l`/`ps_*` ops or "FPR cascade" in diff_op clusters, but the `.cpp` itself has no `__asm` blocks — the cascade is sourced from Vec.h/Mtx.h header inlines. Escape hatch: a source-side refactor that side-steps the Vec.h inlines entirely, or `__declspec(noinline)` on a containing helper — neither attempted.
+
+### Geo.cpp + rndobj/Utl.cpp — same Vec.h/Mtx.h cascade family
+`system/math/Geo.cpp` and `system/rndobj/Utl.cpp` are at-limit on the identical root cause (`Length`/`Normalize`/`Cross`/`Scale`/`Subtract`/`MakeScale`/`Multiply(Vector3,Transform,Vector3)` paired-singles inline asm forcing specific FPR colorings MWCC can't route around). Confirmed via 2,000+ permuter variants:
+
+| Function | % | Class |
+|---|---|---|
+| `Multiply(Plane,Transform,Plane)` | 76.40 | psq_l/ps_madds cascade |
+| `Multiply(Box,float,Box)` | 84.72 | decl-reorder regressed |
+| `Intersect(Segment,Triangle)` | 80.24 | FPR cascade |
+| `Intersect(Segment,Sphere)` | 85.27 | 2 callee-sav FPRs vs target's 1 |
+| `MultiplyEq(BSPNode*,Transform)` | 82.75 | recursive Normalize() |
+| `Sphere::GrowToContain` | 81.18 | Length() inline cascade |
+| `BSPFace::Set` | 91.68 | Subtract/Normalize/Cross |
+| `MakeBSPTree` | 94.31 | ~1300 variants, 0 gain |
+| `Set__7FrustumFffff` | 94.63 | hoist halfY no effect |
+| `Clip(Polygon,Ray,Polygon)` | 97.51 | FPR idx 213-237 |
+| `UtilDrawCigar` | 78.40 | -32 stack, ps_mul/ps_madd/frsqrte |
+| `UtilDrawAxes` | 82.71 | Vec.h cascade |
+| `UtilDrawPlane` | 90.88 | ScaleAdd/Dot/Cross |
+| `ScrambleXfms` | 90.73 | hoist max=1.0 regressed |
+| `TransformKeys` | 93.22 | MakeScale/Scale |
+| `AddMotionSphere` | 97.99 | f0/f2 swap on radius |
+| `CalcSphere` | 95.58 | box-extents Add+Scale |
+| `ConvertBonesToTranses` | 98.91 | inline Normalize tail |
+| `AngleBetween(Quat,Quat)` | 97.65 | simplification regressed |
+
+**Exception (this one DID crack, keep the fix):** `BSPFace::Update` 92.87→96.96% (commit landed) — this was NOT pure at-limit. Two semantic restructures fixed it: (1) the area expression had an actual arithmetic bug (2 sign-flipped terms vs a proper parenthesized shoelace-formula 3-pair form — parens are load-bearing, a flat expr re-serializes); (2) a single running-cursor pointer idiom (`mr;addi;mr;addi`) instead of 3 independent `+1` pointers. The residual ~3% after that fix IS at-limit — facePlane stack-slot grouping (by-size grouping the compiler does internally; `slot_pad`/`declaration_reorder`/`scope_widening` all fail) plus the same paired-single FPR coloring. Do not "clean up" the hoisted `fvx/fvy/fc` temps to match DC3's form — DC3 is a different compiler build and removing them regresses to 95.6%.
+
+Escape hatch: none unless a Vec.h asm-block refactor (replacing `__asm` paired-singles with `__ps_madd` intrinsics) becomes feasible — that would reopen the whole family at once. Sibling families: Mesh.cpp above, CharEyes::Highlight, ApplyPosConstraints, synth-unit-at-limit (all below).
+
+### Part.cpp / CharHair.cpp — `.cpp`-local inline-asm FPR cascade
+Any TU containing inline asm with `psq_l`/`psq_st` (paired-single Gekko) + explicit FPR register constraints cascades an unusual FPR allocation across **every function in the file** via IPA. Local decl/scope changes cannot break it.
+
+- `src/system/rndobj/Part.cpp` — inline `Multiply` at top of file. All 9 partials AT_LIMIT: `UpdateRelativeXfm` 76.6%, `UpdateParticles` 92.6%, `InitParticle` 95.3%, ctor 96.5%, `Load` 96.5%, `SetSubSamples` 96.8%, `MoveParticles` 96.8%, `Emit` 98.0%, `RunFastForward` 98.8%, `UpdateSphere` 99.3%, `Copy` 99.7%.
+- `src/system/char/CharHair.cpp` — inline `StrandMultiply`. All 9 partials AT_LIMIT: `Multiply` 75.0%, `SimulateZeroTime` 76.9%, `GetRadius` 90.1%, `DoReset` 93.4%, `SetCloth` 93.9%, `SetAngle` 94.1%, `Normalize` 94.4%, `SimulateLoops` 96.0%, `Interp` 96.7%.
+
+Detector: grep the TU for `asm` blocks containing `psq_` mnemonics — if present, mark its low-% partials AT_LIMIT. Escape hatch: only (a) splitting the file, or (b) rewriting the inline asm — neither in scope for normal sweep work. DC3 sister files typically use the Mtx.h `Multiply` inline instead (no cascade), so DC3's 100%-match on these doesn't transfer.
+
+### Mtx.h / Vec.h Multiply/Normalize/Cross — A/B'd dead end
+**Rule: do NOT edit `src/system/math/Mtx.h` or `Vec.h` Multiply/Normalize/Cross inline bodies** to fix `Spotlight::UpdateTransforms`, `CharIKFingers::Poll`, `RndMesh::GetDistanceToPlane`, `BandIKEffector::IKElbow`, or `CamShotFrame::BuildTransform`.
+
+A/B test (4 variants) all regressed the ≥95% band net-negative:
+- `cmplw cr0` instead of `cr1` in Multiply alias check → Spotlight 79.9→78.7, CharIKFingers::Poll 86.0→79.2.
+- Manual Cross expansion in Vec.h → CharHair::Cross 100→46.8% (catastrophic).
+- `#pragma fp_contract off` around Cross → CharHair::Cross 100→48.6% (catastrophic).
+- Normalize epsilon reorder → Rot::MakeVertical 95.1→86.4%, Character::Teleport 97.3→91.2%.
+
+Key insight: `Spotlight::UpdateTransforms`'s dominant mismatch is a function-level regalloc shift (r29↔r30, 42 instrs) + stack-offset shift, originating from the function's *prologue*, not from any inline Mtx.h body — the "Mtx.h is the blocker" hypothesis was wrong for this one. Escape hatch: source-level work in the function's OWN `.cpp` (decl order, local pointer cache, pre-loop iterator hoist, `ObjPtr.mPtr`) — not the header. Also check for `#pragma pool_data off` candidates (BSS-base hoist suppression).
+
+### Timer.h AutoTimer ctor field-init order — A/B'd dead end
+**Rule: do NOT fix** `BinkReader::Poll` (94.1%), `Character::Poll`, `RndTransformable::WorldXfm_Force`, `CharLipSyncDriver::Poll`, or other Poll functions stuck at 99.x% by reordering field inits in `src/system/os/Timer.h` (AutoTimer).
+
+A/B (4 variants): swap `mTimeLimit` before `mCallback` → 27 regressions; body-assignment for `mTimer = t` → bit-identical, no change; `mTimer->Start()` first → 48 regressions; full member-init list with unconditional stores → 43 regressions.
+
+Why: MWCC hoists `lis r4,@F_00004842` + `lfs f0` (the 50.0f addr+load) ABOVE the null check in base; target keeps them INSIDE. Scheduler-level decision driven by register pressure + inlined `Start()` interleaving — not influenceable by field-init order, and it propagates differently to every inlined ctor call-site. Escape hatch (untried): a fix in the `.cpp` at each call site (inline a local pinning r5 vs r6 before AutoTimer construction) — not the header.
+
+### Timer.h / MessageTimer.h header lock — PARTIALLY BROKEN, has a real fix
+Most `system/meta/*Panel*::Handle`/`::Poll` partial-match functions were blocked at the inlined `AddTime__12MessageTimer...` sequence in the epilogue — root cause is evaluation order of low-cycles-first vs high-cycles-first in `Timer::Ms()` (`src/system/os/Timer.h` ~L115-121), which requires an off-limits header edit. Same lock affects `char/CharUpperTwist` (`Timer::Restart` inlining).
+
+**Working fix found (Wave 79C) — try this BEFORE declaring at_limit:** replace `mTimer.Ms()` with `Timer::CyclesToMs(mTimer.mCycles)` at the call site. Mathematically equivalent but produces different MWCC register allocation, flipping it to match target. `GameTimePanel::Poll` went 1.1→100% this way. This is an in-`.cpp` change, no header edit needed — always try it first on any Handle/Poll stuck with the `mflr`/late `lwz r0,0x14(r1)`/`lis @sHighCycles2Ms` signature.
+
+### Key.h `Keys<T>::KeyGreaterEq()` if/else simplification — A/B'd dead end
+**Rule: do NOT simplify** the two-if pattern in `Keys<T1>::KeyGreaterEq()` (`src/system/math/Key.h` ~L274-280) to if/else:
+```cpp
+if (frame > (*this)[newCnt].frame) cnt = newCnt;
+if (!(frame > (*this)[(int)newCnt].frame)) threshold = newCnt;
+```
+The two-if forces a re-load of `(*this)[newCnt].frame` after the first branch; if/else lets MWCC CSE the load — different codegen, and the target binary uses the double-load form across the whole `Keys<>` family.
+
+A/B result (Opus): overall 60.92%→60.73% (−0.19pp), matched fns −33. 40 functions at 95%+ regressed ≥0.5pp; 29 fell from 100% (`PropKeys::CloneKey__*Keys` 100→~87-90%, `PropKeys::SetKey__*Keys` 100→~89-91%, `Utl::Add/Remove/FindBounds__Keys<...>` 100→88-94%, `CamAnim/MatAnim/PartAnim/LightAnim::SetKey` 100→~90-91%, `Morph::OnSetPoseWeight` 100→90.8%, `TransAnim::OnRemove*Keys` 100→92-94%, several `BandDirector::*Keyframe/Preset/Dircut` 96-100→90-95%). **Zero functions improved** — even DC3's if/else-shaped "winner" `TransAnim::OnAddRotKey` regressed 98.69→93.81%.
+
+Detector: if diff_inspect suggests "the loop body should CSE the array load," check whether target asm has TWO `lfs` per iteration on the same index — if yes, source must keep the two-if form. The `(int)newCnt` cast is load-bearing noise, keep it.
+
+### `Vector_impl::reserve` (`_vector_sized.c`) — permuter-class dead end
+**Rule: do NOT spend cycles** fixing the 36 `Vector_impl::reserve` partials (typically 60-80%) via `src/system/stlport/stl/_vector_sized.c` edits.
+
+A/B (Opus, 6 forms of the reserve body): best form added +15 newly-100% functions globally but regressed 11 near-100% functions (some catastrophically, e.g. 98%→14%). Different TUs require mutually exclusive code shapes — no single source-level change satisfies all callers (TUs were built against different inlined-template versions in the original). Escape hatch: skip when seen (doesn't block other functions in the TU); same applies to `_M_insert_overflow`/`_M_clear` from the same header unless a sister file (`_vector.c`, `_construct.h`) has an untried idea.
+
+Also blocked: `_M_fill_insert_aux<T, ..., __false_type>` at 97.27% — 9+ instantiations (OutfitConfig Piercing/MatSwap, CharHair Point/Strand, CharIKFingers::FingerDesc, LightPreset::Keyframe, BandPatchMesh::MeshPair, FileMerger) share an identical 3-instruction diff at `_M_set_finish_idx` (target threads r3 through `subf r0,r0,r3` before freeing; base spills early via `mr r5,r3`). All source-level forms (ptrdiff_t temp, explicit cast) give identical codegen. 77 sister instantiations sit at 100% — structural changes risk regressing those. Skip.
+
+### `vector<POD>::resize` — NOT a true dead end, unfavorable tradeoff only
+For `vector<POD-struct>::resize(n, defVal)` where target emits ~100-200 instrs of inlined `_M_erase` shift loop + `bl _M_fill_insert` UNCONDITIONALLY (both branches), every source shape tested has an offsetting cost — but this is a tradeoff, not an immovable wall (proven: explicit if/erase/insert DOES move the inlining, at idx 77, matching target).
+
+A/B'd on `VocalPlayer::Poll`'s `spewData->mSingerData`/`mPartData`:
+
+| Source shape | Match% |
+|---|---|
+| `resize(n, def)` direct | **72.7%** (best) |
+| `if (size<n) resize; else pop_back-loop` | 72.7% (same) |
+| `if (n<size) erase; if (n>size) insert;` | 71.4% (2nd `_M_erase` now matches target's idx 77, but if-check cascade costs more) |
+| Ternary erase/insert form | 71.3% (same regression) |
+
+Default to plain `vec.resize(n, defVal)` for POD-struct vectors — don't burn time on erase/insert/pop_back permutations (4 shapes tried, 71.3-72.7% band). Retry only with (a) a new theory for emitting both branches without if-checks, or (b) the exact stlport-header tweak the target was built against.
+
+### SongSortMgr `_M_insert<Symbol,{Song,Setlist}Record>` — dead end
+`_M_insert<Symbol,SongRecord>` 98.1% (33 mismatches across 3 inlined ctor sites) and `_M_insert<Symbol,SetlistRecord>` 95.3% (same pattern ×3). The inlined `Hmx::Object::Object(const Object&)` body schedules vt-store + mTypeProps-load/store + mRefs-size-load in a different order than target — instructions identical, only ordering/r3↔r4 coloring differs, repeating verbatim at each `_M_create_node → _Copy_Construct → pair-ctor → record-ctor → Object-ctor` inline chain.
+
+Confirmed not fixable from this TU: the inline `Object` copy ctor at `SongSortMgr.cpp:37` is byte-identical to the same definition in `PatchDir.cpp:13`/`Sfx.cpp:13`. `PatchDir`'s `_M_insert<Symbol,vector<PatchSticker*>>` IS at 100% — but its value type doesn't contain `Hmx::Object`, so the copy ctor never fires inside its `_M_insert`. Adding explicit `ObjRef()` to the init list and reordering the init list: no change. Verdict: permuter-class — skip unless a beam_search-style run finds a structural shape flipping CW's scheduler.
+
+### `ObjVector<T,Us>::push_back` prologue reorder
+Instantiations where `T` needs a `bl __ct__` (non-trivial copy ctor) stall at 98.4-98.8% with an identical 5-instruction prologue reorder: target does `mr r29,r3` (save `this`) → `lhz r3,0x4(r3)` (read size, reusing r3) → ...; base reads `size()` into a fresh volatile register first, saves `this` later.
+
+Unfixable from the using TU: the body lives in `src/system/obj/ObjVector.h` (shared, off-limits); MWCC's IPA picks the schedule at instantiation, no lever in the using `.cpp`; an explicit specialization in the `.cpp` fails to compile (MWCC error 10333 "object redefined"). Recurs in `EventTrigger.cpp` (3 fns), `CameraShot.cpp` (`push_back<CamShotCrowd>`), `OutfitConfig.cpp` (MatSwap/Piercing). When a TU's only remaining partials are `push_back__*ObjVector*`, mark at-limit and move on. Escape hatch (not yet tried, high blast radius): edit `ObjVector.h` to hoist `mOwner` into a local before calling `Base::resize` — treat as a dedicated header experiment with explicit A/B, not wave work.
+
+### `BoxMapLighting::ApplyLight` (Spot) — psq_/ps_ SIMD blocker
+`src/system/rndobj/BoxMap.cpp`, 760 bytes, 0% match. Hand-vectorized with Gekko/Broadway paired-singles (`psq_l/psq_st`, `ps_mul`, `ps_madd`, `ps_madds0/1`, `ps_sum0/1`, `ps_merge00/10`, `ps_neg`, `ps_sub`, `ps_sel`, `frsqrte`) — 6 axis-direction contributions SIMD'd in pairs. Plain C++ cannot compile to `ps_*`; MWCC only emits those via `__psq_load/__psq_store`, vector-typed locals, or inline `__asm`. Skip for plain-C++ port-style decomp — also port-irrelevant (axis-aligned box lighting probe, replaced by platform shaders in the native rewrite).
+
+## Per-function at-limits
+
+- **`Singer::PostLoad`** — 76.0%. `mResultsData.resize(numParts)` (sizeof 0x20, all-int `operator=`) gets an 8-element Duff's-device unroll in target vs our 2-element unroll; `mScoreCaches.resize` (sizeof 0x28, mixed-FPU `operator=`) matches at 2x on both sides. MWCC's unroll-cost heuristic picks 8x for the all-int-copy body, 2x for the mixed-FPU body — pure compiler heuristic, not source-exposable without touching `SingerResultsData::operator=` (regresses other call sites) or hand-rolling the Duff's device (regressed to 71.2% when tried). Tried and flat/regressed: `#pragma opt_strength_reduction_strict`, `#pragma inline_depth(255)`, explicit default-value temp, open-coded if/erase/insert (71.2%), reordering resize calls (32.5%, catastrophic), `unsigned int` induction vars (−0.13pp).
+
+- **`GameMicManager::LoadMicFx` (99.98%) / `GuitarFx::Load` (99.97%) / `KeysFx::Load` (99.96%)** — NOT an inlining gap despite what `find-inlining-gaps --mode qualified-call` reports (false positive: it flags missing `@STRING@LoadFile__21ObjDirPtr<9ObjectDir>` refs, but both target and base already reference that symbol correctly). The real, single-instruction mismatch is `subi r3,r3,0x2a90` (target, SDA-relative reuse of a live r3) vs `addi r3,r3,TheLoadMgr` (base, re-materializes) at one call site inside the inlined `PollUntilLoaded` chain — a CSE/regalloc choice, not source-controllable. objdiff itself classifies this as 100% normalized. **Do NOT** "fix" by adding an explicit specialization inline to `src/system/obj/Dir.h` — it's included by 144+ TUs; a body rewrite risks regressing dozens of currently-100% callers for a body that's already correct everywhere. Always verify a `find-inlining-gaps` qualified-call hit with `objdiff-cli diff --full-listing` before touching a shared header.
+
+- **`VocalNoteList::RemoveInvalidFreestyleSections`** — 77.6%, `src/system/beatmatch/VocalNoteList.cpp`. Our compiler pins the bound function pointer in callee-saved r29 (frame 0x20, `_savegpr_26`); target spills a `binder1st` to stack at 0x10/0x18 (frame 0x40, `_savegpr_27`) and reloads per call — the 8 `beq↔bne` polarity diffs follow from this spill pattern, not source-level polarity. Tried: `std::remove_if(bind1st(ptr_fun(...)))` (60.2%), two separate `Pred` locals (77.6%, no-op — compiler eliminates the second), `std::find_if` + manual second loop (57.1%). No STL helper found produces the target's exact spill shape. Skip.
+
+- **`RndBitmap::LoadDIB`** — palette loop landed at **85.97%** (commit `d47898d0`, up from 84.22% baseline) via an explicit-temp unrolled palette-alpha loop trading `paletteBytes` r30→r31 for a tighter inner loop. **Pixel loops below that are at-limit**: CW's induction-var promotion converts any walking-pointer OR explicit-temp source form back to the same shape; `for(;count>0;--count)` regresses (extra pre-checks for count=0); `while(blocks--)`/`do-while(--blocks>0)` — same outcome. Target uses a CTR (`bdnz`) loop with `paletteBytes` live in r30; matching requires (a) keeping it in r30, (b) a loop body small enough that all temps fit r3-r10 — our scratch-heavy form spills and forces r30→r31. Untried escape hatch: a `noinline` helper for per-pixel decode to isolate its register pressure from the rest of the function's regalloc.
+
+- **`_DDL_X::IsAKindOf` (two-condition Quazal DDL pattern)** — plateaus at 99.6% for every `_DDL_X : _DDL_Parent` inheritance (confirmed: RankingDDL, TournamentDDL, GameSessionDDL; likely NintendoTokenDDL and others). Source form `bool r=true; if(!A && !B) r=false; return r;` gives 99.6% — target inits `r=false` then sets true on hit, one instruction different in register-init ordering. Tried and regressed hard (to 67.7%): `&&`/`||` direct return, early return, `goto`, swapped init polarity (changes register choice entirely). Still open: a permuter pass on this exact shape, or deeper MWCC bool-materialization study of `r=true→false-on-hit` vs `r=false→true-on-hit` regalloc behavior — hasn't been tried. Can still mark the containing unit "Matching" if this is the only residual.
+
+- **`CharEyes::Highlight`** — 82.56% (frame 0x270 vs target 0x250). Target materializes a stack `Vector3` copy of `head->WorldXfm().v` at r1+0x140 (plus headFwd at r1+0x14c) as args to two `IsWithinViewCone` calls; MWCC's IPA folds our copy into a direct ref pass-through whenever the temp only escapes via `const Vector3&` with no further use — every construction form tried (copy-ctor, default+assign, `.Set()`, per-element writes) DCE's byte-identically to 82.56%. The 32-byte stack delta cascades 178 reg swaps across 27 pairs. Both Sonnet (~3 angles) and Opus (~4 angles + IPA diagnosis) confirmed AT_LIMIT. Escape hatch: change `IsWithinViewCone`'s signature to take `Vector3` by value (huge blast radius), or `__declspec(noinline)` on `Transform::WorldXfm()` (breaks elsewhere) — untried as last resorts. Related family: `ApplyPosConstraints` below (same IPA-DCE-of-stack-temp class).
+
+- **`VocalTrack::UpdateScrolling`** — ~79.96%, ~11KB function, deep-dived by Opus + multiple Sonnet waves. Control flow is already correct (the ~1677 instruction diffs are alignment drift, not logic error). Root blocker: whole-function register-allocation cascade — `this` lives in r25 (target) vs r15 (ours), rippling 179+ diffs through the 2900-instruction body + a 0x20 frame delta. Early-arithmetic region is empirically jointly-unsatisfiable: un-caching `trackScale`/`trackWidth` collapses match to 8.6%; `64.0f` vs `64.0` literal independently regresses — the cached locals ARE load-bearing for the whole-function allocation, don't "clean them up." Constant hoisting of ~10 float constants into callee-saved FPRs at loop entry is not source-controllable. Permuter depth-1 found 0 improvements. What already landed (don't redo): `!d.empty()`→`d.size()!=0` (+3pp historically), const-ref hoists + `64.0` double literal (79.28→79.96). Skip until something forces `this` into r25.
+
+- **`CharIKFingers::MeasureLengths`** — landed 86.1%→**86.3%** (commit `6adeafc0`) via a `Length(t1)+Length(t2)+Length(t3)`→`Length(t3)+Length(t2)+Length(t1)` chain reorder (matches target's r5-first `psq_l` load) + deferring `mInv2ab *= handLen` until after `handParentLen` is squared. Residual is permuter-class: target uses f0/f1 for `Length()`'s inline-asm `half=0.5`/`three=3.0` constants, base uses f1/f2 — an FPR-coloring cascade from prologue-level allocation that propagates through every `frsqrte/fmuls/fnmsubs/fmadds/fadds` in the body; target keeps `half` alive across the loop into the second `if` block, base lets it die and reloads (accounting for the 24-byte size delta). Re-verified 2026-05-26 with 4 more shapes, all no-op or regression (parenthesization no-op; DC3-style mul-before-Length reorder −0.22pp to 86.07-86.22%). Beam search (depth 8, width 16, 2687 variants) capped at 86.33% (+0.19pp only). Sibling `CharIKHand::MeasureLengths` (81.3%) has the identical Length()+Length() shape — same likely root cause. AT_LIMIT absent a Vec.h `Length()` asm-block refactor (itself the Mtx.h-class dead end above).
+
+- **`BandIKEffector::ApplyPosConstraints`** — 67.5% (`src/system/bandobj/BandIKEffector.cpp:792`). Frame 0x1d0 (464B) vs ours 0x130 (304B) — a 160-byte delta from 10 extra callee-saved FPRs (f14-f23). Target preloads `0.0f` into 12 distinct callee-saved FPRs to serve two inlined `Normalize(Vector3)` instantiations' compare-to-zero short-circuits (`if(v.x!=0||v.y!=0||v.z!=0)`) plus the else-branch `vout.Set(0,0,0)` zero-stores — CW chooses to keep them resident rather than reload `@F_00000000` per use; our build reloads instead, using fewer registers but more memory traffic. Semantically correct (Ghidra/m2c/asm agree on structure) — pure scheduler/regalloc call. Tried: direct-expression Cross form in `Mtx.h::Normalize(Matrix3)` for FMA fusion → ApplyPosConstraints +2.4pp but regressed `RndTransformable::ApplyDynamicConstraint` −2.4pp and `RndObj::Utl::SetLocalScale` −7.5pp (net −7.5pp across 2 functions) — reverted; Mtx.h's current form is correct for those higher-match sites. `Normalize(Vector3)` is itself an asm-block intrinsic (Vec.h:472) with explicit register hints, not trivially refactorable. Confirmed NOT a semantic bug: RB3's `144.0f * c.mWeight / clamped` weight formula matches the target's `@F_00001043` constant even though DC3's `HamIKEffector.cpp:255` uses a different formula. Healthier siblings with fewer Normalize call sites: `ApplyDynamicConstraint` (91.1%), `SetLocalScale` (92.1%).
+
+- **`CharSleeve::Poll`** — 3128B, landed 88.98%→**89.04%** via literal-precision fix `-3.858268f`→`-3.8582678f` (matches target's exact float bit pattern 0xC076EDDC vs our 0xC076EDDD, collapsing several constant-pool diffs). Remaining ~11% (497 reg-swap diff_arg insns) is the Length()-inline-asm `half=0.5`/`three=3.0` FPR-cascade class (same as MeasureLengths above) — target caches the shared constant across 3 Length()/Normalize calls in callee-saved f29, base reloads. One structural diff_op at idx 24 (`bne body;b end` vs `beq end` for the second null-check) is a CW emission quirk that no if/goto/early-return/combined-condition form reproduces. Tried and regressed/no-op: all multiply-associativity reorders (canonicalized identically), DC3's `dv2`-eliminating form (−0.18pp), split Vector3 init (−0.07pp), decl-order swap (no effect — CW assigns FPR slots by first-use not declaration), hoisting `TransParent()` before the if per DC3 (−0.4pp), `pow()`-arg split (no change), `#pragma fp_contract off` (−8.4pp catastrophic — target uses `fmsubs` in most blocks, avoiding it only in ~2 specific Cross expansions). Don't retry without a new theory for the f29=0.5 cache or the bne+b structural pattern (would need a Vec.h Length() asm edit — itself a dead end per the Mtx.h entry above).
+
+- **`SongStatusMgr::LoadFixed`** (`main/band3/meta_band/SongStatusMgr`) — 92.4%. Loop over 11 score-types with two version-gated branches per iteration; sibling `SaveFixed` is 100% (single-branch body lets CW hoist `r30=r27+r31`). The one-instruction gap: for the *third* read inside the loop (`mCachedTotalStars[i]`, gated on `rev>=0x93`), target recomputes `i*4` via `slwi r0,r30,2` instead of reusing `r31` (=i*4, already live) as it does for the first two reads — a CW scheduler decision downstream of source, not source-driven (both compile paths are semantically identical). Tried, all folding to 92.4% or regressing: explicit `(ScoreType)i` casts (74.8%, cascades), `*(ptr+i)`/`ptr[(int)i]`/`int idx=i` forms (all fold to 92.4%), nesting the two version-ifs (73.5%, breaks control flow), permuter (stmt_reorder, cmpflip×2, brpol×2 — all no-op). Don't retry without a theory specific to forcing a recompute of `i*4` at the exact instruction position.
+
+- **`_outline_*` helper functions still AT_LIMIT despite the noinline helper doing its job:**
+  - `LoadMgr::PollUntilLoaded` (`system/utl/Loader`) — 98.1%. All 33 mismatches are callee-saved register swaps (`funcName`/`ldr2IsNull` get r23/r24 in base vs r31/r30 in target). 12 variants tried (decl reorder, `#pragma pool_data off`, `#pragma dont_inline`, `-ipa function`, reverting header changes in the include graph) — none move it. Note: an earlier commit labeled "Loader to 100%" was mislabeled — `objects.json` still had it NonMatching.
+  - `BandDirector::HarvestDircuts` (`system/bandobj/BandDirector`) — 98.76%. A coupled 5-instruction cluster: target has `bne body;b end` for the `mVenue.Dir()` null check AND no `if(!empty())` pre-check before `mDircuts.erase(begin,end)` — both must change together (removing only the empty check shifts all branch offsets, drops to 86%). 8 variants tried (goto, nested if, early return, `&&`/`||`, locals, `.clear()`, `size()!=0`) — the `bne+b` polarity is not source-controllable.
+  - `BandHighlight::Poll` (`system/bandobj/BandHighlight`) — 94.02%. FPR scheduling / ClampEq cascade: ClampEq's double-load constant, a cascading f2↔f3 swap for pz/ez, and cross-basic-block f3 pre-allocation for `unk13c.x` — MWCC's IPA does CSE/reuse that target avoids.
+
+- **Wave-5 structural trio (2026-05-26), all confirmed permuter-class:**
+  - `RndMeshDeform::Reskin` (`main/system/rndobj/MeshDeform`) — 85.6%, 2768B. `(int)i` cast fix already landed; cross/axis reorder gave nothing further. Residual: −16 frame delta from callee-saved FPR pressure + GPR cascade (`this` in r19 vs r20); one `ObjOwnerPtr` null-check assert that IPA eliminates in target but not base; 1 LINKER_MERGED PathName (ICF) — all unfixable from source.
+  - `CharCuff::DeformMesh` (`main/system/char/CharCuff`) — 91.4%, 2680B. A real semantic bug (interp branch used `mShape[2].radius` instead of `mShape[1].radius`) was already fixed. Residual: base allocates f17/f18 as extra callee-saved FPRs (f17-f31) vs target's f19-f31 → 16-byte frame delta + 218 reg-swap cascade, plus a Mtx.h `FastInvert` inline loading `v.x`/`v.y` in opposite order (header-level, same class as the Mtx.h A/B dead end).
+  - `VocalNoteList::NotesDone` (`main/system/beatmatch/VocalNoteList`) — 92.2%, 3736B. Distinct function from `RemoveInvalidFreestyleSections` above (attack fresh if revisited — but also at-limit). Target keeps the int→float Gekko bias constant `@D_0000304300000080` in callee-saved f31 and spills `currentMin`/`currentMax` to stack (+0x10 frame); base pins them in f30/f31, cascading 50 reg-swap pairs from `this` (r15 target vs r27 base). `volatile float` regressed to 90.5%; decl-reorder no change. Does NOT call TempoMap virtuals, so the TempoMap.h vtable mismatch doesn't apply here.
+
+- **`ClipDistMap::FindBestNode`** (`src/system/char/ClipDistMap.cpp`, 396B) — 77.14%. Not a field/algorithm bug — all struct offsets verified correct. Root cause: a counted-loop (ctr/bdnz) allocation swap — target puts CTR on the *inner* row loop (outer col loop is a plain compare loop), our build inverts it (CTR on outer, inner uses subic./bne). MWCC only CTR-izes one loop and picked the other one; pure scheduler decision, all 14 diff_args trace to this. Tried and dead: removing the `clipAStart` cache (57%, catastrophic — the cache is NOT the lever despite target reloading `mAStart` inside the loop), inner do-while→for (regresses, breaks the `if(rowIdx>=0)` guard shape), DC3-style ternary min (flat 77.14% but breaks the bool-materialize block shape), endCol/startCol decl swap (wash), beam search 116 variants depth 4 (ceiling 77.14, no ctr flip). Keep original source shape (do-while inner, `clipAStart` cache, startCol mask right after decl). **Measurement gotcha:** incremental `ninja-locked X.o` gave stale 76.5-76.9% — always clean-rebuild before trusting a ≤0.5pp delta on this function. Sibling `ClipDistMap::Draw` (71.82%) shares no field bug; its gap is independent (Hmx::Rect/Color inline ctors + ceil/float grid loops + nested cell loop).
+
+## General at-limit guidance
+
+- **No raw asm as a matching shortcut.** Never write inline asm without an `#ifdef __MWERKS__` guard + a plain-C++ fallback. Writing asm purely to force a 100% match is out of scope — x86/native-port compatibility is a project goal, and a match achieved only via MetroWorks-only asm doesn't serve it. If paired-single asm is truly required (e.g. some Vec.h/Mtx.h math), wrap it in `#ifdef __MWERKS__` with a functioning `#else` C++ branch; never leave a function asm-only with no fallback.
+
+- **DC3 is a logic reference, never an asm-match reference.** DC3 (Dance Central 3) shares the Milo engine but was compiled with MSVC for Xbox 360 — a different compiler and target than RB3's MWCC/Wii. A DC3 function at 100% (against the Xbox 360 binary) says nothing about what RB3 source shape will match the Wii binary; DC3's 100% does not transfer. Two full waves (2026-05-28) deliberately tested a "DC3-ahead-of-RB3 sweet spot" hypothesis across math/* and UI/meta_band/utl/world/char candidates — **16/16 regressed or no-changed.** RB3's existing source is already an MWCC local optimum; DC3's source is a different local optimum for a different compiler, and swapping it in regresses even on genuinely shared-engine semantics (regswap cascades, FPR scheduling, stack-frame offsets, SDA-distance encoding, `_outline_` trampolines). **Where DC3 IS useful:** understanding control flow / fields touched / what a function does semantically (via `mcp__orchestrator__lookup_dc3` / `/dc3-pair`), and as the only reference for functions RB3 has at 0% (nothing to compete with). Never for grinding an already-existing sub-100% RB3 function — use the permuter or a from-scratch band3/* structural rewrite instead.
+
+- **DC3 cross-project "shared-engine bug" audit findings do NOT cross-apply to RB3.** A dedicated 8-agent verification wave (2026-05-26) checked 8 DC3-audit-flagged shared-engine bug candidates against RB3 — **0/8 transferred** (`RndCam::UpdateLocal`, `MoggClip::Play`, `Splash::Suspend`, `FxSend::Save`, `ParticleCommonPool::InitPool`, `AccomplishmentProgress::AddAccomplishment`, `SampleInst::SynthPoll`, `UIList::UpdateExtendedEntries` — each either already 100% in RB3, didn't exist in RB3's source, or RB3's class shape had diverged too far). RB3 (2010, Wii/MWCC) and DC3 (2012, Xbox 360/MSVC) have different class layouts, different compiler idioms (MSVC ICF-merged thunks, COMDAT folding don't appear under MWCC), and different runtime APIs. **Don't dispatch a DC3→RB3 bug-transfer verification wave again** unless a specific finding has a clear structural reason to apply (a known shared header, an existing memory pointer at it) — the hit rate is 0%.
+
+- **Never trust an LLM agent's "permuter-class"/"at-limit" bail at face value — verify with an actual permuter run.** Empirical check (2026-05-26): of 3 Wave-10 LLM bails reachable by a sub-80% permuter sweep, **2/3 were cracked by the permuter** (`BandPatchMesh::WorkVerts::ExtendTwin` 71.5%→72.0%; `UtilDrawCigar` 65.7%→67.0%) — the LLM bails were premature. Only the 3rd (`ClipDistMap::Draw`, f24 callee-saved FPR cascade) was genuinely permuter-class as diagnosed. Same sweep found bonus wins on functions no LLM had touched (`StorePackedSong::EndianFix` 41.0→54.7%, `StorePackedPage::EndianFix` 50.0→52.5%, others). **Protocol:** when an LLM agent declares at-limit, queue a verification permuter run — `batch_auto` if the function falls inside an active fleet's pct range, otherwise a targeted sweep (`scripts.permuter.batch_auto --min-pct 0 --max-pct 80 ...` for below-floor targets) or `scripts.permuter.beam_search --symbol <mangled>` for single-function verification. If the permuter also plateaus, the bail is confirmed — log the specific ceiling. If it cracks, cherry-pick and note the mutation pattern that worked (often `asgn_swap`, `fma_reorder`, `stmt_reorder`, `boolmat`, `slot_pad`). **Also:** this memo's own "at-limit" entries are not gospel — periodically re-run the permuter against documented at-limit functions, since the permuter project regularly gains new mutation strategies that can shift a ceiling. Watch for file-write races between an LLM wave, active fleets, and a verification sweep touching the same `.cpp` — commit small and promptly per file. And don't generalize a dead-end across same-named members of *different* types without re-verifying (e.g. `StorePackedRanks::EndianFix` is permuter-class but `StorePackedSong::EndianFix`/`StorePackedPage::EndianFix` — different types, same method name — improved in the same sweep).
+
+- **Watch for false "dead end" shapes — check mutual exclusion before assuming a two-if pattern is locked.** Not every "two sequential ifs on the same loaded pointer force a reload" situation is a wall: if the two conditions are logically mutually exclusive (e.g. `if (mCrowd)` / `if (!mCrowd)`), converting to `if/else if` makes the non-invalidation explicit and lets MWCC drop the redundant reload — `CamShotCrowd::Load` went 99.6%→100% this way in one edit (`src/system/world/CameraShot.cpp:1318`, commit `0e02fa90`). Contrast with `Key.h`'s `KeyGreaterEq` two-if (above), where the *target itself* wants the double-load and if/else regresses — the difference is whether target's asm shows a genuine reload (fixable, convert to else-if) or a genuine intentional double-load (don't touch). Always check target asm's load count per branch before deciding which case applies.
+
+- **Unverified lead, do not act on without a dedicated header-permitted A/B: `NEW_POOL_OVERLOAD` StaticClassName data-pool shift.** Flagged by a wave-8 `CharacterTest::Sync` agent (root cause of that function's ~90.3% ceiling), not independently verified elsewhere. Hypothesis: `NEW_POOL_OVERLOAD(SomeClass)` in a TU can emit a *local* copy of `@STRING@StaticClassName__<OtherClass>...` into that TU's `.data` (e.g. `CharacterTest.o` carried a local `StaticClassName<CharUpperTwist>` string that in the target lives in `Char.o`), shifting every subsequent pooled `.data` constant offset and blocking a small persistent cluster (a pooled zero-constant `@23935` needed by `RndGraph::Get(0)`, landing at the wrong offset). If real, this "symbol emitted in the wrong TU" class (same shape as the vtable key-function rule) could cap many functions across TUs instantiating `StaticClassName<T>` for a `T` whose canonical string belongs elsewhere. Verification steps before touching anything: (1) confirm via objdiff that the stuck cluster is a `.data` pool-offset shift with a stray `@STRING@StaticClassName__...` in the TU's data; (2) force `StaticClassName<X>` out-of-line into X's own `.o` (explicit instantiation, or `__declspec(noinline)` on the specialization); (3) full report.json A/B — any ≥95% function regressing ≥0.5% reverts the change. Do NOT speculatively edit headers for this without a dedicated user-approved header-permitted pass.
