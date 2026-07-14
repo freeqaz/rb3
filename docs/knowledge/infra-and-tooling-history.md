@@ -465,6 +465,36 @@ Design docs live under `rb3-xenon/docs/plans/`: `rb3enhanced-same-instrument-pat
 `same-instrument-derived-addresses.md`, `build-without-xdk-recommendation.md` (+ several sibling
 docs on the XDK-free build path).
 
+### TU5 migration of the patch (2026-07-07 — retargeted, load-bearing addresses changed)
+
+Because RB3Enhanced targets TU5 (v0.0.5.1) while `rb3-xenon`'s decomp target was the base/TU0
+disc EXE, the effort built and validated a **base→TU5 function map** and re-targeted the patch:
+- **Map:** skeleton/content-hash matching gives **96.4% named functions identical (12,817/13,295)**;
+  changed-set = **478**, of which only **81 are genuinely rewritten** — and analysis
+  (`docs/plans/tu5-rewritten-functions-analysis.md`) showed the *entire* changed-set is ONE
+  base-class member + vtable insertion rippling offsets/vtable-slots, so only ~25 are true rewrites
+  (~2-3 eng-days). Work lives in worktree `rb3-xenon/.claude/worktrees/tu5-migrate` (branch
+  `tu5-migrate`; TU0 frozen at tag `target/tu0-frozen`, main untouched). TU5 dtk-extracted at
+  `band_tu5.exe`.
+- **The patch survives TU5 with no logic rework** (6/7 patch fns are clean 1:1; `IsActive` is a
+  whole-function override so its 56% divergence is irrelevant). CAUTION when resuming: the
+  overshell/part-select area is the most-churned (`Reload`/`ResolveSlotStates`/
+  `OvershellSlot::UpdateView` were rewritten and none are hooked) → smoke-test that path.
+- **Addresses changed on retarget** — the original spike addresses were all off by a `−0x8000`
+  flat-map error; corrected, and the **code cave moved `0x82C25000` → `0x82C8A000`** (the base cave
+  is zeros in TU5). `default_tu5_patched.xex` byte-verified (675/675 writes, 4 detours = real `mflr`
+  entries → `b cave`). The test build `clean_tu5_patched.xex` (sha `e411086b`,
+  `gSameInstrumentEnabled@0x82C8AAA0=1`) is byte-verified. **Use the TU5 cave `0x82C8A000`, not the
+  base `0x82C25000`, when resuming.**
+- **`base_to_tu5_map.json` (built vs RB3DX) IS the base→clean-TU5 map** — rebuild delta ≈ 0, just
+  relabel (per the RB3DX = clean-TU5 + 170-byte-patch finding above). Dirty-disc bail helper
+  is `ShowDirtyDiscAndBail 0x8283D740` (called ~`0x8283D74C`).
+- **Tooling:** `rb3-xenon/tools/va_disasm.py <VA> <n>` disassembles PE-section-correct (capstone
+  PPC32 BE) — a flat `VA-0x82000000` read is WRONG for `band.exe`. Ghidra crossport
+  (`docs/plans/ghidra-tu0-tu5-crossport.md`) names only 1,139/13,846 in Ghidra base; the VT (Exact
+  Function Instructions) correlator is the structural cross-check for the 81, not a bulk namer.
+  Divergence write-up: `docs/plans/clean-tu5-vs-rb3dx-divergence.md`.
+
 ## Decomp-synth "hop reward" / edit-contract research thread
 
 An ML/data-pipeline research thread (distinct from asm-matching work) that mines this repo's git
@@ -514,6 +544,28 @@ it was training on a radioactive chain (724 = `Relativize__CharBonesSamples`).
   returning (see the "Multi-Agent Workflows" section of CLAUDE.md).
 - Watch for peer-agent collisions on parallel decomp-synth work — reconcile fix-forward and re-grep
   current `main` before staging, rather than assuming a stale view.
+
+**Additional durable findings (identifiers/conclusions worth keeping):**
+- **Counter-intuitive yield curve (banked):** single-move improver yield *rises* with fuzzy%
+  (`[95,100)`≈0.22 > `[90,100)`≈0.13 > `[50,90)`≈0.04), the *opposite* of the headroom intuition —
+  low-% functions need coupled multi-edit fixes the single-line edit contract can't express
+  (mechanistically = the sub-hop token-class table: coupled edits <15% buildable). Tier-1/2
+  band-chase was stopped at ~0.043 improvers/state as not worth it.
+- **Proposer cost:** `deepseek-v4-pro` is the value proposer; `gpt-5.2` buys ~nothing over it at ~3×
+  cost (tier-3 pilot). Meter cost via per-arm `transcripts.db SUM(cost)`, NOT `/credits` — shared-key
+  pollution inflates the credits view up to 21×.
+- **LoRA pipeline (`f43e65c`):** `train_proposer_lora.py` (QLoRA 4bit) + `serve_proposer.sh` (vLLM
+  base+adapter at a local OpenAI endpoint) run GREEN on 2× RTX 3090; 7B/14B comfortable, 27B tight.
+  GPU 0 had a peer process → use GPU 1. `llm_proposer` is OpenRouter-native when `LLM_BASE_URL` is
+  unset, which sidesteps single-GPU contention for collection.
+- **Next-lever direction if N4 stays null — `N5′`/`N5″` (multi-edit / parameterized edit-chain):**
+  the frontier is a whole-body / multi-line edit contract for the ~71% structural fixes the deployed
+  single-line contract can't express. A fill census over all 1,333 hops (3,942 content-edits) found
+  only ~10.7% of fills are truly freeform (35.7% exact-copy, 17.4% lexicon, 22.4% gensym-locals,
+  11.7% member-API, 2.2% target-literal); **parameterization + constrained-decode pointer-domains
+  lifts content-closable chains 27.5% → ~64%**. Prototype arms to A/B: udiff baseline + anchored-op
+  DSL (quoted anchors self-verify = pre-compile hallucination reject) vs whole-body text; hard
+  copy-only pointer-heads are DEAD (≤53% coverage).
 
 ## `audio_verify.py` — reference-vs-output audio verification tool
 
@@ -574,3 +626,97 @@ Numerous follow-on audio waves (SFX latency, off-main-thread mixing, frame-stall
 per-SFX-trigger PCM leak, an A/V calibration offset, missing venue-intro crowd audio) used this
 tool and its harness as their verification backbone; those are audio/engine fixes rather than
 tooling and are tracked in the audio/render project memory files, not duplicated here.
+
+## Incremental load-perf (web) — diagnosis, infra & gotchas
+
+A 2026-06-10 multi-agent investigation into web incremental-load stalls (screen transitions, preview
+hover, in-game frame drops). Canonical plan/hub: `docs/native/incremental-load-perf/PLAN.md` (ranked
+levers, invariants, wave-scheduled handoff) + `research/01..14`. The wave-by-wave engine/audio
+fixes themselves are render/audio work tracked elsewhere; captured here is the durable **diagnosis,
+infra, flags, and gotchas** that make load-perf debugging cheap next time.
+
+**Diagnosis (measured, the key insight):** Milo's loader is **already async**; the native port
+collapsed it at exactly **ONE seam** — `NativeStdioFile`'s ctor does a *blocking sync XHR* on a
+MEMFS miss (`native_file.cpp` → `WebAssets.cpp` `xhr.open(...,false)` + per-byte `charCodeAt`), and
+`ReadAsync` reads inline, leaving the `ReadDone`/`TempEof` machinery dormant. Native `lpu` (load
+per update) is ~0ms everywhere ⇒ the **17 `PollUntilLoaded` drain sites are free once bytes are
+resident — fix the File seam, NOT per-site conversion.** Preview hover froze because
+`SongPreview::PrepareSong` → `TheSynth->NewStream` → `NewFile` sync-XHR'd the **entire 32-37MB mogg**
+(NOT `MoggClip::EnsureLoaded` — an earlier claim that was refuted); warm re-hover was already fine
+(MEMFS-resident). Boot/transition CPU cost was DXT→RGBA8 *software* decode, BE→LE milo byte-swap,
+and first-draw upload bursts.
+
+**What shipped (all web-only, `HX_NATIVE`/`__EMSCRIPTEN__`-gated → Wii byte-identical, all default-ON
+and A/B'd behind opt-out flags):** async pending-File open (`WebPendingFile` + `/api/manifest`
+size/404 oracle) and Range moggs (server 206) + preview prefetch; per-screen bundles
+(`/api/bundle/screen/...`, hub→select fileReqs 20→1) + pipeline pre-warm (chunked Dawn flush,
+550→80ms); loader read-ahead + a 2-slot Range read-ahead with a cross-open LRU chunk cache; wire-byte
+cuts (SFX PCM→ogg sidecars, 59MB→8.5MB); **A4 mip-strip content downscale** (top-mip drop, venues =
+75% of texture bytes) which turned a 1.5Mbps DNF into reaching game_screen; and **C progressive
+sharpen** (A4-stripped venue loads fast, then a background sidecar fetch live-recreates each texture
+at full res — byte-exact restore, keyed by a name-free `TexFingerprint`).
+
+**Flags (opt-out unless noted):** `RB3_ASYNC_OPEN_OFF`, `RB3_MOGG_RANGE_OFF`, `RB3_BC_TEX_OFF`,
+`RB3_PREVIEW_PREFETCH_OFF`, `RB3_LOADER_READAHEAD=N`, `RB3_MOGG_CACHE_MB=N`, `RB3_SFX_OGG_OFF`,
+`RB3_WEB_DOWNSCALE`, `RB3_PROGRESSIVE_SHARPEN`, `RB3_SHARPEN_PER_FRAME=N`, `RB3_TEX_PREWARM_OFF`,
+`RB3_GAMEWARM_OFF`, `RB3_UNPACK_CACHE_OFF`. (`RB3_METAMUSIC_SYNC`/`RB3_VENUE_SYNC` shipped default-SYNC,
+i.e. those async levers are effectively no-ops as shipped.)
+
+**Tools:** `analyze_net.py` (network census — use `peakConcurrent`/`overlappingMilos`/
+`chunkReDownloads`, NOT `miloSerialΣ` which inflates under overlap), `scripts/web/_netmatrix.mjs`
+(bandwidth/RTT matrix), `scripts/milo/mip_strip.py` (`strip`/`sharpen`), `firstframe-gate.mjs`,
+`prewarm_encode_cache.py`, `_netbytes.py`.
+
+**GOTCHAS (each cost real time the first time):**
+- **"Stuck on song load (web)" is almost always a STALE DEPLOYED BUILD, not a code bug.** Rebuild
+  `scripts/web/build.sh` on the deploy host. (Also: don't screenshot gameplay at +4s and call it
+  broken — a song-intro cinematic runs up to ~25s at `songMs=0`; wait for `songMs>0`/track slide-in.)
+- **Gate perf at 8Mbps/80ms + 4Mbps/150ms**, never only 20Mbps/40ms — the fast gate is provably
+  blind to the serial-fetch wall-clock stall class (the canvas never freezes; ~85MB of milos
+  download 100% serially, 45s for one venue milo @4Mbps).
+- **A benchmark can lie — independently re-derive a load-bearing metric before building on it.** The
+  "stem ring fills only ~743ms vs 9s" premise was a *bench bug*: `audio-stall-bench.mjs` seeded its
+  low-water from the 32768-frame *output* ring (32768/44100 = 743ms), clamping every sample; the
+  stem ring was always ~7-8s deep. A whole "realize the deep ring" workflow was spun on a bench bug.
+- **At 4-8Mbps the pipe is throughput-bound (wall ≈ bytes/bandwidth).** Parallelism (read-ahead)
+  kills RTT gaps but *cannot beat throughput* — the 40-50% wall cut did not materialize; the only
+  remaining lever is **BYTES** (wire compression, content downscale). 1.5Mbps stays
+  throughput-unplayable except via smaller assets.
+- **`mip_strip.py` is Python byte-surgery because the engine has NO ObjectDir save path**
+  (`DirLoader::SaveObjects` = `MILO_ASSERT(0)` stub). Downscaled assets + `.sharpen` sidecars are
+  gitignored/machine-local → regenerate per-deploy (`gen_web_downscaled.py` +
+  `prewarm_encode_cache.py --downscale`). The A4 visual gate must EXCLUDE BC5/DXN normals,
+  BC3-alpha, and textures ≤256² (SSIM degraders); dc3's `validate_milo_entries.py` only checks the
+  start entry-table, so the *visual* gate is the real texture-stream desync detector.
+- **Engine web arms gate on `__EMSCRIPTEN__`, NEVER `HX_WEB`** (milo-engine is compiled `HX_NATIVE`-only).
+  A native-only TU silently becomes a web no-op if it's missing from `RB3_WEB_NATIVE_GLUE`
+  (`ERROR_ON_UNDEFINED_SYMBOLS=0` hides it) — check BOTH source lists.
+
+## rb3-viewer asset renderer + the white-wig "deceptive 99.6% match" lesson
+
+**`rb3-viewer` (2026-07-02, `5b8e0d05`, v2 `793e718d`)** — a standalone `.milo` asset renderer built
+*into* `rb3-native` (no second link target): `rb3-native --viewer <milo-rel-path> [--out png]
+[--sim N] [--list] [--azimuth/--elevation/--distance] [--test-bone] [--pose-dump] ...`; wrapper
+`scripts/native/render-asset.py`; doc `docs/native/asset-viewer-2026-07-02/VIEWER.md`. It registers
+char factories (`CharHair`/`OutfitConfig`/`RndAmbientOcclusion` Init) selectively — NOT wholesale
+`CharInit`/`BandInit`, and NOT `Character` (a `CharacterTest`→overlay trap). GOTCHAS baked into it:
+`OutfitConfig::Init` needs `BandCharDesc::Register()` first (else SIGABRT); `InitGpu` BEFORE `chdir`;
+`_exit` after the PNG. `--sim` diverges for some strands standalone (no head frame / `CharCollide`
+volumes) — `--test-bone` + an in-game gate are the reliable skinning checks. `RB3_HAIR_DBG=1` is the
+hookup-coverage probe.
+
+**White-wig bug FIXED (`81f38f3a`) — the durable lesson.** "Character renders with a white/collapsed
+wig" was `CharHair::SimulateInternal` collapsing strand physics: the decomp **mis-scoped the closing
+brace of `if (collides.size()!=0)`**, gating the per-point bone-update tail (SetWorldXfm / force /
+friction / inertia / chain-advance) that the Wii target runs **unconditionally** (the empty-collides
+`beq` lands *at* the tail, `.L_806D002C`; DC3 confirms). Collide-less free strands (crazyhawk,
+ziggymullet, longmop, robertplant…) draped over faces; tight styles were fine. **objdiff read a
+deceptive 99.6% "match" — the real bug hid as a single `diff_arg beq` branch-target mismatch.**
+The fix was a one-brace move; 99.6% held (the CFG mismatch cleared, residual = regalloc noise) and
+the in-game band-closeup gate passed. **LESSON: a `diff_arg` branch-target mismatch on a `beq` is a
+possible real CFG bug, not noise** — the same "high match% masks a real bug" trap as the
+normalized-masking sections above, but visible even at raw 99.6% fuzzy. Follow-ups all CLOSED
+(`ede6911f`/`e023b8aa`): zero-coverage styles have authored `hookupFlags=0x0` (Wii-identical by
+design, not a bug), and "white" was the collapsed-pose artifact (flat ribbon faces catching light),
+not a texture problem. Evidence: `docs/native/asset-viewer-2026-07-02/` (scout-wig-bug.md,
+land-report.md).

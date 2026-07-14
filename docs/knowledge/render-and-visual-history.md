@@ -37,6 +37,8 @@ Durable fixes and findings by wave:
 
 **Gotcha:** a review agent false-FAILED this by mistaking band-character costume geometry for blown-out particles AND tracing the uncompiled DC3 `Part_Wgpu.cpp` instead of `Rnd_Wgpu_RB3.cpp`. Always adjudicate reviewer FAILs against actual frames + actual compiled source. Engine log via `MILO_LOG`/`TheDebug` is swallowed in native — use `fprintf(stderr)`, grep with `grep -a`.
 
+**Detail / build gotcha:** the weak no-op stub lived at `native/src/rndobj_synth_link_stubs.s:67`. The per-lane `.part` systems are `radial_flare_center.part`, `spark_burst_random.part`, `radial_shockwave.part`, `gem_cap.part`, `broken_glass_squares.part`, `smasher_smoke.part`, collected by `setup_draworder` (smasher_plate.dta) into `after_gems.grp`. The visibility fix (`GemTrackDir.cpp`) took flame `DrawShowing` calls 0→1498; draw path is `RndDir::DrawShowing`→`RndGroup::DrawShowingBudget`→`RndDrawable::DrawBudget` (native skips frustum cull, `SMASHER_DRAW_FIX`), NOT `Draw`/`DrawShowing`. RB3 has NO UV tiling (no `NumTilesAcross`/`Down`); added accessor `RndParticleSys::RelativeXfm()` (Part.h, HX_NATIVE). **Engine is a SEPARATE cmake target `milo-engine` (`libmilo-engine.a`)** — `cmake --build native/build-native --target rb3-native` does NOT rebuild it; use the default (all-targets) `cmake --build native/build-native`. Minor residual: flare pink vs retail blue/white (per-asset tint). Verify harness `/tmp/a1_drive.py`.
+
 ---
 
 ## A2/A3/A4 — gameplay emissive glow (shared root cause)
@@ -63,7 +65,7 @@ Supersedes the old "A4 BLOCKED on venue-environ bring-up" conclusion, wrong on t
 1. The venue `.milo` deferral was NOT a hard instancing gap — it was a single transposed `ObjPair` ctor in `WorldInstance::SyncDir`: RB3 had `ObjPair(foundObj, it)` (from = fresh copy, null Dir → trips `MILO_ASSERT(p->from->Dir())`); DC3 + target use `ObjPair(it, foundObj)`. Swapping is match-neutral (96.63135% unchanged) and removed the ~70-line `IsDeferredVenueProxy` hack. Landed rb3 `d988a301`. Venue backdrop geometry now renders.
 2. Gameplay highway lighting never needed the venue env — highway/gems/HUD draw under `game.cam`, venue/band/crowd under `world.cam`. The dark look is the game.cam-scoped track-lighting change above (engine `f5ee015`).
 
-**Still open (lower priority):** the venue backdrop's own lighting under world.cam. If pursued, it lights band/stage/crowd, not the highway. RB3 accessor contract: `RndEnviron::sCurrent` (public static, no `Current()`); `AmbientColor()/FogColor()/FogEnable()`; light lists are PUBLIC members `mLightsApprox`/`mLightsReal` (use `mLightsApprox` only — DC3 `ObjDirItr<RndLight>` WASM-hangs); `RndLight`: `GetType()` (kPoint=0/kDirectional=1/kFakeSpot=2), `WorldXfm()` (dir = m.y).
+**Still open (lower priority):** the venue backdrop's own lighting under world.cam. If pursued, it lights band/stage/crowd, not the highway. RB3 accessor contract: `RndEnviron::sCurrent` (public static, no `Current()`); `AmbientColor()/FogColor()/FogEnable()`; light lists are PUBLIC members `mLightsApprox`/`mLightsReal` (`ObjPtrList<RndLight>`) + `mNumLightsApprox`/`mNumLightsReal` (NO accessor methods) (use `mLightsApprox` only — DC3 `ObjDirItr<RndLight>` WASM-hangs); `RndLight`: `GetColor()`, `GetType()` (kPoint=0/kDirectional=1/kFakeSpot=2), `Range()`, `Showing()`, `WorldXfm()` (dir = m.y), `mTexture`. SceneUniforms/`standard_wgsl.inc` already support 4 dir + 4 point + ambient + projected.
 
 ---
 
@@ -73,8 +75,8 @@ Hub: [docs/native/c8-ground-truth-2026-07-01/](../native/c8-ground-truth-2026-07
 
 1. **Flesh-skin texture composite** (rb3 `372baf7b`, opt-out `RB3_SKIN_FIX_OFF=1`) — grey/blank skin: runtime 3-arg `SetSkinTextures` never `Recompose()`d + material-identity split (skin.cfg MatSwap `mMat` = dummy-diffuse copy ≠ mesh's `*_naked` mat).
 2. **"Floating eyes and teeth" = `head.mesh` geometry FREED** (rb3 `26c5684d`) — `BandCharacter::SetDeformation` → `CharMeshCacheMgr::Disable` → `MeshCacher` dtor → `RndMesh::SetKeepMeshData(false)` cleared verts after the face-shape bake. Wii-safe (GX display lists); native WGPU re-reads CPU verts every draw → `nf==0` → head never drawn. Fix: `SetKeepMeshData` refuses to free on HX_NATIVE. Opt-out `RB3_MESH_FREE=1`. **Gotcha:** symptom is per-character (deform-skipped chars keep heads) → random band lineups made naive A/Bs lie; it falsely looked caused by `372baf7b`.
-3. **Glowing eyes** (engine `04c8e1c` + rb3 `fadd179a`, opt-out `RB3_COMPOSE_MULT_OFF=1`) — eye RT collapsed to ~white because native `DrawRect` mapped every `MatSwap::Compose` layer's `kBlendSrc` to REPLACE. Fix: dest-multiply the modulate layers while a compose RT is active.
-4. **Flat/over-bright face shading** (engine `5587ce0` + rb3 `7f603e17`, opt-out `RB3_CHAR_REAL_LIGHT_OFF=1`) — `WriteSceneUniforms` promoted every environ's `mLightsApprox` to full Lambert directionals; char envs' approx set = rim.lit + 4 white spots → flat flesh flood while the dim `main.lit` key in `mLightsReal` was ignored. Fix (world.cam path): char envs (`strstr(env,"char")`) shade from `mLightsReal`, approx demoted to averaged ambient.
+3. **Glowing eyes** (engine `04c8e1c` + rb3 `fadd179a`, opt-out `RB3_COMPOSE_MULT_OFF=1`) — eye RT (`eyes_diffuse_output.tex`) collapsed to ~white (last composite layer) because native `DrawRect` mapped every `MatSwap::Compose` layer's `kBlendSrc` to REPLACE. Fix: dest-multiply the modulate layers while a compose RT is active. (Teeth were NOT an eye bug — uncomposited near-white albedo, dimmed by fix 4.)
+4. **Flat/over-bright face shading** (engine `5587ce0` + rb3 `7f603e17`, opt-out `RB3_CHAR_REAL_LIGHT_OFF=1`, plus `RB3_CHAR_APPROX_AMBIENT`/`RB3_CHAR_AMBIENT_MAX` tuners) — `WriteSceneUniforms` promoted every environ's `mLightsApprox` to full Lambert directionals; char envs' approx set = rim.lit + 4 white spots → flat flesh flood while the dim `main.lit` key in `mLightsReal` was ignored. Fix (world.cam path): char envs (`strstr(env,"char")`) with a usable real key shade from `mLightsReal`, approx demoted to averaged ambient; geometry envs + empty-real char envs keep legacy.
 5. **RndTexBlender port = NO-GO** (research-proven, don't revisit): the empty blr is Wii-faithful; backend never binds normal maps.
 
 **Superseded/corrected:** fix 3's dest-multiply was WRONG for clothing (collapsed garment RTs toward black). Correct math landed engine `153beaf` (pin `e4b661ad`): decoded Xbox textures = `_diff` DXT1 RGB detail, `_interp_gw`/`_mask_gw` DXT5 with weight/coverage in ALPHA; composite = `out.rgb = diff.rgb · lerp(color1, color2, interp.a)` then mask dest-multiplies coverage, staged in `BandRnd::DrawRect` under `gRB3OutfitComposeActive`. **Web-only grey/flat skin** fixed separately (`266ffb1b`): even with correct math the SKIN RTT composite bakes grey on web with all inputs proven resident — NOT async/residency (disproven, don't re-chase). Fix binds source `_diff` directly + `SetColor(palette skin tone)`; broken RTT path behind `RB3_SKIN_RTT=1`.
@@ -102,6 +104,18 @@ Full writeup: [docs/native/CHAR_SKINNING_DEFORM_INVESTIGATION.md](../native/CHAR
 
 ---
 
+## Decomp sweeps of SHARED render code — the BandPatchMesh gate lesson
+
+Decomp-sweep commits that rewrite SHARED (non-`#ifdef`'d) geometry/anim/char code for sub-100% fuzzy gains can change runtime semantics with ZERO asm proof — and the whole-binary objdiff regression gate only checks Wii asm, never native-port behavior. `BandPatchMesh` shipped grossly deformed characters TWICE this way:
+- **`4a49b1a4`** (reverted `82f390b1`): `ExtendTwin` cross-sign flip + `outUv` swap; `AddEdge` stale hoisted index. Deformed chars on native/web for a day while claiming "the native port is unaffected".
+- **`30c51bad`** (reverted AGAIN `f0a95910`): a Fable-research→Opus-impl re-land (`AddEdge` 99.76, `ExtendTwin` 94.47, `TryAddFace` 93.1, `FindXfm` 79.15) that PASSED the closeup gate but shipped the same class — giant pale patch shards over arms/hands, needle-spike hands, slab across the vocalist's jaw. Bisect-confirmed (revert→clean, restore→shards). Twist: HEAD's "proven-correct" code was ALSO wrong (`ExtendTwin` cross sign inverted vs the binary; `FindXfm` genuine UB — uninit `xfm.v`/`m.z` + OOB read past `Faces().end()`).
+
+**CRITICAL GATE LESSON:** `band-closeup-capture` + drop/ratio metrics are BLIND to BandPatchMesh corruption — it reported PASS 34/34 pinned, 0 drops, ratio 0.00 on a visibly exploded frame. Corrupted patch geometry renders WITHOUT tripping the V24 shard-guard, and patches (face paint / logos / hand patches) only appear on SOME lineup members. A future BandPatchMesh re-land needs a gate that (a) verifies a patch-bearing lineup is on stage, (b) judges WIDE crowd-shot frames VISUALLY for pale angular shards on hands/arms/faces (venue props like the pub's flying chairs are look-alikes — zoom to discriminate), across ≥2 rerolls, judged by the land-gate reviewer's OWN eyes, not the implementing lane's claim.
+
+**Safe-to-land rule for sub-100 SHARED code:** semantic changes are OK iff they are asm-derived AND the residual is `diff_op:none` (pure regalloc, zero insert/delete — proves semantics match target) AND the pinned native visual gate passes. Wii-only gains inside `#ifndef HX_NATIVE` blocks (template specializations etc.) are always safe. Semantic red flags in sweep diffs: operand-order reversals in cross products/subtractions (sign flips), hoisting a field read out of a loop whose body mutates the container, swapped `.x`/`.y` result rows, removed early-out zeroing. (`FindXfm` at 79% never had `diff_op:none` established — the "iff" was not met by `30c51bad`.)
+
+---
+
 ## Convergence: venue/crowd lighting (2026-06-20/21, 06-30)
 
 Hub: [docs/native/converge-2026-06-20/](../native/converge-2026-06-20/). Deterministic force-band-closeup harness → 5-venue audit. **Band closeup GEOMETRY is CLEAN across all 5 venues** — the convergence frontier moved OFF skin-deform onto venue/crowd lighting.
@@ -116,6 +130,12 @@ Hub: [docs/native/converge-2026-06-20/](../native/converge-2026-06-20/). Determi
 **DC3-SAFE GATING PATTERN (reusable):** add a `SceneUniforms` mode flag reusing a `_pad` slot (struct size unchanged), default 0 = exact legacy, set mode 1 only on the RB3 path. Verify DC3 grep 0 hits.
 
 **Deferred backlog re-assessed 2026-06-30 (CONVERGED):** of 5 items only the screenmask was worth landing. **Festival Bink Option B CLOSED — jumbotron `.bik` were CUT from the 360 build** (reconstructed the full retail 360 disc: XDVDFS is only the ARK, no loose `world/` tree, no mass-crowd biks). Option A (skip white quad → gameplay over black) is plausibly faithful to retail 360. Reusable disc tooling committed in the engine repo: `milo-native-engine/tools/asset-extract/` (`god2iso.py`, `milo_decompress.py`).
+
+**Also from this backlog:**
+- **STEP-2 impostor-crowd env-gate = CLOSE_OBSOLETE — do NOT push tag `converge-step2-crowd-wip` (`bae1aae`).** It was structurally correct + DC3-safe (impostor cam reads its dim authored env instead of hardcoded-white) but B(a) above already fixes the visible crowd, and STEP2+B(a) MULTIPLY in the same pipeline → double-dim → near-black. Its `(unnamed cam && TargetTex())` discriminator could also collide with `OutfitConfig`'s char-customize RTT cam.
+- **Footwear `_skin.2` + crowd/extras accessory shards = ACCEPT** (blocked on the C8 rotation-basis divergence; off-frame/masked, correctly guard-dropped). CORRECTION: the "no non-Band rebake hook" claim was FALSE — `Crowd.cpp:911 RebindCrowdCharBonesToOwnSkeleton` already ships and fixes crowd BODIES; residual is 3 tiny accessories on ≤3/292.
+- **STEP-1 exposure = ACCEPT** (0.70, retail-consistent).
+- Engine landing mechanics for this campaign: `tools/setup-worktree.sh <name> --engine` (private engine worktree, build `-DMILO_ENGINE_PATH=$(cat .engine-path)`); coordinator lands via `git -C ../milo-native-engine merge --ff-only <sha>` then bumps `MILO_ENGINE_PIN`. Engine pin moves under you mid-session — branch off current HEAD and re-verify concurrent agents' uncommitted engine files survived the ff-merge.
 
 **Method lesson:** trust measured root-cause over plan hypothesis (the "char-extras flat-white" hypothesis was wrong — it was empty-name impostor billboard quads). An unverified single-agent reversal of a multi-agent finding must be independently re-verified before landing.
 
@@ -132,7 +152,9 @@ Five gaps (design named 3, verification found 2 more engine bugs):
 4. (engine) imposter cam inherited venue far (~224) → char at world origin behind far clip → culled BLACK RT. Fix = RT-cam far widen to 8000.
 5. (engine) `BeginDrawTarget` must clear `mLastSceneCam=nullptr` — the 2D loop re-Selects the same camera per archetype; the `DrawMesh` camChanged latch misses the re-pose → stale uniforms.
 
-**Verification trap (record):** RT-readback showed all-BLACK while the feature WORKED — RT tex usage lacked `CopySrc`, so `CopyTextureToBuffer` was a silent Dawn no-op. A broken readback masquerades as a broken feature. Gold-standard proof is the RT readback, NOT the in-venue frame (a static baked crowd texture already fills the bowl walls; director cam is non-deterministic).
+**Verification trap (record):** RT-readback showed all-BLACK while the feature WORKED — RT tex usage lacked `CopySrc`, so `CopyTextureToBuffer` was a silent Dawn no-op. A broken readback masquerades as a broken feature. Gold-standard proof is the RT readback, NOT the in-venue frame (a static baked crowd texture already fills the bowl walls; director cam is non-deterministic). Probe `RB3_RENDER_DBG=1` logs "RTT created 256x256 for tex ''" = the imposter tex.
+
+**Follow-up (open):** `PipelineManager::PreWarm` sweeps the RT pass STATIC-only (assumed skinned meshes never render into an RT — now FALSE). Add a `{rtFmt, hasDepth=false, alphaWrite=true, skinned=true}` `PassVariant` to kill the first-imposter-frame pipeline-compile hitch.
 
 ---
 
@@ -196,13 +218,15 @@ Two-wave campaign, all verified from pixels, Wii-neutral. Landed:
 - **Red scrollbar thumb at screen center** = skinned `scrollbar.mesh` bones don't inherit `ScrollbarDisplay`'s `SetWorldXfm`; fix stashes sibling `scrollbar_bg` placement as thumb obj.world (engine `a8089c3`, opt-out `RB3_SCROLLBAR_THUMB_FIX_OFF`).
 - **Opaque grey body below album art** = `bottom_square_refraction.mesh`: native WgpuRnd has NO refraction pass → frosted materials render as opaque lit quads. Fix: skip that mesh in `MenuVoidDrawHook` (rb3 `83d2ffff`, opt-out `RB3_REFRACTION_FIX_OFF`). Other refraction meshes still flat-render — a real frost shader is the general fix.
 
-**Adjudicated FAITHFUL_AS_IS** (don't re-chase without a 360 oracle): sidebar ~15-22px right/down offset vs Wii refs = 360-ARK authored layout variance (sidebar is a skinned milo with absolutely-positioned elements). Xenia is NOT a quick RB3 oracle (local fork is DC3-hacked). **Tooling:** `MENU_VOID_DBG2=2` dumps every drawn RndMesh; ui.cam mapping `screen_x≈640+world_x*1.4`, `screen_y≈360−world_z*1.5`; `MENU_VOID_SKIP=<substr>` A/B. Hub PLAY NOW submenu = cheapest bottom-entry-highlight repro.
+**Adjudicated FAITHFUL_AS_IS** (don't re-chase without a 360 oracle): sidebar ~15-22px right/down offset vs Wii refs + star-badge graze by album panel = 360-ARK authored layout variance (sidebar is a skinned milo with independently absolutely-positioned elements — album z+117, dots z-117; no panel-level entry anim skipped, PropAnim applied). Xenia is NOT a quick RB3 oracle (local fork is DC3-hacked, RB3 faults in audio/present init). **Tooling:** `MENU_VOID_DBG2=2` dumps every drawn RndMesh; ui.cam mapping `screen_x≈640+world_x*1.4`, `screen_y≈360−world_z*1.5`; `MENU_VOID_SKIP=<substr>` A/B. GOTCHA: top-level ObjectDir finds on `song_select_details` hit a NON-rendered prototype (showing=0) — the visible panel is a separate proxy instance. Hub PLAY NOW submenu = cheapest bottom-entry-highlight repro.
+
+**Open residuals (known, unfixed):** overshell part-select sprites displaced vs Dolphin GT (SONG DIFFICULTY dots, missing "Player 1" label, ⊖ icon overlapping "CHOOSE"→"IOOSE") — same displaced-sprite family; transient mirrored footer labels; hub "NEXT MESSAGE (1/1)" text overlap (stale-slot family). Dolphin GT: `docs/native/c8-ground-truth-2026-07-01/dolphin-shots/nav_song_sel.png`. Review note: the `RB3_SCROLLBAR_THUMB_FIX` static `sHaveScrollbarPlacement` latch never resets — fine for the single widget, fragile if two `ScrollbarDisplay`s are ever visible.
 
 ---
 
 ## Part/difficulty selection screen restored (rb3 c9dc059a, 2026-07-02)
 
-The test-infra hack that skipped `part_difficulty_screen` after song confirm is REMOVED. The interactive flow was ALWAYS faithful (pure pad presses reach choose_part → choose_diff → ready → load) — only the synthetic verbs skipped it. **Removed** (`rb3_game_input.cpp`): `track:<sym>`, `difficulty:<d>`, web `WebDrivePartSelect`. **New verbs:** `part:<sym>` (guitar only) and `diff:<easy|medium|hard|expert|0-3>` — readiness-gated multi-frame state machines firing REAL pad presses. **Canonical nav changed** (old `track:`/`difficulty:` scripts are DEAD): `part:` MUST precede `diff:`; the real screen adds ~30s wall-clock so deadlines were bumped. Web: use `down/hold(220ms)/up/gap(400ms)`, not bare `page.keyboard.press()` (races the rAF poll).
+The test-infra hack that skipped `part_difficulty_screen` after song confirm is REMOVED. The interactive flow was ALWAYS faithful (pure pad presses reach choose_part → choose_diff → ready → load) — only the synthetic verbs skipped it. **Removed** (`rb3_game_input.cpp`): `track:<sym>`, `difficulty:<d>`, web `WebDrivePartSelect`. **New verbs:** `part:<sym>` (guitar only) and `diff:<easy|medium|hard|expert|0-3>` — readiness-gated multi-frame state machines firing REAL pad presses. **Canonical nav changed** (old `track:`/`difficulty:` scripts are DEAD): `part:` MUST precede `diff:`; the real screen adds ~30s wall-clock so deadlines were bumped. Web: use `down/hold(220ms)/up/gap(400ms)`, not bare `page.keyboard.press()` (races the rAF `_rb3Keys` poll). 16 harnesses migrated + verified. GOTCHA: `part_difficulty_screen` is only briefly on-screen (~frame 355) — 0.5s health polls MISS the window; use 30ms polls to assert it. `scripts/gpu/capture.sh -f/-s` frame windows need recalibration (game_screen lands later now).
 
 ---
 
@@ -224,6 +248,8 @@ Retail-vs-native visual diff findings (captures `/tmp/visdiff-20260702/`, refs `
 7. Pattern: findings 1+4+6 share an "opaque light-grey where retail is dark translucent" signature — possibly one shared untextured-quad/alpha-material fallback.
 
 **Known/confirmed (don't re-find):** char skin washed pink + eye issues (C8 family); venue backdrop over-bright warm (venue exposure); missing online chrome (intentional offline).
+
+**Not yet captured at that date (need follow-up shots):** drums/vocals/keys gameplay, star-power activation, results screen, filter/sort panel, title screen, career flow, customize, pause overlay, calibration, real-song album thumb in list view.
 
 ---
 

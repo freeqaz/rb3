@@ -60,6 +60,34 @@ Known residual: character skin/cloth textures (`dummy_torso.tex`,
 `poredetail_norm.tex`, `skin.pal`, `*_output.tex`) are MISSING from the
 extracted asset set — chars rely on desaturated vertex colour.
 
+**Earlier milestones (W3c–W8) — text/anim/HUD bring-up:**
+- **v1 demo (`f21547d9`)** booted with INVISIBLE UI text — it only "worked"
+  because autopilot navigated by hardcoded keystrokes.
+- **W5 (engine `8397fa6`):** `useAlphaAsRGB` for empty-name DXT5 alpha-only font
+  submeshes recovered SOME text.
+- **W6-V1 (master `0550a1dd`/`b3604348`/`56d3dd7d`):** plain-`UILabel` fallback
+  in the `dynamic_cast<AppLabel*>` + `HX_NATIVE` silent-return sites (4 sites; 24
+  others use unguarded `MILO_ASSERT`).
+- **W6-V2 (master `ca671682`) — durable finding:** `AnimTask::Poll` `SetFrame`
+  ARG ORDER was flipped under HX_NATIVE. Decomp has `(blend, frame)` but retail
+  asm is `(frame, blend)`; MWCC compiled the swap and STILL matched (96.7%),
+  clang did NOT — so every PropAnim was frozen at frame=1.0 → all reveal anims
+  stuck → main_hub menu invisible. The fix cascade-improves ALL animated UI.
+  (Class of bug: a decomp arg-swap that matches on MWCC but breaks native/web.)
+- **W7-HUD:** `MeshGpuCache::InvalidateGpuMesh` fixed HUD-digit not-drawn (a
+  `SetGeomOwner` cache-key bug).
+- **W8 reassessment (`68021568`):** measured the WHOLE SCREEN 2.6× darker than
+  Wii ref (avgLuma 34 vs 90; 95.6% dim pixels on song_select) → dimness is
+  SCENE-WIDE, not text-specific (resolved in W9 as the non-sRGB surface). Verify
+  with paint-%/RGB sampling, NOT visual impression. W4 size/memory met at dev
+  `-O0 -g2` (5.1MB gzip / 207MB peak); W4a brotli 2.21MB; W4b IDB cache 95% hit.
+- **DIAGNOSIS PATTERN:** both "dim" AND "not-drawn" bugs were real on DIFFERENT
+  widgets simultaneously — don't assume one root cause for a "UI looks wrong"
+  report. Orchestration pattern that worked (W9/W10): 4 parallel Opus agents each
+  with its OWN `/tmp/milo-engine-<task>` worktree (shared engine symlink else
+  collides) via `-DMILO_ENGINE_PATH`; cherry-pick all engine fixes onto ONE
+  combined worktree + rb3 fixes onto ONE integ branch, then COMBINED-verify.
+
 ## W1 deviations (clear-frame) that later waves inherit
 
 W1 landed at rb3 `4183f495` (canvas clears to rgb(51,102,178)) but took
@@ -103,6 +131,15 @@ looked like:
    without creating parents → `ErrnoError` → null `ResourceDir()` → `abort()` at
    `UILabel.cpp:522` (looked like a ~40s hang). Fix = anchor relative fopen to
    `/data/` before `WebAssetsFetchSync`.
+
+**What renders on web (rb3 `2c14d893`, `70873c4a`, `4dcc11a9`; MEMFS-path fix
+`4ef00c69`; pixelmatch `2a89343e`):** pure-geometry/single-chunk milos (e.g.
+`gem_smasher_guitar_meshes.milo_xbox`, lit shaded), then `main_hub` menu panels +
+`tracksystem` (gem grid/HUD/score) — the latter byte-for-byte == native (1151
+objects / 277 meshes / 60k tris). NOTE: an EARLIER diagnosis blaming a
+web-specific "synth/UI resource-manager subsystem-boot gap" was WRONG — the real
+blocker was the one-line MEMFS-path bug below (bumping heap to 2GB didn't help;
+DC3 uses the same sync XHR + 512MB cap).
 
 **Strategic boundary:** the static mesh-walk harness (`LoadMiloAndWalk`) walks
 `RndMesh` only. TEXT labels, UI interactivity, and song playback need the real
@@ -184,9 +221,16 @@ Master `a207f93f`, engine `f52f2f1`.
 `docs/native/web-guitar-input.md`.
 
 - **Gamepad API path** (rb3 `1ff2d174`, e2e 27/27): families `ps3wii_rb` (12ba,
-  primary), `xinput_rb`, `gh_ps3`. Whammy via `window._rb3GpWhammy` → `mSticks`;
-  tilt ORs bit 8. Runtime remap `window.rb3GuitarMap`; `window._rb3GpDebug=1`
-  logs raw buttons/axes. Also `b94e6a0a` (guard glibc-only `backtrace()`/
+  primary), `xinput_rb`, `gh_ps3`. Classification by id regex + vendor hex on
+  `gamepadconnected` (`[rb3-guitar]` console log). `ps3wii_rb` mapping: frets
+  G/R/Y/B/O = buttons 1/2/0/3/4, start/select 9/8, strum = hat `axes[9]` (8-step),
+  whammy `axes[0]`, tilt btn 5. Whammy via `window._rb3GpWhammy` [0..1] → C++
+  `mSticks[1][0] = -1+2*w` (GetWhammyBar = −(RX+1)/2); tilt ORs bit 8 (kPad_Select
+  force_mercury route; the mSensors accelerometer route stays dead). Runtime remap
+  `window.rb3GuitarMap` (shallow-merge over family default); `window._rb3GpDebug=1`
+  logs raw buttons/axes. **Splash gate is a NON-issue** — guitar Start crosses
+  splash via raw JoypadPoll; the main_web.cpp comment claiming the raw path can't
+  advance splash is STALE. Also `b94e6a0a` (guard glibc-only `backtrace()`/
   `<execinfo.h>` in BandCharacter.cpp + CharDriver.cpp with `#ifndef
   __EMSCRIPTEN__`) and `c2fc51ac` (e2e harness).
 - **WebUSB X-plorer path** (rb3 `c07480eb`, e2e 17/17): GH X-plorer 1430:4748 is
@@ -195,7 +239,11 @@ Master `a207f93f`, engine `f52f2f1`.
   claims it via WebUSB (works on macOS — no OS driver owns the interface),
   decodes XUSB reports, injects a synthetic `mapping:'standard'` pad into wrapped
   getGamepads → existing C++ `xinput_rb` family consumes unchanged (zero wasm
-  rebuild). Linux: claimInterface fails (xpad owns it) = expected, Gamepad path
+  rebuild). XUSB report decode: byte2 = strum/dpad/start/back, byte3 =
+  frets/guide, whammy = int16LE @10, tilt = @12 (>8192). "🎸 Connect USB guitar"
+  button (one-time gesture) + auto-reconnect via `usb.getDevices()`. e2e 17/17
+  (faking `navigator.usb` needs `Object.defineProperty` — it's a read-only
+  accessor). Linux: claimInterface fails (xpad owns it) = expected, Gamepad path
   works there.
 - **/rb3 HTTPS serving** (rb3 `86646f94` + nginx): Gamepad/WebUSB need a secure
   context → https://home.freeqaz.com/rb3/ via nginx proxy to server.py:8421.
@@ -223,9 +271,15 @@ native+web). Chronological fix stack (newest first):
 
 - **Off-main mix stem-anchor + pause-latency** (engine `20dba552`, pin rb3
   `747b45b1`): `RB3_WEB_OFFMAIN_MIX` (default-ON) had two web-only bugs. (1)
-  Guitar stem ~10s behind — each stem's worklet cursor seeded independently with
+  Guitar stem ~10s behind (surfaced by "25 or 6 to 4"; aggravated by the
+  CrowdAudio intro stream `2eeb6ced` which seeds a separate StandardStream during
+  count-in) — each stem's worklet cursor seeded independently with
   no shared song-start anchor; a late joiner starts ~one stem ring (~8.9s,
-  `kStemRingFrames` `AudioDevice_Web.cpp:56`) behind. Fix
+  `kStemRingFrames` `AudioDevice_Web.cpp:56`) behind. Debug `RB3_WEB_OFFMAIN_DBG=1`
+  (proven: 11 channels seed in one tick, maxStartSkew=0). This is worklet-ONLY —
+  native is byte-perfect (one Vorbis cursor, all channels share
+  samplesToConsume); the 10s offset was INTERMITTENT and did not repro headless
+  (fix proven structurally, confirm against user repro). Fix
   (`PumpAudioOffMainStems`): defer seeding until the armed set is STABLE for one
   pump, then seed the whole batch in ONE tick (one t=0). Opt-out
   `RB3_NO_STEM_ANCHOR=1`. (2) Pause ramps latency to 500ms ceiling — the
@@ -301,6 +355,37 @@ native+web). Chronological fix stack (newest first):
   masked it). Fix = `#ifndef HX_NATIVE` guard (joins
   `time`/`select`/`random`/`pause`/`on_exit`). WATCH: unguarded libc-name Symbol
   collisions still in the table (`read`/`write`/`open`/`close`/`index`/`system`).
+- **Phase 0 — duplicate `Synth *TheSynth`** (rb3 `50177cce`): main_web.cpp had a
+  2nd definition (UB masked by `-Wl,--allow-multiple-definition`); `Synth.cpp:58`
+  is the sole def. Removed. Also `mEnableSFX=true` in rb3_platform_native.cpp
+  (env-gate `RB3_NO_SFX`) — else `SampleData::Load` seeks past payloads (mData=0)
+  and all SFX are silent.
+
+**Real-device ALSA on the headless box (rb3 `23a7a486` proof):** the box has no
+physical sink (all HDMI `eld_valid 0`, no PipeWire/Pulse), but
+`sudo modprobe snd-aloop` gives a loopback. The user is NOT in the `audio` group,
+so miniaudio AND ffmpeg fail with `-7` until:
+`sudo setfacl -m u:$USER:rw /dev/snd/{controlC3,pcmC3D0c,pcmC3D0p,pcmC3D1c,pcmC3D1p}`
+(permanent = `usermod -aG audio $USER` + relogin). Route the engine in with
+`MILO_AUDIO=1 MILO_AUDIO_BACKEND=alsa ALSA_CONFIG_PATH=<conf>` where conf points
+at a `pcm.!default {type plug; slave.pcm "hw:3,0"}` using the NUMERIC card index
+(the name "Loopback" fails `snd_config_get_card`). Reusable crash-diagnosis
+recipe (found the `poll` Symbol collision above): `gdb -batch -ex run -ex 'thread
+apply all bt'` → ma worker `#0 poll()` at a binary offset → `addr2line -e BIN
+<off>` = `__bss_start` → `nm BIN | grep ' B poll'` = the culprit data object.
+
+**Web audibility harness + gotcha (rb3 `245b8823`, `f798406b`):**
+`scripts/web/web-audio-capture.mjs` (Playwright + headless Chromium, WebGPU via
+ANGLE-Vulkan) drives the served web build and calls the engine's runtime
+`rb3CaptureAudio()` hook (EM_ASM-registered by `AudioDevice::Init`; C exports
+`rb3_start_capture`/`rb3_download_capture` — the JS helper names are
+runtime-registered, NOT string literals in rb3-web.js). GOTCHA (B4 404 root
+cause): `tools/setup-worktree.sh` symlinked `orig-assets/{extracted,wii,…}` but
+NOT `derived/` (where the XMA→PCM sidecars live), so a web server run FROM A
+WORKTREE (the standard agent workflow) 404'd every `sfx/gen/xma_pcm/<hash>.pcm`
+even though server.py + the sidecars were fine — fix = add `derived` to the
+symlink loop. Also `aa0d7ff0`: SFX pan-gain fix (`ComputePanGains` clamp + proper
+L/R).
 
 **Headless audio testing:** the engine null-backend WAV path —
 `MILO_AUDIO=1 MILO_AUDIO_BACKEND=null DC3_DUMP_AUDIO=/tmp/x.wav
@@ -322,7 +407,11 @@ Wii-neutral): (1) `StreamReceiver::BytesWriteable` caps TOTAL pre-Play decode at
 one ring lap (`mTotalWrittenEver`, opt-out `RB3_STREAM_PREPLAY_CAP_OFF=1`); (2)
 `RB3StreamReceiverNative::PlayImpl` resurrects the freed-but-resident lap
 (deterministic guard `totalWritten==ringSize && writtenSpace==0 && !mEndData`).
-Doc: `docs/native/songstart-2sec-2026-06-21/CONTENT_SKIP_DIAGNOSIS.md`.
+Doc: `docs/native/songstart-2sec-2026-06-21/CONTENT_SKIP_DIAGNOSIS.md`. (Surfaced
+on "Du Hast" as ~20 beats early.) NOTE: two EARLIER fix attempts — hold-chunks
+back-pressure and intro-hold — FAILED by perturbing the prime state machine; the
+winning cap+resurrect leaves the pre-Play sequence bit-identical and rewrites
+only 4 ints at first Play.
 
 **Measurement gotchas:** strongest proof = byte-level `RB3_STREAM_AUDIO_DBG=1`
 RINGHEAD vs `decode_reference.py`. `decode_reference` WAVs are FLOAT with peak>1
@@ -343,27 +432,41 @@ a CPU **use-after-free**: `PropSync<RndTex>` `dynamic_cast` on a DANGLING freed
 
 - **Fix:** `3d00d1dd` (BandPatchMesh LP64 `offsetof`) + `65f7f0e6`
   (GetPictureTex null on native) → char preview re-enabled default-ON. Also
-  `cc047050` (ExtendTwin fix, closes ~1/12 char-composite boot abort).
+  `cc047050` (ExtendTwin fix, closes ~1/12 char-composite boot abort). An interim
+  revert `92fcb32c` made char-preview opt-in BEFORE the real fix landed. Native
+  backtrace: PropSync<RndTex>→RndMat::SyncProperty→DataArray::Execute→
+  MusicLibrary::OnEnter→UIScreen::Enter.
 - On web it surfaces as a GPU-process SIGSEGV; native shows the direct
   in-process SIGSEGV with the readable PropSync stack. **LESSON: the GPU symptom
   layer ≠ the cause — get the native symbolized backtrace before trusting a
   web-only GPU signal.** A confidently-wrong theory (unbounded per-frame GPU
   mesh-buffer leak in `BandRnd::DrawMesh`) was REFUTED by experiment: a mesh-cache
-  build (97k→624 buffers) STILL crashes; baseline leaks MORE yet doesn't.
+  build (97k→624 buffers) STILL crashes 6/6; baseline leaks MORE (240k) yet
+  doesn't. The `device lost (reason=2)` console line is BENIGN (prints on clean
+  runs at teardown) — do not treat it as the signal.
 - **BandPatchMesh OOB heap corruption** (`3d00d1dd`): LP64 struct-layout bug —
   `MeshVert` starts with a pointer, so host field offsets shift +4 vs the
   hardcoded Wii `0x32`/`0x27`/`0x38`; the face-index write scribbled the twin
-  cursor → OOB `mMeshVerts[]`. Fix = HX_NATIVE `offsetof`-derived constants;
-  `#else` keeps literals → Wii byte-identical. **LESSON: hardcoded Wii struct
-  offset literals are LP64 landmines when a struct has a leading pointer.**
+  cursor `unk2c` → twin walk reads `0x<faceidx>FFFF` → OOB `mMeshVerts[]`. Fix =
+  HX_NATIVE `offsetof`-derived constants (`kMVFaceList`/`kMVTwinFlag`/
+  `kMVSlotBase`) + a bounds-skip backstop + a deterministic gtest oracle
+  (`native/tests/test_bandpatchmesh.cpp`, reproduces `0x<faceidx>FFFF` with the
+  old literals); `#else` keeps literals → Wii byte-identical. **LESSON: hardcoded
+  Wii struct offset literals are LP64 landmines when a struct has a leading
+  pointer — grep for `0x..` byte literals when porting char/mesh code.**
 - **Separate wins:** JS-heap leak fix `b79cbafa` (`rb3_pre.js __rb3CachePut`
   kept a 2nd copy of every asset, ~187MB). **Mesh cache v2** (engine `b5309b3`,
   rb3 pin `91468cd5`): per-mesh VB/IB cache (97k→~624 buffers, ~2768MB→22MB) +
   per-(mesh, occurrence-within-frame) uniform SLOTS. `a0f98ad` alone FAILED —
   one persistent uniform buffer per mesh renders every instance with the LAST
   instance's uniforms (WebGPU WriteBuffers all run before submit). `RB3_NO_MESH_
-  CACHE=1` = true revert. Tool: `scripts/analysis/visual_diff.py`; doc
-  `docs/native/songlib-web-gpu-device-lost-2026-06-09.md`.
+  CACHE=1` = true revert. LESSONS: perceptual-mode diff (83.6 "no regression")
+  MISSED the multi-draw collapse — only the strict frame-pinned diff gates render
+  changes; cross-process captures aren't frame-identical (~70% stock-vs-stock on
+  animated screens), so gate via best-phase-matched pairs + heatmap LOCALIZATION.
+  Tools: `scripts/analysis/visual_diff.py` + `visual_diff_capture.py` (strict
+  max-channel-Δ + perceptual mode), doc `docs/native/visual-diff-tooling.md`;
+  full writeup `docs/native/songlib-web-gpu-device-lost-2026-06-09.md`.
 
 ---
 
@@ -384,7 +487,11 @@ data stub to a `.s` file for a native link error, mirror it there.** Companion
 `9f2115d9` (App::App argv stack-use-after-scope, web argc==0 path). ASan
 workflow: dedicated `native/build-web-asan/` dir + `-DRB3_WEB_ASAN=ON` — NEVER
 set RB3_WEB_ASAN in build-web-release (sticks in CMakeCache, ships a ~3× slower
-ASan release). Release ASan uses `-fno-inline` so frame #0 is the real function.
+ASan release). Release ASan uses `-fno-inline` so frame #0 is the real function. GOTCHA: faults
+in emscripten system libs (musl) ABORT even in recover mode — only game-code
+faults recover. Full-report capture: collect ALL console lines (frame lines
+` #N 0x...` don't match `/ERROR/` greps) and beware `| head` EPIPE killing the
+harness; GPU-adapter failures mid-capture = vLLM eating both GPUs' VRAM (retry).
 
 ---
 
@@ -400,25 +507,41 @@ miscompiles (release-only), (B) plain NULL/logic bugs (repro on native too).
   `MetaPerformer.cpp` -O0 (3rd such pin next to OutfitConfig.cpp — see below —
   via `set_source_files_properties(... COMPILE_OPTIONS "-O0")`). The repeating
   "vertex/texture" pattern in the corrupt block was the FREED previous occupant,
-  NOT an active stomp (mis-attribution caught by verify-first).
+  NOT an active stomp (mis-attribution caught by verify-first). Two correct-but-
+  NOT-the-cause fixes landed alongside as latent hardening: `VertVector::resize`
+  OOB (`5b769733`) and a `GetHopoPercent` NaN-guard (`47168c37`). The real cause
+  was pinned with an `RB3_STATS_DBG` stomp-watch + `llvm-objdump` of the wasm
+  object.
 - **SPACEBAR/"FILTER" CRASH — FIXED (`cb15ac8a`):** plain NULL deref
   REPRODUCIBLE ON NATIVE (not -O2). `UIList::SetSelected` (UIList.cpp:278)
-  derefs `mListState.Provider()` unconditionally; the details pane's
+  derefs `mListState.Provider()` unconditionally (precedent guard in
+  `UIList::Refresh` ~line 391); the details pane's
   `{instruments.lst set_selected $instrument}` hits it with a null provider after
-  details→part_difficulty→back→reopen. Fix = HX_NATIVE null-provider guard.
+  details→part_difficulty→back→reopen (reloaded instruments.lst resolves before
+  its set_data installs a provider). Fix = HX_NATIVE null-provider guard. Repro:
+  `scripts/native/_filter-crash-test.py --seq pad:8,pad:14,pad:14,pad:14,pad:1,cancel,pad:8`.
   GOTCHA: on web the SORT/FILTER panel is UNREACHABLE (`native/dta/config/
-  joypad.dta` maps kPad_Select→kAction_Option, not kAction_ViewModify).
+  joypad.dta` maps kPad_Select→kAction_Option, not kAction_ViewModify) — the
+  filter C++ (ViewSetting.cpp) is healthy; exposing it = a separate joypad.dta
+  mapping change.
 - **EXIT-TRAP — OPEN (`77304bba` known remaining):** continuing PAST the score
   screen (coop_endgame → meta_loading_continue → song_select) traps `unreachable`,
   web-release only. Same -O2 class. Fix hatch READY:
   `cmake -DRB3_WEB_O0_GLOB="<repo>/src/band3/game/*.cpp"` then narrow to the
-  culprit + permanent pin. Candidates ranked: Game.cpp #1.
+  culprit + permanent pin. Fable-ranked candidates: Game.cpp (~Game triple-MI
+  dtor `__base_destruct_at_end`) #1, Player/GemPlayer/VocalPlayer dtors #2,
+  TrackPanel/GamePanel. Caveat: pinning gameplay-hot Game.cpp -O0 has perf cost —
+  narrow. Confirmed via `_exit-trap-test.py` that native + debug-web PASS (native
+  went to load_nextsong, not the exit path).
 
 **WEB TEST ENV (shared box):** GPUs VRAM-full from vLLM → use SOFTWARE WebGPU
 (`--enable-unsafe-swiftshader --use-angle=swiftshader --disable-gpu`). Heavy CPU
 contention (concurrent clang++/wibo, load 25-51) starves async screen-load →
-boot "wedges" (NOT a build bug). Private iso server needs `boot-assets.manifest`
-(+ `screen-*.manifest`) next to server.py or `/api/bundle/boot` returns 0 files.
+boot "wedges" (frame advances, screen never becomes current — NOT a build/server
+bug; byte-identical wasm boots on shared 8421 at low load). Private iso server
+needs `boot-assets.manifest` (+ `screen-*.manifest`) next to server.py or
+`/api/bundle/boot` returns 0 files. Watch tmpfs quota too — a full `/tmp`
+truncates the copied wasm ("extends past end of module") and breaks chromium cache.
 Tools: `scripts/web/_swrender-boot.mjs`, `_songend-sw.mjs`, `_fullboot.mjs`,
 `scripts/native/_filter-crash-test.py`, `_exit-trap-test.py`.
 
@@ -517,8 +640,10 @@ silent env-import stubs (`ERROR_ON_UNDEFINED_SYMBOLS=0`) → SystemConfig NULL; 
 ~15-build per-TU binary search to ONE TU: `src/system/bandobj/OutfitConfig.cpp`
 (miscompiles outfit-mesh deform/AO data → corrupt GPU buffer); fix = pin that TU
 -O0, rest O2 (harness `RB3_WEB_O0_GLOB` cache var + `/tmp/fast-deploy.sh`).
-**Sizes: raw 16.7M→6.1M (−62%), brotli 2.39M→1.51M (−37%).** Mesh-cache v2 ≈ 2.3×
-native p50 — likely THE web-25fps fix.
+**Sizes: raw 16.7M→6.1M (−62%), brotli 2.39M→1.51M (−37%), gzip 4.1M→2.08M.**
+Mesh-cache v2 ≈ 2.3× native p50 — likely THE web-25fps fix. OPEN BUG to ticket
+(pre-existing, cache-independent): into-song crash `TrackWatcher.cpp:35` TrackInfo
+OOB (repro on beencaughtstealing / breakonthrough).
 
 Verified status deltas that superseded the roadmap: mesh-cache v2 DONE (engine
 `b5309b3`, rb3 `91468cd5`); prewarm spec flaw (`UIPanel::Load` always `new
@@ -604,7 +729,13 @@ SetPaused to `native/src/rb3_movie_native.cpp` under `#ifdef HX_NATIVE`
   `#canvas-container` as a fullscreen overlay (z-index max) over the WebGPU
   canvas. The `.bik` name is rewritten to a pre-transcoded `.webm` (VP9+Opus)
   streamed from `/api/file/videos/...webm` (server.py already serves `.webm` +
-  HTTP range → zero server change). No GPU upload — the browser composites.
+  HTTP range from the `extracted-xbox-full` fallback root → zero server change).
+  No GPU upload — the browser composites. This mirrors the engine's
+  `WebMovieImpl` overlay JS but did NOT reuse it (rb3 lacks `movie/MovieImpl.h`,
+  and the engine only compiles WebMovieImpl for the DC3 backend). At boot (no user
+  gesture) browsers may force a muted fallback; visuals always play. Tests:
+  `scripts/native/intro-cinematic-test.py` (native flow),
+  `scripts/web/intro-cinematic-test.mjs --seek-end` (web, decodes the real video).
 - **Native desktop:** skips by default; `RB3_INTRO_SECS=<n>` virtual-plays n
   seconds for headless flow tests.
 - Gated to fullscreen cinematics by basename (rb3_intro_cinematic /
