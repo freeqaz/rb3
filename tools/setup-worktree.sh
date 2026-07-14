@@ -227,6 +227,23 @@ if [ -e "$MAIN_REPO/bin/objdiff-cli" ]; then
     ln -sfn "$OBJDIFF" "$WORKTREE_PATH/bin/objdiff-cli"
 fi
 
+# ---- venv : symlink to the MAIN repo's uv-managed .venv (not repo-tree-specific)
+# `venv` is gitignored (see .gitignore /venv), so a fresh `git worktree add`
+# doesn't carry it over at all — without this the worktree has no
+# venv/bin/python and the MCP server / analysis scripts fail to launch.
+# Point straight at the main repo's real .venv (absolute path) rather than
+# reproducing the main repo's own venv->.venv symlink: the uv env is tooling,
+# not build output, so every worktree sharing ONE env is correct (and avoids
+# a relative-path depth trap — a worktree-local "../dc3-decomp/venv"-style
+# relative link breaks under .claude/worktrees/<name>/, which is one level
+# deeper than the main repo root).
+if [ -d "$MAIN_REPO/.venv" ]; then
+    echo "==> venv  (symlink — main repo's uv-managed .venv, shared across worktrees)"
+    ln -sfn "$MAIN_REPO/.venv" "$WORKTREE_PATH/venv"
+else
+    echo "WARN: $MAIN_REPO/.venv not found — worktree venv/bin/python will be missing (run 'uv sync' in main repo)." >&2
+fi
+
 # ---- milo-native-engine : single shared symlink (worktree-relative engine path)
 # native/CMakeLists.txt uses `${CMAKE_SOURCE_DIR}/../../milo-native-engine` —
 # from a worktree at `.claude/worktrees/<name>/native/`, that resolves to
