@@ -393,10 +393,10 @@ void QuestFilterPanel::CheatWinQuest() {
 
 void QuestFilterPanel::CheatCycleChallenge() {
     TourPerformerImpl *pPerformer = TheTour->m_pTourPerformer;
-    MILO_ASSERT(pPerformer, 0x222);
-    MILO_ASSERT(pPerformer->IsLocal(), 0x223);
+    MILO_ASSERT(pPerformer, 0x1fa);
+    MILO_ASSERT(pPerformer->IsLocal(), 0x1fb);
     TourPerformerLocal *pLocalPerformer = dynamic_cast<TourPerformerLocal *>(pPerformer);
-    MILO_ASSERT(pLocalPerformer, 0x225);
+    MILO_ASSERT(pLocalPerformer, 0x1fd);
     pLocalPerformer->CheatCycleChallenge();
 }
 
