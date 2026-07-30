@@ -392,7 +392,7 @@ void UILabel::UpdateAndDrawHighlightMesh() {
             float f1 = 0;
             float f2 = 0;
             mText->GetCurrentStringDimensions(f1, f2);
-            Vector3 v80, v74;
+            Vector3 v74, v80;
             InqMinMaxFromWidthAndHeight(f1, f2, Alignment(), v74, v80);
             float x1 = v74.x;
             float x2 = v80.x;
