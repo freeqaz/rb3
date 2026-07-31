@@ -116,10 +116,11 @@ int KeyboardTrackWatcherImpl::RelevantGem(int first_gem_id, int last_gem_id, int
         int gemSlot = gem.GetSlot();
         if (slot == gemSlot)
             return current;
-        if (!gem.GetPlayed())
+        if (!gem.GetPlayed()) {
             count++;
+        }
     }
-    bool noCount = !count;
+    bool noCount = count == 0;
     int closest_gem = -1;
     int minDist = 999;
     for (int i = first_gem_id; i <= last_gem_id; i++) {
