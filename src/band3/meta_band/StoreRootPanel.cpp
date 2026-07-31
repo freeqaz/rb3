@@ -69,7 +69,7 @@ void UpdateStoreOverlay() {
     }
 }
 
-DataNode StoreRootPanel::OnMsg(const MetadataLoadedMsg &msg) { return DataNode(kDataFloat, 6); }
+DataNode StoreRootPanel::OnMsg(const MetadataLoadedMsg &msg) { return 1; }
 
 BEGIN_HANDLERS(StoreRootPanel)
     HANDLE_MESSAGE(MetadataLoadedMsg)
