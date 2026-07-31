@@ -150,10 +150,7 @@ namespace MemMgr {
 }
 
 MemHeapStack &ThreadMemStack(bool createIfMissing) {
-    CriticalSection *lock = gMemStackLock;
-    if (lock != nullptr) {
-        lock->Enter();
-    }
+    CritSecTracker tracker(gMemStackLock);
     if (MemMgr::gNumThreads == 0) {
         MemMgr::gThreadIds[0] = OSGetCurrentThread();
         MemMgr::gNumThreads = 1;
@@ -168,11 +165,7 @@ MemHeapStack &ThreadMemStack(bool createIfMissing) {
                 idx++;
             }
             if (createIfMissing == 0) {
-                MemHeapStack &nullStack = gNullMemStack;
-                if (lock != nullptr) {
-                    lock->Exit();
-                }
-                return nullStack;
+                return gNullMemStack;
             }
             if (idx == MemMgr::gNumThreads) {
                 int cur;
@@ -189,11 +182,7 @@ MemHeapStack &ThreadMemStack(bool createIfMissing) {
             MemMgr::gCurThread = idx;
         }
     }
-    MemHeapStack &result = gThreadBuf[MemMgr::gCurThread];
-    if (lock != nullptr) {
-        lock->Exit();
-    }
-    return result;
+    return gThreadBuf[MemMgr::gCurThread];
 }
 
 int GetCurrentHeapNum() {
