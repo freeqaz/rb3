@@ -1065,7 +1065,7 @@ void GemTrackDir::SetScreenRectX(float f) {
     RndCam *cam = mGameCam;
     if (cam && unk488 >= 0 && unk488 < mNumTracks) {
         float oldy = cam->mScreenRect.y;
-        cam->mScreenRect.x = f * (unk488 - 0.5f * (mNumTracks - 1));
+        cam->mScreenRect.x = f * (unk488 - (mNumTracks - 1) / 2.0f);
         cam->mScreenRect.y = oldy;
         cam->UpdateLocal();
     }
