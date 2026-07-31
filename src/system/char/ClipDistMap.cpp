@@ -614,8 +614,7 @@ void ClipDistMap::DrawDot(float x, float y, float f3, float f4, Hmx::Color const
     Hmx::Rect rect;
     rect.w = 2.0f;
     rect.h = 2.0f;
-    float xminus1 = x - 1.0f;
-    rect.x = 2.0f * ((float)mSamplesPerBeat * (f3 - mAStart)) + xminus1;
+    rect.x = 2.0f * ((float)mSamplesPerBeat * (f3 - mAStart)) + (x - 1.0f);
     float heightOffset = (float)(mDists.mHeight - 1);
     float scaled = (float)mSamplesPerBeat * (f4 - mBStart);
     float inner = heightOffset - scaled;
