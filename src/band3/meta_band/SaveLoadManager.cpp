@@ -1733,11 +1733,7 @@ bool SaveLoadManager::IsReasonToAutoload() {
     if (TheMemcardMgr.IsDisableWriting()) {
         return false;
     }
-    bool reason = false;
-    if (GetNewSigninProfile() || mInitialLoadNotDone) {
-        reason = true;
-    }
-    return reason;
+    return GetNewSigninProfile() || mInitialLoadNotDone;
 }
 
 bool SaveLoadManager::IsAutosaveEnabled(LocalBandUser *user) {
