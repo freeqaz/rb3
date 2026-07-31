@@ -264,8 +264,7 @@ void MemTerminate() {}
 
 int MemFindAddrHeap(void *addr) {
     for (int i = 0; i < gNumHeaps; i++) {
-        int *start = gHeaps[i].mStart;
-        if (addr >= start && addr < start + gHeaps[i].mSizeWords) {
+        if (addr >= gHeaps[i].mStart && addr < (char *)gHeaps[i].mStart + gHeaps[i].mSizeWords * 4) {
             return i;
         }
     }
