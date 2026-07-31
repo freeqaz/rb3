@@ -886,7 +886,8 @@ void *_MemRealloc(void *mem, int newSize, int align) {
         _MemFree(mem);
         return dst;
     }
-    return realloc(mem, newSize);
+    void *ret = realloc(mem, newSize);
+    return ret;
 }
 
 int MemNumHeaps() { return gNumHeaps; }
