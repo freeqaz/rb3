@@ -254,38 +254,26 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
 
 void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
     for (unsigned int i = 0; mPhrases.size() != i; i++) {
-#ifdef HX_NATIVE
-        // libstdc++'s vector::iterator is a class type, not a raw pointer, so
-        // (a) we can't assign begin() + i to T*, and (b) vector::insert wants
-        // an iterator argument. Use indexed access + begin()+i for insert.
-        VocalPhrase *phrase = &mPhrases[i];
-#else
-        VocalPhrase *phrase = mPhrases.begin() + i;
-#endif
+        VocalPhrase &phrase = mPhrases[i];
         int prevEnd = 0;
         if (i != 0) {
-            prevEnd = phrase[-1].mStartTick + phrase[-1].mDurationTicks;
+            prevEnd = mPhrases[i - 1].mStartTick + mPhrases[i - 1].mDurationTicks;
         }
-        if (i != 0 && phrase->mTambourinePhrase
-            && phrase->mStartTick > prevEnd + 0x780) {
+        if (i != 0 && phrase.mTambourinePhrase
+            && phrase.mStartTick > prevEnd + 0x780) {
             VocalPhrase newPhrase;
             newPhrase.mStartTick = prevEnd;
-            newPhrase.mDurationTicks = (phrase->mStartTick - prevEnd) - 0x280;
-            VocalPhrase *insertPos = &mPhrases[i];
-            newPhrase.mTambourinePhrase = insertPos[-1].mTambourinePhrase;
-#ifdef HX_NATIVE
+            newPhrase.mDurationTicks = (phrase.mStartTick - prevEnd) - 0x280;
+            newPhrase.mTambourinePhrase = mPhrases[i - 1].mTambourinePhrase;
             mPhrases.insert(mPhrases.begin() + i, newPhrase);
-#else
-            mPhrases.insert(insertPos, newPhrase);
-#endif
             i--;
         } else {
-            phrase->mDurationTicks = phrase->mDurationTicks + (phrase->mStartTick - prevEnd);
-            phrase->mStartTick = prevEnd;
+            phrase.mDurationTicks = phrase.mDurationTicks + (phrase.mStartTick - prevEnd);
+            phrase.mStartTick = prevEnd;
             float startTime = tmap.TickToTime(prevEnd);
-            float endTime = tmap.TickToTime(phrase->mStartTick + phrase->mDurationTicks);
-            phrase->mStartMs = startTime;
-            phrase->mDurationMs = endTime - startTime;
+            float endTime = tmap.TickToTime(phrase.mStartTick + phrase.mDurationTicks);
+            phrase.mStartMs = startTime;
+            phrase.mDurationMs = endTime - startTime;
         }
     }
 }
