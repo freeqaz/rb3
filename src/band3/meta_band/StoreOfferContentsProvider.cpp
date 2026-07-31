@@ -211,7 +211,7 @@ bool StoreOfferContentsProvider::AllChecked() {
 
 int StoreOfferContentsProvider::NumChecked() {
     int count = 0;
-    for (unsigned int i = 0; i < mElements.size(); i++) {
+    for (int i = 0; i < mElements.size(); i++) {
         if (IsActive(i) && mElements[i]->mChecked)
             count++;
     }
