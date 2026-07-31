@@ -62,15 +62,14 @@ FixedSizeAlloc::FixedSizeAlloc(int mAllocSizeWords, ChunkAllocator *alloc, int j
 void *FixedSizeAlloc::Alloc() {
     if (!mFreeList)
         Refill();
-    int *ret = mFreeList;
-    int numAllocs = mNumAllocs + 1;
-    int *next = (int *)*ret;
-    mNumAllocs = numAllocs;
-    mFreeList = next;
-    if (numAllocs > mMaxAllocs) {
-        mMaxAllocs = numAllocs;
+    intptr_t ret = (intptr_t)mFreeList;
+    intptr_t next = (intptr_t)*mFreeList;
+    mFreeList = (int *)next;
+    mNumAllocs++;
+    if (mNumAllocs > mMaxAllocs) {
+        mMaxAllocs = mNumAllocs;
     }
-    return ret;
+    return (void *)ret;
 }
 
 void FixedSizeAlloc::Free(void *v) {
