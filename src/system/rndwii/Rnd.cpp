@@ -231,8 +231,7 @@ void WiiRnd::DrawLine(const Vector3 &a, const Vector3 &b, const Hmx::Color &c, b
         psq_st rg_pair, 0x0(_dst), 0, 6
         psq_st ba_pair, 0x2(_dst), 0, 6
     )
-    uint col = ((uint)gxc.g << 16) | ((uint)gxc.b << 8) | gxc.a;
-    col |= (uint)gxc.r << 24;
+    uint col = ((uint)gxc.r << 24) | ((uint)gxc.g << 16) | ((uint)gxc.b << 8) | gxc.a;
 #else
     int col = MakeU32Color(c);
 #endif
