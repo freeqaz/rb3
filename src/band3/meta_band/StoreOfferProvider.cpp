@@ -262,7 +262,7 @@ Symbol StoreOfferProvider::PosToShortcut(int pos) {
     Element **it = &mElements[pos];
     while (it >= start) {
         Element *e = *it;
-        if (e->mShortcut.Str() != gNullStr) {
+        if (!e->mShortcut.Null()) {
             return e->mShortcut;
         }
         --it;
