@@ -194,7 +194,7 @@ bool StoreOfferContentsProvider::SpecifyNextSongContents() {
 }
 
 bool StoreOfferContentsProvider::AnyChecked() {
-    for (unsigned int i = 0; i < mElements.size(); i++) {
+    for (int i = 0; i < mElements.size(); i++) {
         if (IsActive(i) && mElements[i]->mChecked)
             return true;
     }
