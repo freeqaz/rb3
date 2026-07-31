@@ -380,7 +380,6 @@ Movie::Impl::Impl()
 }
 
 Movie::Impl::~Impl() {
-    if (this == 0) return;
     ASSERT_MOVIE_THREAD(0x1CD);
     End();
 }
