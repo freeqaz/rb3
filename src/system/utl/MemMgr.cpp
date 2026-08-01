@@ -1275,17 +1275,16 @@ void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
 int GetFreeSystemMemory() {
     int low = 0;
     int high = 0x40000000;
-    do {
-        int mid;
-        mid = (high + low) / 2;
+    while (low + 1 < high) {
+        int mid = (low + high) / 2;
         void *ptr = WiiMalloc(mid);
-        if (nullptr != ptr) {
+        if (ptr != nullptr) {
             low = mid;
             WiiFree(ptr);
         } else {
             high = mid;
         }
-    } while (low + 1 < high);
+    }
     return low;
 }
 
