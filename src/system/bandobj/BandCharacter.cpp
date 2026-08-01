@@ -844,6 +844,51 @@ void BandCharacter::Poll() {
                 bool heartbeatA = (aFrame % 120) == 0;
                 float maxRatio = -1.0f;
                 const char *maxBone = "(none)";
+                // W34 STEP-0: PRE-READ cache map. Must run BEFORE the chain loop
+                // below, because reading WorldXfm() forces a recompute and erases
+                // the staleness we are trying to attribute. Walk root->leaf so each
+                // force uses an already-refreshed parent; the FIRST node (nearest
+                // the root) with staleMove>0 is where the stale world is born.
+                // BAND_ANIM_ANATPRE=<everyNframes>. Env-gated, default OFF.
+                const char *anatPreEnv = getenv("BAND_ANIM_ANATPRE");
+                if (anatPreEnv) {
+                    int hz = anatPreEnv[0] ? atoi(anatPreEnv) : 60;
+                    if (hz < 1) hz = 60;
+                    if ((aFrame % hz) == 0) {
+                        RndTransformable *leaf =
+                            Find<RndTransformable>("bone_R-upperArm.mesh", false);
+                        std::vector<RndTransformable *> up;
+                        for (RndTransformable *n = leaf; n && (int)up.size() < 24;
+                             n = n->TransParent())
+                            up.push_back(n);
+                        // snapshot dirty bits + cached worlds BEFORE any read
+                        std::vector<int> dbits;
+                        std::vector<Vector3> cached;
+                        for (int i = 0; i < (int)up.size(); i++)
+                            dbits.push_back(up[i]->Dirty() ? 1 : 0);
+                        // reading a CLEAN node's WorldXfm() returns the cache with no
+                        // side effect; a dirty node has no meaningful cache to report.
+                        for (int i = 0; i < (int)up.size(); i++)
+                            cached.push_back(dbits[i] ? Vector3(0, 0, 0)
+                                                      : up[i]->WorldXfm().v);
+                        for (int i = (int)up.size() - 1; i >= 0; i--) {
+                            Vector3 f = up[i]->WorldXfm_Force().v;
+                            Vector3 dd;
+                            Subtract(f, cached[i], dd);
+                            fprintf(stderr,
+                                "[BAND_ANIM] evt=ANATXPRE efr=%d frame=%d member='%s' "
+                                "clip='%s' depth=%d node='%s' dirty=%d cons=%d "
+                                "cachedW=(%.3f,%.3f,%.3f) forcedW=(%.3f,%.3f,%.3f) "
+                                "staleMove=%.4f\n",
+                                engFrame, aFrame, aName, aClipName,
+                                (int)up.size() - 1 - i,
+                                up[i]->Name() ? up[i]->Name() : "?",
+                                dbits[i], (int)up[i]->TransConstraint(),
+                                cached[i].x, cached[i].y, cached[i].z,
+                                f.x, f.y, f.z, Length(dd));
+                        }
+                    }
+                }
                 for (int ci = 0; ci < nChain; ci++) {
                     RndTransformable *pB = Find<RndTransformable>(chain[ci].parent, false);
                     RndTransformable *cB = Find<RndTransformable>(chain[ci].child, false);
@@ -874,6 +919,118 @@ void BandCharacter::Poll() {
                         "[BAND_ANIM] evt=ANATBEAT efr=%d frame=%d member='%s' clipType='%s' "
                         "clip='%s' maxRatio=%.3f maxBone='%s'\n",
                         engFrame, aFrame, aName, aClipType, aClipName, maxRatio, maxBone);
+                }
+                // W34-CHARCLIP-EVAL STEP-0: the ANAT ratio metric is
+                //   ratio = |childWorld - parentWorld| / |childLocal.v|
+                // and in Milo's row-vector convention
+                //   childWorld.v = childLocal.v * parentWorld.m + parentWorld.v
+                // so childWorld - parentWorld == childLocal.v * parentWorld.m
+                // EXACTLY, provided (i) cB->TransParent() == pB and (ii) both world
+                // xfms are fresh. For a pure-rotation parentWorld.m the ratio is
+                // therefore identically 1.0. A 4.2x ratio can only come from:
+                //   (a) parentWorld.m carrying a non-unit SCALE (composition/L3 or a
+                //       bad SCALE channel out of L2), or
+                //   (b) STALE world xfms (wc/wp computed at different times, i.e. the
+                //       lazy WorldXfm_Force dirty-propagation is broken), or
+                //   (c) the assumed parentage not being the real TransParent.
+                // ANATX discriminates all three per-frame, for the worst pair, and
+                // walks the ancestor chain dumping each node's LOCAL matrix row
+                // lengths so the exact bone where scale enters is named.
+                // BAND_ANIM_ANATX=<minRatio> (default 1.5). Env-gated, default OFF.
+                const char *anatxEnv = getenv("BAND_ANIM_ANATX");
+                if (anatxEnv && maxRatio > (anatxEnv[0] ? (float)atof(anatxEnv) : 1.5f)) {
+                    // re-resolve the worst pair
+                    const char *wpName = nullptr;
+                    for (int ci = 0; ci < nChain; ci++) {
+                        if (!strcmp(chain[ci].child, maxBone)) { wpName = chain[ci].parent; break; }
+                    }
+                    RndTransformable *pB = wpName ? Find<RndTransformable>(wpName, false) : nullptr;
+                    RndTransformable *cB = Find<RndTransformable>(maxBone, false);
+                    if (pB && cB) {
+                        // Capture the lazy-cache state BEFORE any WorldXfm() read
+                        // (reading forces a recompute and would erase the evidence).
+                        int dirtyC = cB->Dirty() ? 1 : 0;
+                        int dirtyP = pB->Dirty() ? 1 : 0;
+                        int consC = (int)cB->TransConstraint();
+                        int consP = (int)pB->TransConstraint();
+                        const Transform &pw = pB->WorldXfm();
+                        const Transform &cw = cB->WorldXfm();
+                        const Transform &cl = cB->LocalXfm();
+                        Vector3 d;
+                        Subtract(cw.v, pw.v, d);
+                        // (a)/(b) discriminator: predicted separation from the live
+                        // local vector through the live parent world basis.
+                        Vector3 pred;
+                        Multiply(cl.v, pw.m, pred);
+                        Vector3 residual;
+                        Subtract(d, pred, residual);
+                        RndTransformable *realPar = cB->TransParent();
+                        // STALE test: force the child's world xfm to recompute from
+                        // its live local + live parent world. If the cached value was
+                        // stale (dirty-propagation miss) this MOVES it.
+                        Vector3 cachedW = cw.v;
+                        Vector3 forcedW = cB->WorldXfm_Force().v;
+                        Vector3 staleD;
+                        Subtract(forcedW, cachedW, staleD);
+                        float staleMove = Length(staleD);
+                        Vector3 d2;
+                        Subtract(cB->WorldXfm().v, pB->WorldXfm().v, d2);
+                        float sepAfterForce = Length(d2);
+                        // PROPAGATION test: both nodes are clean right now. Mark the
+                        // PARENT dirty and see whether the DirtyCache child-link
+                        // carries it down to the child. propOK=0 => the parent's
+                        // mCache->mChildren link is missing, so a parent's local
+                        // change never invalidates the child's cached world xfm.
+                        pB->SetDirty();
+                        int propOK = cB->Dirty() ? 1 : 0;
+#define W34_ROWLENS(M) \
+    Length((M).x), Length((M).y), Length((M).z)
+#define W34_DET(M) \
+    ((M).x.x * ((M).y.y * (M).z.z - (M).y.z * (M).z.y) \
+   - (M).x.y * ((M).y.x * (M).z.z - (M).y.z * (M).z.x) \
+   + (M).x.z * ((M).y.x * (M).z.y - (M).y.y * (M).z.x))
+                        fprintf(stderr,
+                            "[BAND_ANIM] evt=ANATX efr=%d frame=%d member='%s' clipType='%s' "
+                            "clip='%s' pair='%s'->'%s' ratio=%.3f "
+                            "parWorldRow=(%.4f,%.4f,%.4f) parWorldDet=%.4f "
+                            "chLocalRow=(%.4f,%.4f,%.4f) chLocalDet=%.4f "
+                            "chLocalV=(%.3f,%.3f,%.3f) |chLocalV|=%.4f "
+                            "sep=(%.3f,%.3f,%.3f) |sep|=%.4f "
+                            "pred=(%.3f,%.3f,%.3f) |pred|=%.4f residual=%.5f "
+                            "dirtyC=%d dirtyP=%d consC=%d consP=%d "
+                            "staleMove=%.4f sepAfterForce=%.4f propOK=%d "
+                            "realParent='%s' assumedParent='%s' parentOK=%d\n",
+                            engFrame, aFrame, aName, aClipType, aClipName,
+                            wpName, maxBone, maxRatio,
+                            W34_ROWLENS(pw.m), W34_DET(pw.m),
+                            W34_ROWLENS(cl.m), W34_DET(cl.m),
+                            cl.v.x, cl.v.y, cl.v.z, Length(cl.v),
+                            d.x, d.y, d.z, Length(d),
+                            pred.x, pred.y, pred.z, Length(pred), Length(residual),
+                            dirtyC, dirtyP, consC, consP, staleMove, sepAfterForce, propOK,
+                            realPar ? (realPar->Name() ? realPar->Name() : "?") : "(null)",
+                            wpName ? wpName : "?",
+                            (realPar && pB && realPar == pB) ? 1 : 0);
+                        // Ancestor walk: name the first node where LOCAL scale enters.
+                        int g = 0;
+                        for (RndTransformable *n = cB; n && g < 24;
+                             n = n->TransParent(), g++) {
+                            const Transform &nl = n->LocalXfm();
+                            const Transform &nw = n->WorldXfm();
+                            fprintf(stderr,
+                                "[BAND_ANIM] evt=ANATXCHAIN efr=%d frame=%d member='%s' "
+                                "depth=%d node='%s' localRow=(%.4f,%.4f,%.4f) localDet=%.4f "
+                                "worldRow=(%.4f,%.4f,%.4f) worldDet=%.4f "
+                                "localV=(%.3f,%.3f,%.3f) worldV=(%.3f,%.3f,%.3f)\n",
+                                engFrame, aFrame, aName, g,
+                                n->Name() ? n->Name() : "?",
+                                W34_ROWLENS(nl.m), W34_DET(nl.m),
+                                W34_ROWLENS(nw.m), W34_DET(nw.m),
+                                nl.v.x, nl.v.y, nl.v.z, nw.v.x, nw.v.y, nw.v.z);
+                        }
+#undef W34_ROWLENS
+#undef W34_DET
+                    }
                 }
                 // One-shot per member: dump the ACTUAL TransParent chain from
                 // bone_R-hand.mesh up to root, with each node's world pos, so we can

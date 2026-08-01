@@ -13,6 +13,12 @@
 #include "utl/Std.h"
 #include <algorithm>
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <execinfo.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#endif
 
 INIT_REVS(RndTransformable)
 Plane RndTransformable::sShadowPlane;
@@ -107,7 +113,38 @@ void DirtyCache::SetDirty_Force() {
     }
 }
 
+#ifdef HX_NATIVE
+// W34-CHARCLIP-EVAL STEP-0 (L3 attribution): a bone whose cached WorldXfm is
+// "clean" but does NOT equal localXfm o parentWorldXfm has been explicitly
+// world-PINNED by some caller. RB3_WORLDPIN_PROBE=<name-substr|*> prints the
+// native call stack at every SetWorldXfm/SetWorldPos on a matching object, so
+// the pinning code path is named rather than guessed. Read-only, env-gated,
+// HX_NATIVE-only => the Wii build is byte-identical with the env unset.
+static void HxWorldPinProbe(RndTransformable *t, const char *what) {
+    const char *f = getenv("RB3_WORLDPIN_PROBE");
+    if (!f)
+        return;
+    const char *nm = t->Name() ? t->Name() : "?";
+    if (f[0] != '*' && !strstr(nm, f))
+        return;
+    static int budget = 4000;
+    if (budget-- <= 0)
+        return;
+    void *bt[10];
+    int n = backtrace(bt, 10);
+    char **syms = backtrace_symbols(bt, n);
+    fprintf(stderr, "[WORLDPIN] %s obj='%s'", what, nm);
+    for (int i = 1; i < n && i < 8; i++)
+        fprintf(stderr, " | %s", syms && syms[i] ? syms[i] : "?");
+    fprintf(stderr, "\n");
+    free(syms);
+}
+#endif
+
 void RndTransformable::SetWorldXfm(const Transform &tf) {
+#ifdef HX_NATIVE
+    HxWorldPinProbe(this, "SetWorldXfm");
+#endif
     mWorldXfm = tf;
     mCache->SetLastBit(0);
     UpdatedWorldXfm();
@@ -117,6 +154,9 @@ void RndTransformable::SetWorldXfm(const Transform &tf) {
 }
 
 void RndTransformable::SetWorldPos(const Vector3 &vec) {
+#ifdef HX_NATIVE
+    HxWorldPinProbe(this, "SetWorldPos");
+#endif
     mWorldXfm.v = vec;
     UpdatedWorldXfm();
     FOREACH (it, mChildren) {

@@ -12,6 +12,10 @@
 #include "os/Debug.h"
 #include "utl/Symbols.h"
 #include <string.h>
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#endif
 
 #ifdef __MWERKS__
 inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
@@ -530,6 +534,38 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     accum.v.z /= totalWeight;
     MakeRotMatrix(accum.q, m);
     Multiply(m, worldShoulder.m, worldShoulder.m);
+#ifdef HX_NATIVE
+    // W34-CHARCLIP-EVAL STEP-0 (L3): this is the site that world-PINS the
+    // upperArm (the 4.2x ANAT stretch bone). Dump the weights and the shoulder
+    // pull delta so a runaway pull is attributable to elbow vs hand vs the
+    // constraint weights. BAND_IK_PROBE=<shoulder-name-substr|*>, default OFF.
+    {
+        const char *ikp = getenv("BAND_IK_PROBE");
+        if (ikp) {
+            const char *sn = shoulder->Name() ? shoulder->Name() : "?";
+            if (ikp[0] == '*' || strstr(sn, ikp)) {
+                static int ikBudget = 3000;
+                if (ikBudget-- > 0) {
+                    fprintf(stderr,
+                        "[BAND_IK] DoFancyElbow shoulder='%s' elbow='%s' eff='%s' "
+                        "elbowW=%.4f handW=%.4f naturalW=%.4f totalW=%.4f "
+                        "elbowDest=(%.3f,%.3f,%.3f) neutralElbow=(%.3f,%.3f,%.3f) "
+                        "shoulderPre=(%.3f,%.3f,%.3f) pull=(%.3f,%.3f,%.3f) "
+                        "|pull|=%.4f nCons=%d\n",
+                        sn,
+                        elbow->Name() ? elbow->Name() : "?",
+                        mEffector && mEffector->Name() ? mEffector->Name() : "?",
+                        elbowWeight, handWeight, naturalWeight, totalWeight,
+                        elbowDest.x, elbowDest.y, elbowDest.z,
+                        neutralElbow.v.x, neutralElbow.v.y, neutralElbow.v.z,
+                        worldShoulder.v.x, worldShoulder.v.y, worldShoulder.v.z,
+                        accum.v.x, accum.v.y, accum.v.z, Length(accum.v),
+                        (int)mConstraints.size());
+                }
+            }
+        }
+    }
+#endif
     worldShoulder.v.x += accum.v.x;
     worldShoulder.v.y += accum.v.y;
     worldShoulder.v.z += accum.v.z;
@@ -634,6 +670,26 @@ float BandIKEffector::ApplyConstraints(
             QuatXfm newQ;
             newQ.v = local.v;
             newQ.q.Set(local.m);
+#ifdef HX_NATIVE
+            // W34 STEP-0 (L3): name the IK constraint TARGET that is dragging the
+            // effector, and how far its neutral-frame offset is. BAND_IK_CONS=<*|
+            // target-name-substr>, default OFF.
+            if (getenv("BAND_IK_CONS")) {
+                static int cBudget = 2000;
+                if (cBudget-- > 0) {
+                    const char *tn =
+                        c.mTarget->Name() ? c.mTarget->Name() : "?";
+                    fprintf(stderr,
+                        "[BAND_IK_CONS] eff='%s' target='%s' cWeight=%.4f "
+                        "neutralOffsetLenSq=%.3f w=%.4f targetWorld=(%.3f,%.3f,%.3f) "
+                        "destWorld=(%.3f,%.3f,%.3f)\n",
+                        mEffector && mEffector->Name() ? mEffector->Name() : "?",
+                        tn, c.mWeight, lensq, w,
+                        targetWorld.v.x, targetWorld.v.y, targetWorld.v.z,
+                        local.v.x, local.v.y, local.v.z);
+                }
+            }
+#endif
             ScaleAdd(q.v, newQ.v, w, q.v);
             ScaleAddEq(q.q, newQ.q, w);
         }
