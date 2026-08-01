@@ -132,3 +132,18 @@ xenon's char/ stack anyway.
 - rb3-xenon/docs/plans/paths-to-100/20-native-port-and-engine-reuse.md (RFC)
 - rb3-xenon/docs/plans/engine-reuse-and-asset-rendering.md (DC3-renders-RB3
   experiment)
+
+## Post-assessment execution record (same day, 2026-08-01)
+
+X0→X3 ALL LANDED: X1 engine link + deterministic clear frame (xenon
+37b97b6e..8c63629b; also restored xenon's silently-broken native build);
+X2 object-graph load of real .milo_xbox from the ark (bf03982c..3f3dc0ce,
+203 fork TUs, censuses match DC3's independent loads); **X3 FIRST RENDER
+(branch x3-first-render, 625b14f9/7b5a08eb): fully textured clothed
+character + highway geometry from xenon's own target — output SUPERSETS
+DC3's viewer on both test assets.** Coordinator E1 PASS. The predicted
+Rnd/NgRnd layout hazard never materialized; all defects found were
+xenon-side decomp/config fidelity gaps only a linking-and-running build
+exposes (projection-matrix slot bug Cam.cpp:468, DrawMode missing
+enumerator = dead shadows, TextureCompressed LP64 override, NodeCmp ODR).
+Next: X4 venue + animation, per rb3-xenon/docs/plans/x3-first-render-2026-08-01.md.
