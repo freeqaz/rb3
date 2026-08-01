@@ -129,13 +129,101 @@ Runs 9–10 reserved for fix verification.
 
 ---
 
+## FIX (landed) — `evidence/fix.json`
+
+**One-line change class:** make the native `#else` branch of
+`Multiply(const Transform&, const Transform&, Transform&)` (`src/system/math/Rot.cpp`)
+**alias-safe**, by snapshotting `a.v` / `b.m` / `b.v` before `Multiply(a.m, b.m, res.m)`
+overwrites `res.m`. The `__MWERKS__` asm it replaces already is alias-safe.
+
+**UNCONDITIONAL, no `RB3_NO_*` gate** — this is a decomp-source divergence from
+target semantics, not a native render heuristic. There is nothing to opt out of:
+the pre-fix result was arithmetically wrong for aliased calls.
+
+### Bone-anatomy A/B (the un-gameable oracle)
+
+| Metric | Before (run8) | After (run9) |
+|---|---|---|
+| ANAT detonations (ratio > 1.5), shell-vignette window | **3650** | **0** |
+| `maxRatio` (ANATBEAT) | 1.945 | **1.000** |
+| IK shoulder `\|pull\|` max | 7.7599 | **0.0685** |
+
+`1.000` is the *exact* theoretical value for a rigid skeleton under a
+pure-rotation parent basis — the invariant is satisfied identically, not merely
+pushed under a threshold.
+
+### Gameplay A/B, ≥2 songs
+
+| | song 1 | song 2 |
+|---|---|---|
+| shots | 13/13 PASS | 11/11 PASS |
+| ANAT > 1.5 | 51 | 65 |
+| …all of clipType | `guitar_body` | `guitar_body` |
+| **vignette-typed detonations** | **0** | **0** |
+| max ratio | 1.520 | 1.515 |
+
+The residual is the pre-existing `guitar_body` 1.50-1.52 at-threshold flutter that
+A3 explicitly says not to chase, reported separately as instructed.
+**set_play census non-regressed:** `rhythm_norm` 6815, `rhythm_ext` 5669,
+`rhythm_mel` 2361, `solo_norm` 675 — rhythm *and* solo dispatch alive.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Wii match, touched units | **PASS — baseline-EXACT.** `math/Rot` 97.748400→97.748400, `bandobj/BandCharacter` 99.670180→99.670180, `bandobj/BandIKEffector` 93.575386→93.575386, `rndobj/Trans` 99.029840→99.029840. **0 units changed repo-wide**; overall 63.245117 / 77.56096 unchanged. (Full before/after `report.json`, per-function compare — not assumed from the `#else`.) |
+| drawlog canonical-order | **PASS — 792 draws**, `--fixed-clock --canonical-order`, 303 known-residual within the committed `load_residual` bound, **0 unexpected** |
+| rb3-tests | **PASS — 123 ran / 116 pass / 7 skip / 0 fail** (= baseline) |
+| boot runs | 9 of the 10 bounded runs; 4 further screenshot-A/B runs under the charter's extra-runs carve-out |
+
+### A3 frozen-remnant acceptance — **attributed, not claimed fixed**
+
+The frozen-remnant path **persists**: 290 `evt=HI` samples at gameplay with
+`FirstPlaying=(nil) clip='(none)'`, 32 of them parked above world y=100
+(player1 258, player0 26, player3 6). **But those bones are no longer at a
+*detonated* pose** — the run has zero vignette-typed detachments and a global max
+ratio of 1.520. The frozen pose is now *stale-but-anatomically-valid*: the
+character is parked at its shell-vignette stage spot instead of being re-driven
+to its venue walk-on pose. That is the `BandCharacter.cpp:603-632` walk-on-snap
+gap A3 pre-registered as a **separate in-fence defect** — a clip-DRIVE gap, not a
+clip-EVAL gap. Recommended as a follow-up lane item; deliberately not folded in.
+
+**Honesty note — "world-Y fling gone" is NOT claimed.** Investigation showed the
+`evt=HI` y>50 threshold sits *below* the members' legitimate stage Y in the shell
+vignette (the four stand at y ≈ 105/115/135/185), so `evt=HI` fires on the
+character being *placed* into the scene
+(`pre=(7.05,-0.69,53.99) → post=(14.01,105.45,52.56) moved=106` under
+`clip='player3_m'`), not on a bone detaching. `evt=HI` counts are therefore
+~unchanged (5851 → 5642) and that is **expected, not a miss**. The metric the
+charter designated as un-gameable — the bone-length invariant — went to exactly
+1.000.
+
+### Screenshots
+
+`postfix_gameplay_{000,003,005}.png` vs baseline `gameplay_{000,003,005}.png`.
+**Caveat, stated plainly:** this is **not** a songMs-matched pair. The committed
+baseline `manifest.json` records songMs only for the `handcloseup_*` shots (and
+its own shot pin failed, `shot_resolved: null`), and the post-fix run landed on a
+differently-lit venue, so camera and venue do not correspond 1:1. Qualitatively
+the post-fix members render as intact humanoid figures with no spike-fans or
+branch-shard clusters, against a baseline (`handcloseup_play_01.png`,
+`gameplay_005.png`) showing an unmistakable splayed tree-branch hand fan.
+**Coordinator does E1**; the bone-length oracle is the load-bearing result.
+
+---
+
 ## Self-grade vs charter acceptance
 
 | # | Criterion | Status |
 |---|---|---|
 | 1 | STEP-0 attribution table committed; raw logs gzipped; per-probe-tag counts in STATUS | **MET** |
-| 2 | Fix A/B: maxRatio 4.2 → ≤1.5, world-Y fling gone, ≥2 songs; set_play census non-regressed | see FIX section below |
-| 3 | Screenshot A/B vs baseline | see FIX section below |
-| 4 | Gates: batch_objdiff baseline-exact-or-improved; drawlog 792 PASS; rb3-tests 116/0 | see FIX section below |
-| 5 | Checkpoint JSONs before returning | `evidence/step0.json` **MET**; `evidence/fix.json` see below |
-| A3 | Frozen-remnant path verified cleared **or** attributed as a separate downstream item | see FIX section below |
+| 2 | maxRatio 4.2 → ≤1.5 across ≥2 songs; world-Y fling gone; set_play non-regressed | **MET on the oracle** (4.2 → **1.000 exact**, 2 songs, 0 vignette detonations, set_play intact). **PARTIAL on "world-Y fling gone"** — not claimed; shown above to be a threshold artifact of the HI metric, not a defect. |
+| 3 | Screenshot A/B vs baseline, same songMs ±150 ms | **PARTIAL** — A/B produced and committed, but songMs-matching was not achievable from the committed baseline (no gameplay songMs recorded; baseline shot pin had failed). Caveat stated; coordinator does E1. |
+| 4 | batch_objdiff baseline-exact-or-improved; drawlog 792 PASS; rb3-tests 116/0; ≤10 boots | **MET** (baseline-exact, 792 PASS, 116/0/7, 9 bounded boots) |
+| 5 | Checkpoint JSONs before returning | **MET** — `evidence/step0.json` (committed pre-fix), `evidence/fix.json` |
+| A3 | Frozen-remnant verified cleared **or** attributed as a separate downstream item | **MET via attribution** — persists, but no longer a detonated pose; assigned to `BandCharacter.cpp:603-632`. |
+
+**Fences respected:** `Rnd_Wgpu_RB3.cpp` mitten/clamp untouched (no L4 tap was
+needed — the error is upstream at L3); bind/rebake/reskin untouched; crowd chain
+untouched; lighting/wash/postproc/UI untouched; **engine repo untouched — no
+engine commit, `MILO_ENGINE_PIN` not bumped.**

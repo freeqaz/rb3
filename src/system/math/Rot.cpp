@@ -734,10 +734,28 @@ void Multiply(const Transform &a, const Transform &b, Transform &res) {
     // transform is res.m = a.m * b.m and res.v = a.v * b.m + b.v (translation of
     // a pushed through b's rotation, then offset by b's translation). This
     // matches the dc3 sister mtx.cpp Multiply(Transform,Transform,Transform).
+    //
+    // W34-CHARCLIP-EVAL: this path MUST be alias-safe. The __MWERKS__ asm above
+    // loads all of _a and _b into paired-single registers before its first store,
+    // so retail is well-defined when the destination aliases either operand. The
+    // naive C form was not: `Multiply(a.m, b.m, res.m)` overwrites b.m whenever
+    // res === b, and the translation below then reads the already-multiplied
+    // basis. Callers DO alias the second argument -- BandIKEffector::
+    // NeutralWorldXfm does `Multiply(tf38, tf, tf)` recursively (so the error
+    // compounds once per bone up the skeleton), and RndTransformable::
+    // SetTransParent does `Multiply(tf48, tf78, tf78)`. The corrupted neutral
+    // pose fed the band IK a hand target far outside arm reach, which yanked and
+    // world-pinned the shoulder: the 4.2x upperArm "stretch" and the spindly
+    // tree-branch arms. Snapshot the inputs the translation needs before writing
+    // res. (STEP-0 attribution: docs/native/engine-arch-review-2026-07-05/
+    // execution/W34-CHARCLIP-EVAL/evidence/step0.json)
+    const Vector3 av = a.v;
+    const Hmx::Matrix3 bm = b.m;
+    const Vector3 bv = b.v;
     Multiply(a.m, b.m, res.m);
-    res.v.x = a.v.x * b.m.x.x + a.v.y * b.m.y.x + a.v.z * b.m.z.x + b.v.x;
-    res.v.y = a.v.x * b.m.x.y + a.v.y * b.m.y.y + a.v.z * b.m.z.y + b.v.y;
-    res.v.z = a.v.x * b.m.x.z + a.v.y * b.m.y.z + a.v.z * b.m.z.z + b.v.z;
+    res.v.x = av.x * bm.x.x + av.y * bm.y.x + av.z * bm.z.x + bv.x;
+    res.v.y = av.x * bm.x.y + av.y * bm.y.y + av.z * bm.z.y + bv.y;
+    res.v.z = av.x * bm.x.z + av.y * bm.y.z + av.z * bm.z.z + bv.z;
 #endif
 }
 
