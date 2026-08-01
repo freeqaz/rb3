@@ -99,3 +99,47 @@ ifdef paths and any paired-single/intrinsic rewrite sites in the eval chain.
 - Build via tools/ninja-locked (Wii gates) + own native build dir
   (native/build-agent-W34 — copy CMake config from native/build-native).
 - Stage only your own paths; no git stash; no push.
+
+---
+
+# ADOPTED AMENDMENTS (coordinator, from REVIEW.md — BINDING, supersede the text above where they conflict)
+
+**A3 — detonation phase CORRECTED.** The 4.2× events are NOT gameplay-time: all
+2682 `clipType='vignette'` ANAT events sit at engine frames 0-399 (~0-7s, the
+shell/loading-vignette window; clips from `world/vignette/shell/sv3|sv4/...`).
+The gameplay-time world-Y +194 is a FROZEN REMNANT (`FirstPlaying=(nil)`,
+moved≈0) — the stale-vignette-freeze at BandCharacter.cpp:603-632. Vignette
+masks are retail decomp code (BandCharacter.cpp:467-494) → playing the clips is
+faithful; clip-SELECTION attack is dead, EVAL attack stands. STEP-0 repro =
+boot to venue + wait ~2-7s (no gameplay nav needed). ACCEPTANCE ADDITION: the
+frozen-remnant path (bone parked at y≈194 after clip ends) must be verified
+cleared — or explicitly attributed as a separate downstream item — not assumed
+fixed by the eval fix.
+
+**A4/A6 — layer map ANCHORED (use these, don't re-derive):**
+- L1 = `CharBonesSamples::EvaluateChannel` (CharBonesSamples.cpp:262, **90.76%
+  match — prime suspect**); `ReadCounts` 61.93% (computes decode-steering
+  offsets — audit it); the HX_NATIVE padded LoadData (:558-650) was ALREADY
+  V38-audited and refuted — do NOT re-derive the stride/padded-read hypothesis.
+- L2 = CharClipDriver::Evaluate/ScaleAdd → `CharBones::ScaleAdd/Blend/RotateBy/
+  RotateTo` (CharBones.cpp:361/612/735/967 at 92.4/97.3/91.6/95.6%).
+- L3 = CharServoBone::Poll → CharBonesMeshes::PoseMeshes + lazy
+  `RndTransformable::WorldXfm_Force` (Trans.cpp:127). Prior probes CBS_DBG /
+  CBM_DBG2 / SERVO_PROBE exist — reuse, don't rebuild.
+- L4 = ENGINE repo `../milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp`
+  palette compose. FENCE CARVE-OUT: read-only probe taps in Rnd_Wgpu_RB3.cpp
+  are ALLOWED (default-OFF, env-gated); the mitten/clamp LOGIC stays untouched.
+- Regenerate build/SZBE69_B8/report.json FIRST (19 days stale) before quoting
+  match% in findings.
+
+**A5 — "never audited" scoped.** V38 audited L1 load layout; wave-07 probed L3.
+The genuinely new instrument = per-frame VALUE trace L1→L4 on one detonating
+bone at one timestamp. Frame that as the deliverable.
+
+**Probe gating exactness:** `BAND_ANIM_PROBE=<substr|*>` AND `BAND_ANIM_ANAT=1`
+(ANAT alone is inert). Chain covers spine+arms only — legs/face defects in the
+baseline PNGs are NOT covered by this probe; extend the chain table if needed
+(small, BandCharacter.cpp:711-919).
+
+**Gates:** re-baseline drawlog canonical-order at HEAD once before use;
+rb3-tests baseline = 123 ran / 116 pass / 7 skip / 0 fail.
