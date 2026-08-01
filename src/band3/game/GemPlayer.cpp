@@ -2127,8 +2127,8 @@ bool GemPlayer::ShouldPenalizeGem(int gem) const {
         MILO_ASSERT(endGemID - 1 == gem, 0xCCE);
         return true;
     } else {
-        for (; startGemID < endGemID; startGemID++) {
-            if (mGemStatus->GetHit(startGemID) || mGemStatus->Get0x4(startGemID)) {
+        for (int i = startGemID; i < endGemID; i++) {
+            if (mGemStatus->GetHit(i) || mGemStatus->Get0x4(i)) {
                 return false;
             }
         }
