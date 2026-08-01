@@ -14,7 +14,9 @@
 #include <algorithm>
 #include "utl/Symbols.h"
 #ifdef HX_NATIVE
-#include <execinfo.h>
+#ifndef __EMSCRIPTEN__
+#include <execinfo.h> // W34-CHARCLIP-EVAL STEP-0 backtrace probe (RB3_WORLDPIN_PROBE), inert by default; glibc-only, absent under Emscripten musl
+#endif
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -130,14 +132,16 @@ static void HxWorldPinProbe(RndTransformable *t, const char *what) {
     static int budget = 4000;
     if (budget-- <= 0)
         return;
+    fprintf(stderr, "[WORLDPIN] %s obj='%s'", what, nm);
+#ifndef __EMSCRIPTEN__
     void *bt[10];
     int n = backtrace(bt, 10);
     char **syms = backtrace_symbols(bt, n);
-    fprintf(stderr, "[WORLDPIN] %s obj='%s'", what, nm);
     for (int i = 1; i < n && i < 8; i++)
         fprintf(stderr, " | %s", syms && syms[i] ? syms[i] : "?");
-    fprintf(stderr, "\n");
     free(syms);
+#endif
+    fprintf(stderr, "\n");
 }
 #endif
 
