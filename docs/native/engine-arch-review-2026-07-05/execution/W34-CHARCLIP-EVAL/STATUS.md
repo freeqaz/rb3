@@ -236,3 +236,30 @@ branch-shard clusters, against a baseline (`handcloseup_play_01.png`,
 needed — the error is upstream at L3); bind/rebake/reskin untouched; crowd chain
 untouched; lighting/wash/postproc/UI untouched; **engine repo untouched — no
 engine commit, `MILO_ENGINE_PIN` not bumped.**
+
+## Coordinator E1 (Fable, 2026-08-01, post-fix HEAD)
+
+Independent re-capture with the SAME two harnesses as the 2026-08-01 baseline
+(boot-to-song.py defaults + hand-closeup-capture.py; evidence/e1_fixed_*.png
+vs the morning baseline PNGs in this dir):
+
+- **E1 = PASS.** Branch-hand family visually RESOLVED: guitarist shows
+  individual separated fingers both hands (baseline: yellow twig-claws);
+  right member's giant flesh branched claw GONE (recognizable gloved hands);
+  skeletal mask-face gone (face renders with glasses).
+- Residuals, all pre-attributed elsewhere: thin angular floating structure
+  over the track (A3 walk-on-snap frozen-remnant item, BandCharacter.cpp:
+  603-632 — follow-up lane); dark-face band + magenta/green casts (lighting/
+  wash family, out of scope); guitar_body 1.50-1.52 flutter (A3: do not
+  chase).
+- Caveat honored: not songMs-matched (baseline recorded no gameplay songMs and
+  its shot pin failed); judgment is qualitative on symptom classes, which is
+  what E1 is for. The bone-length oracle (3650→0 detonations, maxRatio 1.000
+  exact) is the load-bearing result.
+
+**Wave disposition: FIX RATIFIED (unconditional, correctly ungated — decomp
+divergence restored to target semantics; Wii match byte-identical).** The same
+alias fix also covers RndTransformable::SetTransParent and CharIKHand.cpp:459
+call sites — closed IK/forearm residuals (FOREARM-FLOAT, W28-PROP right_hand
+~39u) should be re-measured opportunistically next wave before re-chartering
+anything in that family.
