@@ -249,7 +249,8 @@ bool GameGemList::AddGameGem(const GameGem &gem, NoStrumState noStrum) {
 }
 
 void GameGemList::Finalize() {
-    std::vector<GameGem>(mGems).swap(mGems);
+    std::vector<GameGem> gems(mGems);
+    mGems.swap(gems);
 }
 
 bool GameGemList::WillBeNoStrum(const GameGem &gem) {
