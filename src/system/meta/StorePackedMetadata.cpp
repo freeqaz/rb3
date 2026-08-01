@@ -2090,10 +2090,9 @@ void StorePackedOfferBase::EndianFixBase() {
 
 void StorePackedOffer::EndianFix() {
     EndianFixBase();
-    unsigned char b0 = ((unsigned char *)this)[0x0];
-    ((unsigned char *)this)[0x0] = b0 & ~0x80;  // clear mIsRBN bit
+    mIsRBN = (mIsRBN >> 6) & 1;
     for (int i = 0; i < mNumSongs; i++) {
-        mSongs[i] -= 1;
+        mSongs[i]--;
     }
 }
 
