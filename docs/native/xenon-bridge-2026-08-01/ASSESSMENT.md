@@ -12,9 +12,33 @@ milestone M3 = "asset render via milo-native-engine with
 directive in its memory: "rb3-xenon native is the real goal — matching is the
 means. The Wii game is the inferior cut-down version."
 
-Two recon lanes (this session) converged independently; SPIKE-X0 (empirical
-compile of the engine's dc3 flavor against xenon headers) dispatched — verdict
-to be appended below / in `rb3-xenon/docs/plans/spike-x0-engine-dc3-flavor-2026-08-01.md`.
+Two recon lanes (this session) converged independently, and **SPIKE-X0
+confirmed empirically (rb3-xenon `443070fe`,
+`docs/plans/spike-x0-engine-dc3-flavor-2026-08-01.md`): COMPOSES.**
+
+## SPIKE-X0 result (2026-08-01)
+
+- **14/14 flavor-critical TUs compile** against xenon headers (all 6
+  rndobj-coupled gfx TUs + all 8 dc3 Wgpu backends). `libmilo-engine.a`
+  (4.99 MB) links clean with a **5-entry** `MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE`
+  (vs rb3-Wii's 18; two of the five are one-line reconciliations →
+  effectively 3). Zero xenon header gaps on the spike subject; the
+  `-fsyntax-only` fallback was not needed (Dawn from dc3-decomp-deps +
+  system glfw3 resolved directly).
+- Minimal include set: `native/src`, `src`, `src/system` in that order
+  (`/I src` before `/I src/system` is load-bearing); band3/network/oggvorbis
+  unnecessary; no consumer STL shim injection needed (engine's
+  stl_iterator.h is byte-identical to xenon's).
+- **Bonus finding — latent shared-engine defect:** `Mesh_Wgpu.cpp:206,:299`
+  test `GetDrawMode() == 8` against a DrawMode enum topping out at
+  `kDrawVelocity = 6` (enum byte-identical in DC3) → two two-sided-cull
+  overrides are dead on EVERY consumer, hidden by DC3/rb3's blanket `-w`.
+  Xenon's `-Werror=` policy is a net asset to the engine. → engine backlog.
+- **Recommended next milestone: X1 as a clear-frame + headless-screenshot
+  smoke target** linked against the lib — NOT a straight jump to .milo
+  render, because xenon's `rndobj/Rnd.h:354-360` documents an Rnd/NgRnd
+  member-layout shift vs the DC3 assumption; isolate that silent-offset
+  class on a known-good clear frame first.
 
 ## Why it composes
 
