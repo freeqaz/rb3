@@ -63,6 +63,15 @@ same factor, same zeroing) — its 73.6% residual is scheduling, not semantics. 
 IK itself is faithful; it is being fed a corrupted neutral pose.
 (Ghidra MCP was down this session; m2c was Bank-8-accurate and sufficient.)
 
+**Probe honesty:** all probes are `HX_NATIVE` + `getenv`-gated and default OFF, so
+the shipped path is unaffected. Two of them are *not* strictly read-only when
+enabled: `ANATX` calls `cB->WorldXfm_Force()` and `pB->SetDirty()` — that is
+deliberate (they *are* the stale/propagation discriminators) and it perturbs only
+the probed frame, but a run with `BAND_ANIM_ANATX` set is not a clean behavioural
+baseline. All A/B numbers above were taken with the *same* probe set on both
+sides, and the gates (drawlog, rb3-tests) were run with every probe unset. The L4
+fence needed no tap at all: `Rnd_Wgpu_RB3.cpp` was never opened.
+
 ### Repro correction (extends A3)
 
 A bare boot does **not** detonate — at splash no clip plays
