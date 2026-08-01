@@ -73,12 +73,12 @@ void WiiLight::UpdatePosition() {
 }
 
 float WiiLight::GetLightFieldOfView() {
-
-    // this nightmare spaghetti removes 90% of the regswaps. end mii
     Transform t = WorldXfm();
-    return (std::atan2(
-        mBotRadius, mRange + mTopRadius / ((mBotRadius - mTopRadius) / mRange)
-    ) * 2) * 180 / float(PI);
+    float bot = mBotRadius;
+    float top = mTopRadius;
+    float range = mRange;
+    float denom = (bot - top) / range;
+    return (std::atan2(bot, range + top / denom) * 2) * 180 / PI;
 }
 
 Vector3 WiiLight::CalcAdjustedPos() {
