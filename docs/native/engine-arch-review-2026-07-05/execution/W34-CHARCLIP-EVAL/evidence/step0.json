@@ -1,0 +1,101 @@
+{
+  "lane": "W34-CHARCLIP-EVAL",
+  "stage": "STEP-0",
+  "date": "2026-08-01",
+  "repro": {
+    "amendment": "A3",
+    "method": "boot rb3-native headless -> press Start to main_hub_screen -> hold ~12s",
+    "harness": "scripts/native/_w34_shellvignette_trace.py --nav-hub",
+    "note": "A bare boot (splash only) does NOT detonate: no clip plays (FirstPlaying=nil, maxRatio=1.000, run1). The shell vignette clips (player1_f/player2_f/player3_m) only start once main_hub_screen is reached. A3's 'boot to venue' is therefore main_hub, not the splash.",
+    "boot_runs_used": 8,
+    "boot_runs_budget": 10
+  },
+  "oracle": {
+    "metric": "ratio = |childWorld - parentWorld| / |childLocal.v|",
+    "identity": "In Milo row-vector convention childWorld.v = childLocal.v * parentWorld.m + parentWorld.v, so childWorld - parentWorld == childLocal.v * parentWorld.m EXACTLY. For a pure-rotation parentWorld.m the ratio is identically 1.000. Any ratio != 1 is therefore one of: (a) scale in parentWorld.m, (b) a stale/pinned cached world xfm, (c) wrong parentage.",
+    "worst_bone": "bone_R-upperArm.mesh / bone_L-upperArm.mesh (parent = matching clavicle)"
+  },
+  "attribution": [
+    {
+      "layer": "L1",
+      "site": "CharBonesSamples::EvaluateChannel (CharBonesSamples.cpp:262, 90.76%), ReadCounts (61.93%)",
+      "verdict": "CLEAN",
+      "value_evidence": "chLocalRow=(1.0000,1.0000,1.0000) chLocalDet=1.0000 on every detonating frame; chLocalV=(3.4516,0,0) constant and equal to the authored bone length. A quantized-decode / stride / endianness error would perturb the local matrix norm or the local offset; neither moves.",
+      "runs": ["run2", "run3", "run4", "run7"]
+    },
+    {
+      "layer": "L2",
+      "site": "CharClipDriver::Evaluate -> CharBones::ScaleAdd/Blend/RotateBy/RotateTo (91.6-97.3%)",
+      "verdict": "CLEAN",
+      "value_evidence": "Same evidence as L1: the composed per-bone LocalXfm handed to PoseMeshes is an exact orthonormal rotation (det 1.0000, row lengths 1.0000) with the authored translation. The blend kernels are not corrupting the pose.",
+      "runs": ["run3", "run4"]
+    },
+    {
+      "layer": "L3",
+      "site": "world compose / RndTransformable cached WorldXfm (Trans.cpp) -- pin origin BandIKEffector::DoFancyElbow (BandIKEffector.cpp:538)",
+      "verdict": "DEFECT -- FIRST LAYER WHERE THE VALUE GOES WRONG",
+      "value_evidence": {
+        "sep_vs_pred": "sep=|childWorld-parentWorld|=6.9432 but pred=|childLocal.v * parentWorld.m|=3.4516 -> residual 5.19. parWorldRow=(1.0000,1.0000,1.0000) parWorldDet=1.0000 (no scale), parentOK=1 (parentage correct), consC=0 consP=0 (no transform constraints).",
+        "stale_test": "dirtyC=0 dirtyP=0 (both cached/clean) yet forcing cB->WorldXfm_Force() MOVES the bone by staleMove=5.19, after which sepAfterForce=3.4516 == authored length exactly (ratio 1.000). The cached world xfm does not equal localXfm o parentWorldXfm.",
+        "propagation_test": "propOK=1 in 1244/1244 samples -- the DirtyCache parent->child link is intact, so this is NOT a dirty-propagation miss.",
+        "pin_backtrace": "RB3_WORLDPIN_PROBE + addr2line: SetWorldXfm on bone_R-upperArm.mesh <- BandIKEffector::DoFancyElbow (BandIKEffector.cpp:538) <- BandIKEffector::Poll (:686) <- CharPollGroup::Poll <- RndDir::Poll <- Character::Poll <- BandCharacter::Poll. The arm bones are explicitly world-PINNED by the IK, which is why the cached world is not the clip-composed world.",
+        "pin_magnitude": "BAND_IK probe: |pull| added to the shoulder world position reaches 7.76 vs an authored upperArm length of 3.45 (2.2x the bone). elbowW=0, handW=0.30-0.61, naturalW the remainder, nCons=0 at the chain head (weights come via mMore)."
+      },
+      "runs": ["run3", "run4", "run5", "run6", "run7", "run8"]
+    },
+    {
+      "layer": "L4",
+      "site": "engine ../milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp palette compose",
+      "verdict": "NOT REACHED / EXONERATED BY UPSTREAM",
+      "value_evidence": "The invariant is already violated in the bone WorldXfm that L4 consumes, upstream of the palette. No L4 tap was needed and none was added; the mitten/clamp logic was not touched. This is consistent with W2.8f joint-attachment GREEN.",
+      "runs": []
+    }
+  ],
+  "root_cause": {
+    "file": "src/system/math/Rot.cpp",
+    "function": "Multiply(const Transform &a, const Transform &b, Transform &res)",
+    "line": 736,
+    "class": "native #else branch is NOT alias-safe; the MWCC paired-single asm it replaces IS",
+    "detail": "The native path does `Multiply(a.m, b.m, res.m);` and only THEN computes `res.v = a.v * b.m + b.v`. When the caller passes the destination as the SECOND argument (res === b), the first statement has already overwritten b.m with a.m*b.m, so the translation is computed against the wrong basis. The MWCC __MWERKS__ asm loads all of _a and _b into paired-single registers before any store, so retail is alias-safe. res === a is safe on both paths.",
+    "observable": "BAND_IK_CONS: neutralOffsetLenSq=481.261 (=> neutral hand-to-hip distance 21.94) but |destWorld - targetWorld| = 49.76 for the same constraint -- a 2.27x length blow-up through a Normalize()d (orthonormal) rotation, which is arithmetically impossible unless an input transform was corrupted.",
+    "primary_aliasing_call_site": "BandIKEffector::NeutralWorldXfm (BandIKEffector.cpp:263) `Multiply(tf38, tf, tf)` -- recursive, so the corruption compounds once per bone up the chain. Feeds ApplyConstraints/ApplyPosConstraints -> a bogus IK hand target -> out-of-reach -> ComputeHandPullAndQuat yanks the shoulder -> DoFancyElbow world-pins the detached upperArm.",
+    "other_aliasing_call_sites_transform": [
+      "src/system/rndobj/Trans.cpp:79  Multiply(tf48, tf78, tf78)   (SetTransParent recalcLocal)",
+      "src/system/char/CharIKHand.cpp:459  Multiply(tf2, tf, tf)",
+      "src/system/char/CharCuff.cpp:172  Multiply(sp50, xfm, xfm)",
+      "src/system/rndobj/TexRenderer.cpp:193  Multiply(tf150, tf180, tf180)",
+      "src/system/world/Reflection.cpp:72  Multiply(tf78, tfa8, tfa8)",
+      "src/system/rndwii/Mat.cpp:454  Multiply(*sCurrentModelXfm, t1, t1)  (Wii-only path)"
+    ],
+    "not_affected": "Multiply(const Hmx::Matrix3&, const Hmx::Matrix3&, Hmx::Matrix3&) (Rot.cpp:624) builds all nine products as call arguments to out.Set(...), so it is already alias-safe. The Matrix3-aliasing sites in the sweep are therefore benign."
+  },
+  "banned_classes_not_re_derived": [
+    "padded-LoadData / stride hypothesis (V38-refuted, documented in CharBonesSamples.cpp:574-584)",
+    "the 8 dead bind-side classes",
+    "reskin / authored-offset repoint",
+    "clip SELECTION attack (A3: vignette masks are retail decomp code)"
+  ],
+  "probes_added": {
+    "src/system/bandobj/BandCharacter.cpp": [
+      "BAND_ANIM_ANATX=<minRatio> -- evt=ANATX (per-pair world-vs-local discriminator: parent world row lengths/det, child local row lengths/det, sep vs pred, residual, dirty bits, constraints, staleMove, sepAfterForce, propOK, parentage) + evt=ANATXCHAIN ancestor walk",
+      "BAND_ANIM_ANATPRE=<everyNframes> -- evt=ANATXPRE root->leaf pre-read cache map (dirty bit + cached world vs forced world per node)"
+    ],
+    "src/system/rndobj/Trans.cpp": [
+      "RB3_WORLDPIN_PROBE=<name-substr|*> -- native backtrace at every SetWorldXfm/SetWorldPos on a matching object"
+    ],
+    "src/system/bandobj/BandIKEffector.cpp": [
+      "BAND_IK_PROBE=<shoulder-substr|*> -- DoFancyElbow weights + shoulder pull delta at the pin site",
+      "BAND_IK_CONS=1 -- IK constraint target identity, neutral offset, weight, target/dest world"
+    ]
+  },
+  "probe_gating": "All probes are HX_NATIVE + getenv-gated and default OFF, so the Wii build is unaffected by construction (the Rot.cpp fix lives in the native #else branch only).",
+  "evidence_logs": {
+    "run2.engine.log.gz": "first detonation repro with evt=ANATX (ANATX 5811, ANATXCHAIN 40677)",
+    "run3.engine.log.gz": "stale test added (dirtyC/dirtyP/consC/consP/staleMove/sepAfterForce)",
+    "run4.engine.log.gz": "propagation test (propOK) -- 1244/1244 propOK=1",
+    "run5.engine.log.gz": "ANATXPRE root->leaf cache map (1071 lines)",
+    "run6.engine.log.gz": "RB3_WORLDPIN_PROBE backtraces (4000) naming DoFancyElbow",
+    "run7.engine.log.gz": "BAND_IK weights/pull at the pin site (3000)",
+    "run8.engine.log.gz": "BAND_IK_CONS constraint targets (2000) -- playerN_bone_target_{L,R}-hip.tp"
+  }
+}

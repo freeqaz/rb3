@@ -1,0 +1,89 @@
+{
+  "lane": "W34-CHARCLIP-EVAL",
+  "stage": "FIX",
+  "date": "2026-08-01",
+  "layer_fixed": "L3 (local->world composition)",
+  "fix": {
+    "file": "src/system/math/Rot.cpp",
+    "function": "Multiply(const Transform &a, const Transform &b, Transform &res)",
+    "branch": "the non-__MWERKS__ (native) #else branch only",
+    "change": "snapshot a.v, b.m, b.v into locals before `Multiply(a.m, b.m, res.m)` writes res.m, so the translation is computed from the ORIGINAL basis. Makes the native path alias-safe for res===b, matching the MWCC paired-single asm (which loads both operands into registers before its first store).",
+    "gated": false,
+    "gate_rationale": "This is a decomp-source divergence from target semantics, not a native render heuristic -> lands UNCONDITIONAL per the charter Fix rules and the W31 ack rule. There is no behaviour to opt out of: the pre-fix result was simply arithmetically wrong for aliased calls.",
+    "wii_impact": "NONE by construction (the fix is inside the #else that mwcceppc never compiles). Proven, not assumed -- see gates.",
+    "engine_repo_touched": false,
+    "engine_sha": null,
+    "milo_engine_pin_bumped": false
+  },
+  "ab_bone_anatomy": {
+    "harness": "scripts/native/_w34_shellvignette_trace.py --nav-hub (shell-vignette window, the A3 detonation phase)",
+    "before_run": "run8",
+    "after_run": "run9",
+    "anat_detonation_events_ratio_gt_1_5": { "before": 3650, "after": 0 },
+    "max_ratio_anatbeat": { "before": 1.945, "after": 1.000 },
+    "ik_shoulder_pull_magnitude_max": { "before": 7.7599, "after": 0.0685 },
+    "note": "maxRatio 1.000 is the exact theoretical value for a rigid skeleton under a pure-rotation parent basis -- the invariant is now satisfied identically, not merely brought under threshold."
+  },
+  "ab_gameplay": {
+    "harness": "scripts/native/boot-to-song.py --bin native/build-agent-W34/rb3-native",
+    "song1": {
+      "out": "/tmp/w34-gp-fix",
+      "shots": "13/13 PASS",
+      "anat_events_ratio_gt_1_5": 51,
+      "all_of_which_cliptype": "guitar_body",
+      "vignette_typed_detonations": 0,
+      "max_ratio": 1.520
+    },
+    "song2": {
+      "out": "/tmp/w34-gp-fix2",
+      "shots": "11/11 PASS",
+      "anat_events_ratio_gt_1_5": 65,
+      "all_of_which_cliptype": "guitar_body",
+      "vignette_typed_detonations": 0,
+      "max_ratio": 1.515
+    },
+    "residual_disposition": "The only remaining >1.5 events are the pre-existing guitar_body 1.50-1.52 at-threshold flutter that amendment A3 explicitly classifies as noise and instructs NOT to chase ('gate on the vignette clips ... report the performance-clip max separately'). Reported separately here: performance-clip max = 1.520 (song1) / 1.515 (song2), unchanged in character from the W33 baseline of 1.500-1.515.",
+    "setplay_census": "NON-REGRESSED. RB3_SETPLAY_PROBE run shows rhythm and solo dispatch alive: rhythm_norm_c_med 6815, rhythm_ext_c_med 5669, rhythm_mel_s_med 2361, solo_norm_c_med 675."
+  },
+  "a3_frozen_remnant_acceptance": {
+    "verdict": "PERSISTS -- ATTRIBUTED AS A SEPARATE DOWNSTREAM ITEM, NOT FOLDED INTO THIS FIX",
+    "measurement": "Gameplay song1: 290 evt=HI samples with FirstPlaying=(nil) clip='(none)' (no clip playing), of which 32 are parked above world y=100. Members: player1 (257 + 1), player0 (26), player3 (6).",
+    "but": "Those parked bones are no longer at a DETONATED pose. Across the whole gameplay run there are ZERO vignette-typed ANAT detachments and the global max ratio is 1.520 (guitar_body flutter). The frozen pose is now stale-but-anatomically-valid: the character is parked at its shell-vignette stage position instead of being re-driven to its venue walk-on pose.",
+    "attribution": "This is the stale-vignette-freeze / walk-on-snap gap at BandCharacter.cpp:603-632 that A3 pre-registered as a SEPARATE in-fence defect. It is a clip-DRIVE/re-pose gap, not a clip-EVAL gap, so it is out of scope for this lane's named layer. Recommend a follow-up lane item.",
+    "honesty_note": "The charter's 'world-Y fling gone' criterion is NOT claimed. Investigation showed the evt=HI y>50 threshold is below the members' legitimate stage Y in the shell vignette (the four members stand at y ~= 105/115/135/185), so evt=HI fires on the character being PLACED into the scene (pre=(7.05,-0.69,53.99) -> post=(14.01,105.45,52.56), moved=106 under clip='player3_m'), not on a bone detaching. evt=HI counts are therefore ~unchanged (5851 -> 5642) and that is expected, not a miss. The un-gameable oracle the charter designated -- the bone-length invariant -- went to exactly 1.000."
+  },
+  "gates": {
+    "wii_match_batch": {
+      "method": "full tools/ninja-locked build/SZBE69_B8/report.json before vs after, per-unit AND per-function fuzzy_match_percent compared",
+      "result": "PASS -- baseline-EXACT",
+      "touched_units": {
+        "main/system/math/Rot": "97.748400 -> 97.748400 IDENTICAL",
+        "main/system/bandobj/BandCharacter": "99.670180 -> 99.670180 IDENTICAL",
+        "main/system/bandobj/BandIKEffector": "93.575386 -> 93.575386 IDENTICAL",
+        "main/system/rndobj/Trans": "99.029840 -> 99.029840 IDENTICAL"
+      },
+      "units_changed_repo_wide": 0,
+      "overall": "matched_code 63.245117 -> 63.245117, matched_functions 77.56096 -> 77.56096"
+    },
+    "drawlog_canonical_order": "PASS -- 792 draws, --fixed-clock --canonical-order, 303 known-residual divergences within the committed residual bound (load_residual), 0 unexpected",
+    "rb3_tests": "PASS -- 123 ran / 116 passed / 7 skipped / 0 failed (exactly the documented baseline)",
+    "boot_runs": {
+      "bounded_budget": 10,
+      "used_for_step0_and_fix_verification": 9,
+      "extra_screenshot_ab_runs": "2 x boot-to-song.py + 2 x band-closeup-capture.py, under the charter's 'screenshot A/B extra runs allowed via boot-to-song.py' carve-out"
+    }
+  },
+  "screenshots": {
+    "post_fix": ["postfix_gameplay_000.png", "postfix_gameplay_003.png", "postfix_gameplay_005.png"],
+    "baseline": ["gameplay_000.png", "gameplay_003.png", "gameplay_005.png"],
+    "caveat": "NOT a songMs-matched pair. The committed baseline manifest.json only records songMs for the handcloseup_* shots (and its own shot pin failed: shot_resolved=null), and the post-fix boot-to-song run landed on a differently-lit venue, so the camera and venue do not correspond 1:1. Qualitatively the post-fix band members render as intact humanoid figures with no spike-fans or branch-shard clusters, versus the baseline handcloseup_play_01.png / gameplay_005.png which show an unmistakable splayed tree-branch hand fan. Coordinator does E1; this pair is supporting evidence, the bone-length oracle is the load-bearing result.",
+    "band_closeup_note": "band-closeup-capture.py post-fix run: verdict=PASS, shots=5, pinned=10/10, drops_band=0. Its frames landed on an unlit venue (black background), which is the separate lighting/wash family explicitly out of scope, so they are not offered as the visual A/B."
+  },
+  "fences_respected": {
+    "rnd_wgpu_rb3_mitten_clamp": "untouched (no L4 tap was needed -- the error was already present upstream at L3)",
+    "bind_rebake_reskin_sites": "untouched",
+    "crowd_chain": "untouched",
+    "lighting_wash_postproc_ui": "untouched",
+    "engine_repo": "untouched -- no engine commit, MILO_ENGINE_PIN not bumped"
+  }
+}
