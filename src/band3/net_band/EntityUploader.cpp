@@ -234,13 +234,13 @@ int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profi
             TourCharLocal *cur = profile->CharAt(i);
             if (cur->IsUploadNeeded()) {
                 int id = GenerateOpID();
-                data[i] = new EntityData();
-                data[i]->mOpID = id;
-                data[i]->mOpType = 2;
-                data[i]->mString = cur->GetCharacterName();
-                data[i]->mRetCode = 0;
-                data[i]->mOpFinished = false;
-                data[i]->mSavableObject = cur;
+                data[curOp] = new EntityData();
+                data[curOp]->mOpID = id;
+                data[curOp]->mOpType = 2;
+                data[curOp]->mString = cur->GetCharacterName();
+                data[curOp]->mRetCode = 0;
+                data[curOp]->mOpFinished = false;
+                data[curOp]->mSavableObject = cur;
                 curOp++;
                 cur->UploadAttempted();
             }
