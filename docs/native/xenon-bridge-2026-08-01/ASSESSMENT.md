@@ -147,3 +147,21 @@ xenon-side decomp/config fidelity gaps only a linking-and-running build
 exposes (projection-matrix slot bug Cam.cpp:468, DrawMode missing
 enumerator = dead shadows, TextureCompressed LP64 override, NodeCmp ODR).
 Next: X4 venue + animation, per rb3-xenon/docs/plans/x3-first-render-2026-08-01.md.
+
+## In flight (dispatched 2026-08-02)
+
+- **X4a venue render** — worktree x4a-venue-render (via rb3-xenon
+  scripts/setup_worktree.sh, path /home/free/tmp/laneX4A/wt): depth-range
+  prereq → objdiff A/B rider (promote the 2 HX_NATIVE shared-src fixes,
+  discharge gate-d debt) → venue .milo_xbox render w/ per-subsystem
+  VERIFIED/SYNTHESIZED/UNREACHED table → rebase onto main + 18-target gate →
+  ff-merge land. Doc will be rb3-xenon/docs/plans/x4a-venue-render-2026-08-02.md.
+  Owner directive: worktree per milestone, land to main each milestone, rebase
+  often (decomp lanes DD-* commit to main continuously).
+- **X4b (queued, NOT dispatched)** — CharClip/CharDriver animation: first
+  BoneSetup-vs-xenon-CharBones exercise; dispatches after X4a lands.
+- **DC3 viewer partial-render fix** (owner-requested) — dc3-decomp lane:
+  root-cause why milo-viewer draws only 2 disembodied hands of
+  crowd_female01 (vs xenon full figure) and blank tracksystem; adjudicate
+  correct viewer behavior; fix DC3-side if possible; engine edits
+  conservative (3 consumers, verify xenon X3 PNGs unchanged, no pin bumps).
