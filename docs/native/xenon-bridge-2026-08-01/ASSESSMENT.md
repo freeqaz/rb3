@@ -148,18 +148,41 @@ exposes (projection-matrix slot bug Cam.cpp:468, DrawMode missing
 enumerator = dead shadows, TextureCompressed LP64 override, NodeCmp ODR).
 Next: X4 venue + animation, per rb3-xenon/docs/plans/x3-first-render-2026-08-01.md.
 
-## In flight (dispatched 2026-08-02)
+## X4a — LANDED 2026-08-02, PARTIAL (xenon main `eb750e84`, coordinator E1 PASS)
 
-- **X4a venue render** — worktree x4a-venue-render (via rb3-xenon
-  scripts/setup_worktree.sh, path /home/free/tmp/laneX4A/wt): depth-range
-  prereq → objdiff A/B rider (promote the 2 HX_NATIVE shared-src fixes,
-  discharge gate-d debt) → venue .milo_xbox render w/ per-subsystem
-  VERIFIED/SYNTHESIZED/UNREACHED table → rebase onto main + 18-target gate →
-  ff-merge land. Doc will be rb3-xenon/docs/plans/x4a-venue-render-2026-08-02.md.
-  Owner directive: worktree per milestone, land to main each milestone, rebase
-  often (decomp lanes DD-* commit to main continuously).
-- **X4b (queued, NOT dispatched)** — CharClip/CharDriver animation: first
-  BoneSetup-vs-xenon-CharBones exercise; dispatches after X4a lands.
+Doc: rb3-xenon/docs/plans/x4a-venue-render-2026-08-02.md. Gates all green on
+the landed tree (18/18 targets, zero engine edits, X3 PNGs byte-identical,
+determinism ×2 with one named exception below). Per-subsystem: geometry→GPU,
+materials+textures (no fallback needed), and RndPostProc VERIFIED (shipped
+`intro_contrast_flame.pp` A/B: coverage 3.97%→88.47%); environ/lights
+SYNTHESIZED (asset ships zero RndEnviron); transparency UNREACHED
+(`QueueTransparentDraw` has zero callers — engine gap); shadows UNREACHED
+(needs driven Character → X4b).
+
+**The structural finding that recharters X4b: band3 is the critical path,
+not last.** Every RB3 venue root carries 506-633 band3 factory refs (684
+misses over 14 classes on the test venue), and unregistered persistent
+objects CANNOT be skipped (no ReadDead framing → desync → segv). No RB3
+asset with lighting avoids band3. BandCharacter/BandWardrobe are in the
+missing list, so animation likely needs it too.
+
+Also fixed en route: main was broken at lane start (DD-2's `81d23046`
+ObjOwnerPtr save site — gate exists but wasn't run); `DeleteTransientObjects`
+silent 11-min hang (`auto refs = obj->Refs()` copies the ring head by value →
+unterminated iteration; both X4a defects were in world/Instance.cpp).
+Carry-forward: grep for `auto … = …->Refs()` — mechanical to find, silent to
+hit. Engine change requests filed as text in the X4a doc (incl. postproc
+grain seeded from mFrameCount → nondeterministic at frames≥2); no pin bumps.
+Rider A/Bs on the 2 HX_NATIVE fixes: Δ=0 but neither function is scored —
+"instrument can't discriminate", ifdefs stay.
+
+## In flight (2026-08-02)
+
+- **X4b (dispatched after X4a close-out)** — reframed per X4a: STEP-0 =
+  band3 linkage survey (how much of band3 compiles/links; the 14
+  missing-factory classes first), then CharClip/CharDriver animation
+  (BoneSetup-vs-xenon-CharBones, pose the T-pose), then venue-root retry if
+  the 14 classes land. Same worktree/land-per-milestone discipline.
 - **DC3 viewer partial-render fix** (owner-requested) — dc3-decomp lane:
   root-cause why milo-viewer draws only 2 disembodied hands of
   crowd_female01 (vs xenon full figure) and blank tracksystem; adjudicate
