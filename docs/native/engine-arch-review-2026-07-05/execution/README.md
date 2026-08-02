@@ -1206,3 +1206,27 @@ native uidump control never captured).
    oracle); F6 hub grade BLOCKED on UIGRADE reconciliation; SKEL/CROWD
    families CLOSED (STOPs binding); arg-order NOT renewable as a sweep (Lane D
    ruling — behavioral-heuristic use only).
+
+## Wave 34 (2026-08-01) — HANDS/POSE ROOT CAUSE FIXED (alias-unsafe Multiply)
+
+W34-CHARCLIP-EVAL (kickoff+review+amendments `79a5b84d`/`eeae37bb`, lane
+`ec9bd9ff`→`6b0e02d1`, E1 ratify `62f14711`): STEP-0 per-layer value trace
+named **L3 world compose**, exonerating clip decode (L1/L2) numerically. Root
+cause = native `Multiply(Transform,Transform,Transform)` (math/Rot.cpp #else)
+ALIASING-UNSAFE vs the MWCC paired-single asm's load-all-then-store contract;
+`BandIKEffector::NeutralWorldXfm` aliases destination recursively per bone →
+corrupt neutral pose → IK yank → the entire "spindly hands / 4.2× stretch /
+mask-face" family. Fix UNCONDITIONAL; detonations 3650→0, maxRatio 1.000
+exact; Wii match byte-identical (full report.json A/B); drawlog 792; rb3-tests
+123/116/7/0; coordinator E1 PASS on independent recapture (fingers render).
+Same fix covers SetTransParent + CharIKHand.cpp:459 call sites. NOTE: the
+SKEL-family STOP is now DISCHARGED-BY-FIX, not merely closed — the 15-wave
+bind-side theories were chasing a downstream symptom. New kickoff lint: audit
+native #else replacements of MWCC asm for aliasing assumptions.
+
+**Wave 35 menu:** (1) re-measure post-fix: FOREARM-FLOAT, W28-PROP right_hand
+~39u, RB3_HANDS_MITTEN + RB3_IK_REACH_CLAMP retirement A/Bs; (2) walk-on-snap
+frozen remnant (BandCharacter.cpp:603-632); (3) lighting/wash casts (now the
+biggest visual family); (4) W33 leftovers F2-PILL + F7-SIDEBAR-BACKING; (5)
+web-build confirmation of the alias fix; (6) engine backlog: Mesh_Wgpu
+GetDrawMode()==8 dead cull-overrides (SPIKE-X0 find).
