@@ -183,8 +183,35 @@ Rider A/Bs on the 2 HX_NATIVE fixes: Δ=0 but neither function is scored —
   missing-factory classes first), then CharClip/CharDriver animation
   (BoneSetup-vs-xenon-CharBones, pose the T-pose), then venue-root retry if
   the 14 classes land. Same worktree/land-per-milestone discipline.
-- **DC3 viewer partial-render fix** (owner-requested) — dc3-decomp lane:
-  root-cause why milo-viewer draws only 2 disembodied hands of
-  crowd_female01 (vs xenon full figure) and blank tracksystem; adjudicate
-  correct viewer behavior; fix DC3-side if possible; engine edits
-  conservative (3 consumers, verify xenon X3 PNGs unchanged, no pin bumps).
+## DC3 viewer fix — DONE 2026-08-02 (coordinator E1 PASS)
+
+Write-up: dc3-decomp/docs/investigations/2026-08-02-viewer-rb3-asset-render/.
+Root cause was three DC3-side defects, none in engine rendering: (1) a
+name-based `_lod` visibility override in ViewerScene.cpp:333 — RB3 crowd
+characters are authored AS their lod02 asset, so the viewer deleted the whole
+body (the engine's Mesh_Wgpu.cpp:136 carried an identical blanket skip;
+xenon never hit it only because rb3-render independently re-issues lod-named
+meshes via DrawMeshImmediate — same workaround written twice = filter in the
+wrong place); (2) tracksystem meshes ship mat=(none) — geometry library,
+materials come from the venue; skip was correct, viewer now applies an
+announced fallback material; (3) auto-framing blew up on one asset-side
+outlier vertex (Y=121458, confirmed by xenon's independent decoder) → robust
+percentile framing. Adjudication anchored on Character.h's authored rule
+(`mLods` groups are the authority; no groups ⇒ hide nothing by name). A
+name-based sibling rule was tried, refuted on DC3's own emilia01, reverted
+with evidence. Results: crowd_female01 two-hands → full clothed figure;
+tracksystem blank → legible; DC3's own 35-asset sweep byte-identical; xenon
+rb3-render at X3 rebuilt against the modified engine → PNGs byte-identical.
+Commits: dc3 13b583df/fc40baec/3f66008e/f0275669; **engine 9898a63+138e160
+(ShouldSkipMesh seam) — UNPINNED; all three consumers still pin 2ea8e343.**
+Their "xenon main can't link rb3-render" flag was stale: same RndEnvAnim
+break X4a already fixed on main (dce343a1). dc3 housekeeping noted: canonical
+native/build/milo-viewer is a May build; rebuild before render_screenshots.sh
+reflects the fix.
+
+## In flight (2026-08-02, cont.)
+
+- **Pin currency (coordinator item):** decide bumping consumers 2ea8e343 →
+  138e160. Xenon bump rides X4b (gated; may retire the main_render.cpp:947
+  DrawMeshImmediate `_lod` workaround). rb3-Wii unaffected functionally
+  (dc3-flavor file) — bump when a Wii-relevant engine change next lands.
