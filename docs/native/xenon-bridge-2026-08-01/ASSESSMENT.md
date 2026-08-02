@@ -209,9 +209,66 @@ break X4a already fixed on main (dce343a1). dc3 housekeeping noted: canonical
 native/build/milo-viewer is a May build; rebuild before render_screenshots.sh
 reflects the fix.
 
+## X4b — LANDED 2026-08-02 (xenon main, 7 commits; doc docs/plans/x4b-animation-2026-08-02.md)
+
+**RETRACTS X4a's headline.** The 14 classes gating every venue root contain
+**zero `src/band3/` classes**: 5 `system/bandobj/`, 7 `system/synth/`, 1
+`world/`, 1 `ui/`. X4a inferred ownership from the failure log rather than
+from where the classes are defined — a pattern to watch for. 12/13 TUs
+compile clean; `WorldCrowd` + `UIColor` were registerable immediately
+(landed, −8 misses); `BandCharacter.cpp`'s 18 errors reduce to ~4 root
+defects. The real blocker is **807 duplicate-definition link errors from 3
+emitters — a `ScatterIncludes.cmake` dedupe gap, a build-system defect, not
+unported code.** Corrected cost of "a venue root loads": one build-system
+change + four defects in one file.
+
+**Animation: pose math VERIFIED, skinning BROKEN and root-caused.** Clip
+decode (44 shipped CharClips), bone evaluation (39/39 bones, determinants
+1.000) and world compose all pass the bone-length oracle at **max ratio
+0.9999 (deviation 7.47e-05)**. But coordinator E1 on the posed PNG shows the
+character SMEARED into vertical spikes — matching the lane's own honest
+"skinning palette ❌ BROKEN" verdict, not contradicting it.
+
+**Root cause (verified independently by me at rndobj/Mesh.h:227):**
+`MaxBones() = GetGfxMode() != kOldGfx ? 40 : 4`, and `RndMesh::Load`
+enforces it *destructively* (`mBones.resize(MaxBones())`, Mesh.cpp:567-578).
+`gGfxMode` is a zero-init global (kOldGfx) and the only thing that sets
+kNewGfx is `PreInitSystem` (os/System.cpp:505) — which the hand-rolled
+native driver never calls. So every skinned mesh was truncated 20→4 bones at
+load; vertices weighted to bones 4..19 stay pinned at bind coordinates while
+bones 0..3 animate. That is exactly the "clean at bind, smears with pose
+deviation" signature. X3 recorded the warning and left the "4" unexplained;
+X4a carried it forward; X4b explained it. **Fix built, measured, and
+deliberately NOT landed** (main_render.cpp:1419-1467): kNewGfx has 22
+consumers, and while bind-pose coverage improves 11.07%→15.78% (confirming
+the diagnosis), the posed frame goes to 0.00% — geometry leaves the camera.
+Correctly handed to X4c rather than trading a smear for nothing.
+
+★ **The finding that should drive X4c: the same root-cause shape bit twice
+in one milestone.** `TrigTableInit` (so `Sine`/`Cosine` returned 0.0 across
+all 17 native targets) and `SetGfxMode` are both `PreInitSystem`/`SystemInit`
+sub-inits the hand-rolled bring-up skipped — silent, and latent for four
+milestones. **~10 such sub-inits exist; 2 have bitten, 8 are unaudited.**
+Renders looked plausible while six bones were singular and world determinants
+had reached -3.9e14, so X4c must add boot-time invariants and pick oracles
+*before* screenshots. Cross-repo check (done): rb3-Wii is NOT exposed — it
+calls TrigTableInit via the real `System.cpp` path, and its `MAX_BONES` is
+an unconditional 40. The defect is specific to xenon's hand-rolled bring-up.
+
+Also fixed: `Multiply(Transform,Transform,Transform)` was alias-unsafe **both
+ways** — the identical hazard class as rb3-Wii's W34 hands fix, found because
+it was flagged in the charter. Rider landed: engine pin → `138e1606`, all
+four X3/X4a PNGs byte-identical, `_lod` re-issue retired on a discriminating
+A/B. Gate PASS 18/18 fresh on the rebased tree, zero engine edits.
+
 ## In flight (2026-08-02, cont.)
 
-- **Pin currency (coordinator item):** decide bumping consumers 2ea8e343 →
-  138e160. Xenon bump rides X4b (gated; may retire the main_render.cpp:947
-  DrawMeshImmediate `_lod` workaround). rb3-Wii unaffected functionally
-  (dc3-flavor file) — bump when a Wii-relevant engine change next lands.
+- **X4c** — audit the ~8 remaining PreInitSystem/SystemInit sub-inits; make
+  the native driver use the real init path instead of hand-rolled stand-up;
+  land kNewGfx and find what it breaks in the posed draw (22 consumers);
+  boot-time invariant checks before any screenshot claim.
+- **band3/venue-unblock roadmap review** — rb3-xenon docs lane; corrected
+  mid-flight with X4b's retraction of the band3 premise.
+- **Pin currency:** xenon now at 138e1606. rb3-Wii + dc3 still 2ea8e343;
+  functionally unaffected (dc3-flavor file) — bump when a Wii-relevant
+  engine change next lands.
