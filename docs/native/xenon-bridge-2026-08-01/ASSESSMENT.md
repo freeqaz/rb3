@@ -267,8 +267,32 @@ A/B. Gate PASS 18/18 fresh on the rebased tree, zero engine edits.
   the native driver use the real init path instead of hand-rolled stand-up;
   land kNewGfx and find what it breaks in the posed draw (22 consumers);
   boot-time invariant checks before any screenshot claim.
-- **band3/venue-unblock roadmap review** — rb3-xenon docs lane; corrected
-  mid-flight with X4b's retraction of the band3 premise.
+- **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
+  only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
+  dated corrections to `bandobj-port.md` (its absent-source claim has been
+  false since 2026-05-26; 52 cpp/60 h, 51 pins not 7 — and its "defer
+  BandCharacter" advice was the costly part) and `paths-to-100/20`;
+  `paths-to-100/03` explicitly CORROBORATED rather than amended, which is the
+  right call to record. **Verdict on the question I posed: the venue milestone
+  needs ZERO new ports and ZERO stubs.** All 13 real TUs are pinned *and
+  scored* (67.84%–100.00%; the 14th, `BandConfiguration`, has no class
+  anywhere — only a factory-only shim at Band.cpp:66-73; `SynthFader` is class
+  `Fader` via OBJ_CLASSNAME). A stub buys nothing on either path: DirLoader
+  already re-syncs a miss via `ReadDead`, and on the persistent path a
+  short-reading stub desyncs identically to a miss, just later. The milestone
+  is 13 TUs onto a link line + 14 registration lines; X4b's WorldCrowd/UIColor
+  (two lines, zero source changes) is the empirical proof.
+- **Open question handed to X4c (highest leverage on the board):** the
+  factory-miss message is emitted from **two** sites with a byte-identical
+  format string — `DirLoader.cpp:929` and `world/Instance.cpp:232` (verified)
+  — so X4a's log cannot be attributed to a path retroactively. A one-token
+  disambiguation decides whether `BandCamShot`'s 611 misses (90% of the
+  remaining 676) are recoverable top-level misses retired by a one-line bind
+  to the already-registered `CamShot::NewObject` (`BandCamShot : public
+  CamShot`, verified), or a genuine persistent-object wall. Caution recorded
+  with the lane: a base-class substitute runs the base `Load()` and short-reads
+  the derived payload — safe only if `ReadDead` re-syncs it, i.e. only on the
+  top-level path.
 - **Pin currency:** xenon now at 138e1606. rb3-Wii + dc3 still 2ea8e343;
   functionally unaffected (dc3-flavor file) — bump when a Wii-relevant
   engine change next lands.
