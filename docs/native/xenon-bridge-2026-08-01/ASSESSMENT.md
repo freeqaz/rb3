@@ -1470,6 +1470,91 @@ prove the object is byte-reproducible** before trusting the comparison. PNG
 determinism ×2; base frame byte-identical to X17's artifact. Three of its own
 mid-lane errors retracted in the doc.
 
+## X19 — LANDED 2026-08-03: the geometric oracle was measuring the wrong bone (xenon main `122b0350`)
+
+Doc: docs/plans/x19-sharing-and-scope-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX19/evidence/` (33 files).
+
+★★ **Sharing verdict: BOTH — which is why counting could never settle it.** Every
+player figure carries **two** bones named `bone_L-hand.mesh`. `FindBoneNamed`
+returns the first — the **shared unplaced** one at `(-21.749, 0.197, 44.274)`,
+identical across all eight band entries — and **passes over the member's own
+placed bone** (chain roots `player0`…`player3`, four distinct pointers at four
+placed worlds). The prediction was named in advance from X14 §1.2, not fitted
+after the fact.
+
+⛔ **The consequence, and it corrects a great deal of what I have reported:** the
+hand-mesh gap gate — **the only geometric oracle in this ladder** — keys off
+`lh`/`rh`. **Five lanes of band hand gaps (32–128u) were read off a bone
+belonging to no member.** Measured against each member's *own* bone, all four
+`hands_naked.mesh` are **0.000 — INSIDE**. The four apparent residuals
+(15.6/10.6/20.3/0.5) are **right** wrist accessories measured against the
+**left** hand bone: expected geometry, not defects.
+
+**Blast radius, stated precisely** (7380 slots = 2607 own-rooted + 4773 foreign;
+**123 deviating = 3 own + 120 foreign**):
+
+- **Stand:** X14's four-distinct-centroid placement (measured via `SkinVertex`,
+  which never touches `FindBoneNamed`, and independently reproduced in the poll
+  arm); X18's writer classification and publisher attribution; X17's
+  ROOT/inherited structure — whose counts reproduce **exactly** and are now
+  *explained*.
+- **Do NOT stand as per-figure:** every `bone_L/R-hand` number and gap gate from
+  X12–X17, including X15's `1.09e+01` and X17's `1.097e+01`/`1.102e+01` — one
+  object read eight times.
+- **New structural fact:** the members' own skeletons are essentially **clean**
+  (3 deviating of 2207). The residual lives on the shared unplaced skeleton — so
+  `CharHair` and the IK solvers are publishing onto the *shared* skeleton.
+
+★ **X14's driver-side call is RETIRED — and the blocker was never a shared-`src/`
+default.** The `quiescent → FULL` `setenv` sat **inside** the `!pollOnly` block
+alongside the call, so the "poll only" arm skipped the *scope decision* as a side
+effect. Hoisting it fixed the collapse. **Methodological catch worth carrying:
+the old guard meant `RB3_BAND_POLL=1` ran *both* — so the arm meant to prove
+`Poll()` works was in fact carried by the direct call.** Retirement is real:
+poll-with-call-removed is byte-identical both to keeping it and to X18's
+artifact, with head, eyebrows and fingernails on player0 rather than the origin.
+**PNGs opened**; the pre-fix arm is visibly sparse and headless.
+
+⛔ **Correction to my own charter language:** three lanes (mine included) called
+the torso rebind scope "shipped behaviour". **`RebindOutfitBonesToOwnSkeleton()`
+is entirely inside `#ifdef HX_NATIVE` and does not exist in the X360 build —
+there is no retail default to depart from.** The default was left unflipped for a
+better reason: FULL scope under a driven clip is **unmeasured**, and X14 §5
+refuted the shard mechanism explicitly *"in the un-animated case"* only.
+
+★ **Textures reached for the first time in seven lanes, with a precise cause.**
+The band's drawn skin materials carry the **authored `dummy_torso/legs/feet.tex`
+placeholders**, plus **NULL** on `head_naked.mat` — a fourth state nobody had
+enumerated (not null, not unuploaded, not shader tint). Chain measured in the
+lane's own logs: no `OutfitConfig` registration → 40 `Can't make OutfitConfig` →
+`SyncOutfitConfig` never runs → `SetSkinTextures` never runs. **Negative proof:
+its six "could not find" warnings fire zero times.** Refuted by measurement:
+"missing assets"; "upload gap" (0 GPU-texture failures); and **X14's "419
+texture-resolution failures", which I recorded — the real count is 417 and
+*none* are texture failures** (367 are cache-key notices emitted *after*
+successful deserialization). The 191/1511/48 bill: *"I did not re-derive and do
+not repeat"* — only the 48 is corroborated. Seven lanes of quoting it, finally
+retired properly.
+
+**Coordinator E1 PASS:** four upright band members distributed on the stage with
+the drum kit, crowd along the mezzanine railing. Still pink — consistent with the
+placeholder-texture finding.
+
+**Did not land:** the scope flip (deliberate, on evidence); **FULL scope under a
+driven clip unmeasured** — the sole reason the default stays torso; the crowd
+negative control for the gap gate is **unavailable** (crowd figures carry no hand
+mesh) and was *stated, not claimed*; the exact pink mechanism (placeholder texel
+vs shader tint) undetermined; tattoo heads at origin in **both** arms
+(pre-existing). Three own retractions recorded, including a mislabelled evidence
+PNG caught by `md5sum`.
+
+Gates: baseline **18/18 fresh** (so `main` **not** broken by a decomp lane),
+final post-rebase **18/18 fresh, rc=0, 0 SKIPs, 18/18 relinked**; PNG determinism
+×2 on all three arms; default and poll arms byte-identical to X18's artifacts.
+**Zero shared-`src/` edits — so no X360 A/B exists to run**, and `main_render.cpp`
+is unscoreable (not in `objdiff.json`); said rather than implied.
+
 ## Next (not yet chartered)
 - The undecided polled pose (blocked on the above); band textures
   (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
