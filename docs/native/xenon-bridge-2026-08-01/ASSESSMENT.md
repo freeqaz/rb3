@@ -737,18 +737,108 @@ re-deriving, and I nearly reported it as a cross-repo finding. **Status:
 genuinely unverified** — handed to X9 as a named check rather than asserted in
 either direction.
 
+## X9 — LANDED 2026-08-03: ★ THE BAND IS ON ITS MARKS (xenon main `bb3a4659`..`8d7c7dc6`)
+
+Doc: docs/plans/x9-band-marks-2026-08-03.md. Evidence: `/home/free/tmp/laneX9/
+evidence/`. **Placement: YES. Geometry: partial.** Four members stand at four
+distinct world positions and **every one matches the venue's authored slot
+transform to every printed digit**. No position was computed, interpolated or
+hand-picked — six lanes running.
+
+| slot | shipped transform | member | measured |
+|---|---|---|---|
+| `player_bass0` | (-70.003, 80.657, 13.495) | `player0` | (-70.00, 80.66, 13.50) |
+| `player_drum0` | (14.429, 146.133, 13.182) | `player1` | (14.43, 146.13, 13.18) |
+| `player_guitar0` | (68.770, 51.436, 13.248) | `player3` | (68.77, 51.44, 13.25) |
+| `player_vocals0` | (-10.026, 31.389, 13.218) | `player2` | (-10.03, 31.39, 13.22) |
+
+★ **The strongest evidence in the whole campaign is `arena_01`, because the
+number was predicted before anything could render it.** X7 measured the shipped
+drum riser at **+65** from the asset alone; X9's rendered drummer sits at
+z=320.90 against bass/vocals/guitar at 255.83/255.79/256.12 — **+65.07**. Eight
+slot matches across two venues. A hand-placed position cannot survive a
+prediction made two lanes earlier from a different instrument.
+
+**Coordinator E1 PASS.** The stage crop shows a vocalist standing on the stage
+floor with arm raised, a full drum kit (snare, toms, cymbals), and guitars —
+all on their marks, with the crowd visible behind the railing. This is a Rock
+Band stage.
+
+**The wall took one line, and the guard's own comment said where it came
+from.** X8's observations were all correct; the *justification* was not. The
+comment's last line read *"Matches the guard in `ObjPtrVec::ReplaceNode`"* — it
+was reasoned by analogy, and the two containers aren't the same shape. In
+`ObjPtrVec` the guard is **real** (Nodes live inline in a `std::vector`, so
+`erase()` memmoves survivors via `CopyRef`, rewriting live ring pointers) and
+was left untouched. `ObjPtrList`'s Nodes are individually heap-allocated and
+never move. The second stated hazard was false too, with the disproof 130 lines
+up in the same header: `old` is `SetObj`'s return, i.e. the **new** referent,
+so reaching the erase arm means `Release(this)` already ran and the node is
+already out of the ring. rb3-Wii erases unconditionally and has no guard.
+`rc=139` → `rc=0`; scene 320 → 411 meshes, 114 → 203 draws. X8 had framed this
+as needing "its own lane with an A/B on every prior frame" — it perturbs zero
+prior frames and zero X360 units.
+
+**Both of X8's flagged items were artifacts and are refuted:** the four members
+do *not* share one mesh set (160/169/162/160, each with its own `outfit` and
+`instrument` subdirs), and band meshes are not unskinned (19/27/22/18; 134
+scene-wide).
+
+★ **Cross-repo dead-key question answered properly: NO, rb3-Wii does not share
+it.** The instrument had to start from X8's own enumeration — the 248 are
+textually `^Symbol <ident>;` **at column 0**, which is the entire discriminator
+and reproduces 139+109=248 exactly. The indent-tolerant variant reproduces
+**my** failed attempt (164), and sampling confirms those are members and
+locals. **The negative is trustworthy because of a positive control:**
+intersecting the 248 names against every bare-identifier `HANDLE*`/`SYNC_PROP*`
+first argument finds **227 live dead keys in xenon**; the same instrument on
+rb3-Wii finds 2 file-scope globals in `src/`, 1 in `native/`, 0 in the engine —
+all three sampled, none a dispatch key. Audited from the other side too: 4002
+distinct dispatch keys, 3997 interned, all 5 residuals run to ground as
+instrument artifacts. rb3-Wii has the `Symbols*.cpp` files xenon lacks (7146
+interned symbols). **This closes the open question I could not answer.**
+
+**Did not land: the band is placed, not fully drawn.** Nine SHOWN-BUT-EMPTY
+meshes per member (`head`, `eyes`, `tongue`, upper/lower teeth, `hands_naked`,
+`fingernails`, `eyebrows`, hair) — selected correctly by the recompose but
+carrying zero vertices — against 34 FULL-BUT-HIDDEN which are tattoo/AO/
+placement decals and are *believed* correct (flagged, not asserted). The
+obvious next fix was tried and **reverted**: `OutfitConfig::Init()` is the
+**fifth** instance of the factory-drift class and gates exactly that
+head/hands set (`Can't make OutfitConfig` ×40), but it does not link.
+
+★★ **That failure is the most important finding for the next milestone.**
+`BandPatchMesh.cpp` is not compiled standalone — it is scatter-included into
+`src/system/world/LightPreset.cpp:1503`, an **X360 TU-packing decision made for
+objdiff scoring**, and `LightPreset.cpp` isn't in `rb3-render`'s source list.
+**A match-build packing choice silently determines what the native link
+contains.** That is X7's "a stub's blast radius is the source list it sits in",
+inverted — and it is unlikely to be a one-off.
+
+Gates: native 18/18 fresh ×2, 0 SKIPs, all relinked; X360 same-`main` A/B with
+**0 units changed** (39.154087% / 62.961410% both sides); PNG determinism ×3;
+prior lanes byte-identical **against artifacts** — X6's SHA table vindicated a
+**third** time; `main` not broken by a decomp lane. Two notes: `obj/ObjPtr_p.h`
+is a header with no `splits.txt` entry and **cannot be scored at all** (blast
+radius measured instead), and the gate cache trap has a **third** ingredient
+beyond the two I documented — `native_build_gate.sh:228` also sets the
+compiler, so a two-flag seed picks up system `g++` and fails with ~104 errors
+that look exactly like a broken `main`. I corrected my CLAUDE.md note
+accordingly (xenon `7f18adab`).
+
 ## Next (not yet chartered)
 
-- **X9 — the band renders.** One named wall: `obj/ObjPtr_p.h:777-789`
-  (`gInReplaceList` suppressing an erase → NULL in a `kObjListNoNull` list →
-  `SyncObjects` dereferences it). Then outfit/LOD selection unblocks, and the
-  band should take its shipped slot transforms.
-- **Cross-repo question (unresolved):** does rb3-Wii share the dead-`Symbol`-
-  dispatch-key class? If yes it is a candidate cause for remaining Wii visual
-  defects; my cheap check did not answer it.
+- **X10 — finish the band's geometry.** `OutfitConfig::Init()` (5th
+  factory-drift instance) gates the head/hands/hair set; it does not link
+  because `BandPatchMesh.cpp` is scatter-included into `LightPreset.cpp` for
+  X360 TU packing and that file isn't in the native source list. **Audit the
+  scatter-include map against the native source lists generally** — this is
+  unlikely to be a one-off.
 - Camera shots (the real `BandCamShot` TU) — gates crowd visibility as well as
   shots; X6's engine change request; `video_05` `rc=1`; audio; `ThreadCallInit`;
-  `BandConfiguration` still unscoreable (no `splits.txt` entry).
+  `BandConfiguration` still unscoreable.
+- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **six lanes**
+  running. Owner decision still outstanding (see the hygiene section above).
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
   dated corrections to `bandobj-port.md` (its absent-source claim has been
