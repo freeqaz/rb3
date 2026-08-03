@@ -1133,21 +1133,99 @@ Gates: fresh pre-land 18/18, rc=0, 0 SKIPs on the rebased tree; engine HEAD
 exactly the pin with only the pre-existing foreign edit; post-rebase frame
 byte-identical to X12's artifact.
 
+## X14 — LANDED 2026-08-03: ★★ THE BAND DRAWS ON ITS MARKS (xenon main `6c8944ab`)
+
+Doc: docs/plans/x14-band-placement-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX14/evidence/`. **Four distinct drawn centroids in two
+venues**, skinned through the shipped `RndMesh::SkinVertex`; the baseline was
+one point for all four.
+
+**The load-bearing proof is not that the numbers look right** — it is that
+`drawn z − slot z` is a **per-member constant identical to 3 d.p. across two
+unrelated venues** (40.045 / 32.168 / 40.042), z being the yaw-invariant axis
+where a translation prediction is valid. The `arena_01` riser measures **+64.99
+authored vs +57.11 drawn**, and the 7.88 shortfall is *exactly* the drummer's
+own hand-height offset measured independently in the other venue — two
+measurements reconciling to **0.003**.
+
+**Coordinator E1 PASS.** The frame shows four band members spread across the
+stage — guitarist, vocalist, bassist, and a drummer seated at the kit holding
+sticks — each with their instrument. The disclosed defects are plainly visible
+and match the lane's account exactly: untextured pink skin, bald heads, and a
+detached hairpiece mid-stage.
+
+★ **Root cause: the repair was already in the tree, already default-ON, and had
+never run.** All four members' `bone_L-hand.mesh` is the *same object* —
+bit-identical pointer — but each member also owns a placed skeleton with 492
+same-named bones. `RebindOutfitBonesToOwnSkeleton()` is called from
+`BandCharacter::Poll()`, and **the band is never polled because it has no
+clip**. So both charter milestones were one defect. As the lane put it: *three
+lanes measured around a correct, default-ON fix because its own probe was
+silent on the failing case.*
+
+**`body_clips` ships empty by design** — the string appears in exactly one
+shipped file and it is a runtime-filled container. The clips live at
+`char/main/anim/<inst>/body/<gender>/gen/` (16 per set), loaded by tempo/genre
+paths built at `BandCharacter.cpp:2703-2718`; no song → never requested.
+Whether the merge would *succeed* is undecided, gated on X12's `ObjPtrList`
+defect.
+
+⛔ **X13's renderer citation is refuted, and my own correction of it is
+confirmed.** The path is `Mesh_Wgpu.cpp:246-256` + `BoneSetup.cpp:219` (dc3
+flavor); `Rnd_Wgpu_RB3.cpp` is not compiled into this binary at all
+(`native/CMakeLists.txt:983` forces `dc3`, and no `Rnd_Wgpu_RB3.cpp.o` exists).
+The conclusion survived but the mechanism differs — dc3 writes identity into the
+object uniform outright rather than cancelling `meshWorld`. **Free consequence,
+independently reached: `RB3_HANDS_MITTEN` lives in that TU and is therefore dead
+here — it cannot contaminate any rb3-xenon frame.** That is exactly the flavor
+split I verified when correcting X13, arrived at from the other direction.
+
+**Three retractions, two of them the lane's own** — including "no shard", which
+was hands-only: **hair blew up 7–14× and was caught by opening the PNG, not by
+any number.** The shard turned out to be a *partial* rebind, not the
+rotation-basis mechanism on file; fixed all-or-nothing per mesh.
+
+**Did not land:** hair still draws at the venue origin (its `bone_hair_*` bones
+don't exist under the member's own root) — four bald members and two hairpieces
+mid-stage. The band renders **untextured**, and this is **proved pre-existing,
+not introduced**: 419 texture failures / 40 `OutfitConfig` / 203 draws
+*identical* in both arms — the stacking had been hiding it.
+`CharWeightable::mWeightOwner` resolves NULL after `Load`, so
+`BandCharacter::Poll()` SIGSEGVs; named, not worked around.
+
+Gates: 18/18 at the branch point, 0 SKIPs. X360 **1796/1796 `.text` sections
+byte-identical**, with a comparator that **carries a positive control and
+refused to report until it detected a known difference** — its first version was
+vacuous. Control frame byte-identical to X13's artifact; PNG determinism ×2.
+
+### Coordinator action: `main` was broken, and I fixed it
+
+X14 reported the post-rebase gate at 17/18 and **proved the break was not its
+own** — `rb3-song` fails to link on a pristine detached worktree carrying none
+of its commits. I confirmed and repaired it (xenon `57093d0a`): lane DP-1's
+`BandSongMgr::Handle` match (`c6e8408f`) calls `Jukebox::Jukebox(int)`, which is
+defined at `src/system/meta/Jukebox.cpp:7` — but `rb3-song` enumerates its
+`meta/` sources explicitly and did not list that file. One line; verified by
+building `rb3-song` to a clean link. **This is the fourth time a decomp lane has
+broken `main` this way, and it is precisely the class the `CLAUDE.md` note I
+added warns about**: the match build compiles `src/`, the native targets link a
+superset, so a change can be perfectly matched while leaving a symbol only a
+linker ever sees.
+
 ## Next (not yet chartered)
 
-- **X14 — the band renders stacked at the origin.** Now mechanically
-  understood: the skeleton is parented to an unplaced `Character` and the
-  renderer cancels `meshWorld`. This is the biggest visible defect on the
-  board and it invalidates nothing about the placement *data*, which is proven.
-- **Band `body_clips` is empty** (0 clips vs 40–44 for crowd) — animation
-  cannot reach band members until that is understood.
-- Direction-B rows 4 and 3b (clean, deferred for budget); `OutfitConfig`
-  (48 symbols); camera shots (the real `BandCamShot` TU); X6's engine change
-  request; `video_05` `rc=1`; audio; `ThreadCallInit`.
+- **X15 — `CharWeightable::mWeightOwner` resolves NULL after `Load`**, which
+  SIGSEGVs `BandCharacter::Poll()`. X14's judgement, which I share: fixing it
+  unblocks `Poll()` — the shipped home of the rebind, the animation, and the
+  per-frame outfit sync — retiring X14's driver-side call entirely and making
+  band animation reachable for the first time.
+- Band textures (419 failures / 40 `OutfitConfig`, pre-existing, no longer
+  hidden); hair parented to bones absent under the member root.
+- Direction-B rows 4 and 3b; camera shots (the real `BandCamShot` TU); X6's
+  engine change request; `video_05` `rc=1`; audio; `ThreadCallInit`.
 - **rb3-Wii (Wave-35):** characterise `RB3_HANDS_MITTEN` ON vs OFF before any
-  further finger-appearance claim; W35-0's absolute-oracle work now has a
-  second, experimentally-confirmed justification.
-- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **ten
+  further finger-appearance claim (W35-0b).
+- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **eleven
   lanes** running. Owner decision still outstanding.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
