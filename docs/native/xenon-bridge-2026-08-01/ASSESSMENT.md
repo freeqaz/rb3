@@ -1044,16 +1044,110 @@ files touched**.
 `git commit` heredocs** (worked around with message files). Now at 63% / 18G
 free, but it will bite again.
 
+## X13 — LANDED 2026-08-03 (xenon main `1fc71cff`..`962a9200`)
+
+Doc: docs/plans/x13-animated-pose-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX13/evidence/` (25 artifacts).
+
+**Animated hand pose — split verdict, because the two populations differ
+structurally.** **Crowd: VERIFIED CORRECT** — eight members driven by the
+shipped `crowd_realtime_idle_10` at beat 4.0 (41 polls); the skeleton genuinely
+moved (left hand travelled 15.4 units, 112-line oracle diff) and **every arm
+segment length was preserved exactly** (6.211 / 9.584 / 10.105, identical
+bind→animated), recompose identity **0.000e+00 over 7380 admissible bones**.
+**Band: UNDECIDABLE, structurally** — all four members' driver binds to
+`body_clips`, which holds **zero** `CharClip`s against 40–44 for every crowd
+member. No clip can reach them, and the lane **did not invent a cross-set
+fallback to manufacture a frame**. Positive control run *under animation*:
+`RB3_HANDPOSE_PERTURB=17` moved parent distance 10.105 → 27.105, exactly
++17.000, left hand only. It also corrected X12's oracle — the recompose check
+is invalid under animation as written, because `WorldXfm_Force`
+(`rndobj/Trans.cpp:666-687`) picks among four compositions on `mConstraint` and
+`SetWorldXfm` bypasses it entirely; bones are now split admissible vs excluded,
+and a new `handpose-measured-hand-geometry` gate catches X12's case of passing
+on a skeleton while measuring **zero** hand meshes.
+
+★★ **The palette-vs-`meshWorld` gap is NOT benign — and it corrects my own
+reporting.** The band's skeleton is parented to an unnamed `Character` **at the
+origin**; the placed transform is not on the bone chain. The renderer
+deliberately cancels `meshWorld` out (`Rnd_Wgpu_RB3.cpp:4077`), drawing at
+`skin·v`, so the palette must be world-space on its own — and isn't. Proved by
+set identity, not magnitude: **four members at slots spanning ~140 units all
+report drawn hand centroid `(-0.00, ~0.6, ~40)`. The band renders stacked at
+the venue origin.**
+
+> **⛔ Correction to my X9 close-out.** I reported "the band stands on its
+> marks — four members at four distinct world positions". That is true of the
+> `Character` **objects' transforms**, which is what X9 measured, and false of
+> the **drawn geometry**, which stacks at the origin. The arena drum-riser
+> confirmation (+65.07 against X7's +65 predicted from asset bytes) likewise
+> validates the *object* placement pipeline — a real and non-trivial result —
+> but it is **not** evidence that the rendered band is spatially correct. I
+> should have distinguished "the transform is right" from "the pixels are in
+> the right place", and the stage crop I ratified showed a vocalist and
+> instruments without my checking whether the other three members were behind
+> them. This also explains, mechanically, the "only one member reads as a
+> complete figure" symptom that X9 and X10 both carried unexplained.
+
+**`Rot.cpp:299` fixed and demonstrated both ways:** the unfixed arm returns
+`y = -2.000` (the already-written `x`), deviation 3.000e+00; fixed arm
+0.000e+00. X360 A/B with both objects built in the same worktree: **9378/9378
+`.text` sections byte-identical** (deltas confined to symtab/strtab and
+`.debug$S`). A first A/B against a main-tree object was confounded by embedded
+debug paths and **discarded rather than reported**. `Rot.cpp` has no unit in
+`objdiff.json` — **not scoreable at all**, stated rather than implied.
+
+**Retracted mid-lane, its own:** "recompose fails under animation, 3.473e+00 at
+`bone_pelvis.mesh`" — actually `DriveSceneCharacters` polling 21 characters
+while driving 8 (also the cause of an `rc=139`). Fixed loop, same clip:
+0.000e+00, counts reconciling exactly.
+
+**Did not land:** Direction-B rows 4 and 3b were **not** guarded — out of
+budget, not out of agreement. Ceiling legs: **benign at medium confidence**,
+and the lane was honest that the two frames it rendered to settle the question
+did *not* settle it (legs cut by the frame edge, not by geometry); the verdict
+rests on a wide frame showing the same crowd with full bodies, and it corrected
+my proposed mechanism — a mezzanine fascia beam, not floor back-face culling.
+
+### ⛔ Coordinator correction — the mitten warning is real but misattributed
+
+X13 flags `RB3_HANDS_MITTEN` as default-ON and warns that any "the fingers look
+right" claim, **including X12's close-up that I ratified**, is contaminated
+until characterised ON vs OFF. I verified the flag: `Rnd_Wgpu_RB3.cpp:3763`
+sets `sMittenOn = 1` when the variable is unset, so default-ON is correct.
+**But `Rnd_Wgpu_RB3.cpp` is in `MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3` — the
+Wii-flavor-only source set — and rb3-xenon builds `MILO_ENGINE_GPU_BACKEND=dc3`.
+It is not compiled into any xenon target.** So:
+
+- **My xenon E1 finger observation stands** — no mitten code runs in that build.
+- **The warning lands on rb3-Wii instead, where it is sharper than X13 knew.**
+  W34's E1 — *my own ratification* — cited "fingers render, branch-claws gone"
+  as evidence the alias-unsafe `Multiply` fix worked. That claim **is**
+  contaminated by a default-ON finger-lerping hack. The `Multiply` fix has
+  independent support (detonation count 3650→0, byte-identical Wii match), so
+  the fix is not in doubt; the *finger-appearance* half of the evidence is.
+  This sharpens the existing Wave-35 mitten-retirement item rather than adding
+  a new one.
+
+Gates: fresh pre-land 18/18, rc=0, 0 SKIPs on the rebased tree; engine HEAD
+exactly the pin with only the pre-existing foreign edit; post-rebase frame
+byte-identical to X12's artifact.
+
 ## Next (not yet chartered)
 
-- **X13 — hand pose under animation** (X12 verified bind pose only), the
-  palette-vs-`meshWorld` placement discrepancy above, `Rot.cpp:299`'s dormant
-  alias-unsafe arm, and Direction-B rows 4 and 3b (the clean ones).
-- The ceiling-legs observation above — confirm benign or name the defect.
-- `OutfitConfig` (48 symbols); camera shots (the real `BandCamShot` TU — gates
-  crowd visibility too); X6's engine change request; `video_05` `rc=1`; audio;
-  `ThreadCallInit`; `CharMeshHide::HideAll` stub.
-- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **nine
+- **X14 — the band renders stacked at the origin.** Now mechanically
+  understood: the skeleton is parented to an unplaced `Character` and the
+  renderer cancels `meshWorld`. This is the biggest visible defect on the
+  board and it invalidates nothing about the placement *data*, which is proven.
+- **Band `body_clips` is empty** (0 clips vs 40–44 for crowd) — animation
+  cannot reach band members until that is understood.
+- Direction-B rows 4 and 3b (clean, deferred for budget); `OutfitConfig`
+  (48 symbols); camera shots (the real `BandCamShot` TU); X6's engine change
+  request; `video_05` `rc=1`; audio; `ThreadCallInit`.
+- **rb3-Wii (Wave-35):** characterise `RB3_HANDS_MITTEN` ON vs OFF before any
+  further finger-appearance claim; W35-0's absolute-oracle work now has a
+  second, experimentally-confirmed justification.
+- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **ten
   lanes** running. Owner decision still outstanding.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
