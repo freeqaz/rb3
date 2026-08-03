@@ -334,15 +334,87 @@ width — `short *p` with `bs >> p[0] >> p[1] >> p[2]` at `kCompressVects`
 (CharBonesSamples.cpp:609-613) — which is what V38's audit established. The
 defect is specific to xenon's transcription.
 
+## X4d — LANDED 2026-08-03: VENUES RENDER (xenon main `972f5a40`..`86b616a2`)
+
+Doc: docs/plans/x4d-venue-root-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX4D/evidence/` (15 items, worktree left in place).
+**6 of 6 venue roots load; 5 of 6 render** — not partial in the way every
+prior milestone was.
+
+**Coordinator E1 PASS, and it is the best frame this campaign has produced.**
+`small_club_01` is a legible club interior: plank flooring, brick and panelled
+walls, a bar, a staircase with railings, stacked chairs, ceiling beams — all
+textured and coherently lit. 114 meshes, 96 drawn, 38.92% coverage, and
+crucially **its own shipped `RndEnviron`** (`geom_norim.env`) — the first real
+RB3 lighting in the port, where X4a had to synthesize one. Five distinct
+environs across the sweep, so lighting is general rather than one asset's
+quirk. `arena_01` = 251 meshes at 74.49%; `festival_01` = 307 including the
+first skinned ones.
+
+**Root cause — one boolean, in `src/system/obj/Dir.cpp` (`ObjectDir::PostLoad`
+tail): the proxy guard was strictly weaker than retail's.** rb3-Wii's oracle
+(`rb3/src/system/obj/Dir.cpp:475`) is `IsProxy() && !mProxyFile.empty()`;
+xenon had `ShouldSaveProxy(bs)` = `IsProxy() && (!mProxyFile.empty() ||
+InlineProxy(bs))`. The extra disjunct fires for a proxy dir with an **empty**
+`mProxyFile`, building a `DirLoader` on an empty path and handing it the
+parent's live stream. Byte-exact: a phantom `LoadHeader` eats 4 bytes at
+offset 906607, so the next object starts 4 bytes late and the `3` it reads is
+the *following* object's `WorldInstance` rev. Of 12 proxy dirs, 11 have a
+non-empty `mProxyFile` and both guards agree; the 12th is the venue. One line,
+HX_NATIVE-gated, X360 arm untouched (0 symbols differ, verified per-symbol —
+the lane notes whole-file `cmp` is insufficient here).
+
+**All three charter leads I supplied were REFUTED — usefully.** (1) Factory
+misses are not the wall: the venue renders **with all 675 still present**, and
+they are not even reached (0 `MISS-SKIP` before the crash). (2) `ObjectDir::
+Init` is innocent *by construction* — `nm` shows `--gc-sections` stripped
+`DirLoader::New` itself, impossible if any dir load used the factory table.
+(3) **The `BandCamShot`→`CamShot` bind retires all 611 misses and BREAKS the
+load (`rc=134`)** — because `ReadDead` recovers objects that were *skipped*,
+never one that was *mis-parsed*, since the parse never returns. A miss is
+strictly better and is already the default. My pre-dispatch caution about
+base-class short-reads was therefore load-bearing; it is now measured, not
+theoretical. The `ScatterIncludes` build fix enabled nothing here and was not
+needed — it remains right for *content*, not loading.
+
+**Riders both closed.** (1) Framing: an explicit ark path always took
+`distScale 0.9`, tuned for the flat track piece rather than `1.15` for a tall
+figure; with `--dist-scale/--azimuth/--elevation` added, **E1 confirms the
+whole character in frame with a verifiably correct two-armed overhead reach,
+face and features intact.** (2) The slivers are **not skinning**: present at
+bind pose with no clip, and present in the X3 baseline PNG that predates all
+pose work. They are the LOD2 body's own surface content amplified by this
+cell's synthetic single directional light. The lane retracted its own first
+answer (hand props) after `--only-mesh` killed it.
+
+Gates: native 18/18 fresh rc=0; engine pin `138e1606` untouched, zero edits;
+X360 0 symbols differ; PNG determinism 4/4; all X3/X4a/X4b/X4c evidence
+byte-identical.
+
+★ **Costing lesson:** four documents — including two of my own close-outs —
+costed the venue at 13 TUs plus a `ScatterIncludes` lane plus 14 registration
+lines. It was **one boolean guard**. Every estimate inherited X4a's framing
+that the factory-miss log named the blocker; nobody re-derived the failure
+from the stream itself until X4d traced it byte-by-byte. When a cost estimate
+is inherited rather than measured, say so.
+
+⚠ **Process, systemic:** the rebase re-gate caught **main broken by a match
+lane** (DI-1) — the third such repair of the same shape now in main's history.
+Decomp lanes land ungated because the native gate isn't part of their loop.
+This is a standing gap, not an incident.
+
 ## Next (not yet chartered)
 
-- **X4d — the venue SIGSEGV.** Misses are recoverable (675/0), so a distinct
-  defect remains; pair with the `ScatterIncludes` dedupe gap and the ~4
-  `BandCharacter.cpp` defects. Correct venue path is
-  `world/venue/small_club/small_club_01/gen/small_club_01.milo_xbox`.
-- Explain the residual pelvis/shin slivers; render a framing that actually
-  includes the arms so the pose can be judged.
-- `ThreadCallInit` / `ObjectDir::Init` remediation (Tier-1, unlanded).
+- **X5 — content and a scene:** venues render but are *empty*. What §5 of the
+  X4d doc shows missing is content — characters, crowd, audio, camera shots —
+  and **player-targeted lighting is the first thing real venue lighting now
+  blocks on (49 unresolved `player0` refs)**. Putting the posed character into
+  the lit venue is the milestone that makes this look like the game.
+- `video_05` loads but renders empty — a render defect, cleanly isolated from
+  loading.
+- `ThreadCallInit` remediation (Tier-1, unlanded; `ObjectDir::Init` is now
+  refuted as a defect).
+- Xenon-side: make the native gate part of the decomp lanes' loop.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
   dated corrections to `bandobj-port.md` (its absent-source claim has been
