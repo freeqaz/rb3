@@ -1230,3 +1230,30 @@ frozen remnant (BandCharacter.cpp:603-632); (3) lighting/wash casts (now the
 biggest visual family); (4) W33 leftovers F2-PILL + F7-SIDEBAR-BACKING; (5)
 web-build confirmation of the alias fix; (6) engine backlog: Mesh_Wgpu
 GetDrawMode()==8 dead cull-overrides (SPIKE-X0 find).
+
+### ★ W35-0 (do this FIRST): the ANAT oracle is rigid-motion invariant
+
+Imported from rb3-xenon X4c (2026-08-02, `docs/plans/x4c-init-audit-2026-08-02.md`),
+which lost four milestones to exactly this and named it its parting lesson:
+**pick oracles that are not invariant under the defect you are hunting.**
+
+Our ANAT metric is `ratio = |childWorld − parentWorld| / |childLocal.v|`
+(BandCharacter.cpp:896-905, :923-930) — a **pairwise distance ratio**. Pairwise
+distances are preserved by *any* rigid motion, so the metric is **structurally
+blind** to: a whole skeleton (or subtree) rigidly displaced or rotated; a wrong
+but still-unit quaternion; and any defect that moves parent and child together.
+W34's "maxRatio 1.000 exact" is therefore a real result about *bone rigidity*
+and **not** evidence that world poses are correct. Xenon's equivalent claim
+(0.9999) coexisted with a posed character that was mostly bind-pose geometry
+and wrong throughout — one **absolute landmark position** found in a single run
+what four milestones of rigidity checks could not see.
+
+Cheap to fix: the probe **already logs absolute positions**
+(`childWorld=(%.3f,%.3f,%.3f)`, BandCharacter.cpp:911-914) — only the PASS
+criterion is the ratio. Add absolute landmark checks (a few named bones with
+expected world positions/bounds at a known clip+timestamp) and re-run the W34
+A/B before treating any part of the SKEL family as settled. This does **not**
+reopen the alias-unsafe-`Multiply` fix, which was verified independently by
+detonation count, screenshots and a byte-identical Wii match — it bounds what
+the *ratio* evidence alone can support, and it is the right instrument for
+the still-open items (1), (2) and any residual face/limb defects.
