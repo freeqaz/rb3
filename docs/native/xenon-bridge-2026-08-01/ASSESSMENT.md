@@ -578,19 +578,101 @@ entirely correct facts and each wrong by a whole subsystem. Every one was
 settled by a single cheap measurement that nobody took because the estimate
 had been inherited rather than re-derived.
 
+## X7 — LANDED 2026-08-03, MILESTONE DID NOT LAND (xenon main `ba3dd797`..`9931c1b7`)
+
+Doc: docs/plans/x7-band-on-stage-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX7/evidence/`. **No frame in this lane contains a band
+member** — stated plainly by the lane, and correct. What landed is the path to
+one plus a precise account of the wall.
+
+★★ **Band stage placement is baked shipped data, in all six venue roots** — the
+same shape as X6's crowd finding. The lane asked what `BandConfiguration::
+SyncPlayMode` *does* before porting anything: it computes nothing, it looks up
+a stored `Transform` and calls `Teleport`. Each venue ships **12 named slot-rows
+(4 band slots × 3 play modes)**, all non-identity. `small_club_01` mode 0:
+`player_bass0 (-70.0, 80.7, 13.5)`, `player_drum0 (14.4, 146.1, 13.2)`,
+`player_guitar0 (68.8, 51.4, 13.2)`, `player_vocals0 (-10.0, 31.4, 13.2)`.
+**The data validates itself against landmarks with no interpretation:** the 12
+transforms span 145×146 in x/y but only **0.313 in z** — coplanar, a stage
+floor; band y is entirely positive and crowd y entirely negative (opposite
+sides of the origin); and `arena_01` ships a **drum riser** — bass/guitar/vocals
+coplanar to 0.32 at z≈255.9, drummer at 320.9, exactly 65 higher and ~480
+upstage. A canonical Rock Band layout falls out of the shipped file. It was
+**one CMake line** away: X6 ported the TU and wired `objects.json` (the X360
+build) but never `native/CMakeLists.txt`.
+
+★ **The four-times-deferred `ScatterIncludes` blocker was never a lane: three
+`#if !HX_NATIVE` lines.** Every fact in the inherited estimate was true and the
+conclusion did not follow — 807 duplicate definitions is the cost of adding all
+*ten* bandobj TUs, and **CMake structurally cannot perform that dedupe** (its
+rule drops an includee that is also a target source; every collision here is
+between two *emitters* that must both stay, so any winner-picking still needs a
+source-side guard). Also `BandWardrobe.cpp` **had been compiled into every
+`rb3-render` binary since X3** (91 symbols in `Console.cpp.o`), invisible only
+to `--gc-sections` — half of X6's handoff was stale. `BandCharacter.cpp` went
+**18 errors → 0** (all four defects rb3-Wii-shape ports onto xenon types, all
+inside `HX_NATIVE` arms); ten TUs now link with 0 errors, 0 duplicates, 0
+undefined. **That is the fourth consecutive inherited cost estimate to be wrong
+by a subsystem** — see the standing rule.
+
+**The real wall:** registering `BandCharacter` *does* construct band members,
+then desyncs the stream (`FAIL: String chars 290146 > 128`, rc=139).
+`chars.milo`'s `player0` is a proxy declared `BandCharacter` whose proxied
+`char/main/main.milo` declares root `RndDir`, so `DirLoader::SetupDir:712-748`
+`ReplaceObject`s a half-loaded dir mid-stream. Off by default behind
+`RB3_BAND_MEMBERS=1`. **The lane generalized the rule correctly: X4d's "a miss
+beats a wrong parse" also covers this, where the class is *right* and the
+outcome is the same shape.**
+
+★ **Crowd visibility answered with a mechanism, so no default needs picking.**
+`mShowing` in the asset is **dead data**. Every camera cut, `CamShot::StartAnim`
+pushes the shot's own `mCrowds` into `WorldDir::SetCrowds`, which shows exactly
+the crowds that shot names and hides the rest — confirmed in rb3-xenon, rb3-Wii
+**and** DC3. The `_ps3` suffix is a red herring (the platform gate is
+`CamShot::mPlatformOnly`/`PlatformOk()`). **`--crowd-all` should NOT become a
+default.** Blocked on the same surface as the band: `BandCamShot` is 611 of 675
+misses.
+
+Gates: native 18/18 fresh rc=0 with **0 SKIPs** — but it **FAILED first at
+8/18**, because stubs went into `native_undecomp_stubs.cpp`, which all 18
+targets link ("a stub's blast radius is the source list it sits in"). X360
+non-regressed at symbol granularity across all 10 touched units; PNGs
+deterministic ×3 and stable across a full toolchain rebuild; `main` not broken
+by a decomp lane. Disclosed substitution: 18 declared-never-defined functions
+stubbed including five deform/refine passes and all of `CharKeyHandMidi` — a
+member would be posed but unrefined; **none on the placement path**, and no
+position was computed, guessed or hand-picked.
+
+### ⛔ Coordinator correction — X7's retraction of X6's SHA table is itself wrong
+
+X7 landed a retraction asserting X6's recorded PNG hashes "do not match X6's
+own evidence files" and that X6's table carried fabricated hashes. **I
+re-measured every artifact: all four of X6's SHAs are correct**
+(`d7963b8c1e6d5711` / `5282bd275159f10b` / `2f36c1e369314e11` /
+`218cf68dd5a019a7`). Two errors produced the false retraction: (1) X7's own
+table asserts `cmp` **IDENTICAL** against an artifact *and* a different
+`sha256` than that artifact has — both cannot be true, so its hash came from a
+file other than the one it compared; (2) X6 §3's *identical* hashes across
+0/30/300 instances are its **finding** ("300 instances and not one pixel
+changed"), not a transcription error — §4.1 carries the post-substitution
+hashes, which match. Corrected in-place on xenon main (`0ea11c3c`) with the
+withdrawal recorded next to the original claim rather than rewriting it.
+X7's non-regression conclusion is unaffected and correct. **The durable rule:
+before retracting another lane's numbers, re-measure the artifact and check
+your own two instruments agree with each other — an accusation of fabrication
+against a correct record is more corrosive than the error it alleges.**
+
 ## Next (not yet chartered)
 
-- **X7 — the band on stage.** The crowd is placed; the players are not. This
-  needs `BandCharacter`/`BandWardrobe` (the ScatterIncludes dedupe lane) plus
-  the `BandConfiguration` path X6 just landed. It is the most "Rock Band"
-  thing left.
-- **Owner decision:** crowd visibility policy — `mShowing` selects 0 crowds in
-  4 of 6 venues, so faithful = empty arena. Is retail gating crowds on
-  something the port doesn't set yet, or is `--crowd-all` the right default?
-- Engine change request (from X6, filed as text): the impostor RTT path emits
-  nothing on this backend and composites additively, so it is a silent no-op.
-- Camera shots (the real `BandCamShot` TU, never a base-class bind); audio;
-  `video_05` `rc=1`; `player1..3` stand-ins; `ThreadCallInit` remediation.
+- **X8 — the band is one defect away, not one subsystem away.** Two named
+  items: `DirLoader::SetupDir`'s proxy class-conversion arm (`ReplaceObject`
+  mid-stream), and **`player_mic0` vs the venue's `player_vocals0`** — a
+  confirmed defect (rb3-Wii has the remap, rb3-xenon does not).
+- Camera shots (the real `BandCamShot` TU, never a base-class bind) — now known
+  to gate crowd visibility as well as shots.
+- Engine change request from X6 (impostor RTT emits nothing, composites
+  additively — silent no-op); `video_05` `rc=1`; audio; `ThreadCallInit`;
+  `BandConfiguration` still unscoreable (no `splits.txt` entry).
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
   dated corrections to `bandobj-port.md` (its absent-source claim has been
