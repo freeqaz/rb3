@@ -403,6 +403,32 @@ lane** (DI-1) — the third such repair of the same shape now in main's history.
 Decomp lanes land ungated because the native gate isn't part of their loop.
 This is a standing gap, not an incident.
 
+## ⚠ Coordinator hygiene item — uncommitted edit in the shared engine
+
+`../milo-native-engine` has carried **one uncommitted edit since 2026-06-16**
+(seven weeks): `src/platform/FxSendNative.cpp`, in
+`NativeEffectSlot::SyncParams`. It is not mine and not any X-lane's — every
+lane from X4a on has disclosed it and correctly left it alone. It is
+semantically real, not whitespace:
+
+```
+-  p.mActiveBands = 0x1F;   // all 5 bands
++  p.unk0 = false;          // bypass slot (offset 0x0); SetParameters never reads it
+   …
+-  p.mBand5Q = eq->mHighPassReso;
+```
+
+So it re-interprets the field at offset 0x0 (plausibly a real layout
+correction) and drops the band-5 Q assignment (plausibly a regression). **All
+three consumers — rb3-Wii, dc3, rb3-xenon — have been building against this
+out-of-tree state**, so every gate run and every "byte-identical PNG"
+comparison since mid-June was taken against a working tree that does not match
+any commit. Audio EQ only, off the load/render paths, so it does not confound
+the render milestones. **Not actioned by me: I did not create it and do not
+know the intent** (committing or reverting another agent's in-progress work in
+a shared repo is exactly the failure mode the concurrent-agent rule guards
+against). Owner decision: commit it with a message, or revert it.
+
 ## Next (not yet chartered)
 
 - **X5 — content and a scene:** venues render but are *empty*. What §5 of the
