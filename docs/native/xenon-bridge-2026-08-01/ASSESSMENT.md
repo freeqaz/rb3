@@ -1337,6 +1337,72 @@ Gates: baseline gate PASS (so `main` was **not** broken by a decomp lane); final
 scoreable**; PNG determinism ×2; **both frames opened — no shards, no
 explosion**.
 
+## X17 — LANDED 2026-08-03: one condition, sibling symptoms (xenon main `82db5d93`)
+
+Doc: docs/plans/x17-pose-residual-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX17/evidence/`.
+
+★ **The lane split X16's hypothesis into two claims, because it was two claims —
+and they came out opposite ways.**
+
+**Causal claim REFUTED, decisively.** Three arms from one binary: rebind at full
+scope, at the shipped torso scope, and disabled. Every per-figure recompose line
+is **byte-identical across all three** — worst deviation `6.172e+01` on
+`bone_mic_stand_bottom.mesh` in each. What makes this decisive rather than
+merely null is the **positive control inside the same A/B**: it moves all four
+members' hand centroids from four distinct authored slots onto a **single
+collapsed point**. The suspect is maximally potent and the residual does not
+move by one ULP. Mechanism agrees and was read *second*: the rebind only calls
+`RndMesh::SetBone`, touching no transformable's local, world or parent.
+
+**Set claim CONFIRMED, more strongly than X16 knew.** Prior lanes reasoned from
+six per-figure argmax names; X17 dumped the whole population — **123 of 7380
+admissible bones (1.7%)**, and **all 60 distinct names are hair or trouser bones
+in both naming conventions**, plus exactly three others (`bone_pelvis`,
+`bone_mic_stand_bottom`, `bone_mic`). Every bone in X15's unresolved list is
+present.
+
+**Verdict: neither yes nor no — one structural condition** (these bones are not
+resolvable under the member's own skeleton) **with three sibling symptoms** (the
+rebind skip, the recompose residual, X15's floating hairpieces). Neither is
+upstream of the other.
+
+**Pose still does not validate; X14's driver-side call stays — the third lane to
+decline it.** The lane narrowed "the pose is untrustworthy" to 123 bones and
+~57 real sites and refuted the leading explanation, but **also found a reason to
+doubt the gate itself** — and refused to act on it: *"an unproven doubt is not
+grounds to adopt an unvalidated pose as the default."* The doubt is worth
+carrying: `RecomposeAdmissible` screens constraints but **not** `SetWorldXfm`
+publication, so X13's `Enter()` control making `bone_R-hand` deviate **may be IK
+working correctly rather than a worse pose**. That ambiguity sits directly under
+the gate blocking retirement.
+
+**Handoff:** the residual is **chain-structured** — ~57 ROOT sites, 66 inherited
+propagation — rooted at three attachment points (`bone_hair.mesh`,
+`exo_pelvis.mesh`, the `Character` object itself), which **recharacterises
+`bone_pelvis` and `bone_mic_stand_bottom` as *attachment roots*, not misposed
+body bones**. And explicitly: **fixing the rebind will not fix the pose** — arm C
+already proves it will move the skip set and the floating hair and leave the
+residual untouched.
+
+**Did not land:** textures entirely unreached (fifth lane), X15's bill inherited
+and not re-verified. Whether every ROOT bone is frozen is **unresolved** and
+said so — six sampled ROOTs are bit-identical across arms but 59 hair/leg bones
+are among the 1309 movers, so the population splits and the name-keyed diff is
+confounded by names recurring across figures. **Retracted, its own:** a mover
+count taken over a diff field that differs between arms by construction —
+re-measured, the count held, *"but that was luck rather than method."*
+
+⚠ **Fourth vacuous-pass instance in this ladder:** `RB3_BAND_PLACE=1` is
+required or the oracle measures a **bandless scene and PASSes**. It caught the
+lane on its first run, and what exposed it was X13's geometry gate — i.e. the
+structural fix for this exact class, working as intended.
+
+Gates: **18/18 fresh, rc=0, 0 SKIPs**, binaries deleted first; baseline gate
+confirms `main` **not** broken by a decomp lane. Change surface is **one
+native-only file**, so the X360 blast radius is zero *by construction* — **"there
+is no A/B to run and I say so rather than implying coverage."**
+
 ## Next (not yet chartered)
 - The undecided polled pose (blocked on the above); band textures
   (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
