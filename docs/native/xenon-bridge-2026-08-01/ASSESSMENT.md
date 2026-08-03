@@ -1633,6 +1633,77 @@ gate-built and post-rebase binaries both reproduce the same md5. **Zero
 shared-`src/` edits → X360 blast radius zero by construction**; none of the four
 touched files can be scored at all.
 
+## X21 — LANDED 2026-08-03: two independent causes for the pink band (xenon main `a92a80a9`, `7f4e7289`)
+
+Doc: docs/plans/x21-compose-path-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX21/evidence/`.
+
+★★ **X20's central handoff is refuted, and the irony is instructive: X20 warned
+that a failure-only predicate cannot prove a success, then reasoned about the
+call graph without building a positive one.** X21 built one. **`SyncOutfitConfig`
+fires 336 times** (42 with `sym='skin'`) and **`SetSkinTextures` runs on all four
+members** with `skin.cfg=FOUND`, correct genders, all five materials and all
+three render targets found. **The call path was already complete when X20 handed
+it forward as "the whole remaining distance."**
+
+**The band is pink for two reasons neither lane had, and they are independent:**
+
+1. ★ **The census was reading names, not identities — the sixth instance of that
+   class on this ladder.** The "58 skin material instances" are `(mesh, mat)`
+   pairs over **11 distinct `RndMat` objects**. `SetSkinTextures` rebinds all four
+   per-member materials correctly, but **every visible body mesh points at one
+   shared material in `char_shared.milo` that no member touches** — only the two
+   tattoo meshes use the rebound ones. This is **X19's shared-object defect one
+   subsystem over**, it is **independent of the compose work, and it will survive
+   it**.
+2. **The compose pass never dispatches at all.** `Rnd::DrawPreClear`'s
+   list-selection arms are **swapped** relative to the rb3-Wii oracle (offsets map
+   1:1). Measured `mPreClearDraws=0 mDraws=40 listUsed=0`, `Compose` 0 calls —
+   **against 734 lines from the same predicate in the same run, so the zeros are
+   absences, not silence**.
+
+**Milestone 2 decided, and it is engine-side.** Correcting the polarity repairs
+dispatch (0→40 calls, 0→44 composes) **and then kills the frame**: a WebGPU
+pass-nesting violation, coverage 0.00%. So it shipped **opt-in, not default-ON** —
+*"necessary, not sufficient, the same shape X20 hit one link earlier."* dc3 has
+RTT and does call `DrawPreClear()`, but its `DrawRect` drops `mat->GetColor()`
+entirely, with no `colorMod` awareness, no two-texture pass and no pipeline cache.
+
+**Two inherited things checked rather than quoted:**
+`MILO_ENGINE_GPU_PLATFORM_SOURCES_DC3` **does not exist** (zero occurrences
+engine-wide; the dc3 list is unsuffixed), and **X18's four-flag worktree recipe
+is insufficient** — the compilers must be *pinned*, or the gate wipes the cache
+and SKIPs three engine targets. Its first baseline read 15/18 with 3 SKIPs and
+**the 0-SKIP rule caught it**. I corrected my `CLAUDE.md` note accordingly
+(xenon `a46979fb`).
+
+`Rnd::DrawPreClear` **cannot be scored at all** (`target_size=0`, no ICF alias,
+absent from the asm) — stated, not implied. All three shared TUs verified
+unchanged at unit granularity with both objects built in the same worktree.
+
+**Did not land:** milestone 3 (the 120 shared-skeleton publications) untouched
+for a **third** lane — read the dead-ends doc, attempted none of the four,
+**proposed no fifth**.
+
+### Coordinator decision on the two engine change requests
+
+Both are well-scoped, with per-consumer risk and a sequencing note. My call:
+
+- **CR-1** (move `gRB3OutfitComposeActive` out of the rb3-flavor TU, ~3 lines):
+  zero behavioural risk to rb3-Wii and dc3, but **it breaks rb3-xenon's link
+  unless X20's deliberately-strong stub is deleted in the same change**. That
+  cross-repo sequencing plus the pin bump is coordinator work, not a lane's.
+- **CR-2** (implement the compose in dc3's `DrawRect`, ~150–190 lines): the real
+  risk is **not** the compose — it is folding `mat->GetColor()`, which changes
+  modulation for *every* dc3 `DrawRect` caller (UI, postproc, vignette). Must be
+  independently gated. Also must resolve the pass-nesting violation or it lands
+  dead.
+- **Sequencing consequence that decides the order of work:** CR-1 alone buys
+  nothing observable, and **§2's shared-material defect is independent of both
+  CRs and will leave the visible meshes pink even after CR-2 lands.** So the
+  xenon-side material defect is the higher-value next step, and the CRs want a
+  dedicated engine lane afterwards.
+
 ## Next (not yet chartered)
 - The undecided polled pose (blocked on the above); band textures
   (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
