@@ -429,18 +429,84 @@ know the intent** (committing or reverting another agent's in-progress work in
 a shared repo is exactly the failure mode the concurrent-agent rule guards
 against). Owner decision: commit it with a message, or revert it.
 
+## X5 — LANDED 2026-08-03: CHARACTERS RENDER INSIDE THE LIT VENUE (xenon main `678d57c6`..`202bc55e`)
+
+Doc: docs/plans/x5-scene-2026-08-03.md. Evidence: `/home/free/tmp/laneX5/
+evidence/` (worktree left at `/home/free/tmp/laneX5/wt`).
+`small_club_01` renders **180 meshes / 48 skinned / 162 drawn**, rc=0, lit by
+its own shipped `geom_norim.env`. The 48 skinned meshes are **eight crowd
+members × six meshes, each driven by a real shipped `CharClip`** at beat 4.0.
+
+**Coordinator E1 PASS, with the caveat the lane itself names.** The close
+frame shows a textured, lit character — hair, jacket, boots, a held prop —
+standing inside richly detailed venue geometry (beams, panelling, hanging
+signs, a bottle-lined bar). Geometry, materials, textures, lighting, skinning,
+animation and reference resolution are all alive in one scene. But **every
+character sits at the world origin**, which in `small_club_01` is at ceiling
+height, so the figure reads as standing on the ceiling and all eight crowd
+members are coincident (the wide shot shows one figure, not eight). That is
+precisely the missing placement, not a new defect.
+
+★ **The headline is a measurement lesson, not a fix: the crowd was already
+there.** X4d's "114 meshes (0 skinned), crowd UNREACHED" was an **instrument
+artifact**. `ObjDirItr(dir, recurse=true)` descends only `mSubDirs`, and a
+`Character` *is* an `ObjectDir` — so a loaded crowd member sits in its parent's
+**hash table**, which that walk never enters. Eight fully populated crowd
+characters (65 objects and 6 meshes each, with their `male_base`/`female_base`
+clip sets) were resident in X4d's own `rc=0` run, invisible to the census
+measuring them. **Not a decomp defect** — `ObjDirItr` is faithful (retail draws
+through the `RndDrawable` tree); it was `rb3-render`'s flat mesh vector that
+needed the deeper walk. Driver-side fix only.
+
+**`player0` resolved 49 → 0 with no `BandCharacter`, no factory change, and no
+`ScatterIncludes` lane.** The lane inherited X4d's "needs BandCharacter"
+estimate, re-measured, and found it wrong *as a cost claim* (its facts hold).
+`ObjPtr` resolution already falls back to `ObjectDir::Main()`
+(`obj/ObjPtr_p.h:246`) and `main_render` calls `DataInit()` which creates
+`Main()`; registering a real shipped `Character` named `player0` there before
+the venue loads suffices. Crucially this does **not** repeat X4d's refuted
+base-class bind — no wrong class is ever asked to *parse* a payload; the four
+`BandCharacter` misses stay misses and `ReadDead` still recovers them. Positive
+signal: TransProxy **bound** went 1/47 → **38/47**, and 37 is exactly X4d's
+count of unresolved `.tp` player anchors. Control (`player1/2/3`, no stand-in)
+unchanged at 5/5/4.
+
+Gates: native 18/18 fresh ×3 including immediately pre-land; zero engine edits,
+pin `138e1606` unmoved; **gate (c) vacuous — the entire diff is one file,
+`native/src/main_render.cpp`**, so no shared-`src/` edit, no X360 codegen risk,
+no objdiff debt; PNG determinism 4/4 post-rebase; X4d's venue frame reproduces
+byte-identically under `RB3_NO_DEEP_TREE=1` and both X3 cells reproduce *with*
+the deep walk on. **Main was not broken by a decomp lane this time — the first
+lane in four.**
+
+**Did NOT land: placement.** All nine characters at `(0,0,0)` — measured
+(`1 DISTINCT world position`), not inferred. Two independent mechanisms are
+missing and **neither needs `BandCharacter` or the ScatterIncludes lane**:
+`WorldCrowd` scatter onto `mPlacementMesh` (6 objects load, none runs), and
+`BandConfiguration` → `Character::Teleport` for band slots — and
+**`BandConfiguration` is not ported in rb3-xenon at all** (factory shim only,
+`bandobj/Band.cpp:66-73`; 176 lines in the rb3-Wii oracle). The lane
+deliberately did not invent placement transforms, on the grounds that a
+hand-picked position would look better and be indistinguishable from the real
+thing in the evidence — the right call. Also unlanded: `player1..3` stand-ins
+(left as a clean control), camera shots, audio, `video_05`.
+
+**Four retractions, two of X4d's and two of its own** — including a clip
+selection rule that silently gave `crowd_male01` a *female* clip and reported
+success. And a **third consecutive lane hit the zsh word-split trap**: a camera
+sweep silently rendered the default X3 cells instead of the venue and returned
+`rc=0`. The failure mode is not "it errors", it is "it renders something else
+and passes".
+
 ## Next (not yet chartered)
 
-- **X5 — content and a scene:** venues render but are *empty*. What §5 of the
-  X4d doc shows missing is content — characters, crowd, audio, camera shots —
-  and **player-targeted lighting is the first thing real venue lighting now
-  blocks on (49 unresolved `player0` refs)**. Putting the posed character into
-  the lit venue is the milestone that makes this look like the game.
-- `video_05` loads but renders empty — a render defect, cleanly isolated from
-  loading.
-- `ThreadCallInit` remediation (Tier-1, unlanded; `ObjectDir::Init` is now
-  refuted as a defect).
-- Xenon-side: make the native gate part of the decomp lanes' loop.
+- **X6 — placement.** The only thing between this and a Rock Band frame, and
+  reachable without the two classes everyone has been waiting on: `WorldCrowd`
+  scatter onto `mPlacementMesh`, and `BandConfiguration` (unported; 176 lines
+  in the rb3-Wii oracle) → `Character::Teleport`.
+- `video_05` renders empty; camera shots (`BandCamShot` — the real TU, never a
+  base-class bind); audio; `player1..3` stand-ins.
+- `ThreadCallInit` remediation (Tier-1, unlanded; `ObjectDir::Init` refuted).
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
   dated corrections to `bandobj-port.md` (its absent-source claim has been
