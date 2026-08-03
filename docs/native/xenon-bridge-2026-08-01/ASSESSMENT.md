@@ -1212,20 +1212,85 @@ added warns about**: the match build compiles `src/`, the native targets link a
 superset, so a change can be perfectly matched while leaving a symbol only a
 linker ever sees.
 
+## X15 — LANDED 2026-08-03: `BandCharacter::Poll()` runs (xenon main `eed970f5`)
+
+Doc: docs/plans/x15-poll-unblock-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX15/evidence/`. **4/4 members, rc=0, two venues — first
+time in this ladder.**
+
+★ **X14's root cause is refuted, by pointer identity.** X14 said
+`d >> mWeightOwner` resolves NULL "when the named owner is absent". Three
+measurements say otherwise: the slot is **not** among the 11,494 empty-name
+`ObjRef` loads, it resolves to a real named object every time
+(`left_hand.weight` / `right_hand.weight`), and `strum.dmidi @0x558339c1edf8` is
+**bit-identically** the object that logged that owner at `Load`. **The owner was
+resolved and then taken away.**
+
+★★ **The real cause is a native-only teardown shortcut, and it is a *class*.**
+`~ObjectDir` Phase 0 (`obj/Dir.cpp:119-135`, **`HX_NATIVE`-only**) calls
+`NullifyAllRefs()`, which by its own documented design does **not** fire
+`Replace()` — and `Replace()` is the only place these classes restore their
+"null means me" invariant. **Retail's ring teardown does fire it.** Traced to
+`FileMerger::PostMerge` ← `BandCharacter::StartLoad` by symbolized backtrace.
+Fixing `Weight()` moved the fault immediately to `Character::mSphereBase`,
+identical pattern, gdb-confirmed NULL. **The lane did not enumerate the rest of
+the class and says so.**
+
+**Did not land, and the judgement is the valuable part: X14's driver-side call
+was NOT retired.** `Poll()` *does* perform the rebind — the band stays on marks
+with the call fully removed — so it is redundant *for the rebind*. But `Poll()`
+also **poses** the skeleton, and **that pose is undecided**: it carries X13's
+exact contamination signature (3.565e+00 at `bone_pelvis.mesh` against X13's
+retracted 3.473e+00, same bone), `handpose-recompose` FAILs, and X13's own
+`Enter()` control makes it **worse** (hands 20–27 units off). Named cause: the
+destroyed `CharWeightSetter`s are the blend-weight sources for these IK/MIDI
+drivers. **Retiring the call would have adopted an unvalidated pose as every
+future lane's default** — exactly the trap this ladder has avoided fourteen
+times running. What *is* proved is **placement, not pose**: polled
+`drawn z − slot z` is identical across two venues to 0.000/0.001/0.007/0.000 —
+X14's invariant at the same precision, now under animation.
+
+**Textures unreached**, bill re-derived rather than inherited (191/1511/48 all
+reproduce) with two refinements: the required action is **registration**
+(`OutfitConfig::Init()` is compiled but called by nothing; `"Can't make
+OutfitConfig"` is purely a factory-registration test), and **X10's scatter-host
+citation is stale** — it is `rndobj/TexBlender.cpp`, not `ui/UIListDir.cpp`.
+
+**Hair unchanged, and X14's framing corrected.** X14 said the skip probe "names
+them precisely, so the target list is mechanical" — it named the **mesh**, never
+the **bone**. The real set is **7 meshes, 3 of them trousers**, across **two
+bone-naming conventions** (`bone_hair_l-01` vs `bone_hair-L-01`), so a prefix
+match written against one silently misses the other.
+
+⚠ **Self-caught methodological failure worth carrying: the lane retracted three
+of its own measurements because it deleted the `rb3-*` binaries for a fresh gate
+and then ran three probes before the rebuild finished.** All returned empty, and
+it "began reading the silence as findings" (rc=127). **Empty output from a
+missing binary is indistinguishable from a negative result** — the same family
+as the vacuous-green oracles this ladder keeps finding.
+
+Gates: native **18/18, rc=0, 0 warnings, 0 SKIPs**, fresh both pre- and
+post-rebase; `main` **not** broken this time; X360 `.text` **byte-identical
+across 6 TUs** (2403/827/627/373/93/1796) with the comparator running a positive
+control first, and **all 6 scoreable** in `objdiff.json`; PNG determinism ×2;
+**default club frame byte-identical to X14's artifact** — the strongest
+available non-regression, and the reason no new E1 was needed.
+
 ## Next (not yet chartered)
 
-- **X15 — `CharWeightable::mWeightOwner` resolves NULL after `Load`**, which
-  SIGSEGVs `BandCharacter::Poll()`. X14's judgement, which I share: fixing it
-  unblocks `Poll()` — the shipped home of the rebind, the animation, and the
-  per-frame outfit sync — retiring X14's driver-side call entirely and making
-  band animation reachable for the first time.
-- Band textures (419 failures / 40 `OutfitConfig`, pre-existing, no longer
-  hidden); hair parented to bones absent under the member root.
-- Direction-B rows 4 and 3b; camera shots (the real `BandCamShot` TU); X6's
-  engine change request; `video_05` `rc=1`; audio; `ThreadCallInit`.
+- **X16 — the `ObjOwnerPtr` null is a class, not a site.** Every
+  `ObjOwnerPtr` seeded `(this, this)` whose invariant is restored only in
+  `Replace()` is exposed; X15 found two by walking into them. Its guards are
+  retail-equivalent but symptomatic — **the real repair is upstream**, and
+  **keeping the `CharWeightSetter`s alive across the merge is what separates
+  "animation runs" from "animation is right."** Enumerate the class.
+- The undecided polled pose (blocked on the above); band textures
+  (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
+  2 naming conventions); Direction-B rows 4 and 3b; camera shots; X6's engine
+  change request; `video_05` `rc=1`; audio; `ThreadCallInit`.
 - **rb3-Wii (Wave-35):** characterise `RB3_HANDS_MITTEN` ON vs OFF before any
   further finger-appearance claim (W35-0b).
-- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **eleven
+- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **twelve
   lanes** running. Owner decision still outstanding.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
