@@ -662,16 +662,92 @@ before retracting another lane's numbers, re-measure the artifact and check
 your own two instruments agree with each other — an accusation of fabrication
 against a correct record is more corrosive than the error it alleges.**
 
+## X8 — LANDED 2026-08-03, band still does not render by default (xenon main `1e24f4da`..`db8f09fc`)
+
+Doc: docs/plans/x8-band-render-2026-08-03.md. Evidence: `/home/free/tmp/laneX8/
+evidence/` (36 artifacts). **All four members (`player0`–`player3`,
+`BandCharacter`, 50 objects each) now instantiate at 4 distinct world
+positions — but those are `char/main/main.milo`'s own authored defaults** (a
+straight line ~37 units apart at y=28.85, **z=0**), not the venue's shipped
+slots. So they are off the stage floor plane, in a row, not on their marks.
+Geometry renders (114→148 draws) only under an explicitly-labelled diagnostic
+flag. **No position was computed, interpolated or hand-picked anywhere in the
+lane** — the standing rule held for the fourth consecutive lane.
+
+**Coordinator E1:** the diagnostic frame shows the venue and its crowd intact
+with a white, untextured figure standing mid-room — consistent with the lane's
+own account (members resident, positions wrong, outfit/LOD selection blocked
+downstream).
+
+★ **X7's wall was misdiagnosed, and retracting it was the lane's headline.**
+`char/main/main.milo` declares **`BandCharacter`** (rev 0x1C, read from the
+asset bytes), not `RndDir`; `SetupDir`'s body is already equivalent to
+rb3-Wii's, so there was no oracle diff to find. The `RndDir` came from
+`LoadHeader`'s `mRev<=0xC` arm after reading a garbage rev of **8** from the
+four bytes following an `0xADDEADDE` terminator — and the competing arm's
+"not registered, defaulting to" message appears **zero** times in X7's own log,
+which was the disproof sitting in the evidence all along. Real cause:
+**`ObjectDir::InlineProxy`'s `HX_NATIVE` arm read the `mInlineProxyType`
+*field* instead of dispatching through the virtual `AllowsInlineProxy()`**,
+which `BandCharacter` overrides to `false` in both trees. One guard restored:
+`rc=139` → `rc=0`.
+
+**Defect 2 confirmed independently from X360 assets:** 11 shipped `small_club`
+roots carry 1322–1360 `player_vocals0` references each and **zero**
+`player_mic0`. Exercising it needed two further fixes: `BandCharDesc::Init()`
+was never called (leaving `gInstNames` all-null → SIGSEGV — the **4th**
+instance of the init/factory-list drift class), and the venue's
+`BandConfiguration` never became the wardrobe's mode sink (its own `Load` guard
+runs before `TheBandWardrobe` exists). All four slots now resolve.
+
+★★ **A defect class nobody had named: 248 `Symbol` globals were dead dispatch
+keys.** `HANDLE_ACTION` compares `sym == symbol` against the *global itself*,
+and 139+109 of them are default-constructed to the NULL symbol. Every handler
+keyed on one silently did nothing — `rc=0`, no warning. **That is why the
+venue's authored band transforms were never applied for four lanes.** As the
+lane put it: *a dead key is indistinguishable from a message never sent.*
+
+**Did not land:** the shipped `enter_venue` path still crashes, so placement is
+opt-in behind `RB3_BAND_PLACE=1` rather than shipped broken. New wall named to
+one function: `obj/ObjPtr_p.h:777-789` suppresses an `ObjPtrList` erase while
+`gInReplaceList`, leaving a NULL in a `kObjListNoNull` list;
+`BandCharacter::SyncObjects`'s shipped loop (token-identical to rb3-Wii's)
+dereferences it, and the entry never leaves, so a null-skip would spin forever.
+Downstream: all 140 of a member's meshes have `Showing()==false` (only 34 carry
+geometry) because outfit/LOD selection lives inside that blocked path. Flagged
+rather than asserted: the four members share **one** 140-mesh set, and band
+meshes report `skinned=0` against the crowd's `skinned=6`.
+
+Gates: native 18/18 fresh, 0 SKIPs, on the rebased tree; all three touched X360
+units unchanged to every digit; both cited frames reproduce byte-identically.
+**X6's SHA table is now independently vindicated a second time** — X8's default
+frame hashes `5282bd275159f10b`, exactly X6's recorded E1, with `cmp` and
+`sha256sum` agreeing with each other and with X6's document.
+
+### ⚠ My own failed cross-repo check, recorded because the failure is instructive
+
+I tried to determine cheaply whether rb3-Wii shares the dead-`Symbol`-key
+class, since it could bear on the remaining Wii visual defects. My grep found
+"169 matches in rb3-Wii vs 223 in xenon" — and **that number is worthless**:
+sampling showed the matches are struct *members* (`Symbol unk28;` in headers)
+and function *locals* (`Symbol s;`), not file-scope dispatch keys. The
+instrument never located the population X8 described. This is exactly the
+"aggregate consistent with two different worlds" trap this campaign keeps
+re-deriving, and I nearly reported it as a cross-repo finding. **Status:
+genuinely unverified** — handed to X9 as a named check rather than asserted in
+either direction.
+
 ## Next (not yet chartered)
 
-- **X8 — the band is one defect away, not one subsystem away.** Two named
-  items: `DirLoader::SetupDir`'s proxy class-conversion arm (`ReplaceObject`
-  mid-stream), and **`player_mic0` vs the venue's `player_vocals0`** — a
-  confirmed defect (rb3-Wii has the remap, rb3-xenon does not).
-- Camera shots (the real `BandCamShot` TU, never a base-class bind) — now known
-  to gate crowd visibility as well as shots.
-- Engine change request from X6 (impostor RTT emits nothing, composites
-  additively — silent no-op); `video_05` `rc=1`; audio; `ThreadCallInit`;
+- **X9 — the band renders.** One named wall: `obj/ObjPtr_p.h:777-789`
+  (`gInReplaceList` suppressing an erase → NULL in a `kObjListNoNull` list →
+  `SyncObjects` dereferences it). Then outfit/LOD selection unblocks, and the
+  band should take its shipped slot transforms.
+- **Cross-repo question (unresolved):** does rb3-Wii share the dead-`Symbol`-
+  dispatch-key class? If yes it is a candidate cause for remaining Wii visual
+  defects; my cheap check did not answer it.
+- Camera shots (the real `BandCamShot` TU) — gates crowd visibility as well as
+  shots; X6's engine change request; `video_05` `rc=1`; audio; `ThreadCallInit`;
   `BandConfiguration` still unscoreable (no `splits.txt` entry).
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
