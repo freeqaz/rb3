@@ -826,19 +826,95 @@ compiler, so a two-flag seed picks up system `g++` and fails with ~104 errors
 that look exactly like a broken `main`. I corrected my CLAUDE.md note
 accordingly (xenon `7f18adab`).
 
+## X10 — LANDED 2026-08-03: X9's gap was mostly an instrument artifact (xenon main `163ec8ac`..`c2344a87`)
+
+Doc: docs/plans/x10-band-geometry-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX10/evidence/` (23 files).
+
+**Six of the nine "empty" band meshes were never empty.** X9's probe asked
+`NumVerts()`, which reads a mesh's own `mVerts` — but the native loader
+deliberately does `mVerts.resize(0)` and parks the shipped blob in
+`mCompressedVerts`. The hair X9 called empty carries **2348 verts / 3012
+faces**. The positive control was sitting in X9's own log: the venue's
+`stage.mesh` reports `verts=0 cverts=140`, and the stage has rendered in every
+frame since X6. Quantitatively the old predicate said 30 while the renderer
+issued **203 draws**. Per member: SHOWN-BUT-EMPTY 9 → **3**, DRAWABLE 5–9 →
+**16–26**. Genuinely empty: `head.mesh`, `hands_naked.mesh`,
+`eyebrows*_resource.mesh`. **This was a measurement change, not a render
+change — the frame is `cmp`-identical before and after.** My E1 confirms the
+frame is unchanged and correct: crowd along the railing, vocalist plus drum kit
+and guitars on the stage.
+
+**X9's `OutfitConfig` root cause is refuted on two independent grounds.**
+`LightPreset.cpp` *is* in `rb3-render`'s source list (via `file(GLOB
+world/*.cpp)`), and `BandPatchMesh.cpp` is listed **directly** at
+`native/CMakeLists.txt:1227` — the build prints the disproof at configure time.
+The real cause is that `BandPatchMesh.cpp` is a **191-line partial port** vs
+rb3-Wii's 1511, owing 48 symbols (11 bodies + 37 undefined globals). **X10
+deliberately did not pay that bill**, on the grounds that `OutfitConfig` is a
+material/texture compositor supplying **no geometry** — it would fix tattoos and
+skin composites, not a single vertex. Correct call.
+
+★ **Scatter-include audit delivered, instrument validated by positive control
+(reproduces 109/109 of the build's own prune decisions, zero disagreements).**
+**Direction B is real and nobody had noticed:** `rb3-milo`/`rb3-render` each
+compile **zero** TUs of 8 modules yet link **20 files** from them — including
+**5 `system/rnddx9` (D3D9) files into a WebGPU target**, via
+`rndobj/CubeTex.cpp:284`. Currently masked by `--gc-sections` (105 `Dx*::`
+symbols in the object, 0 in the binary): latent, not active. Also 42 files
+reach no native target at all, and 22 multi-host duplicate landmines, none
+live. **Direction A is not decidable from the graph** — "missing" is a demand
+property; the lane's first cut emitted 2110 meaningless rows and it **discarded
+them rather than reporting them**, offering a labelled predictor instead.
+
+**X9's "34 FULL-BUT-HIDDEN decals are correct" holds** — but the count was
+wrong (140, same broken predicate), and the better reason is that it is the
+entire both-gender wardrobe option catalogue. The gender flip X9 asked for is
+observed. Caveat: `CharMeshHide::HideAll` is an inert stub, so the mechanism
+isn't the shipped one.
+
+**Did not land:** `OutfitConfig` still unregistered, three meshes still empty —
+but X10 established **they are not the same problem**: the 40 `OutfitConfig`
+failures fire *identically* on the hair milo (geometry loads) and the head milo
+(it doesn't). Three of its own hypotheses retracted, two before writing code.
+
+★★ **The finding worth carrying: a cause that is constant across the working
+and broken arms is not the cause.** One log line read *comparatively* retired
+the entire briefed milestone before any code was written.
+
+Gates: native 18/18 fresh, 0 SKIPs, all relinked, re-gated pre-landing; zero
+engine edits; **zero shared `src/` touched → no X360 blast radius**; PNG
+determinism ×2; default frame byte-identical to X9's artifact with both
+instruments agreeing — **X6's SHA table vindicated a fourth time**; `main` not
+broken by a decomp lane. Trap passed on: X9's "E0 default" is `small_club_01`
+*without* `RB3_BAND_PLACE`, not the two-cell run — comparing against the wrong
+cell looks exactly like a regression.
+
+### ★ Meta-observation: handoff diagnoses are hypotheses, and the process is catching them
+
+Seven of the ten lanes' handoff root causes have been **refuted by the next
+lane**: X4a's band3 framing, X4d's "needs BandCharacter", X5's WorldCrowd
+scatter, X7's ScatterIncludes lane and its proxy-conversion diagnosis, X8's
+"`ObjPtrList` needs its own lane", and now X9's `OutfitConfig` cause plus its
+nine-empty-meshes count. **This is the method working, not failing** — each
+lane re-derives from measurement instead of inheriting, and the refutations are
+consistently cheap (a `grep`, a log line read comparatively, a positive
+control). The lesson for charters, including mine: **state a predecessor's root
+cause as a hypothesis to test first, never as a premise to build on.**
+
 ## Next (not yet chartered)
 
-- **X10 — finish the band's geometry.** `OutfitConfig::Init()` (5th
-  factory-drift instance) gates the head/hands/hair set; it does not link
-  because `BandPatchMesh.cpp` is scatter-included into `LightPreset.cpp` for
-  X360 TU packing and that file isn't in the native source list. **Audit the
-  scatter-include map against the native source lists generally** — this is
-  unlikely to be a one-off.
-- Camera shots (the real `BandCamShot` TU) — gates crowd visibility as well as
-  shots; X6's engine change request; `video_05` `rc=1`; audio; `ThreadCallInit`;
-  `BandConfiguration` still unscoreable.
-- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **six lanes**
-  running. Owner decision still outstanding (see the hygiene section above).
+- **X11 — the three genuinely-empty meshes** (`head`, `hands_naked`,
+  `eyebrows*_resource`). X10's scoping: start from `RndMesh::LoadVertices` /
+  `CopyGeometry`, the only two places geometry is ever populated.
+- **Direction B remediation:** 20 files linked into targets that compile none
+  of their module, incl. D3D9 into a WebGPU target — latent behind
+  `--gc-sections`, worth closing before it stops being latent.
+- Camera shots (the real `BandCamShot` TU) — gates crowd visibility too; X6's
+  engine change request; `video_05` `rc=1`; audio; `ThreadCallInit`;
+  `BandConfiguration`/`BandPatchMesh` (48 symbols) still owed and unscoreable.
+- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **seven
+  lanes** running. Owner decision still outstanding.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
   dated corrections to `bandobj-port.md` (its absent-source claim has been
