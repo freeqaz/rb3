@@ -902,18 +902,79 @@ consistently cheap (a `grep`, a log line read comparatively, a positive
 control). The lesson for charters, including mine: **state a predecessor's root
 cause as a hypothesis to test first, never as a premise to build on.**
 
+## X11 — LANDED 2026-08-03: the band's faces and hands are back (xenon main `e52065f8`..`9e57cad2`)
+
+Doc: docs/plans/x11-mesh-geometry-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX11/evidence/` (38 files). **All five empty meshes now
+carry geometry** — the three named plus two X10 never found
+(`malewrist_barbedwire_right`, `malewrist_hercules_right`). Per member
+SHOWN-BUT-EMPTY **3–4 → 0**, and **DRAWABLE now equals `showing` exactly**
+(19/19, 29/29, 22/22, 19/19); same on `arena_01`, with the +65.1 drum riser
+preserved. **Coordinator E1 PASS on the zoom pair: the baseline has a dark void
+where the face should be; X11 shows a rendered head with facial features and
+hair.**
+
+★ **X10's central conclusion is refuted: the meshes never shipped empty.**
+Loaded standalone, `head.mesh` carries **2592 verts / 4726 faces**,
+`hands_naked` 1876/3092, `eyebrows1` 302/254. They load every run — something
+throws them away. The mechanism is `SetKeepMeshData(false)`
+(`rndobj/Mesh.cpp:954-965`), which clears `mVerts` and frees `mFaces` while
+leaving `mCompressedVerts` alone: the observed signature exactly. Two sites —
+`bandobj/BandCharacter.cpp:1118` (the `RndMeshDeform` drain → hands, eyebrows,
+wrists) and `char/CharMeshCacheMgr.h:9-16`, reached because `SetDeformation`
+does `mgr->Disable(!mInCloset)` → **head**. `head.mesh` arrives at site 1
+*already* at `verts=0`, so as the lane put it: *had I stopped there I'd have
+reported a fixed head that was still empty.*
+
+**Both releases are correct on console** — the platform vertex buffer already
+exists, so the CPU copy is dead weight. The WebGPU backend uploads lazily at
+first draw, so the release destroys geometry **before it is ever uploaded**. A
+**lifetime mismatch, not a decomp defect**; both fixes `HX_NATIVE`-gated with
+`RB3_RELEASE_MESHDATA=1` to opt back in. **The proof is a set identity, not a
+count:** `RB3_TRACE_KEEPMESH=1` names every released mesh, and the released set
+*is* the broken set — eyes, tongue, teeth, hair, fingernails and
+`male_neck_ao` never appear in it.
+
+**Direction B: the sharpest row is closed** — 105 `Dx*::` symbols → **0**, D3D9
+out of the WebGPU target, zero pixels moved. But guarding the edge **broke the
+link** on exactly one symbol: `Hmx::Matrix4::Col3`, declared in `math/Mtx.h:128`
+but **defined at `rnddx9/Cam.cpp:13`** and called from `rndobj/Lit_NG.cpp`.
+★ **`--gc-sections` proved the *symbols* were dead; it did not prove the *file*
+was.** Provided natively, copied verbatim. **The other 7 rows are explicitly
+not closed** — the best-evidenced row had a hidden dependency, so the lane
+assumes the rest do too. Correct inference.
+
+Gates: native 18/18 fresh ×3 (including after both rebases), 0 SKIPs, 18
+relinked; **both X360 A/Bs Δ+0 matched, Δ+0.000000pp code%, Δ+0.000000pp
+fuzzy** across 8 real recompiles; PNG determinism ×2; E0 byte-identical to
+X10's artifact — X6's SHA table vindicated a **fifth** time; `main` not broken.
+`CharMeshCacheMgr.h` is a header and **not scoreable**; its consumers measured
+unchanged; the two native driver TUs have no `splits.txt` entry at all.
+
+**Did not land, and flagged rather than asserted in either direction: the
+restored hands' pose is unverified.** They draw with `nullbones=0`, but at ~40 px
+they read as possibly detached from the sleeves. **The lane names this as the
+single most important item for X12** rather than claiming success — the right
+call, and exactly the discipline that has made this ladder's results credible.
+Also untouched: `OutfitConfig` (still unregistered), 7 Direction-B rows, 42
+orphan files, 22 landmines, and `CharMeshHide::HideAll` (still an inert stub).
+
+**Near-miss worth carrying:** `ab_measure --revert` leaves the *reverted* patch
+in the worktree, so everything built afterwards silently lacked the fix — and
+the frame came back byte-identical to X10's baseline, which reads exactly like
+"Direction B undid the mesh fix". It hadn't. Caught by `cmp`-ing against three
+candidate artifacts instead of one. Recorded in xenon `CLAUDE.md` (`7d5c566b`).
+
 ## Next (not yet chartered)
 
-- **X11 — the three genuinely-empty meshes** (`head`, `hands_naked`,
-  `eyebrows*_resource`). X10's scoping: start from `RndMesh::LoadVertices` /
-  `CopyGeometry`, the only two places geometry is ever populated.
-- **Direction B remediation:** 20 files linked into targets that compile none
-  of their module, incl. D3D9 into a WebGPU target — latent behind
-  `--gc-sections`, worth closing before it stops being latent.
-- Camera shots (the real `BandCamShot` TU) — gates crowd visibility too; X6's
-  engine change request; `video_05` `rc=1`; audio; `ThreadCallInit`;
-  `BandConfiguration`/`BandPatchMesh` (48 symbols) still owed and unscoreable.
-- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **seven
+- **X12 — verify the restored hands are correctly posed** (X11's own top
+  handoff; currently unverified in either direction), then the remaining
+  7 Direction-B rows, each assumed to carry a hidden dependency.
+- `OutfitConfig` (48 symbols owed via `BandPatchMesh`'s partial port); camera
+  shots (the real `BandCamShot` TU — gates crowd visibility too); X6's engine
+  change request; `video_05` `rc=1`; audio; `ThreadCallInit`;
+  `CharMeshHide::HideAll` stub.
+- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **eight
   lanes** running. Owner decision still outstanding.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
