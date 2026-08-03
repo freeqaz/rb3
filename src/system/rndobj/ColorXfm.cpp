@@ -129,20 +129,14 @@ void RndColorXfm::AdjustBrightness() {
 
 void RndColorXfm::AdjustLevels() {
     float loBlue = mLevelInLo.blue;
-    float loGreen = mLevelInLo.green;
     float diffBlue = mLevelInHi.blue - loBlue;
-    float loRed = mLevelInLo.red;
+    float loGreen = mLevelInLo.green;
     float diffGreen = mLevelInHi.green - loGreen;
+    float loRed = mLevelInLo.red;
     float diffRed = mLevelInHi.red - loRed;
-    float f1 = diffBlue != 0
-        ? (mLevelOutHi.blue - mLevelOutLo.blue) / diffBlue
-        : 0;
-    float f2 = diffGreen != 0
-        ? (mLevelOutHi.green - mLevelOutLo.green) / diffGreen
-        : 0;
-    float f3 = diffRed != 0
-        ? (mLevelOutHi.red - mLevelOutLo.red) / diffRed
-        : 0;
+    float f1 = diffBlue != 0 ? (mLevelOutHi.blue - mLevelOutLo.blue) / diffBlue : 0;
+    float f2 = diffGreen != 0 ? (mLevelOutHi.green - mLevelOutLo.green) / diffGreen : 0;
+    float f3 = diffRed != 0 ? (mLevelOutHi.red - mLevelOutLo.red) / diffRed : 0;
     float v68z = f1 * -loBlue + mLevelOutLo.blue;
     float v68y = f2 * -loGreen + mLevelOutLo.green;
     float v68x = f3 * -loRed + mLevelOutLo.red;
