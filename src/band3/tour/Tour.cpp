@@ -147,19 +147,13 @@ int Tour::GetStarsForTourStatus(Symbol s) const {
 void Tour::ConfigureTourPropertyData(DataArray *arr) {
     MILO_ASSERT(m_mapTourProperties.empty(), 0xF7);
     for (int i = 1; i < arr->Size(); i++) {
-        TourProperty *pProperty = new TourProperty(arr->Array(i));
-        Symbol name = pProperty->GetName();
+        TourProperty *prop = new TourProperty(arr->Array(i));
+        Symbol name = prop->GetName();
         if (HasTourProperty(name)) {
-            MILO_WARN("%s tour property already exists, skipping", name);
-            delete pProperty;
+            MILO_WARN("Tour property %s already exists, skipping", name);
+            delete prop;
         } else {
-            std::map<Symbol, TourProperty *>::iterator it = m_mapTourProperties.lower_bound(name);
-            bool canInsert = it == m_mapTourProperties.end() || name < it->first;
-            if (canInsert) {
-                std::map<Symbol, TourProperty *>::iterator hint = it;
-                it = m_mapTourProperties.insert(hint, std::map<Symbol, TourProperty *>::value_type(name, (TourProperty *)0));
-                it->second = pProperty;
-            }
+            m_mapTourProperties[name] = prop;
         }
     }
 }
