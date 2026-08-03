@@ -1555,6 +1555,84 @@ final post-rebase **18/18 fresh, rc=0, 0 SKIPs, 18/18 relinked**; PNG determinis
 **Zero shared-`src/` edits — so no X360 A/B exists to run**, and `main_render.cpp`
 is unscoreable (not in `objdiff.json`); said rather than implied.
 
+## X20 — LANDED 2026-08-03: `OutfitConfig` registered; band still pink (xenon main `bd8d88f7`, `18d4adfb`)
+
+Doc: docs/plans/x20-textures-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX20/evidence/`.
+
+**Registration works** — `Can't make OutfitConfig` **40 → 0**, 40 instances,
+exactly 4 `skin.cfg`. **The band is still untextured: acceptance not met**, and
+the lane says so first.
+
+★ **The bill that stalled five lanes is finally derived, and the lane refused to
+launder a coincidence.** Referencing `OutfitConfig::Init()` leaves **exactly 48**
+undefined symbols: 36 `extern Symbol` globals, 11 `BandPatchMesh` members, one
+`gRB3OutfitComposeActive`. The 36 are declared **~7083×** across
+`utl/Symbols{,2,3,4}.h` and **defined nowhere in the tree** — they survive
+natively only because `--gc-sections` drops the referencing section. Two
+*already-existing* macro arms retire them: 48 → 16 → 12 → links. **Total cost: 2
+compile definitions, 1 native-only TU, 1 line.** And explicitly: *"the 48
+numerically matching the inherited bill is a coincidence I refuse to launder into
+corroboration — X19's 48 was a different quantity"*; `191`/`1511` **remain
+unmeasured by anyone**, ten lanes after first being quoted.
+
+★★ **The control missed its prediction, and that is the finding.** Textures did
+not change. **Registration is necessary and not sufficient** — X19's chain was
+right in *every link it named* and was **not the whole chain**. This also
+weakens X19's negative proof: `could not find == 0` is *still* 0 after
+registration, so **a failure-only predicate cannot separate "never ran" from
+"ran and succeeded"**.
+
+**Next link precisely located:** `SyncOutfitConfig` has exactly two callers,
+**neither reached**. One candidate was excluded **by measurement** — the lane
+predicted the deform-clip guard blocked it and **refuted its own prediction**
+(`male=male female=female`). And `SetSkinTextures` binds
+`*_skin_diffuse_output.tex` (the compose render target), not the authored
+diffuse — **all 22 RTs exist**, so the asset side is complete and the gap is
+purely a call path.
+
+⚠ **Handoff caveat that matters most, and it is the flavor split again:**
+binding the right RT may still give **blank** skin, because the compose pass
+that fills them is gated by `gRB3OutfitComposeActive`, whose engine home
+`RB3Quad.cpp` lives in the **`rb3` GPU backend this build does not link**
+(xenon is `MILO_ENGINE_GPU_BACKEND=dc3`). **Reaching `SetSkinTextures` and
+getting correct skin are two milestones.** This is the third time the Wii/DC3
+flavor split has silently shaped a xenon result — after `RB3_HANDS_MITTEN` and
+X13's renderer citation — and it may need an engine change request or a dc3-side
+equivalent, which is coordinator territory.
+
+★ **The vacuous-pass machinery this ladder built caught a real false negative
+prospectively — the first time it has done so.** The lane's first `OutfitConfig`
+census used `ObjDirItr` (which does not follow `SubDirs()`) and reported **0**
+where the truth was **40**: *"it would have 'confirmed' registration failed at
+the moment it succeeded."* It printed **VACUOUS** over its zero denominator and
+was re-pointed at `CollectDeep`. Five instances of this class have now been
+found; this is the first one the guard stopped *before* it became a wrong
+conclusion.
+
+**Also refuted:** X9's in-tree blocker note — 125 `BandPatchMesh` symbols were
+*already* linked via `TexBlender.cpp:383`'s unconditional scatter edge; X9 had
+read `Rot.cpp:431`, which carries the same edge under `#if !HX_NATIVE`.
+
+**Coordinator E1:** the frame is a fully lit, textured club interior with ~20
+**textured** crowd figures on the balcony in distinct clothing, and four
+**untextured pink** band members upright on four distinct marks, heads present,
+no shards. Gate (f) reported as a **quantified non-identity** rather than "no
+regression": 455 differing pixels of 921600 (0.0494%), max channel delta 130.
+
+**Did not land:** milestone 2 (the 120 shared-skeleton publications) **not
+advanced at all** — the lane read the dead-ends doc, attempted none of the four,
+and **proposes no fifth**; milestone 3 (FULL scope under a driven clip) not
+reached for a **seventh** lane; X19's `FindBoneNamed` other-call-sites item
+untouched. Two `BandPatchMesh` members are **counted stubs measured at 0 hits
+every run**, so nothing is fictional today.
+
+Gates: baseline **18/18 fresh** (`main` **not** broken by a decomp lane);
+post-rebase **18/18 fresh, rc=0, 0 SKIPs, all 18 relinked**; PNG determinism ×2;
+gate-built and post-rebase binaries both reproduce the same md5. **Zero
+shared-`src/` edits → X360 blast radius zero by construction**; none of the four
+touched files can be scored at all.
+
 ## Next (not yet chartered)
 - The undecided polled pose (blocked on the above); band textures
   (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
