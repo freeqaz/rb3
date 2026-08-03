@@ -1231,6 +1231,27 @@ biggest visual family); (4) W33 leftovers F2-PILL + F7-SIDEBAR-BACKING; (5)
 web-build confirmation of the alias fix; (6) engine backlog: Mesh_Wgpu
 GetDrawMode()==8 dead cull-overrides (SPIKE-X0 find).
 
+### ⛔ W35-0b: W34's "fingers render" E1 evidence is contaminated by a default-ON hack
+
+Found via rb3-xenon X13 (2026-08-03) and **verified by me in the engine**:
+`RB3_HANDS_MITTEN` is **default-ON** — `Rnd_Wgpu_RB3.cpp:3763` sets
+`sMittenOn = 1` whenever the variable is unset — and the pre-pass at :3740+
+**lerps finger palette entries toward the wrist-rigid transform**. So any claim
+of the form "the fingers look right" is contaminated until characterised ON vs
+OFF, **including W34's E1 ratification** ("fingers render, branch-claws gone"),
+which was mine.
+
+**This does not put the W34 fix in doubt** — the alias-unsafe `Multiply` fix has
+independent support (detonations 3650→0, maxRatio exactly 1.000, byte-identical
+Wii match on the full report.json A/B). What is contaminated is the
+*finger-appearance* half of that evidence. Treat the mitten retirement A/B
+(already Wave-35 item 1) as a **prerequisite for any further finger claim**,
+not an optional cleanup.
+
+Note the flag is Wii-flavor only (`MILO_ENGINE_GPU_PLATFORM_SOURCES_RB3`), so
+rb3-xenon — which builds `MILO_ENGINE_GPU_BACKEND=dc3` — is unaffected; its own
+finger observations stand.
+
 ### ★ W35-0 (do this FIRST): the ANAT oracle is rigid-motion invariant
 
 Imported from rb3-xenon X4c (2026-08-02, `docs/plans/x4c-init-audit-2026-08-02.md`),
