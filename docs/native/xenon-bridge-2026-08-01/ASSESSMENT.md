@@ -261,12 +261,88 @@ it was flagged in the charter. Rider landed: engine pin → `138e1606`, all
 four X3/X4a PNGs byte-identical, `_lod` re-issue retired on a discriminating
 A/B. Gate PASS 18/18 fresh on the rebased tree, zero engine edits.
 
-## In flight (2026-08-02, cont.)
+## X4c — LANDED 2026-08-02, all 3 milestones (xenon main `e486d726`..`05a8267d`)
 
-- **X4c** — audit the ~8 remaining PreInitSystem/SystemInit sub-inits; make
-  the native driver use the real init path instead of hand-rolled stand-up;
-  land kNewGfx and find what it breaks in the posed draw (22 consumers);
-  boot-time invariant checks before any screenshot claim.
+Doc: docs/plans/x4c-init-audit-2026-08-02.md. Gate PASS 18/18 fresh, zero
+engine edits (HEAD == pin 138e1606), X360 no-codegen-change verified **by
+rebuild** rather than inspection.
+
+**Init audit:** ~23 sub-inits audited using `nm` on the linked binary as
+ground truth (targets build `--gc-sections`, so absence from `nm` *proves*
+nothing calls it — a good instrument choice). `PreInitSystem` and
+`SystemInit` are absent from the binary entirely; none of the 18 drivers
+calls either; 19 sub-inits skipped, 5 provably inert. Two new Tier-1 finds:
+`ThreadCallInit` (leaves `gMainThreadID == -1`, silently making **every
+`MainThread()` assertion in the engine a no-op**, and `DataLoader::LoadFile`
+can spin forever undiagnosed) and `ObjectDir::Init` (the `milo`/`milo_xbox`
+loader factories never register; `LoadMgr::AddLoader` falls through to a
+plain `FileLoader` with no warning). Both charter-named suspects came back
+**innocent** — `TrigInit` shares only a *filename* with `TrigTableInit`.
+**The stated reason 18 drivers skip `PreInitSystem` is false**: it is 39
+lines with no renderer call (`TheRnd.Init`/`PreInit` have zero call sites
+tree-wide). `SystemInit` genuinely is unreachable (4 named blockers).
+
+**kNewGfx landed — and the charter's premise was wrong, which is the
+headline.** kNewGfx never emptied the frame: a load-vs-draw bisect
+(kNewGfx at Load, kOldGfx at draw) was still 0.00%, exonerating all 21
+draw-time consumers, and posed bone positions are byte-identical between
+modes. The real defect was in **`CharBonesSamples::LoadData`: the big-endian
+swap used a 4-byte float width on a section that is three shorts** at
+`kCompressVects`, overrunning into the quat section so the root bone's Z
+became an unrelated quaternion component. Pelvis Z went from noise to a
+standing bob. RB3-specific — DC3 fixed the same line but it was a no-op
+there (all DC3 clips are `kCompressRots`).
+
+**Coordinator E1 (I rebuilt `rb3-render` on main and ran the A/B myself,
+because the lane removed its worktree and its evidence PNGs with it):
+CONFIRMED.** `RB3_GFX_MODE=old` reproduces long flat ribbon spikes streaming
+off both shoulders — visually the same family as rb3-Wii's "tree-branch
+hands". Default (kNewGfx) has none: coherent torso and legs, cleanly skinned,
+arms raised above the frame per the reaching clip. The control makes this a
+direct attribution of the spikes to the 20→4 bone truncation. Two honest
+caveats of my own: the framing crops head and arms, so "arms are correct" is
+*not* verifiable from this render (only that the spikes are gone); and thin
+residual slivers remain near the pelvis and right shin — much reduced, not
+zero. No retail ground truth in this loop, so the claim is "no detectable
+defect", not "matches the shipped game". Also established: **X4b's posed
+character was mostly bind-pose geometry and its pose was wrong throughout.**
+
+**Milestone 3 / the log-disambiguation experiment: 675 top-level / 0
+persistent.** Every outstanding factory miss is on the recoverable
+`ReadDead` path — there is no persistent-object wall. The `BandCamShot`→
+`CamShot` bind's precondition is therefore met, but the lane correctly did
+**not** land it: the short-read/`ReadDead` interaction needs measuring and
+there is no clean signal while the venue still SIGSEGVs. So factory misses
+were never the only venue defect. (X4a's documented venue path was also
+wrong; the real one is `world/venue/small_club/small_club_01/gen/…`.)
+
+**Invariant checks added** (`native/src/boot_invariants.h`) and validated
+against a known-bad control: emptying `TrigTableAutoInit` makes the check
+report `Sine(pi/2)=0.0000` and FAIL, i.e. it would have caught X4b's first
+defect back at X1.
+
+★ **Method lesson worth carrying:** pick oracles that are not invariant under
+the defect you are hunting. X4b's bone-length invariant caught two real
+defects and was **structurally blind** here — pairwise distances survive any
+rigid motion of the root, and unit quaternions survive being wrong. One
+absolute landmark position found in a single run what four milestones of
+rigidity checks could not see.
+
+**Cross-repo check (done by me): rb3-Wii is NOT affected by the byte-swap
+bug.** Its `HX_NATIVE` `LoadData` reads element-by-element at the correct
+width — `short *p` with `bs >> p[0] >> p[1] >> p[2]` at `kCompressVects`
+(CharBonesSamples.cpp:609-613) — which is what V38's audit established. The
+defect is specific to xenon's transcription.
+
+## Next (not yet chartered)
+
+- **X4d — the venue SIGSEGV.** Misses are recoverable (675/0), so a distinct
+  defect remains; pair with the `ScatterIncludes` dedupe gap and the ~4
+  `BandCharacter.cpp` defects. Correct venue path is
+  `world/venue/small_club/small_club_01/gen/small_club_01.milo_xbox`.
+- Explain the residual pelvis/shin slivers; render a framing that actually
+  includes the arms so the pose can be judged.
+- `ThreadCallInit` / `ObjectDir::Init` remediation (Tier-1, unlanded).
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
   dated corrections to `bandobj-port.md` (its absent-source claim has been
