@@ -965,16 +965,95 @@ the frame came back byte-identical to X10's baseline, which reads exactly like
 "Direction B undid the mesh fix". It hadn't. Caught by `cmp`-ing against three
 candidate artifacts instead of one. Recorded in xenon `CLAUDE.md` (`7d5c566b`).
 
+## X12 — LANDED 2026-08-03: hands VERIFIED correctly posed (xenon main, 5 commits)
+
+Doc: docs/plans/x12-hand-pose-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX12/evidence/` (14M). **X11's open question is answered
+YES, for bind pose**, via four absolute checks with no ratios: recompose
+identity `W == L·parentW` elementwise **0.000e+00 over 7434 bones** (7953 in a
+second venue); arm chain monotone and L/R symmetric to 3 d.p.; both hand bones
+**inside** the hand geometry; `malewrist_barbedwire_right` contains the **R**
+hand bone and is 40.5 from the L — handedness, not merely presence; and
+`fingernails_resource.mesh`, a mesh *never* in the broken set, nests inside the
+restored hands to 0.1u. **"Detached from the sleeves" is refuted**: on player0
+the garment spans x −9.24…8.84 while arm skin spans ±25.22 — it never reaches
+the arms; on player2, which does have sleeves, the sleeve→forearm→hand join is
+continuous at 1600×1200.
+
+★ **The existing `--bone-audit` was a vacuous green.** It walks `ObjDirItr`,
+reaches `character: 'lighttarget'`, and reports *"palette-invariant PASS — 0
+bone(s) over 0 mesh(es)"* — while the deep walk in the same run saw 134 skinned
+meshes. The new `--hand-audit` uses `CollectDeep` and the *shipped*
+`RndMesh::SkinVertex`, with a positive control: injected 17.0 → measured
+**16.9998**, localized to the bone, right hand untouched. **And the charter's
+warning was demonstrated outright — `bone-length-invariant` emitted
+byte-identical output in both runs**, i.e. the rb3-Wii-style ratio oracle
+literally cannot see this class. That is the W35-0 finding confirmed
+experimentally on a second codebase.
+
+**Alias hazard, partially live:** X4b's fix at `mtx.cpp:77` is intact
+(0.000e+00 under both aliasings, now gated), but **`Rot.cpp:299`'s `HX_NATIVE`
+arm IS unsafe** — stores `vout.x` at :306 then re-reads `vin` at :307-308.
+Dormant, and it gates Direction-B row 1.
+
+**Direction B: rows verified, none broken, correctly.** It is **6 rows, not 7**
+(row 5 closed transitively by X11; row 7 was a mis-classification — `midi/` *is*
+compiled natively). Rows **2 and 3a must stay open** — `PanelDir.cpp:439-455`
+is port-added `#ifdef HX_NATIVE` code driving `Flow`, and `GemManager.cpp:1649`
+carries `TheFlowMgr`: the exact `Col3` shape again. Rows **4 and 3b are clean**
+and should be done first.
+
+**The lane published a wrong table and corrected it in-tree** (`785b7ef6`, with
+retraction and evidence): its first §6.1 marked every edge unguarded because its
+grep printed `#include` lines without the surrounding `#ifndef` and it did not
+open the files — *the same failure its own §3 documents in someone else's
+instrument*. Self-caught and self-corrected is the right outcome.
+
+**Did not land:** no Direction-B row closed (correct — two are load-bearing);
+**hand pose under animation unverified** (this path applies no clip, so
+"correct" means correct *bind* pose — cheapest next check); `Rot.cpp:299`
+unfixed; `OutfitConfig` untouched.
+
+★ **Handoff for X13, stated carefully by the lane:** at bind pose the palette
+and `meshWorld` disagree by **exactly the character's placement** — for every
+worn mesh *and* every never-broken control mesh alike. Constant across the
+working and broken arms, so by X10's rule it is **not a hand defect** — but it
+is real, and confirmed across two venues whose placements differ by hundreds of
+units while hand geometry measures identically.
+
+### Coordinator E1 — PASS, plus one observation the lane did not report
+
+The closeup is the best frame of the campaign: a full character with eyebrows,
+moustache and eyes, long hair, a detailed jacket with buttons and shoulder
+work, a studded belt, and **hands with individual fingers gripping a mic stand**
+— hands plainly attached and naturally posed, which independently corroborates
+the numeric verdict. **However**, the top of the frame shows a row of legs and
+boots apparently hanging from the ceiling. Most likely benign — `small_club_01`
+has an upper level, and this camera sits below it, so the mezzanine crowd's legs
+show through a floor that isn't drawn from underneath (back-face culling) — but
+it is **unconfirmed**, and it is exactly the kind of thing that reads as correct
+until someone looks from a different angle. Handed to X13 as a named check, not
+asserted as a defect.
+
+Gates: native 18/18 fresh, rc=0, 0 SKIPs at three points; `main` **not** broken
+by a decomp lane (four landed underneath); band frame byte-identical to X11's
+artifact before *and* after rebase; PNG determinism ×2; **zero shared `src/`
+files touched**.
+
+⚠ Infra: `/tmp` is a tmpfs that hit its 38270M user quota mid-lane and **broke
+`git commit` heredocs** (worked around with message files). Now at 63% / 18G
+free, but it will bite again.
+
 ## Next (not yet chartered)
 
-- **X12 — verify the restored hands are correctly posed** (X11's own top
-  handoff; currently unverified in either direction), then the remaining
-  7 Direction-B rows, each assumed to carry a hidden dependency.
-- `OutfitConfig` (48 symbols owed via `BandPatchMesh`'s partial port); camera
-  shots (the real `BandCamShot` TU — gates crowd visibility too); X6's engine
-  change request; `video_05` `rc=1`; audio; `ThreadCallInit`;
-  `CharMeshHide::HideAll` stub.
-- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **eight
+- **X13 — hand pose under animation** (X12 verified bind pose only), the
+  palette-vs-`meshWorld` placement discrepancy above, `Rot.cpp:299`'s dormant
+  alias-unsafe arm, and Direction-B rows 4 and 3b (the clean ones).
+- The ceiling-legs observation above — confirm benign or name the defect.
+- `OutfitConfig` (48 symbols); camera shots (the real `BandCamShot` TU — gates
+  crowd visibility too); X6's engine change request; `video_05` `rc=1`; audio;
+  `ThreadCallInit`; `CharMeshHide::HideAll` stub.
+- ⚠ The foreign uncommitted `FxSendNative.cpp` engine edit is now **nine
   lanes** running. Owner decision still outstanding.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
