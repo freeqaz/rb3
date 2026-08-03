@@ -1403,6 +1403,73 @@ confirms `main` **not** broken by a decomp lane. Change surface is **one
 native-only file**, so the X360 blast radius is zero *by construction* — **"there
 is no A/B to run and I say so rather than implying coverage."**
 
+## X18 — LANDED 2026-08-03: the gate was wrong (xenon main `c5b2e4dc`, `c1cb4ba3`)
+
+Doc: docs/plans/x18-gate-and-roots-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX18/evidence/` (48 files).
+
+★ **Gate verdict: OVER-REPORTING — settled, not suspected.** X17's doubt was
+correct. A last-writer tag on `mWorldXfm` (native-only; **all five** writers
+tagged and verified by grep as the only ones) shows **123 of 123 deviating
+bones are `PUBLISHED`**, while **4351 `COMPOSED` and 2793 `LOADED` bones deviate
+zero**. Not a tautology: 236 published bones exist and 113 of them *don't*
+deviate. The key deduction preceded any run — `WorldXfm()` returns the cached
+world when `!mDirty`, so the check is structurally capable of firing only on
+publication or dirty-propagation failure.
+
+**Three controls, because a gate never seen to fail proves nothing:** `SetLocalXfm`
++5 stays `COMPOSED` and both gates pass; `SetWorldXfm` +5 flips to `PUBLISHED`
+and the old gate **fails** while the corrected one passes; and a **forged stale
+bone makes the corrected gate fail on demand** at 5.6e+01 — *"the one that makes
+the PASS mean anything."*
+
+**X17's three attachment roots dissolve.** Resolving the captured return address
+names the publishers: `CharHair::SimulateZeroTime()` ×120 (92 hair + 28
+trouser), `CharIKHand::Poll()` ×2, `CharIKScale::Poll()` ×1. The "~57 ROOT sites
+to attack" are **the correct output of three engine subsystems — there is
+nothing to fix there.** So three lanes were blocked by an instrument artifact,
+and the residual they were chasing was never a defect.
+
+★ **The real blocker was hiding behind it, and it is not the pose.** Removing
+X14's driver-side call collapses the band's head, eyebrows and fingernails to
+the origin — visible in the frame. With `RB3_SKEL_REBIND_FULL=1` the same
+removal is **byte-identical** to keeping it. **The blocker was always the rebind
+*scope*.** The lane did not flip that shipped default: a consequential shared-
+`src/` behavioural change deserving its own lane and X360 A/B. Right call.
+
+**Coverage stated explicitly, and this is the sentence to remember:** the
+corrected gate is **algebraic**. It asserts only that composed bones compose
+(dirty-propagation intact). It says **nothing** about whether a published world
+is the *right* world — *"an IK solver publishing a hand into the floor passes
+it."* **The pose is un-invalidated, not validated.**
+
+★★ **Biggest finding, and it reaches backwards through the campaign** — caught
+by chasing a control's *missed* prediction (C2 predicted +P, delivered +8P):
+**all four band members and their `outfit` sub-Characters resolve
+`bone_L-hand.mesh` to one shared object.** 7380 admissible slots are **3306
+distinct objects**; the 123 deviating are **63**. ⚠ **Five lanes of per-figure
+band numbers are therefore not independent measurements.** Whether this is
+genuine sharing or a `FindBoneNamed` artifact is **unresolved** — instrument
+committed, not run to conclusion. This does not obviously overturn X14's
+four-distinct-centroid result (which post-dates its own rebind fix), but any
+per-figure band statistic in X13–X17 should be re-read with it in mind.
+
+**Textures unreached for a sixth lane — but the inherited claim was re-verified
+and is WRONG.** `OutfitConfig::Init()` *is* called, from `Band.cpp:114`. The real
+blocker is that it does `Register()` **plus** three static `New<>` calls, and the
+native driver never calls `BandInit()`. **The 191/1511/48-symbol bill remains
+unverified by anyone**, five lanes after it was first quoted.
+
+Gates: **18/18 fresh, rc=0, 0 warnings, 0 SKIPs**, all binaries deleted and
+relinked, re-run after rebase; `main` **not** broken by a decomp lane. X360
+blast radius **zero in emitted code — measured, not assumed**: all
+`.text`/`.data`/`.rdata`/`.bss` byte-identical across `Trans`/`TransAnim`/
+`TransProxy`, deltas confined to `.debug`. A naive `cmp` said DIFFERS (143k
+bytes) and the lane controlled for it by **rebuilding unmodified source twice to
+prove the object is byte-reproducible** before trusting the comparison. PNG
+determinism ×2; base frame byte-identical to X17's artifact. Three of its own
+mid-lane errors retracted in the doc.
+
 ## Next (not yet chartered)
 - The undecided polled pose (blocked on the above); band textures
   (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
