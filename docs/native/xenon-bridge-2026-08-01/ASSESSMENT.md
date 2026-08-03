@@ -1276,14 +1276,68 @@ control first, and **all 6 scoreable** in `objdiff.json`; PNG determinism ×2;
 **default club frame byte-identical to X14's artifact** — the strongest
 available non-regression, and the reason no new E1 was needed.
 
-## Next (not yet chartered)
+## X16 — LANDED 2026-08-03: the null class enumerated and repaired upstream (xenon main `72377b61`, `fa0d0914`)
 
-- **X16 — the `ObjOwnerPtr` null is a class, not a site.** Every
-  `ObjOwnerPtr` seeded `(this, this)` whose invariant is restored only in
-  `Replace()` is exposed; X15 found two by walking into them. Its guards are
-  retail-equivalent but symptomatic — **the real repair is upstream**, and
-  **keeping the `CharWeightSetter`s alive across the merge is what separates
-  "animation runs" from "animation is right."** Enumerate the class.
+Doc: docs/plans/x16-ownerptr-class-2026-08-03.md. Evidence:
+`/home/free/tmp/laneX16/evidence/`.
+
+**14 `ObjOwnerPtr` sites, not 2** — X15 fixed the two it walked into; twelve
+were open, including `RndMesh::mGeomOwner`, `RndEnviron::mAmbientFogOwner`,
+`Spotlight::mColorOwner` and seven `*Anim::mKeysOwner`. The census instrument
+carries **4 positive + 1 negative control that abort the run on failure**, and
+**it caught two bugs in itself**: comment pollution (a doc comment *quoting*
+`mWeightOwner(this, this)` matched as a real seed), and a `= this`-only restore
+regex producing **7 false negatives that both original controls sailed past** —
+answered by adding a control per newly-learned spelling. That is the right
+response to an instrument failing: not a fix, a new control.
+
+★ **Why the `HX_NATIVE` shortcut exists is documented, not folklore** —
+dc3-decomp `07bad0ab` (2026-03-20) plus an adjudicating design doc. All four
+named consumers genuinely `delete this` from `Replace()`, verified in xenon
+source (`Task.cpp:54`, `:117`, `FlowSetProperty.cpp:138`, `DirLoader.cpp:155`),
+and all four are `ObjOwnerPtr`s — so **firing `Replace()` was never available**.
+One correction to the record: the comment reads as though it fixed a diagnosed
+crash, but **the delete-this use-after-free was never observed**; the real crash
+was a stale `ObjPtr<Task>` in `TaskTimeline::Poll`.
+
+**Upstream repair, in one place:** `ObjOwnerPtr` retains its constructor seed and
+restores it in `NullifyObj()` — retail's post-`Replace` *value* with **no
+consumer callback**, hence zero delete-this exposure. Provably scoped: the four
+dangerous consumers seed `nullptr` (bit-identical behaviour) and no
+`ObjOwnerPtr` in `src/` is ever seeded with a foreign object. **Proof is a set
+identity, not a spot check:** NULL→self one-for-one (+7/+17/+7), `other`
+**invariant** (nothing foreign stolen), and the zero-rows (vocalist, crowd)
+**bit-identical across arms** — a negative control inside the measurement.
+
+★ **X15's cause for the bad pose is refuted — while its measurements reproduce
+exactly.** With every weight owner restored (0 NULL, 0 WOULD FAULT), the polled
+pose is **bit-identical** to the unrepaired arm: same deviation to four figures,
+same worst bone. So the blend-weight explanation falls, but X15's numbers
+(7/17/0/7; `3.565e+00` at `bone_pelvis`) all reproduced. A clean separation of
+"the measurements were right" from "the explanation was wrong". **X14's
+driver-side call therefore stays — acceptance part two fails**, and the lane
+said so rather than retiring it anyway.
+
+**Lead for X17, stated as an untested hypothesis:** the pose residual sits on
+**prop/trouser/hair bones** (`bone_mic_stand_bottom` at 61.7, `bone_legs-ring2`,
+`bone_hair_back01`) — the same family as X15's unresolved-bone skip list. **The
+pose defect and the rebind-skip defect are plausibly one defect.**
+
+**Did not land:** textures/`OutfitConfig` and the 7 skipped hair/trouser meshes
+untouched; the 12 newly-repaired sites are fixed by mechanism but not
+individually exercised; two `SEEDED_NO_REPL` sites are unresolved residual risk.
+**Retracted, its own:** two `--focus`/`--bone-audit` runs that **PASSed over a
+zero denominator** — the third instance of that exact vacuity in this ladder —
+and one bad `--focus band` argument that produced a FAIL looking like a
+regression.
+
+Gates: baseline gate PASS (so `main` was **not** broken by a decomp lane); final
+**18/18 fresh, rc=0, 0 warnings, 0 SKIPs**; X360 `.text` **byte-identical across
+6 TUs**, sole delta `.debug$S`, comparator positive-controlled first, **all 6
+scoreable**; PNG determinism ×2; **both frames opened — no shards, no
+explosion**.
+
+## Next (not yet chartered)
 - The undecided polled pose (blocked on the above); band textures
   (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
   2 naming conventions); Direction-B rows 4 and 3b; camera shots; X6's engine
