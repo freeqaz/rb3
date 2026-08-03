@@ -498,15 +498,99 @@ sweep silently rendered the default X3 cells instead of the venue and returned
 `rc=0`. The failure mode is not "it errors", it is "it renders something else
 and passes".
 
+## X6 — LANDED 2026-08-03: THE CROWD IS PLACED (xenon main `9aff0a54`..`d589b78a`)
+
+Doc: docs/plans/x6-placement-2026-08-03.md. Evidence: `/home/free/tmp/laneX6/
+evidence/` (17 files). **Coordinator E1 PASS — this is the first frame that
+looks like Rock Band.** `small_club_01`: ~30 crowd members standing on the club
+floor along the railing, facing the stage, properly spaced and lit.
+`arena_01`: a full arena — truss rigging, stage, tiered seating — with **4700
+crowd members massed on the floor in front of the stage**. Every position read
+from shipped asset data; **the lane authored no transform**, which was the one
+instruction I weighted above all others in its charter.
+
+★ **My charter's premise was wrong, and finding that out closed a lane's worth
+of planned work.** I handed X6 "write the `WorldCrowd` scatter onto
+`mPlacementMesh` — 6 objects load, none runs". **There is no scatter.**
+`WorldCrowd::OnRebuild` is `return 0;` in rb3-xenon, in the rb3-Wii oracle,
+**and** in DC3 — three independent decomps of the same engine. It is a
+Milo-editor routine compiled out of the shipping game. Every crowd position is
+baked at author time and deserialized by `WorldCrowd::Load`
+(`world/Crowd.cpp:361-368`) straight into `mMMesh->Instances()`. **The data had
+been resident since X4d**, inside the same `rc=0` runs that reported "no
+crowd". One `grep` for `OnRebuild` across three repos settled it.
+
+Why it was invisible is the same shape as X5's finding, one level up:
+`rb3-render` draws a flat `vector<RndMesh*>`, and **`WorldCrowd` is an
+`RndDrawable`, not an `RndMesh`** — its 355-line `DrawShowing()` was
+unreachable.
+
+| venue | `WorldCrowd`s | baked instances | distinct positions | `mShowing` |
+|---|---|---|---|---|
+| `small_club_01`/`_02` | 6 | 300 / 300 | **300 / 300** | 1 |
+| `arena_01` | 18 | **4700** | **4700** | **0** |
+| `big_club_01` | 24 | 4643 | **4643** | **0** |
+| `festival_01` | 18 | **8400** | **8400** | **0** |
+
+Instances **equal** distinct positions in every venue — not one coincident pair
+across 18,343 members. `small_club_01` spans x∈[-161,161], y∈[-298,-22] at
+constant per-archetype **floor** height, i.e. nowhere near the origin (which in
+that venue is ceiling height — the X5 symptom).
+
+**Disclosed substitutions and open items:** wiring `WorldCrowd::Draw()` in was
+**not sufficient** — the frame stayed byte-identical, because the native
+impostor path does a nested render-to-texture composited with **additive**
+blend, the RTT emits nothing on this backend, and additive-black is the
+identity. Caught only by varying 0→30→300 against a control. The driver
+therefore draws the archetype's **real geometry** at each baked transform: a
+**mechanism** substitution, never a placement one, and disclosed as such.
+**Visibility policy is deliberately unresolved (top handoff):** `mShowing`
+selects **0 crowds in 4 of 6 venues**, so the faithful default renders no arena
+crowd and `--crowd-all` (measured safe) is what produces the arena frame above.
+The lane left that choice to the owner rather than quietly picking one.
+**`BandConfiguration` ported but yields less than I hoped:** all deps were
+already present and `BandInit` measures 98.1% / 252 instr / 95 diff_arg
+**identically before and after**, same mismatch list item-for-item — but
+**objdiff cannot score it** (no `splits.txt` entry → no target `.obj` → no
+unit), and it places nothing at runtime yet (needs `BandWardrobe`/
+`BandCharacter`, behind the ScatterIncludes lane). It lands the path, not the
+placement.
+
+**Four retractions**, including X5's scatter estimate, the lane's own
+"wiring `Draw()` in will work", its own family-duplicate hypothesis (refuted by
+the instrument it built to confirm it — all 15 pairs share **zero** positions),
+and X4d/X5's "9 characters ALL STACKED" as a *diagnosis*: that was a correct
+measurement of the wrong objects, since archetypes are templates and a
+`Character` census can never see the crowd (crowd members are transforms in an
+instance list). The lane also **caught a fabricated PNG hash in its own first
+draft and recorded it in the doc** — exactly the right response.
+
+Gates: native 18/18 fresh ×2 (own base + post-rebase); X360 full build rc=0
+×2; every cited PNG deterministic ×2; legacy-walk control reproduces X4d's
+exact SHA; engine pin `138e1606` unmoved. `main` healthy this lane (it was
+broken by a decomp lane in 3 of the prior 4). `video_05`'s `rc=1` fails
+identically with the crowd draw off — X4d's carried defect, not X6's.
+
+★★ **The rule this campaign keeps re-learning, now three lanes running: ask
+what the missing code would DO before planning to write it.** X5's scatter,
+X4d's "needs BandCharacter", and X4a's band3 framing were each built from
+entirely correct facts and each wrong by a whole subsystem. Every one was
+settled by a single cheap measurement that nobody took because the estimate
+had been inherited rather than re-derived.
+
 ## Next (not yet chartered)
 
-- **X6 — placement.** The only thing between this and a Rock Band frame, and
-  reachable without the two classes everyone has been waiting on: `WorldCrowd`
-  scatter onto `mPlacementMesh`, and `BandConfiguration` (unported; 176 lines
-  in the rb3-Wii oracle) → `Character::Teleport`.
-- `video_05` renders empty; camera shots (`BandCamShot` — the real TU, never a
-  base-class bind); audio; `player1..3` stand-ins.
-- `ThreadCallInit` remediation (Tier-1, unlanded; `ObjectDir::Init` refuted).
+- **X7 — the band on stage.** The crowd is placed; the players are not. This
+  needs `BandCharacter`/`BandWardrobe` (the ScatterIncludes dedupe lane) plus
+  the `BandConfiguration` path X6 just landed. It is the most "Rock Band"
+  thing left.
+- **Owner decision:** crowd visibility policy — `mShowing` selects 0 crowds in
+  4 of 6 venues, so faithful = empty arena. Is retail gating crowds on
+  something the port doesn't set yet, or is `--crowd-all` the right default?
+- Engine change request (from X6, filed as text): the impostor RTT path emits
+  nothing on this backend and composites additively, so it is a silent no-op.
+- Camera shots (the real `BandCamShot` TU, never a base-class bind); audio;
+  `video_05` `rc=1`; `player1..3` stand-ins; `ThreadCallInit` remediation.
 - **band3/venue-unblock roadmap review — DONE** (xenon main `7842bdcd`, docs
   only): new `docs/plans/band3-native-unblock-priority-2026-08-02.md` +
   dated corrections to `bandobj-port.md` (its absent-source claim has been
