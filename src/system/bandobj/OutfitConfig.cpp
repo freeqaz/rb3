@@ -175,7 +175,9 @@ void OutfitConfig::MatSwap::Compose(
             sMat->SetColor(*col);
         }
         mMat->SetColor(baseColor);
-        Hmx::Rect rect(0.0f, 0.0f, (float)TheRnd->Width(), (float)TheRnd->Height());
+        int rectHeight = TheRnd->Height();
+        int rectWidth = TheRnd->Width();
+        Hmx::Rect rect(0.0f, 0.0f, rectWidth, rectHeight);
         sMat->SetUseEnv(false);
         TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
         if (mTwoColorInterp) {
