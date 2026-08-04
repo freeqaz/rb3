@@ -208,9 +208,32 @@ public:
         mDirty |= 1;
     }
     void SetColor(const Hmx::Color &col) {
-        // Declaration order fixes the FP temp numbering (g->f2, b->f1, r->f0) and the
-        // assignment order fixes the load order (blue, green, red) that the target
-        // emits at every inlined call site. Same idiom as Color.h's Add/Multiply.
+        // The assignment order fixes the load order (blue, green, red); the
+        // declaration order fixes the FP temp numbering. Same idiom as Color.h's
+        // Add/Multiply.
+        //
+        // MEASURED TRADE-OFF (full 6-way decl-order sweep, 2026-08-04). The
+        // numbering the target uses when this body is INLINED is not the numbering
+        // it uses for the single out-of-line copy MWCC emits in MatAnim.o, so no
+        // declaration order satisfies both. Per-order fuzzy%, all other sources held
+        // fixed:
+        //
+        //   order   SetColor(OOL)  Compose  UILabel  UIList  BandPatch  PlayerDiff
+        //   plain      100.000     98.800   99.314   99.651    99.881     99.936
+        //   r,g,b      100.000     98.800   99.314   99.651    99.881     99.936
+        //   b,g,r       98.462     98.894   99.543   99.767    99.921     99.958
+        //   g,r,b       98.462     99.097   99.543   99.767    99.921     99.958
+        //   g,b,r       97.692     99.284  100.000  100.000   100.000    100.000
+        //   b,r,g       97.692     98.800   99.314   99.651    99.881     99.936
+        //
+        // `g,b,r` is chosen: it is the only order that takes four inlined call sites
+        // to an exact 100% (UILabel::DrawShowing, UIListWidget::DrawMesh,
+        // BandPatchMesh::Render, PlayerDiffIcon::DrawShowing) plus Compose +5.5pp and
+        // PatchLayer::Draw +0.085pp. The price is the 52-byte out-of-line copy
+        // SetColor__6RndMatFRCQ23Hmx5Color in main/system/rndobj/MatAnim, which drops
+        // 100% -> 97.692% (six FP register renames, identical semantics and load
+        // order). Four exact matches gained for one lost. Do not "fix" that residual
+        // by reordering these three declarations without re-reading this table.
         float g, b, r;
         b = col.blue;
         g = col.green;
