@@ -30,11 +30,33 @@ classification matches one of these, the permuter is the right next step — not
 
 Callee-saved swaps across `r19-r31` and `f14-f31`, live-range shuffles where two locals trade
 registers and cascade into ten or more `lwz`/`stw`/`mr` deltas, and "this function would
-match if r28 and r30 were swapped"-shaped diffs. These are mechanically controlled by
-declaration order and scope boundaries; the permuter brute-forces the search space without
-asking you to reason about coloring. See [fixable-declarations.md](fixable-declarations.md)
-for the underlying mechanism. Run the source permuter; do NOT hand-edit cascades > ~10
-instructions.
+match if r28 and r30 were swapped"-shaped diffs. The permuter brute-forces the search space
+without asking you to reason about coloring, and it is still the right first move here
+because it is cheap. Run the source permuter; do NOT hand-edit cascades > ~10 instructions.
+
+> ⚠ **Corrected 2026-08-04 — "mechanically controlled by declaration order and scope
+> boundaries" is too strong, and it is the sentence that sends sweeps down a dead end.**
+> Wave E1 (`../../plans/wave-e-targets.md`,
+> `../../plans/permuter-mechanization-roadmap.md` §E1) ran `declaration_reorder` +
+> `statement_reorder` + all patterns for 8-12 rounds each on **11** callee-saved regswap
+> targets and returned **0 improvements**, with manual edits regressing or doing nothing.
+> Its own root-cause note is the correction: *"MWCC assigns callee-saves based on whole-TU
+> live-range analysis, not declaration order within the function"* — which `-ipa file`
+> predicts.
+>
+> **Scoping and declaration order move stack slots; liveness and scheduling move
+> registers.** Declaration order is the right lever for
+> [Stack slot inversion](#stack-slot-inversion), which is unchanged. For registers, see
+> [fixable-liveness.md](fixable-liveness.md) — including RB3's own measured liveness lever
+> ([Child Pointer in Loop](harmful-avoid.md#child-pointer-in-loop), −6.5%) running in the
+> opposite direction.
+>
+> Practical consequence for sweep budgeting: **a zero-gain declaration-axis sweep is not
+> evidence that a function is at a register floor.** It is evidence that the axis is wrong.
+> If the sweep came back byte-identical, that is stronger still — see
+> [fixable-liveness.md § Byte-identical is not "no improvement"](fixable-liveness.md#2-byte-identical-is-not-no-improvement--it-is-a-routing-signal).
+
+See [fixable-declarations.md](fixable-declarations.md) for the declaration/scope mechanism.
 
 ### Bool materialization
 <a id="bool-materialization"></a>

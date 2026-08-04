@@ -9,13 +9,15 @@ This index mirrors the structure of [DC3's pattern catalog](../../../../dc3-deco
 | File | Topic |
 |------|-------|
 | [at-limit-mwcc.md](at-limit-mwcc.md) | **Source-immune vs permuter-class triage.** Which patterns can be hand-edited, which need the permuter, which are truly at-limit. Read before declaring any function "stuck". |
-| [permuter-roi.md](permuter-roi.md) | **When to dispatch the source permuter.** Categories of mismatch the permuter cracks (regswaps, FPR scheduling, bool materialization, stack-slot inversion). Hand-edit alternatives are listed inline. |
+| [permuter-roi.md](permuter-roi.md) | **When to dispatch the source permuter.** Categories of mismatch the permuter cracks (regswaps, FPR scheduling, bool materialization, stack-slot inversion). Hand-edit alternatives are listed inline. ⚠ Its register-allocation-cascades section is **corrected** by `fixable-liveness.md`. |
+| [fixable-liveness.md](fixable-liveness.md) | **Register swaps are symptoms, not causes.** Scoping moves stack slots; liveness and scheduling move registers. Carries RB3's own two measurements of that boundary (Wave E1's 11 declaration-axis zeroes; `harmful-avoid.md`'s −6.5% live-range lever), the ABI argument that makes the volatile/callee-saved split *decidable*, four candidate levers imported from DC3 and **labelled unverified on MWCC**, and the three-part floor-evidence standard. Read before opening a regswap residual. |
 | [harmful-avoid.md](harmful-avoid.md) | Anti-patterns — source shapes that look reasonable but actively hurt match%. Read before writing new code in shared headers. |
 
 ## Pattern Files
 
 | File | Topic |
 |------|-------|
+| [fixable-liveness.md](fixable-liveness.md) | Live-range shortening, call-through-the-cached-local, schedule-then-polarity, scope-into-block, name-the-call-argument-temporaries; the volatile-vs-callee-saved routing rule; the byte-identical routing signal; three-part floor evidence. **Provenance is labelled per claim** — MWCC-measured vs ABI consequence vs MSVC-measured-and-unverified-here. |
 | [fixable-declarations.md](fixable-declarations.md) | Declaration order, register hoisting, pre-load before loop, function definition order, `CopyFrom` vs `operator=`, `return *this;`, stlport accessor inlining, `__less<T>` specialization, inline container helpers, `ObjPtr<T>.mPtr` direct access, struct-copy → field-access, pre-declare-for-callee-saved, pre-loop iterator hoist, pointer-select after function call |
 | [fixable-bool-mask.md](fixable-bool-mask.md) | Bool materialization (`IsLocal()` vs `!IsNet()`, compound bools, condition inversion) |
 | [fixable-control-flow.md](fixable-control-flow.md) | `switch` vs if/else, early return inversion, `do-while` vs `while`, loop unrolling, nested scopes, STL `__find` / `vector::erase` patterns, early-return AutoTimer dtor dedup, split int addition, mid-loop break, pair-local stack materialization, restore missing MILO_ASSERTs |
@@ -73,7 +75,9 @@ Match% 99%+ but not 100%
 
 | Question | Answer |
 |----------|--------|
-| What does "register swap" mean in the verdict? | Permuter-class. See [permuter-roi.md#register-allocation-cascades](permuter-roi.md#register-allocation-cascades). |
+| What does "register swap" mean in the verdict? | A **symptom**. Route by register class first: volatile-only ⇒ scheduling; callee-saved or mixed ⇒ liveness across a call. See [fixable-liveness.md](fixable-liveness.md). Still worth a cheap permuter pass — [permuter-roi.md#register-allocation-cascades](permuter-roi.md#register-allocation-cascades) — but do **not** read a zero-gain declaration-axis sweep as floor evidence. |
+| A permuter sweep returned zero improvements — is that a floor? | Only if the variants were **byte-identical** *and* they were on the right axis. Byte-identical on the declaration axis for a register residual means the axis is wrong. See [fixable-liveness.md](fixable-liveness.md#2-byte-identical-is-not-no-improvement--it-is-a-routing-signal). |
+| Does the DC3/rb3-xenon "EH funclet score wobble" note apply here? | **No.** RB3 builds `-Cpp_exceptions off` and has zero `__unwind$`/`__catch$` symbols — the whole class is absent on Wii. |
 | objdiff says "rarely_hand_fixable" — am I stuck? | No. Check the pattern type: source-immune = accept, anything else = run the permuter. See [at-limit-mwcc.md](at-limit-mwcc.md). |
 | When to run the source permuter? | See [permuter-roi.md](permuter-roi.md). Short answer: high-match (≥85%) functions with regswaps, FPR/scheduling cascades, bool/clrlwi noise, or OFFSET_SWAP. |
 | When to truly mark AT_LIMIT? | See [at-limit-mwcc.md#when-to-mark-at-limit](at-limit-mwcc.md#when-to-mark-at-limit). |

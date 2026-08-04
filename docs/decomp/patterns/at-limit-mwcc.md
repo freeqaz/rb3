@@ -92,13 +92,37 @@ Run the source permuter on this function before marking at-limit.
 
 A swap on a callee-saved register (e.g. r30 ↔ r31, f30 ↔ f31) usually cascades through the function: prologue saves, every use, epilogue restores. The dominant `diff_arg` count comes from the cascade, not from the root swap.
 
-MWCC's register allocator picks callee-saved registers based on declaration order, first-use order, and liveness graph topology. Source permutation that touches any of those (declaration reorder, hoisting/sinking, splitting compound expressions) routinely fixes the cascade.
+MWCC's register allocator picks callee-saved registers from the liveness graph, computed
+**across the whole translation unit** (`-ipa file`). Declaration order and first-use order
+feed that graph only where they actually change what is live across a call.
 
-Run the source permuter on this function before marking at-limit. See [permuter-roi.md](permuter-roi.md) for sweep parameters.
+> ⚠ **Corrected 2026-08-04.** "Source permutation that touches any of those … routinely fixes
+> the cascade" is not what RB3 measured. Wave E1 ran `declaration_reorder` +
+> `statement_reorder` + all patterns for 8-12 rounds each on **11** targets in exactly this
+> class and got **0 improvements**. The lever that has moved a callee-saved allocation in this
+> repo is a **liveness** change — [Child Pointer in
+> Loop](harmful-avoid.md#child-pointer-in-loop), measured at −6.5% for lengthening one live
+> range across an inner call. Work the live set, not the declaration list:
+> [fixable-liveness.md](fixable-liveness.md).
+
+Run the source permuter on this function before marking at-limit — it is cheap, and a
+byte-identical result is itself informative. See [permuter-roi.md](permuter-roi.md) for sweep
+parameters.
 
 ### Volatile-register FPR swaps (f0-f13)
 
 f0-f13 swaps look like the callee-saved case but are scheduling-driven rather than allocation-driven. MWCC's scheduler picks volatile FPRs based on the instruction window it's currently scheduling, not on a global allocation pass. Source permutation has lower hit rate here than for callee-saved swaps, but it's still nonzero — restructuring the surrounding float expression (operand reorder for commutative ops, splitting a `fmadds` chain, hoisting a constant) sometimes shifts the choice.
+
+**This is decidable, not just empirical.** A volatile register cannot hold a value across a
+call — that is the ABI. So a swap confined to `f0-f13` (or `r0`, `r3-r12`) *cannot itself* be
+a disagreement about what stays live across a call: liveness is **excluded** and only emission
+order and operand order remain. The most productive question is therefore "is the arithmetic
+that feeds this compare at the same instruction index as the target's?" — if not, the swap is a
+schedule artifact and operand order is a second, separate fix that must come *after* it. See
+[fixable-liveness.md § Lever 3](fixable-liveness.md#lever-3--fix-the-schedule-then-the-comparison-polarity).
+The converse is not symmetric: a volatile swap can be *downstream* of a liveness problem
+elsewhere in the function even though it cannot *be* one, so a **mixed** volatile +
+callee-saved set is one liveness cause with a volatile shadow, not two problems.
 
 Run the source permuter on this function before marking at-limit. If the permuter returns zero improvements after a full sweep, this one is genuinely at-limit; classify as permuter-exhausted.
 
@@ -131,6 +155,26 @@ Mark a function at-limit only when ALL of the following are true:
 If any pattern in the diff is `LikelyFixable` or `MaybeFixable`, the function is not at-limit — work the fixable pattern first.
 
 > WHY: A "permuter-exhausted" mark blocks future agents from wasting cycles re-running the same sweep. A bare "at-limit" mark doesn't carry that information and invites re-attempts.
+
+### Two additions to the checklist (2026-08-04)
+
+- [ ] **The sweep that returned zero improvements was on the right axis.** A zero-gain
+  *declaration-axis* sweep on a register residual is evidence the axis is wrong, not that the
+  function is at a floor — Wave E1's 11 targets are exactly this shape. If the variants came
+  back **byte-identical** rather than merely unimproved, that is not "no improvement": a
+  deterministic compiler emits identical bytes only when the mutation did not change the
+  program it sees. Try a liveness or scheduling change before marking.
+- [ ] **Ideally: decompile the *target* and name the residual construct.** (a) hand variants
+  and (b) a permuter sweep only ever prove "I ran out of ideas". Decompiling the target — cheap
+  here, RB3 has full DWARF — and finding a **spill/reload with no source-level identity**, a
+  **slot reused for two unrelated values**, or a **store with no read on any path** converts
+  that into "unreachable from C++". Anything else you find (a real computation, an extra call,
+  a different constant) means there *is* a missing source construct.
+
+  The families that already meet this standard are the `psq_l`/`psq_st` inline-asm TUs and
+  [paired-single-boxmap-lighting.md](paired-single-boxmap-lighting.md) — at-limit **by
+  construction**, which is a much stronger claim than exhaustion. See
+  [fixable-liveness.md § Floor evidence](fixable-liveness.md#floor-evidence-the-three-part-standard).
 
 ---
 
