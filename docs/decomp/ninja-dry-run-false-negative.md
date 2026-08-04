@@ -150,6 +150,12 @@ Row C's "4" is correct, not slop: the 3 extra edges are the REPORT / PROGRESS /
 `SYNC decomp.db` tail that every source change drags along. Row D's "1" is the
 PROGRESS edge, which genuinely lists `configure.py` as an input.
 
+Reproduce it: `tools/tests/ninja-dry-matrix.sh`. It refuses to run on an
+unconverged tree, because a matrix taken from a dirty tree reads like a tool bug
+when it is in fact correct output — that happened on the first re-run here, where
+rows A/D/E came back `PENDING 3` (REPORT + PROGRESS + `SYNC decomp.db`, dragged
+in by an earlier `dtk dol split`) and `ninja-dry` was right.
+
 ### The check is shown to FAIL, not just to pass
 
 `tools/tests/test-ninja-dry.sh` — hermetic scratch ninja project, 18 assertions:
@@ -188,6 +194,9 @@ re-evaluated rather than carried forever.
 3. **`tools/setup-worktree.sh`** — runs `ninja build.ninja` after `configure.py`
    so a new worktree is dry-runnable from the start.
 4. **`tools/tests/test-ninja-dry.sh`** — the regression test above.
+5. **`tools/tests/ninja-dry-matrix.sh`** — re-runs the control matrix against the
+   real RB3 build, so the table above is a reproducible measurement rather than
+   a one-time claim. Moves mtimes only; compiles nothing; restores on exit.
 
 Lock isolation was re-verified after the changes: holding
 `<worktree>/.ninja-build.lock` blocks both `ninja-dry` and `ninja-locked -n`
