@@ -182,6 +182,12 @@ Why ninja accepts the warm cache: `deps="gcc"` was removed from all build rules,
 so ninja reads `.d` files directly. Reflinked `.o`/`.d` files keep their mtimes,
 so a no-op rebuild is ~0.15s ("ninja: no work to do") instead of a full rebuild.
 
+That only works because the `.d` prerequisites are **repo-relative** — ninja
+resolves them against its own working directory, so a reflinked depfile means
+"this tree's headers" in whichever tree reads it. When they were absolute, the
+same mechanism silently pointed every worktree's header deps back at main; see
+[Header edits in a worktree](#header-edits-in-a-worktree--fixed-2026-08-04-was-a-silent-false-negative).
+
 ## CoW savings (measured)
 
 A fresh worktree's `build/SZBE69_B8` + `orig` are **~487M apparent** but only
@@ -190,30 +196,68 @@ repo. Verify with `btrfs filesystem du -s <dir>` (not plain `du`, which can't se
 shared extents). On a non-CoW filesystem the script falls back to full copies and
 warns.
 
-## ⚠ Header edits in a worktree can produce a SILENT FALSE NEGATIVE
+## Header edits in a worktree — FIXED 2026-08-04 (was a silent false negative)
 
-**Found 2026-08-04 by lane `x24-rotatez`, which lost a build cycle to it.**
+> **Status: fixed.** Header edits inside a worktree now invalidate correctly.
+> The manual `find build/SZBE69_B8 -name '*.d' -delete` workaround that this
+> section used to prescribe is **no longer needed**. Kept here because the
+> failure mode is worth recognising if it ever regresses.
 
-The reflinked `.d` depfiles carry **main-repo absolute paths**. Combined with the
-`deps="gcc"` removal above (ninja reads `.d` files directly), a header edit
-inside the worktree can invalidate **nothing**: ninja sees every dependency
-satisfied against the *main repo's* copy of that header, reports "no work to
-do", and `objdiff` then returns a **stale, identical** result.
+**The bug (found 2026-08-04 by lane `x24-rotatez`, which lost a build cycle).**
+mwcceppc under wibo reports every `#include`d header by **absolute path**
+(`Z:\home\…\src\system\math\Mtx.h`), and `tools/transform_dep.py` used to
+un-Windows-ify that while leaving it absolute — so each `.d` named **one
+specific checkout**. Because `deps="gcc"` is deliberately disabled (ninja reads
+`.d` files directly), the reflinked depfiles pointed every header dependency
+back at the **main repo**. A header edit inside the worktree therefore
+invalidated **nothing**: ninja found every dependency satisfied against main's
+copy, printed "no work to do", and `objdiff` returned a **stale, identical**
+result.
 
-The failure mode is what makes this dangerous — it doesn't error, it reports
-**no change**. An experiment that should have moved the number reads as
-"tried it, made no difference," which is indistinguishable from a genuine
-negative result and will be recorded as one.
+What made it dangerous is that it doesn't error — it reports **no change**. An
+experiment that should have moved the number reads as "tried it, made no
+difference," indistinguishable from a genuine negative result, and gets
+recorded as one.
+
+Measured before the fix: **730 of 1306** real depfiles referenced
+`src/system/math/Mtx.h` by main-repo absolute path; **0** referenced it
+relatively.
+
+**The fix (three parts).**
+
+1. **`tools/transform_dep.py` emits repo-relative prerequisites.** Ninja
+   resolves depfile paths against its own working directory, so a relative
+   prerequisite means "*this* tree's copy" in whichever tree reads it.
+   Depfiles are now location-independent, and a reflinked cache is correct in
+   every worktree at zero cost. (It also fixes a latent CRLF bug: the upstream
+   ` \\\n` suffix test silently failed on mwcc's `\r\n` line endings.)
+2. **`tools/normalize-depfiles.py`** migrates a build cache compiled before
+   that change, and with `--check` **verifies** no depfile references a foreign
+   checkout. Rewriting only changes path *spelling*, never which file is named,
+   so it cannot trigger a rebuild.
+3. **`setup-worktree.sh` runs both passes and HARD-FAILS** if anything still
+   points at another tree. The entire point of this bug was that it failed
+   silently, so setup now aborts rather than hand you a lying worktree.
 
 ```bash
-# Before trusting ANY header experiment in a worktree, force the rebuild:
-find build/SZBE69_B8 -name '*.d' -delete     # x24 had to delete 730 of them
-tools/ninja-locked build/SZBE69_B8/report.json
+# Verify any worktree (or the main repo) at any time — exits nonzero if unsafe:
+python3 tools/normalize-depfiles.py --check
 ```
 
-Sanity check that costs nothing: after the first edit, confirm ninja actually
-*compiled* something. If a change to a header included by hundreds of TUs
-produces "no work to do", the depfiles are stale — not the change.
+**Verified with controls** (worktree built by the fixed script):
 
-This only bites `.h` edits. A `.cpp` edit names the file ninja is asked to
-build, so it rebuilds normally.
+| Control | Result |
+|---|---|
+| Positive — codegen edit to `Mtx.h` | **730 / 1306** TUs recompiled; `report.json` moved 7234296 → 7166436 bytes (63.2853% → 62.6917%), functions 31998 → **31905** |
+| Same edit, *unfixed* worktree | **0** recompiles, "no work to do", 0 function change ← the bug |
+| Negative — no edit | **0** recompiles, "no work to do", 0.97s (cache still warm) |
+| Transitive — `Vec.h`, named by **no** `.cpp` (715 TUs reach it only through other headers) | **732** recompiled; `report.json` moved −46,176 bytes / −117 functions |
+| Killed build — SIGKILL mid-flight | 142 done before the kill, **590** on the rebuild = 732 exactly. No rebuild-everything; `deps=` stays off |
+
+Setup cost and CoW are unaffected: `btrfs filesystem du -s` still reports
+**0.00 B exclusive** for a fresh worktree's `build/SZBE69_B8` + `orig`, because
+the normalizer only writes files whose content actually changes — and once main
+is itself normalized, that is none of them.
+
+Still true: this only ever bit `.h` edits. A `.cpp` edit names the file ninja
+is asked to build, so it always rebuilt normally.
