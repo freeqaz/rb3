@@ -760,6 +760,24 @@ void DirLoader::Replace(Hmx::Object *from, Hmx::Object *to) {
 }
 
 void DirLoader::Cleanup(const char *s) {
+#ifdef HX_NATIVE
+    // DIAGNOSTIC (RB3_COMPOSE_PROBE=1): line 781 below is the ONLY production
+    // caller of ObjectDir::SyncObjects during load, and the RndDir::SyncObjects
+    // probe reports zero calls. Three worlds produce that zero and this
+    // separates them: Cleanup never runs at all; it runs with mDir==NULL; or it
+    // runs with IsLoaded()==false (the ~DirLoader failure path, which is
+    // *supposed* to skip the sync). Report the guard operands, not a bare hit
+    // count -- a hit count alone cannot tell those apart.
+    if (getenv("RB3_COMPOSE_PROBE")) {
+        static int sCln = 0;
+        if (++sCln <= 60)
+            fprintf(stderr,
+                    "[dirloader-cleanup] #%d file='%s' err='%s' mDir=%p "
+                    "isLoaded=%d proxy='%s'\n",
+                    sCln, mFile.c_str(), s ? s : "(none)", (void *)mDir,
+                    (int)IsLoaded(), mProxyName ? mProxyName : "(null)");
+    }
+#endif
     if (s)
         MILO_WARN(s);
     mObjects.clear();

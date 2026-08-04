@@ -1,3 +1,74 @@
+# ⚠️ RETRACTED 2026-08-04 — every zero in this document was an instrument artifact
+
+**This document's central claim is FALSE. The outfit chain is fully alive.** It
+is kept, unedited below the fold, because how it went wrong is worth more than
+what it concluded.
+
+`grep` in this environment is a **shell function** that re-executes the `claude`
+binary as `ugrep -I` (*ignore binary files*). The engine log contains one
+invalid UTF-8 byte sequence at offset 112481, so ugrep classified the **whole
+log** as binary and printed **nothing, exit 1** — byte-identical to a genuine
+"0 matches". Full mechanism: [`docs/decomp/shadowed-grep-false-negative.md`](../../decomp/shadowed-grep-false-negative.md).
+
+Re-measured with `/usr/bin/grep` on the same harness run:
+
+| Probe point | This doc claimed | Actual |
+|---|---|---|
+| `RndDir::SyncObjects()` | 0 | **40+** (`isSubDir=0`, full body runs) |
+| `RndDir::SyncDrawables()` | 0 | **40+** (walk visits up to 150 objects/dir) |
+| `OutfitConfig::UpdatePreClearState()` | 0 | **20+** |
+| `OutfitConfig::DrawPreClear()` | 0 | **20+** (`unk38=-1`, i.e. fully dirty) |
+| `OutfitConfig::MatSwap::Compose()` | 0 | **40+** |
+| `DirLoader::Cleanup()` | (not probed) | **60+** |
+
+Every count was at its probe **cap**, not at zero. `SwapResource()` runs too
+(`OutfitConfig.cpp:1249`, reached whenever `unk38 != 0 && unk3c != 2`; the probe
+shows `unk38 == -1` throughout).
+
+**Independent corroboration:** a 100-symbol objdiff/Ghidra audit of the entire
+chain found **no decomp bug** — 59/59 `ObjDirItr` symbols at 100.0% fuzzy *and*
+raw, `ObjectDir::PreLoad` 796/796 instructions exact (so the `mIsSubDir = false`
+clear is byte-faithful), `__vt__12OutfitConfig` 216/216 bytes identical with
+every relocation slot resolving to the same symbol. `DirLoader::Cleanup` is
+99.3%, and its only mismatch is register scheduling in the `sPrintTimes`
+`Timer::CyclesToMs` block — control flow is correct.
+
+### What this invalidates
+
+- **"This is the pink band."** No. The chain runs. The pink is narrower: for
+  `skin.cfg`, `Compose` receives `dummy_torso.tex` / `dummy_legs.tex` as its
+  **diffuse input**, while `male_head_diff.tex` (head) and every outfit
+  render-target (`legs_tightdistressedpants_jeans_diffuse_output.tex`,
+  `grungepants_jeans_diffuse_output.tex`, … all `isRT=1 twoColor=1`) resolve
+  correctly. A correct head on a pink body is the signature. **That is the open
+  question — pursue it, not this document.**
+- **The ordered "Next" plan at the bottom.** Step 1 chases a non-bug. Steps 2–4
+  were gated on it and are now unblocked.
+- **"The X22 result came from bypassing the dead chain."** The chain was not
+  dead, so that reframing does not hold.
+
+### What survives
+
+The **compose-collapse-unreachable-by-construction** argument (`mColorModFlags`
+is always `kColorModNone`; `SetColorModFlags` has exactly one caller, in
+`Crowd.cpp:304`, which never touches `sMat`) was **static source analysis, not a
+probe count**. It does not depend on any grep and remains valid.
+
+### The lesson
+
+The project's existing guard — *confirm the probe string is in the binary and
+that the binary predates the log* — **passed on every run here.** It validates
+the *producer*; this defect was in the *reader*, upstream of everything that
+guard can see. Worse, `head -1000 log | grep` works fine (the bad byte is at
+line ~1777), so the small reproduction looks healthy.
+
+Before believing any zero: **grep for a string you know is in the file.**
+
+---
+
+<details>
+<summary>Original document (retained for the record — conclusions above are superseded)</summary>
+
 # The entire outfit texture chain is dead in native — `RndDir::SyncObjects()` never runs
 
 **Measured 2026-08-04, rb3 native (`rb3-native`, gameplay, guitarist closeup).**
@@ -138,3 +209,5 @@ grep -E '\[(syncobjects|syncdraw|syncdraw-walk|preclear-register|preclear-probe|
 the binary and the binary predates the log. Every zero above was checked that
 way; the first attempt at this investigation reported a green build that had in
 fact failed (`BUILD_RC` had captured `tail`'s exit code through a pipe).
+
+</details>
