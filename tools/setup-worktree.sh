@@ -414,6 +414,50 @@ if [ "$WARM_CACHE" -eq 1 ]; then
     fi
 fi
 
+# ---- depfiles : make the reflinked cache LOCATION-INDEPENDENT (correctness) --
+# The reflinked .d files may carry ABSOLUTE paths naming the MAIN repo (any
+# object compiled before tools/transform_dep.py started emitting relative
+# prerequisites). Because deps="gcc" is deliberately disabled, ninja reads those
+# .d files directly — so a header edit INSIDE this worktree would be checked
+# against MAIN's copy of the header, find it unchanged, print "no work to do",
+# and hand objdiff a STALE, IDENTICAL result. That failure is SILENT: it reports
+# NO CHANGE, indistinguishable from a real negative result (lane x24-rotatez
+# lost a build cycle to it, 2026-08-04).
+#
+# Rewriting only changes path SPELLING, never which file is named, so it cannot
+# trigger a rebuild — the warm cache above stays warm. The --check pass then
+# HARD-FAILS if anything still points at a foreign checkout: better an aborted
+# setup than a worktree that silently measures the wrong tree.
+#
+# Use the worktree's own copy when it has one, else THIS script's sibling copy:
+# a worktree based on a ref that predates the normalizer (bisecting, or
+# reproducing an old lane) checks out a tools/ without it, and hard-failing
+# there would break a legitimate workflow. The tool is checkout-independent —
+# it only rewrites build-cache text — so the sibling copy is safe to use.
+NORMALIZER="$WORKTREE_PATH/tools/normalize-depfiles.py"
+[ -f "$NORMALIZER" ] || NORMALIZER="$SCRIPT_DIR/normalize-depfiles.py"
+if [ ! -f "$NORMALIZER" ]; then
+    echo "FATAL: tools/normalize-depfiles.py not found in the worktree or next to" >&2
+    echo "       this script. Cannot verify the warm cache is location-independent," >&2
+    echo "       and an unverified warm cache silently reports STALE results." >&2
+    exit 1
+fi
+
+echo "==> Normalizing depfiles to repo-relative paths (kills the silent stale-header read)"
+if ! python3 "$NORMALIZER" \
+        --root "$WORKTREE_PATH" --build-dir "$WT_BUILD" --quiet; then
+    echo "FATAL: depfile normalization failed — this worktree would silently report" >&2
+    echo "       stale results for header edits. Aborting rather than lying." >&2
+    exit 1
+fi
+if ! python3 "$NORMALIZER" \
+        --root "$WORKTREE_PATH" --build-dir "$WT_BUILD" --check --quiet; then
+    echo "FATAL: depfiles still reference a foreign checkout after normalization." >&2
+    echo "       Recover: find $WT_BUILD -name '*.d' -delete" >&2
+    exit 1
+fi
+echo "  depfiles verified location-independent"
+
 # ---- configure.py : reproduce main's build.ninja commands byte-identically --
 # The seeded .ninja_log validates by COMMAND HASH, so the worktree's compile
 # commands must match main's exactly:
@@ -429,7 +473,38 @@ fi
 #     report edge (which regenerates anyway)
 MAIN_PYTHON="$(sed -n 's/^python = "\(.*\)"$/\1/p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
 [ -x "$MAIN_PYTHON" ] || MAIN_PYTHON="python3"
-MAIN_CFG_ARGS="$(sed -n 's/^configure_args = //p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
+# Extracting configure_args needs care on two counts (both hit when the source
+# tree is ITSELF a worktree, i.e. creating a worktree from a worktree):
+#   1. ninja WRAPS long lines with a trailing `$` continuation. A naive
+#      `sed -n 's/^configure_args = //p' | head -1` grabs only the first
+#      physical line and yields a dangling `--objdiff $`, so configure.py dies
+#      with "argument --objdiff: expected one argument".
+#   2. A worktree's build.ninja already records `--objdiff <abs path>` (we added
+#      it), so re-appending ours duplicates the flag.
+# Unwrap continuations, then drop any existing --objdiff pair; we re-add it
+# absolutely below.
+MAIN_CFG_ARGS="$(python3 - "$MAIN_REPO/build.ninja" <<'PY' 2>/dev/null || true
+import re, sys
+try:
+    text = open(sys.argv[1]).read()
+except OSError:
+    sys.exit(0)
+# ninja line continuation: "$" at EOL + leading whitespace on the next line
+text = re.sub(r"\$\n\s*", " ", text)
+for line in text.splitlines():
+    if line.startswith("configure_args = "):
+        args = line[len("configure_args = "):].split()
+        out, i = [], 0
+        while i < len(args):
+            if args[i] == "--objdiff":
+                i += 2          # drop flag AND its value
+                continue
+            out.append(args[i])
+            i += 1
+        print(" ".join(out))
+        break
+PY
+)"
 [ -n "$MAIN_CFG_ARGS" ] || MAIN_CFG_ARGS="--version $VERSION --map"
 echo "==> configure.py $MAIN_CFG_ARGS (main's interpreter, relative tool paths)"
 (
