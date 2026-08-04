@@ -6,6 +6,15 @@
 #include "os/System.h"
 #include <revolution/os/OSError.h>
 #include <cstdio>
+#ifdef HX_NATIVE
+// FixedSizeAlloc::Alloc uses intptr_t for the free-list pop (fa463d01d, the
+// shape that takes it to 100%). MWCC's MSL pulls intptr_t in transitively, so
+// the Wii build never needed a declaration; clang's libc++ does not, so the
+// native and web builds fail to compile without this. Guarded so MWCC's
+// preprocessor never sees it and the match is untouched. <cstdint> is
+// available under both the native clang toolchain and emscripten/musl.
+#include <cstdint>
+#endif
 
 extern CriticalSection *gMemLock;
 extern ChunkAllocator *gChunkAlloc[2];
