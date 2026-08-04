@@ -11,6 +11,13 @@
 #include <cstring>
 #endif
 
+#ifdef HX_NATIVE
+// X24 TEMPORARY PROBE — counts how often each CharBones rotation channel loop
+// actually executes in the native build. Removed in the follow-up commit.
+static long gX24Pose = 0, gX24RotX = 0, gX24RotY = 0, gX24RotZ = 0;
+static long gX24RotZNonZero = 0, gX24Quat = 0, gX24MeshTotal = 0;
+#endif
+
 CharBonesMeshes::CharBonesMeshes()
     : mMeshes(this), mDummyMesh(Hmx::Object::New<RndTransformable>()) {}
 
@@ -102,6 +109,8 @@ void CharBonesMeshes::PoseMeshes() {
     // clean -> PoseMeshes (channel partition) is the deformer.
     if (getenv("RB3_NO_POSEMESHES"))
         return;
+    gX24Pose++;
+    gX24MeshTotal += (long)mMeshes.size();
 #endif
     ObjOwnerPtr<RndTransformable> *curMesh = &mMeshes[0];
     Vector3 *end = (Vector3 *)ScaleOffset();
@@ -123,23 +132,43 @@ void CharBonesMeshes::PoseMeshes() {
                 }
             }
 #endif
+#ifdef HX_NATIVE
+            gX24Quat++;
+#endif
             Normalize(*p, *p);
             MakeRotMatrix(*p, (*curMesh)->DirtyLocalXfm().m);
         }
         float *rotIt = (float *)RotXOffset();
         float *xEnd = (float *)RotYOffset();
         for (; rotIt < xEnd; rotIt++, curMesh++) {
+#ifdef HX_NATIVE
+            gX24RotX++;
+#endif
             (*curMesh)->DirtyLocalXfm().m.RotateAboutX(*rotIt);
         }
         float *yEnd = (float *)RotZOffset();
         for (; rotIt < yEnd; rotIt++, curMesh++) {
+#ifdef HX_NATIVE
+            gX24RotY++;
+#endif
             (*curMesh)->DirtyLocalXfm().m.RotateAboutY(*rotIt);
         }
         float *zEnd = (float *)EndOffset();
         for (; rotIt < zEnd; rotIt++, curMesh++) {
+#ifdef HX_NATIVE
+            gX24RotZ++;
+            if (*rotIt != 0.0f) gX24RotZNonZero++;
+#endif
             (*curMesh)->DirtyLocalXfm().m.RotateAboutZ(*rotIt);
         }
     }
+#ifdef HX_NATIVE
+    if ((gX24Pose % 600) == 1) {
+        fprintf(stderr,
+                "[X24] pose=%ld meshes=%ld quat=%ld rotX=%ld rotY=%ld rotZ=%ld rotZnonzero=%ld\n",
+                gX24Pose, gX24MeshTotal, gX24Quat, gX24RotX, gX24RotY, gX24RotZ, gX24RotZNonZero);
+    }
+#endif
 #ifdef HX_NATIVE
     // V38 probe: after QUAT+ROT (pre-SCALE), dump the final LocalXfm det for a
     // named bone, to localize whether the crowd 0.53-det is born here.

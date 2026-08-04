@@ -1255,6 +1255,16 @@ void BandPatchMesh::PreRender(BandCharDesc *desc, int iii) {
                                 Transform tf60;
                                 if (FindXfm(mesh, patch.mUV, tf60)) {
                                     Hmx::Matrix3 m88;
+#ifdef HX_NATIVE
+                                    {   // X24 TEMPORARY PROBE
+                                        static long n = 0, nz = 0;
+                                        n++;
+                                        if (patch.mRotation != 0.0f) nz++;
+                                        fprintf(stderr,
+                                            "[X24_PATCH] hits=%ld nonzeroRot=%ld rot=%.5f\n",
+                                            n, nz, patch.mRotation);
+                                    }
+#endif
                                     m88.RotateAboutZ(patch.mRotation);
                                     Multiply(m88, tf60.m, tf60.m);
                                     tf60.m.x *= (patch.mScale.x * 0.5f);
