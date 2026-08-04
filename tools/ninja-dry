@@ -132,6 +132,12 @@ fi
 # ---- phase 1: make the manifest genuinely current ---------------------------
 # `ninja build.ninja` builds ONLY the manifest chain. It is a no-op (<0.1s)
 # when already current. Assert convergence rather than assume it.
+#
+# A manifest with NO generator edge (build.ninja is not an output of any rule)
+# is trivially always current — ninja reports "unknown target 'build.ninja'".
+# That is a pass, not a failure. Found by the lock-isolation test 2026-08-04,
+# where ninja-dry wrongly reported FAILED on a hand-written scratch manifest.
+manifest_static=0
 manifest_work=0
 i=0
 while [ "$i" -lt "$MAX_MANIFEST_TRIES" ]; do
@@ -139,6 +145,12 @@ while [ "$i" -lt "$MAX_MANIFEST_TRIES" ]; do
     out=$(cd "$REPO" && ninja build.ninja 2>&1)
     rc=$?
     if [ "$rc" -ne 0 ]; then
+        case "$out" in
+            *"unknown target 'build.ninja'"*)
+                manifest_static=1
+                break
+                ;;
+        esac
         echo "$out" >&2
         echo "ninja-dry: FAILED  manifest regeneration exited $rc (see above)" >&2
         exit 2
@@ -169,7 +181,8 @@ fi
 # anything dirtied it between phase 1 and phase 2 (a concurrent edit, a restat
 # surprise), the dry run we just captured is the truncated one. Uses only
 # ninja's own "no work to do" sentinel — no parsing of our descriptions.
-post=$(cd "$REPO" && ninja build.ninja 2>&1)
+post="ninja: no work to do."
+[ "$manifest_static" -eq 1 ] || post=$(cd "$REPO" && ninja build.ninja 2>&1)
 case "$post" in
     *"no work to do"*) : ;;
     *)

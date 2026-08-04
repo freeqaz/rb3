@@ -160,6 +160,41 @@ else
     pass=$((pass + 1))
 fi
 
+# --- T5: manifest with NO generator edge -------------------------------------
+# Trivially always current. Must be a normal verdict, not FAILED. (Regression:
+# ninja-dry reported "FAILED manifest regeneration exited 1" here, because
+# `ninja build.ninja` says "unknown target".)
+echo "T5 hand-written manifest with no generator edge"
+S="$WORK/static"; mkdir -p "$S"
+printf 'rule cp\n  command = cp $in $out\n  description = CP $out\nbuild a.out: cp a.in\ndefault a.out\n' > "$S/build.ninja"
+echo a > "$S/a.in"
+(cd "$S" && ninja) >/dev/null 2>&1
+out=$(cd "$S" && "$NINJA_DRY" -q 2>&1); rc=$?
+check    T5 "reports CLEAN" "$out" "ninja-dry: CLEAN   0/1"
+check_rc T5 "exit code"     "$rc"  0
+sleep 0.02; touch "$S/a.in"
+out=$(cd "$S" && "$NINJA_DRY" -q 2>&1); rc=$?
+check    T5 "still detects real work" "$out" "ninja-dry: PENDING 1/1"
+check_rc T5 "exit code"               "$rc"  1
+
+# --- T6: the two wrappers must agree on the lock path ------------------------
+# ninja-dry duplicates ninja-locked's build-dir/lock derivation (deliberately —
+# ninja-locked is on the fleet's hot path and sourcing a helper adds a failure
+# mode). Guard the duplication instead of refactoring it.
+echo "T6 ninja-dry and ninja-locked derive the same lock path"
+blk() { sed -n '/^build_cwd="\$PWD"$/,/^fi$/p' "$1" | grep -vE '^[[:space:]]*(#|$)'; }
+if [ -f "$SCRIPT_DIR/../ninja-locked" ] && \
+   [ "$(blk "$SCRIPT_DIR/../ninja-locked")" = "$(blk "$NINJA_DRY")" ] && \
+   [ -n "$(blk "$NINJA_DRY")" ]; then
+    echo "  ok   T6: derivation code is identical ($(blk "$NINJA_DRY" | wc -l) lines)"
+    pass=$((pass + 1))
+else
+    echo "  FAIL T6: ninja-locked and ninja-dry have DIVERGED on lock derivation."
+    echo "       Two spellings of one build dir can now take two different locks."
+    diff <(blk "$SCRIPT_DIR/../ninja-locked") <(blk "$NINJA_DRY")
+    fail=$((fail + 1))
+fi
+
 echo
 echo "ninja-dry tests: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

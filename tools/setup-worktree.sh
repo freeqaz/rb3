@@ -514,6 +514,32 @@ echo "==> configure.py $MAIN_CFG_ARGS (main's interpreter, relative tool paths)"
         --objdiff "$OBJDIFF"
 )
 
+# ---- materialise the manifest : leave the worktree with a CURRENT build.ninja
+# `configure.py` above WROTE build.ninja, but that does not make ninja consider
+# the `build build.ninja: configure` edge satisfied — ninja compares the mtime
+# it RECORDED in .ninja_log when it last ran that edge against the edge's
+# inputs, and a fresh worktree has git-stamped (= "now") copies of configure.py,
+# tools/project.py, tools/ninja_syntax.py and config/<VER>/*.json sitting next
+# to a .ninja_log seeded from main with older recorded times.
+#
+# A stale manifest is not merely slow — it makes `ninja -n` return a FALSE
+# NEGATIVE. ninja rebuilds the manifest before anything else and then, in
+# dry-run mode, deliberately `exit(0)`s (src/ninja.cc: "In dry_run mode the
+# regeneration will succeed without changing the manifest forever"), so the dry
+# run reports one bookkeeping edge and exits 0 while hundreds of TUs are dirty.
+# Dry runs never write .ninja_log, so the state never clears on its own: every
+# repeat of the check returns the same empty answer. Measurement lanes live in
+# fresh worktrees, which is exactly where this bites.
+#
+# One real `ninja build.ninja` settles it. It builds ONLY the manifest chain
+# (download_tool -> dtk dol split -> configure.py): measured 4.7s worst case,
+# 0.13s when already current. Non-fatal — a worktree with a stale manifest is
+# still usable, just not dry-runnable.
+# See docs/decomp/ninja-dry-run-false-negative.md and tools/ninja-dry.
+echo "==> Materialising build.ninja (so \`tools/ninja-dry\` can be trusted here)"
+( cd "$WORKTREE_PATH" && ./tools/ninja-locked build.ninja ) >/dev/null 2>&1 \
+    || echo "  WARN: 'ninja build.ninja' failed; \`ninja -n\` in this worktree may report a FALSE 'nothing to do'. Use tools/ninja-dry, which detects it." >&2
+
 # ---- safety assertion : worktree build/ must be its own real dir -------------
 if [ -L "$WT_BUILD" ]; then
     echo "FATAL: $WT_BUILD is a symlink — the build would corrupt the main tree. Aborting." >&2
