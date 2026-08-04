@@ -31,10 +31,44 @@ Compare stack-frame layouts between target and our build for a single function. 
    |---|---|---|
    | **SWAPPED** | Two slots' fingerprints exchanged across sides | Reorder the two source declarations |
    | **DIFFER** | Same offset, different fingerprint (float-vs-int, different access pattern) | A different variable lives at that slot on each side — usually a declaration-reorder |
+   | **PERMUTED** | Same offset, same fingerprint, but the two sides touch it at **different program points** | Same slot *set*, variables assigned differently — MWCC slot-allocation shaping. Read the `↔ base 0x..` note for the mapping. **Not** a missing/extra local. |
    | **SHIFTED** | Same fingerprint, offset differs by the dominant Δ | One side has an extra local pushing the rest; find the extra local |
    | **TGT_ONLY** | Slot exists only on target | Target spills a temp that our build keeps in a register (or vice versa) |
    | **BASE_ONLY** | Slot exists only on our build | Our build is spilling extra; usually a register-pressure symptom |
-   | **MATCH** | Hidden by default; pass `--show-equal` to see |
+   | **MATCH** | Same offset, same fingerprint, **and** same aligned access rows | Hidden by default; pass `--show-equal` to see |
+
+   ⚠ **`MATCH` did not always mean this.** Before 2026-08-04 a row was MATCH
+   whenever the offset and the `(kind,size,loads,stores)` fingerprint agreed. For
+   a run of same-typed locals that fingerprint is **constant**, so a pure
+   permutation of variables across identically-shaped slots read as MATCH.
+   Measured over **N = 1,769** SZBE69_B8 functions that have at least one
+   exact-offset paired user slot (drawn from all 2,744 partial-match functions in
+   units with a base `.o`): **425 (24.0%)** had at least one such false MATCH, and
+   **2,276 of 19,156 MATCH rows (11.9%)** moved MATCH → PERMUTED. No other verdict
+   count changed. `SaveLoadManager::GetDialogMsg` went from "MATCH 105" to
+   "30 MATCH / 75 PERMUTED". Any pre-2026-08-04 stack-layout reading of "slots all
+   match" should be re-run before being trusted.
+
+   Read the **signature discriminating power** line under the summary: it says how
+   many target slots share a fingerprint with another. Where that number is high,
+   any *fingerprint-based* pairing (SWAPPED, SHIFTED) is arbitrary within the
+   group and is flagged `⚠ ambiguous`. On `GetDialogMsg` it is 230 of 231.
+
+3b. **Frame size can now REFUSE.** If the prologue cannot be decoded the tool
+   prints `UNKNOWN` (never `0x0`) and exits **2** with no frame verdict, because
+   the callee-save slot filter is derived from the frame size. Pass
+   `--allow-unknown-frame` to force exit 0. Previously an unparsed prologue
+   defaulted to 0 on both sides and printed "→ Frame sizes match" — a vacuous
+   `0 == 0`. That fired for real: 28 of the 2,744 functions above (notably the
+   MWCC over-aligned `clrlwi/subfic/stwux` frames such as `ESP_GetTmd`, where the
+   target allocates 0x140 and our build allocates nothing at all). The **refusal**
+   path itself fires on **0 of 2,744** today — it is insurance, not something
+   catching anything now.
+
+   Self-check with no toolchain, objdiff or filesystem needed:
+   ```bash
+   python3 scripts/analysis/stack_layout.py --selftest   # expect PASS, 31 checks
+   ```
 
 4. **Fingerprint columns** (`kind sz=N L=loads S=stores A=accesses [first_idx..last_idx]`) help you guess the source type:
    - `float sz=4` → `float`
@@ -57,6 +91,8 @@ Compare stack-frame layouts between target and our build for a single function. 
 - `--show-equal` — include MATCH rows (useful to confirm a fix didn't break already-aligned slots).
 - `--show-callee-save` — include prologue/epilogue callee-save slots (hidden by default; they're not source-fixable).
 - `--json-file <path>` — skip the objdiff invocation if you already have the JSON cached at `/tmp/claude/diff_*.json`.
+- `--allow-unknown-frame` — exit 0 instead of 2 when the frame size could not be determined.
+- `--selftest` — run the in-memory regression fixtures (no toolchain, no objdiff, no filesystem) and exit.
 
 ## How name extraction works
 

@@ -5,7 +5,8 @@ For a given function, walk the objdiff target+base instruction stream and
 build per-offset "slot fingerprints" (opcode family, inferred size, access
 count, instruction-index span). Diff the two fingerprint maps to identify:
 
-  MATCH      -- same offset, same fingerprint
+  MATCH      -- same offset, same fingerprint, AND same aligned access rows
+  PERMUTED   -- same offset, same fingerprint, but touched at DIFFERENT rows
   SHIFTED    -- same fingerprint, offset differs by the dominant frame Δ
   SWAPPED    -- two slots' fingerprints exchanged (declaration reorder lever)
   DIFFER     -- same offset, different fingerprint (unresolved)
@@ -15,8 +16,13 @@ count, instruction-index span). Diff the two fingerprint maps to identify:
 Also parses the prologue to report frame size and callee-saved register counts;
 if the frame delta is fully explained by callee-saved counts, flags AT_LIMIT.
 
+Toolchain: MWCC CodeWarrior for Wii (PowerPC Gekko/Broadway). Frame-allocation
+forms MEASURED over all 41,254 functions in build/SZBE69_B8/asm (see
+_scan_frame_size for the table).
+
 Usage:
     python3 scripts/analysis/stack_layout.py --symbol "Mangled__FName" [--unit U] [--show-equal]
+    python3 scripts/analysis/stack_layout.py --selftest
 """
 
 import argparse
@@ -154,8 +160,27 @@ class SlotFingerprint:
         return "?"
 
     def fingerprint(self) -> tuple:
-        """Compact identity used for cross-side matching."""
+        """Compact identity used for cross-side matching.
+
+        NOT sufficient on its own to conclude "same variable" — see index_set().
+        """
         return (self.dominant_kind, self.inferred_size, self.loads, self.stores)
+
+    def index_set(self) -> frozenset:
+        """Aligned-row indices at which this slot is touched.
+
+        ★ THIS is the discriminator v1 threw away. objdiff aligns target and
+        base into ONE row stream, so row N names the same program point on both
+        sides. Two slots at the same offset holding the SAME variable are
+        touched at the SAME rows; a permutation of variables across a set of
+        identically-shaped slots keeps every fingerprint equal but moves the
+        rows. v1's fingerprint() is (kind,size,loads,stores) only -- which for a
+        run of same-typed locals is CONSTANT, so v1 could not tell "same
+        variable" from "some other variable that happens to look alike".
+        short_repr() has been PRINTING [first..last] the whole time; the verdict
+        just never consulted it.
+        """
+        return frozenset(self.indices)
 
     def short_repr(self) -> str:
         return (f"{self.dominant_kind:6s} sz={self.inferred_size:<2d} "
@@ -205,12 +230,30 @@ def build_fingerprints(side_key: str, instrs: list, skip_prologue: int = 0,
 
 @dataclass
 class Prologue:
-    frame_size: int = 0
-    saved_gpr_count: int = 0
-    saved_fpr_count: int = 0
+    # ★ TRI-STATE, and half the point of the 2026-08-04 repair (back-ported from
+    #   rb3-xenon 111ea902, lane DQ-2).
+    #   None  = COULD NOT DETERMINE (an allocation form we do not model)
+    #   0     = scanned, positively found NO frame allocation (frameless leaf)
+    #   N > 0 = measured frame size
+    # v1 used a plain `int = 0`, conflating "unparsed" with "frameless", so an
+    # unparsed prologue on BOTH sides printed "→ Frame sizes match." off 0 == 0.
+    frame_size: Optional[int] = None
+    frame_evidence: str = "not scanned"
+    # Same tri-state for the callee-save counts, so an unrecognised save helper
+    # cannot silently read 0 against a real count on the other side.
+    saved_gpr_count: Optional[int] = None
+    saved_fpr_count: Optional[int] = None
     callee_save_slots: set = field(default_factory=set)  # offsets used for callee-saved regs
     raw_savegprlr: Optional[int] = None
     raw_savefpr: Optional[int] = None
+    # `bl _save*` targets whose register count we could NOT parse. Empty in the
+    # SZBE69_B8 target today (measured: 14,184 numbered call sites, 0 bare), but
+    # recording them is what keeps a future unmodelled form from reading as 0.
+    unparsed_saves: list = field(default_factory=list)
+
+    @property
+    def frame_known(self) -> bool:
+        return self.frame_size is not None
 
 
 def _try_int(s: str) -> Optional[int]:
@@ -218,6 +261,161 @@ def _try_int(s: str) -> Optional[int]:
         return int(s, 0)
     except (ValueError, TypeError):
         return None
+
+
+def _maxi(a: Optional[int], b: Optional[int]) -> Optional[int]:
+    """max() that treats None as 'no value yet' instead of crashing."""
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return max(a, b)
+
+
+# ── Frame-size scanning ──────────────────────────────────────────────────────
+#
+# MEASURED over all 41,254 functions in 1,876 target .s files under
+# build/SZBE69_B8/asm (scripts count == report.json's total_functions, which is
+# the freshness control -- see the commit message for the staleness discussion):
+#
+#     STWU    26,856  65.10%   stwu r1, -N, r1               <- v1 handled only this
+#     NONE    14,323  34.72%   no frame allocation (leaf)
+#     STWUX       73   0.18%   clrlwi/subfic + stwux r1,r1,rX <- v1 read 0 here
+#     ADDI         2   0.00%   subi r1, r1, N                 <- v1 read 0 here
+#
+# The Wii STWUX form is NOT the Xenon one. MWCC emits it for over-aligned
+# frames, and the allocation is DYNAMIC:
+#
+#     clrlwi r11, r1, 27        ; r11 = r1 & 0x1f  (current misalignment)
+#     mr     r12, r1            ; stash the old sp
+#     subfic r11, r11, -0x200   ; r11 = -0x200 - (r1 & 0x1f)
+#     stwux  r1, r1, r11        ; allocate
+#
+# so the true size is NOMINAL + (sp & 0x1f) and is only known at run time. All
+# 73 sites in the binary have exactly this shape (measured: every stwux r1,r1,rX
+# is preceded by clrlwi + mr + subfic, 73/73). We report the NOMINAL constant --
+# both sides compute the alignment slack identically, so nominal-vs-nominal is a
+# sound comparison -- and say so in the evidence string.
+#
+# The *representation* bug is the one that generalises: v1's `int = 0` meant any
+# form outside the 65.10% silently read 0, and 0 == 0 printed "frames match".
+
+
+def _scan_frame_size_v1(instrs: list, side_key: str, horizon: int) -> int:
+    """SUPERSEDED 2026-08-04. Retained ONLY so the selftest can assert it STAYS
+    WRONG. Handles `stwu r1, -N, r1` and nothing else, and returns a plain 0 --
+    indistinguishable from a frameless leaf -- otherwise."""
+    size = 0
+    for ins in instrs[:horizon]:
+        side = ins.get(side_key)
+        if not side:
+            continue
+        op = side.get("opcode", "")
+        parts = [a.strip() for a in side.get("args", "").split(",")]
+        if op == "stwu" and len(parts) >= 3 and parts[0] == "r1" and parts[2] == "r1":
+            n = _try_int(parts[1])
+            if n is not None and n < 0:
+                size = -n
+    return size
+
+
+def _scan_frame_size(instrs: list, side_key: str, horizon: int) -> tuple:
+    """-> (size_or_None, evidence_str).
+
+    Preference order: stwu > stwux(nominal) > addi/subi > positively-frameless.
+    Returns None -- never 0 -- when an allocation is present but undecodable.
+    """
+    consts: dict = {}          # reg -> last materialized constant (signed)
+    stwu_size = None
+    stwux_size = None
+    stwux_note = None
+    addi_size = None
+    addi_note = None
+    saw_alloc_form = False
+
+    def _sext(v: int) -> int:
+        return v - (1 << 32) if v >= (1 << 31) else v
+
+    for ins in instrs[:horizon]:
+        side = ins.get(side_key)
+        if not side:
+            continue
+        op = side.get("opcode", "")
+        parts = [a.strip() for a in side.get("args", "").split(",")]
+
+        # --- constant materialization: lis / li / ori / subfic ---------------
+        if op == "lis" and len(parts) == 2:
+            v = _try_int(parts[1])
+            if v is not None:
+                consts[parts[0]] = _sext((v << 16) & 0xFFFFFFFF)
+            continue
+        if op == "li" and len(parts) == 2:
+            v = _try_int(parts[1])
+            if v is not None:
+                consts[parts[0]] = v
+            continue
+        if op == "ori" and len(parts) == 3 and parts[0] == parts[1]:
+            v = _try_int(parts[2])
+            if v is not None and parts[0] in consts:
+                consts[parts[0]] = _sext((consts[parts[0]] | (v & 0xFFFF)) & 0xFFFFFFFF)
+            continue
+        # subfic rD, rA, SIMM  =>  rD = SIMM - rA. In the MWCC aligned-frame
+        # prologue rA is the alignment slack (r1 & 0x1f); SIMM is the NOMINAL
+        # negative frame size, which is what we want.
+        if op == "subfic" and len(parts) == 3:
+            v = _try_int(parts[2])
+            if v is not None:
+                consts[parts[0]] = v
+            continue
+
+        # --- stwu r1, -N, r1  (65.10% of functions) -------------------------
+        if op == "stwu" and len(parts) >= 3 and parts[0] == "r1" and parts[2] == "r1":
+            saw_alloc_form = True
+            n = _try_int(parts[1])
+            if n is not None and n < 0 and stwu_size is None:
+                stwu_size = -n
+            continue
+
+        # --- stwux r1, r1, rX  (MWCC over-aligned frames; 73 functions) ------
+        if op == "stwux" and len(parts) >= 3 and parts[0] == "r1" and parts[1] == "r1":
+            saw_alloc_form = True
+            reg = parts[2]
+            raw = consts.get(reg)
+            if raw is None:
+                stwux_note = f"stwux via {reg} (constant not resolvable)"
+            elif raw < 0 and stwux_size is None:
+                stwux_size = -raw
+                stwux_note = (f"stwux r1,r1,{reg}: nominal {stwux_size:#x} "
+                              "(+ runtime 32B-alignment slack)")
+            else:
+                stwux_note = f"stwux via {reg}={raw:#x} (not a negative allocation)"
+            continue
+
+        # --- subi/addi r1, r1, +-N  (non-update allocation; 2 functions) -----
+        if op in ("subi", "addi", "addic") and len(parts) >= 3 \
+                and parts[0] == "r1" and parts[1] == "r1":
+            n = _try_int(parts[2])
+            if n is None:
+                saw_alloc_form = True
+                continue
+            size = n if op == "subi" else -n
+            if size > 0:
+                saw_alloc_form = True
+                if addi_size is None:
+                    addi_size = size
+                    addi_note = f"{op} r1, r1, {parts[2]}"
+            continue
+
+    if stwu_size is not None:
+        return stwu_size, f"stwu r1, -{stwu_size:#x}, r1"
+    if stwux_size is not None:
+        return stwux_size, stwux_note
+    if addi_size is not None:
+        return addi_size, addi_note
+    if saw_alloc_form:
+        # We SAW an allocation but could not decode it. Never report 0 here.
+        return None, (stwux_note or "frame allocation present but not decodable")
+    return 0, "no frame allocation found in prologue (frameless/leaf)"
 
 
 def parse_prologue(instrs: list, side_key: str) -> Prologue:
@@ -240,6 +438,9 @@ def parse_prologue(instrs: list, side_key: str) -> Prologue:
     # code because they require fNN >= 14 / rNN >= 13 destinations.
     horizon = min(80, len(instrs))
 
+    # Pass 1: frame size (tri-state; see _scan_frame_size for the measured forms).
+    p.frame_size, p.frame_evidence = _scan_frame_size(instrs, side_key, horizon)
+
     # Terminator: a call to anything OTHER than __save* / _save* exits the prologue.
     # All other ops we don't recognize simply get skipped.
 
@@ -251,11 +452,7 @@ def parse_prologue(instrs: list, side_key: str) -> Prologue:
         args = side.get("args", "")
         parts = [a.strip() for a in args.split(",")]
 
-        # stwu r1, -N, r1  → frame size = N
-        if op == "stwu" and len(parts) >= 3 and parts[0] == "r1" and parts[2] == "r1":
-            n = _try_int(parts[1])
-            if n is not None and n < 0:
-                p.frame_size = -n
+        # (frame size is handled by _scan_frame_size above, tri-state.)
 
         # bl _save(gpr|fpr|gprlr)_NN  (one or two leading underscores)
         if op == "bl":
@@ -266,10 +463,22 @@ def parse_prologue(instrs: list, side_key: str) -> Prologue:
                 count = 32 - nn
                 if kind in ("gpr", "gprlr"):
                     p.raw_savegprlr = nn
-                    p.saved_gpr_count = max(p.saved_gpr_count, count)
+                    p.saved_gpr_count = _maxi(p.saved_gpr_count, count)
                 elif kind == "fpr":
                     p.raw_savefpr = nn
-                    p.saved_fpr_count = max(p.saved_fpr_count, count)
+                    p.saved_fpr_count = _maxi(p.saved_fpr_count, count)
+            elif re.search(r"_+save(gpr|fpr|gprlr|vmx)", args):
+                # ★ A save helper whose register count we could NOT read. v1 had
+                #   no such branch: the `else` below simply broke out of the
+                #   prologue scan and the count stayed at its `int = 0` default,
+                #   which is indistinguishable from "positively saves nothing".
+                #   That is the xenon `bl __savegprlr` (bare, no _NN) bug --
+                #   MEASURED ABSENT here (14,184 numbered call sites, 0 bare, and
+                #   config/SZBE69_B8/symbols.txt defines no unnumbered
+                #   _savegpr/_savefpr symbol at all), so this branch records
+                #   rather than guesses. It exists so the next unmodelled form
+                #   surfaces instead of reading as a confident zero.
+                p.unparsed_saves.append(args.strip())
             else:
                 # bl to a non-save helper is the end of the prologue
                 break
@@ -314,11 +523,20 @@ def parse_prologue(instrs: list, side_key: str) -> Prologue:
                 p.callee_save_slots.add(off)
 
     if seen_stmw_gpr is not None:
-        p.saved_gpr_count = max(p.saved_gpr_count, seen_stmw_gpr)
+        p.saved_gpr_count = _maxi(p.saved_gpr_count, seen_stmw_gpr)
     if callee_fprs:
-        p.saved_fpr_count = max(p.saved_fpr_count, len(callee_fprs))
+        p.saved_fpr_count = _maxi(p.saved_fpr_count, len(callee_fprs))
     if callee_gprs:
-        p.saved_gpr_count = max(p.saved_gpr_count, len(callee_gprs))
+        p.saved_gpr_count = _maxi(p.saved_gpr_count, len(callee_gprs))
+
+    # We scanned the whole prologue window. If nothing at all was found AND no
+    # save helper went unparsed, that is a positive "no callee saves", not an
+    # unknown — settle it to 0 rather than leaving None to propagate as a fake
+    # delta. If a save WAS seen but not decoded, the count stays None.
+    if p.saved_gpr_count is None and not p.unparsed_saves:
+        p.saved_gpr_count = 0
+    if p.saved_fpr_count is None and not p.unparsed_saves:
+        p.saved_fpr_count = 0
 
     # Saved LR slot at frame_size+4 (above the frame, in caller's space).
     # Detect: stw r0, (frame_size+4), r1 near the top.
@@ -350,11 +568,48 @@ class Row:
     callee_save: bool = False
 
 
+def _positional_partner(t: SlotFingerprint,
+                        base_slots: dict[int, SlotFingerprint]) -> Optional[int]:
+    """Base offset whose access rows overlap this target slot's the most.
+
+    Fingerprint-free, so it works precisely where fingerprints are degenerate.
+    Returns None when nothing overlaps at all.
+    """
+    ts = t.index_set()
+    if not ts:
+        return None
+    best_off, best_n = None, 0
+    for off, b in base_slots.items():
+        n = len(ts & b.index_set())
+        if n > best_n:
+            best_off, best_n = off, n
+    return best_off
+
+
+def classify_slots_v1(tgt_slots, base_slots, dominant_delta,
+                      tgt_callee_save, base_callee_save) -> list[Row]:
+    """SUPERSEDED 2026-08-04. Retained ONLY so the selftest can assert it STAYS
+    WRONG -- it reports MATCH on a pure variable permutation.
+    Do not call it for analysis."""
+    return _classify_impl(tgt_slots, base_slots, dominant_delta,
+                          tgt_callee_save, base_callee_save, positional=False)
+
+
 def classify_slots(tgt_slots: dict[int, SlotFingerprint],
                    base_slots: dict[int, SlotFingerprint],
                    dominant_delta: int,
                    tgt_callee_save: set[int],
                    base_callee_save: set[int]) -> list[Row]:
+    return _classify_impl(tgt_slots, base_slots, dominant_delta,
+                          tgt_callee_save, base_callee_save, positional=True)
+
+
+def _classify_impl(tgt_slots: dict[int, SlotFingerprint],
+                   base_slots: dict[int, SlotFingerprint],
+                   dominant_delta: int,
+                   tgt_callee_save: set[int],
+                   base_callee_save: set[int],
+                   positional: bool = True) -> list[Row]:
     rows: list[Row] = []
     seen_base: set[int] = set()
 
@@ -367,8 +622,25 @@ def classify_slots(tgt_slots: dict[int, SlotFingerprint],
         tfp = tgt_slots[off]
         if off in base_slots:
             bfp = base_slots[off]
-            verdict = "MATCH" if tfp.fingerprint() == bfp.fingerprint() else "DIFFER"
-            rows.append(Row(off, off, tfp, bfp, verdict, callee_save=is_cs(off, off)))
+            note = ""
+            if tfp.fingerprint() != bfp.fingerprint():
+                verdict = "DIFFER"
+            elif not positional:
+                verdict = "MATCH"          # ← v1: the vacuous verdict
+            elif tfp.index_set() == bfp.index_set():
+                verdict = "MATCH"          # same shape AND same program points
+            else:
+                # Same offset, indistinguishable fingerprints, but the two sides
+                # touch the slot at DIFFERENT program points => it does not hold
+                # the same variable. Never call this MATCH.
+                verdict = "PERMUTED"
+                partner = _positional_partner(tfp, base_slots)
+                if partner is not None and partner != off:
+                    note = f"target's slot ↔ base 0x{partner:x}"
+                else:
+                    note = "same offset, accesses do not line up"
+            rows.append(Row(off, off, tfp, bfp, verdict, note=note,
+                            callee_save=is_cs(off, off)))
             seen_base.add(off)
         else:
             rows.append(Row(off, None, tfp, None, "TGT_ONLY", callee_save=is_cs(off, None)))
@@ -426,6 +698,14 @@ def classify_slots(tgt_slots: dict[int, SlotFingerprint],
             tr.base = br.base
             tr.note = (f"Δ{delta:+#x} (dominant)" if delta == dominant_delta
                        else f"Δ{delta:+#x}")
+            # ★ Ambiguity disclosure: this pairing is by FINGERPRINT, so when
+            # several base-only slots share it the choice is arbitrary. Say so
+            # rather than presenting an arbitrary pick as a finding.
+            rivals = sum(1 for k, b2 in enumerate(base_only)
+                         if k not in used_base_idxs and b2.base is not None
+                         and b2.base.fingerprint() == tr.tgt.fingerprint())
+            if rivals > 1:
+                tr.note += f"  ⚠ ambiguous: {rivals} equal-fingerprint candidates"
             used_base_idxs.add(j)
 
     # Drop the now-merged BASE_ONLY rows
@@ -437,31 +717,75 @@ def classify_slots(tgt_slots: dict[int, SlotFingerprint],
 
 # ── Printing ─────────────────────────────────────────────────────────────────
 
-VERDICT_ORDER = ["SWAPPED", "DIFFER", "SHIFTED", "TGT_ONLY", "BASE_ONLY", "MATCH"]
+VERDICT_ORDER = ["SWAPPED", "DIFFER", "PERMUTED", "SHIFTED",
+                 "TGT_ONLY", "BASE_ONLY", "MATCH"]
 
 
 def print_report(rows: list[Row], tgt_prol: Prologue, base_prol: Prologue,
                  show_equal: bool, show_callee_save: bool,
-                 dominant_delta: int, base_names: dict | None = None) -> None:
+                 dominant_delta: int, base_names: dict | None = None) -> bool:
+    """Print the report. Returns True if the frame comparison is TRUSTWORTHY,
+    False if it had to refuse (caller turns that into a nonzero exit)."""
     print("=" * 84)
     print("STACK LAYOUT DIFF")
     print("=" * 84)
     print()
 
-    frame_delta = base_prol.frame_size - tgt_prol.frame_size
-    gpr_delta = base_prol.saved_gpr_count - tgt_prol.saved_gpr_count
-    fpr_delta = base_prol.saved_fpr_count - tgt_prol.saved_fpr_count
+    frame_ok = tgt_prol.frame_known and base_prol.frame_known
+    saves_known = (tgt_prol.saved_gpr_count is not None
+                   and base_prol.saved_gpr_count is not None
+                   and tgt_prol.saved_fpr_count is not None
+                   and base_prol.saved_fpr_count is not None)
+    gpr_delta = ((base_prol.saved_gpr_count - tgt_prol.saved_gpr_count)
+                 if saves_known else 0)
+    fpr_delta = ((base_prol.saved_fpr_count - tgt_prol.saved_fpr_count)
+                 if saves_known else 0)
 
-    print(f"  Frame size:          TGT 0x{tgt_prol.frame_size:x}     "
-          f"BASE 0x{base_prol.frame_size:x}     Δ {frame_delta:+#x}")
-    print(f"  Callee-saved GPRs:   TGT {tgt_prol.saved_gpr_count:<5d}   "
-          f"BASE {base_prol.saved_gpr_count:<5d}   Δ {gpr_delta:+d}")
-    print(f"  Callee-saved FPRs:   TGT {tgt_prol.saved_fpr_count:<5d}   "
-          f"BASE {base_prol.saved_fpr_count:<5d}   Δ {fpr_delta:+d}")
+    def fs(p):
+        return f"0x{p.frame_size:x}" if p.frame_known else "UNKNOWN"
+
+    def cnt(v):
+        return str(v) if v is not None else "UNKNOWN"
+
+    if frame_ok:
+        frame_delta = base_prol.frame_size - tgt_prol.frame_size
+        print(f"  Frame size:          TGT {fs(tgt_prol):<9s} "
+              f"BASE {fs(base_prol):<9s} Δ {frame_delta:+#x}")
+    else:
+        frame_delta = None
+        print(f"  Frame size:          TGT {fs(tgt_prol):<9s} "
+              f"BASE {fs(base_prol):<9s} Δ UNKNOWN")
+    print(f"  Callee-saved GPRs:   TGT {cnt(tgt_prol.saved_gpr_count):<7s} "
+          f"BASE {cnt(base_prol.saved_gpr_count):<7s} "
+          f"Δ {(f'{gpr_delta:+d}' if saves_known else 'UNKNOWN')}")
+    print(f"  Callee-saved FPRs:   TGT {cnt(tgt_prol.saved_fpr_count):<7s} "
+          f"BASE {cnt(base_prol.saved_fpr_count):<7s} "
+          f"Δ {(f'{fpr_delta:+d}' if saves_known else 'UNKNOWN')}")
+    print(f"    frame evidence: TGT {tgt_prol.frame_evidence}")
+    print(f"                    BASE {base_prol.frame_evidence}")
+    for side, prol in (("TGT", tgt_prol), ("BASE", base_prol)):
+        if prol.unparsed_saves:
+            print(f"    ⚠ {side} save helper(s) not decoded: "
+                  f"{', '.join(prol.unparsed_saves[:3])}")
 
     callee_bytes = gpr_delta * 4 + fpr_delta * 8
-    if frame_delta == 0:
+    if not frame_ok:
+        # ★ REFUSE. v1 defaulted an unparsed frame to 0 and then printed
+        #   "→ Frame sizes match." off 0 == 0 -- a vacuous success. A frame we
+        #   could not read is NOT a frame that matches.
+        print()
+        print("  ⛔ REFUSED: frame size could not be determined on "
+              + ("both sides." if not (tgt_prol.frame_known or base_prol.frame_known)
+                 else ("the TARGET side." if not tgt_prol.frame_known
+                       else "the BASE side.")))
+        print("     No frame verdict is reported. Note the callee-save slot filter")
+        print("     is derived from the frame size, so the table below is NOT")
+        print("     filtered for prologue slots and may contain them.")
+    elif frame_delta == 0:
         print("  → Frame sizes match.")
+    elif not saves_known:
+        print(f"  → Frame Δ {frame_delta:+#x}, but the callee-save counts are UNKNOWN, "
+              "so it cannot be attributed. No AT_LIMIT verdict.")
     elif callee_bytes == frame_delta:
         print(f"  → Frame Δ fully explained by callee-saved counts ({gpr_delta} GPR + "
               f"{fpr_delta} FPR = {callee_bytes:+#x} bytes). AT_LIMIT (not source-fixable).")
@@ -523,6 +847,25 @@ def print_report(rows: list[Row], tgt_prol: Prologue, base_prol: Prologue,
     for v in VERDICT_ORDER:
         if counts[v]:
             print(f"    {v:10s} {counts[v]}")
+
+    # ★ Discriminating power of the per-slot signature. If many user slots share
+    #   one fingerprint, any fingerprint-based pairing among them is arbitrary,
+    #   and a bare "MATCH n" would be reporting a coincidence as a finding.
+    fp_counts: Counter = Counter()
+    for r in rows:
+        if r.callee_save or r.tgt is None:
+            continue
+        fp_counts[r.tgt.fingerprint()] += 1
+    degenerate = {f: n for f, n in fp_counts.items() if n > 1}
+    if degenerate:
+        worst = max(degenerate.values())
+        n_amb = sum(degenerate.values())
+        print(f"    ── signature discriminating power: {n_amb} of "
+              f"{sum(fp_counts.values())} target slots share a fingerprint with "
+              f"another (largest group {worst}).")
+        print("       Fingerprint-only pairing is ARBITRARY within those groups; "
+              "MATCH/PERMUTED\n       above is decided by aligned access rows, "
+              "not by fingerprint.")
     if cs_rows:
         cs_non_match = sum(c for v, c in cs_counts.items() if v != "MATCH")
         if cs_non_match:
@@ -579,21 +922,32 @@ def print_report(rows: list[Row], tgt_prol: Prologue, base_prol: Prologue,
         else:
             print(f"    • {counts['DIFFER']} user slot(s) with same offset but different fingerprint "
                   "— different variable lives in that slot on each side; reorder candidates.")
+    if counts["PERMUTED"]:
+        print(f"    • {counts['PERMUTED']} user slot(s) PERMUTED — both sides use the same "
+              "slot at\n      different program points, i.e. the SAME SET of slots with "
+              "variables\n      assigned differently. Slot-allocation shaping, not a "
+              "declaration\n      count difference. Read the '↔ base 0x..' notes for the "
+              "mapping.")
     if counts["TGT_ONLY"]:
         print(f"    • {counts['TGT_ONLY']} slot(s) only on target — a source local our build "
               "elides, or different spill choice.")
     if counts["BASE_ONLY"]:
         print(f"    • {counts['BASE_ONLY']} slot(s) only on our build — extra spill or "
               "compiler temp. Often correlates with register pressure.")
-    if not any(counts[v] for v in ("SWAPPED", "SHIFTED", "DIFFER", "TGT_ONLY", "BASE_ONLY")):
-        if frame_delta == 0:
+    if not any(counts[v] for v in ("SWAPPED", "SHIFTED", "DIFFER", "PERMUTED",
+                                   "TGT_ONLY", "BASE_ONLY")):
+        if frame_delta is None:
+            print("    • No user-slot mismatches, but the frame size is UNKNOWN — this is "
+                  "NOT a clean bill of health.")
+        elif frame_delta == 0:
             print("    • User-slot layouts match. If diff is still poor, root cause is not "
                   "stack-layout (check regswaps / replaces / inserts).")
-        elif callee_bytes == frame_delta:
+        elif saves_known and callee_bytes == frame_delta:
             print("    • Pure callee-saved-register shift. AT_LIMIT.")
         else:
             print("    • Frame Δ exists but no user-slot mismatches surfaced — fingerprint "
                   "matching may be too coarse; inspect --show-callee-save and --show-equal.")
+    return frame_ok
 
 
 def dominant_delta_from_rows(tgt_slots: dict[int, SlotFingerprint],
@@ -613,12 +967,206 @@ def dominant_delta_from_rows(tgt_slots: dict[int, SlotFingerprint],
     return delta
 
 
+# ── Selftest / regression fixtures ───────────────────────────────────────────
+#
+# Every fixture is built IN MEMORY: no toolchain, no objdiff, no filesystem, so
+# this can never silently SKIP.
+#
+# ★ The load-bearing property is NOT "the new code passes". It is that the OLD
+#   code is asserted to STAY WRONG on the same fixtures. A selftest that only
+#   demonstrates the new comparator would pass just as happily after somebody
+#   "simplified" the fix back out.
+
+def _ins(idx, t=None, b=None):
+    """One objdiff-shaped aligned row. t/b are (opcode, args) or None."""
+    d = {"index": idx}
+    if t is not None:
+        d["target"] = {"opcode": t[0], "args": t[1]}
+    if b is not None:
+        d["base"] = {"opcode": b[0], "args": b[1]}
+    return d
+
+
+def _aligned_frame_prologue(nominal, idx0=0):
+    """The MWCC over-aligned-frame shape MEASURED in all 73 rb3 stwux sites:
+        clrlwi r11, r1, 27 / mr r12, r1 / subfic r11, r11, -N / stwux r1,r1,r11
+    """
+    return [
+        _ins(idx0 + 0, ("clrlwi", "r11, r1, 27"), ("clrlwi", "r11, r1, 27")),
+        _ins(idx0 + 1, ("mr", "r12, r1"), ("mr", "r12, r1")),
+        _ins(idx0 + 2, ("subfic", f"r11, r11, -{nominal:#x}"),
+                       ("subfic", f"r11, r11, -{nominal:#x}")),
+        _ins(idx0 + 3, ("stwux", "r1, r1, r11"), ("stwux", "r1, r1, r11")),
+    ]
+
+
+def _mix(tgt_rows, base_rows):
+    """Splice two same-length single-side fixtures into one aligned stream."""
+    out = []
+    for t, b in zip(tgt_rows, base_rows):
+        ts = t.get("target")
+        bs = b.get("base")
+        out.append(_ins(t["index"],
+                        (ts["opcode"], ts["args"]) if ts else None,
+                        (bs["opcode"], bs["args"]) if bs else None))
+    return out
+
+
+def selftest():
+    out = []
+    ok = True
+    n_checks = 0
+
+    def check(label, got, want):
+        nonlocal ok, n_checks
+        n_checks += 1
+        good = got == want
+        if not good:
+            ok = False
+        out.append(f"  [{'ok' if good else 'FAIL'}] {label}: got {got!r}, want {want!r}")
+
+    H = 80
+
+    # ── Fixture 1: over-aligned frame, and the two sides genuinely DIFFER ────
+    # This is the killer. v1 reads 0 on both sides and therefore declares the
+    # frames EQUAL, when they in fact differ by 0x40. A wrong number would be
+    # bad; a confident "match" on a real difference is the vacuous-success shape.
+    mixed = _mix(_aligned_frame_prologue(0x200), _aligned_frame_prologue(0x240))
+    out.append("fixture 1 — MWCC over-aligned frame (clrlwi/subfic/stwux), "
+               "sides differ by 0x40:")
+    check("v1 TARGET frame (STAYS WRONG)", _scan_frame_size_v1(mixed, "target", H), 0)
+    check("v1 BASE   frame (STAYS WRONG)", _scan_frame_size_v1(mixed, "base", H), 0)
+    check("v1 verdict is a FALSE 'frames match'",
+          _scan_frame_size_v1(mixed, "target", H) == _scan_frame_size_v1(mixed, "base", H),
+          True)
+    check("v2 TARGET frame (nominal)", _scan_frame_size(mixed, "target", H)[0], 0x200)
+    check("v2 BASE   frame (nominal)", _scan_frame_size(mixed, "base", H)[0], 0x240)
+    check("v2 correctly sees a difference",
+          _scan_frame_size(mixed, "target", H)[0] != _scan_frame_size(mixed, "base", H)[0],
+          True)
+    check("v2 evidence names the dynamic slack",
+          "alignment slack" in _scan_frame_size(mixed, "target", H)[1], True)
+
+    # ── Fixture 2: the non-update allocation form (subi r1, r1, N) ──────────
+    # 2 functions in the binary (InitMetroTRK & friends). v1 reads 0 for both
+    # sides again -> another vacuous "frames match".
+    sub = [_ins(0, ("subi", "r1, r1, 0x4"), ("subi", "r1, r1, 0x8")),
+           _ins(1, ("stw", "r3, 0x0, r1"), ("stw", "r3, 0x0, r1"))]
+    out.append("fixture 2 — `subi r1, r1, N` allocation:")
+    check("v1 TARGET frame (STAYS WRONG)", _scan_frame_size_v1(sub, "target", H), 0)
+    check("v1 declares a FALSE match",
+          _scan_frame_size_v1(sub, "target", H) == _scan_frame_size_v1(sub, "base", H), True)
+    check("v2 TARGET frame", _scan_frame_size(sub, "target", H)[0], 0x4)
+    check("v2 BASE   frame", _scan_frame_size(sub, "base", H)[0], 0x8)
+
+    # ── Fixture 3: CONTROL — v2 must not over-fire ──────────────────────────
+    # A plain stwu frame must still parse identically to v1, and a frameless
+    # leaf must read 0-KNOWN, not UNKNOWN. Without this, v2 could be
+    # `return None` and fixtures 1-2 would still pass.
+    out.append("fixture 3 — CONTROL: v2 must agree with v1 where v1 was right:")
+    plain = [_ins(0, ("stwu", "r1, -0x50, r1"), ("stwu", "r1, -0x50, r1")),
+             _ins(1, ("mflr", "r0"), ("mflr", "r0")),
+             _ins(2, ("bl", "_savegpr_27"), ("bl", "_savegpr_27"))]
+    check("v1 plain stwu frame", _scan_frame_size_v1(plain, "target", H), 0x50)
+    check("v2 plain stwu frame (must AGREE)", _scan_frame_size(plain, "target", H)[0], 0x50)
+    check("v2 saved GPRs for _savegpr_27",
+          parse_prologue(plain, "target").saved_gpr_count, 5)
+    leaf = [_ins(0, ("mr", "r11, r3"), ("mr", "r11, r3")),
+            _ins(1, ("blr", ""), ("blr", ""))]
+    check("v2 frameless leaf is KNOWN-zero, not UNKNOWN",
+          _scan_frame_size(leaf, "target", H)[0], 0)
+    check("v2 frameless leaf reports frame_known",
+          parse_prologue(leaf, "target").frame_known, True)
+    # ...and an allocation form we do NOT model must be UNKNOWN, never 0.
+    weird = [_ins(0, ("stwux", "r1, r1, r7"), ("stwux", "r1, r1, r7"))]
+    check("v2 undecodable allocation is UNKNOWN (None), never 0",
+          _scan_frame_size(weird, "target", H)[0], None)
+    check("v2 undecodable allocation sets frame_known False",
+          parse_prologue(weird, "target").frame_known, False)
+
+    # ── Fixture 4: the degenerate slot comparison ───────────────────────────
+    # Two same-shaped locals at 0x60 and 0x68, with the ASSIGNMENT SWAPPED
+    # between the sides. Every fingerprint is equal, so v1 reports MATCH twice
+    # and zero actionable rows -- while the two builds demonstrably put
+    # different variables in those slots.
+    out.append("fixture 4 — variable permutation across identical-shaped slots:")
+    perm = [
+        _ins(0, ("stwu", "r1, -0x90, r1"), ("stwu", "r1, -0x90, r1")),
+        _ins(1, ("lwz", "r3, 0x60, r1"), ("lwz", "r3, 0x68, r1")),
+        _ins(2, ("lwz", "r4, 0x68, r1"), ("lwz", "r4, 0x60, r1")),
+    ]
+    ts = build_fingerprints("target", perm)
+    bs = build_fingerprints("base", perm)
+    v1c = Counter(r.verdict for r in classify_slots_v1(ts, bs, 0, set(), set()))
+    v2_rows = classify_slots(ts, bs, 0, set(), set())
+    v2c = Counter(r.verdict for r in v2_rows)
+    check("v1 says MATCH x2 (STAYS WRONG)", v1c["MATCH"], 2)
+    check("v1 finds ZERO actionable rows (STAYS WRONG)",
+          sum(v for k, v in v1c.items() if k != "MATCH"), 0)
+    check("v2 says MATCH x0", v2c["MATCH"], 0)
+    check("v2 says PERMUTED x2", v2c["PERMUTED"], 2)
+    check("v2 reports the positional mapping 0x60 ↔ base 0x68",
+          any("0x68" in r.note for r in v2_rows if r.tgt_off == 0x60), True)
+
+    # ── Fixture 5: CONTROL — a genuinely identical layout ───────────────────
+    # Without this, v2 could be `return PERMUTED` and fixture 4 would pass.
+    out.append("fixture 5 — CONTROL: identical layout must still read MATCH:")
+    same = [
+        _ins(0, ("stwu", "r1, -0x90, r1"), ("stwu", "r1, -0x90, r1")),
+        _ins(1, ("lwz", "r3, 0x60, r1"), ("lwz", "r3, 0x60, r1")),
+        _ins(2, ("lwz", "r4, 0x68, r1"), ("lwz", "r4, 0x68, r1")),
+    ]
+    ts2 = build_fingerprints("target", same)
+    bs2 = build_fingerprints("base", same)
+    v2c2 = Counter(r.verdict for r in classify_slots(ts2, bs2, 0, set(), set()))
+    check("v2 says MATCH x2 on an identical layout", v2c2["MATCH"], 2)
+    check("v2 says PERMUTED x0 on an identical layout", v2c2["PERMUTED"], 0)
+
+    # ── Fixture 6: paired-single (Gekko-only) slots take the same path ──────
+    # psq_st/psq_l are the Wii-specific opcodes; make sure the permutation test
+    # is not accidentally int-only.
+    out.append("fixture 6 — Gekko paired-single slots permute too:")
+    ps = [
+        _ins(0, ("stwu", "r1, -0x40, r1"), ("stwu", "r1, -0x40, r1")),
+        _ins(1, ("psq_st", "f1, 0x10, r1, 0, qr0"), ("psq_st", "f1, 0x18, r1, 0, qr0")),
+        _ins(2, ("psq_st", "f2, 0x18, r1, 0, qr0"), ("psq_st", "f2, 0x10, r1, 0, qr0")),
+    ]
+    tp = build_fingerprints("target", ps)
+    bp = build_fingerprints("base", ps)
+    check("paired slots are recognised", sorted(tp), [0x10, 0x18])
+    v6 = Counter(r.verdict for r in classify_slots(tp, bp, 0, set(), set()))
+    check("v2 says PERMUTED x2 on permuted paired-single slots", v6["PERMUTED"], 2)
+    check("v1 says MATCH x2 on the same (STAYS WRONG)",
+          Counter(r.verdict for r in classify_slots_v1(tp, bp, 0, set(), set()))["MATCH"], 2)
+
+    # ── Fixture 7: save-helper counts stay tri-state ────────────────────────
+    # rb3 has NO bare `bl _savegpr` (measured: 14,184 numbered, 0 bare), so the
+    # xenon bug-3 shape cannot be reproduced from the binary. What we DO assert
+    # is that an unrecognised save helper is recorded rather than read as 0.
+    out.append("fixture 7 — an undecodable save helper must not read as 0 saves:")
+    bare = [_ins(0, ("stwu", "r1, -0x50, r1"), ("stwu", "r1, -0x50, r1")),
+            _ins(1, ("bl", "_savegpr"), ("bl", "_savegpr_14"))]
+    pt = parse_prologue(bare, "target")
+    pb = parse_prologue(bare, "base")
+    check("TARGET records the unparsed helper", pt.unparsed_saves, ["_savegpr"])
+    check("TARGET GPR count is UNKNOWN, not 0", pt.saved_gpr_count, None)
+    check("BASE GPR count is read normally", pb.saved_gpr_count, 18)
+
+    return ok, out, n_checks
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--symbol", required=True, help="Mangled symbol name")
+    parser.add_argument("--symbol", help="Mangled symbol name")
+    parser.add_argument("--selftest", action="store_true",
+                        help="Run the in-memory regression fixtures (no toolchain, "
+                             "no objdiff, no filesystem) and exit.")
+    parser.add_argument("--allow-unknown-frame", action="store_true",
+                        help="Exit 0 even when the frame size could not be determined. "
+                             "Default is to REFUSE with exit 2.")
     parser.add_argument("--unit", default=None, help="Unit for objdiff disambiguation")
     parser.add_argument("--project-dir", default=None, help="Project root")
     parser.add_argument("--show-equal", action="store_true",
@@ -632,6 +1180,17 @@ def main() -> None:
     parser.add_argument("--json-file", default=None,
                         help="Skip objdiff invocation; load diff JSON from this path")
     args = parser.parse_args()
+
+    if args.selftest:
+        ok, lines, n_checks = selftest()
+        print("# stack_layout selftest — frame-parse + slot-comparator regression")
+        for ln in lines:
+            print(ln)
+        print(f"PASS ({n_checks} checks)" if ok else f"FAIL ({n_checks} checks)")
+        sys.exit(0 if ok else 1)
+
+    if not args.symbol:
+        parser.error("--symbol is required (or use --selftest)")
 
     if args.json_file:
         json_path = args.json_file
@@ -663,8 +1222,10 @@ def main() -> None:
         if not base_names:
             base_names = None  # collapse empty dict → no column
 
-    print_report(rows, tgt_prol, base_prol, args.show_equal,
-                 args.show_callee_save, dominant_delta, base_names)
+    frame_ok = print_report(rows, tgt_prol, base_prol, args.show_equal,
+                            args.show_callee_save, dominant_delta, base_names)
+    if not frame_ok and not args.allow_unknown_frame:
+        sys.exit(2)
 
 
 if __name__ == "__main__":
