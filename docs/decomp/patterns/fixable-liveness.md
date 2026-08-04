@@ -24,6 +24,23 @@ The MSVC work is written up at
 and, tool-side, at
 [`../../../../objdiff/docs/research/register-swap-symptom-not-cause.md`](../../../../objdiff/docs/research/register-swap-symptom-not-cause.md).
 
+### Standing note: percentages here are point-in-time
+
+**Every per-function percentage on this page is a reading taken on one repo at one commit.
+Re-measure before citing one** — dc3-decomp figures with `mcp__orchestrator__run_objdiff`
+against that tree, RB3 figures with this repo's own tooling. Two ways they rot:
+
+1. **Neighbours drift.** A match% can move when a *different* function in the same
+   translation unit changes; inlining, ICF and `.text` layout are all TU-wide.
+2. **The number in a commit message is not a measurement.** `RndText::SizeCheck` carried a
+   fabricated **99.1%** here for two days, sourced from a dc3-decomp commit subject line
+   rather than a diff. Corrected to 98.6% on 2026-08-04; see Lever 3.
+
+**Always name the repo next to a number.** rb3, rb3-xenon and dc3-decomp share the Milo
+engine, so the *same symbol name* exists in all three with different code and different
+match%. An unattributed figure will eventually be refuted against the wrong binary — that
+has already happened.
+
 ### What does NOT apply here
 
 **The whole EH-funclet class is absent on Wii.** MSVC `/EHsc` emits one ~40-byte
@@ -118,8 +135,10 @@ that means the *set* of simultaneously live values differs, not just the colours
 
 The function caches a member pointer in a local, then a later call site spells the member path
 again. The re-load forces the base object to stay live across the call **as well**, costing one
-whole callee-saved register. DC3 `RndText::FitTextScroll`, 92.7% → 96.7%; the prologue save
-range differed by exactly one register and ~40 swaps collapsed from the single edit.
+whole callee-saved register. **dc3-decomp** `RndText::FitTextScroll`, 92.7% → 96.7%; the
+prologue save range differed by exactly one register and ~40 swaps collapsed from the single
+edit. **96.7% is an intermediate, not that function's final figure** — Lever 4 below takes
+the same function to **98.2%**, where it stands on dc3-decomp `main` today.
 
 This is [`harmful-avoid.md`: Child Pointer in Loop](harmful-avoid.md#child-pointer-in-loop)
 run backwards, and that page's RB3 measurement is the strongest reason to expect this one to
@@ -141,14 +160,22 @@ its consumer **first**; only then flip the compare to the target's operand order
 NaN). `a <= b` → `!(a > b)` is **not** — do not do that.
 
 Ordering matters: flipping the compare before fixing the schedule just moves the swap to the
-other side of the compare and scores as a wash. DC3 `RndText::SizeCheck`, 96.5% → 99.1%, nine
-FPR swaps resolved automatically once the schedule was right.
+other side of the compare and scores as a wash. **dc3-decomp** `RndText::SizeCheck`,
+96.5% → **98.6%**, nine FPR swaps resolved automatically once the schedule was right.
+
+> Corrected 2026-08-04: this said 99.1%. That figure was never a direct measurement — it
+> came from dc3-decomp commit `0c2b0c38`'s subject line. Re-measured with `run_objdiff`
+> in **dc3-decomp**: 96.5% at the parent, 98.6% at `0c2b0c38` itself, 98.6% on `main`.
+> The residual is one `mr r4, r27` moved two slots, and it was already there at 96.5% —
+> this lever never touched it. Not an rb3 measurement.
 
 ### Lever 4 — scope a declaration into the block that uses it
 
 A **stack** lever, listed here for contrast: it moves slots and no registers. Same-scope locals
 pack together, so moving two into the inner block that uses them makes them pack adjacently
-instead of each claiming an outer-frame slot. DC3: 14 offset diffs killed at once.
+instead of each claiming an outer-frame slot. **dc3-decomp** `RndText::FitTextScroll`,
+96.7% → **98.2%**: 14 offset diffs killed at once. This is the second of that function's two
+levers, so 98.2% is its final figure.
 
 **Confirm the block is faithful before adding it** — in the DC3 case the target genuinely
 branched past the whole block on the null path, so the `if` reproduced real control flow rather
@@ -159,8 +186,10 @@ than being a match hack.
 The inverse of Lever 4. An unnamed aggregate passed by const-ref dies at the end of its own
 full expression, so N consecutive calls each building one share **one** stack slot. Naming them
 widens each live range so the frame packer sees them all — and *then* re-coalesces the pairs
-whose ranges still do not overlap. DC3 `LabelShrinkWrapper::UpdateAndDrawWrapper`: 68.1% →
-99.9%, four names, three slots, frame `0xb0` → `0xc0`.
+whose ranges still do not overlap. **dc3-decomp** `LabelShrinkWrapper::UpdateAndDrawWrapper`:
+68.1% → **99.9%** (+31.8%), four names, three slots, frame `0xb0` → `0xc0`. 68.1% is the
+honest baseline; an 80.4% figure circulates for this function but it was a `_tmp0` match-hack
+state, not a clean starting point, and quoting it understates the lever as +19.4%.
 
 **Trap: fewer names is not closer.** Two intermediate spellings measured 90.6% and 86.2% and
 both read exactly like floors. Match the target's *number of live values* and let the packer
