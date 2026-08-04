@@ -48,26 +48,66 @@ import sys
 SKIP_PREFIX = ".permuter_work_"
 
 
-def split_depfile(text):
-    """Yield (leading_whitespace, path, trailing) for each prerequisite line.
+# Top-level directories that mark the start of a repo-relative path. Used to
+# recognise the tail of a FOREIGN checkout's absolute path.
+REPO_TOPS = ("src/", "include/", "config/", "build/")
 
-    Line 0 is `target: firstprereq \\` and is emitted relative by ninja already;
-    later lines are one prerequisite each. We only rewrite the path token.
+
+class Relativizer:
+    """Turn absolute depfile prerequisites into root-relative ones.
+
+    Two distinct cases both need rewriting, and conflating them was a real bug:
+
+      1. Path is under THIS root (`<root>/src/Foo.h`). Strip the prefix.
+      2. Path is under ANOTHER checkout (`/…/rb3/src/Foo.h` while we are a
+         worktree at `/…/rb3/.claude/worktrees/x`). This is the actual reflinked
+         -cache case, and it IS migratable: the repo-relative tail `src/Foo.h`
+         names our own copy. Rewriting it to that tail is exactly the fix.
+
+    A path with no local counterpart (a genuine out-of-tree file) is left alone
+    and reported — unportable, but not a staleness trap.
+
+    Foreign roots are cached after first discovery, so the filesystem probing is
+    O(number of distinct checkouts), not O(number of prerequisite paths) —
+    which matters at ~308k paths.
     """
+
+    def __init__(self, root):
+        self.root = root.rstrip("/")
+        self.prefix = self.root + "/"
+        self.foreign_prefixes = []
+
+    def relativize(self, path):
+        """Return (new_path, unfixable)."""
+        p = os.path.normpath(path)
+        if not p.startswith("/"):
+            return p, False
+        if p.startswith(self.prefix):
+            return p[len(self.prefix) :], False
+        for fp in self.foreign_prefixes:
+            if p.startswith(fp):
+                return p[len(fp) :], False
+        parts = p.strip("/").split("/")
+        for i in range(len(parts)):
+            tail = "/".join(parts[i:])
+            if not tail.startswith(REPO_TOPS):
+                continue
+            if os.path.exists(os.path.join(self.root, tail)):
+                self.foreign_prefixes.append(p[: len(p) - len(tail)])
+                return tail, False
+        return p, True
+
+
+def normalize_text(text, rel):
+    """Rewrite absolute prerequisites to root-relative form.
+
+    Returns (new_text, unfixable_absolute_paths, shadowing_examples).
+    """
+    out_lines = []
+    unfixable = []
+    shadowing = []
     for idx, raw in enumerate(text.split("\n")):
         line = raw.rstrip("\r")
-        yield idx, line
-
-
-def normalize_text(text, root):
-    """Rewrite absolute prerequisites under `root` to root-relative form.
-
-    Returns (new_text, remaining_absolute_paths).
-    """
-    prefix = root.rstrip("/") + "/"
-    out_lines = []
-    remaining = []
-    for idx, line in split_depfile(text):
         if idx == 0 or not line.strip():
             out_lines.append(line)
             continue
@@ -81,41 +121,14 @@ def normalize_text(text, root):
             out_lines.append(line)
             continue
         if path.startswith("/"):
-            normalized = os.path.normpath(path)
-            if normalized.startswith(prefix):
-                path = normalized[len(prefix) :]
-            else:
-                remaining.append(normalized)
-                path = normalized
+            new_path, bad = rel.relativize(path)
+            if bad:
+                unfixable.append(new_path)
+            elif not new_path.startswith("/"):
+                shadowing.append((path, new_path))
+            path = new_path
         out_lines.append("\t" + path + suffix)
-    return "\n".join(out_lines), remaining
-
-
-def classify(offenders, root):
-    """Split remaining absolute paths into FATAL (shadowing) and benign.
-
-    An absolute path is FATAL when the same repo-relative tail ALSO exists
-    inside this build root — that is precisely the silent-staleness defect: the
-    depfile names another checkout's copy of a file we have locally, so local
-    edits to it invalidate nothing. A path with no local counterpart (a real
-    system header, say) is merely unportable, not a correctness trap.
-    """
-    fatal, benign = [], []
-    for path in offenders:
-        tail = None
-        # Find a plausible repo-relative tail: the longest suffix of the path
-        # that exists inside our root.
-        parts = path.strip("/").split("/")
-        for i in range(len(parts)):
-            candidate = "/".join(parts[i:])
-            if os.path.exists(os.path.join(root, candidate)):
-                tail = candidate
-                break
-        if tail and tail.startswith(("src/", "include/", "config/", "build/")):
-            fatal.append((path, tail))
-        else:
-            benign.append(path)
-    return fatal, benign
+    return "\n".join(out_lines), unfixable, shadowing
 
 
 def main():
@@ -139,9 +152,11 @@ def main():
             print(f"normalize-depfiles: no build dir at {build_dir}; nothing to do")
         return 0
 
+    rel = Relativizer(root)
     scanned = changed = 0
-    all_fatal = []
-    all_benign = []
+    shadow_examples = []
+    unfixable_examples = []
+    n_shadow = n_unfixable = 0
 
     for dirpath, _dirnames, filenames in os.walk(build_dir):
         for name in filenames:
@@ -156,10 +171,13 @@ def main():
                 print(f"normalize-depfiles: WARN cannot read {path}: {exc}", file=sys.stderr)
                 continue
 
-            new_text, remaining = normalize_text(text, root)
-            fatal, benign = classify(remaining, root)
-            all_fatal.extend((path, p, t) for p, t in fatal)
-            all_benign.extend((path, p) for p in benign)
+            new_text, unfixable, shadowing = normalize_text(text, rel)
+            n_shadow += len(shadowing)
+            n_unfixable += len(unfixable)
+            if shadowing and len(shadow_examples) < 5:
+                shadow_examples.append((path, shadowing[0][0], shadowing[0][1]))
+            if unfixable and len(unfixable_examples) < 5:
+                unfixable_examples.append((path, unfixable[0]))
 
             if new_text != text:
                 changed += 1
@@ -172,33 +190,31 @@ def main():
     if not args.quiet:
         verb = "would rewrite" if args.check else "rewrote"
         print(f"normalize-depfiles: scanned {scanned} depfile(s), {verb} {changed}")
+        if n_shadow:
+            print(f"  {n_shadow} prerequisite path(s) named a FOREIGN checkout "
+                  f"and were re-pointed at this tree")
 
-    if all_benign and not args.quiet:
-        print(f"normalize-depfiles: NOTE {len(all_benign)} out-of-tree absolute "
-              f"path(s) left as-is (no local counterpart, not a staleness risk)")
-        for dfile, p in all_benign[:5]:
+    if n_unfixable and not args.quiet:
+        print(f"normalize-depfiles: NOTE {n_unfixable} out-of-tree absolute path(s) "
+              f"left as-is (no local counterpart, not a staleness risk)")
+        for dfile, p in unfixable_examples:
             print(f"    {dfile}: {p}")
-
-    if all_fatal:
-        print("", file=sys.stderr)
-        print("normalize-depfiles: FATAL — depfile(s) reference a FOREIGN checkout.", file=sys.stderr)
-        print("  These name another tree's copy of a file that also exists here, so", file=sys.stderr)
-        print("  editing the local copy would invalidate NOTHING and the build would", file=sys.stderr)
-        print("  silently report a stale result. Refusing to continue.", file=sys.stderr)
-        print("", file=sys.stderr)
-        for dfile, p, tail in all_fatal[:10]:
-            print(f"    {dfile}\n        -> {p}\n        (local copy exists at {tail})", file=sys.stderr)
-        if len(all_fatal) > 10:
-            print(f"    ... and {len(all_fatal) - 10} more", file=sys.stderr)
-        print("", file=sys.stderr)
-        print("  Recover with:  find <build-dir> -name '*.d' -delete && tools/ninja-locked", file=sys.stderr)
-        return 1
 
     if args.check and changed:
         print("", file=sys.stderr)
-        print(f"normalize-depfiles: FAIL — {changed} depfile(s) still use absolute "
-              f"in-tree paths.", file=sys.stderr)
-        print("  Run: python3 tools/normalize-depfiles.py", file=sys.stderr)
+        print(f"normalize-depfiles: FAIL — {changed} depfile(s) do not use "
+              f"repo-relative paths.", file=sys.stderr)
+        if n_shadow:
+            print("", file=sys.stderr)
+            print(f"  {n_shadow} of those prerequisites name ANOTHER checkout's copy of a", file=sys.stderr)
+            print("  file that also exists here. Editing the local copy would invalidate", file=sys.stderr)
+            print("  NOTHING — ninja would print \"no work to do\" and the build would", file=sys.stderr)
+            print("  silently report a STALE result. Examples:", file=sys.stderr)
+            print("", file=sys.stderr)
+            for dfile, foreign, local in shadow_examples:
+                print(f"    {dfile}\n        names  {foreign}\n        ours   {local}", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  Fix with:  python3 tools/normalize-depfiles.py", file=sys.stderr)
         return 1
 
     return 0

@@ -428,14 +428,29 @@ fi
 # trigger a rebuild — the warm cache above stays warm. The --check pass then
 # HARD-FAILS if anything still points at a foreign checkout: better an aborted
 # setup than a worktree that silently measures the wrong tree.
+#
+# Use the worktree's own copy when it has one, else THIS script's sibling copy:
+# a worktree based on a ref that predates the normalizer (bisecting, or
+# reproducing an old lane) checks out a tools/ without it, and hard-failing
+# there would break a legitimate workflow. The tool is checkout-independent —
+# it only rewrites build-cache text — so the sibling copy is safe to use.
+NORMALIZER="$WORKTREE_PATH/tools/normalize-depfiles.py"
+[ -f "$NORMALIZER" ] || NORMALIZER="$SCRIPT_DIR/normalize-depfiles.py"
+if [ ! -f "$NORMALIZER" ]; then
+    echo "FATAL: tools/normalize-depfiles.py not found in the worktree or next to" >&2
+    echo "       this script. Cannot verify the warm cache is location-independent," >&2
+    echo "       and an unverified warm cache silently reports STALE results." >&2
+    exit 1
+fi
+
 echo "==> Normalizing depfiles to repo-relative paths (kills the silent stale-header read)"
-if ! "python3" "$WORKTREE_PATH/tools/normalize-depfiles.py" \
+if ! python3 "$NORMALIZER" \
         --root "$WORKTREE_PATH" --build-dir "$WT_BUILD" --quiet; then
     echo "FATAL: depfile normalization failed — this worktree would silently report" >&2
     echo "       stale results for header edits. Aborting rather than lying." >&2
     exit 1
 fi
-if ! "python3" "$WORKTREE_PATH/tools/normalize-depfiles.py" \
+if ! python3 "$NORMALIZER" \
         --root "$WORKTREE_PATH" --build-dir "$WT_BUILD" --check --quiet; then
     echo "FATAL: depfiles still reference a foreign checkout after normalization." >&2
     echo "       Recover: find $WT_BUILD -name '*.d' -delete" >&2
