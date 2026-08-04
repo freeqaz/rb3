@@ -1704,7 +1704,193 @@ Both are well-scoped, with per-consumer risk and a sequencing note. My call:
   xenon-side material defect is the higher-value next step, and the CRs want a
   dedicated engine lane afterwards.
 
+> ⛔ **Coordinator correction, 2026-08-04 (X22).** The clause above — "§2's
+> shared-material defect … **will leave the visible meshes pink even after CR-2
+> lands**" — is **REFUTED BY MEASUREMENT**, and it was mine: I carried it from
+> X21 into X22's charter as its central premise. The shared-material defect is
+> real and is now closed, and closing it moved the band's pinkness **2670 px →
+> 2615 px** (8.0% → 7.9%). It was never why the band is pink. The rest of the
+> sequencing paragraph stands; only the "higher-value next step" ordering is
+> withdrawn. See X22 below.
+
+## X22 — LANDED 2026-08-04: ★★★ THE PINK IS DIAGNOSED END TO END (xenon main `edffb29a`..`f42e1a81`)
+
+Doc `docs/plans/x22-shared-material-2026-08-03.md` (486 lines). Branch
+`x22-shared-material` from `a46979fb`, rebased onto `f278d4d7`, fast-forwarded.
+Engine pin `138e1606`, **zero engine edits**. Gate **PASS 18/18, rc=0, 0 SKIPs**
+(fresh, stale binaries deleted, six-flag cache verified).
+
+**Coordinator E1 PASS — I opened both frames myself.**
+`x22-A-skinmatfix-club.png`: the four band members on the club stage are plainly
+**magenta**. `x22-C-swapresource-club.png`: the magenta is **gone**, the clothing
+reads dark/neutral, and the venue and the balcony crowd are unchanged between the
+two. This is an independent confirmation of the lane's pixel counts, not a
+restatement of them.
+
+### Three results, in the order they matter
+
+1. ★★★ **The band is pink because of the *CLOTHING* materials, which no census
+   on this ladder had ever looked at.** Five lanes filtered on the five *skin*
+   material names (`torso_naked`, `legs_skin`, `feet_skin`, `feet_socks_skin`,
+   `head_naked`) and read the result as "why the band is pink". A clothed member
+   is mostly **cloth** — `torso_militaryjacket.mat`, `trackjacket_resource.mat`,
+   `torso_shred.mat`, `legs_grungepants.mat`, `tiightjeans_resource.mat`,
+   1150–1778 verts each — all drawing through `dummy_torso/legs/feet.tex`, and
+   all invisible to a filter keyed on the five skin names. **The filter made the
+   answer unreachable by construction.**
+2. ★★★ **The pink is MEASURED, not inferred.** `dummy_torso/legs/feet/guitar.tex`
+   are 8×8 DXT magenta, block-0 endpoints `rgb(246,222,238)`/`rgb(189,28,238)`,
+   all four identical. This sampling sat on the handoff list from X19 through
+   X21 undone; without it the chain's last link was unmeasured.
+3. ★★★ **The missing operation is `OutfitConfig::MatSwap::SwapResource()` —
+   shipped code whose only caller is the function X21 measured at 0 calls.**
+   `DrawPreClear()` calls `SwapResource()` at `OutfitConfig.cpp:1088` and
+   `Compose()` at `:1097` — **eleven lines apart in one function**. One dispatch
+   gates both.
+
+### ★★★ The two halves are SEPARABLE, and that changes the plan
+
+| band region | baseline | skin-mat repoint | **+`SwapResource()`** |
+|---|---|---|---|
+| pink px | 2670 (8.0%) | 2615 (7.9%) | **80 (0.2%)** |
+| dark px | 370 | 438 | **1035** |
+| rc / coverage | 0 / 38.92% | 0 | **0 / 38.92%** |
+
+⇒ **The swap alone removes 97% of the pink**, is pure consumer-side object
+plumbing, needs **no engine change**, and — unlike X21's polarity arm — does
+**not** kill the frame (the pass-nesting violation comes from the *compose* half,
+which opens render passes). It leaves the clothing **dark**, because the
+`*_output.tex` render targets it repoints onto are never painted. So **compose is
+required for the band to be *textured*, but not for it to stop being *pink*.**
+
+⚠ Currently `RB3_X22_SWAP_RESOURCE=1`, a **harness-only diagnostic**: it calls
+one half of an ordered function and skips the `PreRender`/patch work between the
+halves. **Evidence, not a shippable fix.** Its faithful home is the repaired
+`DrawPreClear` dispatch.
+
+### Milestone 1 closed (the defect that was real but wasn't the cause)
+
+`BandCharacter::Filter` (`:2519-2523`) carries retail's own answer: any object
+whose `Dir()` is `sCharSharedDir` gets `Find<Hmx::Object>(name, true)` +
+`::ReplaceRefs` + `kIgnore` — i.e. retail **un-shares `char_shared` per member at
+merge**. The native `FilterSubdir` shim (`:2586`) converts `kMergeMerge →
+kMergeReplace` for every subdir that is its own on-disk milo, so `char_shared`
+stays a shared reference and that arm never runs. **The sharing is authored; the
+persistence of it is the defect.** Fixed per-mesh via `SetMat` (not the global
+`::ReplaceRefs`, which walks the global ref ring carrying all four members and
+would repoint the whole band onto whichever ran last — retail survives that only
+because each member's merge is atomic and ordered). Measured: 20/20 per-member
+replacement materials exist and are member-owned (retail's `MILO_ASSERT` would
+hold), 18 showing meshes repointed, **every one `reach==1` by pointer**, distinct
+`RndMat` 11→14, NULL diffuses 4→0, frame delta **1048 px entirely inside the
+band's bbox, 0 px outside**. Default-ON, opt-out `RB3_NO_SKINMAT_REBIND=1`.
+
+### ⚠ `main`'s native gate broken a FIFTH time — repaired as part of this landing
+
+`f278d4d7` (wave4, +350 matched) landed **eight** native breakages; six compile,
+and **two link errors that were masked behind the compile failures**. Repair:
+xenon main `ac23ad26`, 8 files, +113/−7, all X360-neutral.
+
+| cause | repair |
+|---|---|
+| retail 2-arg `MemAlloc` declared only `#ifndef HX_NATIVE` | guard; native arm = pre-wave4 5-arg call |
+| `MiloStripEval` declared only `#ifndef HX_NATIVE` (×3 sites) | same guard — **call preserved, not deleted**; native arm keeps a real `MILO_LOG`/`MILO_NOTIFY` |
+| 2-arg `ObjRefOwner::Replace` is the X360 ObjRefNode model (×2 sites) | native arm calls `ReplaceRefs`, the pattern already at `EventTrigger.cpp:735-751` |
+| wave4 gave `RndFont::CellDiff` a real **unguarded** in-class body | now-redundant native stub DELETED |
+| X360 vector iterator IS `T*`; native `__normal_iterator`'s ctor from one is `explicit` | guard; native arm = pre-wave4 offset spelling |
+| **link:** `PopRev(Hmx::Object*)` declared + called ×4, never defined | one native-only definition forwarding to the static member |
+| **link:** `VocalTrack::JumpReset()` called, TU not a source of those targets | no-op stub beside the existing `RebuildHUD` stub |
+
+★ The wave omitted the `HX_NATIVE` guard **13 lines away from a site where it
+used the same guard correctly** (`CharBoneDir.cpp:283`).
+
+★ **Neutrality was proven, not asserted:** raw `.obj` sha256 was tried and
+**rejected** — `mwcceppc` output is not byte-deterministic here (three builds of
+identical source produced three different hash sets). The A/B is per-unit objdiff
+`matched`/`fuzzy`, identical to six decimals across all six touched units, plus a
+mechanical `0 unguarded` count. **No unit was unscoreable.**
+
+### ⚠ Owed — surfaced by the repair, NOT fixed (wave-owner / native-lane calls)
+
+- ★★ **wave4 removed two behaviours from `SpotlightDrawer::PostDraw`** that the
+  native renderer inherits: the `DrawBeams` call (spotlight beams no longer
+  drawn) and the `GetGfxMode()==kOldGfx → DrawShadow()` branch. Plausibly correct
+  matching work; **visible native regressions if not.** Reverting either would
+  regress the X360 match, so this is not the repair lane's call.
+- ⚠ **Possible defect in the matching work:** `MemMgr.cpp:554`'s
+  `(MemAlloc)(size, (int)file)` truncates a `const char*` into an `int align`.
+  Inert today (the 2-arg allocator ignores `align`) and it is the register shape
+  retail's stripped 3-param `MemRealloc` wants — but it is a pointer truncation
+  inside a 6-param signature.
+- ⚠ **Native behaviour change from the `CellDiff` stub deletion:** text layout
+  that saw a constant `0.0f` now gets the real cell-aspect ratio and divides by
+  `mCellSize.x`. Correct value — the native lane should know.
+- ★★ **`cmake/ScatterIncludes.cmake:88` scans with an UNANCHORED regex**, so an
+  `#if`-directive token written inside a **comment** pushes its nesting stack.
+  This cost a full gate cycle: a quoted directive in a Console.cpp comment
+  un-pruned `MultiMesh.cpp` and `Crowd.cpp` and produced an error in a file
+  nobody had touched. Worked around (prose comments + a warning in each affected
+  TU, scanner classification verified identical); **the fragility itself is
+  unfixed** and is worth its own charter.
+
+### Milestone 2 NOT advanced — fourth consecutive lane
+
+The 120 `CharHair`/IK publications onto the shared unplaced skeleton. Dead-ends
+doc read first as instructed; none of the four retried, **no fifth proposed**.
+§7 carries an unmeasured argument that they are downstream of a *different*
+mechanism than the material share.
+
+### Lessons (X22 §12)
+
+1. ★★★ **A census's FILTER is part of its claim.** Ask what a census excludes
+   before trusting it.
+2. ★★★ **"Count identities, not names" has a sibling: COUNT THE RIGHT SET.**
+   X21's 58-vs-11 was the right set counted wrongly; this was the wrong set
+   counted correctly. **Both read as facts about the frame.**
+3. ★★★ **When two operations sit in one function, dispatch them separately
+   before pricing the repair.** Eleven lines of separation was worth a whole CR
+   of sequencing.
+4. ★★ **Measure the last link even when the chain is obvious** — `dummy_*.tex`
+   went three lanes unsampled while every lane assumed its colour.
+5. ★★ **Write down the wrong tests.** Two of the lane's three "is this mesh the
+   member's own" tests were wrong and each gave a clean, confident, false answer
+   (`mesh->Dir() == bc` said 0 of 172 were repointable — the dir's *name* is the
+   sixth-time-rule trap). Only reach-count by pointer asks the real question.
+6. ★★ **A predicate that returns 0 on your control is broken, not informative.**
+
 ## Next (not yet chartered)
+
+**Ordering decided 2026-08-04 after X22.** The band's clothing is now the whole
+critical path and it splits cleanly:
+
+1. ★★★ **Land the `SwapResource()` dispatch — FIRST, and on its own.** Promote
+   it out of X22's `RB3_X22_SWAP_RESOURCE` harness into the repaired
+   `DrawPreClear` (the harness calls one half of an ordered function and skips
+   the `PreRender`/patch work between the halves). Consumer-side only, **no
+   engine change**, does not kill the frame, removes 97% of the pink. Expect
+   **dark** clothing, not correct clothing.
+2. ★★★ **Then the compose lane (coordinator-owned, engine commits + pin bump
+   across three consumers).** CR-1 move `gRB3OutfitComposeActive` out of
+   `RB3Quad.cpp` — **and delete X20's deliberately-strong stub at
+   `x20_bandpatchmesh_link.cpp:107` in the SAME change, or xenon fails to
+   link.** Then CR-2 implement compose in dc3's `DrawRect` (~150–190 lines; the
+   real risk is the `mat->GetColor()` fold touching every dc3 `DrawRect`
+   caller), resolving the pass-nesting violation or it lands dead. Then flip
+   `RB3_X21_PRECLEAR_POLARITY_FIX` default-ON, then bump `MILO_ENGINE_PIN`.
+3. ★★ **Re-run X22's censuses after compose lands** — `x22-showing-r1.log` is
+   the before-picture; every `dummy_*` row should become an `*_output.tex` row.
+4. ★★★ **The 120 shared-skeleton publications** — untouched for a FOURTH lane.
+   Read `docs/CHAR_SKINNING_DEFORM_INVESTIGATION.md` first; four un-share
+   attempts are proven dead ends and no fifth has been proposed.
+5. ★★ Carried untouched since X19: fix `FindBoneNamed` at its other call sites;
+   a geometric oracle with a reference pose. `Rnd::DrawPreClear`'s retail arm
+   **cannot be scored** (`target_size=0`) — state that, don't imply coverage.
+6. ⚠ Wave4 fallout from the gate repair (see X22): `SpotlightDrawer::PostDraw`'s
+   removed `DrawBeams`/`DrawShadow`; `MemMgr.cpp:554`'s pointer truncation;
+   `ScatterIncludes.cmake:88`'s unanchored regex.
+7. ⚠ Own lanes, still untouched: `ReProject`/`PreRender` counted stubs (0 in
+   every X22 run); widen `RB3_SYNCPROP_LOCAL_STATIC` (X20 §1.2).
+
 - The undecided polled pose (blocked on the above); band textures
   (`OutfitConfig` **registration**, 48-symbol bill re-verified); hair (7 meshes,
   2 naming conventions); Direction-B rows 4 and 3b; camera shots; X6's engine

@@ -210,6 +210,36 @@ Prefer high-value areas. Use `/progress` and `scripts/dc3_compare.py` for per-un
 - Do not include `Co-Authored-By` lines in commit messages
 - Use worktrees for isolated experiments. A bare `git worktree add` is unbuildable here (build inputs/toolchain are gitignored); run `tools/setup-worktree.sh <name>` to get a buildable + diffable worktree in ~1.5s via CoW reflinks (see docs/decomp/worktree-setup.md)
 
+### ★ Landing a worktree branch: ALWAYS `git merge --no-ff`
+
+**Effective 2026-08-04, this SUPERSEDES the previous cherry-pick / `git apply` /
+`format-patch` / `--ff-only` landing strategies wherever they appear in older
+docs and plan files.** Those dated records stay as they are — don't rewrite
+them, don't follow them.
+
+```bash
+# in the main repo, after the lane's branch is rebased onto master and verified
+git merge --no-ff lane-branch-name          # NOT --ff-only, NOT cherry-pick
+```
+
+**Why:** the lane's intermediate commits are the point. The failed attempt, the
+revert with its reasoning, the "tried X, regressed N units, reverted" — that is
+the most valuable thing in a decomp log, and it feeds the training-data
+pipelines. Cherry-picking or squashing keeps only the final diff and discards
+every negative result along the way; `--ff-only` loses the branch boundary, so
+you can no longer see where a lane began and ended. A merge commit preserves
+both.
+
+- **Rebase onto `master` first**, then merge. The merge commit is for preserving
+  lane history, not for recording that the lane was stale.
+- **Write a real merge-commit message** — what the lane set out to do, what it
+  found, and what it deliberately did *not* do. Never accept the default
+  `Merge branch 'x'`.
+- Everything else still holds: stage only your own paths, no `Co-Authored-By`,
+  committing is standing-authorized but **pushing is not**.
+- Cherry-pick survives for exactly one case: **salvaging a single commit from a
+  lane whose remainder is being abandoned.** Say so explicitly in the message.
+
 ## Multi-Agent Workflows (ultracode / Workflow tool)
 
 - **Checkpoint agent outputs to disk.** Every workflow subagent whose result
