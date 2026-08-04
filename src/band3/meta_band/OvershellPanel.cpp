@@ -1239,7 +1239,7 @@ void OvershellPanel::Poll() {
             bWasFinding = mSessionMgr->GetMatchmaker()->IsFinding();
         }
         UIPanel::Poll();
-        for (unsigned int slotI = 0; slotI < mSlots.size(); slotI++) {
+        for (int slotI = 0; slotI < mSlots.size(); slotI++) {
             mSlots[slotI]->Poll();
         }
     }

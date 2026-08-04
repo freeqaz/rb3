@@ -171,7 +171,7 @@ void CharKeyHandMidi::EndTest() {
 }
 
 DataNode CharKeyHandMidi::OnFingersUp(DataArray *msg) {
-    const KeyboardKey& key = (KeyboardKey)msg->Int(2);
+    KeyboardKey key = (KeyboardKey)msg->Int(2);
     MILO_ASSERT(key > kNoKey && key <= kKeyC4, 0x65);
     for (int i = 0; i < 5; i++) {
         if (unk6c[i] == (KeyboardKey)(key - kNoKey)) {

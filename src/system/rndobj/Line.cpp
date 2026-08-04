@@ -106,9 +106,7 @@ static void Add(const Vector3 &v3, const Vector2 &v2, Vector3 &out) {
 static void Subtract(const Vector3 &v3, const Vector2 &v2, Vector3 &out) {
     float z = v3.z - v2.y;
     float x = v3.x - v2.x;
-    out.y = v3.y;
-    out.x = x;
-    out.z = z;
+    out.Set(x, v3.y, z);
 }
 
 static int LINE_REV = 4;

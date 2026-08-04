@@ -418,7 +418,11 @@ unsigned int RGGetChordShapeID(const GameGem &gem, bool b) {
         if (!b && gem.GetRGNoteType(i) == kRGGhost)
             fret = -1;
         MILO_ASSERT(fret > -2, 0x2B4);
-        fret = fret < 1 ? fret + 1 : Min(fret + range, 7);
+        if (fret < 1) {
+            fret = fret + 1;
+        } else {
+            fret = Min(fret + range, 7);
+        }
         mask |= fret << (i * 4);
     }
     unsigned int strumMask = 0x3F;

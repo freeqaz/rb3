@@ -239,8 +239,7 @@ namespace {
 
 int CheckContext(const DataArray *a) {
     gContextWeight = 10;
-    int result = (int)CheckContextAnd(a);
-    return gContextWeight & ((result | -result) >> 31);
+    return CheckContextAnd(a) ? gContextWeight : 0;
 }
 
 void HandleContextUsed(Symbol ctx) { gUsedContexts.insert(ctx); }

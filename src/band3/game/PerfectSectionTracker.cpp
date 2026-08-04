@@ -29,8 +29,9 @@ void PerfectSectionTracker::ConfigureTrackerSpecificData(const DataArray *arr) {
 void PerfectSectionTracker::HandlePlayerSaved_(const TrackerPlayerID &pid) {
     Player *pPlayer = mSource->GetPlayer(pid);
     MILO_ASSERT(pPlayer, 0x46);
+    TrackType trackType = pPlayer->GetTrackType();
     std::map<TrackType, PlayerStreakData>::iterator it =
-        unk5c.find(pPlayer->GetTrackType());
+        unk5c.find(trackType);
     if (it != unk5c.end()) {
         it->second.unk1c = 0;
     }

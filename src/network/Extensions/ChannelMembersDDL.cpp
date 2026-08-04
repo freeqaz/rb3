@@ -11,16 +11,11 @@ namespace Quazal {
     }
 
     void _DS_ChannelMembers::AddSourceTo(Message *msg, Time, bool) {
-        unsigned int count;
-        qList<VoiceChannelMember>::iterator it = m_dsMemberList.begin();
-        unsigned int n = 0;
-        for (; it != m_dsMemberList.end(); ++it) {
-            n++;
-        }
-        count = n;
+        unsigned int count = m_dsMemberList.size();
         msg->Append((const unsigned char *)&count, 4, 1);
 
-        for (it = m_dsMemberList.begin(); it != m_dsMemberList.end(); ++it) {
+        for (std::list<VoiceChannelMember>::iterator it = m_dsMemberList.begin();
+             it != m_dsMemberList.end(); ++it) {
             _DDL_VoiceChannelMember::Add(msg, *it);
         }
     }

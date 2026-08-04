@@ -216,12 +216,19 @@ void PitchArrow::SetSplit(bool b) {
     RndPropAnim *anim = mSplitAnim;
     if (anim) {
         float next = anim->mFrame;
-        if (b) next = next + 0.05f;
-        else next = next - 0.05f;
+        if (b) {
+            next += 0.05f;
+        } else {
+            next -= 0.05f;
+        }
         float clamped;
-        if (next > 1.0f) clamped = 1.0f;
-        else if (next < 0.0f) clamped = 0.0f;
-        else clamped = next;
+        if (next > 1.0f) {
+            clamped = 1.0f;
+        } else if (next < 0.0f) {
+            clamped = 0.0f;
+        } else {
+            clamped = next;
+        }
         anim->SetFrame(clamped, 1.0f);
     }
 }

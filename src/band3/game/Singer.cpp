@@ -423,13 +423,10 @@ int Singer::SuddenOctaveShift(float pitch) const {
 }
 
 void Singer::UpdatePitchDeviation(float pitch) {
-    int count = mPitchDeviationFrameCount + 1;
-    mPitchDeviationFrameCount = count;
-    float dev = mPitchDeviationDev;
-    float mean = mPitchDeviationMean;
-    float newMean = mean + (pitch - mean) / (float)count;
-    mPitchDeviationMean = newMean;
-    mPitchDeviationDev = dev + (std::fabs(pitch - newMean) - dev) / (float)count;
+    mPitchDeviationFrameCount++;
+    float meanDiff = (pitch - mPitchDeviationMean) / (float)mPitchDeviationFrameCount;
+    mPitchDeviationMean += meanDiff;
+    mPitchDeviationDev += (std::fabs(pitch - mPitchDeviationMean) - mPitchDeviationDev) / (float)mPitchDeviationFrameCount;
 }
 
 float Singer::GetPartPercentage(int part) const {

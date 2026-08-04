@@ -56,7 +56,7 @@ MemResizeElem(void *&, int &, void *, int, int, const char *);
 void *RndMeshDeform::VertArray::FindVert(int vert) {
     u8 *buf = (u8 *)mData;
     while (vert != 0) {
-        buf = (*buf * 2) + buf + 1;
+        buf = (u8 *)((buf[0] << 1) + 1 + (u8 *)buf);
         vert--;
     }
     MILO_ASSERT(buf <= (u8 *)mData + mSize, 0x37);

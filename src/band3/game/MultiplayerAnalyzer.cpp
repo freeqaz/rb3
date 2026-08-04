@@ -199,7 +199,7 @@ void MultiplayerAnalyzer::GetCodaExtents(const UserGuid &u, int &i1, int &i2) {
     if (TheSongDB->GetCodaStartTick() != -1) {
         int tracknum = mConfig->GetTrackNumByUserGuid(u);
         if (tracknum != -1) {
-            std::vector<FillExtent> &fills = mSongData->GetDrumFillInfo(tracknum)->mFills;
+            const std::vector<FillExtent> &fills = mSongData->GetDrumFillInfo(tracknum)->mFills;
             if (fills.size() != 0) {
                 i1 = fills.back().start;
                 i2 = fills.back().end;

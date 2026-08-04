@@ -216,7 +216,7 @@ bool UsbWii::OpenLib() {
             return false;
         }
     }
-    return WaitForUSBOpenCloseResult();
+    return WaitForUSBOpenCloseResult() == 0;
 }
 
 void UsbWii::SetLED(int num, int led) {

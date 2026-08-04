@@ -262,7 +262,7 @@ Symbol StoreOfferProvider::PosToShortcut(int pos) {
     Element **it = &mElements[pos];
     while (it >= start) {
         Element *e = *it;
-        if (e->mShortcut.Str() != gNullStr) {
+        if (!e->mShortcut.Null()) {
             return e->mShortcut;
         }
         --it;
@@ -272,8 +272,7 @@ Symbol StoreOfferProvider::PosToShortcut(int pos) {
 }
 
 int StoreOfferProvider::ShortcutToPos(Symbol s) {
-    unsigned int n = mElements.size();
-    for (unsigned int i = 0; i < n; i++) {
+    for (int i = 0; i < mElements.size(); i++) {
         if (mElements[i]->mShortcut == s) {
             return i;
         }

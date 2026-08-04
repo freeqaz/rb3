@@ -150,10 +150,7 @@ namespace MemMgr {
 }
 
 MemHeapStack &ThreadMemStack(bool createIfMissing) {
-    CriticalSection *lock = gMemStackLock;
-    if (lock != nullptr) {
-        lock->Enter();
-    }
+    CritSecTracker tracker(gMemStackLock);
     if (MemMgr::gNumThreads == 0) {
         MemMgr::gThreadIds[0] = OSGetCurrentThread();
         MemMgr::gNumThreads = 1;
@@ -168,11 +165,7 @@ MemHeapStack &ThreadMemStack(bool createIfMissing) {
                 idx++;
             }
             if (createIfMissing == 0) {
-                MemHeapStack &nullStack = gNullMemStack;
-                if (lock != nullptr) {
-                    lock->Exit();
-                }
-                return nullStack;
+                return gNullMemStack;
             }
             if (idx == MemMgr::gNumThreads) {
                 int cur;
@@ -189,11 +182,7 @@ MemHeapStack &ThreadMemStack(bool createIfMissing) {
             MemMgr::gCurThread = idx;
         }
     }
-    MemHeapStack &result = gThreadBuf[MemMgr::gCurThread];
-    if (lock != nullptr) {
-        lock->Exit();
-    }
-    return result;
+    return gThreadBuf[MemMgr::gCurThread];
 }
 
 int GetCurrentHeapNum() {
@@ -264,8 +253,7 @@ void MemTerminate() {}
 
 int MemFindAddrHeap(void *addr) {
     for (int i = 0; i < gNumHeaps; i++) {
-        int *start = gHeaps[i].mStart;
-        if (addr >= start && addr < start + gHeaps[i].mSizeWords) {
+        if (addr >= gHeaps[i].mStart && addr < (char *)gHeaps[i].mStart + gHeaps[i].mSizeWords * 4) {
             return i;
         }
     }
@@ -898,7 +886,8 @@ void *_MemRealloc(void *mem, int newSize, int align) {
         _MemFree(mem);
         return dst;
     }
-    return realloc(mem, newSize);
+    void *ret = realloc(mem, newSize);
+    return ret;
 }
 
 int MemNumHeaps() { return gNumHeaps; }
@@ -1286,17 +1275,16 @@ void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
 int GetFreeSystemMemory() {
     int low = 0;
     int high = 0x40000000;
-    do {
-        int mid;
-        mid = (high + low) / 2;
+    while (low + 1 < high) {
+        int mid = (low + high) / 2;
         void *ptr = WiiMalloc(mid);
-        if (nullptr != ptr) {
+        if (ptr != nullptr) {
             low = mid;
             WiiFree(ptr);
         } else {
             high = mid;
         }
-    } while (low + 1 < high);
+    }
     return low;
 }
 

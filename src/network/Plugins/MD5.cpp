@@ -164,21 +164,16 @@ namespace Quazal {
         memset(XX, 0, sizeof(XX));
     }
 
-    void MD5::decode(unsigned int *dest, const unsigned char *src, unsigned int size) {
-        unsigned int j, i;
-        if (size == 0) {
-            return;
-        }
+    void MD5::decode(unsigned int *output, const unsigned char *input, unsigned int len) {
+    unsigned int i, j;
 
-        for (j = 0, i = 0; i < size + 3; j++, i += 4) {
-            // clang-format off
-            dest[j] = src[i + 0] << 0 |
-                src[i + 1] << 8 |
-                src[i + 2] << 16 |
-                src[i + 3] << 24;
-            // clang-format on
-        }
+    for (i = 0, j = 0; j < len; i++, j += 4) {
+        output[i] = ((unsigned int)input[j]) |
+                    (((unsigned int)input[j + 1]) << 8) |
+                    (((unsigned int)input[j + 2]) << 16) |
+                    (((unsigned int)input[j + 3]) << 24);
     }
+}
 
     void MD5::FF(
         unsigned int &a,
