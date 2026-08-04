@@ -65,10 +65,17 @@ fi
 
 # Skip the post-build progress print for ninja subtools / help / version
 # queries — those aren't builds and the report file may be stale or absent.
+#
+# `-n` / `--dry-run` is in this list for a sharper reason (added 2026-08-04):
+# a dry run's ENTIRE value is its output, and a stale manifest truncates that
+# output to two or three lines (see tools/ninja-dry for the mechanism). Bolting
+# a 40-line progress dashboard onto the end buries the one thing the caller
+# needed to read. Dry runs also build nothing, so there is no progress to
+# report. Use tools/ninja-dry for an invalidation check you can trust.
 skip_progress=0
 for arg in "$@"; do
     case "$arg" in
-        -t|--help|-h|--version) skip_progress=1 ;;
+        -t|--help|-h|--version|-n|--dry-run) skip_progress=1 ;;
     esac
 done
 

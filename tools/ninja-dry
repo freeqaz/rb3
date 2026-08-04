@@ -1,0 +1,226 @@
+#!/bin/sh
+# ninja-dry: a TRUSTWORTHY "would anything rebuild?" check.
+#
+# WHY THIS EXISTS
+# ---------------
+# `ninja -n` cannot be used as an invalidation check in this repo. When the
+# generated manifest (build.ninja) is itself out of date, ninja rebuilds the
+# manifest FIRST — and in dry-run mode it then deliberately gives up:
+#
+#     src/ninja.cc (v1.13.2), NinjaMain::main loop:
+#         if (ninja.RebuildManifest(options.input_file, &err, status)) {
+#           // In dry_run mode the regeneration will succeed without changing
+#           // the manifest forever. Better to return immediately.
+#           if (config.dry_run)
+#             exit(0);
+#           continue;   // (non-dry-run: reload the manifest and start over)
+#         }
+#
+# So `ninja -n` prints the two or three manifest-regeneration edges and exits
+# **0**, having never looked at a single compile edge. That is byte-for-byte
+# indistinguishable from a genuine "nothing to do" — and it is a FALSE
+# NEGATIVE, not an error. Repeating the check does not help: a dry run never
+# runs the generator command and never writes .ninja_log, so the manifest stays
+# stale and every subsequent `ninja -n` gives the same empty answer. From the
+# caller's point of view the generator edge is permanently dirty.
+#
+# The manifest goes stale constantly here — the `build build.ninja: configure`
+# edge lists configure.py, tools/project.py, tools/ninja_syntax.py,
+# config/<VER>/config.json and config/<VER>/objects.json as inputs, and
+# objects.json is edited by ordinary decomp work. A freshly created worktree is
+# stale too (git stamps every checked-out file with "now", while the .ninja_log
+# seeded from main carries older recorded mtimes).
+#
+# HOW THIS FIXES IT
+# -----------------
+# Materialise the manifest for real, THEN dry-run. A real `ninja build.ninja`
+# runs the generator, writes .ninja_log, and converges — after which `ninja -n`
+# is operating on a current graph and its answer means something.
+#
+# The convergence is ASSERTED, not assumed: we re-run `ninja build.ninja` until
+# ninja itself reports "no work to do", up to a bounded number of attempts. If
+# it never converges the generator really is perpetually dirty and we exit 2
+# (CHECK FAILED) rather than emit a verdict. An empty result is never reported
+# as a pass.
+#
+# NOT READ-ONLY. Phase 1 is a real (small) build: it may re-run configure.py and
+# `dtk dol split`. That is the same work any real build does first, and it is
+# unavoidable — while the manifest is stale, ninja's in-memory graph is the OLD
+# graph, so no answer derived from it can be trusted anyway.
+#
+# WHY NOT `ninja -t ...`
+# ----------------------
+# Every `-t` subtool runs at RUN_AFTER_FLAGS / RUN_AFTER_LOAD / RUN_AFTER_LOGS,
+# all strictly BEFORE the manifest-rebuild attempt, so subtools are immune to
+# the early exit — but none of them answers "what is dirty":
+#   -t targets / -t rules / -t commands  ignore dirtiness entirely
+#   -t deps / -t missingdeps             read .ninja_deps, which this repo
+#                                        deliberately keeps EMPTY (`deps="gcc"`
+#                                        was removed from every rule so ninja
+#                                        parses .d files directly; see CLAUDE.md
+#                                        "Concurrent Builds"). Do not "fix" that
+#                                        to make -t deps work.
+# `-t commands` IS useful as an honest denominator: it lists every edge in the
+# transitive closure of the requested targets, dirty or not.
+#
+# USAGE
+#   tools/ninja-dry                       # default targets
+#   tools/ninja-dry build/SZBE69_B8/src/system/ui/UILabel.o
+#   tools/ninja-dry -q <targets...>       # verdict line only
+#
+# EXIT CODES (diff(1) convention)
+#   0  CLEAN   — check succeeded, nothing would rebuild
+#   1  PENDING — check succeeded, N edges would rebuild (listed on stdout)
+#   2  FAILED  — the check could not be trusted; NO verdict was produced
+#
+# VERDICT LINE (always printed, always on stdout, always with a denominator)
+#   ninja-dry: CLEAN   0/1310 edge(s) pending
+#   ninja-dry: PENDING 17/1310 edge(s) pending
+#   ninja-dry: FAILED  ...reason...
+
+set -u
+
+MAX_MANIFEST_TRIES=5
+
+quiet=0
+args=""
+for arg in "$@"; do
+    case "$arg" in
+        -q|--quiet) quiet=1 ;;
+        -n|--dry-run) : ;;   # implied; swallow so callers can pass it harmlessly
+        *) args="$args $arg" ;;
+    esac
+done
+# shellcheck disable=SC2086
+set -- $args
+
+# ---- build dir + lock (identical derivation to tools/ninja-locked) ----------
+# The lock is PER BUILD DIRECTORY. Phase 1 is a real build, so this MUST be
+# serialised against concurrent tools/ninja-locked runs in the same tree; and
+# separate worktrees must still proceed in parallel.
+build_cwd="$PWD"
+prev=""
+for arg in "$@"; do
+    case "$prev" in
+        -C) build_cwd="$arg" ;;
+    esac
+    case "$arg" in
+        -C?*) build_cwd="${arg#-C}" ;;
+    esac
+    prev="$arg"
+done
+REPO="$(cd "$build_cwd" 2>/dev/null && pwd -P)" || REPO="$PWD"
+d="$REPO"
+while [ "$d" != "/" ] && [ ! -f "$d/build.ninja" ]; do
+    d=$(dirname "$d")
+done
+if [ -f "$d/build.ninja" ]; then
+    REPO="$d"
+fi
+
+if [ ! -f "$REPO/build.ninja" ]; then
+    echo "ninja-dry: FAILED  no build.ninja found at or above $build_cwd" >&2
+    exit 2
+fi
+
+exec 9>"$REPO/.ninja-build.lock"
+if ! flock -n 9; then
+    echo "ninja-dry: another build is running in $REPO; waiting for the lock..." >&2
+    flock 9
+fi
+
+# ---- phase 1: make the manifest genuinely current ---------------------------
+# `ninja build.ninja` builds ONLY the manifest chain. It is a no-op (<0.1s)
+# when already current. Assert convergence rather than assume it.
+#
+# A manifest with NO generator edge (build.ninja is not an output of any rule)
+# is trivially always current — ninja reports "unknown target 'build.ninja'".
+# That is a pass, not a failure. Found by the lock-isolation test 2026-08-04,
+# where ninja-dry wrongly reported FAILED on a hand-written scratch manifest.
+manifest_static=0
+manifest_work=0
+i=0
+while [ "$i" -lt "$MAX_MANIFEST_TRIES" ]; do
+    i=$((i + 1))
+    out=$(cd "$REPO" && ninja build.ninja 2>&1)
+    rc=$?
+    if [ "$rc" -ne 0 ]; then
+        case "$out" in
+            *"unknown target 'build.ninja'"*)
+                manifest_static=1
+                break
+                ;;
+        esac
+        echo "$out" >&2
+        echo "ninja-dry: FAILED  manifest regeneration exited $rc (see above)" >&2
+        exit 2
+    fi
+    case "$out" in
+        *"no work to do"*) break ;;
+        *) manifest_work=$((manifest_work + 1)) ;;
+    esac
+done
+if [ "$i" -ge "$MAX_MANIFEST_TRIES" ] && [ "$manifest_work" -ge "$MAX_MANIFEST_TRIES" ]; then
+    echo "ninja-dry: FAILED  build.ninja is still dirty after $MAX_MANIFEST_TRIES real regenerations." >&2
+    echo "                   The generator edge is genuinely unstable; no verdict produced." >&2
+    echo "                   Diagnose with: ninja -d explain -n build.ninja" >&2
+    exit 2
+fi
+
+# ---- phase 2: the dry run, now on a current graph ---------------------------
+dry=$(cd "$REPO" && ninja -n "$@" 2>&1)
+rc=$?
+if [ "$rc" -ne 0 ]; then
+    echo "$dry" >&2
+    echo "ninja-dry: FAILED  dry run exited $rc (see above)" >&2
+    exit 2
+fi
+
+# ---- phase 3: guard — the dry run must not have been truncated --------------
+# Structural guard first: re-assert that the manifest is STILL current. If
+# anything dirtied it between phase 1 and phase 2 (a concurrent edit, a restat
+# surprise), the dry run we just captured is the truncated one. Uses only
+# ninja's own "no work to do" sentinel — no parsing of our descriptions.
+post="ninja: no work to do."
+[ "$manifest_static" -eq 1 ] || post=$(cd "$REPO" && ninja build.ninja 2>&1)
+case "$post" in
+    *"no work to do"*) : ;;
+    *)
+        printf '%s\n' "$post" >&2
+        echo "ninja-dry: FAILED  build.ninja went stale during the check; the dry" >&2
+        echo "                   run above is truncated and no verdict is produced." >&2
+        exit 2
+        ;;
+esac
+
+# Belt-and-braces: if the manifest chain shows up in the dry-run output at all,
+# phase 1 did not hold and the answer is the truncated one. Refuse to report it.
+if printf '%s\n' "$dry" | grep -q 'RUN configure\.py'; then
+    printf '%s\n' "$dry" >&2
+    echo "ninja-dry: FAILED  the dry run was truncated by manifest regeneration" >&2
+    echo "                   despite phase 1 reporting the manifest current." >&2
+    exit 2
+fi
+
+# ---- denominator: every edge in the closure, dirty or not -------------------
+total=$(cd "$REPO" && ninja -t commands "$@" 2>/dev/null | grep -c . || true)
+[ -n "$total" ] || total=0
+
+# ---- count pending edges ----------------------------------------------------
+pending=$(printf '%s\n' "$dry" | grep -cE '^\[[0-9]+/[0-9]+\] ' || true)
+[ -n "$pending" ] || pending=0
+
+if printf '%s\n' "$dry" | grep -q 'no work to do'; then
+    pending=0
+fi
+
+if [ "$quiet" -eq 0 ] && [ "$pending" -gt 0 ]; then
+    printf '%s\n' "$dry"
+fi
+
+if [ "$pending" -eq 0 ]; then
+    echo "ninja-dry: CLEAN   0/$total edge(s) pending"
+    exit 0
+fi
+echo "ninja-dry: PENDING $pending/$total edge(s) pending"
+exit 1

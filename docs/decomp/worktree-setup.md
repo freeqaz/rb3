@@ -294,3 +294,31 @@ text depfile. Neither has any compiler-generated `.d` files at all (the `.d`
 files under their `build/tools/` are cargo artifacts). Do **not** port this fix
 to them — the mechanisms genuinely differ, and the shared thing is only the
 failure *class* (a warm cache that may not invalidate), not this defect.
+
+## A fresh worktree also could not be dry-run — FIXED 2026-08-04
+
+Same failure *class* as the depfile bug above, different mechanism, and it was
+found while investigating the fix for it. `configure.py` runs at the end of
+setup and writes `build.ninja`, but that does not satisfy the
+`build build.ninja: configure` edge: ninja compares the mtime it **recorded in
+`.ninja_log`** against the edge's inputs, and a new worktree pairs git-stamped
+(`now`) copies of `configure.py`, `tools/project.py`, `tools/ninja_syntax.py`
+and `config/<VER>/*.json` with a `.ninja_log` seeded from main carrying older
+recorded times — or, with `--cold-cache`, no log at all.
+
+A stale manifest makes **`ninja -n` return a false negative**: ninja rebuilds
+the manifest before anything else and then deliberately `exit(0)`s in dry-run
+mode. Measured A/B, identical `--cold-cache` conditions:
+
+```
+BEFORE:  ninja -n -> 3 edges, exit 0   (TOOL dtk / SPLIT / RUN configure.py)
+                                        ...while 1310 edges were pending.
+AFTER:   ninja -n -> 1310 edges, honest.
+```
+
+Setup now runs one real `ninja build.ninja` (0.13s when current, 4.7s worst
+case) so a new worktree is dry-runnable immediately. Pre-fix worktrees do **not**
+need recreating — `tools/ninja-dry` works in them as-is, or run
+`tools/ninja-locked build.ninja` once to settle the edge permanently.
+
+Full write-up: [ninja-dry-run-false-negative.md](ninja-dry-run-false-negative.md).
