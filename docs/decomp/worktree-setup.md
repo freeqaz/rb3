@@ -261,3 +261,36 @@ is itself normalized, that is none of them.
 
 Still true: this only ever bit `.h` edits. A `.cpp` edit names the file ninja
 is asked to build, so it always rebuilt normally.
+
+### Worktrees created BEFORE the fix are still exposed
+
+Setup only repairs worktrees it creates. A worktree made before 2026-08-04 keeps
+its absolute depfiles and **will still silently swallow header edits**. Measured
+at the time of the fix: ~50 live rb3 worktrees, most at **1274 / 1306** depfiles
+carrying main-repo absolute paths.
+
+Repair one in place — takes ~1s, rewrites path *spelling* only, and provably
+triggers **no** rebuild (verified: 1275 depfiles rewritten → 0 recompiles):
+
+```bash
+cd <worktree>
+flock .ninja-build.lock python3 tools/normalize-depfiles.py     # repair
+python3 tools/normalize-depfiles.py --check                     # verify (exit 0)
+```
+
+Take the worktree's own `flock` first, as shown — the repair rewrites the same
+`.d` files a concurrent compile would be writing.
+
+Cost when migrating a pre-fix cache: **13.36 MiB** exclusive disk (the rewritten
+depfiles stop sharing extents). On an already-normalized cache the tool writes
+nothing and exclusive stays at **0.00 B**.
+
+### The sibling decomps do NOT share this bug
+
+`rb3-xenon` and `dc3-decomp` were checked and are **immune, for a real reason
+rather than by luck**: both keep `deps = msvc` on their compile rules, so ninja
+stores dependencies in its own binary `.ninja_deps` and never re-reads a copied
+text depfile. Neither has any compiler-generated `.d` files at all (the `.d`
+files under their `build/tools/` are cargo artifacts). Do **not** port this fix
+to them — the mechanisms genuinely differ, and the shared thing is only the
+failure *class* (a warm cache that may not invalidate), not this defect.
