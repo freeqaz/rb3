@@ -414,6 +414,35 @@ if [ "$WARM_CACHE" -eq 1 ]; then
     fi
 fi
 
+# ---- depfiles : make the reflinked cache LOCATION-INDEPENDENT (correctness) --
+# The reflinked .d files may carry ABSOLUTE paths naming the MAIN repo (any
+# object compiled before tools/transform_dep.py started emitting relative
+# prerequisites). Because deps="gcc" is deliberately disabled, ninja reads those
+# .d files directly — so a header edit INSIDE this worktree would be checked
+# against MAIN's copy of the header, find it unchanged, print "no work to do",
+# and hand objdiff a STALE, IDENTICAL result. That failure is SILENT: it reports
+# NO CHANGE, indistinguishable from a real negative result (lane x24-rotatez
+# lost a build cycle to it, 2026-08-04).
+#
+# Rewriting only changes path SPELLING, never which file is named, so it cannot
+# trigger a rebuild — the warm cache above stays warm. The --check pass then
+# HARD-FAILS if anything still points at a foreign checkout: better an aborted
+# setup than a worktree that silently measures the wrong tree.
+echo "==> Normalizing depfiles to repo-relative paths (kills the silent stale-header read)"
+if ! "python3" "$WORKTREE_PATH/tools/normalize-depfiles.py" \
+        --root "$WORKTREE_PATH" --build-dir "$WT_BUILD" --quiet; then
+    echo "FATAL: depfile normalization failed — this worktree would silently report" >&2
+    echo "       stale results for header edits. Aborting rather than lying." >&2
+    exit 1
+fi
+if ! "python3" "$WORKTREE_PATH/tools/normalize-depfiles.py" \
+        --root "$WORKTREE_PATH" --build-dir "$WT_BUILD" --check --quiet; then
+    echo "FATAL: depfiles still reference a foreign checkout after normalization." >&2
+    echo "       Recover: find $WT_BUILD -name '*.d' -delete" >&2
+    exit 1
+fi
+echo "  depfiles verified location-independent"
+
 # ---- configure.py : reproduce main's build.ninja commands byte-identically --
 # The seeded .ninja_log validates by COMMAND HASH, so the worktree's compile
 # commands must match main's exactly:

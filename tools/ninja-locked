@@ -1,7 +1,7 @@
 #!/bin/sh
 # ninja-locked: serialized ninja wrapper.
 #
-# Running multiple `ninja` instances concurrently in one build directory
+# Running multiple `ninja` instances concurrently in ONE build directory
 # corrupts .ninja_log/.ninja_deps and can trigger an infinite
 # SPLIT->configure manifest-regeneration loop. This wrapper takes an
 # exclusive flock so concurrent builds queue up instead of colliding.
@@ -9,10 +9,57 @@
 # Used as objdiff.json's `custom_make` (so every orchestrator / objdiff-cli
 # build is serialized) and by build scripts. For manual builds, run this
 # instead of bare `ninja`.
-REPO="$(cd "$(dirname "$0")/.." && pwd)"
+#
+# SCOPE: the lock is PER BUILD DIRECTORY, deliberately. It is not a global
+# mutex across worktrees/repos — separate worktrees have separate build dirs
+# and must keep building in parallel at full speed.
+#
+# The lock is keyed off the directory ninja will ACTUALLY build in, not off
+# this script's own location (changed 2026-08-04). The old `dirname $0/..`
+# form was wrong in two ways that both yield a silently MIS-SCOPED lock:
+#   * It assumed `tools/` is a real directory in the tree being built. It is
+#     today, but any future setup change that symlinks `tools/` at the main
+#     repo would collapse every worktree onto MAIN's lock (a global mutex)
+#     AND read progress.json from the wrong tree.
+#   * `ninja` is invoked with no `-C`, so it builds in the CALLER's cwd.
+#     Running <main>/tools/ninja-locked from inside a worktree therefore built
+#     the worktree while locking main — and vice versa. Two agents in two
+#     trees could take two DIFFERENT locks and race on ONE build dir.
+# Resolving the build dir from the cwd (honouring -C) and canonicalising it
+# with `pwd -P` makes one build dir map to exactly one lock file, which is the
+# isolation property we actually need.
+
+# Determine the directory ninja will build in: honour `-C dir` / `-Cdir`,
+# otherwise the current working directory.
+build_cwd="$PWD"
+prev=""
+for arg in "$@"; do
+    case "$prev" in
+        -C) build_cwd="$arg" ;;
+    esac
+    case "$arg" in
+        -C?*) build_cwd="${arg#-C}" ;;
+    esac
+    prev="$arg"
+done
+
+# Canonicalise (resolve symlinks) so two spellings of one build dir cannot end
+# up with two different lock files.
+REPO="$(cd "$build_cwd" 2>/dev/null && pwd -P)" || REPO="$PWD"
+
+# Walk up to the tree that owns build.ninja — that is the real build root even
+# when invoked from a subdirectory.
+d="$REPO"
+while [ "$d" != "/" ] && [ ! -f "$d/build.ninja" ]; do
+    d=$(dirname "$d")
+done
+if [ -f "$d/build.ninja" ]; then
+    REPO="$d"
+fi
+
 exec 9>"$REPO/.ninja-build.lock"
 if ! flock -n 9; then
-    echo "ninja-locked: another build is running; waiting for the lock..." >&2
+    echo "ninja-locked: another build is running in $REPO; waiting for the lock..." >&2
     flock 9
 fi
 
