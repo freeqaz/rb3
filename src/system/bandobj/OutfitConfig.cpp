@@ -132,7 +132,7 @@ void OutfitConfig::MatSwap::Compose(
             mMat->SetDiffuseTex(mTextures[idx]);
         } else if (mColor1Palette) {
             const Hmx::Color &c = mColor1Palette->GetColor(colors[mColor1Option]);
-            mMat->SetColor(c.red, c.green, c.blue);
+            mMat->SetColor(c);
         }
     } else {
         RndCam *prevCam = RndCam::sCurrent;
@@ -160,45 +160,51 @@ void OutfitConfig::MatSwap::Compose(
         sCam->SetFrustum(0.01f, 5.0f, 0.0f, 1.0f);
         sCam->Select();
         Hmx::Color baseColor(1.0f, 1.0f, 1.0f, 1.0f);
-        sMat->SetColorModFlags(RndMat::kColorModNone);
         sMat->SetBlend(RndMat::kBlendSrc);
+        sMat->SetZMode(RndMat::kZModeDisable);
         sMat->SetTexWrap(kTexWrapClamp);
         sMat->SetDiffuseTex(nullptr);
         sMat->SetAlpha(1.0f);
         {
-            const Hmx::Color *col = &baseColor;
+            const Hmx::Color *col;
             if (mColor1Palette) {
                 col = &mColor1Palette->GetColor(colors[mColor1Option]);
+            } else {
+                col = &baseColor;
             }
-            sMat->SetColor(col->red, col->green, col->blue);
+            sMat->SetColor(*col);
         }
-        mMat->SetColor(baseColor.red, baseColor.green, baseColor.blue);
-        Hmx::Rect rect(0.0f, 0.0f, (float)TheRnd->Width(), (float)TheRnd->Height());
-        sMat->SetAlphaCut(false);
+        mMat->SetColor(baseColor);
+        int rectHeight = TheRnd->Height();
+        int rectWidth = TheRnd->Width();
+        Hmx::Rect rect(0.0f, 0.0f, rectWidth, rectHeight);
+        sMat->SetUseEnv(false);
         TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
-        if (mTwoColorDiffuse) {
-            sMat->SetColorModFlags(RndMat::kColorModModulate);
-            sMat->SetDiffuseTex(mTwoColorDiffuse);
-            const Hmx::Color *col = &baseColor;
+        if (mTwoColorInterp) {
+            sMat->SetBlend(RndMat::kBlendSrcAlpha);
+            sMat->SetDiffuseTex(mTwoColorInterp);
+            const Hmx::Color *col;
             if (mColor2Palette) {
                 col = &mColor2Palette->GetColor(colors[mColor2Option]);
+            } else {
+                col = &baseColor;
             }
-            sMat->SetColor(col->red, col->green, col->blue);
-            TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
-        }
-        if (mTwoColorInterp) {
-            sMat->SetColorModFlags(RndMat::kColorModModulate);
-            sMat->SetDiffuseTex(mTwoColorInterp);
-            sMat->SetColor(baseColor.red, baseColor.green, baseColor.blue);
+            sMat->SetColor(*col);
             TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
         }
         if (mTwoColorMask) {
-            sMat->SetColorModFlags(RndMat::kColorModAlphaUnpackModulate);
+            sMat->SetBlend(RndMat::kBlendSrcAlpha);
             sMat->SetDiffuseTex(mTwoColorMask);
-            sMat->SetColor(baseColor.red, baseColor.green, baseColor.blue);
+            sMat->SetColor(baseColor);
             TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
         }
-        sMat->SetAlphaCut(false);
+        if (mTwoColorDiffuse) {
+            sMat->SetBlend(RndMat::kBlendMultiply);
+            sMat->SetDiffuseTex(mTwoColorDiffuse);
+            sMat->SetColor(baseColor);
+            TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
+        }
+        sMat->SetUseEnv(false);
         sMat->SetCull(false);
         for (int i = 0; i < patches.size(); i++) {
             patches[i].Render(diffTex, sMat);

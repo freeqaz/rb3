@@ -208,7 +208,14 @@ public:
         mDirty |= 1;
     }
     void SetColor(const Hmx::Color &col) {
-        mColor.Set(col.red, col.green, col.blue);
+        // Declaration order fixes the FP temp numbering (g->f2, b->f1, r->f0) and the
+        // assignment order fixes the load order (blue, green, red) that the target
+        // emits at every inlined call site. Same idiom as Color.h's Add/Multiply.
+        float g, b, r;
+        b = col.blue;
+        g = col.green;
+        r = col.red;
+        mColor.Set(r, g, b);
         mDirty |= 1;
     }
     void SetColor(float r, float g, float b) {
