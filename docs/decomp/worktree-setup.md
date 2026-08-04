@@ -189,3 +189,31 @@ A fresh worktree's `build/SZBE69_B8` + `orig` are **~487M apparent** but only
 repo. Verify with `btrfs filesystem du -s <dir>` (not plain `du`, which can't see
 shared extents). On a non-CoW filesystem the script falls back to full copies and
 warns.
+
+## ⚠ Header edits in a worktree can produce a SILENT FALSE NEGATIVE
+
+**Found 2026-08-04 by lane `x24-rotatez`, which lost a build cycle to it.**
+
+The reflinked `.d` depfiles carry **main-repo absolute paths**. Combined with the
+`deps="gcc"` removal above (ninja reads `.d` files directly), a header edit
+inside the worktree can invalidate **nothing**: ninja sees every dependency
+satisfied against the *main repo's* copy of that header, reports "no work to
+do", and `objdiff` then returns a **stale, identical** result.
+
+The failure mode is what makes this dangerous — it doesn't error, it reports
+**no change**. An experiment that should have moved the number reads as
+"tried it, made no difference," which is indistinguishable from a genuine
+negative result and will be recorded as one.
+
+```bash
+# Before trusting ANY header experiment in a worktree, force the rebuild:
+find build/SZBE69_B8 -name '*.d' -delete     # x24 had to delete 730 of them
+tools/ninja-locked build/SZBE69_B8/report.json
+```
+
+Sanity check that costs nothing: after the first edit, confirm ninja actually
+*compiled* something. If a change to a header included by hundreds of TUs
+produces "no work to do", the depfiles are stale — not the change.
+
+This only bites `.h` edits. A `.cpp` edit names the file ninja is asked to
+build, so it rebuilds normally.
