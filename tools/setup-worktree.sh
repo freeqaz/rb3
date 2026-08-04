@@ -458,7 +458,38 @@ echo "  depfiles verified location-independent"
 #     report edge (which regenerates anyway)
 MAIN_PYTHON="$(sed -n 's/^python = "\(.*\)"$/\1/p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
 [ -x "$MAIN_PYTHON" ] || MAIN_PYTHON="python3"
-MAIN_CFG_ARGS="$(sed -n 's/^configure_args = //p' "$MAIN_REPO/build.ninja" 2>/dev/null | head -1)"
+# Extracting configure_args needs care on two counts (both hit when the source
+# tree is ITSELF a worktree, i.e. creating a worktree from a worktree):
+#   1. ninja WRAPS long lines with a trailing `$` continuation. A naive
+#      `sed -n 's/^configure_args = //p' | head -1` grabs only the first
+#      physical line and yields a dangling `--objdiff $`, so configure.py dies
+#      with "argument --objdiff: expected one argument".
+#   2. A worktree's build.ninja already records `--objdiff <abs path>` (we added
+#      it), so re-appending ours duplicates the flag.
+# Unwrap continuations, then drop any existing --objdiff pair; we re-add it
+# absolutely below.
+MAIN_CFG_ARGS="$(python3 - "$MAIN_REPO/build.ninja" <<'PY' 2>/dev/null || true
+import re, sys
+try:
+    text = open(sys.argv[1]).read()
+except OSError:
+    sys.exit(0)
+# ninja line continuation: "$" at EOL + leading whitespace on the next line
+text = re.sub(r"\$\n\s*", " ", text)
+for line in text.splitlines():
+    if line.startswith("configure_args = "):
+        args = line[len("configure_args = "):].split()
+        out, i = [], 0
+        while i < len(args):
+            if args[i] == "--objdiff":
+                i += 2          # drop flag AND its value
+                continue
+            out.append(args[i])
+            i += 1
+        print(" ".join(out))
+        break
+PY
+)"
 [ -n "$MAIN_CFG_ARGS" ] || MAIN_CFG_ARGS="--version $VERSION --map"
 echo "==> configure.py $MAIN_CFG_ARGS (main's interpreter, relative tool paths)"
 (
