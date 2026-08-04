@@ -49,6 +49,17 @@ void RndDir::SetSubDir(bool b) {
 
 // fn_805D26A0
 void RndDir::SyncObjects() {
+#ifdef HX_NATIVE
+    // DIAGNOSTIC (RB3_COMPOSE_PROBE=1): SyncDrawables is never entered, and
+    // this is its ONLY caller. Distinguish "SyncObjects never runs" from "runs
+    // but IsSubDir() is always true".
+    if (getenv("RB3_COMPOSE_PROBE")) {
+        static int sSO = 0;
+        if (++sSO <= 40)
+            fprintf(stderr, "[syncobjects] #%d dir='%s' class=%s isSubDir=%d\n", sSO,
+                    Name() ? Name() : "?", ClassName().Str(), (int)IsSubDir());
+    }
+#endif
     mAnims.clear();
     mPolls.clear();
     if (!IsSubDir()) {
@@ -106,16 +117,42 @@ void RndDir::SyncObjects() {
 
 // fn_805D33A4
 void RndDir::SyncDrawables() {
+#ifdef HX_NATIVE
+    // DIAGNOSTIC (RB3_COMPOSE_PROBE=1): UpdatePreClearState is reached ONLY
+    // from the walk below, and OutfitConfig is never being registered. Report
+    // the two ways that can happen: never called for this dir, the IsSubDir()
+    // early-out, or an ObjDirItr walk that visits nothing.
+    if (getenv("RB3_COMPOSE_PROBE")) {
+        static int sSync = 0;
+        if (++sSync <= 40)
+            fprintf(stderr, "[syncdraw] #%d dir='%s' class=%s isSubDir=%d\n", sSync,
+                    Name() ? Name() : "?", ClassName().Str(), (int)IsSubDir());
+    }
+#endif
     mDraws.clear();
     if (!IsSubDir()) {
         std::list<RndDrawable *> drawchildren;
+#ifdef HX_NATIVE
+        int probeVisited = 0;
+#endif
         for (ObjDirItr<RndDrawable> it(this, true); it != 0; ++it) {
             if (it != this) {
+#ifdef HX_NATIVE
+                ++probeVisited;
+#endif
                 mDraws.push_back(it);
                 it->ListDrawChildren(drawchildren);
                 it->UpdatePreClearState();
             }
         }
+#ifdef HX_NATIVE
+        if (getenv("RB3_COMPOSE_PROBE")) {
+            static int sWalk = 0;
+            if (++sWalk <= 40)
+                fprintf(stderr, "[syncdraw-walk] #%d dir='%s' visited=%d\n", sWalk,
+                        Name() ? Name() : "?", probeVisited);
+        }
+#endif
         UpdatePreClearState();
         for (std::list<RndDrawable *>::const_iterator it = drawchildren.begin();
              it != drawchildren.end();

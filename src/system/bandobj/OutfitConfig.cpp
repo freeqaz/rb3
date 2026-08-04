@@ -111,6 +111,21 @@ void OutfitConfig::MatSwap::Compose(
         return;
     RndTex *diffTex = mMat->GetDiffuseTex();
 #ifdef HX_NATIVE
+    // DIAGNOSTIC (RB3_COMPOSE_PROBE=1): Compose was reached — but does it
+    // take the RTT branch? The early branch below requires diffTex to be a
+    // kRenderedNoZ render target; anything else is the no-op path.
+    if (getenv("RB3_COMPOSE_PROBE")) {
+        static int sComposeCalls = 0;
+        bool isRt = diffTex &&
+            (diffTex->GetType() & RndTex::kRenderedNoZ) == RndTex::kRenderedNoZ;
+        if (++sComposeCalls <= 40)
+            fprintf(stderr, "[compose-entry] #%d diffTex='%s' isRT=%d twoColor=%d\n",
+                    sComposeCalls,
+                    diffTex && diffTex->Name() ? diffTex->Name() : "(null)",
+                    (int)isRt, (int)mTwoColor);
+    }
+#endif
+#ifdef HX_NATIVE
     // Native two-color composite fix (c8-eyes, 2026-07-02): scope a flag while
     // this outfit composite paints its *_diffuse_output render target so the
     // native BandRnd::DrawRect can combine the modulate layers with a
@@ -1029,6 +1044,19 @@ void OutfitConfig::PreSave(BinStream &bs) {
 
 void OutfitConfig::PostSave(BinStream &) {}
 void OutfitConfig::UpdatePreClearState() {
+#ifdef HX_NATIVE
+    // DIAGNOSTIC (RB3_COMPOSE_PROBE=1): this is the ONLY thing that puts an
+    // OutfitConfig into Rnd's pre-clear draw list, and it is reached only from
+    // RndDir::SyncDrawables' ObjDirItr<RndDrawable> walk. If this never fires,
+    // DrawPreClear can never run and the whole outfit compose chain is dead.
+    if (getenv("RB3_COMPOSE_PROBE")) {
+        static int sReg = 0;
+        if (++sReg <= 20)
+            fprintf(stderr, "[preclear-register] #%d cfg='%s' dir='%s'\n", sReg,
+                    Name() ? Name() : "?",
+                    Dir() && Dir()->Name() ? Dir()->Name() : "(nodir)");
+    }
+#endif
     TheRnd->PreClearDrawAddOrRemove(this, true, false);
 }
 
@@ -1151,6 +1179,21 @@ void OutfitConfig::ApplyAO(SyncMeshCB *mesh) {
 }
 
 void OutfitConfig::DrawPreClear() {
+#ifdef HX_NATIVE
+    // DIAGNOSTIC (RB3_COMPOSE_PROBE=1): is this even reached, and is the
+    // dirty mask ever non-zero? Everything below is gated on unk38 != 0, so a
+    // zero mask means SwapResource + Compose never run. Prints a call counter
+    // so "no output" cannot be confused with "reached but clean".
+    if (getenv("RB3_COMPOSE_PROBE")) {
+        static int sPreClearCalls = 0;
+        static int sDirtyCalls = 0;
+        ++sPreClearCalls;
+        if (unk38 != 0) ++sDirtyCalls;
+        if (sPreClearCalls <= 20 || (unk38 != 0 && sDirtyCalls <= 20))
+            fprintf(stderr, "[preclear-probe] #%d name='%s' unk38=%d unk3c=%d dirtyCalls=%d\n",
+                    sPreClearCalls, Name() ? Name() : "?", (int)unk38, (int)unk3c, sDirtyCalls);
+    }
+#endif
     if (mTexBlender && mTexBlender->unk9p6) {
         mTexBlender->DrawShowing();
     }
