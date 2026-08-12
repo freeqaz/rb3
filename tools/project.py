@@ -1399,6 +1399,26 @@ def generate_objdiff_config(
         ],
         "units": [],
         "progress_categories": [],
+        # Relocation ruler. objdiff's default, `none`, compares a relocation's
+        # POSITION and TYPE but never the NAME of the symbol it points at, so a
+        # `bl` to the wrong function, a load of the wrong global and a reference
+        # to the wrong constant all score a COMPLETE match. `name_check` checks
+        # the name, with the tolerances a dtk-split target and mwcc output need:
+        # a missing left-side relocation and a placeholder left name
+        # (`fn_8xxxxxxx`, `lbl_*`) are unverifiable rather than wrong;
+        # counter-numbered literals (`__FUNCTION__$12505`, `@23858`) are
+        # compared by CONTENT, since mwcc renumbers them per compilation; and a
+        # relocation against a zero-sized section anchor (`...data.0`) is
+        # resolved through its addend to the datum it actually reaches.
+        #
+        # This lowers every recorded progress number, and the drop is the point:
+        # it is the part of the corpus that was credited without being checked.
+        # At the flip, 63.3769% -> 62.1722% matched_code, exposing 225 of 31,422
+        # complete functions -- among them `scanOffsets` against `_scanOffsets`
+        # and `sNullMicClientID` against `sNullClientID`.
+        "options": {
+            "functionRelocDiffs": "name_check",
+        },
     }
 
     # decomp.me compiler name mapping
