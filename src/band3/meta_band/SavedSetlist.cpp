@@ -175,7 +175,7 @@ Symbol NetSavedSetlist::GetIdentifyingToken() const {
         MILO_FAIL("Battles should have their own identifying token!\n");
         break;
     default:
-        MILO_FAIL("Bad NetSavedSetlist SetlistType %i!\n", mSetlistType);
+        MILO_FAIL("Bad NetSavedSetlist SetlistType %i!\n", (int)mSetlistType);
         break;
     }
     return gNullStr;

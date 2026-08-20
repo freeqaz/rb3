@@ -116,7 +116,7 @@ const char *StoreMenuProvider::GetFileName(int i) {
             if (submenu->unk6 != 0) {
                 return TheStoreMetadata.GetString(submenu->unk6);
             }
-            return MakeString("%d", submenu->unk0);
+            return MakeString("%d", (int)submenu->unk0);
         }
     }
     return "1";

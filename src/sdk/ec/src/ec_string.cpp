@@ -180,6 +180,14 @@ namespace ec {
     int hex_decode(const ECString &data, unsigned char *dest, size_t length) {
         ECVector<char> vec;
         std::insert_iterator<ECVector<char> > ins(vec, vec.end());
+        // NOTE (2026-08-20, name_check relocation audit): the target calls
+        // get_pointer__...CFv here, not begin__...CFv (it does call end() out of
+        // line, so only the first argument differs). get_pointer() is PRIVATE on
+        // basic_string, so ec::hex_decode cannot name it; the only source lever is
+        // the DONT_INLINE_CLASS crutch on `begin() const` in the MSL string header.
+        // Removing it was tried and reverted: hex_decode 99.82653 -> 99.87755, but
+        // ec_base64's out-of-line begin__... symbol stops being emitted and
+        // base64_decode drops 100.0 -> 90.61053. Net -1 matched function.
         int decoded = hex_decode(data.begin(), data.end(), ins);
         if (decoded < 0) {
             return -1;

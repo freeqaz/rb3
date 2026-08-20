@@ -345,6 +345,15 @@ void VocalNoteList::DetermineFreestyleSections() {
         }
         atWordBoundary = false;
         sectionStart = note->EndMs();
+        // NOTE (2026-08-20, name_check relocation audit): the target calls
+        // rindex__6StringCFi at both sites below and follows each with
+        // `extsb r0, r3` (return by value), where we call rindex__6StringFi and
+        // then `lbz r0, 0x0(r3)` (return by reference). So `text` really is const
+        // in the original. Declaring it `const String &` DOES fix all four of
+        // those rows -- and costs more than it gains right now: canonical
+        // 94.51562 -> 93.73437, mismatch rows 74 -> 96, because the codegen shift
+        // reshuffles the still-unmatched remainder of this function. Reapply the
+        // const together with whatever fixes the rest; do not reapply it alone.
         String &text = note->mText;
         if (text.empty()
             || (text.rindex(-1) != '-' && text.rindex(-1) != '=')) {

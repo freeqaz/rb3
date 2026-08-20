@@ -157,6 +157,7 @@ public:
     void *operator new(size_t t) {
         return _MemAlloc(t, 32);
     }
+    void operator delete(void *v) { _MemFree(v); }
 
     /// Returns the output buffer object
     FIFOSamplePipe *getOutput() { return &outputBuffer; };
