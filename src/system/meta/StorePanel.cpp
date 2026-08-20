@@ -478,7 +478,7 @@ void StorePanel::ExitError(StoreError e) {
 
 DataNode StorePanel::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
     DataArray *data = msg.Data();
-    if (data->Node(2).Int(data) != 0) {
+    if (data->Int(2) != 0) {
         mSessionStatus = kSessionCreated;
     } else {
         ExitError(TheStoreMetadata.LoadError());

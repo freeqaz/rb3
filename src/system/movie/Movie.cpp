@@ -158,7 +158,7 @@ namespace {
 }
 
 static DataNode OnMovieSetTrack(DataArray *arr) {
-    gForceTrack = arr->Node(1).Int(arr);
+    gForceTrack = arr->Int(1);
     return DataNode();
 }
 
