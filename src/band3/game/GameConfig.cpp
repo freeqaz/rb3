@@ -42,7 +42,7 @@ GameConfig::~GameConfig() {
 
 int GameConfig::GetTrackNum(const UserGuid &userGuid) const {
     MILO_ASSERT(!userGuid.IsNull(), 0x4D);
-    return mPlayerTrackConfigList->GetConfigByUserGuid(userGuid).mTrackNum;
+    return mPlayerTrackConfigList->GetTrackNumByUserGuid(userGuid);
 }
 
 Difficulty GameConfig::GetAverageDifficulty() const {
