@@ -135,7 +135,6 @@ void Movie::Impl::DiscContentionPublish() {
 namespace {
     CriticalSection gMovieCrit;
     bool gInitialized;
-    int gForceTrack;
 
     void *RadAlloc(unsigned int size) { return _MemAlloc(size, 0x80); }
     void RadFree(void *p) { _MemFree(p); }
@@ -156,6 +155,11 @@ namespace {
     }
 #pragma pop
 }
+
+// External linkage with an undecorated name, sitting in .bss immediately after
+// gMovieCrit -- main.elf.MAP: "gForceTrack (object,global) found in Movie.o".
+// It is deliberately NOT in the anonymous namespace above.
+int gForceTrack;
 
 static DataNode OnMovieSetTrack(DataArray *arr) {
     gForceTrack = arr->Int(1);
