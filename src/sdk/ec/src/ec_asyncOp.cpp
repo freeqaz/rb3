@@ -97,7 +97,7 @@ namespace {
     _SHRThread asyncOpThread__24_unnamed_ec_asyncOp_cpp_;
     _SHRMutex envMutex__24_unnamed_ec_asyncOp_cpp_;
     _SHRMutex progressMutex__24_unnamed_ec_asyncOp_cpp_;
-    _SHRMessageQueue requestQueue__24_unnamed_ec_asyncOp_cpp_;
+    _SHRMessageQueue requestQueue;
     OSMessage requests__24_unnamed_ec_asyncOp_cpp_[3];
     unsigned char wifiMAC__24_unnamed_ec_asyncOp_cpp_[6];
     bool initialized__24_unnamed_ec_asyncOp_cpp_;
@@ -145,7 +145,7 @@ namespace {
         ECAsyncOpEnv *env = (ECAsyncOpEnv *)ctx;
         OSMessage request;
         while (true) {
-            _SHR_message_receive(&requestQueue__24_unnamed_ec_asyncOp_cpp_, &request, 1);
+            _SHR_message_receive(&requestQueue, &request, 1);
             if (ENV_BOOL(env, 0x0C)) break;
             ECAsyncOp *op = (ECAsyncOp *)request;
             ec::logmsg(ECLogLevel_Fine, "async op thread before process %s\n", op->name.data());
@@ -194,7 +194,7 @@ ECResult ECAsyncOpEnv::init() {
         ec::logmsg(ECLogLevel_Fine, "Initial ucsUrl %s\n",
             ENV_STR(this, 0x40).data());
 
-        _SHR_message_queue_init(&requestQueue__24_unnamed_ec_asyncOp_cpp_,
+        _SHR_message_queue_init(&requestQueue,
             requests__24_unnamed_ec_asyncOp_cpp_, 3);
 
         _SHRThreadAttr threadAttr;
@@ -237,7 +237,7 @@ ECResult ECAsyncOpEnv::shutDown() {
 
     _SHRThread *thr = (_SHRThread *)ENV_PTR(this, 0x8);
     if (thr != 0) {
-        int rv = _SHR_message_send(&requestQueue__24_unnamed_ec_asyncOp_cpp_, 0, 0);
+        int rv = _SHR_message_send(&requestQueue, 0, 0);
         if (rv != 0) {
             ec::logmsg(ECLogLevel_Error, "ERROR: EC requestQueue was full");
             return ECResult_ECFail;
@@ -327,11 +327,11 @@ ECResult ECAsyncOpEnv::dispatchOp(ECAsyncOp *op) {
 }
 
 ECResult ECAsyncOpEnv::post(ECAsyncOp *op) {
-    int rv = _SHR_message_send(&requestQueue__24_unnamed_ec_asyncOp_cpp_,
-        (OSMessage)op, 0);
-    if (rv == 0) return ECResult_Success;
-    ec::logmsg(ECLogLevel_Error, "ERROR: EC requestQueue was full");
-    return ECResult_ECFail;
+    if (_SHR_message_send(&requestQueue, (OSMessage)op, 0) != 0) {
+        ec::logmsg(ECLogLevel_Error, "ERROR: EC requestQueue was full");
+        return ECResult_ECFail;
+    }
+    return ECResult_Success;
 }
 
 ECResult ECAsyncOpEnv::start(ECAsyncOp *op, ECAsyncOpArg *arg) {
