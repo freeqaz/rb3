@@ -436,6 +436,19 @@ def generate_build_ninja(
     build_path = config.out_path()
     progress_path = build_path / "progress.json"
     report_path = build_path / "report.json"
+
+    # The split-currency guard. `dtk dol split` writes build/<v>/obj/** -- 1,876
+    # objects, the TARGET side of every diff -- but its only DECLARED output is
+    # config.json. Nothing in the build graph can therefore tell a reader that
+    # those objects came from a DIFFERENT config/<v>/symbols.txt than the one on
+    # disk, or that a split is rewriting them right now. Both failure modes are
+    # mtime-invisible and both read as a plausible LOWER number rather than an
+    # error: measured in the sibling repo dc3-decomp on 2026-08-21, a report
+    # started 2 s into a split read 29,497 matched functions where the same
+    # command after it finished read 29,838. See scripts/verify_split_current.py.
+    split_guard_script = Path("scripts") / "verify_split_current.py"
+    split_stamp = build_path / "split_inputs.stamp"
+    split_checked = build_path / "split_current_checked.stamp"
     build_tools_path = config.build_dir / "tools"
     download_tool = config.tools_dir / "download_tool.py"
     n.rule(
@@ -1228,7 +1241,11 @@ def generate_build_ninja(
         n.build(
             outputs=report_path,
             rule="report",
-            implicit=[objdiff, "all_source"],
+            # ... and on the split-currency check, because the TARGET side of
+            # every diff in this report is written by an edge that declares
+            # none of it. Without this the report is free to measure objects
+            # the config on disk did not produce, and to do it silently.
+            implicit=[objdiff, "all_source", str(split_checked)],
             order_only="post-build",
         )
 
@@ -1296,10 +1313,19 @@ def generate_build_ninja(
     # Split DOL
     ###
     build_config_path = build_path / "config.json"
+
     n.comment("Split DOL into relocatable objects")
     n.rule(
         name="split",
-        command=f"{dtk} dol split $in $out_dir",
+        # --begin marks the record `running` BEFORE dtk touches anything;
+        # --complete marks it `complete` only on success, so a split that dies
+        # partway leaves the tree explicitly unvouchable rather than quietly
+        # half-rewritten.
+        command=(
+            f"$python {split_guard_script} --begin --quiet && "
+            f"{dtk} dol split $in $out_dir && "
+            f"$python {split_guard_script} --complete --quiet"
+        ),
         description="SPLIT $in",
         depfile="$out_dir/dep",
         # restat: dtk split is deterministic, so re-running it with an
@@ -1312,9 +1338,35 @@ def generate_build_ninja(
     n.build(
         inputs=config.config_path,
         outputs=build_config_path,
+        # DECLARE THE RECORD. The 1,876 target objects cannot be listed here
+        # (they are not known until the split has run), but the stamp that
+        # VOUCHES for them can be -- so deleting it re-fires the split that can
+        # legitimately recreate it, instead of wedging the build until someone
+        # touches config.yml by hand.
+        implicit_outputs=[str(split_stamp)],
         rule="split",
-        implicit=dtk,
+        implicit=[dtk, str(split_guard_script)],
         variables={"out_dir": build_path},
+    )
+    n.newline()
+
+    n.comment("Assert the target objects came from the current split config")
+    # `always`, because BOTH failure modes are mtime-invisible: a split in
+    # flight, and a symbols.txt restored with an OLDER mtime than config.json
+    # (for which ninja does not even plan a SPLIT). write-if-changed + restat
+    # keeps the OUTPUT from moving unless the split record does, so this does
+    # not re-fire REPORT on a quiet tree.
+    n.build(outputs="always", rule="phony")
+    n.rule(
+        name="split_current_check",
+        command=f"$python {split_guard_script} --check --quiet --stamp-out $out",
+        description="CHECK SPLIT CURRENT",
+        restat=True,
+    )
+    n.build(
+        outputs=str(split_checked),
+        rule="split_current_check",
+        implicit=[str(split_guard_script), "always"],
     )
     n.newline()
 
