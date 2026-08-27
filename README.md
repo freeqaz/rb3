@@ -168,6 +168,27 @@ rebuilds.
 
 ![](assets/objdiff.png)
 
+License
+=======
+
+This fork's own contributions are released under
+[CC0 1.0 Universal](LICENSE) — public domain, no attribution required.
+That matches the [DC3 sister project](https://github.com/freeqaz/dc3-decomp).
+
+A single root license cannot honestly describe a decomp tree, so
+**[NOTICE](NOTICE) records what CC0 does and does not cover** — read it
+before reusing code. In short:
+
+- CC0 covers this fork's own contributions — all of `native/`, `scripts/`
+  and `docs/`, plus this fork's work in `tools/` and `src/`.
+- Upstream [DarkRTA/rb3](https://github.com/DarkRTA/rb3) is unlicensed;
+  its contributors keep their rights and CC0 does not speak for them.
+- `src/` vendors third-party libraries under their own licenses, **two of
+  them copyleft** — SoundTouch (LGPL v2.1) and the GNU getopt files in
+  Speex. Those are not available under CC0.
+- Nothing here claims any right in Rock Band 3 itself, which belongs to
+  Harmonix Music Systems and MTV Games.
+
 Acknowledgments
 ===============
 
