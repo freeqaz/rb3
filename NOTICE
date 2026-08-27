@@ -1,0 +1,148 @@
+NOTICE
+======
+
+This file records what the CC0 waiver in `LICENSE` does and does not cover.
+Read it before reusing code from this repository.
+
+This is a decompilation project. Its source tree mixes four kinds of code with
+four different legal characters, and a single root license file cannot honestly
+describe all of them. `LICENSE` covers the first. The other three are set out
+below.
+
+
+1. What the CC0 waiver covers
+-----------------------------
+
+`LICENSE` is a CC0 1.0 Universal public-domain dedication made by the
+contributors to *this fork* (github.com/freeqaz/rb3), waiving their rights in
+their own contributions to it.
+
+That is the 2,974 commits made since the fork point `a59c651b`, wherever in the
+tree they landed. Concretely:
+
+  - `native/`, `scripts/` and `docs/` are entirely this fork's work. No commit
+    predating the fork point touches them.
+  - `tools/` and `src/` are mixed. This fork's contributions there are covered;
+    upstream's are not — see section 2. `src/` additionally contains
+    third-party libraries covered by section 3.
+
+You may use, modify, redistribute and build on that work for any purpose,
+including commercial ones. No attribution is required, though it is
+appreciated.
+
+CC0 is a waiver, not an assertion of ownership. It relinquishes whatever rights
+these contributors hold; it does not claim they hold any particular right, and
+it does not speak for anyone else. Sections 2 through 4 are the people it does
+not speak for.
+
+
+2. It does not speak for the upstream project
+---------------------------------------------
+
+This repository is a fork of DarkRTA/rb3, which carries no license. 629 commits
+of this repository's history predate the fork point `a59c651b`, and changes
+continue to be merged from upstream.
+
+Those contributions belong to their authors, who have granted no license to
+anyone. The CC0 in `LICENSE` applies, in its own words, only "to the extent
+that [the Affirmer] is an owner of Copyright and Related Rights in the Work" —
+so it waives this fork's contributors' rights and leaves upstream contributors'
+rights untouched.
+
+If you need clear rights to the upstream portion, ask upstream:
+https://github.com/DarkRTA/rb3
+
+
+3. It does not cover vendored third-party libraries
+---------------------------------------------------
+
+`src/` vendors third-party libraries that carry their own licenses. These are
+NOT under CC0 and were never ours to waive. Each retains its own terms:
+
+  Path                                    Files  License
+  --------------------------------------  -----  ---------------------------
+  src/system/stlport/                       319  STLport license (permissive;
+                                                 retain notices, mark
+                                                 modifications)
+  src/system/speex/                         127  BSD 3-clause (Xiph.Org);
+                                                 GSM 06.10; and LGPL for the
+                                                 getopt files noted below
+  src/system/synth/tomcrypt/                 70  LibTomCrypt / TDCAL —
+                                                 public domain, unlimited use
+  src/system/synthwii/soundtouch/            56  LGPL v2.1
+  src/sdk/PowerPC_EABI_Support/MSL/          34  Sun Microsystems fdlibm
+    MSL_C/MSL_Common_Embedded/Math/              (permissive)
+    Double_precision/
+  src/system/zlib/                           29  zlib license
+  src/sdk/ec/                                27  OpenSSL / SSLeay
+                                                 (BSD 4-clause, incl.
+                                                 advertising clause)
+  src/network/net/json-c/                    18  MIT
+
+Copyright holders include: Hewlett-Packard (1994), Silicon Graphics
+(1996-1999), Moscow Center for SPARC Technology (1997) and Boris Fomitchev
+(1999-2003) for STLport; the Xiph.Org Foundation, and Jutta Degener and Carsten
+Bormann (GSM 06.10), for Speex; Tom St Denis, with AES and Serpent by Brian
+Gladman, for LibTomCrypt; Olli Parviainen for SoundTouch; Sun Microsystems
+(1993, 2004) for the MSL math routines; Jean-loup Gailly and Mark Adler for
+zlib; Eric Young (1995-1998) for the SSLeay-derived code in src/sdk/ec; and
+Metaparadigm Pte Ltd (2004-2005) and Yahoo! Inc (2008-2009) for json-c.
+
+Two of these ship their license text in this tree already:
+
+  - src/system/stlport/LICENSE
+  - src/system/synthwii/soundtouch/COPYING.TXT
+
+TWO ARE COPYLEFT and cannot be taken under CC0 regardless of what the root
+LICENSE file says:
+
+  - src/system/synthwii/soundtouch/ — LGPL v2.1, see its COPYING.TXT
+  - src/system/speex/src/getopt.c, getopt1.c, getopt_win.h — GNU getopt, taken
+    from the GNU C Library, under the GNU Library General Public License
+
+The remainder are permissive, but nearly all require that copyright notices be
+retained on redistribution. Retain them.
+
+Known gap: the json-c file headers refer to a `COPYING` file for the MIT text,
+and that file is not present in this tree. The terms are the standard MIT
+license; the headers in src/network/net/json-c/ state them.
+
+
+4. It makes no claim over the underlying game
+----------------------------------------------
+
+The sources under `src/`, excluding the third-party libraries in section 3, are
+a decompilation of Rock Band 3, Build 100901_A, target `SZBE69_B8` — a work of
+Harmonix Music Systems and MTV Games.
+
+The CC0 waiver relinquishes this fork's contributors' interest in the
+decompiled expression they wrote. It asserts nothing about, and grants nothing
+in, the underlying game. Rights in the original work remain with their owners.
+
+This repository contains no game assets, no game assembly, and no copyrighted
+binaries. An existing, legitimately obtained copy of the game is required to
+build it or do anything useful with it.
+
+
+Reusing code from this repository
+---------------------------------
+
+Check which section a file falls under:
+
+  native/, scripts/, docs/
+      Section 1. CC0, take it.
+
+  tools/
+      Mixed. Section 1 for this fork's contributions, section 2 for upstream's.
+
+  src/system/{stlport,speex,zlib,synthwii/soundtouch},
+  src/system/synth/tomcrypt, src/network/net/json-c, src/sdk/ec,
+  src/sdk/PowerPC_EABI_Support/.../Math/Double_precision/
+      Section 3. Third-party terms apply, including two copyleft libraries.
+
+  Everything else under src/
+      Section 1 for this fork's contributions, section 2 for upstream's, and
+      section 4 for the underlying work.
+
+This file is a good-faith description by the fork maintainer. It is not legal
+advice and not a legal opinion on the status of decompiled code.
