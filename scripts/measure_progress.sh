@@ -259,8 +259,8 @@ else
         local deps=(
             "${WORKTREE}/build/SZBE69_B8/config.json"
             "${WORKTREE}/configure.py"
-            "${WORKTREE}/tools/project.py"
-            "${WORKTREE}/tools/ninja_syntax.py"
+            "${WORKTREE}/tools/upstream/project.py"
+            "${WORKTREE}/tools/upstream/ninja_syntax.py"
             "${WORKTREE}/config/SZBE69_B8/config.json"
             "${WORKTREE}/config/SZBE69_B8/objects.json"
         )

@@ -294,7 +294,7 @@ if [ "$WARM_CACHE" -eq 1 ]; then
         echo "==> Validating warm object cache (worktree == $BASE_REF; marking outputs current)"
         # Old-stamp every tracked source (a fixed old timestamp, not main's,
         # which may itself be recent) so no tracked input — including
-        # tools/download_tool.py, which feeds the toolchain download edges —
+        # tools/upstream/download_tool.py, which feeds the toolchain download edges —
         # is ever newer than the reflinked outputs. A later source EDIT still
         # gets a fresh mtime and rebuilds normally.
         # NB: run FROM the worktree — `git ls-files` prints worktree-relative

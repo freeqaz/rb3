@@ -19,7 +19,7 @@ Implementation notes:
   detect the `.text section layout` block and parse until the next section.
 - We index the mangled symbol table by the *content* of the class encoding
   (length-prefix and namespace-prefix variants both yield the same class).
-- Demangling shells out to `tools/batch-demangle` once per call; we cache.
+- Demangling shells out to `tools/upstream/batch-demangle` once per call; we cache.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ from typing import Optional
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MAP = REPO_ROOT / "orig" / "SZBE69_B8" / "files" / "band_r_wii.map"
 DEFAULT_CACHE = REPO_ROOT / "build" / "SZBE69_B8" / ".mwcc_symbols.pkl"
-BATCH_DEMANGLE = REPO_ROOT / "tools" / "batch-demangle"
+BATCH_DEMANGLE = REPO_ROOT / "tools" / "upstream" / "batch-demangle"
 
 
 @dataclass

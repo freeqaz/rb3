@@ -416,7 +416,7 @@ fi
 
 # ---- depfiles : make the reflinked cache LOCATION-INDEPENDENT (correctness) --
 # The reflinked .d files may carry ABSOLUTE paths naming the MAIN repo (any
-# object compiled before tools/transform_dep.py started emitting relative
+# object compiled before tools/upstream/transform_dep.py started emitting relative
 # prerequisites). Because deps="gcc" is deliberately disabled, ninja reads those
 # .d files directly — so a header edit INSIDE this worktree would be checked
 # against MAIN's copy of the header, find it unchanged, print "no work to do",
@@ -519,7 +519,7 @@ echo "==> configure.py $MAIN_CFG_ARGS (main's interpreter, relative tool paths)"
 # the `build build.ninja: configure` edge satisfied — ninja compares the mtime
 # it RECORDED in .ninja_log when it last ran that edge against the edge's
 # inputs, and a fresh worktree has git-stamped (= "now") copies of configure.py,
-# tools/project.py, tools/ninja_syntax.py and config/<VER>/*.json sitting next
+# tools/upstream/project.py, tools/upstream/ninja_syntax.py and config/<VER>/*.json sitting next
 # to a .ninja_log seeded from main with older recorded times.
 #
 # A stale manifest is not merely slow — it makes `ninja -n` return a FALSE

@@ -17,9 +17,9 @@ import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Union
-from tools.project import *
+from tools.upstream.project import *
 
-from tools.defines_common import (
+from tools.upstream.defines_common import (
     cflags_includes,
     DEFAULT_VERSION,
     VERSIONS
@@ -119,6 +119,10 @@ config.version = str(args.version)
 version_num = VERSIONS.index(config.version)
 
 # Apply arguments
+# Upstream's build scripts live in tools/upstream/ so the CC0 boundary is a
+# fact about the layout (see NOTICE). Set here rather than editing project.py,
+# which keeps tools/upstream/ byte-identical to upstream and diffable against it.
+config.tools_dir = Path("tools") / "upstream"
 config.build_dir = args.build_dir
 config.dtk_path = args.dtk
 config.objdiff_path = args.objdiff or Path("..") / "objdiff" / "target" / "release" / "objdiff-cli"

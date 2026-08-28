@@ -28,7 +28,7 @@ How identities are established (pure data joining, no Ghidra):
                normalize to (scope, method, argcount, constness).
   Wii side:    orig/SZBE69_B8/files/band_r_wii.map (.text/.init function
                symbols, MWCC-mangled), demangled in one batch with
-               tools/batch-demangle (Rust), normalized identically.
+               tools/upstream/batch-demangle (Rust), normalized identically.
   Join key:    (scope-sans-template-arg-order, method, argcount, const).
                Template args are canonicalized to a sorted token multiset so
                the two demanglers' renderings ("char const *" vs
@@ -91,7 +91,7 @@ DEFAULT_RESERVED = DEFAULT_OUT_DIR / "reserved_seed_candidates_round2.json"
 DEFAULT_WII_MAP = RB3 / "orig" / "SZBE69_B8" / "files" / "band_r_wii.map"
 DEFAULT_XENON_SYMS = XENON / "config" / "45410914" / "symbols.txt"
 DEFAULT_BANK8_ELF = RB3 / "build" / "SZBE69_B8" / "ghidra" / "bank8_target.elf"
-BATCH_DEMANGLE = RB3 / "tools" / "batch-demangle" / "target" / "release" / "rb3-batch-demangle"
+BATCH_DEMANGLE = RB3 / "tools" / "upstream" / "batch-demangle" / "target" / "release" / "rb3-batch-demangle"
 
 # Fallback executable ranges if the artifacts are unavailable at run time.
 # bank8_target.elf PROGBITS+X sections (readelf -S), xex .text from symbols.txt.
@@ -342,7 +342,7 @@ def parse_wii_map(map_path: Path) -> Dict[str, Set[int]]:
 
 
 def demangle_wii_batch(symbols: List[str]) -> Dict[str, str]:
-    """mangled -> demangled via tools/batch-demangle (one process)."""
+    """mangled -> demangled via tools/upstream/batch-demangle (one process)."""
     if not BATCH_DEMANGLE.exists():
         raise FileNotFoundError(
             f"{BATCH_DEMANGLE} missing — build with: cargo build --release "
