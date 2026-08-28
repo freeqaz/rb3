@@ -20,11 +20,16 @@ their own contributions to it.
 That is the 2,974 commits made since the fork point `a59c651b`, wherever in the
 tree they landed. Concretely:
 
-  - `native/`, `scripts/` and `docs/` are entirely this fork's work. No commit
-    predating the fork point touches them.
+  - `scripts/` and `docs/` are entirely this fork's work. No commit predating
+    the fork point touches them, and they vendor no third-party code.
+  - `native/` is this fork's work with one exception: the vendored header
+    `native/include/httplib.h`, which is covered by section 3.
   - `tools/` and `src/` are mixed. This fork's contributions there are covered;
-    upstream's are not — see section 2. `src/` additionally contains
-    third-party libraries covered by section 3.
+    upstream's are not — see section 2. Both additionally contain third-party
+    code covered by section 3.
+  - `doc/` is NOT this fork's work at all. See section 2.
+
+Note the one-character distinction: `docs/` is ours, `doc/` is not.
 
 You may use, modify, redistribute and build on that work for any purpose,
 including commercial ones. No attribution is required, though it is
@@ -49,6 +54,12 @@ that [the Affirmer] is an owner of Copyright and Related Rights in the Work" —
 so it waives this fork's contributors' rights and leaves upstream contributors'
 rights untouched.
 
+`doc/` is entirely upstream's. Every commit touching it is by Dark, Nathan or
+rjkiv; this fork has contributed nothing to it. It holds reference material
+rather than build inputs — `doc/src-old/` (1,727 files) and `doc/rb2_dump/`
+(1,241 files) — and 911 of those files carry third-party licenses of their own,
+described in section 3. Do not treat anything under `doc/` as CC0.
+
 If you need clear rights to the upstream portion, ask upstream:
 https://github.com/DarkRTA/rb3
 
@@ -56,8 +67,11 @@ https://github.com/DarkRTA/rb3
 3. It does not cover vendored third-party libraries
 ---------------------------------------------------
 
-`src/` vendors third-party libraries that carry their own licenses. These are
-NOT under CC0 and were never ours to waive. Each retains its own terms:
+This repository vendors third-party code that carries its own licenses. It is
+NOT under CC0 and was never ours to waive. Most of it is in `src/`, but not all
+— see the second table below.
+
+In `src/`, each retains its own terms:
 
   Path                                    Files  License
   --------------------------------------  -----  ---------------------------
@@ -88,7 +102,22 @@ Gladman, for LibTomCrypt; Olli Parviainen for SoundTouch; Sun Microsystems
 zlib; Eric Young (1995-1998) for the SSLeay-derived code in src/sdk/ec; and
 Metaparadigm Pte Ltd (2004-2005) and Yahoo! Inc (2008-2009) for json-c.
 
-Two of these ship their license text in this tree already:
+Outside `src/`, three more:
+
+  Path                          Files  License
+  ----------------------------  -----  -----------------------------------
+  doc/src-old/                   1727  Mixed third-party reference source.
+                                       911 files carry license markers:
+                                       Apache 2.0, BSD, and Broadcom
+                                       Corporation (1999-2012) copyrights
+  native/include/httplib.h          1  MIT (cpp-httplib, Yuji Hirose)
+  tools/ninja_syntax.py             1  Apache 2.0 (Google Inc., 2011)
+
+`doc/src-old/` is reference material, not compiled into anything. It is
+third-party source in bulk and should be treated as such regardless of the fact
+that it sits under a directory named `doc`.
+
+Two of the `src/` libraries ship their license text in this tree already:
 
   - src/system/stlport/LICENSE
   - src/system/synthwii/soundtouch/COPYING.TXT
@@ -129,11 +158,19 @@ Reusing code from this repository
 
 Check which section a file falls under:
 
-  native/, scripts/, docs/
+  scripts/, docs/
       Section 1. CC0, take it.
 
+  native/
+      Section 1, except native/include/httplib.h, which is MIT (section 3).
+
   tools/
-      Mixed. Section 1 for this fork's contributions, section 2 for upstream's.
+      Mixed. Section 1 for this fork's contributions, section 2 for upstream's,
+      and section 3 for tools/ninja_syntax.py (Apache 2.0).
+
+  doc/
+      None of it is ours. Section 2 for authorship, section 3 for the
+      third-party source in doc/src-old/.
 
   src/system/{stlport,speex,zlib,synthwii/soundtouch},
   src/system/synth/tomcrypt, src/network/net/json-c, src/sdk/ec,
