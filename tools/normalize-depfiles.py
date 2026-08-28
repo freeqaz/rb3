@@ -15,7 +15,7 @@ That failure is silent. It does not error — it reports NO CHANGE, which reads
 exactly like a genuine negative result and gets recorded as one. rb3 lane
 `x24-rotatez` lost a build cycle to it.
 
-`tools/transform_dep.py` now emits repo-relative prerequisites, so newly
+`tools/upstream/transform_dep.py` now emits repo-relative prerequisites, so newly
 compiled depfiles are correct by construction. This script does the other two
 jobs:
 

@@ -75,7 +75,7 @@
       "command": "python",
       "linux": { "command": "python3" },
       "args": [
-        "tools/decompctx.py",
+        "tools/upstream/decompctx.py",
         "${relativeFile}"
       ],
       "options": {

@@ -25,7 +25,7 @@
 # caller's point of view the generator edge is permanently dirty.
 #
 # The manifest goes stale constantly here — the `build build.ninja: configure`
-# edge lists configure.py, tools/project.py, tools/ninja_syntax.py,
+# edge lists configure.py, tools/upstream/project.py, tools/upstream/ninja_syntax.py,
 # config/<VER>/config.json and config/<VER>/objects.json as inputs, and
 # objects.json is edited by ordinary decomp work. A freshly created worktree is
 # stale too (git stamps every checked-out file with "now", while the .ninja_log

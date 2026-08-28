@@ -24,9 +24,12 @@ tree they landed. Concretely:
     the fork point touches them, and they vendor no third-party code.
   - `native/` is this fork's work with one exception: the vendored header
     `native/include/httplib.h`, which is covered by section 3.
-  - `tools/` and `src/` are mixed. This fork's contributions there are covered;
-    upstream's are not — see section 2. Both additionally contain third-party
-    code covered by section 3.
+  - `tools/` is this fork's work, EXCEPT for everything under
+    `tools/upstream/`, which is not ours at all — see its README, and sections
+    2 and 3.
+  - `src/` is mixed. This fork's contributions there are covered; upstream's
+    are not — see section 2. It also contains third-party libraries covered by
+    section 3.
   - `doc/` is NOT this fork's work at all. See section 2.
 
 Note the one-character distinction: `docs/` is ours, `doc/` is not.
@@ -45,8 +48,11 @@ not speak for.
 ---------------------------------------------
 
 This repository is a fork of DarkRTA/rb3, which carries no license. 629 commits
-of this repository's history predate the fork point `a59c651b`, and changes
-continue to be merged from upstream.
+of this repository's history predate the fork point `a59c651b` (2026-03-26).
+
+Nothing has been taken from upstream since: every upstream-authored commit here
+is part of that pre-fork heritage, and there are no merges from upstream at all.
+Upstream remains independently active, so the two trees are simply diverging.
 
 Those contributions belong to their authors, who have granted no license to
 anyone. The CC0 in `LICENSE` applies, in its own words, only "to the extent
@@ -111,7 +117,7 @@ Outside `src/`, three more:
                                        Apache 2.0, BSD, and Broadcom
                                        Corporation (1999-2012) copyrights
   native/include/httplib.h          1  MIT (cpp-httplib, Yuji Hirose)
-  tools/ninja_syntax.py             1  Apache 2.0 (Google Inc., 2011)
+  tools/upstream/ninja_syntax.py    1  Apache 2.0 (Google Inc., 2011)
 
 `doc/src-old/` is reference material, not compiled into anything. It is
 third-party source in bulk and should be treated as such regardless of the fact
@@ -165,8 +171,8 @@ Check which section a file falls under:
       Section 1, except native/include/httplib.h, which is MIT (section 3).
 
   tools/
-      Mixed. Section 1 for this fork's contributions, section 2 for upstream's,
-      and section 3 for tools/ninja_syntax.py (Apache 2.0).
+      Section 1, CC0 -- except tools/upstream/, which is entirely upstream and
+      third-party code (sections 2 and 3). See tools/upstream/README.md.
 
   doc/
       None of it is ours. Section 2 for authorship, section 3 for the
