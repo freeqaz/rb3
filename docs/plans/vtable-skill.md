@@ -57,7 +57,7 @@ Pros:
 
 Cons:
 - No demangled output for free — we need a demangler (objdiff-cli embeds
-  `cwdemangle`; we can shell out, or call the Rust `tools/batch-demangle`
+  `cwdemangle`; we can shell out, or call the Rust `tools/upstream/batch-demangle`
   binary if we build it). For our needs the mangled names are already
   unambiguous, so demangling is a nicety.
 - No direct inheritance graph; we can derive "primary vs secondary base" only
@@ -176,7 +176,7 @@ Notes / simplifications:
   red flag worth printing as a warning.
 - **Demangling is optional.** The mangled MWCC names are already unambiguous
   ("Handle__9CharacterFP9DataArrayb"). If demangling is wanted, options are:
-  build `tools/batch-demangle` (already has `cwdemangle` as a dep), shell out
+  build `tools/upstream/batch-demangle` (already has `cwdemangle` as a dep), shell out
   to it; OR call `objdiff-cli` indirectly; OR ship a tiny pure-Python parser
   that handles only the cases we hit (class-length + method-name extraction,
   similar to `_demangle_itanium_to_qualified` in
@@ -322,7 +322,7 @@ Dependencies:
   in [tooling-roadmap.md](tooling-roadmap.md). Earlier draft of this doc
   claimed it was already installed; that was wrong.
 - No new Rust deps. If we want demangled output, either (a) build the
-  existing `tools/batch-demangle` crate (which already pulls in
+  existing `tools/upstream/batch-demangle` crate (which already pulls in
   `cwdemangle`) and shell out, or (b) implement a minimal pure-Python
   cwdemangle that handles only the cases we hit. Option (b) is probably
   ~50 lines and avoids the build dep.
@@ -360,7 +360,7 @@ NW4R class with virtual inheritance).
    until a counter-example appears.
 
 3. **Demangler choice.** Pure-Python mini-demangler vs shelling out to a
-   built `tools/batch-demangle` vs invoking `objdiff-cli`. None is hard;
+   built `tools/upstream/batch-demangle` vs invoking `objdiff-cli`. None is hard;
    the right answer depends on whether we ever want to run this without
    the Rust toolchain (e.g. in a stripped-down CI image). Default to
    "mangled output by default, pure-Python pretty-print of class+method
