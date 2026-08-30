@@ -76,7 +76,7 @@ rule configure
   description = RUN configure.py
   generator = 1
 build build.ninja: configure | build/SZBE69_B8/config.json configure.py $
-    tools/project.py tools/ninja_syntax.py config/SZBE69_B8/config.json $
+    tools/upstream/project.py tools/upstream/ninja_syntax.py config/SZBE69_B8/config.json $
     config/SZBE69_B8/objects.json
 ```
 
@@ -84,7 +84,7 @@ so there is no "make the generator honestly clean" fix to apply — it already i
 The problem is that those inputs change *often*:
 
 * `config/SZBE69_B8/objects.json` is edited by ordinary decomp work (marking a
-  file matched), and `configure.py` / `tools/project.py` by build-tooling work;
+  file matched), and `configure.py` / `tools/upstream/project.py` by build-tooling work;
 * a **fresh worktree** starts stale by construction (see below).
 
 One further detail worth knowing, because it defeats the folk model of ninja
@@ -102,8 +102,8 @@ set`. `tools/tests/test-ninja-dry.sh` T4 builds exactly that case.
 `tools/setup-worktree.sh` ends by running `configure.py`, which *writes*
 build.ninja — but writing it does not satisfy the edge. Ninja compares its
 **recorded** mtime against the edge's inputs, and a fresh worktree pairs
-git-stamped (`now`) copies of `configure.py`, `tools/project.py`,
-`tools/ninja_syntax.py` and `config/<VER>/*.json` with a `.ninja_log` seeded
+git-stamped (`now`) copies of `configure.py`, `tools/upstream/project.py`,
+`tools/upstream/ninja_syntax.py` and `config/<VER>/*.json` with a `.ninja_log` seeded
 from main carrying *older* recorded times — or, with `--cold-cache`, no log at
 all.
 

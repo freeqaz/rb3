@@ -204,9 +204,9 @@ The MCP server process is long-lived across tool calls — instance-level
 caches persist.
 
 **Build graph** — `build/SZBE69_B8/report.json` is produced by the
-`report` rule (`tools/project.py:1206`–`1216`, runs `objdiff-cli report
+`report` rule (`tools/upstream/project.py:1206`–`1216`, runs `objdiff-cli report
 generate`). `build/SZBE69_B8/progress.json` is produced by the `progress`
-rule (`tools/project.py:1185`–`1200`), depends on `report.json`, and is
+rule (`tools/upstream/project.py:1185`–`1200`), depends on `report.json`, and is
 the sole `default` target. Builds run through **`tools/ninja-locked`** (a
 flock wrapper — bare `ninja` is unsafe; concurrent runs corrupt
 `.ninja_log`/`.ninja_deps`). The hook rides the ninja graph so it fires
@@ -225,7 +225,7 @@ is partitioned — assign whole rows to a single implementer:
 | Step | Files it may create/modify | Build? |
 |---|---|---|
 | 2.1 + 2.3 | `scripts/orchestrator/mcp_server.py`, `scripts/orchestrator/database.py` | no |
-| 2.2 | `scripts/batch_check.py`, `tools/project.py`; deletes `tools/sync_decomp_db.py` | yes |
+| 2.2 | `scripts/batch_check.py`, `tools/upstream/project.py`; deletes `tools/sync_decomp_db.py` | yes |
 | 2.4 | `scripts/sweep_untouched.py` (new), `bin/sweep-untouched` (new) | no |
 
 Steps 2.1 and 2.3 **both edit `mcp_server.py`** — they must go to the
@@ -336,13 +336,13 @@ percentages directly degrade Step 2.1. The hook must do **both** jobs.
   it should print a single summary line. `'*'` already works (normalizes
   to `main/*`, covers all 1876 units).
 - **Wire as Option C — a build-edge follow-up rule.** In
-  `tools/project.py` near the `report`/`progress` rules (`:1185`–`:1216`):
+  `tools/upstream/project.py` near the `report`/`progress` rules (`:1185`–`:1216`):
   add a `batch_check` rule running
   `$python scripts/batch_check.py '*' --quiet`, output a stamp file
   `build/SZBE69_B8/.decomp_db_synced`, with `build/SZBE69_B8/report.json`
   as an implicit input. Add the stamp to the `default` target set so
   plain `tools/ninja-locked` always finishes by syncing (find where
-  `tools/project.py` emits `progress.json` as the default and add the
+  `tools/upstream/project.py` emits `progress.json` as the default and add the
   stamp beside it).
 - **Cost is settled.** `batch_check.py '*'` runs in ~0.24 s on the
   current report — far under the 2 s threshold. Option C stands; no

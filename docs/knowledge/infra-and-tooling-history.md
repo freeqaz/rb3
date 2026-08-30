@@ -134,7 +134,7 @@ Concurrent or killed `ninja` runs in this multi-agent repo used to cause three d
 modes: an infinite `SPLIT->configure` loop, `premature end of file; recovering` warnings, and a
 rebuild-everything storm (corrupt `.ninja_deps` → "deps are missing" for all ~1,150 objects).
 
-**Fixes in place** (all via `tools/project.py` + `configure.py`, already regenerated — nothing
+**Fixes in place** (all via `tools/upstream/project.py` + `configure.py`, already regenerated — nothing
 further to do here, this section is a durable explainer):
 - **`deps="gcc"` removed from all 6 build rules.** Ninja now reads per-object `.d` files directly;
   there's no shared binary `.ninja_deps` cache left to corrupt. This is what permanently kills the

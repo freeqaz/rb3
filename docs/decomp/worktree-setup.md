@@ -205,7 +205,7 @@ warns.
 
 **The bug (found 2026-08-04 by lane `x24-rotatez`, which lost a build cycle).**
 mwcceppc under wibo reports every `#include`d header by **absolute path**
-(`Z:\home\…\src\system\math\Mtx.h`), and `tools/transform_dep.py` used to
+(`Z:\home\…\src\system\math\Mtx.h`), and `tools/upstream/transform_dep.py` used to
 un-Windows-ify that while leaving it absolute — so each `.d` named **one
 specific checkout**. Because `deps="gcc"` is deliberately disabled (ninja reads
 `.d` files directly), the reflinked depfiles pointed every header dependency
@@ -225,7 +225,7 @@ relatively.
 
 **The fix (three parts).**
 
-1. **`tools/transform_dep.py` emits repo-relative prerequisites.** Ninja
+1. **`tools/upstream/transform_dep.py` emits repo-relative prerequisites.** Ninja
    resolves depfile paths against its own working directory, so a relative
    prerequisite means "*this* tree's copy" in whichever tree reads it.
    Depfiles are now location-independent, and a reflinked cache is correct in
@@ -302,7 +302,7 @@ found while investigating the fix for it. `configure.py` runs at the end of
 setup and writes `build.ninja`, but that does not satisfy the
 `build build.ninja: configure` edge: ninja compares the mtime it **recorded in
 `.ninja_log`** against the edge's inputs, and a new worktree pairs git-stamped
-(`now`) copies of `configure.py`, `tools/project.py`, `tools/ninja_syntax.py`
+(`now`) copies of `configure.py`, `tools/upstream/project.py`, `tools/upstream/ninja_syntax.py`
 and `config/<VER>/*.json` with a `.ninja_log` seeded from main carrying older
 recorded times — or, with `--cold-cache`, no log at all.
 
