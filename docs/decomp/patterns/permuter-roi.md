@@ -204,6 +204,26 @@ A sweep returning 0 improvements is information, not failure. In order:
    [paired-single-boxmap-lighting.md](paired-single-boxmap-lighting.md) and the at-limit
    notes in the wave-session logs ([wave-session-2026-05-23.md](wave-session-2026-05-23.md)).
 
+## Where the run output goes
+
+`logs/` is **gitignored wholesale** and always should have been — it is run output,
+not repo material. (6,700 permuter JSON logs got tracked by accident in 2026-05,
+more files than `src/` had at the time; removed 2026-08-30.) Sweeps keep writing
+`logs/permuter/auto_YYYYMMDD_HHMMSS/` exactly as before, they just stay local.
+
+A *finished* campaign worth keeping is filed in decomp-bench as a corpus —
+`archive/corpora/permuter-sweeps/`, one member per campaign, parquet plus a
+byte-faithful snapshot. The 2026-05 campaign that produced most of this page's
+empirical numbers is `permuter-sweeps/rb3-2026-05/`. Read its README before
+quoting anything from it: those percentages are the sweep's own self-report,
+read at objdiff's **`none`** default (this repo did not ship
+`functionRelocDiffs=name_check` until `ca01cdbfd`), so a 100 there is not a
+byte-exact claim.
+
+The live per-candidate history — `score_cache`, `pattern_runs`, `climb_variant` —
+is `permuter_cache.db` at the repo root. It is gitignored, it grows daily, and its
+only off-box copy is `decomp-synth tools/backup_dbs.py` → `b2:.../db-backups`.
+
 ## Cache & coordination
 
 - The permuter caches scoring results per `(symbol, source_md5, dep_set)` in

@@ -19,6 +19,9 @@ Comparing `config/SZBE69_B8/objects.json` status against `src/` filesystem:
 **14 files were marked MISSING but already had source implementations.** Of these,
 **11 were verified to compile** by checking `logs/permuter/auto_2026052*/` JSON logs
 (the permuter ran them on the developer's machine and got valid match% readings).
+Those logs left this repo on 2026-08-30 — they are now
+`decomp-bench/archive/corpora/permuter-sweeps/rb3-2026-05/` (queryable parquet,
+plus a byte-faithful snapshot in the run dir beside it).
 
 All 11 were flipped to `NonMatching`. See commit `config: flip 11 MISSING→NonMatching
 files confirmed by permuter logs` for the full list.

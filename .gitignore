@@ -149,8 +149,12 @@ docs/sessions/**/screenshots/**/*.jpg
 docs/sessions/**/screenshots/**/*.jpeg
 docs/sessions/**/screenshots/**/*.json
 
-# Permuter auto-sweep run logs (one dir per fleet run, large attempt dumps)
-logs/permuter/auto_*/
+# Run output — permuter sweeps, ghidra sweeps, regression checks. NOT repo
+# material: this is a game repo, and 6,700 of these got tracked by accident in
+# 2026-05 (more files than src/ had) because the narrower logs/permuter/auto_*/
+# rule below could not untrack what predated it. Finished campaigns are
+# catalogued in decomp-bench: archive/corpora/permuter-sweeps/
+/logs/
 
 # Xenon-hardening research/forensics artifacts (local-only generated dumps:
 # sysnet Wii asm/m2c, per-pair evidence/judgments, plans — not repo material)
