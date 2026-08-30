@@ -194,14 +194,29 @@ set(MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
     FFmpegMovieImpl.cpp
     FFmpegAudioReader.cpp)
 
+# Headless configure. The gfx core needs Dawn, which has no distro package —
+# it is a depot_tools/gn build measured in hours, so a CI runner cannot have it.
+# rb3-dta compiles only obj/utl/os/math and needs none of it, so a headless
+# consumer configures -DRB3_NATIVE_GFX=OFF and gets the real engine with the
+# gfx core out. Default ON: a dev checkout with the deps tree is unaffected.
+# Targets that genuinely need a GPU are excluded below when this is OFF.
+option(RB3_NATIVE_GFX "Build the WebGPU gfx core (needs Dawn + glfw3)" ON)
+
 # Build the real engine lib with the `rb3` GPU backend flavor: the rndobj-FREE
 # gfx CORE (GpuDevice/PipelineManager/Screenshot/headless frame) PLUS the engine's
 # BandRnd : Rnd backend (src/platform/Rnd_Wgpu_RB3.cpp — graduated from this dir).
 # This replaces the old BUILD_GFX=ON + BUILD_GPU_BACKENDS=OFF pair: the `dc3`
 # WgpuRnd : NgRnd backend + the 6 rndobj-coupled gfx TUs stay OFF for RB3 (they
 # read DC3's 2012-era rndobj shapes). Sticky CACHE so a stale value can't linger.
-set(MILO_ENGINE_BUILD_GFX ON CACHE BOOL "RB3: build the rndobj-free WebGPU gfx core" FORCE)
-set(MILO_ENGINE_GPU_BACKEND rb3 CACHE STRING "RB3: BandRnd : Rnd GPU backend" FORCE)
+# FORCEd both ways: the engine refuses a backend without the core it needs, so
+# the two must move together and neither may be left over from a stale cache.
+if(RB3_NATIVE_GFX)
+    set(MILO_ENGINE_BUILD_GFX ON CACHE BOOL "RB3: build the rndobj-free WebGPU gfx core" FORCE)
+    set(MILO_ENGINE_GPU_BACKEND rb3 CACHE STRING "RB3: BandRnd : Rnd GPU backend" FORCE)
+else()
+    set(MILO_ENGINE_BUILD_GFX OFF CACHE BOOL "RB3: headless — no WebGPU gfx core" FORCE)
+    set(MILO_ENGINE_GPU_BACKEND off CACHE STRING "RB3: headless — no GPU backend" FORCE)
+endif()
 
 # The gfx core links Dawn (WebGPU) + glfw. glfw3 is system-installed
 # (find_package(glfw3) works out of the box); Dawn lives in the dc3 deps tree.
@@ -212,7 +227,7 @@ set(MILO_ENGINE_GPU_BACKEND rb3 CACHE STRING "RB3: BandRnd : Rnd GPU backend" FO
 # usable on macOS — macOS needs its OWN Metal-enabled Dawn build. On APPLE the
 # default therefore points at the per-user Dawn install location documented in
 # docs/native/MACOS_BUILD.md (~/dc3-deps/dawn); always overridable with -DDawn_DIR.
-if(NOT DEFINED Dawn_DIR)
+if(RB3_NATIVE_GFX AND NOT DEFINED Dawn_DIR)
     if(APPLE)
         set(Dawn_DIR "$ENV{HOME}/dc3-deps/dawn/lib/cmake/Dawn"
             CACHE PATH "Path to macOS Metal Dawn's CMake package config")
@@ -515,6 +530,11 @@ add_executable(rb3-dta
     # (RB3TraceCurrentSongMs), whose real TU drags band3 Game/UI types. This
     # weak stub returns the tap's exact "engine not booted" value (-1.0f).
     ${CMAKE_SOURCE_DIR}/src/rb3_trace_taps_stub.cpp
+    # Same reason as the two telemetry TUs above: the loaddet probe's taps are
+    # called from fork TUs rb3-dta already compiles (math/Rand.cpp, DirLoader.cpp,
+    # DataFile.cpp), so its definitions must link here too. Probe stays inert
+    # unless RB3_LOADDET_PROBE is set.
+    ${CMAKE_SOURCE_DIR}/src/rb3_loaddet_probe.cpp
 )
 rb3_configure_target(rb3-dta)
 
