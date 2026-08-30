@@ -12,16 +12,16 @@
 #
 # Sibling repos required (per NATIVE_PORT_ROADMAP.md):
 #   ../milo-native-engine     — shared LP64 engine; rb3/native/CMakeLists.txt
-#                               consumes it via add_subdirectory().
-#                               TODO: milo-native-engine is not yet pushed to a
-#                               public GitHub repo. Until then this workflow
-#                               clones from a sibling-checkout fallback path
-#                               (MILO_ENGINE_REPO secret). If that secret is
-#                               not set, the workflow checks out a placeholder
-#                               directory so the engine SHA-pin warning fires
-#                               loudly but the build still proceeds (the rb3
-#                               native build uses HAVE_CONTEXT=OFF, i.e. the
-#                               near-empty placeholder libmilo-engine.a).
+#                               consumes it via add_subdirectory(). It IS public
+#                               now, so the real engine is what gets checked out;
+#                               the placeholder below is a fallback that only
+#                               fires if the checkout fails.
+#
+# Headless: the engine's gfx core needs Dawn (WebGPU), which has no distro
+# package — it is a depot_tools/gn build measured in hours, so a runner cannot
+# have it. rb3-dta compiles only obj/utl/os/math and needs no GPU, so we
+# configure -DRB3_NATIVE_GFX=OFF and build the REAL engine with the gfx core
+# out. Do not "fix" a Dawn error here by installing Dawn; drop gfx instead.
 #
 # The full songs.dta milestone validation requires the extracted RB3 assets
 # (~4 GB) that don't fit on a GitHub-hosted runner; the asset-aware check is a
@@ -110,6 +110,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++ \
+            -DRB3_NATIVE_GFX=OFF \
             -DMILO_ENGINE_PATH="${GITHUB_WORKSPACE}/milo-native-engine"
 
       - name: Build rb3-dta

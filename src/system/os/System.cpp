@@ -1,5 +1,5 @@
 #include "System.h"
-
+#include "decomp.h"
 #include "math/FileChecksum.h"
 #include "math/Geo.h"
 #include "math/Rand.h"
@@ -550,17 +550,17 @@ static DataArray *GetSystemConfigWith3Syms(Symbol s1, Symbol s2, Symbol s3) {
     return SystemConfig(s1, s2, s3);
 }
 
-#pragma push
-#pragma force_active on
-inline DataArray *SystemConfig(Symbol s) { return gSystemConfig->FindArray(s); }
+FORCE_LOCAL_INLINE DataArray *SystemConfig(Symbol s) { return gSystemConfig->FindArray(s); }
+END_FORCE_LOCAL_INLINE
 
-inline DataArray *SystemConfig(Symbol s1, Symbol s2) {
+FORCE_LOCAL_INLINE DataArray *SystemConfig(Symbol s1, Symbol s2) {
     return gSystemConfig->FindArray(s1)->FindArray(s2);
 }
-inline DataArray *SystemConfig(Symbol s1, Symbol s2, Symbol s3) {
+END_FORCE_LOCAL_INLINE
+FORCE_LOCAL_INLINE DataArray *SystemConfig(Symbol s1, Symbol s2, Symbol s3) {
     return gSystemConfig->FindArray(s1)->FindArray(s2)->FindArray(s3);
 }
-#pragma pop
+END_FORCE_LOCAL_INLINE
 
 DataArray *SystemConfig(Symbol s1, Symbol s2, Symbol s3, Symbol s4) {
     return gSystemConfig->FindArray(s1)->FindArray(s2)->FindArray(s3)->FindArray(s4);

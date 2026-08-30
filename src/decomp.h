@@ -1,8 +1,22 @@
 #ifndef DECOMP_H
 #define DECOMP_H
 
+// `force_active on` makes MWCC emit the out-of-line copy retail has, even
+// though the function is inline. Other compilers ignore the pragma, so the
+// bare `inline` is emitted only at -O0; from -O1 the definition is inlined
+// away and discarded, and callers in OTHER TUs fail to link. `used` restores
+// the emission the pragma provides, and keeps it weak so TUs still merge.
+// (This is why the native rb3-dta target linked only in an unoptimized build.)
+#ifdef __MWERKS__
 #define FORCE_LOCAL_INLINE _Pragma("push") _Pragma("force_active on") inline
 #define END_FORCE_LOCAL_INLINE _Pragma("pop")
+#elif defined(__GNUC__) || defined(__clang__)
+#define FORCE_LOCAL_INLINE __attribute__((used)) inline
+#define END_FORCE_LOCAL_INLINE
+#else
+#define FORCE_LOCAL_INLINE inline
+#define END_FORCE_LOCAL_INLINE
+#endif
 
 #ifdef VERSION_SZBE69_B8
 #define UNPOOL_DATA _Pragma("push") _Pragma("pool_data off")

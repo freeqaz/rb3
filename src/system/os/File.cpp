@@ -31,10 +31,10 @@ const int File::MaxFileNameLen = 0x100;
 
 void DirListCB(const char *cc1, const char *cc2) { gDirList.push_back(String(cc2)); }
 
-#pragma push
-#pragma force_active on
-inline const char *FileRoot() { return gRoot; }
-#pragma pop
+// force_active: keep the out-of-line copy retail has (see decomp.h).
+FORCE_LOCAL_INLINE
+const char *FileRoot() { return gRoot; }
+END_FORCE_LOCAL_INLINE
 
 const char *FileExecRoot() { return gExecRoot; }
 
