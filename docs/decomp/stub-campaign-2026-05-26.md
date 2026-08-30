@@ -2,7 +2,7 @@
 
 After ~10 sweep waves moved the project from **75.54% → 78.46% functions / 59.58% → 62.22% code**, the source-fixable mid/large partial surface (≥1200B, 40-90%, not in AT_LIMIT) is exhausted. Remaining productive paths:
 
-1. **Permuter runs** (autonomous, already churning in `logs/permuter/auto_*`) — grinds 95-99.9% scheduling/regswap last-mile
+1. **Permuter runs** (autonomous, already churning in `logs/permuter/auto_*`) — grinds 95-99.9% scheduling/regswap last-mile — *those runs' logs are now `decomp-bench/archive/corpora/permuter-sweeps/rb3-2026-05/`*
 2. **From-scratch stub fills** on in-scope `<50%` functions — the target of this campaign
 
 ## Wave-Based Sweep Process (refined over 10 waves)
