@@ -71,6 +71,49 @@ Use the `mcp__orchestrator__` tools for all decomp analysis.
 - `query_functions` — find workable functions by unit pattern and match range
 - `report_result` — report task completion status
 
+⚠ **`objdiff-cli diff` and `objdiff-cli report generate` were TWO DIFFERENT
+RULERS, and the per-function one read LOW.** The two entry points carry different
+*hardcoded base configs*, neither of which is the schema default: `report
+generate` (`objdiff-cli/src/cmd/report.rs:581`) sets `functionRelocDiffs=none,
+combineDataSections=true, combineTextSections=true,
+ppc.calculatePoolRelocations=false`; `diff` (`diff.rs:1070`, `--batch` at
+`diff.rs:1807`) sets only `functionRelocDiffs=data_value` and leaves the other
+three at schema defaults (`false / false / **true**`). Both then layer
+`objdiff.json`'s `options`, which used to pin only `functionRelocDiffs`.
+`ppc.calculatePoolRelocations` is the one that bites: it **synthesizes**
+`R_PPC_NONE` "fake" relocations for pooled data loads
+(`objdiff-core/src/arch/ppc/mod.rs:819 make_fake_pool_reloc`), reconstructed per
+object from *that object's own symbol table* — and a dtk-carved target obj and
+our per-TU mwcc obj do not reconstruct the same set. `reloc_eq`
+(`objdiff-core/src/diff/code.rs:1330-1338`) forgives a base-only one under
+`name_check` but charges a **target-only** one under every ruler except `none`,
+so the charged row can be two *textually identical* instructions.
+**Whole-binary sweep 2026-08-31** (worktree at `f819f72ae`, objdiff 4.2.8, full
+build before reading `report.json`, `diff --batch` over every uniquely-named
+function): of **34,268 comparable rows** — 6,949 unpaired rows (batch `null` /
+report `0.0`) are *agreement*, and 109 `base_unit` rows are the batch path's
+disclosed cross-unit COMDAT fallback, a different question — **151 functions /
+224,892 B scored LOWER through `diff`, 0 scored higher**, up to 7.50 pp;
+`ppc.calculatePoolRelocations` alone explains 151/151. Two (284 B) read exactly
+100.0 in `report.json` and <100 through `diff`. ⚠ **The headline is NOT
+overstated by this** — the report path was never the lower of the two.
+**FIXED** by pinning all four keys in `tools/upstream/project.py`'s `options`
+block (both entry points layer it, so no tool rebuild); **no recorded number
+moved** (31,942 / 7,219,476 / 63.155643% / fuzzy 81.89174 before and after, with
+objdiff's own `Report cache: 1876 hits, 0 misses` as independent confirmation
+that the resolved report config did not change) and the re-sweep leaves 0.
+This is *upstream* objdiff (`0c9e552`, 2025-05-07, `report.rs` only), and
+`bin/objdiff-cli` is a symlink shared with `../rb3-xenon` (102 fns / 55,604 B)
+and `../dc3-decomp` (155 fns / 120,728 B) — all three are now fixed the same
+way. ⚠ **This repo has the LARGEST byte population of the three**, so do not
+assume "mwcc, so pool relocations do not apply". Guard: `python3
+scripts/verify_ruler_agreement.py --check` (~0.2 s) and `--selftest` (flips the
+knob back and *requires* failure; exits 5 "vacuous" rather than passing on an
+empty probe — measured 1,095 witnesses agreeing, 46 disagreeing under the flip).
+Also a ninja edge, `CHECK RULER AGREEMENT`, gating `REPORT`; verified failing by
+deleting one pin from `objdiff.json`. Full write-up:
+[docs/decomp/patterns/two-objdiff-entry-points-two-rulers.md](docs/decomp/patterns/two-objdiff-entry-points-two-rulers.md).
+
 ## Code Style
 
 - Keep members protected/private unless confirmed public
