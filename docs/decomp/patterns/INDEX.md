@@ -83,6 +83,20 @@ Match% 99%+ but not 100%
 | When to truly mark AT_LIMIT? | See [at-limit-mwcc.md#when-to-mark-at-limit](at-limit-mwcc.md#when-to-mark-at-limit). |
 | objdiff shows a run of `lfs`/`stfs` vs `lwz`/`stw` replaces in a struct copy? | Run `scripts/analysis/flat_member_retype_scan.py` and see [dwarf-flat-member-retype.md](dwarf-flat-member-retype.md) — a flat `float unkN` block is probably a hidden `Vector2`/`Vector3`/`Color` aggregate; **retype from the Bank-5 DWARF, don't permute**. (`lwz`/`stw` on BOTH sides = already member-faithful → permuter-class.) |
 
+## Measurement instruments
+
+- [two-objdiff-entry-points-two-rulers.md](two-objdiff-entry-points-two-rulers.md) —
+  **`objdiff-cli diff` and `objdiff-cli report generate` were two different
+  rulers, and the per-function one read LOW.** The two entry points carry
+  different hardcoded base configs; `ppc.calculatePoolRelocations` synthesizes
+  "fake" pool relocations that a dtk-carved target obj and an mwcc base obj do
+  not reconstruct identically, and `reloc_eq` charges the target-only ones under
+  every ruler except `none`. **151 functions / 224,892 bytes** on this binary —
+  the largest of the three sibling repos — always with `diff` low; two of them
+  read exactly 100.0 in `report.json`. Fixed by pinning all four divergent keys
+  in `objdiff.json`'s `options`; guard `scripts/verify_ruler_agreement.py`,
+  wired into the build ahead of `REPORT`.
+
 ## Cross-Project Reference
 
 DC3's catalog at `/home/free/code/milohax/dc3-decomp/docs/decomp/patterns/` has many MSVC-specific patterns that don't apply to MWCC, but the categorization is mostly portable. When a new RB3 pattern is discovered:
