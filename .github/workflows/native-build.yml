@@ -23,6 +23,12 @@
 # configure -DRB3_NATIVE_GFX=OFF and build the REAL engine with the gfx core
 # out. Do not "fix" a Dawn error here by installing Dawn; drop gfx instead.
 #
+# BUILD_TESTS=OFF for the same reason in miniature: it defaults ON and pulls a
+# REQUIRED GTest that the runner has no reason to carry, and this job builds
+# only the rb3-dta target, so the convergence suite is configure cost with no
+# gate behind it. Turning it on means apt-installing libgtest-dev AND accepting
+# that suite as a merge gate — a deliberate scope change, not a build fix.
+#
 # The full songs.dta milestone validation requires the extracted RB3 assets
 # (~4 GB) that don't fit on a GitHub-hosted runner; the asset-aware check is a
 # separate manual/release gate.
@@ -46,6 +52,15 @@ jobs:
   rb3-dta-smoke:
     name: rb3-dta build + smoke
     runs-on: ubuntu-latest
+    # This tree needs libstdc++ 15. ubuntu-latest is 24.04, whose libstdc++ 13
+    # fails with ~390 errors inside <bits/stl_algobase.h> and friends before
+    # reaching a line of our source; -fno-delayed-template-parsing and dropping
+    # -fms-compatibility both change nothing. So pin the image rather than the
+    # runner: ubuntu-26.04 exists but is a PREVIEW label, and a preview image
+    # changing under us would read exactly like a real regression. Verified
+    # green in this image: clang 21.1.8 / libstdc++ 15, 156/156, smoke exit 0.
+    container:
+      image: ubuntu:26.04
     timeout-minutes: 30
     env:
       CC: clang
@@ -53,6 +68,15 @@ jobs:
       CMAKE_GENERATOR: Ninja
 
     steps:
+      - name: Container prerequisites
+        # Runs BEFORE checkout: the bare image has no git, and without it
+        # actions/checkout silently falls back to a tarball download with no
+        # .git, which turns the engine SHA-pin check into a false warning.
+        # No sudo here — the container runs as root and has no sudo installed.
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates
+
       - name: Checkout rb3
         uses: actions/checkout@v4
         with:
@@ -92,13 +116,29 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          apt-get update
+          # vorbis/ogg are linked by bare name (native/CMakeLists.txt
+          # rb3_configure_target: `vorbis vorbisfile ogg`), so a missing dev
+          # package is invisible at configure time and fails at LINK. Check
+          # `ldd` on the produced binary before trimming this list.
+          #
+          # libglfw3-dev is HEADERS-ONLY here (glfw does not appear in ldd):
+          # the engine compiles src/platform/Keyboard_Native.cpp regardless of
+          # MILO_ENGINE_BUILD_GFX and that TU includes <GLFW/glfw3.h>. That is
+          # arguably an engine bug — the honest fix is upstream in
+          # milo-native-engine, gating that source on the gfx core — but glfw3
+          # is a normal distro package (unlike Dawn), so carrying the headers
+          # is cheap and keeps this fix inside rb3.
+          apt-get install -y --no-install-recommends \
             clang \
             cmake \
             ninja-build \
             pkg-config \
-            zlib1g-dev
+            zlib1g-dev \
+            libogg-dev \
+            libvorbis-dev \
+            libglfw3-dev \
+            file
           clang --version
           cmake --version
           ninja --version
@@ -111,6 +151,7 @@ jobs:
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++ \
             -DRB3_NATIVE_GFX=OFF \
+            -DBUILD_TESTS=OFF \
             -DMILO_ENGINE_PATH="${GITHUB_WORKSPACE}/milo-native-engine"
 
       - name: Build rb3-dta
