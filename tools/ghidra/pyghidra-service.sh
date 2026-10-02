@@ -71,12 +71,23 @@ fi
 
 BINARY_PATH="${BINARY_PATHS[0]}"  # for log/status lines below
 
-export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
 # The RB3 project's programs are PowerPC:BE:32:Gekko_Broadway (Wii). /opt/ghidra
 # (stock 12.1.2) does NOT define that language id, so opening the project throws
-# LanguageNotFoundException. Use the local 12.2_DEV build (symlink -> ghidra_12.2_DEV),
+# LanguageNotFoundException. Use the local fork build (build/ghidra symlink, 12.3_DEV since 2026-10-02),
 # which HAS Gekko_Broadway and is what the working rb3-xenon MCP instance uses.
 export GHIDRA_INSTALL_DIR="/home/free/code/milohax/ghidra/build/ghidra"
+# JAVA_HOME follows the install: read application.java.min from the install's
+# own application.properties and pick the lowest installed JDK that satisfies
+# it (12.2 needs 21, 12.3 needs 25). Override by exporting JAVA_HOME.
+if [[ -z "${JAVA_HOME:-}" ]]; then
+    _jmin=$(sed -n 's/^application.java.min=//p' "$GHIDRA_INSTALL_DIR/Ghidra/application.properties" 2>/dev/null)
+    for _jv in $(ls -d /usr/lib/jvm/java-*-openjdk 2>/dev/null | sed 's/.*java-\([0-9]*\)-openjdk/\1/' | sort -n); do
+        if [[ "$_jv" -ge "${_jmin:-21}" && -x "/usr/lib/jvm/java-$_jv-openjdk/bin/java" ]]; then
+            export JAVA_HOME="/usr/lib/jvm/java-$_jv-openjdk"; break
+        fi
+    done
+    [[ -n "${JAVA_HOME:-}" ]] || { echo "No installed JDK >= ${_jmin:-21} under /usr/lib/jvm" >&2; exit 1; }
+fi
 # Use writable temp directory for Ghidra user home
 export GHIDRA_USER_HOME="/tmp/claude/ghidra_user_rb3"
 
