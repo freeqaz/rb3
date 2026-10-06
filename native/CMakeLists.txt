@@ -210,9 +210,15 @@ option(RB3_NATIVE_GFX "Build the WebGPU gfx core (needs Dawn + glfw3)" ON)
 # read DC3's 2012-era rndobj shapes). Sticky CACHE so a stale value can't linger.
 # FORCEd both ways: the engine refuses a backend without the core it needs, so
 # the two must move together and neither may be left over from a stale cache.
+set(RB3_GPU_BACKEND "rb3" CACHE STRING
+    "Engine GPU backend flavor for RB3-Wii native: rb3 (BandRnd : Rnd) or dc3 (WgpuRnd)")
+set_property(CACHE RB3_GPU_BACKEND PROPERTY STRINGS rb3 dc3)
+if(NOT RB3_GPU_BACKEND MATCHES "^(rb3|dc3)$")
+    message(FATAL_ERROR "RB3_GPU_BACKEND must be rb3 or dc3 (got '${RB3_GPU_BACKEND}')")
+endif()
 if(RB3_NATIVE_GFX)
     set(MILO_ENGINE_BUILD_GFX ON CACHE BOOL "RB3: build the rndobj-free WebGPU gfx core" FORCE)
-    set(MILO_ENGINE_GPU_BACKEND rb3 CACHE STRING "RB3: BandRnd : Rnd GPU backend" FORCE)
+    set(MILO_ENGINE_GPU_BACKEND ${RB3_GPU_BACKEND} CACHE STRING "RB3: GPU backend flavor" FORCE)
 else()
     set(MILO_ENGINE_BUILD_GFX OFF CACHE BOOL "RB3: headless — no WebGPU gfx core" FORCE)
     set(MILO_ENGINE_GPU_BACKEND off CACHE STRING "RB3: headless — no GPU backend" FORCE)
@@ -366,7 +372,16 @@ set(NATIVE_FORK_SOURCES
     # dsp/VibratoDetector: small standalone class (~75 lines, clang-clean) used
     # by Singer.cpp. Pulled in surgically rather than globbing all of dsp/
     # (PitchDetector/SndAnalysis are off-path and still stubbed).
-    ${REPO_ROOT}/src/system/dsp/VibratoDetector.cpp)
+    ${REPO_ROOT}/src/system/dsp/VibratoDetector.cpp
+    # math/strips/Striper: RndMesh::PostLoad reads the cached GX triangle strips
+    # a Wii-platform (.milo_wii) mesh carries (CacheStrips: Cached() && Wii), via
+    # STRIPERRESULT::AllocLengthsAndRuns. With only the weak stub linked the
+    # allocation returned null and the strip read segfaulted on the first Wii
+    # mesh. The Xbox asset set never takes that branch, so it went unnoticed.
+    ${REPO_ROOT}/src/system/math/strips/Striper.cpp
+    ${REPO_ROOT}/src/system/math/strips/Adjacency.cpp
+    ${REPO_ROOT}/src/system/math/strips/CustomArray.cpp
+    ${REPO_ROOT}/src/system/math/strips/RevisitedRadix.cpp)
 
 # Shared exclusions applied to BOTH source sets.
 #

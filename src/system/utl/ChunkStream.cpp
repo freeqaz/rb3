@@ -444,8 +444,19 @@ void DecompressMemHelper(
     const void *srcData, int srcLen, void *dstData, int &dstLen, const char *fname
 ) {
     int expectedDstLen = *((int *)srcData);
+#ifndef HX_NATIVE
+    // The size prefix is stored little-endian; the big-endian console swaps it.
+    // A native (little-endian) host reads it as-is.
     EndianSwapEq(expectedDstLen);
+#endif
+#ifdef HX_NATIVE
+    // LP64: the matched `(int)srcData + 4` truncates the pointer to 32 bits.
+    // Only compressed (0xCDBEDEAF) milos reach here -- the Wii .milo_wii set;
+    // the extracted Xbox set is uncompressed (0xCABEDEAF), so this never ran.
+    DecompressMem((const char *)srcData + 4, srcLen - 4, dstData, dstLen, false, fname);
+#else
     DecompressMem((void *)((int)srcData + 4), srcLen - 4, dstData, dstLen, false, fname);
+#endif
     MILO_ASSERT(dstLen == expectedDstLen, 949);
 }
 
