@@ -53,7 +53,7 @@
 // API. No render-pass is open during the dwell poll, so WarmGpuForDir is safe to
 // call (its contract requires GPU-ready + outside an open pass).
 
-#include "platform/Rnd_Wgpu_RB3.h"   // gBandRnd, BandRnd::WarmGpuForDir
+#include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 #include "obj/Dir.h"                  // ObjectDir, ObjDirItr
 #include "obj/DirLoader.h"           // DirLoader::Find / GetDir (resident venue dir)
 #include "obj/Object.h"
@@ -530,11 +530,11 @@ static void CollectProxySubdirs(ObjectDir* dir) {
 extern "C" bool RB3GameWarmPollDwell(ObjectDir* selfDir, ObjectDir* trackDir) {
     if (!RB3GameWarmEnabled()) return false;
     // The warm sweep uploads through wgpu; only meaningful once the device is up.
-    if (!gBandRnd.mGpuReady) return false;
+    if (!RB3RndBackend::GpuReady()) return false;
     // Never sweep with an open render pass (WarmGpuForDir contract). The dwell
     // poll runs from GamePanel::PollForLoading, which is well outside BeginFrame/
     // EndFrame, so InPass() is false here — assert-guard anyway.
-    if (gBandRnd.InPass()) return false;
+    if (RB3RndBackend::InPass()) return false;
 
     if (!gWarm.active) {
         gWarm.active = true;
@@ -690,7 +690,7 @@ extern "C" bool RB3GameWarmPollDwell(ObjectDir* selfDir, ObjectDir* trackDir) {
     int uploadedThisFrame = 0;
     for (int i = 0; i < kMaxRoots; i++) {
         if (!roots[i]) continue;
-        uploadedThisFrame += gBandRnd.WarmGpuForDir(roots[i], budgetEach);
+        uploadedThisFrame += RB3RndBackend::WarmGpuForDir(roots[i], budgetEach);
     }
 
     gWarm.frames++;

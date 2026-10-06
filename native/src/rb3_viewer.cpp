@@ -74,7 +74,7 @@
 #include "math/Color.h"
 #include "gfx/GpuDevice.h"
 #include "gfx/Screenshot.h"
-#include "platform/Rnd_Wgpu_RB3.h"
+#include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 
 #include "rb3_render_mesh.h"
 
@@ -271,7 +271,7 @@ void PrintCensus(ObjectDir* dir) {
 // Draw one frame walking every drawable RndMesh, applying --hide / --only-showing.
 void ViewerDrawFrame(ObjectDir* dir, RndCam* cam, const ViewerArgs& a) {
     if (cam) { RndCam::sCurrent = cam; cam->Select(); }
-    gBandRnd.BeginFrame(cam);
+    RB3RndBackend::BeginFrame(cam);
     for (ObjDirItr<Hmx::Object> it(dir, true); it; ++it) {
         RndMesh* mesh = dynamic_cast<RndMesh*>((Hmx::Object*)it);
         if (!mesh) continue;
@@ -285,9 +285,9 @@ void ViewerDrawFrame(ObjectDir* dir, RndCam* cam, const ViewerArgs& a) {
         if (nm) for (const std::string& h : a.hides) if (strstr(nm, h.c_str())) { hidden = true; break; }
         if (hidden) continue;
         if (mesh->Showing()) mesh->DrawShowing();
-        else                 gBandRnd.DrawMesh(mesh);
+        else                 RB3RndBackend::DrawMesh(mesh);
     }
-    gBandRnd.EndFrame();
+    RB3RndBackend::EndFrame();
 }
 
 // Drive N CharHair settle steps at 30fps with a manually advanced TaskMgr clock.
@@ -505,9 +505,9 @@ void DumpPose(ObjectDir* dir, const char* path, const std::vector<std::string>& 
 // do not apply on this path (the dir controls its own draw order).
 void ViewerDrawFrameDir(ObjectDir* dir, RndCam* cam) {
     if (cam) { RndCam::sCurrent = cam; cam->Select(); }
-    gBandRnd.BeginFrame(cam);
+    RB3RndBackend::BeginFrame(cam);
     if (RndDir* rd = dynamic_cast<RndDir*>(dir)) rd->DrawShowing();
-    gBandRnd.EndFrame();
+    RB3RndBackend::EndFrame();
 }
 
 }  // namespace
@@ -528,10 +528,10 @@ int RunViewer(int argc, char** argv) {
     // --- GPU FIRST (before chdir), unless --list (census needs no GPU). ---
     // Dawn/Vulkan adapter enumeration wants the clean original cwd.
     if (!a.list) {
-        gBandRnd.SetClearColor(Hmx::Color(0.12f, 0.14f, 0.18f));
+        RB3RndBackend::SetClearColor(Hmx::Color(0.12f, 0.14f, 0.18f));
         bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
         if (!getenv("MILO_HEADLESS")) headless = true;   // viewer is always headless
-        if (!gBandRnd.InitGpu(a.width, a.height, headless)) {
+        if (!RB3RndBackend::InitGpu(a.width, a.height, headless)) {
             fprintf(stderr, "rb3-viewer: GPU init FAILED (sandboxed? re-run with "
                             "dangerouslyDisableSandbox)\n");
             return 2;
@@ -557,7 +557,7 @@ int RunViewer(int argc, char** argv) {
     // touch the GPU — so it is safe (and required) even on the --list no-GPU path:
     // skipping it leaves classes unregistered -> Unknown-class stream desync ->
     // heap corruption on load (trap #4). Only InitGpu is skipped for --list.
-    gBandRnd.PreInitRender();
+    RB3RndBackend::PreInitRender();
     RB3RegisterGameObjectFactories();
     RegisterViewerCharFactories();
 
@@ -679,7 +679,7 @@ int RunViewer(int argc, char** argv) {
     // directly (so --hide stays applied on the captured frame).
     drawOnce();
 
-    GpuDevice& gpu = gBandRnd.Gpu();
+    GpuDevice& gpu = RB3RndBackend::Gpu();
     int gw = gpu.WindowWidth(), gh = gpu.WindowHeight();
     std::vector<uint8_t> pixels((size_t)gw * gh * 4);
     if (!gpu.ReadbackHeadlessFrame(pixels.data(), pixels.size())) {

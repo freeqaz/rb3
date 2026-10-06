@@ -104,10 +104,10 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten/em_asm.h>
 #else
-// gBandRnd.Gpu().Window() — the GLFW window for desktop key polling. The RB3
+// RB3RndBackend::Gpu().Window() — the GLFW window for desktop key polling. The RB3
 // GPU backend header drags in webgpu_cpp.h; that is already on every native
 // glue TU's include path (it links milo-engine).
-#include "platform/Rnd_Wgpu_RB3.h"
+#include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 #include <GLFW/glfw3.h>
 #endif
 
@@ -798,7 +798,7 @@ void JoypadPoll() {
     d->mSticks[1][0] = webRx; // RX (negative_rx / traditional whammy)
     (void)whammyHeld;
 #else
-    GLFWwindow *w = gBandRnd.Gpu().Window();
+    GLFWwindow *w = RB3RndBackend::Gpu().Window();
     if (!w)
         return; // headless (MILO_HEADLESS=1) — no window; HTTP/script harness drives input
     // --- USB gamepad (optional, Phase 4): face -> fret, dpad -> strum --------

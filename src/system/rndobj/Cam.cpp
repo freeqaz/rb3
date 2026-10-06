@@ -60,6 +60,18 @@ void RndCam::Select() {
     Rnd::Aspect a = TheRnd->GetAspect();
     if (mAspect != a)
         UpdateLocal();
+#ifdef HX_NATIVE
+    // Begin-side render-target redirect. On the Wii it lived in the platform
+    // camera subclass, which the native build does not have; this is the same
+    // hook DC3's RndCam::Select carries under HX_NATIVE. Under the engine's dc3
+    // GPU backend it opens a pass into the target texture (or returns to the
+    // frame); under the rb3 backend both calls are no-ops, because BandRnd
+    // redirects lazily from its first draw instead.
+    if (mTargetTex)
+        mTargetTex->MakeDrawTarget();
+    else
+        TheRnd->MakeDrawTarget();
+#endif
 }
 
 void RndCam::SetTargetTex(RndTex *tex) {

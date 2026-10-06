@@ -595,7 +595,7 @@ extern int RunViewer(int argc, char **argv);  // rb3_viewer.cpp — standalone .
 //   RB3_SYSCFG=<path>  — override system config DTA path
 // ---------------------------------------------------------------------------
 #include "App.h"
-#include "platform/Rnd_Wgpu_RB3.h"
+#include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 #include "audio/AudioDevice.h"
 #include "rb3_session_trace.h"  // session-telemetry boot marks + nav-sink register
 
@@ -680,15 +680,15 @@ static int RunGame(int argc, char **argv) {
         float cr = 0, cg = 0, cb = 0;
         const char* cc = getenv("RB3_CLEAR_COLOR");
         if (cc) sscanf(cc, "%f,%f,%f", &cr, &cg, &cb);
-        gBandRnd.SetClearColor(Hmx::Color(cr, cg, cb));
+        RB3RndBackend::SetClearColor(Hmx::Color(cr, cg, cb));
     }
-    if (!gBandRnd.InitGpu(W, H, headless)) {
+    if (!RB3RndBackend::InitGpu(W, H, headless)) {
         fprintf(stderr, "rb3-native: RB3_GAME — GpuDevice init FAILED\n");
         return 1;
     }
     printf("rb3-native: RB3_GAME — GpuDevice up (%dx%d, %s)\n",
            W, H, headless ? "headless" : "windowed");
-    gBandRnd.InitScreenshots(); // reads MILO_SCREENSHOT_DIR / _FRAMES / _NAMES
+    RB3RndBackend::InitScreenshots(); // reads MILO_SCREENSHOT_DIR / _FRAMES / _NAMES
     // NOTE: the embedded HTTP debug server (RB3_HTTP=1) is started later, inside
     // App::RunWithoutDebugging() just before the frame loop — AFTER the App ctor
     // completes — mirroring DC3 (App.cpp:1070). Starting its background thread

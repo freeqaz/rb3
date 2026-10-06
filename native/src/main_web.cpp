@@ -21,8 +21,8 @@
 //                        HARNESS mode also runs SystemPreInit/SystemInit +
 //                        RegisterCommonFactories + PreInitRender here (the App
 //                        ctor owns those in APP mode); both arm StartGpuInit
-//   BOOT_GPU_WAIT      → gBandRnd.Gpu().PollEvents() + IsReady() (async device)
-//   BOOT_GPU_READY     → gBandRnd.InitGpuResources()
+//   BOOT_GPU_WAIT      → RB3RndBackend::Gpu().PollEvents() + IsReady() (async device)
+//   BOOT_GPU_READY     → RB3RndBackend::InitGpuResources()
 //   ── App mode (no ?milo=) ──
 //   BOOT_APP_CTOR      → RB3RegisterLegacyRndAliases() + sApp = new App(0,nullptr);
 //                        emit window.rb3AppBooted
@@ -54,7 +54,7 @@
 #include "utl/Loader.h"
 
 #include "platform/WebAssets.h"
-#include "platform/Rnd_Wgpu_RB3.h"  // gBandRnd
+#include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 #include "rndobj/Cam.h"
 
 #include "ui/UI.h"          // TheUI — current-screen poll for window.rb3CurrentScreen
@@ -674,8 +674,8 @@ static void DoEngineInit() {
         printf("RB3 Web: SystemInit('config/band_keep.dta')...\n");
         SystemInit("config/band_keep.dta");
         RegisterCommonFactories();
-        gBandRnd.PreInitRender();
-        gBandRnd.SetClearColor(Hmx::Color(0.12f, 0.14f, 0.18f));
+        RB3RndBackend::PreInitRender();
+        RB3RndBackend::SetClearColor(Hmx::Color(0.12f, 0.14f, 0.18f));
     } else {
         // ── App mode (default): the App ctor owns SystemPreInit/SystemInit and
         // factory registration. Don't run them here. Just arm the GPU; App is
@@ -684,13 +684,13 @@ static void DoEngineInit() {
         // Black clear (the App ctor's HX_NATIVE arm also sets black via
         // TheRnd->SetClearColor; set it here so the canvas isn't a default color
         // before the first App draw).
-        gBandRnd.SetClearColor(Hmx::Color(0, 0, 0));
+        RB3RndBackend::SetClearColor(Hmx::Color(0, 0, 0));
     }
 
     // Phase 1 of the two-phase GPU bring-up (async on web). Poll IsReady() in
     // BOOT_GPU_WAIT. Canvas selector is baked via MILO_WEB_CANVAS_SELECTOR.
-    printf("RB3 Web: gBandRnd.StartGpuInit (async)\n");
-    if (!gBandRnd.StartGpuInit(kW, kH, /*headless=*/false)) {
+    printf("RB3 Web: RB3RndBackend::StartGpuInit (async, %s backend)\n", RB3RndBackend::FlavorName());
+    if (!RB3RndBackend::StartGpuInit(kW, kH, /*headless=*/false)) {
         printf("RB3 Web: StartGpuInit FAILED (sync error before async dispatch)\n");
         sBootState = BOOT_ERROR;
         return;
@@ -845,8 +845,8 @@ static void mainLoop() {
         // GpuDevice's RequestAdapter/RequestDevice are async on web; poll until
         // the JS callbacks fire (usually within a few RAF ticks).
         sGpuWaitFrames++;
-        gBandRnd.Gpu().PollEvents();
-        if (gBandRnd.Gpu().IsReady()) {
+        RB3RndBackend::Gpu().PollEvents();
+        if (RB3RndBackend::Gpu().IsReady()) {
             printf("RB3 Web: GPU ready (after %d frames)\n", sGpuWaitFrames);
             sBootState = BOOT_GPU_READY;
             break;
@@ -864,7 +864,7 @@ static void mainLoop() {
         // creates default rndobj objects) and any milo load can proceed.
         BootMark("gpu_ready");
         printf("RB3 Web: GPU ready — initializing resources...\n");
-        gBandRnd.InitGpuResources();
+        RB3RndBackend::InitGpuResources();
         BootMark("appctor_start");
         sBootState = sHarnessMode ? BOOT_LOADING_MILO : BOOT_APP_CTOR;
         break;
@@ -1104,8 +1104,8 @@ static void mainLoop() {
             if (sWalk.ok) {
                 RenderFrame(sWalk);
             } else {
-                gBandRnd.BeginFrame(sWalk.cam);
-                gBandRnd.EndFrame();
+                RB3RndBackend::BeginFrame(sWalk.cam);
+                RB3RndBackend::EndFrame();
             }
         } catch (...) {
             printf("RB3 Web: boot error — exception during render frame\n");
@@ -1135,8 +1135,8 @@ void rb3MainLoopTick() {
 
 EMSCRIPTEN_KEEPALIVE
 void rb3_resize_canvas(int w, int h) {
-    if (gBandRnd.Gpu().IsReady() && w > 0 && h > 0) {
-        gBandRnd.Gpu().ResizeSurface(w, h);
+    if (RB3RndBackend::Gpu().IsReady() && w > 0 && h > 0) {
+        RB3RndBackend::Gpu().ResizeSurface(w, h);
     }
 }
 

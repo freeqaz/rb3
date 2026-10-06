@@ -29,7 +29,7 @@
 
 #include "gfx/GpuDevice.h"
 #include "gfx/Screenshot.h"
-#include "platform/Rnd_Wgpu_RB3.h"
+#include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 
 #include "rb3_render_mesh.h"
 
@@ -446,7 +446,7 @@ void RenderFrame(const WalkResult& walk) {
     // hidden template-geometry meshes (the common case for these milos) call
     // BandRnd::DrawMesh directly so the static scene still renders.
     bool onlyShowing = getenv("RB3_ONLY_SHOWING") != nullptr;
-    gBandRnd.BeginFrame(walk.cam);
+    RB3RndBackend::BeginFrame(walk.cam);
     for (ObjDirItr<Hmx::Object> it(walk.dir, true); it; ++it) {
         Hmx::Object* o = it;
         if (RndMesh* mesh = dynamic_cast<RndMesh*>(o)) {
@@ -457,10 +457,10 @@ void RenderFrame(const WalkResult& walk) {
             if (mesh->Showing())
                 mesh->DrawShowing();          // engine virtual body
             else if (!onlyShowing)
-                gBandRnd.DrawMesh(mesh);      // hidden template geometry
+                RB3RndBackend::DrawMesh(mesh);      // hidden template geometry
         }
     }
-    gBandRnd.EndFrame();
+    RB3RndBackend::EndFrame();
 }
 
 #ifndef __EMSCRIPTEN__
@@ -473,7 +473,7 @@ int RenderToPng(const WalkResult& walk) {
 
     RenderFrame(walk);
 
-    GpuDevice& gpu = gBandRnd.Gpu();
+    GpuDevice& gpu = RB3RndBackend::Gpu();
     int gw = gpu.WindowWidth(), gh = gpu.WindowHeight();
     std::vector<uint8_t> pixels((size_t)gw * gh * 4);
     if (!gpu.ReadbackHeadlessFrame(pixels.data(), pixels.size())) {
@@ -545,11 +545,11 @@ int RunRenderMesh(int argc, char **argv, const char *miloPath) {
     // use relative paths) and allocates through the system allocator; doing it
     // in the original cwd, before RB3's MemMgr / config boot perturbs global
     // state, keeps it on the same clean path the GPU-smoke + triangle modes use.
-    gBandRnd.SetClearColor(Hmx::Color(0.12f, 0.14f, 0.18f));
+    RB3RndBackend::SetClearColor(Hmx::Color(0.12f, 0.14f, 0.18f));
     bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
     int W = getenv("MILO_WIDTH") ? atoi(getenv("MILO_WIDTH")) : 640;
     int H = getenv("MILO_HEIGHT") ? atoi(getenv("MILO_HEIGHT")) : 480;
-    if (!gBandRnd.InitGpu(W, H, headless)) return 1;
+    if (!RB3RndBackend::InitGpu(W, H, headless)) return 1;
 
     if (chdir(dataDir) != 0) {
         fprintf(stderr, "rb3-native: chdir('%s') failed\n", dataDir);
@@ -573,7 +573,7 @@ int RunRenderMesh(int argc, char **argv, const char *miloPath) {
 
     // Register the rndobj factories (after the config boot, since the Init fns
     // read gSystemConfig).
-    gBandRnd.PreInitRender();
+    RB3RndBackend::PreInitRender();
 
     // Load + walk (also injects the type-def stubs), then render to PNG (_exit).
     WalkResult walk = LoadMiloAndWalk(absMilo);

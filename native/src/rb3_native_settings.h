@@ -75,7 +75,7 @@ struct NativeSettings {
     // ---------------------------------------------------------------------
 
     // Clear / background colour (0..1 per channel). Default black, matching the
-    // gBandRnd.SetClearColor(Hmx::Color(0,0,0)) used at boot.
+    // RB3RndBackend::SetClearColor(Hmx::Color(0,0,0)) used at boot.
     float clearColorR = 0.0f;
     float clearColorG = 0.0f;
     float clearColorB = 0.0f;

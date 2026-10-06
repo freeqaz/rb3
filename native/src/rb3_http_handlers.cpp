@@ -27,9 +27,9 @@
 #include "beatmatch/BeatMaster.h"   // BeatMaster::GetAudio()
 #include "beatmatch/MasterAudio.h"  // MasterAudio::GetTime()
 
-// RB3 GPU backend (graduated into the shared engine). gBandRnd owns the
-// GpuDevice; readback + window size come from gBandRnd.Gpu().
-#include "platform/Rnd_Wgpu_RB3.h"
+// RB3 GPU backend (rb3 or dc3 engine flavor): readback + window size come from
+// RB3RndBackend::Gpu().
+#include "rb3_rnd_backend.h"
 #include "platform/RB3DrawLogDebug.h"  // W0.3.S3: RB3DebugGetDrawLog() for /api/drawlog
 #include "gfx/Screenshot.h"
 
@@ -71,7 +71,6 @@
 #include <signal.h>
 #include <setjmp.h>
 
-extern BandRnd gBandRnd;  // RB3 GPU backend (Rnd_Wgpu_RB3.cpp)
 
 // rb3_game_input.cpp — main-thread synthetic-input executor.
 bool RB3GameInputExecVerbMainThread(const std::string& verb, std::string* err);
@@ -129,7 +128,7 @@ extern sigjmp_buf gDrawJmpBuf;   // native draw guard (defined in main_native.cp
 extern bool gDrawJmpBufSet;
 
 void RB3RenderFreshHeadlessFrame() {
-    if (!gBandRnd.mGpuReady || !gBandRnd.Gpu().IsHeadless())
+    if (!RB3RndBackend::GpuReady() || !RB3RndBackend::Gpu().IsHeadless())
         return;  // windowed mode (or pre-init): leave the swapchain path alone
     if (!TheRnd)
         return;
@@ -154,7 +153,7 @@ void RB3RenderFreshHeadlessFrame() {
 // Screenshot — read back the just-rendered headless frame to PNG bytes.
 // ---------------------------------------------------------------------------
 void RB3HttpServer::HandleScreenshot(Command& cmd) {
-    if (!gBandRnd.mGpuReady) {
+    if (!RB3RndBackend::GpuReady()) {
         cmd.result.error = "Renderer not initialized";
         return;
     }
@@ -165,12 +164,12 @@ void RB3HttpServer::HandleScreenshot(Command& cmd) {
     // because HandleScreenshot runs on the main thread after EndDrawing.
     RB3RenderFreshHeadlessFrame();
 
-    int w = gBandRnd.Gpu().WindowWidth();
-    int h = gBandRnd.Gpu().WindowHeight();
+    int w = RB3RndBackend::Gpu().WindowWidth();
+    int h = RB3RndBackend::Gpu().WindowHeight();
     size_t pixelSize = (size_t)w * h * 4;
     std::vector<uint8_t> pixels(pixelSize);
 
-    if (!gBandRnd.Gpu().ReadbackHeadlessFrame(pixels.data(), pixelSize)) {
+    if (!RB3RndBackend::Gpu().ReadbackHeadlessFrame(pixels.data(), pixelSize)) {
         cmd.result.error = "Framebuffer readback failed (headless mode required)";
         return;
     }
@@ -246,7 +245,7 @@ void RB3HttpServer::HandleDrawLog(Command& cmd) {
     std::string json;
     json.reserve(log.size() * 320 + 64);
     snprintf(buf, sizeof(buf), "{ \"frame\": %d, \"count\": %d,\n  \"draws\": [",
-             gBandRnd.mFrameCount, (int)log.size());
+             RB3RndBackend::FrameCount(), (int)log.size());
     json += buf;
 
     // Emit one draw's base record; append its prov object when emitProv. Returns
