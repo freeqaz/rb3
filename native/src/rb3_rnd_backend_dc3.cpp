@@ -25,6 +25,7 @@
 #include "rndobj/Lit.h"
 #include "rndobj/Mat.h"
 #include "rndobj/Mesh.h"
+#include "rndobj/Stats_NG.h"
 #include "rndobj/MultiMesh.h"
 #include "rndobj/Tex.h"
 #include "rndobj/Text.h"
@@ -37,6 +38,18 @@
 
 // Mesh_Wgpu.cpp: draw one mesh now, whatever its showing flag says.
 void DrawMeshImmediate(RndMesh *mesh);
+
+// ---------------------------------------------------------------------------
+// Render statistics. RB3's platform renderer (rndwii/Rnd.cpp) owns the
+// NgStats block; the native link only has band3_link_stubs.s's weak 256-byte
+// zero blob under the same name, which read as a pointer is null. Under this
+// backend SpotlightDrawer::EndWorld -> DrawWorld reads and writes
+// TheNgStats->mMotionBlurs on every venue frame (world/SpotlightDrawer.cpp), so
+// game_screen segfaulted in Draw() each frame from its first frame and the
+// track, HUD and every post-world draw were skipped. A real block fixes it.
+// ---------------------------------------------------------------------------
+static NgStats sNgStats;
+NgStats *TheNgStats = &sNgStats;
 
 // ---------------------------------------------------------------------------
 // Legacy class aliases. RB3's 2010-era milos name these classes "Tex" / "Text" /
