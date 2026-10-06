@@ -87,7 +87,7 @@ endif()
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "cfef5a239ef41ad2eea47b889964cf426c54f0e0"
+set(MILO_ENGINE_PIN "14b3c2d4371fa62c3fa8409a16d27e672c89f224"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -210,7 +210,16 @@ option(RB3_NATIVE_GFX "Build the WebGPU gfx core (needs Dawn + glfw3)" ON)
 # read DC3's 2012-era rndobj shapes). Sticky CACHE so a stale value can't linger.
 # FORCEd both ways: the engine refuses a backend without the core it needs, so
 # the two must move together and neither may be left over from a stale cache.
-set(RB3_GPU_BACKEND "rb3" CACHE STRING
+# Desktop builds default to dc3: the Xbox-derived WgpuRnd backend renders RB3 at
+# least as faithfully as BandRnd and has fewer bugs (docs/native/
+# dc3-backend-for-rb3-wii.md in the engine). rb3-web still drives gBandRnd
+# directly, so the web target keeps rb3 until it is ported.
+if(EMSCRIPTEN)
+    set(_rb3_gpu_backend_default rb3)
+else()
+    set(_rb3_gpu_backend_default dc3)
+endif()
+set(RB3_GPU_BACKEND "${_rb3_gpu_backend_default}" CACHE STRING
     "Engine GPU backend flavor for RB3-Wii native: rb3 (BandRnd : Rnd) or dc3 (WgpuRnd)")
 set_property(CACHE RB3_GPU_BACKEND PROPERTY STRINGS rb3 dc3)
 if(NOT RB3_GPU_BACKEND MATCHES "^(rb3|dc3)$")
