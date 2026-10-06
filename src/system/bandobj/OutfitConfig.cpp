@@ -515,9 +515,11 @@ NativeBindSkinMaps(ObjectDir *dir1, ObjectDir *dir2, BandCharDesc *desc, const c
     const bool probe = getenv("RB3_SKIN_MAPS_PROBE") != 0;
     Symbol gender = desc->mGender;
     // Every material instance the five skin names resolve to: dir1's (retail's
-    // only target) plus whatever the drawn meshes sample — the native milo merge
-    // splits these (the band's head.mesh draws char_shared.milo's head_naked.mat,
-    // shared by every member).
+    // only target) plus whatever the drawn meshes sample. Since W16-RP the band's
+    // skin meshes draw dir1's own materials (BandCharacter's
+    // NativeAdoptCharSharedRefs, as retail's Filter does), so the scan normally adds
+    // only colorpalettes.milo's texblender copy; it stays as a fallback for a
+    // material the adoption could not repoint.
     std::vector<RndMat *> mats[5];
     ObjectDir *scan[2] = { dir1, dir2 };
     for (int i = 0; i < 5; i++) {
@@ -692,10 +694,11 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
         sHeadFixRtt = getenv("RB3_SKIN_RTT") ? 1 : 0;
     if (!sBlackHeadFixOff && !sHeadFixRtt) {
         // Resolve the head detail texture once (recursively — it and head_naked.mat
-        // are both in the nested head subdir). The native milo merge also SPLITS
-        // head_naked.mat into several distinct instances (the mesh the character
-        // draws samples one, dir1->Find returns another), so fix the material each
-        // drawn `head.mesh` actually samples rather than the dir1->Find copy.
+        // are both in the nested head subdir). Fix the material each drawn
+        // `head.mesh` actually samples. Before W16-RP that was char_shared.milo's
+        // head_naked.mat, one instance for the whole cast, not the dir1->Find copy;
+        // BandCharacter's NativeAdoptCharSharedRefs now repoints head.mesh to dir1's
+        // own material as retail does, so the two are normally the same.
         const char *headDiffName = MakeString("%s_head_diff.tex", gender);
         RndTex *headDiff = 0;
         for (ObjDirItr<RndTex> it(dir1, true); it != 0 && !headDiff; ++it) {
@@ -749,6 +752,35 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
         sSkinMapsOff = getenv("RB3_NO_SKIN_MAPS") ? 1 : 0;
     if (!sSkinMapsOff)
         NativeBindSkinMaps(dir1, dir2, desc, skinMats);
+    // RB3_SKIN_MAT_ADOPT_PROBE: one [SKIN_MAT] line per mesh in dir1/dir2 that draws
+    // one of the five skin materials: which material instance it samples, the dir
+    // that owns it, whether that is dir1's own (own=1, retail) and its diffuse and
+    // specular maps. Before W16-RP every band member read own=0 (char_shared.milo).
+    if (getenv("RB3_SKIN_MAT_ADOPT_PROBE")) {
+        ObjectDir *sd[2] = { dir1, dir2 };
+        for (int d = 0; d < (dir1 == dir2 ? 1 : 2); d++) {
+            for (ObjDirItr<RndMesh> it(sd[d], true); it != 0; ++it) {
+                RndMat *m = it->Mat();
+                if (!m || !m->Name())
+                    continue;
+                bool skin = false;
+                for (int i = 0; i < 5; i++)
+                    if (streq(m->Name(), skinMats[i * 2]))
+                        skin = true;
+                if (!skin)
+                    continue;
+                RndTex *df = m->GetDiffuseTex();
+                fprintf(stderr,
+                        "[SKIN_MAT] dir1='%s' gender=%s mesh='%s' meshDir='%s' mat=%p "
+                        "matDir='%s' own=%d diff='%s' spec='%s'\n",
+                        dir1->Name(), desc->mGender.mStr, it->Name(),
+                        it->Dir() ? PathName(it->Dir()) : "?", (void *)m,
+                        m->Dir() ? PathName(m->Dir()) : "?", (int)(m->Dir() == dir1),
+                        df && df->Name() ? df->Name() : "-",
+                        m->mXbSpecularMap ? m->mXbSpecularMap->Name() : "-");
+            }
+        }
+    }
     // C8 dark-face fix (2026-07-01): the RUNTIME caller (BandCharacter, sym==skin)
     // invokes this 3-arg SetSkinTextures directly. It wires skin.cfg's MatSwap
     // diffuse sources (mTwoColorDiffuse/mTwoColorInterp) and binds head/torso/legs
