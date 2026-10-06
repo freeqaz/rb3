@@ -22,8 +22,18 @@ ANY env value as a trigger, "presence" mode; others require a non-empty non-"0" 
   check      re-scan and diff against the *committed* .gen.inc's flag-name set (grep, not
              compile) — exits nonzero if any live `getenv` is not yet in the registry, or
              if `gen` would produce different committed-file content (regen-not-clean).
-             This is the CI-shaped gate: green ⇒ registry ⊇ every getenv in the tree AND
-             is up to date with the sidecar.
+             It also fails on any class=unknown row whose name is not in the sidecar's
+             `_unclassifiedGrandfathered` list (the 151 flags already unclassified on
+             2026-10-06), so running `gen` alone cannot register a new flag.
+             This is the CI-shaped gate: green ⇒ registry ⊇ every getenv in the tree, every
+             new flag is classified, AND the registry is up to date with the sidecar.
+             It runs as ctest `native_compat_census.check` in rb3/native (BUILD_TESTS),
+             against the engine checkout that build links (MILO_ENGINE_PATH).
+
+  --engine-root PATH (or $MILO_ENGINE_PATH) points every engine path (scan root,
+             sidecar, .gen.inc) at a milo-native-engine checkout; the default is the
+             sibling `<rb3>/../milo-native-engine`, which does not exist from a worktree.
+             A missing scan root REFUSES (exit 2) instead of scanning an empty tree.
   --selftest hermetic fixtures (temp dirs, no repo/dependency on the real trees) proving
              the scan/gen/check logic itself is correct. Run this first.
 
@@ -33,6 +43,7 @@ Usage:
     scripts/analysis/native_compat_census.py scan --json /tmp/census.json
     scripts/analysis/native_compat_census.py gen  [--gen-inc-out PATH] [--ledger-out PATH]
     scripts/analysis/native_compat_census.py check
+    scripts/analysis/native_compat_census.py --engine-root ~/tmp/wt-eng check
 """
 
 import argparse
@@ -71,6 +82,30 @@ LEDGER_DEFAULT = (
 )
 
 SCAN_EXTS = (".cpp", ".h", ".mm")
+
+
+def configure_engine_root(engine_root):
+    """Re-point every engine-derived path at `engine_root`.
+
+    The default (`<rb3>/../milo-native-engine`) only exists in the canonical
+    checkout layout; from a `~/tmp` worktree it names a directory that does not
+    exist, and the engine scan root would then contribute NOTHING. So the root is
+    overridable: `--engine-root PATH`, else `$MILO_ENGINE_PATH` (the same name
+    rb3/native/CMakeLists.txt uses for its cache variable), else the sibling.
+    `run_scan` raises ScanRootMissing on a missing root rather than scanning an
+    empty tree."""
+    global ENGINE_ROOT, SCAN_ROOTS, SIDECAR_DEFAULT, GEN_INC_DEFAULT
+    ENGINE_ROOT = Path(engine_root).resolve()
+    SCAN_ROOTS = [(label, ENGINE_ROOT / "src") if label == "engine" else (label, root)
+                  for label, root in SCAN_ROOTS]
+    SIDECAR_DEFAULT = ENGINE_ROOT / "src" / "platform" / "NativeCompatFlags.classification.json"
+    GEN_INC_DEFAULT = ENGINE_ROOT / "src" / "platform" / "NativeCompatFlags.gen.inc"
+
+
+class ScanRootMissing(Exception):
+    """A missing scan root makes the scan silently smaller, and a smaller scan can
+    only make `check` greener. `run_scan` raises this instead; `main` maps it to
+    exit 2 (refused — neither pass nor fail)."""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # scan
@@ -162,6 +197,11 @@ def scan_tree(root_label: str, root: Path):
 def run_scan(roots=None):
     """Returns the deterministic scan result dict (see module docstring)."""
     roots = roots or SCAN_ROOTS
+    missing = [f"'{label}' -> {root}" for label, root in roots if not Path(root).is_dir()]
+    if missing:
+        raise ScanRootMissing(
+            "scan root(s) do not exist: " + ", ".join(missing)
+            + " (pass --engine-root or set MILO_ENGINE_PATH)")
     flags = {}  # name -> {sites: [...], read_modes: Counter-ish list}
     root_labels = {}  # name -> set of root labels it appears under
     for label, root in roots:
@@ -234,6 +274,15 @@ def cmd_scan(args):
 # ─────────────────────────────────────────────────────────────────────────────
 # sidecar (curated classification)
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Sidecar key listing the flags that were ALREADY unclassified when the
+# classification ratchet landed (W16-RN, 2026-10-06). `check` fails on any
+# class=unknown row NOT in this list: without it, a lane that adds a getenv and
+# runs `gen` goes green with the flag registered as FlagClass::Unknown, i.e. the
+# gate enforced registration but not classification. Classifying a grandfathered
+# flag should also delete it from this list (check reports stale entries).
+GRANDFATHER_KEY = "_unclassifiedGrandfathered"
+
 
 def load_sidecar(path: Path) -> dict:
     if not path.is_file():
@@ -413,6 +462,23 @@ def cmd_check(args):
     fresh_gen_inc = render_gen_inc(rows)
     fresh_ledger = render_ledger_md(rows)
 
+    grandfathered = set(sidecar.get(GRANDFATHER_KEY, []))
+    unclassified = {r["name"] for r in rows if r["class"] == "unknown"}
+    new_unclassified = sorted(unclassified - grandfathered)
+    if new_unclassified:
+        print(f"check: FAIL — {len(new_unclassified)} flag(s) have no classification "
+              f"(class=unknown) and are not grandfathered; add an entry for each to "
+              f"{sidecar_path}, then run `gen`:")
+        for name in new_unclassified:
+            print(f"  - {name}")
+        ok = False
+    stale_grandfathered = sorted(grandfathered - unclassified)
+    if stale_grandfathered:
+        print(f"check: note — {len(stale_grandfathered)} {GRANDFATHER_KEY} entr"
+              f"{'y is' if len(stale_grandfathered) == 1 else 'ies are'} no longer "
+              f"unclassified (classified or removed); delete from the sidecar: "
+              + ", ".join(stale_grandfathered))
+
     if gen_inc_path.is_file() and gen_inc_path.read_text() != fresh_gen_inc:
         print(f"check: FAIL — {gen_inc_path} is stale (regen would differ). Run `gen`.")
         ok = False
@@ -498,7 +564,8 @@ int Period() {
             "FIXTURE_PRESENCE_OFF": {
                 "class": "workaround", "owner": "test", "faithfulStatus": "n/a",
                 "default": "on",
-            }
+            },
+            GRANDFATHER_KEY: ["FIXTURE_TRUTHY_OFF", "FIXTURE_PERIOD_MS"],
         }
         rows = join_scan_and_sidecar(scan_result, sidecar)
         rows_by_name = {r["name"]: r for r in rows}
@@ -558,11 +625,56 @@ void Rogue() {
 }
 """)
             rc_red = cmd_check(args)
-            check("check: exits nonzero when an unregistered getenv is present",
-                  rc_red != 0)
+            # == 1, not != 0: a refusal (2) or a crash must not count as the
+            # coverage gate firing.
+            check("check: exits 1 when an unregistered getenv is present",
+                  rc_red == 1)
+
+            # --- Ratchet: registering the rogue flag via `gen` WITHOUT a
+            # classification must still fail (it is class=unknown and not
+            # grandfathered); classifying it must turn the gate green. ---
+            regen_rows = join_scan_and_sidecar(orig_run_scan(roots), sidecar)
+            gen_inc_path.write_text(render_gen_inc(regen_rows))
+            ledger_path.write_text(render_ledger_md(regen_rows))
+            rc_unclassified = cmd_check(args)
+            check("check: exits 1 when a flag is registered by gen but unclassified",
+                  rc_unclassified == 1)
+
+            sidecar["FIXTURE_UNREGISTERED_DEMO"] = {
+                "class": "probe", "owner": "test", "faithfulStatus": "n/a",
+                "default": "off", "read": "presence",
+            }
+            regen_rows = join_scan_and_sidecar(orig_run_scan(roots), sidecar)
+            gen_inc_path.write_text(render_gen_inc(regen_rows))
+            ledger_path.write_text(render_ledger_md(regen_rows))
+            rc_classified = cmd_check(args)
+            check("check: exits 0 once that flag is classified and regenerated",
+                  rc_classified == 0)
         finally:
             globals()["run_scan"] = orig_run_scan
             globals()["load_sidecar"] = orig_load_sidecar
+
+        # --- A missing scan root must REFUSE, not scan an empty tree ---
+        try:
+            orig_run_scan([("engine", td / "does-not-exist"), ("glue", glue_src)])
+            refused = False
+        except ScanRootMissing:
+            refused = True
+        check("scan: refuses (ScanRootMissing) on a missing scan root", refused)
+
+        # --- --engine-root re-points every engine-derived path ---
+        saved = (ENGINE_ROOT, list(SCAN_ROOTS), SIDECAR_DEFAULT, GEN_INC_DEFAULT)
+        try:
+            configure_engine_root(td / "milo-native-engine")
+            eng = (td / "milo-native-engine").resolve()
+            check("configure_engine_root: re-points engine scan root, sidecar and gen.inc",
+                  dict(SCAN_ROOTS)["engine"] == eng / "src"
+                  and SIDECAR_DEFAULT.parent == eng / "src" / "platform"
+                  and GEN_INC_DEFAULT.parent == eng / "src" / "platform"
+                  and dict(SCAN_ROOTS)["glue"] == dict(saved[1])["glue"])
+        finally:
+            g = globals()
+            g["ENGINE_ROOT"], g["SCAN_ROOTS"], g["SIDECAR_DEFAULT"], g["GEN_INC_DEFAULT"] = saved
 
     n_pass = sum(1 for _, ok in results if ok)
     n_total = len(results)
@@ -597,8 +709,16 @@ def main() -> int:
 
     ap.add_argument("--selftest", action="store_true",
                      help="run the hermetic selftest (no real repo dependency) and exit")
+    ap.add_argument("--engine-root",
+                    help="milo-native-engine checkout to scan and to read/write the "
+                         "registry in (default: $MILO_ENGINE_PATH, else <rb3>/../milo-native-engine)")
 
     args = ap.parse_args()
+
+    import os
+    engine_root = args.engine_root or os.environ.get("MILO_ENGINE_PATH")
+    if engine_root:
+        configure_engine_root(engine_root)
 
     if args.selftest:
         return selftest()
@@ -607,7 +727,11 @@ def main() -> int:
         ap.print_help()
         return 2
 
-    return args.func(args)
+    try:
+        return args.func(args)
+    except ScanRootMissing as e:
+        print(f"census: REFUSED — {e}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

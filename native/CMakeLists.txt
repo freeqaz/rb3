@@ -897,6 +897,28 @@ if(BUILD_TESTS)
             ENVIRONMENT "TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/tmp"
             RESOURCE_LOCK "rb3_engine_singleton"
             TIMEOUT 180)
+
+    # NativeCompat registry guard. scripts/analysis/native_compat_census.py
+    # `check` fails when a getenv() flag in the engine, the native glue or
+    # src/system is missing from the engine's NativeCompatFlags.gen.inc, or when
+    # the .gen.inc / ledger are stale against the classification sidecar. Nothing
+    # ran it before this, and it sat red for two months (12 flags unregistered
+    # since 2026-08-01). It scans the SAME engine checkout this build links
+    # (MILO_ENGINE_PATH), so a worktree build checks its own engine worktree.
+    # Fix a failure by classifying the flag in
+    # ${MILO_ENGINE_PATH}/src/platform/NativeCompatFlags.classification.json and
+    # running `native_compat_census.py --engine-root <engine> gen`.
+    # Exit 2 (a scan root does not exist) fails the test too.
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    set(_RB3_COMPAT_CENSUS
+        ${CMAKE_SOURCE_DIR}/../scripts/analysis/native_compat_census.py)
+    add_test(NAME native_compat_census.selftest
+        COMMAND ${Python3_EXECUTABLE} ${_RB3_COMPAT_CENSUS} --selftest)
+    add_test(NAME native_compat_census.check
+        COMMAND ${Python3_EXECUTABLE} ${_RB3_COMPAT_CENSUS}
+                --engine-root ${MILO_ENGINE_PATH} check)
+    set_tests_properties(native_compat_census.selftest native_compat_census.check
+        PROPERTIES TIMEOUT 120)
 endif()
 
 else() # EMSCRIPTEN — web target
