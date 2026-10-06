@@ -24,7 +24,7 @@
 #include "obj/Dir.h"
 #include "obj/Object.h"
 
-#include "platform/Rnd_Wgpu_RB3.h"        // gBandRnd, InitGpu
+#include "rb3_rnd_backend.h"               // RB3RndBackend::InitGpu (either GPU flavor)
 #include "platform/RB3TexSharpen.h"       // the manager under test
 #include "platform/RB3TexSharpenDebug.h"  // RB3DebugUploadTex / GetTexGpuInfo
 
@@ -37,7 +37,7 @@ namespace {
 bool EnsureGpu() {
     static int sState = -1;
     if (sState >= 0) return sState == 1;
-    bool ok = gBandRnd.InitGpu(64, 64, /*headless=*/true);
+    bool ok = RB3RndBackend::InitGpu(64, 64, /*headless=*/true);
     sState = ok ? 1 : 0;
     return ok;
 }
@@ -238,8 +238,8 @@ TEST_F(TexSharpenManagerTest, NonMatchingSidecarIsNoOp) {
 // Research/14 Lane B fold-in: RB3SharpenReuploadTex returning false (GPU not
 // ready) must NOT mark the entry done and must NOT consume the per-frame budget
 // — the entry retries on later frames and succeeds once the GPU is back. We
-// simulate not-ready by flipping the public gBandRnd.mGpuReady latch (the exact
-// condition RB3SharpenReuploadTex early-outs on); the device itself stays alive.
+// simulate not-ready with RB3DebugSetSharpenGpuUnavailable, which makes
+// RB3SharpenReuploadTex take its GPU-not-ready early-out; the device stays alive.
 TEST_F(TexSharpenManagerTest, RetriesWhenGpuNotReady) {
     if (!RB3ProgressiveSharpenEnabled())
         GTEST_SKIP() << "RB3_PROGRESSIVE_SHARPEN disabled in env";
@@ -259,7 +259,7 @@ TEST_F(TexSharpenManagerTest, RetriesWhenGpuNotReady) {
     // GPU "not ready": several frames of stepping make NO progress — the head
     // entry is retried (not marked done), the budget is not consumed (0 returned
     // even with budget 4 and 2 entries pending), and the session is not complete.
-    gBandRnd.mGpuReady = false;
+    RB3DebugSetSharpenGpuUnavailable(true);
     for (int frame = 0; frame < 5; frame++) {
         EXPECT_EQ(RB3SharpenStep(4), 0) << "not-ready reupload must not consume budget";
         EXPECT_EQ(RB3SharpenGetStatus().sharpened, 0) << "must not be marked done";
@@ -272,7 +272,7 @@ TEST_F(TexSharpenManagerTest, RetriesWhenGpuNotReady) {
 
     // GPU back: the SAME entries complete (the retry path must not have lost the
     // already-swapped full-res bitmap) and both recreate at full size.
-    gBandRnd.mGpuReady = true;
+    RB3DebugSetSharpenGpuUnavailable(false);
     EXPECT_EQ(RB3SharpenStep(4), 2);
     EXPECT_TRUE(RB3SharpenComplete());
     RB3TexGpuInfo a1 = RB3DebugGetTexGpuInfo(a.tex);
@@ -303,7 +303,7 @@ TEST_F(TexSharpenManagerTest, RetryCapMarksDoneEventually) {
     AppendEntry(blob, 0, 256, 256, a.strippedW, a.strippedH, 4, 0x08, a.strippedFp, 5);
     ASSERT_EQ(RB3SharpenLoadSidecar(dir, blob.data(), (uint32_t)blob.size()), 1);
 
-    gBandRnd.mGpuReady = false;
+    RB3DebugSetSharpenGpuUnavailable(true);
     // One retry per Step call; the cap is 120 → the entry must be abandoned
     // (marked done) within a bounded number of calls, well under 200.
     int stepsUntilDone = -1;
@@ -314,9 +314,9 @@ TEST_F(TexSharpenManagerTest, RetryCapMarksDoneEventually) {
     int sharpenedWhileDown = RB3SharpenGetStatus().sharpened;
     // No GPU work ever happened (still the stripped texture + original view).
     RB3TexGpuInfo a1 = RB3DebugGetTexGpuInfo(a.tex);
-    // Restore the GPU latch BEFORE any assert can abort the test body — later
+    // Clear the not-ready override BEFORE any assert can abort the test body — later
     // tests depend on it.
-    gBandRnd.mGpuReady = true;
+    RB3DebugSetSharpenGpuUnavailable(false);
 
     EXPECT_GT(stepsUntilDone, 100) << "cap must allow ~120 retry frames";
     EXPECT_GE(stepsUntilDone, 0)   << "entry must eventually be marked done";

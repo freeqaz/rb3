@@ -6,9 +6,11 @@
 // engine assumption:
 //
 //   Swap a stripped (half-res) RndBitmap up to full resolution + dirty the
-//   churn key, and UploadRndTexIfNeeded (Rnd_Wgpu_RB3.cpp) RECREATES the GPU
-//   texture at the NEW (larger) size and publishes a NEW view — with no
-//   same-size assert and no fixed-size assumption.
+//   churn key, and the GPU backend's texture upload RECREATES the GPU texture
+//   at the NEW (larger) size and publishes a NEW view — with no same-size
+//   assert and no fixed-size assumption. The upload is UploadRndTexIfNeeded
+//   (Rnd_Wgpu_RB3.cpp) under the rb3 flavor and RndTex::PresyncBitmap
+//   (Tex_Wgpu.cpp) under dc3; both key on the pixel pointer and fingerprint.
 //
 // This test proves that against the REAL engine GPU device (headless Dawn on
 // this host's RTX 3090; the null backend in CI exercises the same code path).
@@ -27,7 +29,7 @@
 #include "rndobj/Bitmap.h"
 #include "obj/Object.h"
 
-#include "platform/Rnd_Wgpu_RB3.h"        // gBandRnd, BandRnd::InitGpu
+#include "rb3_rnd_backend.h"               // RB3RndBackend::InitGpu (either GPU flavor)
 #include "platform/RB3TexSharpenDebug.h"  // RB3DebugUploadTex / RB3DebugGetTexGpuInfo
 
 #include <cstdint>
@@ -44,7 +46,7 @@ bool EnsureGpu() {
     if (sState >= 0) return sState == 1;
     // Small target — we never present; the texture sizes under test are
     // independent of the swapchain size.
-    bool ok = gBandRnd.InitGpu(/*width=*/64, /*height=*/64, /*headless=*/true);
+    bool ok = RB3RndBackend::InitGpu(/*width=*/64, /*height=*/64, /*headless=*/true);
     sState = ok ? 1 : 0;
     return ok;
 }

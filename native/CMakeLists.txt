@@ -876,17 +876,16 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_placement_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_crowd_bone_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_skinning_oracle.cpp
+        # The renderer suites: texture-sharpen recreate and manager, the shipped
+        # WGSL modules, the draw-log comparator and accessors. Both GPU flavors
+        # implement what they test (RB3RndBackend, gfx/ShippedWgsl.h,
+        # RB3TexSharpen*.h, RB3DrawLogDebug.h), so they build with either.
+        ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_wgsl_validation.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp
         ${_RB3_NATIVE_SRCS}
     )
-    # BandRnd's own suites — its texture-sharpen manager, its WGSL, its draw log.
-    # They test the rb3 flavor's renderer, so they build with it and not without.
-    if(RB3_GPU_BACKEND STREQUAL "rb3")
-        target_sources(rb3-tests PRIVATE
-            ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
-            ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
-            ${CMAKE_SOURCE_DIR}/tests/test_wgsl_validation.cpp
-            ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp)
-    endif()
     rb3_configure_target(rb3-tests)
     target_include_directories(rb3-tests PRIVATE ${CMAKE_SOURCE_DIR}/tests)
     target_link_libraries(rb3-tests PRIVATE GTest::gtest GTest::gtest_main)
