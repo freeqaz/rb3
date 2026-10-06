@@ -30,6 +30,10 @@
 #                                       # native/CMakeLists.txt + 03-diagnosis-results.md.
 #   scripts/web/build.sh --closure      # --closure 1 (BROKEN as of W4a; renames
 #                                       # break rb3_pre.js stub patch)
+#   scripts/web/build.sh --backend rb3  # engine GPU backend flavor: dc3 (WgpuRnd,
+#                                       # the default) or rb3 (BandRnd). Passed
+#                                       # explicitly so a build dir that cached
+#                                       # the other flavor is reconfigured.
 #
 # The release build pre-compresses .wasm + .js with brotli (-q 11) and gzip (-9)
 # so server.py negotiates Content-Encoding with no runtime CPU cost. The debug
@@ -66,6 +70,7 @@ BUILD_DEBUG=1
 BUILD_RELEASE=1
 CLOSURE=OFF
 OPT_LEVEL=""
+GPU_BACKEND="${RB3_GPU_BACKEND:-dc3}"
 FORCE_RECONFIGURE=0
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -76,8 +81,10 @@ while [ $# -gt 0 ]; do
         --reconfigure) FORCE_RECONFIGURE=1 ;;
         --opt)         shift; OPT_LEVEL="$1" ;;
         --opt=*)       OPT_LEVEL="${1#--opt=}" ;;
+        --backend)     shift; GPU_BACKEND="$1" ;;
+        --backend=*)   GPU_BACKEND="${1#--backend=}" ;;
         -h|--help)
-            sed -n '2,37p' "$0"
+            sed -n '2,41p' "$0"
             exit 0
             ;;
         *)
@@ -87,6 +94,11 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+case "$GPU_BACKEND" in
+    dc3|rb3) ;;
+    *) echo "ERROR: --backend must be dc3 or rb3 (got '$GPU_BACKEND')" >&2; exit 1 ;;
+esac
 
 # Ensure the Emscripten toolchain is on PATH. The build needs emcc/emcmake; if
 # they aren't already active, source emsdk_env.sh from $EMSDK (set by a prior
@@ -161,6 +173,7 @@ build_one() {
         -DMILO_ENGINE_PATH="$MILO_ENGINE_PATH"
         -DRB3_WEB_RELEASE="$release_flag"
         -DRB3_WEB_CLOSURE="$CLOSURE"
+        -DRB3_GPU_BACKEND="$GPU_BACKEND"
     )
     if [ -n "$OPT_LEVEL" ]; then
         cmake_args+=(-DRB3_WEB_OPT_LEVEL="$OPT_LEVEL")
@@ -170,11 +183,13 @@ build_one() {
     if [ ! -f "$bdir/CMakeCache.txt" ] || [ "$FORCE_RECONFIGURE" = "1" ]; then
         need_configure=1
     else
-        local cached_release cached_closure cached_opt
+        local cached_release cached_closure cached_opt cached_backend
         cached_release="$(grep -E '^RB3_WEB_RELEASE:BOOL=' "$bdir/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo OFF)"
         cached_closure="$(grep -E '^RB3_WEB_CLOSURE:BOOL=' "$bdir/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo OFF)"
         cached_opt="$(grep -E '^RB3_WEB_OPT_LEVEL:STRING=' "$bdir/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo O0)"
+        cached_backend="$(grep -E '^RB3_GPU_BACKEND:STRING=' "$bdir/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || true)"
         if [ "$cached_release" != "$release_flag" ] || [ "$cached_closure" != "$CLOSURE" ] \
+           || [ "$cached_backend" != "$GPU_BACKEND" ] \
            || { [ -n "$OPT_LEVEL" ] && [ "$cached_opt" != "$OPT_LEVEL" ]; }; then
             echo "==> [$mode] build flags changed; reconfiguring + relinking"
             rm -f "$bdir/rb3-web.wasm" "$bdir/rb3-web.js"
