@@ -8,9 +8,12 @@
 // through the REAL engine GPU device (headless Dawn) and asserts each produces
 // zero WGSL compilation Errors.
 //
-// It validates the EXACT bytes shipped by #include-ing the same .inc files the
-// engine embeds (so a bad edit to a .wgsl.inc turns this test red), plus the
-// engine's own standard_wgsl.inc. A fail-red self-test (HarnessCatchesBadShader)
+// It validates the EXACT bytes the linked GPU flavor hands CreateShaderModule,
+// read from the engine's module table (gfx/ShippedWgsl.h): under the rb3
+// flavor the five .wgsl.inc modules plus standard_wgsl.inc, under dc3 the
+// standard shader and every WgpuRnd pass (bloom, depth of field, 2D rects,
+// post-process, RB3 retail post, display ramp, shadow, particles). A bad edit
+// to any of them turns this test red. A fail-red self-test (HarnessCatchesBadShader)
 // proves the harness can actually fail on a broken shader — a validator that
 // only ever passes is worthless.
 //
@@ -29,40 +32,13 @@
 // which os/File.h (reached transitively below) uses as struct member names.
 #include "test_helpers.h"
 
-#include "platform/Rnd_Wgpu_RB3.h"  // gBandRnd, BandRnd::InitGpu, GpuDevice (pulls webgpu_cpp.h)
+#include "rb3_rnd_backend.h"  // RB3RndBackend::InitGpu / Gpu() (either GPU flavor; pulls webgpu_cpp.h)
+#include "gfx/ShippedWgsl.h"   // ShippedWgslModules: the linked flavor's WGSL sources
 
+#include <cstring>
 #include <string>
 
 namespace {
-
-// ---------------------------------------------------------------------------
-// The exact shipped shader bytes, embedded the same compile-time way the engine
-// embeds them (PipelineManager.cpp:37-40 pattern). Any WGSL edit to a .wgsl.inc
-// changes these strings, so this test guards the real artifacts.
-// ---------------------------------------------------------------------------
-static const char* kHaloBlit =
-#include "gfx/Shaders/rb3_halo_blit.wgsl.inc"
-;
-static const char* kPostProc =
-#include "gfx/Shaders/rb3_postproc.wgsl.inc"
-;
-static const char* kQuad =
-#include "gfx/Shaders/rb3_quad.wgsl.inc"
-;
-static const char* kCompose =
-#include "gfx/Shaders/rb3_compose.wgsl.inc"
-;
-static const char* kParticle =
-#include "gfx/Shaders/rb3_particle.wgsl.inc"
-;
-static const char* kStandard =
-#include "gfx/standard_wgsl.inc"
-;
-
-struct NamedShader {
-    const char* name;
-    const char* code;
-};
 
 // One-time headless GPU bring-up, mirroring test_texsharpen.cpp:38-100. The
 // engine GpuDevice is a process-global; bring it up once (InitGpu is the same
@@ -71,7 +47,7 @@ struct NamedShader {
 bool EnsureGpu() {
     static int sState = -1;  // -1 untried, 0 failed, 1 ready
     if (sState >= 0) return sState == 1;
-    bool ok = gBandRnd.InitGpu(/*width=*/64, /*height=*/64, /*headless=*/true);
+    bool ok = RB3RndBackend::InitGpu(/*width=*/64, /*height=*/64, /*headless=*/true);
     sState = ok ? 1 : 0;
     return ok;
 }
@@ -89,7 +65,7 @@ bool CompileOk(const char* wgsl, std::string& firstError) {
     desc.label = "WgslValidationTest";
     desc.nextInChain = &wgslSource;
 
-    wgpu::ShaderModule module = gBandRnd.Gpu().Device().CreateShaderModule(&desc);
+    wgpu::ShaderModule module = RB3RndBackend::Gpu().Device().CreateShaderModule(&desc);
 
     bool hasError = false;
     wgpu::Future future = module.GetCompilationInfo(
@@ -107,7 +83,7 @@ bool CompileOk(const char* wgsl, std::string& firstError) {
                 }
             }
         });
-    gBandRnd.Gpu().Instance().WaitAny(future, UINT64_MAX);
+    RB3RndBackend::Gpu().Instance().WaitAny(future, UINT64_MAX);
 
     return !hasError;
 }
@@ -122,34 +98,35 @@ protected:
 
 }  // namespace
 
-// Every shipped shader (5 externalized RB3 modules + the engine's standard
-// shader) must compile with zero WGSL Errors against the real Dawn front-end.
-TEST_F(WgslValidation, AllRB3ShadersCompile) {
+// Every shader module the linked GPU flavor ships must compile with zero WGSL
+// Errors against the real Dawn front-end.
+TEST_F(WgslValidation, AllShippedShadersCompile) {
     // Document which backend path ran (both exercise Tint WGSL validation).
     printf("[WgslValidation] GPU backend: %s\n",
-           gBandRnd.Gpu().IsNullBackend() ? "null (Tint front-end validation still runs)"
+           RB3RndBackend::Gpu().IsNullBackend() ? "null (Tint front-end validation still runs)"
                                           : "real (native Dawn)");
 
-    const NamedShader shaders[] = {
-        {"rb3_halo_blit.wgsl.inc", kHaloBlit},
-        {"rb3_postproc.wgsl.inc", kPostProc},
-        {"rb3_quad.wgsl.inc", kQuad},
-        {"rb3_compose.wgsl.inc", kCompose},
-        {"rb3_particle.wgsl.inc", kParticle},
-        {"standard_wgsl.inc", kStandard},
-    };
+    printf("[WgslValidation] GPU flavor: %s\n", RB3RndBackend::FlavorName());
 
-    for (const auto& s : shaders) {
+    int count = 0;
+    const ShippedWgslModule* modules = ShippedWgslModules(&count);
+    // Both flavors ship the standard shader plus at least five pass modules; a
+    // short table means a module fell out of the registry.
+    ASSERT_GE(count, 6) << "module table is shorter than any flavor ships";
+    for (int i = 0; i < count; i++) {
+        const ShippedWgslModule& m = modules[i];
+        ASSERT_NE(m.code, nullptr) << m.name;
+        EXPECT_GT(std::strlen(m.code), 32u) << m.name << ": empty source";
         std::string err;
-        bool ok = CompileOk(s.code, err);
-        EXPECT_TRUE(ok) << s.name << ": " << err;
-        if (ok) printf("[WgslValidation] %-24s OK\n", s.name);
+        bool ok = CompileOk(m.code, err);
+        EXPECT_TRUE(ok) << m.name << ": " << err;
+        if (ok) printf("[WgslValidation] %-36s OK\n", m.name);
     }
 }
 
 // Fail-red self-test: a deliberately broken shader (calls an undefined function)
 // MUST be reported as a compile failure. Proves CompileOk can fail red rather
-// than silently passing — without this, AllRB3ShadersCompile could be a no-op.
+// than silently passing — without this, AllShippedShadersCompile could be a no-op.
 TEST_F(WgslValidation, HarnessCatchesBadShader) {
     static const char* kBad =
         "@fragment fn f() -> @location(0) vec4f { return nonexistent_fn(); }";

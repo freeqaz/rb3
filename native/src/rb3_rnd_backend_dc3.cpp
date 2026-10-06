@@ -5,18 +5,14 @@
 // rndobj through src/platform/rndshape/RndShape_RB3Wii.h.
 //
 // Besides the facade, this TU defines the renderer hooks RB3's fork and game
-// glue call by name (draw-provenance scopes, the menu UI post-grade flush, the
-// outfit-compose latch, the legacy class aliases, the exit-time GPU teardown) and
-// the BandRnd instrumentation entry points the harnesses read (draw log,
-// progressive texture sharpen). Those last two are BandRnd features WgpuRnd does
-// not have; here they report "off" (empty log, sharpen disabled), which is the
-// state every caller already handles because both are env-gated off by default
-// under the rb3 flavor too.
+// glue call by name that WgpuRnd has no use for (the menu UI post-grade flush,
+// the outfit-compose latch), the legacy class aliases and the exit-time GPU
+// teardown. The draw log, provenance scopes and progressive texture sharpen
+// come from the engine (rndshape/RB3WiiDrawLog.cpp, platform/RB3TexSharpen.cpp
+// with rndshape/RB3WiiTexSharpen.cpp), as they do for the rb3 flavor.
 #include "rb3_rnd_backend.h"
 
 #include "platform/Rnd_Wgpu.h"
-#include "platform/RB3DrawLogDebug.h"
-#include "platform/RB3TexSharpen.h"
 #include "gfx/GpuDevice.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Dir.h"
@@ -35,6 +31,7 @@
 #include "utl/Symbol.h"
 
 #include <cstdio>
+#include <cstdlib>
 
 // Mesh_Wgpu.cpp: draw one mesh now, whatever its showing flag says.
 void DrawMeshImmediate(RndMesh *mesh);
@@ -82,32 +79,9 @@ void RB3RegisterBandRndShutdown() { TheDebug.AddExitCallback(WgpuRndShutdownExit
 // ---------------------------------------------------------------------------
 // Fork-facing hooks the rb3 flavor implements and WgpuRnd has no use for.
 // ---------------------------------------------------------------------------
-void RB3DrawScopePush(int, const char *) {}
-void RB3DrawScopePop(int) {}
 class Rnd;
 void RB3FlushMenuUIPostGrade(Rnd *) {}
 bool gRB3OutfitComposeActive = false;
-
-// BandRnd draw log / provenance: not recorded by WgpuRnd.
-const std::vector<RB3DrawRecord> &RB3DebugGetDrawLog() {
-    static const std::vector<RB3DrawRecord> sEmpty;
-    return sEmpty;
-}
-const std::vector<RB3DrawProv> &RB3DebugGetDrawProv() {
-    static const std::vector<RB3DrawProv> sEmpty;
-    return sEmpty;
-}
-void RB3DebugSetDrawLogEnabled(bool) {}
-bool RB3DebugDrawLogEnabled() { return false; }
-
-// BandRnd progressive texture sharpen: not implemented by WgpuRnd.
-bool RB3ProgressiveSharpenEnabled() { return false; }
-int RB3SharpenPerFrame() { return 0; }
-int RB3SharpenLoadSidecar(ObjectDir *, const uint8_t *, uint32_t) { return 0; }
-int RB3SharpenStep(int) { return 0; }
-bool RB3SharpenComplete() { return true; }
-void RB3SharpenReset() {}
-RB3SharpenStatus RB3SharpenGetStatus() { return RB3SharpenStatus(); }
 
 // ---------------------------------------------------------------------------
 // RB3RndBackend
@@ -170,6 +144,16 @@ bool InitGpu(int width, int height, bool headless) {
         return false;
     }
     InitGpuResources();
+    // A process that never reaches Debug::Exit (the gtest binary returns from
+    // main) would otherwise release WgpuRnd's handles from its static
+    // destructor, after Dawn's Vulkan backend is gone, and segfault at exit.
+    // atexit handlers registered now run before that destructor; the callback
+    // is a no-op once the teardown has run.
+    static bool sAtExit = false;
+    if (sGpuReady && !sAtExit) {
+        sAtExit = true;
+        std::atexit(WgpuRndShutdownExitCallback);
+    }
     return sGpuReady;
 }
 

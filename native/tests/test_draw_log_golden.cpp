@@ -21,19 +21,19 @@
 // PopulatesFromRealDrawMesh is GPU-gated (EnsureGpu + GTEST_SKIP). Real-draw
 // population of the ring is independently proven by S1's headless boot capture
 // (877-891 draws dumped from a real menu frame) and S3's /api/drawlog live
-// capture; an in-process gBandRnd.DrawMesh drive needs full camera + material
+// capture; an in-process RB3RndBackend::DrawMesh drive needs full camera + material
 // + active-pass state that the unit fixture does not stand up, so this case
 // documents that and SKIPs rather than risk a crash on the headless host.
 
 // test_helpers.h FIRST: it pulls in <gtest/gtest.h> then neutralizes glibc's
 // st_atime/st_mtime/st_ctime macros before any decomp header (os/File.h uses
 // those as struct member names). Including raw <gtest/gtest.h> here instead
-// would let the macros corrupt File.h pulled transitively by Rnd_Wgpu_RB3.h.
+// would let the macros corrupt File.h pulled transitively by the engine headers.
 #include "test_helpers.h"
 
 #include "drawlog_compare.h"
 
-#include "platform/Rnd_Wgpu_RB3.h"        // gBandRnd, BandRnd::InitGpu
+#include "rb3_rnd_backend.h"               // RB3RndBackend::InitGpu (either GPU flavor)
 #include "platform/RB3DrawLogDebug.h"     // RB3DebugSetDrawLogEnabled / RB3DebugGetDrawLog
 
 #include <string>
@@ -228,13 +228,13 @@ TEST(DrawLogGolden, ParserRoundTrip) {
 }
 
 // ===========================================================================
-// GPU-gated: drive real draws through gBandRnd and read the ring back.
+// GPU-gated: the debug accessors of whichever GPU flavor is linked.
 // ===========================================================================
 namespace {
 bool EnsureGpu() {
     static int sState = -1; // -1 untried, 0 failed, 1 ready
     if (sState >= 0) return sState == 1;
-    bool ok = gBandRnd.InitGpu(/*width=*/64, /*height=*/64, /*headless=*/true);
+    bool ok = RB3RndBackend::InitGpu(/*width=*/64, /*height=*/64, /*headless=*/true);
     sState = ok ? 1 : 0;
     return ok;
 }
@@ -254,7 +254,7 @@ TEST(DrawLogGolden, PopulatesFromRealDrawMesh) {
     (void)log;   // readable handle; contents depend on prior draws
     RB3DebugSetDrawLogEnabled(false);
 
-    // A full in-process gBandRnd.BeginFrame(cam)/DrawMesh(a)/DrawMesh(b)/EndFrame()
+    // A full in-process RB3RndBackend::BeginFrame(cam)/DrawMesh(a)/DrawMesh(b)/EndFrame()
     // drive needs a valid RndCam (RndCam::sCurrent), per-mesh material + geometry
     // that survives unpacking, and an active render pass — none of which the unit
     // fixture stands up. Attempting it risks a segfault on the headless host, so
