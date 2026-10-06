@@ -4951,6 +4951,60 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
     return action;
 }
 
+#ifdef HX_NATIVE
+// W16-RP: per-member skin materials. Retail merges char/main/shared/char_shared.milo
+// with kMerge, so every object in it reaches Filter's sCharSharedDir branch above:
+// the member's own same-named object (from main.milo) replaces it in the refs of the
+// outfit being installed (ReplaceRefs, scoped to sOutfitDir/sResourceDir/sToDir), and
+// the shared object is ignored. That is how each member's head.mesh, hands and
+// *_skin meshes end up drawing that member's own head_naked.mat / torso_naked.mat /
+// legs_skin.mat / feet_skin.mat / feet_socks_skin.mat, which SetSkinTextures then
+// fills with the member's gender textures and skin tone.
+// Natively FilterSubdir below turns that kMerge into kReplace (the shared-subdir
+// shim), so Filter never sees char_shared's objects and the outfit meshes keep
+// their refs into the one shared char_shared instance: one material per skin part
+// for the whole cast, last writer wins. Run the same per-object step here instead,
+// keeping the shim's kReplace topology. Returns the number of objects adopted.
+static int NativeAdoptCharSharedRefs(BandCharacter *self, ObjectDir *shared) {
+    int adopted = 0;
+    // Collect first: ReplaceRefs does not add or remove objects, but keep the
+    // iteration independent of anything it touches.
+    std::vector<Hmx::Object *> objs;
+    for (ObjDirItr<Hmx::Object> it(shared, false); it != 0; ++it) {
+        if ((Hmx::Object *)it != shared && it->Name() && *it->Name())
+            objs.push_back(it);
+    }
+    for (size_t i = 0; i < objs.size(); i++) {
+        Hmx::Object *theirs = objs[i];
+        // Retail: Find<Hmx::Object>(name, true) + MILO_ASSERT(mine->Dir() == this).
+        // Natively char_shared is also appended as a subdir of the member, so a
+        // name the member lacks resolves back into char_shared; skip those.
+        Hmx::Object *mine = self->FindObject(theirs->Name(), false);
+        if (!mine || mine == theirs || mine->Dir() != self)
+            continue;
+        if (mine->ClassName() != theirs->ClassName())
+            continue;
+        ReplaceRefs(theirs, mine);
+        adopted++;
+    }
+    return adopted;
+}
+
+// True if `target` is `dir` or one of its nested subdirs, i.e. retail's kMerge
+// recursion (MergeObjectsRecurse) through `dir` would have reached it.
+static bool NativeSubdirTreeHas(ObjectDir *dir, ObjectDir *target, int depth = 0) {
+    if (!dir || !target || depth > 16)
+        return false;
+    if (dir == target)
+        return true;
+    for (int i = 0; i < (int)dir->mSubDirs.size(); i++) {
+        if (NativeSubdirTreeHas(dir->mSubDirs[i], target, depth + 1))
+            return true;
+    }
+    return false;
+}
+#endif
+
 MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir) {
 #ifdef HX_NATIVE
     // Native load-order fix (char textures rendering white). A shared external
@@ -5041,6 +5095,25 @@ MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir)
         } else if (!LoadBindNoShim()) {
             act = MergeFilter::kReplace;
             overrode = true;
+        }
+    }
+    // W16-RP: the shim stops the merge at this subdir, so retail's recursion never
+    // reaches char_shared.milo: directly (head, hands, hair, ...) or nested under an
+    // outfit's *_resource.milo (torso, legs, feet). Do retail's per-object
+    // sCharSharedDir step (Filter) here instead; see NativeAdoptCharSharedRefs.
+    // Opt-out RB3_NO_SKIN_MAT_ADOPT=1.
+    if (overrode && NativeSubdirTreeHas(o1, sCharSharedDir)) {
+        static int sAdoptOff = -1;
+        if (sAdoptOff < 0)
+            sAdoptOff = getenv("RB3_NO_SKIN_MAT_ADOPT") ? 1 : 0;
+        if (!sAdoptOff) {
+            int n = NativeAdoptCharSharedRefs(this, sCharSharedDir);
+            if (getenv("RB3_SKIN_MAT_ADOPT_PROBE"))
+                fprintf(stderr,
+                        "[SKIN_MAT_ADOPT] member='%s' outfit='%s' via='%s' adopted=%d\n",
+                        Name() ? Name() : "?",
+                        sOutfitDir && sOutfitDir->Name() ? sOutfitDir->Name() : "?",
+                        o1->Name() ? o1->Name() : "?", n);
         }
     }
     if (LoadBindProbeOn()) {
