@@ -5,6 +5,10 @@
 #include "rndobj/Rnd.h"
 #include "utl/Loader.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstring>
+#include "math/Utl.h"
+#endif
 
 INIT_REVS(RndMat)
 
@@ -42,7 +46,14 @@ RndMat::RndMat()
       mScreenAligned(0), mRefractEnabled(0), mPointLights(0), mFog(0), mFadeout(0),
       mColorAdjust(0), mBlend(kBlendSrc), mTexGen(kTexGenNone), mTexWrap(kTexWrapRepeat),
       mZMode(kZModeNormal), mStencilMode(kStencilIgnore),
-      mShaderVariation(kShaderVariationNone), mColorModFlags(kColorModNone), mDirty(3) {
+      mShaderVariation(kShaderVariationNone), mColorModFlags(kColorModNone), mDirty(3)
+#ifdef HX_NATIVE
+      ,
+      mXbSpecularRGB(0, 0, 0, 0), mXbNormalMap(this), mXbSpecularMap(this),
+      mXbRimRGB(0, 0, 0, 0), mXbRimMap(this), mXbDeNormal(0), mXbPerPixelLit(false),
+      mXbRimLightUnder(false)
+#endif
+{
     mEmissiveMultiplier = 1.0f;
     mTexXfm.Reset();
     ResetColors(mColorMod, 3);
@@ -86,12 +97,19 @@ BEGIN_LOADS(RndMat)
         MemDoTempAllocations tmp(true, false);
         ObjPtr<RndTex> texPtr(this);
         bs >> texPtr;
+#ifdef HX_NATIVE
+        mXbSpecularRGB = loc_color;
+        mXbNormalMap = texPtr;
+#endif
     }
     bs >> mEmissiveMap;
     {
         MemDoTempAllocations tmp(true, false);
         ObjPtr<RndTex> texPtr(this);
         bs >> texPtr;
+#ifdef HX_NATIVE
+        mXbSpecularMap = texPtr;
+#endif
     }
     if (gRev < 0x33) {
         ObjPtr<RndTex> texPtr(this);
@@ -110,9 +128,18 @@ BEGIN_LOADS(RndMat)
             bs >> b2;
         }
     }
+#ifdef HX_NATIVE
+    if (gRev < 0x25 && mXbSpecularMap) {
+        mXbSpecularRGB.Set(1, 1, 1, mXbSpecularRGB.alpha);
+    }
+    mXbPerPixelLit = false;
+#endif
     if (gRev > 0x19) {
         bool b;
         bs >> b;
+#ifdef HX_NATIVE
+        mXbPerPixelLit = b;
+#endif
         mPerPixelLit = b;
         mPerPixelLit = 0;
     }
@@ -145,6 +172,10 @@ BEGIN_LOADS(RndMat)
     if (gRev > 0x23) {
         int i;
         bs >> i;
+#ifdef HX_NATIVE
+        // mDeNormal: a float, read through the int as raw bits.
+        memcpy(&mXbDeNormal, &i, sizeof(float));
+#endif
         bs >> i;
     }
     if (gRev > 0x26) {
@@ -201,10 +232,27 @@ BEGIN_LOADS(RndMat)
             if (gRev > 0x39) {
                 bool b;
                 bs >> b;
+#ifdef HX_NATIVE
+                mXbRimLightUnder = b;
+#endif
             } else {
                 bool b;
                 bs >> b;
+#ifdef HX_NATIVE
+                color2f.red = Min(color2f.red * 2.857143f, 1.0f);
+                color2f.green = Min(color2f.green * 2.857143f, 1.0f);
+                color2f.blue = Min(color2f.blue * 2.857143f, 1.0f);
+#endif
             }
+#ifdef HX_NATIVE
+            if (gRev < 0x3B) {
+                color2f.red = 0;
+                color2f.green = 0;
+                color2f.blue = 0;
+            }
+            mXbRimRGB = color2f;
+            mXbRimMap = texPtr;
+#endif
         }
     }
     if (gRev > 0x30) {
@@ -312,6 +360,16 @@ BEGIN_COPYS(RndMat)
         COPY_MEMBER_FROM(m, mRefractEnabled)
         COPY_MEMBER_FROM(m, mRefractStrength)
         COPY_MEMBER_FROM(m, mRefractNormalMap)
+#ifdef HX_NATIVE
+        COPY_MEMBER_FROM(m, mXbSpecularRGB)
+        COPY_MEMBER_FROM(m, mXbNormalMap)
+        COPY_MEMBER_FROM(m, mXbSpecularMap)
+        COPY_MEMBER_FROM(m, mXbRimRGB)
+        COPY_MEMBER_FROM(m, mXbRimMap)
+        COPY_MEMBER_FROM(m, mXbDeNormal)
+        COPY_MEMBER_FROM(m, mXbPerPixelLit)
+        COPY_MEMBER_FROM(m, mXbRimLightUnder)
+#endif
     }
     mDirty = 3;
 END_COPYS
