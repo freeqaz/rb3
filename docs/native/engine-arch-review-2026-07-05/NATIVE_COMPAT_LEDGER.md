@@ -5,18 +5,22 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 418  
-**By class:** compat=2, diagnostic=1, feature=14, perf=9, probe=137, tuning=3, unknown=151, workaround=101  
-**Default-ON workarounds (the number §W5.3 must drive to 0):** 76
+**Total flags:** 430  
+**By class:** compat=2, diagnostic=1, feature=17, perf=9, probe=145, tuning=3, unknown=151, workaround=102  
+**Default-ON workarounds (the number §W5.3 must drive to 0):** 77
 
 | name | class | default | owner | faithful-status | sites |
 |---|---|---|---|---|---|
 | `BAND_ANIM_ANAT` | unknown | unknown | unclassified | n/a | 1 |
+| `BAND_ANIM_ANATPRE` | probe | off | char/anim | n/a: W34-CHARCLIP-EVAL STEP-0 L3 attribution probe (rb3 ec9bd9ff; it named the alias-unsafe native Multiply(Transform,Transform,Transform) in Rot.cpp as the 4.2x upperArm stretch). HX_NATIVE, getenv-gated, read-only. Pre-read world-xfm cache map of the bone_R-upperArm chain (dirty bits + cached vs forced world, root->leaf) every N frames. Any value enables; value = period in frames (empty or <1 -> 60, so '0' still enables) [BandCharacter.cpp:853] | 1 |
+| `BAND_ANIM_ANATX` | probe | off | char/anim | n/a: W34-CHARCLIP-EVAL STEP-0 L3 attribution probe (rb3 ec9bd9ff; it named the alias-unsafe native Multiply(Transform,Transform,Transform) in Rot.cpp as the 4.2x upperArm stretch). HX_NATIVE, getenv-gated, read-only. Per-frame worst-pair ANAT ratio discriminator (scale vs stale vs wrong parentage) with an ancestor local-matrix dump. Any value enables; value = min ratio to report (empty -> 1.5, '0' reports every frame) [BandCharacter.cpp:940] | 1 |
 | `BAND_ANIM_BONE` | probe | off | char/anim | n/a: names the bone BAND_ANIM_PROBE samples (defaults to bone_R-upperArm.mesh); only read when BAND_ANIM_PROBE is active, never alters Poll() [BandCharacter.cpp:507] | 1 |
 | `BAND_ANIM_CHAIN` | unknown | unknown | unclassified | n/a | 1 |
 | `BAND_ANIM_CHAIN_HZ` | unknown | unknown | unclassified | n/a | 1 |
 | `BAND_ANIM_PROBE` | probe | off | char/anim | n/a: per-frame trace of the band animation chain (driver presence, playing clip, named bone worldPos pre/post Character::Poll) to localize why the on-stage skeleton fails to move; substring-matches a member's dir name or '*' [BandCharacter.cpp:497] | 1 |
 | `BAND_ANIM_YTHRESH` | probe | off | skinning/char | probe: Wave-23 FOREARM discovery — world-y threshold (default 50) for the event-triggered BAND_ANIM_PROBE emit; inert unless BAND_ANIM_PROBE set | 1 |
+| `BAND_IK_CONS` | probe | off | char/ik | n/a: W34-CHARCLIP-EVAL STEP-0 L3 attribution probe (rb3 ec9bd9ff; it named the alias-unsafe native Multiply(Transform,Transform,Transform) in Rot.cpp as the 4.2x upperArm stretch). HX_NATIVE, getenv-gated, read-only. Prints each IK constraint target dragging an effector (BandIKEffector::ApplyConstraints, budget 2000). Presence only: the comment advertises a <*|target-name-substr> filter that the code does not implement, so any value prints every constraint [BandIKEffector.cpp:677] | 1 |
+| `BAND_IK_PROBE` | probe | off | char/ik | n/a: W34-CHARCLIP-EVAL STEP-0 L3 attribution probe (rb3 ec9bd9ff; it named the alias-unsafe native Multiply(Transform,Transform,Transform) in Rot.cpp as the 4.2x upperArm stretch). HX_NATIVE, getenv-gated, read-only. DoFancyElbow weight/shoulder-pull dump (budget 3000); value = shoulder-name substring or '*' (empty matches every shoulder) [BandIKEffector.cpp:543] | 1 |
 | `BONE_CLEAR_DBG` | probe | off | skinning | n/a: logs any CopyBones(0) that wipes a non-empty bone list off a mesh, to catch post-load bone clears [Mesh.cpp:1156] | 1 |
 | `BONE_LOAD_DBG` | probe | off | skinning | n/a: reports how many bones a mesh loaded from the file vs. how many resolved null, before RemoveInvalidBones strips them [Mesh.cpp:1000] | 1 |
 | `BONE_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
@@ -88,6 +92,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_DEBUG_ARM_CHAIN_DIR` | probe | off | skinning/chain | n/a: archaeological debug probe | 1 |
 | `MILO_DEBUG_ARM_CHAIN_FRAME` | probe | off | skinning/chain | n/a: archaeological debug probe | 1 |
 | `MILO_DEBUG_PIPELINES` | unknown | off | unclassified | n/a | 3 |
+| `MILO_DUMP_RT` | probe | off | render/capture | n/a: debug dump of every live GPU render target to <screenshot dir>/rt_<frame>_<tex>.png beside each auto-screenshot frame (WgpuRnd::MaybeCaptureFrame; engine 79352c0, used to measure the RB3 title cloud-layer RT alpha). Inspection only, no draw change [Rnd_Wgpu.cpp:1934] | 1 |
 | `MILO_HEADLESS` | feature | off | platform/headless | n/a: headless runtime mode (skips window/audio/GPU device init; UI.cpp fakes a fixed 1/30s UI clock). Real port toggle, not a fidelity stand-in. | 9 |
 | `MILO_HEIGHT` | unknown | unknown | unclassified | n/a | 10 |
 | `MILO_INPUT_SCRIPT` | unknown | unknown | unclassified | n/a | 1 |
@@ -95,6 +100,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_NORENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_NO_TRANSPARENT_DEFER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_PERF` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_RB3_DISPLAY_GAMMA` | feature | off | render/post | n/a: override value knob for the retail display gamma ramp (rndshape::DisplayGamma, engine 72f38c6/246264c). Unset = retail DxRnd::SetupGamma behaviour: (rnd (gamma g)) from the system config, applied to presented frames only, none headless. Set = applies to every output incl. headless; 'off'/'0' = no ramp, else the gamma value. RB3Wii rndshape only; DC3 shape is a constant 0 so the flag is inert there [rndshape/RB3WiiPostChain.cpp:34] | 1 |
+| `MILO_RB3_RETAIL_POST` | feature | on | render/post | live: RB3 Xbox 360 retail post chain (pseudo-HDR luma bloom mask, bloom/blur/downsample sets, screen blend, RndColorXfm) ported from the retail shaders, default-ON for the RB3Wii rndshape (engine c942ad9 WIP, completed 34169f1). Unset or unrecognised = 1 (retail chain); '0' = PostProcPass's previous DC3 composite; 'raw'/'mask'/'bloom'/'grade' = inspection views. DC3 shape RetailPostMode() is a constant 0, so the flag is inert there [rndshape/RB3WiiPostChain.cpp:21] | 1 |
 | `MILO_RENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_SCREENSHOT_DIR` | unknown | unknown | unclassified | n/a | 2 |
 | `MILO_SCREENSHOT_FRAMES` | unknown | unknown | unclassified | n/a | 2 |
@@ -149,13 +156,14 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_CHAR_REAL_LIGHT_OFF` | workaround | on | render/lighting | not-live: real-key character lighting approximation default-ON (see project_c8_faces memory) | 1 |
 | `RB3_CLEAR_COLOR` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_COMPOSE_MULT_OFF` | workaround | on | render/compose | not-live: composite-blend multiply-fallback default-ON (see project_c8_faces memory) | 1 |
+| `RB3_COMPOSE_PROBE` | probe | off | render/compose | n/a: outfit texture-compose chain reachability probes (DirLoader::Cleanup, RndDir::SyncObjects/SyncDrawables, OutfitConfig::UpdatePreClearState/DrawPreClear/MatSwap::Compose), capped counters. Added by rb3 d773f1da to argue the chain was dead; that finding was RETRACTED in c053c63c (every zero was the ugrep -I shell grep skipping a log with one invalid UTF-8 byte; the chain runs, every probe sits at its cap). Retirement candidate [OutfitConfig.cpp:120,1177,1312; DirLoader.cpp:771; Dir.cpp:56,125,149] | 7 |
 | `RB3_CROWD_BONE_PROBE` | probe | off | render/crowd | n/a: W2.3.S1 crowd bone-source seam characterization (owner vs own-bone SKIN_CLAMP extent; SHARED/SELF+POISON decision) | 1 |
 | `RB3_CROWD_DIM` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_CROWD_DIM_OFF` | workaround | on | render/crowd | not-live: crowd-dim heuristic default-ON | 1 |
 | `RB3_CROWD_IMPOSTER_OFF` | workaround | on | render/crowd | not-live: crowd impostor rendering default-ON | 1 |
 | `RB3_DATA` | unknown | unknown | unclassified | n/a | 6 |
 | `RB3_DRAWLOG` | probe | off | render/determinism | n/a: per-draw state-log ring capture (W0.3 draw-log golden harness) | 1 |
-| `RB3_DRAWLOG_DUMP` | probe | off | render/determinism | n/a: draw-log JSON dump path (W0.3 draw-log golden harness) | 1 |
+| `RB3_DRAWLOG_DUMP` | probe | off | render/determinism | n/a: draw-log JSON dump path (W0.3 draw-log golden harness) | 2 |
 | `RB3_DRAWLOG_PROV` | probe | off | render/ui-forensics | n/a: W17 R3-UIDUMP provenance sidecar for the draw-log ring (mesh/mat/cam names, screen rect, render-pass idx + depth LoadOp, game-fed panel/owner scope). Implies RB3_DRAWLOG on; render output byte-identical. | 2 |
 | `RB3_DRAWORDER_TRACE` | probe | off | render/determinism | n/a: transparent/text queue pre/post-sort submission-order trace (W0.3c.S1 order-flake attribution) | 2 |
 | `RB3_DRAWRECT_DBG` | unknown | off | unclassified | n/a | 1 |
@@ -276,6 +284,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_NO_INST_REBIND` | workaround | on | skinning | not-live: instrument-strings rest-basis rebind (RebindInstStringsToRestBasis) default-ON [BandCharacter.cpp:1540] | 1 |
 | `RB3_NO_MESH_CACHE` | workaround | on | render/mesh-cache | not-live: mesh cache default-ON (see project_songlib_web_crash_charpreview memory) | 1 |
 | `RB3_NO_MIDIDRV_ENTER_FIX` | workaround | on | char/driver | not-live: W32-PROP-FAN Enter-starvation fix default-ON — instrument-MIDI prop drivers (drum-hit/strum/fret .dmidi) were Polled but never Entered natively (added to mPolls after the one-time Character::Enter), so they never AddSink'd onto their MIDI parser: no hit/strum clips, idle arm, CharIKHand over-reach, prop-tip fans. Fix lazily Enters once on first native Poll. Earned by ON-vs-OFF: OnMidiParser 0->173, clips 0->416, drummer shards 1107->2, guitarist 843->0, set_play non-regressed. Opt-out restores the fan artifacts for A/B | 1 |
+| `RB3_NO_OUTFIT_CHAIN_ANCHOR` | workaround | on | skinning/chain | not-live: native-only NativeAnchorOutfitChain default-ON (rb3 36795d92, W16-RL) — multi-bone hair (fauxhawk, ziggymullet, messyshort, visor, 50sbandana) skins to CharHair strand bones in the hair resource dir that never resolve in the member, so RebindHeadHandsAtRest (itself the RB3_NO_HEAD_REBIND workaround) left them bound to the shared static magnet chain at the world origin and the member read as bald. Anchors the strand chain to the first ancestor that resolves to a member bone. No retail counterpart. Measured: fauxhawk skinned avg (0.0,0.6,70.7) -> (48.9,33.7,70.2) vs head (48,24,65). Presence read: any value, '0' included, opts out [BandCharacter.cpp:1777] | 1 |
 | `RB3_NO_POSEMESHES` | probe | off | skinning | n/a: Q1 decisive-test disable of CharBonesMeshes::PoseMeshes (channel->LocalXfm writeback); default-OFF [CharBonesMeshes.cpp:103] | 1 |
 | `RB3_NO_PRECLEAR` | workaround | on | render/mesh-cache | not-live: pre-clear-before-draw workaround default-ON | 1 |
 | `RB3_NO_SETLIST_FIX` | workaround | on | ui/setlist | not-live: setlist fix default-ON (opt-out name) | 1 |
@@ -284,6 +293,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_NO_SKEL_REBIND` | workaround | on | skinning | not-live: outfit-bone rebind-to-own-skeleton (RebindOutfitBonesToOwnSkeleton) default-ON (char-skinning-deform fix acd9c19a; W0.5 fail-red control) [BandCharacter.cpp:1064] | 1 |
 | `RB3_NO_SKEL_WORLDFIX` | workaround | on | skinning | not-live: skeleton world-xfm fix default-ON | 1 |
 | `RB3_NO_SKIN_CLAMP` | workaround | on | skinning | not-live: skin-position clamp default-ON | 1 |
+| `RB3_NO_SKIN_MAPS` | feature | on | render/c8-faces | live, with native deviations: NativeBindSkinMaps restores retail Xbox OutfitConfig::SetSkinTextures' binding of <gender>_<part>_spec.tex + normal maps (retail HeadNormVariant ported) into mXbSpecularMap/mXbNormalMap on the five skin materials, which the Wii source dropped (rb3 4557ed68, W16-RL; fixes plastic-white face specular on the dc3 backend). Deviations: binds every drawn instance with a recursive lookup, not just dir1's (native milo merge splits material instances); head normal is <gender>_head00_norm.tex, not head_wrinkle_output.tex (RndTexBlender::DrawShowing is a no-op natively, so that RT is never painted). BandRnd (rb3 backend) does not read mXb maps. Presence read: any value, '0' included, opts out [OutfitConfig.cpp:749] | 1 |
 | `RB3_NO_STEM_ANCHOR` | workaround | on | skinning | not-live: stem-anchor workaround default-ON | 1 |
 | `RB3_ONLY_SHOWING` | unknown | unknown | unclassified | n/a | 2 |
 | `RB3_PALETTE_DUMP` | probe | off | skinning | probe: R2 (Wave 17) skinning-fixture dump. Writes one PaletteFrame text file per (mesh,ownerPtr,dumpIdx) capturing the exact (verts,weights,uploaded palette bones.bones[], per-bone off/world/palette-parent) triple the skinned shader blends, so the R2 oracle-validation harness (native/tests/skinning_oracle.h) grades a palette against committed known-good/known-bad fixtures OFFLINE. Value=comma-substrs|*|1 (mesh selector, env-driven NOT hardcoded to hands). Assembled from ingredients already read by RB3_HANDS_ATTACH_PROBE/INSTR_B within 150 lines. Render-inert, getenv-gated, flag-OFF byte-identical (drawlog 792) [Rnd_Wgpu_RB3.cpp] | 1 |
@@ -361,6 +371,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_SKEL_REBIND_FULL` | workaround | off | skinning | not-live: KNOWN-BROKEN full-body rebind (shards thin geo), default-OFF study/W0.1 fail-red control; shipped rebind is torso-only [BandCharacter.cpp:1084] | 1 |
 | `RB3_SKINFIX_DBG` | probe | off | skinning | n/a: logs every MatSwap touched by the outfit skin-diffuse rebind loop and what it rebinds, added while triaging the C8 head-invisible regression [OutfitConfig.cpp:600] | 1 |
 | `RB3_SKIN_FIX_OFF` | workaround | on | render/c8-faces | not-live: skin RT-recolor compose rebind (only active when RB3_SKIN_RTT is also set); opt-out RB3_SKIN_FIX_OFF=1 (see project_c8_faces memory) [OutfitConfig.cpp:566] | 1 |
+| `RB3_SKIN_MAPS_PROBE` | probe | off | render/c8-faces | n/a: per-skin-material [SKIN_MAPS] line from NativeBindSkinMaps (material instance count, resolved spec/norm texture or MISSING); rb3 4557ed68 [OutfitConfig.cpp:515] | 1 |
 | `RB3_SKIN_NOCACHE` | perf | off | skinning | n/a: A/B disable of the per-member skinned-mesh cache (measurement only; default cached path is a perf optimization, see incremental-load-perf memory) [BandCharacter.cpp:851] | 1 |
 | `RB3_SKIN_RTT` | feature | off | render/c8-faces | not-live: gates the engine skin-RTT composite path (broken on web); default-OFF ships the direct-bind diff x skin-tone bypass (see project_c8_faces memory 266ffb1b) [OutfitConfig.cpp:508,572] | 3 |
 | `RB3_SKIN_TIMING` | probe | off | skinning | n/a: timing print summing skinned-mesh cache rebuild vs cache-hit cost [BandCharacter.cpp:846] | 1 |
@@ -399,6 +410,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_WEB_OFFMAIN_DBG` | unknown | off | unclassified | n/a | 2 |
 | `RB3_WEB_OFFMAIN_FLOOR_MS` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_WEB_OFFMAIN_MIX` | feature | on | audio/web | n/a: off-main-thread audio decode/mix mode (web survives main-thread freezes; native uses it to size the decode-ahead ring deeper) default-ON; =0 keeps the prior main-thread-mix path. Port audio-architecture toggle, not a Wii-fidelity stand-in. | 2 |
+| `RB3_WORLDPIN_PROBE` | probe | off | char/anim | n/a: W34-CHARCLIP-EVAL STEP-0 L3 attribution probe (rb3 ec9bd9ff; it named the alias-unsafe native Multiply(Transform,Transform,Transform) in Rot.cpp as the 4.2x upperArm stretch). HX_NATIVE, getenv-gated, read-only. Prints the native backtrace at every RndTransformable::SetWorldXfm/SetWorldPos on a matching object (budget 4000; no backtrace under Emscripten); value = object-name substring or '*' (empty matches everything) [Trans.cpp:126] | 1 |
 | `RB3_XMA_PREFETCH_OFF` | workaround | on | load/audio | not-live: XMA prefetch default-ON | 1 |
 | `RB3_XMA_VALIDATE` | unknown | unknown | unclassified | n/a | 1 |
 | `REBIND_DRAW_FLING` | probe | unknown | skinning | n/a: archaeological debug probe | 1 |
