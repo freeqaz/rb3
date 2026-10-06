@@ -882,9 +882,12 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp
         ${_RB3_NATIVE_SRCS}
     )
-    # Depth of field is a dc3-flavor pass (the engine's gfx/DofPass.cpp).
+    # Depth of field and the flare point tests' occlusion queries are
+    # dc3-flavor passes (the engine's gfx/DofPass.cpp, gfx/PointTestPass.cpp).
     if(RB3_NATIVE_GFX AND RB3_GPU_BACKEND STREQUAL "dc3")
-        target_sources(rb3-tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/test_dof_pass.cpp)
+        target_sources(rb3-tests PRIVATE
+            ${CMAKE_SOURCE_DIR}/tests/test_dof_pass.cpp
+            ${CMAKE_SOURCE_DIR}/tests/test_point_test.cpp)
     endif()
     rb3_configure_target(rb3-tests)
     target_include_directories(rb3-tests PRIVATE ${CMAKE_SOURCE_DIR}/tests)
