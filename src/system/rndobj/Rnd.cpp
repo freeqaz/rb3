@@ -430,6 +430,17 @@ void Rnd::TestPoint(const Vector3 &pos, RndFlare *flare) {
     // by platform code that doesn't run here), so an in-view flare would stay
     // invisible forever. Treat in-frustum flares as fully visible instead.
     flare->SetVisible(true);
+    // Fully visible also means the area query's answer: retail's
+    // DxRnd::DoPointTests draws the flare's rect (mArea, set by the CalcRect
+    // in DrawShowing just before this call) as an occlusion query and stores
+    // the visible pixel count in the flare, which DrawShowing divides by the
+    // rect's area (mAreaTest, always on). Unoccluded, that count is the
+    // rect's on-screen area. Without it the ratio is 0 and no point-tested
+    // flare ever draws.
+    const Hmx::Rect &a = flare->mArea;
+    float w = Min<float>(mWidth, a.x + a.w) - Max(0.0f, a.x);
+    float h = Min<float>(mHeight, a.y + a.h) - Max(0.0f, a.y);
+    flare->unkec = (w > 0.0f && h > 0.0f) ? w * h : 0.0f;
 #else
     std::list<PointTest>::iterator it = mPointTests.insert(mPointTests.end(), PointTest());
     it->unk_0xC = flare;
