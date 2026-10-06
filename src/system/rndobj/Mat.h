@@ -382,6 +382,31 @@ public:
     ShaderVariation mShaderVariation : 8;
     ColorModFlags mColorModFlags : 8;
     int mDirty : 8;
+#ifdef HX_NATIVE
+    // The Xbox 360 material fields that RndMat::Load reads past (the Wii
+    // renderer has no per-pixel lighting), kept for the native renderer.
+    // Field order and the per-revision fixups are retail RB3's RndMat::Load.
+    /** "Specular color, alpha is the specular power" */
+    Hmx::Color mXbSpecularRGB;
+    /** "Tangent-space normal map, alpha unused" */
+    ObjPtr<RndTex> mXbNormalMap;
+    /** "Specular map, rgb tints the specular color, alpha scales the power" */
+    ObjPtr<RndTex> mXbSpecularMap;
+    /** "Rim light color, alpha is the rim power" */
+    Hmx::Color mXbRimRGB;
+    /** "Map that masks the rim light" */
+    ObjPtr<RndTex> mXbRimMap;
+    /** "Normal map strength reduction, 0 is full strength" */
+    float mXbDeNormal;
+    /** "Use per-pixel lighting", as loaded (the Wii load clears mPerPixelLit) */
+    bool mXbPerPixelLit;
+    /** "Rim light also from under the object" */
+    bool mXbRimLightUnder;
+#endif
 };
+#ifdef HX_NATIVE
+// RndMat carries the Xbox 360 material fields above (native renderer only).
+#define RB3_NATIVE_XBOX_MAT_FIELDS 1
+#endif
 
 RndMat *LookupOrCreateMat(const char *, ObjectDir *);
