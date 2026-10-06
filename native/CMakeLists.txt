@@ -223,6 +223,22 @@ else()
     set(MILO_ENGINE_BUILD_GFX OFF CACHE BOOL "RB3: headless — no WebGPU gfx core" FORCE)
     set(MILO_ENGINE_GPU_BACKEND off CACHE STRING "RB3: headless — no GPU backend" FORCE)
 endif()
+# RB3-Wii's matched fork is the 2010-era rndobj shape (Rnd* TheRnd, all
+# material state on RndMat, no NgRnd/BaseMaterial/RndShaderMgr). The engine's
+# dc3 backend reads rndobj through src/platform/rndshape/, which maps its DC3
+# accessors onto these headers when told the shape. Irrelevant to the rb3
+# flavor (BandRnd was written against this shape directly), so set always.
+set(MILO_ENGINE_RNDOBJ_SHAPE rb3wii CACHE STRING "RB3: consumer rndobj header shape" FORCE)
+if(RB3_NATIVE_GFX AND RB3_GPU_BACKEND STREQUAL "dc3")
+    # RndTex_Native.cpp supplies RndBitmap::Load / RndTex::Load/PreLoad/PostLoad
+    # for consumers whose fork stubs them. RB3-Wii's fork defines all four
+    # (src/system/rndobj/Tex.cpp, Bitmap.cpp), so the engine copy would be a
+    # duplicate definition.
+    list(APPEND MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE RndTex_Native.cpp)
+    # BoneSetup.cpp is excluded above because it drags in the gfx chain; the dc3
+    # backend's skinned-mesh path (Mesh_Wgpu.cpp) is its caller, so put it back.
+    list(REMOVE_ITEM MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE BoneSetup.cpp)
+endif()
 
 # The gfx core links Dawn (WebGPU) + glfw. glfw3 is system-installed
 # (find_package(glfw3) works out of the box); Dawn lives in the dc3 deps tree.
@@ -565,6 +581,9 @@ add_executable(rb3-native
     # + name/value mutable for the future HTTP PUT /api/settings endpoint).
     ${CMAKE_SOURCE_DIR}/src/rb3_native_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_render_hook.cpp
+    # RB3RndBackend:: — the one harness-facing seam over the engine GPU backend
+    # flavor (rb3: BandRnd, dc3: WgpuRnd); exactly one implementation links.
+    ${CMAKE_SOURCE_DIR}/src/rb3_rnd_backend_${RB3_GPU_BACKEND}.cpp
     # RB3 GPU rendering backend. The BandRnd : Rnd backend itself
     # (formerly rb3_band_rnd.cpp) has GRADUATED into the shared engine as
     # src/platform/Rnd_Wgpu_RB3.cpp, compiled there under MILO_ENGINE_GPU_BACKEND=rb3
@@ -841,12 +860,8 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_bandpatchmesh.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_charload5b.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_overpress.cpp
-        ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
-        ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
-        ${CMAKE_SOURCE_DIR}/tests/test_wgsl_validation.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_native_compat.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_stub_census.cpp
-        ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_hands_bind_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_farvert_rotation_oracle.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_placement_oracle.cpp
@@ -854,6 +869,15 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_skinning_oracle.cpp
         ${_RB3_NATIVE_SRCS}
     )
+    # BandRnd's own suites — its texture-sharpen manager, its WGSL, its draw log.
+    # They test the rb3 flavor's renderer, so they build with it and not without.
+    if(RB3_GPU_BACKEND STREQUAL "rb3")
+        target_sources(rb3-tests PRIVATE
+            ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
+            ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
+            ${CMAKE_SOURCE_DIR}/tests/test_wgsl_validation.cpp
+            ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp)
+    endif()
     rb3_configure_target(rb3-tests)
     target_include_directories(rb3-tests PRIVATE ${CMAKE_SOURCE_DIR}/tests)
     target_link_libraries(rb3-tests PRIVATE GTest::gtest GTest::gtest_main)
@@ -939,6 +963,8 @@ set(RB3_WEB_NATIVE_GLUE
     # the world-origin path and drew as a static quad over the centre character
     # (Rnd_Wgpu_RB3.cpp:3350/:3355). emcc-clean (std + rndobj headers only).
     ${CMAKE_SOURCE_DIR}/src/rb3_render_hook.cpp
+    # RB3RndBackend:: over the selected engine GPU backend flavor (see rb3-native).
+    ${CMAKE_SOURCE_DIR}/src/rb3_rnd_backend_${RB3_GPU_BACKEND}.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_native_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_platform_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp

@@ -40,7 +40,7 @@
 #include "math/Mtx.h"                   // Transform
 
 #include "platform/RB3DrawLogDebug.h"   // RB3DebugGetDrawLog/Prov, RB3DrawProvEnabled
-#include "platform/Rnd_Wgpu_RB3.h"      // gBandRnd.mFrameCount
+#include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 
 #include <string>
 #include <vector>
@@ -280,7 +280,7 @@ void RB3HttpServer::HandleUIDump(Command& cmd) {
     snprintf(buf, sizeof(buf),
              "{ \"ok\": true, \"data\": { \"frame\": %d, \"coverage\": \"BandRnd::DrawMesh only\", "
              "\"joinEnabled\": %s%s,\n  \"screens\": [",
-             gBandRnd.mFrameCount, jt.provAvail ? "true" : "false",
+             RB3RndBackend::FrameCount(), jt.provAvail ? "true" : "false",
              (wantJoin && !jt.provAvail) ? ", \"joinDisabled\": \"RB3_DRAWLOG_PROV unset (or size mismatch)\"" : "");
     json += buf;
 
