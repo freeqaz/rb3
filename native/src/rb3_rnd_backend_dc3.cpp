@@ -15,6 +15,9 @@
 #include "platform/Rnd_Wgpu.h"
 #include "gfx/GpuDevice.h"
 #include "rndobj/Cam.h"
+#include "rndobj/DOFProc.h"
+#include "rndobj/PostProc.h"
+#include "math/Utl.h"
 #include "rndobj/Dir.h"
 #include "rndobj/Env.h"
 #include "rndobj/Group.h"
@@ -75,6 +78,53 @@ void WgpuRndShutdownExitCallback() {
 } // namespace
 
 void RB3RegisterBandRndShutdown() { TheDebug.AddExitCallback(WgpuRndShutdownExitCallback); }
+
+// ---------------------------------------------------------------------------
+// Depth of field. RB3's base DOFProc ignores Set and reports Enabled() false,
+// so camera shots never reached the engine's DofPass. This keeps what retail
+// NgDOFProc::Set (0x82B8BF78) keeps: the focal plane, the blur depth and blur
+// range after RndPostProc::DOFOverrides, and Enabled = maxBlur > 0. The
+// projected-depth scale and bias retail also computes here are derived by
+// gfx/DofPass.cpp from the same values and the current camera.
+// ---------------------------------------------------------------------------
+namespace {
+class NativeDOFProc : public DOFProc {
+public:
+    NativeDOFProc()
+        : mEnabled(false), mFocalPlane(1), mBlurDepth(1), mMinBlur(0), mMaxBlur(1) {}
+    NEW_OBJ(NativeDOFProc)
+
+    void Set(RndCam *, float focalPlane, float blurDepth, float maxBlur,
+             float minBlur) override {
+        DOFOverrideParams &o = RndPostProc::DOFOverrides();
+        mFocalPlane = focalPlane;
+        mBlurDepth = Max(o.mDepthScale * blurDepth + o.mDepthOffset, 0.0f);
+        mMaxBlur = Clamp(0.0f, 1.0f, o.mMaxBlurScale * maxBlur + o.mMaxBlurOffset);
+        mMinBlur = Clamp(0.0f, 1.0f, o.mMinBlurScale * minBlur + o.mMinBlurOffset);
+        mEnabled = mMaxBlur > 0.0f;
+        if (mBlurDepth <= 0.001f)
+            mBlurDepth = 0.001f;
+    }
+    void UnSet() override { mEnabled = false; }
+    bool Enabled() const override { return mEnabled; }
+    float FocalPlane() override { return mFocalPlane; }
+    float BlurDepth() override { return mBlurDepth; }
+    float MaxBlur() override { return mMaxBlur; }
+    float MinBlur() override { return mMinBlur; }
+
+private:
+    bool mEnabled;
+    float mFocalPlane;
+    float mBlurDepth;
+    float mMinBlur;
+    float mMaxBlur;
+};
+} // namespace
+
+// Called by DOFProc::Init (rndobj/DOFProc.cpp) through a weak reference.
+void RB3RegisterNativeDOFProc() {
+    Hmx::Object::RegisterFactory(DOFProc::StaticClassName(), NativeDOFProc::NewObject);
+}
 
 // ---------------------------------------------------------------------------
 // Fork-facing hooks the rb3 flavor implements and WgpuRnd has no use for.

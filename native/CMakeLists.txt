@@ -882,6 +882,10 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_draw_log_golden.cpp
         ${_RB3_NATIVE_SRCS}
     )
+    # Depth of field is a dc3-flavor pass (the engine's gfx/DofPass.cpp).
+    if(RB3_NATIVE_GFX AND RB3_GPU_BACKEND STREQUAL "dc3")
+        target_sources(rb3-tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/test_dof_pass.cpp)
+    endif()
     rb3_configure_target(rb3-tests)
     target_include_directories(rb3-tests PRIVATE ${CMAKE_SOURCE_DIR}/tests)
     target_link_libraries(rb3-tests PRIVATE GTest::gtest GTest::gtest_main)
