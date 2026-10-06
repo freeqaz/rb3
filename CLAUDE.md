@@ -49,6 +49,7 @@ scripts/web/build.sh                 # build BOTH release + debug (default)
 scripts/web/build.sh --release       # release only (-O0 -g0, brotli+gzip, cached)
 scripts/web/build.sh --debug         # debug only  (-O0 -g2, gzip, no-store) — fast loop
 scripts/web/build.sh --reconfigure   # force a fresh cmake configure
+scripts/web/build.sh --backend rb3   # engine GPU backend: dc3 (WgpuRnd, default) or rb3 (BandRnd)
 scripts/web/build.sh --help          # full flag list (--opt / --closure are BROKEN as of W4a)
 
 python3 native/web/server.py         # serve on http://localhost:8421 (auto-detects assets)

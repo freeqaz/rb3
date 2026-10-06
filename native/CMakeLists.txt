@@ -202,24 +202,20 @@ set(MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
 # Targets that genuinely need a GPU are excluded below when this is OFF.
 option(RB3_NATIVE_GFX "Build the WebGPU gfx core (needs Dawn + glfw3)" ON)
 
-# Build the real engine lib with the `rb3` GPU backend flavor: the rndobj-FREE
-# gfx CORE (GpuDevice/PipelineManager/Screenshot/headless frame) PLUS the engine's
-# BandRnd : Rnd backend (src/platform/Rnd_Wgpu_RB3.cpp — graduated from this dir).
-# This replaces the old BUILD_GFX=ON + BUILD_GPU_BACKENDS=OFF pair: the `dc3`
-# WgpuRnd : NgRnd backend + the 6 rndobj-coupled gfx TUs stay OFF for RB3 (they
-# read DC3's 2012-era rndobj shapes). Sticky CACHE so a stale value can't linger.
+# GPU backend flavor for the real engine lib, on top of the rndobj-free gfx CORE
+# (GpuDevice/PipelineManager/Screenshot/headless frame):
+#   dc3  WgpuRnd (src/platform/Rnd_Wgpu.cpp), the renderer rb3-xenon and
+#        dc3-decomp use, reading RB3-Wii's rndobj through src/platform/rndshape/
+#        (MILO_ENGINE_RNDOBJ_SHAPE=rb3wii, below).
+#   rb3  BandRnd : Rnd (src/platform/Rnd_Wgpu_RB3.cpp, graduated from this dir).
+# Harness code reaches either through RB3RndBackend (src/rb3_rnd_backend.h).
 # FORCEd both ways: the engine refuses a backend without the core it needs, so
 # the two must move together and neither may be left over from a stale cache.
-# Desktop builds default to dc3: the Xbox-derived WgpuRnd backend renders RB3 at
-# least as faithfully as BandRnd and has fewer bugs (docs/native/
-# dc3-backend-for-rb3-wii.md in the engine). rb3-web still drives gBandRnd
-# directly, so the web target keeps rb3 until it is ported.
-if(EMSCRIPTEN)
-    set(_rb3_gpu_backend_default rb3)
-else()
-    set(_rb3_gpu_backend_default dc3)
-endif()
-set(RB3_GPU_BACKEND "${_rb3_gpu_backend_default}" CACHE STRING
+# Desktop and web (rb3-web) both default to dc3: the Xbox-derived WgpuRnd
+# backend renders RB3 at least as faithfully as BandRnd and has fewer bugs
+# (docs/native/dc3-backend-for-rb3-wii.md in the engine, section 15 for the
+# web port). rb3 (BandRnd) remains selectable with -DRB3_GPU_BACKEND=rb3.
+set(RB3_GPU_BACKEND dc3 CACHE STRING
     "Engine GPU backend flavor for RB3-Wii native: rb3 (BandRnd : Rnd) or dc3 (WgpuRnd)")
 set_property(CACHE RB3_GPU_BACKEND PROPERTY STRINGS rb3 dc3)
 if(NOT RB3_GPU_BACKEND MATCHES "^(rb3|dc3)$")
@@ -912,11 +908,10 @@ else() # EMSCRIPTEN — web target
 # (emscripten_set_main_loop). State machine:
 #   BOOT_INIT       → WebAssetsInit + WebAssetsFetchBundle
 #   BOOT_FETCHING   → poll WebAssetsAllDone
-#   BOOT_ENGINE_INIT → SystemPreInit("config/band_preinit_keep.dta") +
-#                      SystemInit("config/band_keep.dta") + register factories +
-#                      gBandRnd.InitGpu(W, H, /*headless=*/false)
-#   BOOT_GPU_WAIT   → gBandRnd.Gpu().IsReady() (async WebGPU adapter)
-#   BOOT_GPU_READY  → one BeginFrame/EndFrame to commit the initial clear
+#   BOOT_ENGINE_INIT → RB3RndBackend::StartGpuInit(W, H, /*headless=*/false)
+#                      (rb3_rnd_backend.h; WgpuRnd under the default dc3 flavor)
+#   BOOT_GPU_WAIT   → RB3RndBackend::Gpu().IsReady() (async WebGPU adapter)
+#   BOOT_GPU_READY  → RB3RndBackend::InitGpuResources(), then the App ctor
 #   BOOT_RUNNING    → per-frame BeginFrame/EndFrame; window.rb3FrameCount = N
 #
 # The lifted engine *_Web.cpp TUs are compiled DIRECTLY here (with the

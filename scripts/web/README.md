@@ -42,7 +42,9 @@ node scripts/web/smoke-test.mjs --port 8421
 
 `smoke-test.mjs` exits **0** on success / **1** on failure and prints a
 `PASS`/`FAIL` line. It reaches `main_hub_screen`, asserts the song DB populated
-(`window.rb3SongCount > 0`), and that no `pageerror` / WASM-trap fired.
+(`window.rb3SongCount > 0`), that no `pageerror` / WASM-trap fired, and that the
+renderer works: no `GpuDevice: uncaptured error` console lines and a main_hub
+canvas at least 10% painted (a dead renderer passes the other checks).
 
 ## RB3 screen flow
 
