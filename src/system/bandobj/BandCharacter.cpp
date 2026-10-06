@@ -1751,6 +1751,79 @@ void BandCharacter::RebindOutfitBonesToOwnSkeleton() {
     }
 }
 
+// W16-RL — anchor an outfit-local bone chain onto this member's skeleton.
+//
+// A multi-bone hair mesh (fauxhawk, ziggymullet, messyshort, visor, 50sbandana, ...)
+// skins to CharHair strand bones (bone_hair-*) that live in the hair resource's own
+// dir. They never resolve by name in the member, so RebindHeadHandsAtRest used to
+// leave the whole mesh pending ("unresolvable") and bound to the authored chain,
+// whose root parent is the SHARED static magnet's bone_hair (char/main/skeleton*.milo,
+// posed at the world origin). Measured on the dc3 backend (W16RL-SKIN probe): the
+// fauxhawk skinned to avg (0.0,0.6,70.7) == its bind avg, while the member's own head
+// was at (48,24,65) — the hair was drawn at the origin and the member read as bald.
+// (Single-bone hair binds only bone_hair, which does resolve, so it was fine.)
+//
+// Fix: walk up from `bone` to the first ancestor whose name resolves to a bone of
+// THIS member, keep the chain's current pose relative to that ancestor, and report
+// the reparent (chain child -> member bone) for pass B to apply. The returned rest is
+// rel * anchorCharSpaceRest, i.e. the same char-space rest the other slots bake
+// against, so the mesh's palette stays coherent. 0 on success, else a miss reason.
+// Opt-out RB3_NO_OUTFIT_CHAIN_ANCHOR=1 (restores the old "unresolvable" miss).
+const char *BandCharacter::NativeAnchorOutfitChain(
+    RndTransformable *bone, Transform &rest,
+    std::vector<std::pair<RndTransformable *, RndTransformable *> > &reparents
+) {
+    static int sOff = -1;
+    if (sOff < 0) sOff = getenv("RB3_NO_OUTFIT_CHAIN_ANCHOR") ? 1 : 0;
+    if (sOff) return "unresolvable";
+    RndTransformable *child = bone;
+    RndTransformable *anc = bone->TransParent();
+    RndTransformable *own = 0;
+    for (int guard = 0; anc && guard < 64; guard++) {
+        if (anc->Name() && *anc->Name()) {
+            own = Find<RndTransformable>(anc->Name(), false);
+            if (own) break;
+        }
+        child = anc;
+        anc = anc->TransParent();
+    }
+    if (!anc || !own) return "unresolvable";
+    bool mine = false;
+    int guard = 0;
+    for (RndTransformable *p = own; p && guard < 64; p = p->TransParent(), guard++)
+        if (p == (RndTransformable *)this) { mine = true; break; }
+    if (!mine) return "anchorNotMember";
+    std::string an(anc->Name());
+    Transform anchorRest;
+    std::map<std::string, Transform>::iterator rp = mNativeRestPose.find(an);
+    if (rp != mNativeRestPose.end() &&
+        mNativeRestDistinct.find(an) != mNativeRestDistinct.end()) {
+        anchorRest = rp->second;
+    } else {
+        // Same capture rule as a distinct bone's first resolve: never while a clip
+        // poses the skeleton, and never a non-finite xfm.
+        if (mDriver && mDriver->FirstPlaying()) return "anchorClipPlaying";
+        anchorRest = NativeCharSpaceRestXfm(own);
+        if (!(std::fabs(anchorRest.v.x) < 1e5f && std::fabs(anchorRest.v.y) < 1e5f &&
+              std::fabs(anchorRest.v.z) < 1e5f))
+            return "anchorNonFinite";
+        mNativeRestPose[an] = anchorRest;
+        mNativeRestDistinct.insert(an);
+    }
+    Transform invAnc;
+    Invert(anc->WorldXfm(), invAnc);
+    Transform rel;
+    Multiply(bone->WorldXfm(), invAnc, rel);
+    Multiply(rel, anchorRest, rest);
+    if (anc != own) {
+        bool have = false;
+        for (size_t i = 0; i < reparents.size(); i++)
+            if (reparents[i].first == child) { have = true; break; }
+        if (!have) reparents.push_back(std::make_pair(child, own));
+    }
+    return 0;
+}
+
 // C7/C8 — rebind the head/hair/hands/face (and any remaining NON-torso) skin meshes
 // onto the member's OWN per-member skeleton with an EXACT inverse-bind baked against
 // the bone's REST WorldXfm. The head/hair/finger geometry is long-thin, so the small
@@ -2067,14 +2140,37 @@ void BandCharacter::RebindHeadHandsAtRest() {
         int resolvable = 0, miss = 0;
         const char *missBone = 0;
         const char *missWhy = "";
+        // (child, member bone) pairs to reparent in pass B — see NativeAnchorOutfitChain.
+        std::vector<std::pair<RndTransformable *, RndTransformable *> > reparents;
         for (int b = 0; b < nb; b++) {
             RndTransformable *bound = mesh->BoneTransAt(b);
             if (!bound || !bound->Name()) continue; // empty slot (engine: identity)
             slots++;
             RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
             if (!own) {
-                miss++;
-                if (!missBone) { missBone = bound->Name(); missWhy = "unresolvable"; }
+                // W16-RL: outfit-local dynamic bones (the CharHair strand chains
+                // bone_hair-*, which live in the hair resource's own dir and so never
+                // resolve by name in the member) hang off the SHARED static magnet's
+                // bone_hair/bone_head at the world origin, so a multi-bone hair mesh
+                // skinned to them drew at the origin instead of on the head (the
+                // "bald band member" on the dc3 backend). Anchor the chain instead:
+                // find the first ancestor whose name resolves to this member's own
+                // bone, keep the chain's current local transforms relative to it,
+                // and (in pass B) reparent the chain onto the member's bone. The
+                // strand's rest is then that relative xfm times the anchor's captured
+                // char-space rest, baked exactly like every other slot below. CharHair
+                // reads Root()->TransParent()->WorldXfm(), so its sim follows too.
+                Transform strandRest;
+                const char *why = NativeAnchorOutfitChain(bound, strandRest, reparents);
+                if (why) {
+                    miss++;
+                    if (!missBone) { missBone = bound->Name(); missWhy = why; }
+                    continue;
+                }
+                owns[b] = bound;
+                rests[b] = strandRest;
+                apply[b] = 1;
+                resolvable++;
                 continue;
             }
             std::string bname(bound->Name());
@@ -2403,6 +2499,11 @@ void BandCharacter::RebindHeadHandsAtRest() {
         if (miss == 0 && resolvable > 0) {
             // pass B: all bones validated — repoint + bake
             // mOffset = meshWorld * inverse(restWorld), bind to the LIVE bone.
+            // W16-RL: first move any outfit-local chain onto the member's bone (local
+            // xfm kept, so the chain's pose relative to its anchor is unchanged).
+            for (size_t r = 0; r < reparents.size(); r++)
+                if (reparents[r].first->TransParent() != reparents[r].second)
+                    reparents[r].first->SetTransParent(reparents[r].second, false);
             int anchoredMine = 0, anchoredForeign = 0;
             for (int b = 0; b < nb; b++) {
                 if (!apply[b]) continue;
