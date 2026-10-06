@@ -138,6 +138,14 @@ public:
     // animates. Complements RebindOutfitBonesToOwnSkeleton (which owns the torso).
     // Opt-out RB3_NO_HEAD_REBIND=1. No-op on Wii (HX_NATIVE only).
     void RebindHeadHandsAtRest();
+    // W16-RL helper for RebindHeadHandsAtRest: anchor an outfit-local bone chain
+    // (CharHair strands) that does not resolve by name in this member onto the
+    // member's own bone. Returns 0 on success (rest = the bone's char-space rest,
+    // and the reparent the caller must apply is appended), else a miss reason.
+    const char *NativeAnchorOutfitChain(
+        RndTransformable *bone, Transform &rest,
+        std::vector<std::pair<RndTransformable *, RndTransformable *> > &reparents
+    );
     // Wave 14 Lane RESKIN (R2): REFUTED per-member hands reskin, kept default-OFF as
     // a documented dead-end (do NOT flip). Synthesized per-vertex weighted multi-bone
     // blend that re-poses hands_naked verts to the member's own gender rest. MEASURED

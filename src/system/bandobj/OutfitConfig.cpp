@@ -17,6 +17,9 @@
 #ifdef HX_NATIVE
 #include <cstdlib> // getenv (RB3_SKIN_FIX_OFF opt-out)
 #include <cstring> // strstr
+#include <algorithm> // std::find (NativeBindSkinMaps)
+#include <vector>
+#include "math/Utl.h" // MaxEq (NativeHeadNormVariant)
 #endif
 #ifndef HX_NATIVE
 #include <revolution/gx/GXMisc.h>
@@ -464,6 +467,107 @@ void OutfitConfig::RecomposePatches(int flag) {
     }
 }
 
+#ifdef HX_NATIVE
+// W16-RL helpers for NativeBindSkinMaps (see the call site in SetSkinTextures).
+// Retail BandCharDesc::HeadNormVariant (rb3-xenon BandCharDesc.cpp): the body-type
+// suffix of the torso/legs normal map, from the strongest of the six deform weight
+// groups. The Wii BandCharDesc has no such method.
+static const char *NativeHeadNormVariant(const BandCharDesc *desc) {
+    static const char *sMale[6] = { "", "heavy", "athletic", "skinny", "soft", "weak" };
+    static const char *sFemale[6] = { "",       "heavy",     "athletic",
+                                      "skinny", "hourglass", "weak" };
+    float weights[18];
+    desc->ComputeDeformWeights(weights);
+    int best = 0;
+    float bestSum = 0;
+    for (int i = 0; i < 6; i++) {
+        float sum = 0;
+        for (int j = 0; j < 3; j++)
+            sum += weights[i * 3 + j];
+        if (MaxEq(bestSum, sum))
+            best = i;
+    }
+    return desc->mGender == "female" ? sFemale[best] : sMale[best];
+}
+
+// Retail resolves these with dir1->Find; natively the skin textures sit in nested
+// subdirs (char/main/shared/colorpalettes.milo), so fall back to a recursive scan of
+// each candidate tree.
+static RndTex *NativeFindSkinTex(const char *name, ObjectDir **dirs, int n) {
+    if (dirs[0]) {
+        RndTex *t = dirs[0]->Find<RndTex>(name, false);
+        if (t)
+            return t;
+    }
+    for (int d = 0; d < n; d++) {
+        if (!dirs[d])
+            continue;
+        for (ObjDirItr<RndTex> it(dirs[d], true); it != 0; ++it) {
+            if (it->Name() && streq(it->Name(), name))
+                return it;
+        }
+    }
+    return 0;
+}
+
+static void
+NativeBindSkinMaps(ObjectDir *dir1, ObjectDir *dir2, BandCharDesc *desc, const char **skinMats) {
+    const bool probe = getenv("RB3_SKIN_MAPS_PROBE") != 0;
+    Symbol gender = desc->mGender;
+    // Every material instance the five skin names resolve to: dir1's (retail's
+    // only target) plus whatever the drawn meshes sample — the native milo merge
+    // splits these (the band's head.mesh draws char_shared.milo's head_naked.mat,
+    // shared by every member).
+    std::vector<RndMat *> mats[5];
+    ObjectDir *scan[2] = { dir1, dir2 };
+    for (int i = 0; i < 5; i++) {
+        RndMat *m = dir1->Find<RndMat>(skinMats[i * 2], false);
+        if (m)
+            mats[i].push_back(m);
+    }
+    for (int d = 0; d < (dir1 == dir2 ? 1 : 2); d++) {
+        for (ObjDirItr<RndMesh> it(scan[d], true); it != 0; ++it) {
+            RndMat *m = it->Mat();
+            if (!m || !m->Name())
+                continue;
+            for (int i = 0; i < 5; i++) {
+                if (!streq(m->Name(), skinMats[i * 2]))
+                    continue;
+                if (std::find(mats[i].begin(), mats[i].end(), m) == mats[i].end())
+                    mats[i].push_back(m);
+            }
+        }
+    }
+    const char *variant = NativeHeadNormVariant(desc);
+    for (int i = 0; i < 5; i++) {
+        if (mats[i].empty())
+            continue;
+        const char *partname = skinMats[i * 2 + 1];
+        ObjectDir *dirs[3] = { dir1, dir2, mats[i].back()->Dir() };
+        RndTex *spec =
+            NativeFindSkinTex(MakeString("%s_%s_spec.tex", gender, partname), dirs, 3);
+        const char *normname;
+        if (i == 4)
+            normname = MakeString("%s_head00_norm.tex", gender);
+        else if (!*variant)
+            normname = MakeString("%s_%s_norm.tex", gender, partname);
+        else
+            normname = MakeString("%s_%s_norm_%s.tex", gender, partname, variant);
+        RndTex *norm = NativeFindSkinTex(normname, dirs, 3);
+        for (size_t k = 0; k < mats[i].size(); k++) {
+            mats[i][k]->mXbSpecularMap = spec;
+            if (norm)
+                mats[i][k]->mXbNormalMap = norm;
+        }
+        if (probe)
+            fprintf(stderr,
+                    "[SKIN_MAPS] dir1='%s' mat='%s' instances=%d spec='%s' norm='%s'\n",
+                    PathName(dir1), skinMats[i * 2], (int)mats[i].size(),
+                    spec ? spec->Name() : "MISSING", norm ? normname : "MISSING");
+    }
+}
+#endif
+
 void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDesc *desc) {
     OutfitConfig *cfg = dir2->Find<OutfitConfig>("skin.cfg", false);
     static const char *skinMats[] = {
@@ -624,6 +728,27 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
             );
         }
     }
+    // W16-RL — skin specular + normal maps (the "glossy skin" on the dc3 backend).
+    // Retail Xbox SetSkinTextures (rb3-xenon OutfitConfig.cpp, the same function)
+    // also binds, for each of the five skin materials, the specular map
+    // `<gender>_<part>_spec.tex` and a normal map: `<gender>_<part>_norm[_variant]
+    // .tex` for torso/legs/feet, and for the head the wrinkle blender's output RT
+    // `head_wrinkle_output.tex`. The Wii build has no specular/normal maps, so its
+    // SetSkinTextures (this file) dropped those lines, and natively the mXb* maps of
+    // the skin materials the band draws stay NULL. The shared head_naked.mat
+    // (char_shared.milo) is authored with specular rgb (1,1,1) power 30 and no
+    // map, so on the dc3 backend — which applies the retail specular terms — the
+    // unmasked white specular lit every band member's skin like plastic. These
+    // lines restore retail's binding into the mXb* fields the backend reads.
+    // One native substitution: the head's normal is the gender's base
+    // `<gender>_head00_norm.tex` instead of `head_wrinkle_output.tex`, because
+    // RndTexBlender::DrawShowing is a no-op in this tree, so the wrinkle RT is never
+    // painted and would read as garbage normals. Opt-out RB3_NO_SKIN_MAPS=1.
+    static int sSkinMapsOff = -1;
+    if (sSkinMapsOff < 0)
+        sSkinMapsOff = getenv("RB3_NO_SKIN_MAPS") ? 1 : 0;
+    if (!sSkinMapsOff)
+        NativeBindSkinMaps(dir1, dir2, desc, skinMats);
     // C8 dark-face fix (2026-07-01): the RUNTIME caller (BandCharacter, sym==skin)
     // invokes this 3-arg SetSkinTextures directly. It wires skin.cfg's MatSwap
     // diffuse sources (mTwoColorDiffuse/mTwoColorInterp) and binds head/torso/legs
