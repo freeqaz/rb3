@@ -75,6 +75,10 @@ BEGIN_LOADS(RndFlare)
     CalcScale();
 END_LOADS
 
+#ifdef HX_NATIVE
+float gNativeFlareColorScale = 0.6f;
+#endif
+
 RndFlare::RndFlare()
     : mPointTest(1), mAreaTest(1), mVisible(0), mSizes(0.1f, 0.1f), mMat(this),
       mRange(0, 0), mOffset(0), mSteps(1), mStep(0), unkec(0), unk114(1, 1) {
@@ -174,9 +178,15 @@ void RndFlare::DrawShowing() {
             float alpha = Clamp(0.0f, 1.0f, t * ratio);
 
             Hmx::Color col;
+#ifdef HX_NATIVE
+            col.red = alpha * gNativeFlareColorScale;
+            col.green = alpha * gNativeFlareColorScale;
+            col.blue = alpha * gNativeFlareColorScale;
+#else
             col.red = alpha * 0.6f;
             col.green = alpha * 0.6f;
             col.blue = alpha * 0.6f;
+#endif
             col.alpha = 1.0f;
             RndMat *mat = mMat;
             if (mat->mUseEnviron) {
