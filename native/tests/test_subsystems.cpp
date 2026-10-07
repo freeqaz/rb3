@@ -12,6 +12,9 @@
 #include "utl/Symbol.h"
 #include "os/System.h"
 #include "bandobj/BandFaceDeform.h"
+#include "obj/Dir.h"
+#include "obj/ObjPtr_p.h"
+#include <cstring>
 
 extern DataArray *gSystemConfig;
 
@@ -104,4 +107,58 @@ TEST_F(NativeSubsystems, MiloTryCatchPropagatesMessageLP64) {
     ASSERT_NE(caught, nullptr) << "MILO_CATCH must receive the failure message";
     EXPECT_STREQ(caught, "milo-try probe 1234")
         << "message must survive the longjmp intact (not a truncated/garbage ptr)";
+}
+
+// ObjPtr::Load returns false only when a non-empty name is not found in the
+// dir; a found object and an empty name both load. Spotlight::Load keys
+// mTargetLoaded off this return (`if (!mTarget.Load(bs, false, 0))
+// mTargetLoaded = false;`), and a Spotlight without mTargetLoaded never
+// reaches SpotlightDrawer, so a Load that returned false on success dropped
+// every spotlight, flare and lens in the title city. Retail Spotlight::Load
+// loads 0 into the result only on the not-found path.
+TEST_F(NativeSubsystems, ObjPtrLoadFailsOnlyForMissingName) {
+    ObjectDir *dir = new ObjectDir();
+    dir->Reserve(16, 256);
+    ObjectDir *owner = new ObjectDir();
+    owner->SetName("w16se_owner", dir);
+    ObjectDir *target = new ObjectDir();
+    target->SetName("w16se_target", dir);
+
+    auto stream = [](const char *s) {
+        std::vector<uint8_t> buf;
+        PutBE32(buf, (uint32_t)strlen(s));
+        buf.insert(buf.end(), s, s + strlen(s));
+        return buf;
+    };
+    {
+        ObjPtr<ObjectDir> p(owner);
+        std::vector<uint8_t> b = stream("w16se_target");
+        MemBinStream bs(b.data(), (int)b.size(), false);
+        EXPECT_TRUE(p.Load(bs, false, nullptr)) << "found name must load";
+        EXPECT_EQ(p.Ptr(), target);
+    }
+    {
+        ObjPtr<ObjectDir> p(owner);
+        std::vector<uint8_t> b = stream("");
+        MemBinStream bs(b.data(), (int)b.size(), false);
+        EXPECT_TRUE(p.Load(bs, false, nullptr)) << "empty name is a valid null load";
+        EXPECT_EQ(p.Ptr(), nullptr);
+    }
+    {
+        ObjPtr<ObjectDir> p(owner);
+        std::vector<uint8_t> b = stream("w16se_missing");
+        MemBinStream bs(b.data(), (int)b.size(), false);
+        EXPECT_FALSE(p.Load(bs, false, nullptr)) << "missing name must fail";
+        EXPECT_EQ(p.Ptr(), nullptr);
+    }
+    {
+        ObjOwnerPtr<ObjectDir> p(owner);
+        std::vector<uint8_t> b = stream("w16se_target");
+        MemBinStream bs(b.data(), (int)b.size(), false);
+        EXPECT_TRUE(p.Load(bs, false, nullptr)) << "ObjOwnerPtr: found name must load";
+        EXPECT_EQ(p.Ptr(), target);
+    }
+    delete target;
+    delete owner;
+    delete dir;
 }

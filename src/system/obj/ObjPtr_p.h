@@ -540,10 +540,15 @@ inline bool ObjPtr<T1, T2>::Load(BinStream &bs, bool warn, class ObjectDir *dir)
         dir = mOwner->Dir();
     if (mOwner && dir) {
         *this = dynamic_cast<T1 *>(dir->FindObject(buf, false));
-        if (mPtr == nullptr && buf[0] != '\0' && warn) {
-            MILO_WARN("%s couldn't find %s in %s", PathName(mOwner), buf, PathName(dir));
+        // Retail returns false only for a name it could not find; a found
+        // object, or an empty name, loads (Spotlight::Load's inlined copy:
+        // `li r0, 0` only on the mPtr == 0 && buf[0] != 0 path, else
+        // `li r0, 1`).
+        if (mPtr == nullptr && buf[0] != '\0') {
+            if (warn)
+                MILO_WARN("%s couldn't find %s in %s", PathName(mOwner), buf, PathName(dir));
+            return false;
         }
-        return false;
     } else {
         *this = nullptr;
         if (buf[0] != '\0' && warn)
@@ -560,10 +565,12 @@ inline bool ObjOwnerPtr<T1, T2>::Load(BinStream &bs, bool b, class ObjectDir *di
         dir = mOwner->Dir();
     if (mOwner && dir) {
         *this = dynamic_cast<T1 *>(dir->FindObject(buf, false));
-        if (mPtr == 0 && buf[0] != '\0' && b) {
-            MILO_WARN("%s couldn't find %s in %s", PathName(mOwner), buf, PathName(dir));
+        // As ObjPtr::Load: false only for a name it could not find.
+        if (mPtr == 0 && buf[0] != '\0') {
+            if (b)
+                MILO_WARN("%s couldn't find %s in %s", PathName(mOwner), buf, PathName(dir));
+            return false;
         }
-        return false;
     } else {
         *this = 0;
         if (buf[0] != '\0')
