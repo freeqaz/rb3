@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 440  
-**By class:** compat=2, diagnostic=1, feature=19, perf=9, probe=152, tuning=3, unknown=151, workaround=103  
+**Total flags:** 441  
+**By class:** compat=2, diagnostic=1, feature=20, perf=9, probe=152, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -97,6 +97,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_HEADLESS` | feature | off | platform/headless | n/a: headless runtime mode (skips window/audio/GPU device init; UI.cpp fakes a fixed 1/30s UI clock). Real port toggle, not a fidelity stand-in. | 9 |
 | `MILO_HEIGHT` | unknown | unknown | unclassified | n/a | 10 |
 | `MILO_INPUT_SCRIPT` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_INPUT_WAKE_BUTTON` | feature | off | input/script | n/a: input-script harness value knob — the button a `wake` directive presses (a script button name; unset = l3). Only read when an input script runs. | 1 |
 | `MILO_LOCALE_DBG` | probe | off | utl/locale | n/a: traces Localize() token/format resolution for diagnosing format-string/token leaks [Locale.cpp:296] | 1 |
 | `MILO_NORENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_NO_POINT_TESTS` | probe | off | render/flare | n/a: WgpuRnd registers no NativePointTester, so the consumer (rb3 Rnd::TestPoint) keeps its no-tester fallback instead of retail's occlusion-query point tests (sections 20-21 of docs/native/dc3-backend-for-rb3-wii.md). For measuring what the tests cost (lane W16-SB); changes flare strength [Rnd_Wgpu.cpp] | 1 |
