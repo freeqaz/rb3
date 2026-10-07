@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 436  
-**By class:** compat=2, diagnostic=1, feature=19, perf=9, probe=148, tuning=3, unknown=151, workaround=103  
+**Total flags:** 438  
+**By class:** compat=2, diagnostic=1, feature=19, perf=9, probe=150, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -93,11 +93,13 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_DEBUG_ARM_CHAIN_FRAME` | probe | off | skinning/chain | n/a: archaeological debug probe | 1 |
 | `MILO_DEBUG_PIPELINES` | unknown | off | unclassified | n/a | 3 |
 | `MILO_DUMP_RT` | probe | off | render/capture | n/a: debug dump of every live GPU render target to <screenshot dir>/rt_<frame>_<tex>.png beside each auto-screenshot frame (WgpuRnd::MaybeCaptureFrame; engine 79352c0, used to measure the RB3 title cloud-layer RT alpha). Inspection only, no draw change [Rnd_Wgpu.cpp:1934] | 1 |
+| `MILO_FRAME_TIMES` | probe | off | render/perf | n/a: writes one CSV row per frame to <path> (frame period, thread CPU time, BeginDrawing->EndDrawing time, time spent collecting flare point-test answers, tests recorded, answers delivered, oldest answer's age in frames; WgpuRnd::WriteFrameTimes, lane W16-SB). Measurement only, no draw change [Rnd_Wgpu.cpp] | 1 |
 | `MILO_HEADLESS` | feature | off | platform/headless | n/a: headless runtime mode (skips window/audio/GPU device init; UI.cpp fakes a fixed 1/30s UI clock). Real port toggle, not a fidelity stand-in. | 9 |
 | `MILO_HEIGHT` | unknown | unknown | unclassified | n/a | 10 |
 | `MILO_INPUT_SCRIPT` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_LOCALE_DBG` | probe | off | utl/locale | n/a: traces Localize() token/format resolution for diagnosing format-string/token leaks [Locale.cpp:296] | 1 |
 | `MILO_NORENDER` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_NO_POINT_TESTS` | probe | off | render/flare | n/a: WgpuRnd registers no NativePointTester, so the consumer (rb3 Rnd::TestPoint) keeps its no-tester fallback instead of retail's occlusion-query point tests (sections 20-21 of docs/native/dc3-backend-for-rb3-wii.md). For measuring what the tests cost (lane W16-SB); changes flare strength [Rnd_Wgpu.cpp] | 1 |
 | `MILO_NO_TRANSPARENT_DEFER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_PERF` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_RB3_DISPLAY_GAMMA` | feature | off | render/post | n/a: override value knob for the retail display gamma ramp (rndshape::DisplayGamma, engine 72f38c6/246264c). Unset = retail DxRnd::SetupGamma behaviour: (rnd (gamma g)) from the system config, applied to presented frames only, none headless. Set = applies to every output incl. headless; 'off'/'0' = no ramp, else the gamma value. RB3Wii rndshape only; DC3 shape is a constant 0 so the flag is inert there [rndshape/RB3WiiPostChain.cpp:34] | 1 |
