@@ -156,8 +156,25 @@ public:
     BS_WRITE_OP(unsigned short);
     BS_WRITE_OP(int);
     BS_WRITE_OP(unsigned int);
+#ifndef HX_NATIVE
     BS_WRITE_OP(long);
     BS_WRITE_OP(unsigned long);
+#else
+    // On the LP64 native host long and unsigned long (so size_t) are 8 bytes;
+    // on the Wii they are 4, and every stream format the game reads or writes
+    // carries them as 4 (`bs << list.size()` is a 32-bit count). Keep the wire
+    // width at 32 bits. Pinned by native/tests/test_binstream.cpp.
+    BinStream &operator<<(long x) {
+        int v = (int)x;
+        WriteEndian(&v, sizeof(v));
+        return *this;
+    }
+    BinStream &operator<<(unsigned long x) {
+        unsigned int v = (unsigned int)x;
+        WriteEndian(&v, sizeof(v));
+        return *this;
+    }
+#endif
     BS_WRITE_OP(long long);
     BS_WRITE_OP(unsigned long long);
     BS_WRITE_OP(float);
