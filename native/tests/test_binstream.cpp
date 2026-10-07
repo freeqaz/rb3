@@ -8,6 +8,9 @@
 
 #include "test_helpers.h"
 
+#include <list>
+#include <map>
+
 // ---- Reading ----
 
 TEST(BinStreamEndian, BigEndianFileReadsIntCorrectly) {
@@ -91,4 +94,75 @@ TEST(BinStreamEndian, RoundTripLittleEndian) {
     MemBinStream in(out.Buffer(), out.Size(), true);
     int r = 0; in >> r;
     EXPECT_EQ(r, w);
+}
+
+// ---- Wire width of long / unsigned long (so size_t) ----
+//
+// On the Wii (MWCC, ILP32) `long`, `unsigned long` and `size_t` are 4 bytes,
+// and every stream format the game reads or writes carries them as 4 bytes:
+// `bs << container.size()` is a 32-bit count, and the matching readers read an
+// int / unsigned int. On the LP64 native host they are 8 bytes, so a
+// sizeof()-width write put 8 bytes on the wire. In a big-endian file the
+// 32-bit count field then reads 0 and the real count lands in the next field.
+// Same bug as rb3-xenon 2117aa92e. These pin the wire width at 4.
+
+TEST(BinStreamWidth, UnsignedLongWritesFourBytes) {
+    MemBinStream out(/*littleEndian=*/false);
+    out << (unsigned long)7;
+    ASSERT_EQ(out.Size(), 4) << "unsigned long (size_t) must be 4 bytes on the wire";
+    const uint8_t *b = (const uint8_t *)out.Buffer();
+    EXPECT_EQ(b[0], 0x00u);
+    EXPECT_EQ(b[3], 0x07u);
+}
+
+TEST(BinStreamWidth, LongWritesFourBytes) {
+    MemBinStream out(/*littleEndian=*/false);
+    out << (long)-2;
+    ASSERT_EQ(out.Size(), 4) << "long must be 4 bytes on the wire";
+    MemBinStream in(out.Buffer(), out.Size(), false);
+    int r = 0; in >> r;
+    EXPECT_EQ(r, -2);
+}
+
+TEST(BinStreamWidth, SizeTCountReadsBackAsInt) {
+    // The BandSongMgr / SongUpgradeMgr cached-metadata shape:
+    // `bs << map.size()` written, `int size; bs >> size` read back.
+    std::map<int, int> m;
+    m[1] = 10;
+    m[2] = 20;
+    m[3] = 30;
+    MemBinStream out(/*littleEndian=*/false);
+    out << m.size() << 0x1234;
+    ASSERT_EQ(out.Size(), 8);
+    MemBinStream in(out.Buffer(), out.Size(), false);
+    int count = -1, next = -1;
+    in >> count >> next;
+    EXPECT_EQ(count, 3);
+    EXPECT_EQ(next, 0x1234);
+}
+
+TEST(BinStreamWidth, ListRoundTrip) {
+    std::list<int> src;
+    src.push_back(5);
+    src.push_back(6);
+    MemBinStream out(/*littleEndian=*/false);
+    out << src;
+    EXPECT_EQ(out.Size(), 4 + 2 * 4);
+    MemBinStream in(out.Buffer(), out.Size(), false);
+    std::list<int> dst;
+    in >> dst;
+    EXPECT_EQ(dst, src);
+}
+
+TEST(BinStreamWidth, MapRoundTrip) {
+    std::map<int, int> src;
+    src[1] = 100;
+    src[9] = 900;
+    MemBinStream out(/*littleEndian=*/false);
+    out << src;
+    EXPECT_EQ(out.Size(), 4 + 2 * 8);
+    MemBinStream in(out.Buffer(), out.Size(), false);
+    std::map<int, int> dst;
+    in >> dst;
+    EXPECT_EQ(dst, src);
 }
