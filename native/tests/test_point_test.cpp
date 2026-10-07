@@ -12,6 +12,11 @@
 // every expected count is exact. RndTestPoint drives the real path: WgpuRnd's
 // frame, a depth-writing mesh, Rnd::TestPoint on real RndFlares, world end.
 // Both fail if occlusion stops working: a flare behind geometry must read 0.
+//
+// The world end takes the previous frame's answers only if their readback has
+// finished; EndDrawing waits for the rest after its submit. The tests that
+// check this keep the GPU busy with a compute job (GpuBusy) calibrated to a
+// known time, so whether an answer is ready at a given point is not a race.
 #include "test_helpers.h"
 
 #include "rb3_rnd_backend.h"
@@ -26,6 +31,8 @@
 #include "rndobj/Rnd.h"
 #include "obj/Dir.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <map>
 #include <string>
@@ -47,6 +54,117 @@ std::string PopErrors(GpuDevice &gpu) {
 }
 
 bool GpuUp() { return RB3RndBackend::InitGpu(64, 64, /*headless=*/true); }
+
+// Blocks until everything submitted so far has finished on the GPU.
+void WaitGpuIdle(GpuDevice &gpu) {
+    gpu.Instance().WaitAny(gpu.Queue().OnSubmittedWorkDone(
+                               wgpu::CallbackMode::WaitAnyOnly,
+                               [](wgpu::QueueWorkDoneStatus, wgpu::StringView) {}),
+                           5000000000ull);
+}
+
+double NowMs() {
+    return std::chrono::duration<double, std::milli>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+
+// Keeps the GPU busy for a chosen time: a compute dispatch of `iters`
+// dependent integer steps per invocation, submitted on its own, so whatever is
+// submitted after it waits behind it.
+class GpuBusy {
+public:
+    // Submits a job of about `ms` of GPU time, calibrated on first use.
+    // Returns the job's expected length in ms (0 if it could not be built).
+    double Submit(GpuDevice &gpu, double ms) {
+        if (!Init(gpu))
+            return 0.0;
+        if (mMsPerIter <= 0.0) {
+            for (uint32_t iters = 1u << 12;; iters *= 4) {
+                const double t0 = NowMs();
+                Dispatch(gpu, iters);
+                WaitGpuIdle(gpu);
+                const double t = NowMs() - t0;
+                if (t >= 10.0 || iters >= (1u << 28)) {
+                    mMsPerIter = t / iters;
+                    break;
+                }
+            }
+        }
+        const double iters = std::min(ms / mMsPerIter, 4.0e9);
+        Dispatch(gpu, (uint32_t)iters);
+        return iters * mMsPerIter;
+    }
+
+private:
+    bool Init(GpuDevice &gpu) {
+        if (mPipe)
+            return true;
+        static const char *kBusy = R"WGSL(
+@group(0) @binding(0) var<storage, read_write> o: array<u32>;
+@group(0) @binding(1) var<uniform> iters: vec4u;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3u) {
+    var x = id.x;
+    for (var i = 0u; i < iters.x; i++) {
+        x ^= x >> 13u;
+        x = x * 1664525u + 1013904223u;
+    }
+    o[id.x] = x;
+}
+)WGSL";
+        wgpu::Device dev = gpu.Device();
+        wgpu::ShaderSourceWGSL src;
+        src.code = kBusy;
+        wgpu::ShaderModuleDescriptor sm{};
+        sm.nextInChain = &src;
+        wgpu::ComputePipelineDescriptor cd{};
+        cd.compute.module = dev.CreateShaderModule(&sm);
+        cd.compute.entryPoint = "main";
+        mPipe = dev.CreateComputePipeline(&cd);
+        wgpu::BufferDescriptor bd{};
+        bd.size = kInvocations * 4;
+        bd.usage = wgpu::BufferUsage::Storage;
+        mOut = dev.CreateBuffer(&bd);
+        bd.size = 16;
+        bd.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
+        mIters = dev.CreateBuffer(&bd);
+        wgpu::BindGroupEntry e[2] = {};
+        e[0].binding = 0;
+        e[0].buffer = mOut;
+        e[1].binding = 1;
+        e[1].buffer = mIters;
+        wgpu::BindGroupDescriptor bgd{};
+        bgd.layout = mPipe.GetBindGroupLayout(0);
+        bgd.entryCount = 2;
+        bgd.entries = e;
+        mBind = dev.CreateBindGroup(&bgd);
+        return mPipe && mBind;
+    }
+    void Dispatch(GpuDevice &gpu, uint32_t iters) {
+        const uint32_t v[4] = {iters, 0, 0, 0};
+        gpu.Queue().WriteBuffer(mIters, 0, v, sizeof(v));
+        wgpu::CommandEncoder enc = gpu.Device().CreateCommandEncoder();
+        wgpu::ComputePassEncoder pass = enc.BeginComputePass();
+        pass.SetPipeline(mPipe);
+        pass.SetBindGroup(0, mBind);
+        pass.DispatchWorkgroups(kInvocations / 64);
+        pass.End();
+        wgpu::CommandBuffer cmd = enc.Finish();
+        gpu.Queue().Submit(1, &cmd);
+    }
+
+    static constexpr uint32_t kInvocations = 64 * 1024;
+    wgpu::ComputePipeline mPipe;
+    wgpu::Buffer mOut, mIters;
+    wgpu::BindGroup mBind;
+    double mMsPerIter = 0.0;
+};
+
+GpuBusy &Busy() {
+    static GpuBusy busy;  // the engine's device is a singleton too
+    return busy;
+}
+constexpr double kBusyMs = 150.0;
 
 // ---------------------------------------------------------------------------
 // The pass alone
@@ -219,6 +337,52 @@ TEST_F(PointTestPassTest, CancelDropsInFlightAnswers) {
     EXPECT_FLOAT_EQ(gAnswers[2].area, 256.0f);
 }
 
+// CollectThrough considers only the batches up to the sequence it is given:
+// without waiting it takes those that are ready, with waiting it blocks for
+// them, and either way a newer batch stays in flight even once it is ready.
+TEST_F(PointTestPassTest, CollectThroughTakesOnlyBatchesUpToSeq) {
+    GpuDevice &gpu = RB3RndBackend::Gpu();
+    gpu.Device().PushErrorScope(wgpu::ErrorFilter::Validation);
+    FillDepth(gpu, mDepthView);
+    WaitGpuIdle(gpu);
+    ASSERT_GT(Busy().Submit(gpu, kBusyMs), 0.0);  // the batches below queue behind it
+    auto record = [&](int key) {
+        std::vector<PointTestPass::Query> qs = {MakeQuery(key, 80, 16, 16, 0.75f)};
+        wgpu::CommandEncoder enc = gpu.Device().CreateCommandEncoder();
+        EXPECT_TRUE(mPass.Record(enc, mDepthView, wgpu::TextureFormat::Depth24PlusStencil8, 4,
+                                 kW, kH, qs.data(), qs.size(), gpu));
+        wgpu::CommandBuffer cmd = enc.Finish();
+        gpu.Queue().Submit(1, &cmd);
+        mPass.Submitted();
+    };
+    record(1);
+    const uint64_t first = mPass.LastSeq();
+    record(2);
+    const uint64_t second = mPass.LastSeq();
+
+    // The GPU is still on the busy job: nothing is ready, and nothing waits.
+    const double t0 = NowMs();
+    EXPECT_EQ(mPass.CollectThrough(second, false, Collect, nullptr, gpu), 0);
+    EXPECT_LT(NowMs() - t0, kBusyMs / 2) << "CollectThrough without wait blocked";
+    EXPECT_EQ(mPass.InFlight(), 2);
+
+    // Waiting through the first batch delivers it and nothing newer.
+    WaitGpuIdle(gpu);
+    gpu.Instance().ProcessEvents();  // both readbacks have finished; the second must be left
+    EXPECT_EQ(mPass.CollectThrough(first, true, Collect, nullptr, gpu), 1);
+    EXPECT_TRUE(gAnswers.count(1));
+    EXPECT_FALSE(gAnswers.count(2)) << "a batch newer than the one asked for was delivered";
+    EXPECT_EQ(mPass.InFlight(), 1);
+
+    EXPECT_EQ(mPass.Collect(true, Collect, nullptr, gpu), 1);
+    ASSERT_TRUE(gAnswers.count(1));
+    ASSERT_TRUE(gAnswers.count(2));
+    EXPECT_FLOAT_EQ(gAnswers[1].area, 256.0f);
+    EXPECT_FLOAT_EQ(gAnswers[2].area, 256.0f);
+    EXPECT_EQ(mPass.InFlight(), 0);
+    EXPECT_EQ(PopErrors(gpu), "");
+}
+
 // ---------------------------------------------------------------------------
 // The real path: Rnd::TestPoint on RndFlares, inside WgpuRnd's frame
 // ---------------------------------------------------------------------------
@@ -312,9 +476,15 @@ protected:
     // One frame: the wall, then Rnd::TestPoint for each live flare with an
     // 8x8 rect centred on it (what RndFlare::CalcRect leaves in mArea), then
     // the world end (or not: EndDrawing ends it then).
+    // With mBusyMs set, a GPU job of that length is submitted first, so this
+    // frame's commands (and its point tests' readback) finish only after it.
     void Frame(bool endWorld, bool test = true) {
         RB3RndBackend::BeginFrame(mCam);
         ASSERT_TRUE(RB3RndBackend::InPass());
+        if (mBusyMs > 0.0) {
+            ASSERT_GT(Busy().Submit(RB3RndBackend::Gpu(), mBusyMs), 0.0);
+            mBusyMs = 0.0;
+        }
         RB3RndBackend::DrawMesh(mWall);
         for (RndFlare *f : {mBehind, mOpen, mFront}) {
             if (!f || !test)
@@ -334,7 +504,9 @@ protected:
             // already: its copy target is made by Rnd::Init, which this
             // in-process frame does not run.
             TheRnd->unkef = true;
+            const double t0 = NowMs();
             TheRnd->DoWorldEnd();
+            mWorldEndMs = NowMs() - t0;
         }
         mAtWorldEnd = gDelivered.size();
         RB3RndBackend::EndFrame();
@@ -345,6 +517,8 @@ protected:
     RndMesh *mWall = nullptr;
     RndFlare *mBehind = nullptr, *mOpen = nullptr, *mFront = nullptr;
     size_t mAtWorldEnd = 0;  // answers delivered by the time the world ended
+    double mWorldEndMs = 0.0;  // how long DoWorldEnd took
+    double mBusyMs = 0.0;
 };
 
 } // namespace
@@ -361,6 +535,8 @@ TEST_F(RndTestPoint, FlareBehindGeometryReadsZero) {
         Frame(endWorld);
         // Retail answers a frame late: nothing has been read back yet.
         EXPECT_EQ(mOpen->unkec, -1.0f);
+        // Let the readback finish, so the next world end finds it ready.
+        WaitGpuIdle(gpu);
         Frame(endWorld);
         EXPECT_EQ(PopErrors(gpu), "");
         EXPECT_EQ(gDelivered.size(), 3u);
@@ -374,6 +550,43 @@ TEST_F(RndTestPoint, FlareBehindGeometryReadsZero) {
         EXPECT_TRUE(mFront->mVisible);
         EXPECT_NEAR(mFront->unkec, 64.0f, 1.0f);
     }
+}
+
+// A frame whose answers are not ready at the next world end: that world end
+// does not wait for them (retail blocks on the fence there; here the GPU would
+// sit idle while the CPU waited), and they still arrive before that frame ends,
+// so a flare drawn the frame after sees them, as it would in retail. The later
+// frame's own answers are not taken early: they wait for the next world end.
+TEST_F(RndTestPoint, SlowGpuAnswersArriveByFrameEndNotAtWorldEnd) {
+    GpuDevice &gpu = RB3RndBackend::Gpu();
+    Frame(true, /*test=*/false);  // drain answers to earlier frames' tests
+    WaitGpuIdle(gpu);
+    Frame(true, /*test=*/false);
+    for (RndFlare *f : {mBehind, mOpen, mFront})
+        f->unkec = -1.0f;
+    gDelivered.clear();
+    gpu.Device().PushErrorScope(wgpu::ErrorFilter::Validation);
+    mBusyMs = kBusyMs;
+    Frame(true);  // frame A: its commands, point tests included, wait behind the busy job
+    EXPECT_EQ(gDelivered.size(), 0u);
+    Frame(true);  // frame B
+    EXPECT_EQ(mAtWorldEnd, 0u) << "the world end took answers the GPU cannot have finished";
+    EXPECT_LT(mWorldEndMs, kBusyMs / 2) << "the world end waited for the GPU";
+    EXPECT_EQ(gDelivered.size(), 3u)
+        << "frame A's answers did not arrive by the end of frame B, or B's arrived early";
+    EXPECT_FALSE(mBehind->mVisible);
+    EXPECT_EQ(mBehind->unkec, 0.0f);
+    EXPECT_TRUE(mOpen->mVisible);
+    EXPECT_NEAR(mOpen->unkec, 64.0f, 1.0f);
+    EXPECT_TRUE(mFront->mVisible);
+    EXPECT_NEAR(mFront->unkec, 64.0f, 1.0f);
+    // Frame B's own answers, ready by now, arrive at the next world end.
+    WaitGpuIdle(gpu);
+    gDelivered.clear();
+    Frame(true, /*test=*/false);
+    EXPECT_EQ(mAtWorldEnd, 3u);
+    EXPECT_EQ(gDelivered.size(), 3u);
+    EXPECT_EQ(PopErrors(gpu), "");
 }
 
 TEST_F(RndTestPoint, RemovedFlareIsNeverAnswered) {
