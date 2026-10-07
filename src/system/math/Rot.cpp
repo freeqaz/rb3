@@ -991,26 +991,31 @@ void MultiplyStoreTransposed(
 }
 
 void FastInvert(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
-    float zy = min.z.y;
     float xy = min.x.y;
+    float yy = min.y.y;
     float xx = min.x.x;
-    float xz = min.x.z;
+    float zy = min.z.y;
     float yx = min.y.x;
-    float zz = min.z.z;
+    float xz = min.x.z;
     float zx = min.z.x;
     float yz = min.y.z;
-    float zdot = 1.0f / ((zz * zz + (zx * zx + zy * zy)));
-    float xdot = 1.0f / ((xx * xx + (xy * xy + xz * xz)));
-    float yy = min.y.y;
+    float zz = min.z.z;
+    // The inverse of a scaled rotation: its transpose, with each source row's
+    // 1/|row|^2 applied. The target (0x80401560) stores xz*xdot to 0x18 first,
+    // then yx*ydot to 0x4, zx*zdot to 0x8 and xy*xdot to 0xc. The remaining
+    // differences from the target are register allocation and scheduling.
+    float xdot = 1.0f / (xx * xx + xy * xy + xz * xz);
     float ydot = 1.0f / (yx * yx + yy * yy + yz * yz);
-    // The inverse of a scaled rotation is its transpose with each source row's
-    // 1/|row|^2 applied, so mout.x gathers the x column of min. The target
-    // (0x80401560) stores yx*ydot to 0x4, zx*zdot to 0x8 and xy*xdot to 0xc.
-    mout.Set(
-        xx * xdot, yx * ydot, zx * zdot,
-        xy * xdot, yy * ydot, zy * zdot,
-        xz * xdot, yz * ydot, zz * zdot
-    );
+    float zdot = 1.0f / (zx * zx + zy * zy + zz * zz);
+    mout.z.x = xz * xdot;
+    mout.x.x = xx * xdot;
+    mout.x.y = yx * ydot;
+    mout.x.z = zx * zdot;
+    mout.y.x = xy * xdot;
+    mout.y.y = yy * ydot;
+    mout.y.z = zy * zdot;
+    mout.z.y = yz * ydot;
+    mout.z.z = zz * zdot;
 }
 
 void Invert(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
