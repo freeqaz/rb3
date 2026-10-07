@@ -21,6 +21,19 @@ public:
     virtual void Load(BinStream &);
 
     bool GetCurrentDistance(float &) const;
+#ifdef HX_NATIVE
+    // Retail Xbox (rb3-xenon rndobj/TexBlendController.cpp) decides each
+    // controller's draw in RndTexBlender::DrawShowing through these; the Wii
+    // build's DrawShowing is empty, so the Wii fork has neither.
+    enum BlendState {
+        kBlendNone = 0,
+        kBlendNear = 1,
+        kBlendFar = 2,
+        kBlendCustom = 3,
+    };
+    bool IsValid() const;
+    BlendState GetBlendState(float &, float) const;
+#endif
     void UpdateReferenceDistance();
     void UpdateMinDistance();
     void UpdateMaxDistance();
