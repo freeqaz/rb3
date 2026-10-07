@@ -30,6 +30,61 @@ bool RndTexBlendController::GetCurrentDistance(float &dist) const {
     }
 }
 
+#ifdef HX_NATIVE
+// Retail Xbox RndTexBlendController::IsValid and GetBlendState (rb3-xenon
+// rndobj/TexBlendController.cpp, matched against the TU5 binary).
+bool RndTexBlendController::IsValid() const {
+    if (!mMesh)
+        return false;
+    if (!mTex) {
+        float refDist = mReferenceDistance;
+        bool distValid = !(mMinDistance > refDist) || !(mMaxDistance < refDist);
+        return mObject1 && mObject2 && refDist > 0 && distValid;
+    }
+    return true;
+}
+
+RndTexBlendController::BlendState
+RndTexBlendController::GetBlendState(float &blend, float influence) const {
+    BlendState state = kBlendNone;
+    blend = 0.0f;
+    if (IsValid()) {
+        if (mTex) {
+            blend = 1.0f;
+            state = kBlendCustom;
+        } else {
+            float dist;
+            if (GetCurrentDistance(dist) && mReferenceDistance > 0.0f) {
+                if (dist < mReferenceDistance) {
+                    float denom = mReferenceDistance - mMinDistance;
+                    if (denom > 0.0f) {
+                        state = kBlendNear;
+                        blend = (mReferenceDistance - Max(dist, mMinDistance)) / denom;
+                    }
+                } else if (dist > mReferenceDistance) {
+                    float denom = mMaxDistance - mReferenceDistance;
+                    if (denom > 0.0f) {
+                        state = kBlendFar;
+                        blend = (Min(dist, mMaxDistance) - mReferenceDistance) / denom;
+                    }
+                }
+            }
+            // Smoothstep.
+            float t2 = blend * blend;
+            float t3 = blend * t2;
+            blend = t3 * -2.0f + t2 * 3.0f;
+        }
+    }
+    blend *= influence;
+    blend = Clamp(0.0f, 1.0f, blend);
+    // Quantised to the 8-bit alpha the draw writes.
+    blend = (unsigned char)(blend * 255.0f) * (1.0f / 255.0f);
+    if (blend < 1.0f / 255.0f)
+        state = kBlendNone;
+    return state;
+}
+#endif
+
 void RndTexBlendController::UpdateReferenceDistance() {
     GetCurrentDistance(mReferenceDistance);
     mMinDistance = Min(mMinDistance, mReferenceDistance);
@@ -81,6 +136,15 @@ void RndTexBlendController::Load(BinStream &bs) {
             (unsigned short)2
         );
     }
+#endif
+#ifdef HX_NATIVE
+    // The Wii fork never stores the revision, so `gRev > 1` below was always
+    // false and a rev 2 controller left its override map (mTex) unread.
+    // Retail Xbox stores it (rb3-xenon: gRev = getHmxRev(rev)); the head's
+    // norm_*.texblendctl controllers are rev 2.
+    if (getenv("RB3_TEXBLEND_PROBE"))
+        fprintf(stderr, "[TEXBLEND] load ctl '%s' rev=%d\n", Name() ? Name() : "?", rev);
+    gRev = rev;
 #endif
     Hmx::Object::Load(bs);
     bs >> mMesh;

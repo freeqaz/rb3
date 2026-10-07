@@ -20,6 +20,11 @@
 #include <algorithm> // std::find (NativeBindSkinMaps)
 #include <vector>
 #include "math/Utl.h" // MaxEq (NativeHeadNormVariant)
+#ifdef HX_NATIVE
+#include "platform/TexBlendHook.h" // GetNativeTexBlendComposer (head wrinkle normal)
+#include "rndobj/TexBlendController.h"
+#include "rndobj/TexBlender.h"
+#endif
 #endif
 #ifndef HX_NATIVE
 #include <revolution/gx/GXMisc.h>
@@ -510,6 +515,99 @@ static RndTex *NativeFindSkinTex(const char *name, ObjectDir **dirs, int n) {
     return 0;
 }
 
+// Retail looks these up with a non-recursive Find; natively the head's objects
+// sit in nested subdirs, so fall back to a recursive scan of the tree.
+template <class T> static T *NativeFindInTree(ObjectDir *dir, const char *name) {
+    if (!dir)
+        return 0;
+    T *t = dir->Find<T>(name, false);
+    if (t)
+        return t;
+    for (ObjDirItr<T> it(dir, true); it != 0; ++it) {
+        if (it->Name() && streq(it->Name(), name))
+            return it;
+    }
+    return 0;
+}
+
+// W16-SA: the head's normal map is retail's head_wrinkle_output.tex whenever a
+// backend composes RndTexBlenders (TexBlendHook.h; the dc3 WgpuRnd). Without
+// one (the rb3 BandRnd flavor, headless) the target is never painted, so the
+// head keeps the gender's base <gender>_head00_norm.tex (W16-RL).
+// Opt-out RB3_NO_WRINKLE_BLEND=1 (also stops RndTexBlender::DrawShowing).
+static bool NativeWrinkleNormalOn() {
+    static int sOff = -1;
+    if (sOff < 0)
+        sOff = getenv("RB3_NO_WRINKLE_BLEND") ? 1 : 0;
+    return !sOff && GetNativeTexBlendComposer() != 0;
+}
+
+// Retail fn_8229FF30 (rb3-xenon OutfitConfig.cpp SetHeadNormMap): points one
+// head-feature controller of the norm texblend at the numbered head normal map
+// of the feature's current option, and reports whether that changed anything.
+// The Wii build dropped it with the rest of the normal maps.
+static bool NativeSetHeadNormMap(
+    const char *part, int option, Symbol gender, ObjectDir *dir1, ObjectDir *dir2
+) {
+    RndTexBlendController *ctrl = NativeFindInTree<RndTexBlendController>(
+        dir2, MakeString("norm_%s.texblendctl", part)
+    );
+    if (!ctrl) {
+        MILO_WARN("%s could not find norm_%s.texblendctl", PathName(dir2), part);
+        return false;
+    }
+    RndTex *tex = NativeFindInTree<RndTex>(
+        dir1, MakeString("%s_head_norm%02d.tex", gender, option + 1)
+    );
+    if (!tex) {
+        MILO_WARN("%s could not find head norm %d", PathName(dir1), option + 1);
+        return false;
+    }
+    if (tex == ctrl->mTex)
+        return false;
+    ctrl->mTex = tex;
+    return true;
+}
+
+// W16-SA: the wrinkle controllers measure the distance between two of the
+// member's face bones (bone_L-brow1.mesh to bone_brow-low.mesh, ...). Natively
+// every member's controllers reference one other skeleton's bones (the first
+// character loaded, at the origin), so every member read the same static
+// distances against its own gender's reference distances: the women's eye and
+// nose-wing wrinkles sat at full strength and nothing followed the face.
+// Retail's merge leaves the controllers on the member's own bones
+// (BandCharacter::Filter merges outfit bone_ objects onto the member's), so
+// repoint each reference to the member's object of the same name. The
+// authored reference/min/max distances are kept (direct assignment, not the
+// property, so UpdateAllDistances does not run).
+// Opt-out RB3_NO_TEXBLEND_BONE_REMAP=1. Returns the number repointed.
+static int NativeRepointBlendBones(RndTexBlender *blender, ObjectDir *member) {
+    static int sOff = -1;
+    if (sOff < 0)
+        sOff = getenv("RB3_NO_TEXBLEND_BONE_REMAP") ? 1 : 0;
+    if (sOff || !blender || !member)
+        return 0;
+    int n = 0;
+    for (ObjPtrList<RndTexBlendController, ObjectDir>::iterator it =
+             blender->mControllerList.begin();
+         it != blender->mControllerList.end();
+         ++it) {
+        RndTexBlendController *c = *it;
+        ObjPtr<RndTransformable, ObjectDir> *refs[2] = { &c->mObject1, &c->mObject2 };
+        for (int k = 0; k < 2; k++) {
+            RndTransformable *cur = *refs[k];
+            if (!cur || !cur->Name())
+                continue;
+            RndTransformable *own = member->Find<RndTransformable>(cur->Name(), false);
+            if (own && own != cur) {
+                *refs[k] = own;
+                n++;
+            }
+        }
+    }
+    return n;
+}
+
 static void
 NativeBindSkinMaps(ObjectDir *dir1, ObjectDir *dir2, BandCharDesc *desc, const char **skinMats) {
     const bool probe = getenv("RB3_SKIN_MAPS_PROBE") != 0;
@@ -549,13 +647,25 @@ NativeBindSkinMaps(ObjectDir *dir1, ObjectDir *dir2, BandCharDesc *desc, const c
         RndTex *spec =
             NativeFindSkinTex(MakeString("%s_%s_spec.tex", gender, partname), dirs, 3);
         const char *normname;
-        if (i == 4)
-            normname = MakeString("%s_head00_norm.tex", gender);
-        else if (!*variant)
-            normname = MakeString("%s_%s_norm.tex", gender, partname);
-        else
-            normname = MakeString("%s_%s_norm_%s.tex", gender, partname, variant);
-        RndTex *norm = NativeFindSkinTex(normname, dirs, 3);
+        RndTex *norm = 0;
+        if (i == 4) {
+            // Retail: dir2->Find("head_wrinkle_output.tex"), the wrinkle
+            // blender's target (composed in OutfitConfig::DrawPreClear).
+            if (NativeWrinkleNormalOn()) {
+                normname = "head_wrinkle_output.tex";
+                norm = NativeFindInTree<RndTex>(dir2, normname);
+            }
+            if (!norm) {
+                normname = MakeString("%s_head00_norm.tex", gender);
+                norm = NativeFindSkinTex(normname, dirs, 3);
+            }
+        } else {
+            if (!*variant)
+                normname = MakeString("%s_%s_norm.tex", gender, partname);
+            else
+                normname = MakeString("%s_%s_norm_%s.tex", gender, partname, variant);
+            norm = NativeFindSkinTex(normname, dirs, 3);
+        }
         for (size_t k = 0; k < mats[i].size(); k++) {
             mats[i][k]->mXbSpecularMap = spec;
             if (norm)
@@ -563,9 +673,12 @@ NativeBindSkinMaps(ObjectDir *dir1, ObjectDir *dir2, BandCharDesc *desc, const c
         }
         if (probe)
             fprintf(stderr,
-                    "[SKIN_MAPS] dir1='%s' mat='%s' instances=%d spec='%s' norm='%s'\n",
+                    "[SKIN_MAPS] dir1='%s' mat='%s' instances=%d spec='%s' norm='%s'"
+                    " env=%d ppl=%d prelit=%d\n",
                     PathName(dir1), skinMats[i * 2], (int)mats[i].size(),
-                    spec ? spec->Name() : "MISSING", norm ? normname : "MISSING");
+                    spec ? spec->Name() : "MISSING", norm ? normname : "MISSING",
+                    (int)mats[i][0]->mUseEnviron, (int)mats[i][0]->mXbPerPixelLit,
+                    (int)mats[i][0]->mPreLit);
     }
 }
 #endif
@@ -743,15 +856,56 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
     // map, so on the dc3 backend — which applies the retail specular terms — the
     // unmasked white specular lit every band member's skin like plastic. These
     // lines restore retail's binding into the mXb* fields the backend reads.
-    // One native substitution: the head's normal is the gender's base
-    // `<gender>_head00_norm.tex` instead of `head_wrinkle_output.tex`, because
-    // RndTexBlender::DrawShowing is a no-op in this tree, so the wrinkle RT is never
-    // painted and would read as garbage normals. Opt-out RB3_NO_SKIN_MAPS=1.
+    // The head takes `head_wrinkle_output.tex` as retail does when the backend
+    // composes RndTexBlenders (W16-SA, NativeWrinkleNormalOn); otherwise the
+    // gender's base `<gender>_head00_norm.tex`, since nothing would paint the
+    // wrinkle target. Opt-out RB3_NO_SKIN_MAPS=1.
     static int sSkinMapsOff = -1;
     if (sSkinMapsOff < 0)
         sSkinMapsOff = getenv("RB3_NO_SKIN_MAPS") ? 1 : 0;
     if (!sSkinMapsOff)
         NativeBindSkinMaps(dir1, dir2, desc, skinMats);
+    // W16-SA — retail's eyes.cfg block (rb3-xenon SetSkinTextures, after the skin
+    // loop): point the norm texblend's five head-feature controllers at the
+    // numbered head normal maps of this member's chin/eye/mouth/nose/shape
+    // options, and when any changed, mark eyes.cfg's blender (norm.texblend,
+    // whose output norm_output.tex is wrinkle.texblend's base map) and
+    // wrinkle.texblend to re-render. unk9p6 is the Wii slot of retail's
+    // re-render flag (rb3-xenon "unkc0"). Only with a composer: the Wii fork
+    // never draws a blender.
+    if (NativeWrinkleNormalOn()) {
+        OutfitConfig *eyesCfg = NativeFindInTree<OutfitConfig>(dir2, "eyes.cfg");
+        if (eyesCfg) {
+            BandCharDesc::Head &head = desc->GetHead();
+            bool changed = NativeSetHeadNormMap("chin", head.mChin, gender, dir1, dir2);
+            changed = NativeSetHeadNormMap("eye", head.mEye, gender, dir1, dir2) | changed;
+            changed = NativeSetHeadNormMap("mouth", head.mMouth, gender, dir1, dir2) | changed;
+            changed = NativeSetHeadNormMap("nose", head.mNose, gender, dir1, dir2) | changed;
+            changed = NativeSetHeadNormMap("shape", head.mShape, gender, dir1, dir2) | changed;
+            RndTexBlender *wrinkle = NativeFindInTree<RndTexBlender>(dir2, "wrinkle.texblend");
+            if (changed) {
+                if (eyesCfg->mTexBlender)
+                    eyesCfg->mTexBlender->unk9p6 = true;
+                if (wrinkle)
+                    wrinkle->unk9p6 = true;
+            }
+            const int repointed = NativeRepointBlendBones(wrinkle, dir1)
+                + NativeRepointBlendBones(eyesCfg->mTexBlender, dir1);
+            if (getenv("RB3_TEXBLEND_PROBE")) {
+                fprintf(stderr,
+                        "[TEXBLEND] head norms dir1='%s' gender=%s chin=%d eye=%d "
+                        "mouth=%d nose=%d shape=%d changed=%d eyesBlender='%s' "
+                        "bonesRepointed=%d\n",
+                        PathName(dir1), gender.mStr, head.mChin, head.mEye,
+                        head.mMouth, head.mNose, head.mShape, (int)changed,
+                        eyesCfg->mTexBlender ? eyesCfg->mTexBlender->Name() : "-",
+                        repointed);
+            }
+        } else if (getenv("RB3_TEXBLEND_PROBE")) {
+            fprintf(stderr, "[TEXBLEND] head norms dir2='%s' has no eyes.cfg\n",
+                    PathName(dir2));
+        }
+    }
     // RB3_SKIN_MAT_ADOPT_PROBE: one [SKIN_MAT] line per mesh in dir1/dir2 that draws
     // one of the five skin materials: which material instance it samples, the dir
     // that owns it, whether that is dir1's own (own=1, retail) and its diffuse and
