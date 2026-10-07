@@ -14,6 +14,13 @@
 #include "bandobj/BandFaceDeform.h"
 #include "obj/Dir.h"
 #include "obj/ObjPtr_p.h"
+#include "math/Mtx.h"
+#include "math/Geo.h"
+#include "math/Rot.h"
+#include "math/Sphere.h"
+#include "rndobj/Mesh.h"
+#include "platform/MeshDrawShowing.h"
+#include <cmath>
 #include <cstring>
 
 extern DataArray *gSystemConfig;
@@ -161,4 +168,52 @@ TEST_F(NativeSubsystems, ObjPtrLoadFailsOnlyForMissingName) {
     delete target;
     delete owner;
     delete dir;
+}
+
+// FastInvert(Matrix3) inverts a scaled rotation: the transpose, with each
+// source row's 1/|row|^2 applied. The Wii target (0x80401560) stores
+// yx*ydot to out.x.y and xy*xdot to out.y.x. The decomp had the rows
+// untransposed, so the result was the matrix rescaled, not its inverse.
+TEST_F(NativeSubsystems, FastInvertIsTheInverseOfAScaledRotation) {
+    const float c = std::cos(0.5f), s = std::sin(0.5f);
+    Hmx::Matrix3 m(c * 2.0f, s * 2.0f, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 3.0f);
+    Hmx::Matrix3 inv;
+    FastInvert(m, inv);
+    Hmx::Matrix3 prod;
+    Multiply(m, inv, prod);
+    const float *p = &prod.x.x;
+    for (int i = 0; i < 9; i++)
+        EXPECT_NEAR(p[i], (i % 4 == 0) ? 1.0f : 0.0f, 1e-5f) << "element " << i;
+}
+
+// RndCam::UpdatedWorldXfm moves the local frustum into the world with
+// Multiply(Frustum, Transform), which uses FastInvert per plane. With the
+// rows untransposed, a yawed camera's frustum turned the other way, and every
+// spotlight in the title city tested as outside world.cam's frustum.
+TEST_F(NativeSubsystems, WorldFrustumFollowsAYawedCamera) {
+    Frustum local;
+    local.Set(20.0f, 20000.0f, 0.9f, 0.5625f);
+    Transform cam;
+    const float c = std::cos(1.2f), s = std::sin(1.2f);
+    cam.m.Set(c, s, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 1.0f); // forward = m.y
+    cam.v.Set(110.0f, 60.0f, 300.0f);
+    Frustum world;
+    Multiply(local, cam, world);
+    Sphere ahead, behind;
+    ahead.Set(Vector3(cam.v.x + 900.0f * cam.m.y.x, cam.v.y + 900.0f * cam.m.y.y, cam.v.z), 10.0f);
+    behind.Set(Vector3(cam.v.x - 900.0f * cam.m.y.x, cam.v.y - 900.0f * cam.m.y.y, cam.v.z), 10.0f);
+    EXPECT_FALSE(ahead > world) << "a sphere 900 units ahead of the camera is inside its frustum";
+    EXPECT_TRUE(behind > world) << "control: a sphere 900 units behind the camera is outside";
+}
+
+// The image draws a material-less mesh with TheRnd.DefaultMat()
+// (DxMesh::DrawShowing passes the null Mat() to SelectConfig, and
+// RndShaderStandard::Select substitutes the default material), so the engine's
+// DrawShowing seam does not refuse it.
+TEST_F(NativeSubsystems, MeshWithoutMaterialIsNotRefused) {
+    RndMesh *mesh = new RndMesh();
+    mesh->SetMat(nullptr);
+    const char *skip = RndMeshDrawShowingSkip(mesh);
+    EXPECT_EQ(nullptr, skip) << "refused a material-less mesh: " << (skip ? skip : "");
+    delete mesh;
 }

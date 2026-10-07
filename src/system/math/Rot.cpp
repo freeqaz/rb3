@@ -1003,10 +1003,13 @@ void FastInvert(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
     float xdot = 1.0f / ((xx * xx + (xy * xy + xz * xz)));
     float yy = min.y.y;
     float ydot = 1.0f / (yx * yx + yy * yy + yz * yz);
+    // The inverse of a scaled rotation is its transpose with each source row's
+    // 1/|row|^2 applied, so mout.x gathers the x column of min. The target
+    // (0x80401560) stores yx*ydot to 0x4, zx*zdot to 0x8 and xy*xdot to 0xc.
     mout.Set(
-        xx * xdot, xy * xdot, xz * xdot,
-        yx * ydot, yy * ydot, yz * ydot,
-        zx * zdot, zy * zdot, zz * zdot
+        xx * xdot, yx * ydot, zx * zdot,
+        xy * xdot, yy * ydot, zy * zdot,
+        xz * xdot, yz * ydot, zz * zdot
     );
 }
 
