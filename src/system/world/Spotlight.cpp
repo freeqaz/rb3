@@ -532,7 +532,11 @@ void Spotlight::UpdateTransforms() {
     if (mBeam.mBeam) {
         Vector3 ve4(0.0f, mBeam.mOffset, 0.0f);
         mBeam.mBeam->SetLocalPos(ve4);
-        Hmx::Matrix3 m6c(mBeam.mIsCone ? rot : ident);
+        // Cones keep the beam mesh's own frame (BuildCone and BuildNGCone lay
+        // it along +y, the spotlight's axis); flat beams get rot. The Wii
+        // target (0x80860464) and the 360 retail image (0x824D93CC) both pick
+        // ident when mIsCone is set.
+        Hmx::Matrix3 m6c(mBeam.mIsCone ? ident : rot);
         Hmx::Matrix3 m90;
         MakeRotMatrix(
             Vector3(

@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 438  
-**By class:** compat=2, diagnostic=1, feature=19, perf=9, probe=150, tuning=3, unknown=151, workaround=103  
+**Total flags:** 440  
+**By class:** compat=2, diagnostic=1, feature=19, perf=9, probe=152, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -100,10 +100,11 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_LOCALE_DBG` | probe | off | utl/locale | n/a: traces Localize() token/format resolution for diagnosing format-string/token leaks [Locale.cpp:296] | 1 |
 | `MILO_NORENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_NO_POINT_TESTS` | probe | off | render/flare | n/a: WgpuRnd registers no NativePointTester, so the consumer (rb3 Rnd::TestPoint) keeps its no-tester fallback instead of retail's occlusion-query point tests (sections 20-21 of docs/native/dc3-backend-for-rb3-wii.md). For measuring what the tests cost (lane W16-SB); changes flare strength [Rnd_Wgpu.cpp] | 1 |
+| `MILO_NO_SPOT_BEAMS` | probe | off | render/post | n/a: A/B kill switch for the retail NgSpotlightDrawer volumetric beam pass (gfx/SpotBeamPass, W16-SI): set = WgpuRnd registers no NativeSpotBeamRenderer, so the consumer draws beam meshes the old way [Rnd_Wgpu.cpp]. Shipped default draws the beams. | 1 |
 | `MILO_NO_TRANSPARENT_DEFER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_PERF` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_RB3_DISPLAY_GAMMA` | feature | off | render/post | n/a: override value knob for the retail display gamma ramp (rndshape::DisplayGamma, engine 72f38c6/246264c). Unset = retail DxRnd::SetupGamma behaviour: (rnd (gamma g)) from the system config, applied to presented frames only, none headless. Set = applies to every output incl. headless; 'off'/'0' = no ramp, else the gamma value. RB3Wii rndshape only; DC3 shape is a constant 0 so the flag is inert there [rndshape/RB3WiiPostChain.cpp:34] | 1 |
-| `MILO_RB3_RETAIL_POST` | feature | on | render/post | live: RB3 Xbox 360 retail post chain (pseudo-HDR luma bloom mask, bloom/blur/downsample sets, screen blend, RndColorXfm) ported from the retail shaders, default-ON for the RB3Wii rndshape (engine c942ad9 WIP, completed 34169f1). Unset or unrecognised = 1 (retail chain); '0' = PostProcPass's previous DC3 composite; 'raw'/'mask'/'bloom'/'grade' = inspection views. DC3 shape RetailPostMode() is a constant 0, so the flag is inert there [rndshape/RB3WiiPostChain.cpp:21] | 1 |
+| `MILO_RB3_RETAIL_POST` | feature | on | render/post | live: RB3 Xbox 360 retail post chain (pseudo-HDR luma bloom mask, bloom/blur/downsample sets, screen blend, RndColorXfm) ported from the retail shaders, default-ON for the RB3Wii rndshape (engine c942ad9 WIP, completed 34169f1). Unset or unrecognised = 1 (retail chain); '0' = PostProcPass's previous DC3 composite; 'raw'/'mask'/'bloom'/'grade'/'beams' = inspection views ('beams' = the blurred NgSpotlightDrawer beam target, W16-SI). DC3 shape RetailPostMode() is a constant 0, so the flag is inert there [rndshape/RB3WiiPostChain.cpp:21] | 1 |
 | `MILO_RENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_SCREENSHOT_DIR` | unknown | unknown | unclassified | n/a | 2 |
 | `MILO_SCREENSHOT_FRAMES` | unknown | unknown | unclassified | n/a | 2 |
@@ -384,6 +385,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `RB3_SKIP_SKINNED` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SKIP_STATIC` | unknown | unknown | unclassified | n/a | 1 |
 | `RB3_SMASHER_HALO` | probe | unknown | render/particles | n/a: archaeological debug probe | 1 |
+| `RB3_SPOT_BEAM_LOG` | probe | off | render/post | n/a: W16-SI beam diagnostics: prints the SpotDrawParams and each submitted beam (screen projection, axis, mesh axis) for the first 3 frames [world/SpotlightDrawer.cpp]. Render output unchanged. | 2 |
 | `RB3_STATS_DBG` | probe | off | debug/stomp-watch | n/a: two independent stomp-watch bisection sites sharing a name — File.cpp checks MetaPerformer integrity on every file open (web song-end wedge diagnosis); Mesh.cpp records a ring of VertVector alloc/free events for stomp tracing. Both are read-only integrity checks/recorders, no behavior change [File.cpp:168; Mesh.cpp:408] | 2 |
 | `RB3_STREAM_AUDIO_DBG` | unknown | off | unclassified | n/a | 1 |
 | `RB3_STREAM_BUF_SECS` | perf | off | synth/stream | n/a: StandardStream min buffer depth in seconds (default 4, capped by 16-chunk ~9.1s ring). Anti-underrun value knob. | 1 |
