@@ -99,9 +99,16 @@ public:
     static void Init();
     static void RemoveFromLists(Spotlight *);
     static void DrawLight(Spotlight *);
+#ifdef HX_NATIVE
+    // Native also takes the NG path when the GPU backend draws volumetric
+    // beams (platform/SpotBeamHook.h): Spotlight::Generate then builds NG
+    // shafts, and DrawWorld hands them to the backend instead of drawing them.
+    static bool DrawNGSpotlights();
+#else
     static bool DrawNGSpotlights() {
         return GetGfxMode() == kNewGfx && TheLoadMgr.GetPlatform() != kPlatformPC;
     }
+#endif
     static void Register() { REGISTER_OBJ_FACTORY(SpotlightDrawer); }
     NEW_OBJ(SpotlightDrawer);
 

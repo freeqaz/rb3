@@ -299,6 +299,126 @@ void DrawAccessories<LensExtract>(
     }
 }
 
+#ifdef HX_NATIVE
+#include "platform/SpotBeamHook.h"
+#include "world/Dir.h"
+#include <cstdio>
+#include <cstdlib>
+
+bool SpotlightDrawer::DrawNGSpotlights() {
+    return (GetGfxMode() == kNewGfx || GetNativeSpotBeamRenderer())
+        && TheLoadMgr.GetPlatform() != kPlatformPC;
+}
+
+namespace {
+// The beams NgSpotlightDrawer::RenderBeams would draw this frame, for the
+// engine's beam pass (platform/SpotBeamHook.h). Retail draws them in
+// NgSpotlightDrawer::DoPost from sLights; the old-gfx drawer this build runs
+// clears sLights at world end, before any post, so they are taken here.
+std::vector<NativeSpotBeam> gNativeBeams;
+
+void AddNativeBeam(Spotlight *sl) {
+    Spotlight::BeamDef &def = sl->mBeam;
+    RndMesh *mesh = def.mBeam;
+    if (!mesh || !mesh->Showing())
+        return;
+    NativeSpotBeam b;
+    memset(&b, 0, sizeof(b));
+    b.mesh = mesh;
+    b.xsection = def.mXSection.Ptr();
+    const Transform &mx = mesh->WorldXfm();
+    const Vector3 *rows[4] = { &mx.m.x, &mx.m.y, &mx.m.z, &mx.v };
+    for (int r = 0; r < 4; r++) {
+        b.meshXfm[r * 3 + 0] = rows[r]->x;
+        b.meshXfm[r * 3 + 1] = rows[r]->y;
+        b.meshXfm[r * 3 + 2] = rows[r]->z;
+    }
+    b.shape = def.mShape;
+    // GetLightPosition: the spotlight's position plus the beam's local offset
+    // in the spotlight's frame.
+    const Transform &sx = sl->WorldXfm();
+    Vector3 off;
+    Multiply(mesh->LocalXfm().v, sx.m, off);
+    b.lightPos[0] = sx.v.x + off.x;
+    b.lightPos[1] = sx.v.y + off.y;
+    b.lightPos[2] = sx.v.z + off.z;
+    b.axis[0] = sx.m.y.x;
+    b.axis[1] = sx.m.y.y;
+    b.axis[2] = sx.m.y.z;
+    b.sheetDir[0] = sx.m.z.x;
+    b.sheetDir[1] = sx.m.z.y;
+    b.sheetDir[2] = sx.m.z.z;
+    Vector2 radii = def.NGRadii();
+    b.ngRadii[0] = radii.x;
+    b.ngRadii[1] = radii.y;
+    b.topRadius = def.mTopRadius;
+    b.length = def.mLength;
+    b.brighten = def.mBrighten;
+    // The colour owner's colour (packed here; floats on retail).
+    const unsigned int packed = sl->Color().color;
+    b.color[0] = (packed & 255) / 255.0f;
+    b.color[1] = ((packed >> 8) & 255) / 255.0f;
+    b.color[2] = ((packed >> 16) & 255) / 255.0f;
+    b.color[3] = ((packed >> 24) & 255) / 255.0f;
+    b.intensity = sl->Intensity();
+    b.matColor[0] = b.matColor[1] = b.matColor[2] = b.matColor[3] = 1.0f;
+    RndMat *mat = def.mMat;
+    if (!sl->AnimateColorFromPreset() && mat) {
+        const Hmx::Color &mc = mat->GetColor();
+        b.matColor[0] = mc.red;
+        b.matColor[1] = mc.green;
+        b.matColor[2] = mc.blue;
+        b.matColor[3] = mc.alpha;
+    }
+    gNativeBeams.push_back(b);
+    if (getenv("RB3_SPOT_BEAM_LOG") && gNativeBeams.size() < 13)
+        printf("[SpotBeam]  %s cone %d\n", sl->Name(), def.mIsCone);
+}
+
+// RB3_SPOT_BEAM_LOG=1: print each frame's beams and drawer parameters.
+void LogNativeBeams(const NativeSpotBeamFrame &f, SpotlightDrawer *d) {
+    static const bool sLog = getenv("RB3_SPOT_BEAM_LOG") != nullptr;
+    static int sFrames = 0;
+    if (!sLog || sFrames >= 3)
+        return;
+    sFrames++;
+    printf(
+        "[SpotBeam] drawer %s: intensity %g base %g smoke %g half %g texture %s proxy %s, %d beams\n",
+        d->Name(), f.intensity, f.baseIntensity, f.smokeIntensity,
+        d->mParams.mHalfDistance,
+        d->mParams.mTexture ? d->mParams.mTexture->Name() : "-",
+        d->mParams.mProxy ? d->mParams.mProxy->Name() : "-", (int)gNativeBeams.size()
+    );
+    RndCam *cam = (RndCam *)f.camera;
+    for (int i = 0; i < (int)gNativeBeams.size(); i++) {
+        const NativeSpotBeam &b = gNativeBeams[i];
+        // Where the beam's two ends land on screen (0..1), and their depths.
+        Vector3 top(b.lightPos[0], b.lightPos[1], b.lightPos[2]);
+        Vector3 end(
+            top.x + b.axis[0] * b.length, top.y + b.axis[1] * b.length,
+            top.z + b.axis[2] * b.length
+        );
+        Vector2 st(-1, -1), se(-1, -1);
+        float dt = cam ? cam->WorldToScreen(top, st) : 0;
+        float de = cam ? cam->WorldToScreen(end, se) : 0;
+        printf(
+            "[SpotBeam]  screen top %.3f %.3f (depth %g) end %.3f %.3f (depth %g)\n", st.x,
+            st.y, dt, se.x, se.y, de
+        );
+        printf(
+            "[SpotBeam]  %s shape %d len %g radii %g %g top %g brighten %g color %g %g %g "
+            "x %g mat %g %g %g pos %g %g %g axis %g %g %g mesh y %g %g %g xsection %s\n",
+            ((RndMesh *)b.mesh)->Name(), b.shape, b.length, b.ngRadii[0], b.ngRadii[1],
+            b.topRadius, b.brighten, b.color[0], b.color[1], b.color[2], b.intensity,
+            b.matColor[0], b.matColor[1], b.matColor[2], b.lightPos[0], b.lightPos[1],
+            b.lightPos[2], b.axis[0], b.axis[1], b.axis[2], b.meshXfm[3], b.meshXfm[4],
+            b.meshXfm[5], b.xsection ? ((RndTex *)b.xsection)->Name() : "-"
+        );
+    }
+}
+}
+#endif
+
 void SpotlightDrawer::DrawWorld() {
     int numLights = sLights.size();
     if (numLights < TheNgStats->mMotionBlurs) {
@@ -319,6 +439,10 @@ void SpotlightDrawer::DrawWorld() {
             }
             SpotlightEntry *it = &sLights[0];
             SpotlightEntry *itEnd = it + sLights.size();
+#ifdef HX_NATIVE
+            NativeSpotBeamRenderer *nativeBeams = GetNativeSpotBeamRenderer();
+            gNativeBeams.resize(0);
+#endif
             while (it != itEnd) {
                 SpotlightEntry *const e1 = it;
                 Spotlight *spot = it->unk4;
@@ -346,6 +470,16 @@ void SpotlightDrawer::DrawWorld() {
                 if (GetGfxMode() == kNewGfx && TheLoadMgr.GetPlatform() != kPlatformPC) {
                     drawNG = true;
                 }
+#ifdef HX_NATIVE
+                // The backend draws the beams (retail's NG post); see above.
+                if (nativeBeams) {
+                    drawNG = true;
+                    if (!sNoBeams && TheRnd->DrawMode() != 4) {
+                        for (SpotlightEntry *b = it; b != e2; ++b)
+                            AddNativeBeam(b->unk4);
+                    }
+                }
+#endif
                 if (!drawNG && !sNoBeams && TheRnd->DrawMode() != 4) {
                     DrawBeams(it, e2);
                 }
@@ -354,6 +488,21 @@ void SpotlightDrawer::DrawWorld() {
                 }
                 it = e2;
             }
+#ifdef HX_NATIVE
+            if (nativeBeams && !gNativeBeams.empty()) {
+                // CheckCam: TheWorld's camera, else the current one.
+                NativeSpotBeamFrame f;
+                f.camera = TheWorld && TheWorld->GetCam() ? TheWorld->GetCam()
+                                                          : RndCam::Current();
+                f.intensity = mParams.mIntensity;
+                f.baseIntensity = mParams.mBaseIntensity;
+                f.smokeIntensity = mParams.mSmokeIntensity;
+                f.fogTexture = mParams.mTexture.Ptr();
+                f.hasProxy = mParams.mProxy.Ptr() != nullptr;
+                LogNativeBeams(f, this);
+                nativeBeams->SubmitSpotBeams(f, &gNativeBeams[0], (int)gNativeBeams.size());
+            }
+#endif
             if (cur) {
                 cur->Select(pos);
             }
@@ -586,7 +735,7 @@ void SpotDrawParams::Load(BinStream &bs, int rev) {
     else {
         bs >> mIntensity;
         if (rev > 3) {
-            bs >> mSmokeIntensity >> mHalfDistance >> mLightingInfluence;
+            bs >> mBaseIntensity >> mSmokeIntensity >> mHalfDistance;
         } else {
             float i, j, k, l;
             bs >> i >> j >> k >> l;
