@@ -19,6 +19,16 @@
 //     (the control that shows the bloom can be seen at all);
 //   - black additive rect: luma 0, so no mask and no bloom;
 //   - white SrcAlphaAdd rect: not AllowHDR, so no mask and no bloom.
+//
+// Retail also combines a blended draw's alpha with the destination's by MAX
+// (DxRnd::SetDefaultRenderStates: BlendOpAlpha 3; milo-native-engine
+// dc3-backend-for-rb3-wii.md section 30), where the
+// engine used to blend alpha by the colour equation, so an additive draw
+// summed its mask with the one under it. With an additive grey world (mask
+// 0.25), an additive 0.25 rect must leave the mask at max(0.25, 0.25), the
+// same as a SrcAlphaAdd 0.25 rect, which adds the same colour and no mask.
+// Measured: both read 189 with MAX; with the colour equation the additive
+// rect reads 194.
 #include "test_helpers.h"
 
 #include "rb3_rnd_backend.h"
@@ -182,4 +192,26 @@ TEST_F(RectBloomMaskTest, SrcAlphaAddRectLeavesTheMaskAlone) {
 
     EXPECT_LE(std::abs(white - none), 3)
         << "SrcAlphaAdd is not AllowHDR: the rect leaves alpha alone, so nothing blooms";
+}
+
+TEST_F(RectBloomMaskTest, AdditiveRectKeepsTheBrighterMaskNotTheSum) {
+    GpuDevice &gpu = RB3RndBackend::Gpu();
+    gpu.Device().PushErrorScope(wgpu::ErrorFilter::Validation);
+
+    // An additive world writes its own luma, 0.25, to the mask. A milder
+    // bloom than the other tests', so the whole-frame mask does not saturate.
+    mWorldMat->SetBlend(RndMat::kBlendAdd);
+    mPost->mBloomIntensity = 1.0f;
+    const int none = Frame(/*blend=*/-1, 0.0f);
+    const int add = Frame(RndMat::kBlendAdd, 0.25f);
+    const int srcAlphaAdd = Frame(RndMat::kBlendSrcAlphaAdd, 0.25f);
+    const int white = Frame(RndMat::kBlendAdd, 1.0f);
+    EXPECT_EQ(PopErrors(gpu), "");
+
+    EXPECT_GT(white, add + 10)
+        << "control: a brighter additive rect raises the mask and blooms more";
+    EXPECT_GE(add, none) << "the rect adds colour, so the bloom cannot fall";
+    EXPECT_LE(std::abs(add - srcAlphaAdd), 2)
+        << "an additive 0.25 rect over mask 0.25 keeps mask 0.25 (MAX), as a rect "
+           "that writes no mask does; the sum 0.5 would bloom brighter";
 }
