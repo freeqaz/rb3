@@ -20,6 +20,7 @@
 #include "math/Utl.h"
 #include "rndobj/Dir.h"
 #include "rndobj/Env.h"
+#include "rndobj/Flare.h"
 #include "rndobj/Group.h"
 #include "rndobj/Lit.h"
 #include "rndobj/Mat.h"
@@ -178,6 +179,9 @@ bool StartGpuInit(int width, int height, bool headless) {
 }
 
 void InitGpuResources() {
+    // Retail 360 flares: material colour = alpha, not the Wii's alpha * 0.6
+    // (rndobj/Flare.h, gNativeFlareColorScale).
+    gNativeFlareColorScale = 1.0f;
     gWgpuRnd->InitGpuResources();
     sGpuReady = gWgpuRnd->GpuResourcesReady();
     printf("RB3RndBackend[dc3]: WgpuRnd up (%dx%d, %s)\n", gWgpuRnd->mGpu.WindowWidth(),

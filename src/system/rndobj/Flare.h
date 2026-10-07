@@ -20,6 +20,15 @@
  * properly use translucent or SrcAlphaCutout materials."
  */
 
+#ifdef HX_NATIVE
+// The factor DrawShowing scales the flare's material colour by. The Wii target
+// multiplies alpha by 0.6; retail Xbox 360 stores alpha itself
+// (rb3-xenon RndFlare::DrawShowing, 0x82477270: r = g = b = alpha). The native
+// dc3 backend, which renders as the 360 does, sets 1 when it brings up its GPU
+// resources (native/src/rb3_rnd_backend_dc3.cpp); everything else keeps 0.6.
+extern float gNativeFlareColorScale;
+#endif
+
 class RndFlare : public RndTransformable, public RndDrawable {
 public:
     RndFlare();

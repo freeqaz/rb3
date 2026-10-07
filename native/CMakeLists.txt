@@ -883,8 +883,8 @@ if(BUILD_TESTS)
         ${_RB3_NATIVE_SRCS}
     )
     # Depth of field, the flare point tests' occlusion queries, world
-    # refraction's pre-process buffer, the texture blender and the volumetric
-    # spotlight beams are dc3-flavor passes (the engine's gfx/DofPass.cpp,
+    # refraction's pre-process buffer, the rect bloom mask, the texture blender
+    # and the volumetric spotlight beams are dc3-flavor passes (the engine's gfx/DofPass.cpp,
     # gfx/PointTestPass.cpp, WgpuRnd::SavePreBuffer, gfx/TexBlendPass.cpp,
     # gfx/SpotBeamPass.cpp).
     if(RB3_NATIVE_GFX AND RB3_GPU_BACKEND STREQUAL "dc3")
@@ -892,6 +892,7 @@ if(BUILD_TESTS)
             ${CMAKE_SOURCE_DIR}/tests/test_dof_pass.cpp
             ${CMAKE_SOURCE_DIR}/tests/test_point_test.cpp
             ${CMAKE_SOURCE_DIR}/tests/test_refract.cpp
+            ${CMAKE_SOURCE_DIR}/tests/test_rect_bloom_mask.cpp
             ${CMAKE_SOURCE_DIR}/tests/test_texblend_pass.cpp
             ${CMAKE_SOURCE_DIR}/tests/test_spot_beam_pass.cpp)
     endif()
