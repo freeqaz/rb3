@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 448  
-**By class:** compat=2, diagnostic=1, feature=22, perf=10, probe=156, tuning=3, unknown=151, workaround=103  
+**Total flags:** 453  
+**By class:** compat=2, diagnostic=1, feature=25, perf=11, probe=157, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -97,6 +97,9 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_DEBUG_PIPELINES` | unknown | off | unclassified | n/a | 3 |
 | `MILO_DUMP_RT` | probe | off | render/capture | n/a: debug dump of every live GPU render target to <screenshot dir>/rt_<frame>_<tex>.png beside each auto-screenshot frame (WgpuRnd::MaybeCaptureFrame; engine 79352c0, used to measure the RB3 title cloud-layer RT alpha). Inspection only, no draw change [Rnd_Wgpu.cpp:1934] | 1 |
 | `MILO_FRAME_TIMES` | probe | off | render/perf | n/a: writes one CSV row per frame to <path> (frame period, thread CPU time, BeginDrawing->EndDrawing time, time spent collecting flare point-test answers, tests recorded, answers delivered, oldest answer's age in frames; WgpuRnd::WriteFrameTimes, lane W16-SB). Measurement only, no draw change [Rnd_Wgpu.cpp] | 1 |
+| `MILO_FULLSCREEN` | feature | off | render/window | n/a: open the window fullscreen on the primary monitor at its desktop mode (no mode switch); F11 / Alt+Enter toggle at run time either way. For a player (dc3 scripts/play.sh --fullscreen, dc3 PLAN L-1/H-18) [GpuDevice.cpp] | 1 |
+| `MILO_GLFW_PLATFORM` | feature | off | render/window | n/a: Linux window system for GLFW: x11, wayland or any (default: GLFW's choice, Wayland when WAYLAND_DISPLAY is set). A window whose surface WebGPU cannot present to is re-opened through X11 either way (dc3 PLAN H-33) [GpuDevice.cpp] | 1 |
+| `MILO_GPU_COUNTERS` | perf | off | render/perf | n/a: log-only. MILO_GPU_COUNTERS=N prints one [GPUCOUNT] line every N frames (0 or non-numeric: every 600) with the live bind-group cache size, creates/hits/evictions, uniform-ring sizes, grows and WriteBuffer counts, pipelines, GPU meshes and textures (lane np-drawperf, H-30/H-31 bounds check); unset = no line. No draw change [Rnd_Wgpu.cpp] | 1 |
 | `MILO_GPU_LABELS` | perf | off | render/perf | n/a: Dawn use_user_defined_labels_in_backend toggle (Vulkan object names for RenderDoc/GFXReconstruct/validation). 1 = on, 0 = off; unset = on only when a Vulkan layer env (VK_INSTANCE_LAYERS, VK_LOADER_LAYERS_ENABLE, ENABLE_VULKAN_RENDERDOC_CAPTURE) is set. Debug names only, no draw change; off saves the per-object name build + vkSetDebugUtilsObjectNameEXT (5-8% of the DC3 main thread, lane np-cpu-perf) [GpuDevice.cpp] | 1 |
 | `MILO_HEADLESS` | feature | off | platform/headless | n/a: headless runtime mode (skips window/audio/GPU device init; UI.cpp fakes a fixed 1/30s UI clock). Real port toggle, not a fidelity stand-in. | 9 |
 | `MILO_HEIGHT` | unknown | unknown | unclassified | n/a | 10 |
@@ -109,6 +112,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_NO_SPOT_BEAMS` | probe | off | render/post | n/a: A/B kill switch for the retail NgSpotlightDrawer volumetric beam pass (gfx/SpotBeamPass, W16-SI): set = WgpuRnd registers a NativeSpotBeamRenderer that drops the submitted beams, so the consumer keeps the NG path and only the beam pass is removed (W16-TC; registering none sent it down the old-gfx path, whose material-less BuildShaft cones drew opaque) [Rnd_Wgpu.cpp]. Shipped default draws the beams. | 1 |
 | `MILO_NO_TRANSPARENT_DEFER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_PERF` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_PRESENT_SCALE` | feature | on | render/window | n/a: windowed WgpuRnd draws at the Rnd virtual resolution and scales the frame into the window, aspect kept, black bars (dc3 PLAN H-18). 0 restores the swapchain-is-the-frame path (picture in the top-left of a larger window) [Rnd_Wgpu.cpp] | 1 |
 | `MILO_RB3_DISPLAY_GAMMA` | feature | off | render/post | n/a: override value knob for the retail display gamma ramp (rndshape::DisplayGamma, engine 72f38c6/246264c). Unset = retail DxRnd::SetupGamma behaviour: (rnd (gamma g)) from the system config, applied to presented frames only, none headless. Set = applies to every output incl. headless; 'off'/'0' = no ramp, else the gamma value. RB3Wii rndshape only; DC3 shape is a constant 0 so the flag is inert there [rndshape/RB3WiiPostChain.cpp:34] | 1 |
 | `MILO_RB3_RETAIL_POST` | feature | on | render/post | live: RB3 Xbox 360 retail post chain (pseudo-HDR luma bloom mask, bloom/blur/downsample sets, screen blend, RndColorXfm) ported from the retail shaders, default-ON for the RB3Wii rndshape (engine c942ad9 WIP, completed 34169f1). Unset or unrecognised = 1 (retail chain); '0' = PostProcPass's previous DC3 composite; 'raw'/'mask'/'bloom'/'grade'/'beams' = inspection views ('beams' = the blurred NgSpotlightDrawer beam target, W16-SI). DC3 shape RetailPostMode() is a constant 0, so the flag is inert there [rndshape/RB3WiiPostChain.cpp:21] | 1 |
 | `MILO_RENDER` | unknown | unknown | unclassified | n/a | 1 |
@@ -117,6 +121,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_SCREENSHOT_NAMES` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_SETTOKEN_DBG` | probe | off | ui/label | n/a: traces UILabel::SetTokenFmtImp — symbol, localized format string, and final SetDisplayText input [UILabel.cpp:805] | 1 |
 | `MILO_SIMPLE_RENDER` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_SURFACE_FAULT` | probe | off | render/window | n/a: test hook for dc3 PLAN H-33: init (every window's surface probe fails), init-once (the first fails; the X11 fallback then runs once), acquire (GetCurrentTexture fails every frame). Exercises the unusable-surface handling on a box whose surface works [GpuDevice.cpp] | 1 |
 | `MILO_VIDEO` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_VIDEO_FPS` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_WIDTH` | unknown | unknown | unclassified | n/a | 10 |
