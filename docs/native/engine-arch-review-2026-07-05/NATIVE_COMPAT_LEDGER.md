@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 453  
-**By class:** compat=2, diagnostic=1, feature=25, perf=11, probe=157, tuning=3, unknown=151, workaround=103  
+**Total flags:** 454  
+**By class:** compat=2, diagnostic=1, feature=25, perf=12, probe=157, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -124,6 +124,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_SURFACE_FAULT` | probe | off | render/window | n/a: test hook for dc3 PLAN H-33: init (every window's surface probe fails), init-once (the first fails; the X11 fallback then runs once), acquire (GetCurrentTexture fails every frame). Exercises the unusable-surface handling on a box whose surface works [GpuDevice.cpp] | 1 |
 | `MILO_VIDEO` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_VIDEO_FPS` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_WEB_BUNDLE_SLICE_MS` | perf | 6 | web/assets | n/a: web only. Milliseconds of main-thread time one slice of a screen-bundle unpack may take before yielding to the browser (default 6); 0 = unpack the whole bundle in one task, the pre-W-15 behaviour (158-403 ms tasks). Same files, same bytes; only when the main thread yields changes (lane np-web4, W-15) [WebAssets.cpp] | 1 |
 | `MILO_WIDTH` | unknown | unknown | unclassified | n/a | 10 |
 | `PART_DBG` | unknown | off | unclassified | n/a | 1 |
 | `PART_INIT_DBG` | probe | off | render/particles | n/a: dumps InitParticle's emit branch, raw direction and mesh state before speed scale for substring-matched particle systems, diagnosing runaway street-fog particles [Part.cpp:670] | 1 |
