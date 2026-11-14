@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 446  
-**By class:** compat=2, diagnostic=1, feature=20, perf=10, probe=156, tuning=3, unknown=151, workaround=103  
+**Total flags:** 448  
+**By class:** compat=2, diagnostic=1, feature=22, perf=10, probe=156, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -51,11 +51,13 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `CROWD_REBIND_PROBE` | probe | off | render/crowd | n/a: verbose companion to RebindCrowdCharBonesToOwnSkeleton (the default-ON RB3_NO_CROWD_REBIND workaround) — read-only diagnostic flag, does not itself change the rebind [Crowd.cpp:936] | 1 |
 | `CROWD_SUBMIT_DBG` | probe | off | world/crowd | probe: W24-RECON engine SubmitDraw trace for crowd meshes (Rnd_Wgpu_RB3, inert unless env set) | 1 |
 | `DC3_AUDIO_GAIN` | unknown | unknown | unclassified | n/a | 1 |
+| `DC3_DISPLAY_GAMMA` | feature | off | render/post | live: override value knob for DC3's display ramp (DxRnd::SetupGamma, ramp = pow(v, g)). Unset = retail: (rnd (gamma g)) from the system config (default.dta: 0.85), applied once after the UI to EVERY output including headless, so captures are POST-ramp. 'off'/'0' = no ramp (the pre-ramp front buffer), else the gamma value. DC3 shape only (rndshape::kDC3RetailPost) [rndshape/DC3PostChain.cpp:50] | 1 |
 | `DC3_DUMP_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_DUMP_SECONDS` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_HTTP` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_HTTP_PORT` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_NO_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
+| `DC3_RETAIL_POST` | feature | on | render/post | live: selects the DC3 retail post chain (NgPostProc::DoPost port, np-gfx-post). Unset = the retail chain (bloom mask, bloom/streak, screen-blend composite, noise, colour xfm, vignette, chroma). '0' = the pre-np-gfx-post generic PostProcPass; 'raw' = chain with no effects (copy); 'mask' / 'bloom' = inspection views of the pseudo-HDR mask / bloom term; 'grade' = chain without bloom. DC3 shape only (rndshape::kDC3RetailPost); rb3-xenon's shape has no dc3 accessors so the flag is never read there [rndshape/DC3PostChain.cpp:30] | 1 |
 | `DISPLAY` | unknown | unknown | unclassified | n/a | 5 |
 | `ENABLE_VULKAN_RENDERDOC_CAPTURE` | probe | off | render/debug | n/a: external variable owned by RenderDoc's implicit layer, only read: set (non-empty, not 0) means a capture/debug layer is loading, which turns MILO_GPU_LABELS' default on so the capture keeps object names [GpuDevice.cpp] | 1 |
 | `FMERGE_PROBE` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — FileMerger merge/clear event log (proved zero crowd merges → refuted the load-merge theory) | 1 |
