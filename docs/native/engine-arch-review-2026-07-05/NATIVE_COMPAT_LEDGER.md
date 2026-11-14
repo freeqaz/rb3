@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 442  
-**By class:** compat=2, diagnostic=1, feature=20, perf=9, probe=153, tuning=3, unknown=151, workaround=103  
+**Total flags:** 446  
+**By class:** compat=2, diagnostic=1, feature=20, perf=10, probe=156, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -57,6 +57,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `DC3_HTTP_PORT` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_NO_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
 | `DISPLAY` | unknown | unknown | unclassified | n/a | 5 |
+| `ENABLE_VULKAN_RENDERDOC_CAPTURE` | probe | off | render/debug | n/a: external variable owned by RenderDoc's implicit layer, only read: set (non-empty, not 0) means a capture/debug layer is loading, which turns MILO_GPU_LABELS' default on so the capture keeps object names [GpuDevice.cpp] | 1 |
 | `FMERGE_PROBE` | probe | off | char/loader | probe: Wave-26 CROWD discriminator — FileMerger merge/clear event log (proved zero crowd merges → refuted the load-merge theory) | 1 |
 | `GAME_DBG` | probe | off | bandobj/flow | n/a: logs BandDirector::OnFileLoaded's sym/dir args and ReadyForMidiParsers' native venue-deferred gate inputs/result; the gate's own cond is computed independent of the getenv call [BandDirector.cpp:1265,834] | 2 |
 | `GEM_DBG` | probe | off | render/highway | n/a: dumps GemTrackDir::UpdateSurfaceTexture's mesh/mat/tex name state after the (unconditional) SetDiffuseTex call [GemTrackDir.cpp:393] | 1 |
@@ -94,6 +95,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_DEBUG_PIPELINES` | unknown | off | unclassified | n/a | 3 |
 | `MILO_DUMP_RT` | probe | off | render/capture | n/a: debug dump of every live GPU render target to <screenshot dir>/rt_<frame>_<tex>.png beside each auto-screenshot frame (WgpuRnd::MaybeCaptureFrame; engine 79352c0, used to measure the RB3 title cloud-layer RT alpha). Inspection only, no draw change [Rnd_Wgpu.cpp:1934] | 1 |
 | `MILO_FRAME_TIMES` | probe | off | render/perf | n/a: writes one CSV row per frame to <path> (frame period, thread CPU time, BeginDrawing->EndDrawing time, time spent collecting flare point-test answers, tests recorded, answers delivered, oldest answer's age in frames; WgpuRnd::WriteFrameTimes, lane W16-SB). Measurement only, no draw change [Rnd_Wgpu.cpp] | 1 |
+| `MILO_GPU_LABELS` | perf | off | render/perf | n/a: Dawn use_user_defined_labels_in_backend toggle (Vulkan object names for RenderDoc/GFXReconstruct/validation). 1 = on, 0 = off; unset = on only when a Vulkan layer env (VK_INSTANCE_LAYERS, VK_LOADER_LAYERS_ENABLE, ENABLE_VULKAN_RENDERDOC_CAPTURE) is set. Debug names only, no draw change; off saves the per-object name build + vkSetDebugUtilsObjectNameEXT (5-8% of the DC3 main thread, lane np-cpu-perf) [GpuDevice.cpp] | 1 |
 | `MILO_HEADLESS` | feature | off | platform/headless | n/a: headless runtime mode (skips window/audio/GPU device init; UI.cpp fakes a fixed 1/30s UI clock). Real port toggle, not a fidelity stand-in. | 9 |
 | `MILO_HEIGHT` | unknown | unknown | unclassified | n/a | 10 |
 | `MILO_INPUT_LOG` | probe | off | input | n/a: logs one line per pad button message JoypadPoll sends (dc3 key tests); Joypad_Native.cpp is compiled by dc3 only | 1 |
@@ -449,6 +451,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `VENUE_CAM_LOCK` | workaround | on | camera/venue | not-live: native bridge points the venue WorldDir mCam at the director's active shot cam each frame default-ON; =1 reverts to the static cam | 1 |
 | `VENUE_DBG` | probe | off | bandobj/venue | n/a: logs the native venue force-load bridge in BandDirector::EnterVenue (override symbol, chosen venue, sync/async mode, wardrobe/venueDir/venueName state, HarvestDircuts re-run — shares its last two log lines with CAMDIR_DBG/CHAR_DBG); the force-load itself (LoadVenue, RB3_VENUE_SYNC-gated sync mode) runs independent of this flag [BandDirector.cpp:654,666,690,713,744] | 5 |
 | `VERT_PROBE` | probe | off | skinning | n/a: archaeological debug probe | 1 |
+| `VK_INSTANCE_LAYERS` | probe | off | render/debug | n/a: external variable owned by the Vulkan loader, only read: set (non-empty, not 0) means a capture/debug layer is loading, which turns MILO_GPU_LABELS' default on so the capture keeps object names [GpuDevice.cpp] | 1 |
+| `VK_LOADER_LAYERS_ENABLE` | probe | off | render/debug | n/a: external variable owned by the Vulkan loader, only read: set (non-empty, not 0) means a capture/debug layer is loading, which turns MILO_GPU_LABELS' default on so the capture keeps object names [GpuDevice.cpp] | 1 |
 | `VOIDCUT_DBG` | probe | off | render/camera | n/a: logs each shot's void-vs-keep verdict for the RB3_CAM_FALLBACK_OFF-gated sticky last-good-cam fallback (voidcut avoidance); read-only, does not affect the fallback decision [BandDirector.cpp:387] | 1 |
 | `XBONE` | probe | unknown | skinning | n/a: archaeological debug probe | 1 |
 | `XBONE_TRACK` | probe | off | skinning | n/a: archaeological debug probe | 1 |
