@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 454  
-**By class:** compat=2, diagnostic=1, feature=25, perf=12, probe=157, tuning=3, unknown=151, workaround=103  
+**Total flags:** 455  
+**By class:** compat=2, diagnostic=1, feature=25, perf=13, probe=157, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -101,6 +101,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_GLFW_PLATFORM` | feature | off | render/window | n/a: Linux window system for GLFW: x11, wayland or any (default: GLFW's choice, Wayland when WAYLAND_DISPLAY is set). A window whose surface WebGPU cannot present to is re-opened through X11 either way (dc3 PLAN H-33) [GpuDevice.cpp] | 1 |
 | `MILO_GPU_COUNTERS` | perf | off | render/perf | n/a: log-only. MILO_GPU_COUNTERS=N prints one [GPUCOUNT] line every N frames (0 or non-numeric: every 600) with the live bind-group cache size, creates/hits/evictions, uniform-ring sizes, grows and WriteBuffer counts, pipelines, GPU meshes and textures (lane np-drawperf, H-30/H-31 bounds check); unset = no line. No draw change [Rnd_Wgpu.cpp] | 1 |
 | `MILO_GPU_LABELS` | perf | off | render/perf | n/a: Dawn use_user_defined_labels_in_backend toggle (Vulkan object names for RenderDoc/GFXReconstruct/validation). 1 = on, 0 = off; unset = on only when a Vulkan layer env (VK_INSTANCE_LAYERS, VK_LOADER_LAYERS_ENABLE, ENABLE_VULKAN_RENDERDOC_CAPTURE) is set. Debug names only, no draw change; off saves the per-object name build + vkSetDebugUtilsObjectNameEXT (5-8% of the DC3 main thread, lane np-cpu-perf) [GpuDevice.cpp] | 1 |
+| `MILO_GPU_TIMERS` | perf | off | render/perf | n/a: log-only. MILO_GPU_TIMERS=1 (truthy) requests WebGPU timestamp-query when the adapter offers it, disables Dawn's timestamp_quantization toggle, and times every render pass (begin/end timestamps, resolved and read back asynchronously, never waited on); one [GPUTIME] window line + one [GPUTIME] pass= line per pass name every ~1 s (per-frame mean/max ms, passes per frame, frame pass sum and span), latest window via GpuTimers::LatestJson (dc3 GET /api/gputime). Unset = no query set, no buffer, no line. Adapter without the feature / web build: one 'GPU timers unavailable: <reason>' line. No draw change [GpuTimers.cpp, GpuDevice.cpp] | 1 |
 | `MILO_HEADLESS` | feature | off | platform/headless | n/a: headless runtime mode (skips window/audio/GPU device init; UI.cpp fakes a fixed 1/30s UI clock). Real port toggle, not a fidelity stand-in. | 9 |
 | `MILO_HEIGHT` | unknown | unknown | unclassified | n/a | 10 |
 | `MILO_INPUT_LOG` | probe | off | input | n/a: logs one line per pad button message JoypadPoll sends (dc3 key tests); Joypad_Native.cpp is compiled by dc3 only | 1 |
