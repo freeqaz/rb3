@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 458  
-**By class:** compat=2, diagnostic=1, feature=26, perf=15, probe=157, tuning=3, unknown=151, workaround=103  
+**Total flags:** 459  
+**By class:** compat=2, diagnostic=1, feature=27, perf=15, probe=157, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -83,6 +83,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MESH_DUMP` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_AUDIO` | unknown | unknown | unclassified | n/a | 2 |
 | `MILO_AUDIO_BACKEND` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_BACKGROUND_AUDIO` | feature | off | audio | live: =1 keeps the desktop output playing when the game window is in the background and starved. Unset = mute: when the window has no focus and no frame has finished for 500 ms the mix is ramped to silence, and it comes back when the window has focus or 30 frames in a row each took under 100 ms (audio/BackgroundMute.h). A compositor that stops presenting a hidden window drops the main loop to about one frame a second, and the streams it decodes then play in bursts. Never applies headless or on the web [audio/AudioDevice.cpp] | 1 |
 | `MILO_CAM_ASPECT` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_CAM_DEBUG` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_CAM_FAR` | unknown | unknown | unclassified | n/a | 1 |
