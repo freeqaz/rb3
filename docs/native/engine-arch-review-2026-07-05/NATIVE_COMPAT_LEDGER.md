@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 456  
-**By class:** compat=2, diagnostic=1, feature=25, perf=14, probe=157, tuning=3, unknown=151, workaround=103  
+**Total flags:** 457  
+**By class:** compat=2, diagnostic=1, feature=26, perf=14, probe=157, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -56,6 +56,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `DC3_DUMP_SECONDS` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_HTTP` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_HTTP_PORT` | unknown | unknown | unclassified | n/a | 1 |
+| `DC3_LOOK` | feature | on | render/look | live: the DC3 look profile (platform/LookProfile.h), read once. Unset or 'enhanced' = native polish on (the default); 'retail' = the original hardware's behaviour for parity measurement against Xenia/retail; anything else warns and uses enhanced. One switch that every enhancement hangs off (LookSettings), so no per-feature env var. DC3 retail model only (rndshape::kDC3RetailModel); rb3-xenon and rb3 (kDC3RetailModel false in their shapes) resolve profile 'native' and never read it [platform/LookProfile.cpp] | 1 |
 | `DC3_NO_AUDIO` | unknown | unknown | unclassified | n/a | 1 |
 | `DC3_RETAIL_POST` | feature | on | render/post | live: selects the DC3 retail post chain (NgPostProc::DoPost port, np-gfx-post). Unset = the retail chain (bloom mask, bloom/streak, screen-blend composite, noise, colour xfm, vignette, chroma). '0' = the pre-np-gfx-post generic PostProcPass; 'raw' = chain with no effects (copy); 'mask' / 'bloom' = inspection views of the pseudo-HDR mask / bloom term; 'grade' = chain without bloom. DC3 shape only (rndshape::kDC3RetailPost); rb3-xenon's shape has no dc3 accessors so the flag is never read there [rndshape/DC3PostChain.cpp:30] | 1 |
 | `DISPLAY` | unknown | unknown | unclassified | n/a | 5 |
