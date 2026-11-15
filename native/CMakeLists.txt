@@ -87,7 +87,7 @@ endif()
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "51bb511f0732bef09b3f4ae8aa57fa10b42f7070"
+set(MILO_ENGINE_PIN "cc1addc212a1c6bf05952fa9ff971d26fd771efe"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
