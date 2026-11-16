@@ -12,6 +12,7 @@
 #include "test_helpers.h"
 
 #include "rb3_rnd_backend.h"
+#include "gfx/BindGroupCache.h"
 #include "gfx/GpuDevice.h"
 #include "gfx/TexBlendPass.h"
 
@@ -92,14 +93,14 @@ protected:
     // `initial`, collecting validation errors; reads the target back.
     bool Run(const std::vector<Rgba> &initial, wgpu::TextureView base,
              const std::vector<TexBlendPass::Layer> &layers, std::vector<uint8_t> &out,
-             std::string &errors) {
+             std::string &errors, BindGroupCache *cache = nullptr) {
         GpuDevice &gpu = RB3RndBackend::Gpu();
         wgpu::Device dev = gpu.Device();
         dev.PushErrorScope(wgpu::ErrorFilter::Validation);
         wgpu::Texture target = MakeTex(kW, kH, initial, true);
         wgpu::CommandEncoder enc = dev.CreateCommandEncoder();
         bool ran = mPass.Record(enc, target.CreateView(), wgpu::TextureFormat::RGBA8Unorm, kW,
-                                kH, base, layers.data(), layers.size(), gpu);
+                                kH, base, layers.data(), layers.size(), gpu, cache);
         wgpu::CommandBuffer cmd = enc.Finish();
         gpu.Queue().Submit(1, &cmd);
         errors.clear();
@@ -210,6 +211,89 @@ TEST_F(TexBlendPassTest, BaseThenUnwrappedLayersMatchRetailModel) {
     const size_t c = ((size_t)32 * kW + 32) * 4;
     EXPECT_NEAR(out[c + 0], Blend(128, 255, 0.5f), 1.0);
     EXPECT_NEAR(out[c + 1], Blend(128, 0, 0.5f), 1.0);
+}
+
+// The bind-group cache path (DC3's RndTexBlender passes WgpuRnd's cache): the
+// groups bind the params ring at offset 0 and take each draw's slot as the
+// dynamic offset, so a group made in one frame is reused in the next with that
+// frame's alphas, and a ring that grows is a new buffer and gets new groups.
+// Three frames, each read back against the CPU model: frame 1 makes the two
+// groups (base, layer); frame 2 draws the same textures at another alpha and
+// must create nothing; frame 3 records 70 layers, so the ring grows past its
+// 64 slots, and only the last layer draws -- through groups on the new ring.
+// Sabotages, each red here: the pass ignoring the cache (no creates through
+// it); BindGroupCache::MakeKey leaving the buffer out of the key (frame 3's
+// groups are frame 1's, bound to the old ring: a validation error or the old
+// alpha); MakeKey leaving the texture view out (frame 1's layer reuses the base
+// group: the quad is the gradient).
+TEST_F(TexBlendPassTest, CachedBindGroupsAreReusedAcrossFramesAndRingGrowth) {
+    const std::vector<Rgba> base = Gradient();
+    wgpu::Texture baseTex = MakeTex(kW, kH, base, false);
+    wgpu::Texture redTex = MakeTex(8, 8, Solid(64, {255, 0, 0, 255}), false);
+    const wgpu::TextureView baseView = baseTex.CreateView(), redView = redTex.CreateView();
+    const std::vector<float> quadUV = {0.25f, 0.25f, 0.75f, 0.25f, 0.75f, 0.75f, 0.25f, 0.75f};
+    const std::vector<uint16_t> quadIdx = {0, 1, 2, 0, 2, 3};
+    auto model = [&](float a) {
+        std::vector<float> m((size_t)kW * kH * 4);
+        for (int y = 0; y < kH; y++)
+            for (int x = 0; x < kW; x++) {
+                float c[4] = {(float)base[y * kW + x].r, (float)base[y * kW + x].g,
+                              (float)base[y * kW + x].b, 255.0f};
+                const float u = (x + 0.5f) / kW, v = (y + 0.5f) / kH;
+                if (u > 0.25f && u < 0.75f && v > 0.25f && v < 0.75f) {
+                    const float src[4] = {255, 0, 0, 255 * a};
+                    for (int k = 0; k < 4; k++)
+                        c[k] = Blend(c[k], src[k], a);
+                }
+                for (int k = 0; k < 4; k++)
+                    m[((size_t)y * kW + x) * 4 + k] = c[k];
+            }
+        return m;
+    };
+
+    BindGroupCache cache;
+    std::vector<uint8_t> out;
+    std::string err;
+    const std::vector<Rgba> initial = Solid(kW * kH, {9, 9, 9, 9});
+
+    // Frame 1: two groups are made, through the cache.
+    cache.BeginFrame(1);
+    mPass.BeginFrame();
+    std::vector<TexBlendPass::Layer> layers;
+    layers.push_back(MakeLayer(64, quadUV, quadIdx, redView, 0.5f));
+    ASSERT_TRUE(Run(initial, baseView, layers, out, err, &cache));
+    EXPECT_EQ(err, "");
+    EXPECT_LE(Diff(out, model(0.5f)), 2) << "frame 1";
+    EXPECT_EQ(cache.Creates(), 2u) << "the pass made its groups outside the cache";
+    const uint64_t hits1 = cache.Hits();
+
+    // Frame 2: the same textures at alpha 0.25 -- reused groups, new alpha.
+    cache.BeginFrame(2);
+    mPass.BeginFrame();
+    layers[0].alpha = 0.25f;
+    ASSERT_TRUE(Run(initial, baseView, layers, out, err, &cache));
+    EXPECT_EQ(err, "");
+    EXPECT_LE(Diff(out, model(0.25f)), 2) << "frame 2: a reused group read another slot";
+    EXPECT_EQ(cache.Creates(), 2u) << "frame 2 created groups it should have reused";
+    EXPECT_EQ(cache.Hits(), hits1 + 2);
+
+    // Frame 3: 70 layers grow the 64-slot ring; 69 of them draw nothing.
+    cache.BeginFrame(3);
+    mPass.BeginFrame();
+    std::vector<TexBlendPass::Layer> many(70, layers[0]);
+    for (size_t i = 0; i + 1 < many.size(); i++) {
+        many[i].indexCount = 0;
+        many[i].alpha = 0.0f;
+    }
+    many.back().alpha = 0.75f;
+    ASSERT_TRUE(Run(initial, baseView, many, out, err, &cache));
+    EXPECT_EQ(err, "") << "frame 3";
+    EXPECT_LE(Diff(out, model(0.75f)), 2) << "frame 3: a group on the old ring";
+    EXPECT_EQ(cache.Creates(), 4u) << "the grown ring is a new buffer: two new groups";
+    const size_t c = ((size_t)32 * kW + 32) * 4;
+    printf("[TexBlendPass] cache: %llu created, %llu hits; centre after frame 3 = %d,%d,%d\n",
+           (unsigned long long)cache.Creates(), (unsigned long long)cache.Hits(), out[c],
+           out[c + 1], out[c + 2]);
 }
 
 // Without a base the target keeps what it held and only the layers draw.
