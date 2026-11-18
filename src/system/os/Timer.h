@@ -57,8 +57,18 @@ public:
     }
 
     static float CyclesToMs(long long cycles) {
+#ifdef HX_NATIVE
+        // The two words of the count. The Wii's `unsigned long` and `long` are
+        // 4 bytes; as 8-byte types (LP64) the low "word" was the whole count
+        // and the high word was added again, so from 2^32 cycles (71.6 minutes
+        // of native microseconds) the reading was too large by
+        // high * 4,294,967 ms. TimerLp64.* in native/tests/test_timer_lp64.cpp.
+        unsigned int lowCycles = (unsigned int)cycles;
+        int highCycles = (int)(cycles >> 32);
+#else
         unsigned long lowCycles = cycles;
         long highCycles = cycles >> 32;
+#endif
         return (lowCycles * sLowCycles2Ms) + (highCycles * sHighCycles2Ms);
     }
 
@@ -131,8 +141,14 @@ public:
 
     float Ms() {
         // NOTE: do not simplify - intermediate variable affects codegen
+#ifdef HX_NATIVE
+        // 32-bit words natively as on the Wii; see CyclesToMs.
+        unsigned int lowCycles = (unsigned int)mCycles;
+        int highCycles = (int)(mCycles >> 32);
+#else
         unsigned long lowCycles = mCycles;
         long highCycles = mCycles >> 32;
+#endif
         float highMs = highCycles * sHighCycles2Ms;
         return lowCycles * sLowCycles2Ms + highMs;
     }
