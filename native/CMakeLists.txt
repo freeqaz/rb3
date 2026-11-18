@@ -865,6 +865,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_bandpatchmesh.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_charload5b.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_overpress.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_timer_lp64.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_native_compat.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_stub_census.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_hands_bind_oracle.cpp
