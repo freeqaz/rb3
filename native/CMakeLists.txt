@@ -87,8 +87,14 @@ endif()
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
+# FORCE, so the value in this file is the one a configure uses. Without it a
+# build directory's CMakeCache.txt keeps the pin it was first configured with,
+# and the mismatch warning below quotes that old value instead of this line.
+# dc3-decomp (since 2026-08-19) and rb3-xenon (since 2026-11-06) carry FORCE
+# for the same reason. A -DMILO_ENGINE_PIN on the command line is therefore
+# ignored; MILO_ENGINE_PATH above has no FORCE, so -DMILO_ENGINE_PATH works.
 set(MILO_ENGINE_PIN "1c07f45a5065c3a4e0be14ba24dec10e795b31b6"
-    CACHE STRING "Engine commit SHA verified against")
+    CACHE STRING "Engine commit SHA verified against" FORCE)
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
         WORKING_DIRECTORY ${MILO_ENGINE_PATH}
