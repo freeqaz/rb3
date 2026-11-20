@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 463  
-**By class:** compat=2, diagnostic=1, feature=27, perf=19, probe=157, tuning=3, unknown=151, workaround=103  
+**Total flags:** 466  
+**By class:** compat=2, debug=2, diagnostic=1, feature=27, perf=20, probe=157, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -131,6 +131,9 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_SETTOKEN_DBG` | probe | off | ui/label | n/a: traces UILabel::SetTokenFmtImp — symbol, localized format string, and final SetDisplayText input [UILabel.cpp:805] | 1 |
 | `MILO_SIMPLE_RENDER` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_SURFACE_FAULT` | probe | off | render/window | n/a: test hook for dc3 PLAN H-33: init (every window's surface probe fails), init-once (the first fails; the X11 fallback then runs once), acquire (GetCurrentTexture fails every frame). Exercises the unusable-surface handling on a box whose surface works [GpuDevice.cpp] | 1 |
+| `MILO_THERMAL_COOL_SECONDS` | debug | 90 | render | n/a: test knob. Seconds of unbroken nominal level before the thermal governor gives one step back (default 90); a test shortens it so it need not wait minutes [platform/ThermalState.cpp] | 1 |
+| `MILO_THERMAL_GOVERNOR` | perf | on | render | live: the thermal governor (gfx/ThermalGovernor.h, platform/ThermalState.h). Unset or on: when the OS reports thermal pressure (fair or worse) AND frames are late against the consumer's target rate, the output row cap steps down 1080 -> 900 -> 720 rows (never below 720) and steps back up one step per cool dwell; 0/off/false/no = never. Acts only for a consumer that sets a target rate (ThermalSetTargetFps) on a renderer that calls the driver (WgpuRnd); with no thermal level reported the sizes are exactly the frame-size rules' own. Same picture at a smaller size [platform/ThermalState.cpp] | 2 |
+| `MILO_THERMAL_STATE` | debug | unset | render | n/a: test injection. 0..3 (nominal, fair, serious, critical) stands in for the OS thermal level, headless runs included; unset = the OS's level in windowed runs (macOS NSProcessInfo.thermalState; unknown elsewhere) and none headless [platform/ThermalState.cpp] | 1 |
 | `MILO_VIDEO` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_VIDEO_FPS` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_WEB_BUNDLE_SLICE_MS` | perf | 6 | web/assets | n/a: web only. Milliseconds of main-thread time one slice of a screen-bundle unpack may take before yielding to the browser (default 6); 0 = unpack the whole bundle in one task, the pre-W-15 behaviour (158-403 ms tasks). Same files, same bytes; only when the main thread yields changes (lane np-web4, W-15) [WebAssets.cpp] | 1 |
