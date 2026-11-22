@@ -67,9 +67,9 @@ _ZN10MidiReader14ReadSomeEventsEi	func	assert-unreachable
 _ZN10MidiReaderC1ER9BinStreamR12MidiReceiverPKc	func	assert-unreachable	
 _ZN10MidiReaderD1Ev	func	assert-unreachable	
 _ZN10NetSession10DisconnectEv	func	assert-unreachable	
-_ZN10NetSession12SendMsgToAllER10NetMessage10PacketType	func	assert-unreachable	
+_ZN10NetSession12SendMsgToAllER10NetMessage10PacketType	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; retail returns at once when offline (NetSession.cpp:884-888, !IsOnlineEnabled() || !mQNet); native is always offline (rb3_netsession_native.cpp), so callers GamePanel 577/582, Player 1065, Performer 258, AccomplishmentManager 970/977 get exactly retail offline behaviour
 _ZN10NetSession14RegisterOnlineEv	func	assert-unreachable	
-_ZN10NetSession14UpdateUserDataEP4Userj	func	assert-unreachable	
+_ZN10NetSession14UpdateUserDataEP4Userj	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; retail only sends UpdateUserDataMsg to session peers (NetSession.cpp UpdateUserData); native offline session has no peers, so BandUser::UpdateData:286 loses nothing
 _ZN10NetSession15RemoveLocalUserEP9LocalUser	func	assert-unreachable	
 _ZN10NetSession4JoinEP15NetSearchResult	func	assert-unreachable	
 _ZN10NetSession7EndGameEibf	func	assert-unreachable	
@@ -144,7 +144,7 @@ _ZN11SetlistSort16BuildSetlistListEv	func	assert-unreachable
 _ZN11SetlistSort16BuildSetlistTreeERSt3mapI6Symbol13SetlistRecordSt4lessIS1_ESaISt4pairIKS1_S2_EEE	func	assert-unreachable	
 _ZN11SingerStats17SetPartPercentageEif	func	assert-unreachable	
 _ZN11SingerStats21SetPitchDeviationInfoEff	func	assert-unreachable	
-_ZN11UIListState8ProviderEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op)
+_ZN11UIListState8ProviderEv	func	ok-noop	hit during boot smoke 2026-07-05; returns 0 accepted (platform/offline/no-video no-op) | 2026-11-22 rb3-wii-clean: NOT a no-op. Retail returns mProvider; the inline definition in UIListState.cpp is never emitted natively, so this stub answers nullptr. Emitting it (clean/provider_fix_negative.diff) makes song select abort at UIListState.cpp:196 MILO_ASSERT(provider) via a DTA set_provider (BandList::Handle). Fix that downstream gap first.
 _ZN11VocalPhraseC1Ev	func	assert-unreachable	
 _ZN12BandDirector14HarvestDircutsEv	func	assert-unreachable	
 _ZN12BandDirector19ReadyForMidiParsersEv	func	assert-unreachable	

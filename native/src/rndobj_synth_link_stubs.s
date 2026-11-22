@@ -279,8 +279,8 @@ __hmx_tramp_rs_21:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN12AsyncFileWii14FileExistsOnCDEPKc
-    .set _ZN12AsyncFileWii14FileExistsOnCDEPKc, __hmx_tramp_rs_21
+    .weak _ZN12BandDirector12IsMusicVideoEv
+    .set _ZN12BandDirector12IsMusicVideoEv, __hmx_tramp_rs_21
     .p2align 4
 __hmx_tramp_rs_22:
     cmpb $0, __hmx_latch_rs_22(%rip)
@@ -290,8 +290,8 @@ __hmx_tramp_rs_22:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN12BandDirector12IsMusicVideoEv
-    .set _ZN12BandDirector12IsMusicVideoEv, __hmx_tramp_rs_22
+    .weak _ZN12WaveFileDataC1ER8WaveFile
+    .set _ZN12WaveFileDataC1ER8WaveFile, __hmx_tramp_rs_22
     .p2align 4
 __hmx_tramp_rs_23:
     cmpb $0, __hmx_latch_rs_23(%rip)
@@ -301,8 +301,8 @@ __hmx_tramp_rs_23:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN12WaveFileDataC1ER8WaveFile
-    .set _ZN12WaveFileDataC1ER8WaveFile, __hmx_tramp_rs_23
+    .weak _ZN12WaveFileDataD1Ev
+    .set _ZN12WaveFileDataD1Ev, __hmx_tramp_rs_23
     .p2align 4
 __hmx_tramp_rs_24:
     cmpb $0, __hmx_latch_rs_24(%rip)
@@ -312,8 +312,8 @@ __hmx_tramp_rs_24:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN12WaveFileDataD1Ev
-    .set _ZN12WaveFileDataD1Ev, __hmx_tramp_rs_24
+    .weak _ZN13STRIPERRESULT19AllocLengthsAndRunsEii
+    .set _ZN13STRIPERRESULT19AllocLengthsAndRunsEii, __hmx_tramp_rs_24
     .p2align 4
 __hmx_tramp_rs_25:
     cmpb $0, __hmx_latch_rs_25(%rip)
@@ -323,8 +323,8 @@ __hmx_tramp_rs_25:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13STRIPERRESULT19AllocLengthsAndRunsEii
-    .set _ZN13STRIPERRESULT19AllocLengthsAndRunsEii, __hmx_tramp_rs_25
+    .weak _ZN13STRIPERRESULTC1ERKS_
+    .set _ZN13STRIPERRESULTC1ERKS_, __hmx_tramp_rs_25
     .p2align 4
 __hmx_tramp_rs_26:
     cmpb $0, __hmx_latch_rs_26(%rip)
@@ -334,8 +334,8 @@ __hmx_tramp_rs_26:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13STRIPERRESULTC1ERKS_
-    .set _ZN13STRIPERRESULTC1ERKS_, __hmx_tramp_rs_26
+    .weak _ZN13STRIPERRESULTC1Ev
+    .set _ZN13STRIPERRESULTC1Ev, __hmx_tramp_rs_26
     .p2align 4
 __hmx_tramp_rs_27:
     cmpb $0, __hmx_latch_rs_27(%rip)
@@ -345,8 +345,8 @@ __hmx_tramp_rs_27:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13STRIPERRESULTC1Ev
-    .set _ZN13STRIPERRESULTC1Ev, __hmx_tramp_rs_27
+    .weak _ZN13STRIPERRESULTD1Ev
+    .set _ZN13STRIPERRESULTD1Ev, __hmx_tramp_rs_27
     .p2align 4
 __hmx_tramp_rs_28:
     cmpb $0, __hmx_latch_rs_28(%rip)
@@ -356,8 +356,8 @@ __hmx_tramp_rs_28:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13STRIPERRESULTD1Ev
-    .set _ZN13STRIPERRESULTD1Ev, __hmx_tramp_rs_28
+    .weak _ZN13STRIPERRESULTaSERKS_
+    .set _ZN13STRIPERRESULTaSERKS_, __hmx_tramp_rs_28
     .p2align 4
 __hmx_tramp_rs_29:
     cmpb $0, __hmx_latch_rs_29(%rip)
@@ -367,8 +367,8 @@ __hmx_tramp_rs_29:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13STRIPERRESULTaSERKS_
-    .set _ZN13STRIPERRESULTaSERKS_, __hmx_tramp_rs_29
+    .weak _ZN14StandardStream23sReportLargeTimerErrorsE
+    .set _ZN14StandardStream23sReportLargeTimerErrorsE, __hmx_tramp_rs_29
     .p2align 4
 __hmx_tramp_rs_30:
     cmpb $0, __hmx_latch_rs_30(%rip)
@@ -378,8 +378,8 @@ __hmx_tramp_rs_30:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN14StandardStream23sReportLargeTimerErrorsE
-    .set _ZN14StandardStream23sReportLargeTimerErrorsE, __hmx_tramp_rs_30
+    .weak _ZN6RndTex10SyncBitmapEv
+    .set _ZN6RndTex10SyncBitmapEv, __hmx_tramp_rs_30
     .p2align 4
 __hmx_tramp_rs_31:
     cmpb $0, __hmx_latch_rs_31(%rip)
@@ -389,8 +389,8 @@ __hmx_tramp_rs_31:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN6RndTex10SyncBitmapEv
-    .set _ZN6RndTex10SyncBitmapEv, __hmx_tramp_rs_31
+    .weak _ZN6RndTex13PresyncBitmapEv
+    .set _ZN6RndTex13PresyncBitmapEv, __hmx_tramp_rs_31
     .p2align 4
 __hmx_tramp_rs_32:
     cmpb $0, __hmx_latch_rs_32(%rip)
@@ -400,8 +400,8 @@ __hmx_tramp_rs_32:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN6RndTex13PresyncBitmapEv
-    .set _ZN6RndTex13PresyncBitmapEv, __hmx_tramp_rs_32
+    .weak _ZN6RndTex14MakeDrawTargetEv
+    .set _ZN6RndTex14MakeDrawTargetEv, __hmx_tramp_rs_32
     .p2align 4
 __hmx_tramp_rs_33:
     cmpb $0, __hmx_latch_rs_33(%rip)
@@ -411,8 +411,8 @@ __hmx_tramp_rs_33:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN6RndTex14MakeDrawTargetEv
-    .set _ZN6RndTex14MakeDrawTargetEv, __hmx_tramp_rs_33
+    .weak _ZN6RndTex16FinishDrawTargetEv
+    .set _ZN6RndTex16FinishDrawTargetEv, __hmx_tramp_rs_33
     .p2align 4
 __hmx_tramp_rs_34:
     cmpb $0, __hmx_latch_rs_34(%rip)
@@ -422,8 +422,8 @@ __hmx_tramp_rs_34:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN6RndTex16FinishDrawTargetEv
-    .set _ZN6RndTex16FinishDrawTargetEv, __hmx_tramp_rs_34
+    .weak _ZN6WiiRnd18GetProgressiveScanEv
+    .set _ZN6WiiRnd18GetProgressiveScanEv, __hmx_tramp_rs_34
     .p2align 4
 __hmx_tramp_rs_35:
     cmpb $0, __hmx_latch_rs_35(%rip)
@@ -433,8 +433,8 @@ __hmx_tramp_rs_35:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN6WiiRnd18GetProgressiveScanEv
-    .set _ZN6WiiRnd18GetProgressiveScanEv, __hmx_tramp_rs_35
+    .weak _ZN7RndMesh11DrawShowingEv
+    .set _ZN7RndMesh11DrawShowingEv, __hmx_tramp_rs_35
     .p2align 4
 __hmx_tramp_rs_36:
     cmpb $0, __hmx_latch_rs_36(%rip)
@@ -444,8 +444,8 @@ __hmx_tramp_rs_36:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN7RndMesh11DrawShowingEv
-    .set _ZN7RndMesh11DrawShowingEv, __hmx_tramp_rs_36
+    .weak _ZN7RndMesh6OnSyncEi
+    .set _ZN7RndMesh6OnSyncEi, __hmx_tramp_rs_36
     .p2align 4
 __hmx_tramp_rs_37:
     cmpb $0, __hmx_latch_rs_37(%rip)
@@ -455,8 +455,8 @@ __hmx_tramp_rs_37:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN7RndMesh6OnSyncEi
-    .set _ZN7RndMesh6OnSyncEi, __hmx_tramp_rs_37
+    .weak _ZN7Striper4InitER13STRIPERCREATE
+    .set _ZN7Striper4InitER13STRIPERCREATE, __hmx_tramp_rs_37
     .p2align 4
 __hmx_tramp_rs_38:
     cmpb $0, __hmx_latch_rs_38(%rip)
@@ -466,8 +466,8 @@ __hmx_tramp_rs_38:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN7Striper4InitER13STRIPERCREATE
-    .set _ZN7Striper4InitER13STRIPERCREATE, __hmx_tramp_rs_38
+    .weak _ZN7Striper7ComputeER13STRIPERRESULT
+    .set _ZN7Striper7ComputeER13STRIPERRESULT, __hmx_tramp_rs_38
     .p2align 4
 __hmx_tramp_rs_39:
     cmpb $0, __hmx_latch_rs_39(%rip)
@@ -477,8 +477,8 @@ __hmx_tramp_rs_39:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN7Striper7ComputeER13STRIPERRESULT
-    .set _ZN7Striper7ComputeER13STRIPERRESULT, __hmx_tramp_rs_39
+    .weak _ZN8KeyChain10getNumKeysEv
+    .set _ZN8KeyChain10getNumKeysEv, __hmx_tramp_rs_39
     .p2align 4
 __hmx_tramp_rs_40:
     cmpb $0, __hmx_latch_rs_40(%rip)
@@ -488,8 +488,8 @@ __hmx_tramp_rs_40:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN8KeyChain10getNumKeysEv
-    .set _ZN8KeyChain10getNumKeysEv, __hmx_tramp_rs_40
+    .weak _ZN8KeyChain9getMasherEPh
+    .set _ZN8KeyChain9getMasherEPh, __hmx_tramp_rs_40
     .p2align 4
 __hmx_tramp_rs_41:
     cmpb $0, __hmx_latch_rs_41(%rip)
@@ -499,8 +499,8 @@ __hmx_tramp_rs_41:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN8KeyChain9getMasherEPh
-    .set _ZN8KeyChain9getMasherEPh, __hmx_tramp_rs_41
+    .weak _ZN8WaveFileC1ER9BinStream
+    .set _ZN8WaveFileC1ER9BinStream, __hmx_tramp_rs_41
     .p2align 4
 __hmx_tramp_rs_42:
     cmpb $0, __hmx_latch_rs_42(%rip)
@@ -510,8 +510,8 @@ __hmx_tramp_rs_42:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN8WaveFileC1ER9BinStream
-    .set _ZN8WaveFileC1ER9BinStream, __hmx_tramp_rs_42
+    .weak _ZN8WaveFileD1Ev
+    .set _ZN8WaveFileD1Ev, __hmx_tramp_rs_42
     .p2align 4
 __hmx_tramp_rs_43:
     cmpb $0, __hmx_latch_rs_43(%rip)
@@ -521,8 +521,8 @@ __hmx_tramp_rs_43:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN8WaveFileD1Ev
-    .set _ZN8WaveFileD1Ev, __hmx_tramp_rs_43
+    .weak _ZN9Transform6LookAtERK7Vector3S2_
+    .set _ZN9Transform6LookAtERK7Vector3S2_, __hmx_tramp_rs_43
     .p2align 4
 __hmx_tramp_rs_44:
     cmpb $0, __hmx_latch_rs_44(%rip)
@@ -532,8 +532,8 @@ __hmx_tramp_rs_44:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9Transform6LookAtERK7Vector3S2_
-    .set _ZN9Transform6LookAtERK7Vector3S2_, __hmx_tramp_rs_44
+    .weak _ZTV7BufFile
+    .set _ZTV7BufFile, __hmx_tramp_rs_44
     .p2align 4
 __hmx_tramp_rs_45:
     cmpb $0, __hmx_latch_rs_45(%rip)
@@ -543,8 +543,8 @@ __hmx_tramp_rs_45:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTV7BufFile
-    .set _ZTV7BufFile, __hmx_tramp_rs_45
+    .weak ctr_decrypt
+    .set ctr_decrypt, __hmx_tramp_rs_45
     .p2align 4
 __hmx_tramp_rs_46:
     cmpb $0, __hmx_latch_rs_46(%rip)
@@ -554,8 +554,8 @@ __hmx_tramp_rs_46:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak ctr_decrypt
-    .set ctr_decrypt, __hmx_tramp_rs_46
+    .weak ctr_reinit
+    .set ctr_reinit, __hmx_tramp_rs_46
     .p2align 4
 __hmx_tramp_rs_47:
     cmpb $0, __hmx_latch_rs_47(%rip)
@@ -565,8 +565,8 @@ __hmx_tramp_rs_47:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak ctr_reinit
-    .set ctr_reinit, __hmx_tramp_rs_47
+    .weak ctr_start
+    .set ctr_start, __hmx_tramp_rs_47
     .p2align 4
 __hmx_tramp_rs_48:
     cmpb $0, __hmx_latch_rs_48(%rip)
@@ -576,8 +576,8 @@ __hmx_tramp_rs_48:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak ctr_start
-    .set ctr_start, __hmx_tramp_rs_48
+    .weak gDebugFullQuota
+    .set gDebugFullQuota, __hmx_tramp_rs_48
     .p2align 4
 __hmx_tramp_rs_49:
     cmpb $0, __hmx_latch_rs_49(%rip)
@@ -587,8 +587,8 @@ __hmx_tramp_rs_49:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak gDebugFullQuota
-    .set gDebugFullQuota, __hmx_tramp_rs_49
+    .weak register_cipher
+    .set register_cipher, __hmx_tramp_rs_49
     .p2align 4
 __hmx_tramp_rs_50:
     cmpb $0, __hmx_latch_rs_50(%rip)
@@ -598,8 +598,8 @@ __hmx_tramp_rs_50:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak register_cipher
-    .set register_cipher, __hmx_tramp_rs_50
+    .weak rijndael_desc
+    .set rijndael_desc, __hmx_tramp_rs_50
     .p2align 4
 __hmx_tramp_rs_51:
     cmpb $0, __hmx_latch_rs_51(%rip)
@@ -609,8 +609,8 @@ __hmx_tramp_rs_51:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak rijndael_desc
-    .set rijndael_desc, __hmx_tramp_rs_51
+    .weak rijndael_ecb_decrypt
+    .set rijndael_ecb_decrypt, __hmx_tramp_rs_51
     .p2align 4
 __hmx_tramp_rs_52:
     cmpb $0, __hmx_latch_rs_52(%rip)
@@ -620,19 +620,8 @@ __hmx_tramp_rs_52:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak rijndael_ecb_decrypt
-    .set rijndael_ecb_decrypt, __hmx_tramp_rs_52
-    .p2align 4
-__hmx_tramp_rs_53:
-    cmpb $0, __hmx_latch_rs_53(%rip)
-    jne 1f
-    movb $1, __hmx_latch_rs_53(%rip)
-    leaq __hmx_name_rs_53(%rip), %rdi
-    call __hmx_stub_first_hit@PLT
-1:  xorl %eax, %eax
-    ret
     .weak rijndael_setup
-    .set rijndael_setup, __hmx_tramp_rs_53
+    .set rijndael_setup, __hmx_tramp_rs_52
 
     .section .rodata
 __hmx_name_rs_0:
@@ -678,70 +667,68 @@ __hmx_name_rs_19:
 __hmx_name_rs_20:
     .asciz "_ZN11SynthSample7NewInstEbii"
 __hmx_name_rs_21:
-    .asciz "_ZN12AsyncFileWii14FileExistsOnCDEPKc"
-__hmx_name_rs_22:
     .asciz "_ZN12BandDirector12IsMusicVideoEv"
-__hmx_name_rs_23:
+__hmx_name_rs_22:
     .asciz "_ZN12WaveFileDataC1ER8WaveFile"
-__hmx_name_rs_24:
+__hmx_name_rs_23:
     .asciz "_ZN12WaveFileDataD1Ev"
-__hmx_name_rs_25:
+__hmx_name_rs_24:
     .asciz "_ZN13STRIPERRESULT19AllocLengthsAndRunsEii"
-__hmx_name_rs_26:
+__hmx_name_rs_25:
     .asciz "_ZN13STRIPERRESULTC1ERKS_"
-__hmx_name_rs_27:
+__hmx_name_rs_26:
     .asciz "_ZN13STRIPERRESULTC1Ev"
-__hmx_name_rs_28:
+__hmx_name_rs_27:
     .asciz "_ZN13STRIPERRESULTD1Ev"
-__hmx_name_rs_29:
+__hmx_name_rs_28:
     .asciz "_ZN13STRIPERRESULTaSERKS_"
-__hmx_name_rs_30:
+__hmx_name_rs_29:
     .asciz "_ZN14StandardStream23sReportLargeTimerErrorsE"
-__hmx_name_rs_31:
+__hmx_name_rs_30:
     .asciz "_ZN6RndTex10SyncBitmapEv"
-__hmx_name_rs_32:
+__hmx_name_rs_31:
     .asciz "_ZN6RndTex13PresyncBitmapEv"
-__hmx_name_rs_33:
+__hmx_name_rs_32:
     .asciz "_ZN6RndTex14MakeDrawTargetEv"
-__hmx_name_rs_34:
+__hmx_name_rs_33:
     .asciz "_ZN6RndTex16FinishDrawTargetEv"
-__hmx_name_rs_35:
+__hmx_name_rs_34:
     .asciz "_ZN6WiiRnd18GetProgressiveScanEv"
-__hmx_name_rs_36:
+__hmx_name_rs_35:
     .asciz "_ZN7RndMesh11DrawShowingEv"
-__hmx_name_rs_37:
+__hmx_name_rs_36:
     .asciz "_ZN7RndMesh6OnSyncEi"
-__hmx_name_rs_38:
+__hmx_name_rs_37:
     .asciz "_ZN7Striper4InitER13STRIPERCREATE"
-__hmx_name_rs_39:
+__hmx_name_rs_38:
     .asciz "_ZN7Striper7ComputeER13STRIPERRESULT"
-__hmx_name_rs_40:
+__hmx_name_rs_39:
     .asciz "_ZN8KeyChain10getNumKeysEv"
-__hmx_name_rs_41:
+__hmx_name_rs_40:
     .asciz "_ZN8KeyChain9getMasherEPh"
-__hmx_name_rs_42:
+__hmx_name_rs_41:
     .asciz "_ZN8WaveFileC1ER9BinStream"
-__hmx_name_rs_43:
+__hmx_name_rs_42:
     .asciz "_ZN8WaveFileD1Ev"
-__hmx_name_rs_44:
+__hmx_name_rs_43:
     .asciz "_ZN9Transform6LookAtERK7Vector3S2_"
-__hmx_name_rs_45:
+__hmx_name_rs_44:
     .asciz "_ZTV7BufFile"
-__hmx_name_rs_46:
+__hmx_name_rs_45:
     .asciz "ctr_decrypt"
-__hmx_name_rs_47:
+__hmx_name_rs_46:
     .asciz "ctr_reinit"
-__hmx_name_rs_48:
+__hmx_name_rs_47:
     .asciz "ctr_start"
-__hmx_name_rs_49:
+__hmx_name_rs_48:
     .asciz "gDebugFullQuota"
-__hmx_name_rs_50:
+__hmx_name_rs_49:
     .asciz "register_cipher"
-__hmx_name_rs_51:
+__hmx_name_rs_50:
     .asciz "rijndael_desc"
-__hmx_name_rs_52:
+__hmx_name_rs_51:
     .asciz "rijndael_ecb_decrypt"
-__hmx_name_rs_53:
+__hmx_name_rs_52:
     .asciz "rijndael_setup"
 
     .bss
@@ -851,8 +838,6 @@ __hmx_latch_rs_50:
 __hmx_latch_rs_51:
     .zero 1
 __hmx_latch_rs_52:
-    .zero 1
-__hmx_latch_rs_53:
     .zero 1
 
     // ---- DATA stubs (each: own writable zero-filled reservation) ----

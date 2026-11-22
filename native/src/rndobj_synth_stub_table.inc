@@ -31,7 +31,6 @@ static const HmxRndSynthStubInfo kHmxRndSynthStubTable[] = {
     { "_Z22DrawParticlesBillboardP14RndParticleSys", 'F', 'A' },
     { "_Z25HolmesClientCacheResourcePKcS0_", 'F', 'A' },
     { "_ZN11SynthSample7NewInstEbii", 'F', 'A' },
-    { "_ZN12AsyncFileWii14FileExistsOnCDEPKc", 'F', 'A' },
     { "_ZN12BandDirector12IsMusicVideoEv", 'F', 'A' },
     { "_ZN12WaveFileDataC1ER8WaveFile", 'F', 'A' },
     { "_ZN12WaveFileDataD1Ev", 'F', 'A' },
@@ -66,6 +65,6 @@ static const HmxRndSynthStubInfo kHmxRndSynthStubTable[] = {
     { "rijndael_setup", 'F', 'A' },
 };
 
-static const int kHmxRndSynthStubTotal = 54;
-static const int kHmxRndSynthStubFunc  = 54;
+static const int kHmxRndSynthStubTotal = 53;
+static const int kHmxRndSynthStubFunc  = 53;
 static const int kHmxRndSynthStubData  = 0;

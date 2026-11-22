@@ -484,8 +484,8 @@ __hmx_tramp_dta_38:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z11FileIsLocalPKc
-    .set _Z11FileIsLocalPKc, __hmx_tramp_dta_38
+    .weak _Z11JoypadResetv
+    .set _Z11JoypadResetv, __hmx_tramp_dta_38
     .p2align 4
 __hmx_tramp_dta_39:
     cmpb $0, __hmx_latch_dta_39(%rip)
@@ -495,8 +495,8 @@ __hmx_tramp_dta_39:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z11JoypadResetv
-    .set _Z11JoypadResetv, __hmx_tramp_dta_39
+    .weak _Z11UsingHolmesi
+    .set _Z11UsingHolmesi, __hmx_tramp_dta_39
     .p2align 4
 __hmx_tramp_dta_40:
     cmpb $0, __hmx_latch_dta_40(%rip)
@@ -506,8 +506,8 @@ __hmx_tramp_dta_40:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z11UsingHolmesi
-    .set _Z11UsingHolmesi, __hmx_tramp_dta_40
+    .weak _Z12KeyboardInitv
+    .set _Z12KeyboardInitv, __hmx_tramp_dta_40
     .p2align 4
 __hmx_tramp_dta_41:
     cmpb $0, __hmx_latch_dta_41(%rip)
@@ -517,8 +517,8 @@ __hmx_tramp_dta_41:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z12KeyboardInitv
-    .set _Z12KeyboardInitv, __hmx_tramp_dta_41
+    .weak _Z12KeyboardPollv
+    .set _Z12KeyboardPollv, __hmx_tramp_dta_41
     .p2align 4
 __hmx_tramp_dta_42:
     cmpb $0, __hmx_latch_dta_42(%rip)
@@ -528,8 +528,8 @@ __hmx_tramp_dta_42:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z12KeyboardPollv
-    .set _Z12KeyboardPollv, __hmx_tramp_dta_42
+    .weak _Z13CacheResourcePKcPN3Hmx6ObjectE
+    .set _Z13CacheResourcePKcPN3Hmx6ObjectE, __hmx_tramp_dta_42
     .p2align 4
 __hmx_tramp_dta_43:
     cmpb $0, __hmx_latch_dta_43(%rip)
@@ -539,8 +539,8 @@ __hmx_tramp_dta_43:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z13CacheResourcePKcPN3Hmx6ObjectE
-    .set _Z13CacheResourcePKcPN3Hmx6ObjectE, __hmx_tramp_dta_43
+    .weak _Z13RndGxDrawDonev
+    .set _Z13RndGxDrawDonev, __hmx_tramp_dta_43
     .p2align 4
 __hmx_tramp_dta_44:
     cmpb $0, __hmx_latch_dta_44(%rip)
@@ -550,8 +550,8 @@ __hmx_tramp_dta_44:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z13RndGxDrawDonev
-    .set _Z13RndGxDrawDonev, __hmx_tramp_dta_44
+    .weak _Z14CDReadExternalRP11DVDFileInfoiy
+    .set _Z14CDReadExternalRP11DVDFileInfoiy, __hmx_tramp_dta_44
     .p2align 4
 __hmx_tramp_dta_45:
     cmpb $0, __hmx_latch_dta_45(%rip)
@@ -561,8 +561,8 @@ __hmx_tramp_dta_45:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z14CDReadExternalRP11DVDFileInfoiy
-    .set _Z14CDReadExternalRP11DVDFileInfoiy, __hmx_tramp_dta_45
+    .weak _Z14GetMapFileNameR6String
+    .set _Z14GetMapFileNameR6String, __hmx_tramp_dta_45
     .p2align 4
 __hmx_tramp_dta_46:
     cmpb $0, __hmx_latch_dta_46(%rip)
@@ -572,8 +572,8 @@ __hmx_tramp_dta_46:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z14GetMapFileNameR6String
-    .set _Z14GetMapFileNameR6String, __hmx_tramp_dta_46
+    .weak _Z14ThreadCallInitv
+    .set _Z14ThreadCallInitv, __hmx_tramp_dta_46
     .p2align 4
 __hmx_tramp_dta_47:
     cmpb $0, __hmx_latch_dta_47(%rip)
@@ -583,8 +583,8 @@ __hmx_tramp_dta_47:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z14ThreadCallInitv
-    .set _Z14ThreadCallInitv, __hmx_tramp_dta_47
+    .weak _Z14ThreadCallPollv
+    .set _Z14ThreadCallPollv, __hmx_tramp_dta_47
     .p2align 4
 __hmx_tramp_dta_48:
     cmpb $0, __hmx_latch_dta_48(%rip)
@@ -594,8 +594,8 @@ __hmx_tramp_dta_48:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z14ThreadCallPollv
-    .set _Z14ThreadCallPollv, __hmx_tramp_dta_48
+    .weak _Z15HolmesResolveIPv
+    .set _Z15HolmesResolveIPv, __hmx_tramp_dta_48
     .p2align 4
 __hmx_tramp_dta_49:
     cmpb $0, __hmx_latch_dta_49(%rip)
@@ -605,8 +605,8 @@ __hmx_tramp_dta_49:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z15HolmesResolveIPv
-    .set _Z15HolmesResolveIPv, __hmx_tramp_dta_49
+    .weak _Z15InitDefaultHeapv
+    .set _Z15InitDefaultHeapv, __hmx_tramp_dta_49
     .p2align 4
 __hmx_tramp_dta_50:
     cmpb $0, __hmx_latch_dta_50(%rip)
@@ -616,8 +616,8 @@ __hmx_tramp_dta_50:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z15InitDefaultHeapv
-    .set _Z15InitDefaultHeapv, __hmx_tramp_dta_50
+    .weak _Z15JoypadTerminatev
+    .set _Z15JoypadTerminatev, __hmx_tramp_dta_50
     .p2align 4
 __hmx_tramp_dta_51:
     cmpb $0, __hmx_latch_dta_51(%rip)
@@ -627,8 +627,8 @@ __hmx_tramp_dta_51:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z15JoypadTerminatev
-    .set _Z15JoypadTerminatev, __hmx_tramp_dta_51
+    .weak _Z16GetWiiJoypadTypei
+    .set _Z16GetWiiJoypadTypei, __hmx_tramp_dta_51
     .p2align 4
 __hmx_tramp_dta_52:
     cmpb $0, __hmx_latch_dta_52(%rip)
@@ -638,8 +638,8 @@ __hmx_tramp_dta_52:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z16GetWiiJoypadTypei
-    .set _Z16GetWiiJoypadTypei, __hmx_tramp_dta_52
+    .weak _Z16HolmesClientInitv
+    .set _Z16HolmesClientInitv, __hmx_tramp_dta_52
     .p2align 4
 __hmx_tramp_dta_53:
     cmpb $0, __hmx_latch_dta_53(%rip)
@@ -649,8 +649,8 @@ __hmx_tramp_dta_53:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z16HolmesClientInitv
-    .set _Z16HolmesClientInitv, __hmx_tramp_dta_53
+    .weak _Z16HolmesClientOpenPKciRjRi
+    .set _Z16HolmesClientOpenPKciRjRi, __hmx_tramp_dta_53
     .p2align 4
 __hmx_tramp_dta_54:
     cmpb $0, __hmx_latch_dta_54(%rip)
@@ -660,8 +660,8 @@ __hmx_tramp_dta_54:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z16HolmesClientOpenPKciRjRi
-    .set _Z16HolmesClientOpenPKciRjRi, __hmx_tramp_dta_54
+    .weak _Z16HolmesClientPollv
+    .set _Z16HolmesClientPollv, __hmx_tramp_dta_54
     .p2align 4
 __hmx_tramp_dta_55:
     cmpb $0, __hmx_latch_dta_55(%rip)
@@ -671,8 +671,8 @@ __hmx_tramp_dta_55:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z16HolmesClientPollv
-    .set _Z16HolmesClientPollv, __hmx_tramp_dta_55
+    .weak _Z16HolmesClientReadiiiPvP4File
+    .set _Z16HolmesClientReadiiiPvP4File, __hmx_tramp_dta_55
     .p2align 4
 __hmx_tramp_dta_56:
     cmpb $0, __hmx_latch_dta_56(%rip)
@@ -682,8 +682,8 @@ __hmx_tramp_dta_56:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z16HolmesClientReadiiiPvP4File
-    .set _Z16HolmesClientReadiiiPvP4File, __hmx_tramp_dta_56
+    .weak _Z17CaptureStackTraceiPj
+    .set _Z17CaptureStackTraceiPj, __hmx_tramp_dta_56
     .p2align 4
 __hmx_tramp_dta_57:
     cmpb $0, __hmx_latch_dta_57(%rip)
@@ -693,8 +693,8 @@ __hmx_tramp_dta_57:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z17CaptureStackTraceiPj
-    .set _Z17CaptureStackTraceiPj, __hmx_tramp_dta_57
+    .weak _Z17GetSystemLanguage6Symbol
+    .set _Z17GetSystemLanguage6Symbol, __hmx_tramp_dta_57
     .p2align 4
 __hmx_tramp_dta_58:
     cmpb $0, __hmx_latch_dta_58(%rip)
@@ -704,8 +704,8 @@ __hmx_tramp_dta_58:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z17GetSystemLanguage6Symbol
-    .set _Z17GetSystemLanguage6Symbol, __hmx_tramp_dta_58
+    .weak _Z17HolmesClientCloseP4Filei
+    .set _Z17HolmesClientCloseP4Filei, __hmx_tramp_dta_58
     .p2align 4
 __hmx_tramp_dta_59:
     cmpb $0, __hmx_latch_dta_59(%rip)
@@ -715,8 +715,8 @@ __hmx_tramp_dta_59:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z17HolmesClientCloseP4Filei
-    .set _Z17HolmesClientCloseP4Filei, __hmx_tramp_dta_59
+    .weak _Z17HolmesClientPrintPKc
+    .set _Z17HolmesClientPrintPKc, __hmx_tramp_dta_59
     .p2align 4
 __hmx_tramp_dta_60:
     cmpb $0, __hmx_latch_dta_60(%rip)
@@ -726,8 +726,8 @@ __hmx_tramp_dta_60:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z17HolmesClientPrintPKc
-    .set _Z17HolmesClientPrintPKc, __hmx_tramp_dta_60
+    .weak _Z17HolmesClientWriteiiiPKv
+    .set _Z17HolmesClientWriteiiiPKv, __hmx_tramp_dta_60
     .p2align 4
 __hmx_tramp_dta_61:
     cmpb $0, __hmx_latch_dta_61(%rip)
@@ -737,8 +737,8 @@ __hmx_tramp_dta_61:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z17HolmesClientWriteiiiPKv
-    .set _Z17HolmesClientWriteiiiPKv, __hmx_tramp_dta_61
+    .weak _Z17KeyboardTerminatev
+    .set _Z17KeyboardTerminatev, __hmx_tramp_dta_61
     .p2align 4
 __hmx_tramp_dta_62:
     cmpb $0, __hmx_latch_dta_62(%rip)
@@ -748,8 +748,8 @@ __hmx_tramp_dta_62:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z17KeyboardTerminatev
-    .set _Z17KeyboardTerminatev, __hmx_tramp_dta_62
+    .weak _Z17ThreadCallPreInitv
+    .set _Z17ThreadCallPreInitv, __hmx_tramp_dta_62
     .p2align 4
 __hmx_tramp_dta_63:
     cmpb $0, __hmx_latch_dta_63(%rip)
@@ -759,8 +759,8 @@ __hmx_tramp_dta_63:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z17ThreadCallPreInitv
-    .set _Z17ThreadCallPreInitv, __hmx_tramp_dta_63
+    .weak _Z18HolmesClientReInitv
+    .set _Z18HolmesClientReInitv, __hmx_tramp_dta_63
     .p2align 4
 __hmx_tramp_dta_64:
     cmpb $0, __hmx_latch_dta_64(%rip)
@@ -770,8 +770,8 @@ __hmx_tramp_dta_64:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z18HolmesClientReInitv
-    .set _Z18HolmesClientReInitv, __hmx_tramp_dta_64
+    .weak _Z18PlatformDebugBreakv
+    .set _Z18PlatformDebugBreakv, __hmx_tramp_dta_64
     .p2align 4
 __hmx_tramp_dta_65:
     cmpb $0, __hmx_latch_dta_65(%rip)
@@ -781,8 +781,8 @@ __hmx_tramp_dta_65:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z18PlatformDebugBreakv
-    .set _Z18PlatformDebugBreakv, __hmx_tramp_dta_65
+    .weak _Z19HolmesClientSysExecPKc
+    .set _Z19HolmesClientSysExecPKc, __hmx_tramp_dta_65
     .p2align 4
 __hmx_tramp_dta_66:
     cmpb $0, __hmx_latch_dta_66(%rip)
@@ -792,8 +792,8 @@ __hmx_tramp_dta_66:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z19HolmesClientSysExecPKc
-    .set _Z19HolmesClientSysExecPKc, __hmx_tramp_dta_66
+    .weak _Z19ThreadCallTerminatev
+    .set _Z19ThreadCallTerminatev, __hmx_tramp_dta_66
     .p2align 4
 __hmx_tramp_dta_67:
     cmpb $0, __hmx_latch_dta_67(%rip)
@@ -803,8 +803,8 @@ __hmx_tramp_dta_67:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z19ThreadCallTerminatev
-    .set _Z19ThreadCallTerminatev, __hmx_tramp_dta_67
+    .weak _Z20HolmesClientReadDoneP4File
+    .set _Z20HolmesClientReadDoneP4File, __hmx_tramp_dta_67
     .p2align 4
 __hmx_tramp_dta_68:
     cmpb $0, __hmx_latch_dta_68(%rip)
@@ -814,8 +814,8 @@ __hmx_tramp_dta_68:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z20HolmesClientReadDoneP4File
-    .set _Z20HolmesClientReadDoneP4File, __hmx_tramp_dta_68
+    .weak _Z20HolmesClientTruncateii
+    .set _Z20HolmesClientTruncateii, __hmx_tramp_dta_68
     .p2align 4
 __hmx_tramp_dta_69:
     cmpb $0, __hmx_latch_dta_69(%rip)
@@ -825,8 +825,8 @@ __hmx_tramp_dta_69:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z20HolmesClientTruncateii
-    .set _Z20HolmesClientTruncateii, __hmx_tramp_dta_69
+    .weak _Z21HolmesClientTerminatev
+    .set _Z21HolmesClientTerminatev, __hmx_tramp_dta_69
     .p2align 4
 __hmx_tramp_dta_70:
     cmpb $0, __hmx_latch_dta_70(%rip)
@@ -836,8 +836,8 @@ __hmx_tramp_dta_70:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z21FileQualifiedFilenamePciPKc
-    .set _Z21FileQualifiedFilenamePciPKc, __hmx_tramp_dta_70
+    .weak _Z22HolmesClientStackTracePKcPjiR6String
+    .set _Z22HolmesClientStackTracePKcPjiR6String, __hmx_tramp_dta_70
     .p2align 4
 __hmx_tramp_dta_71:
     cmpb $0, __hmx_latch_dta_71(%rip)
@@ -847,8 +847,8 @@ __hmx_tramp_dta_71:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z21HolmesClientTerminatev
-    .set _Z21HolmesClientTerminatev, __hmx_tramp_dta_71
+    .weak _Z22SetGPHangDetectEnabledbPKc
+    .set _Z22SetGPHangDetectEnabledbPKc, __hmx_tramp_dta_71
     .p2align 4
 __hmx_tramp_dta_72:
     cmpb $0, __hmx_latch_dta_72(%rip)
@@ -858,8 +858,8 @@ __hmx_tramp_dta_72:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z22HolmesClientStackTracePKcPjiR6String
-    .set _Z22HolmesClientStackTracePKcPjiR6String, __hmx_tramp_dta_72
+    .weak _Z23RB3InitNativeNetSessionv
+    .set _Z23RB3InitNativeNetSessionv, __hmx_tramp_dta_72
     .p2align 4
 __hmx_tramp_dta_73:
     cmpb $0, __hmx_latch_dta_73(%rip)
@@ -869,8 +869,8 @@ __hmx_tramp_dta_73:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z22SetGPHangDetectEnabledbPKc
-    .set _Z22SetGPHangDetectEnabledbPKc, __hmx_tramp_dta_73
+    .weak _Z27RB3MetaPerfIntegrityCheckAtPKc
+    .set _Z27RB3MetaPerfIntegrityCheckAtPKc, __hmx_tramp_dta_73
     .p2align 4
 __hmx_tramp_dta_74:
     cmpb $0, __hmx_latch_dta_74(%rip)
@@ -880,8 +880,8 @@ __hmx_tramp_dta_74:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z23RB3InitNativeNetSessionv
-    .set _Z23RB3InitNativeNetSessionv, __hmx_tramp_dta_74
+    .weak _Z6CDReadiiiPv
+    .set _Z6CDReadiiiPv, __hmx_tramp_dta_74
     .p2align 4
 __hmx_tramp_dta_75:
     cmpb $0, __hmx_latch_dta_75(%rip)
@@ -891,8 +891,8 @@ __hmx_tramp_dta_75:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z27RB3MetaPerfIntegrityCheckAtPKc
-    .set _Z27RB3MetaPerfIntegrityCheckAtPKc, __hmx_tramp_dta_75
+    .weak _Z8CacheWavPKcR19CacheResourceResult
+    .set _Z8CacheWavPKcR19CacheResourceResult, __hmx_tramp_dta_75
     .p2align 4
 __hmx_tramp_dta_76:
     cmpb $0, __hmx_latch_dta_76(%rip)
@@ -902,8 +902,8 @@ __hmx_tramp_dta_76:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z6CDReadiiiPv
-    .set _Z6CDReadiiiPv, __hmx_tramp_dta_76
+    .weak _ZN10MemcardWii4InitEv
+    .set _ZN10MemcardWii4InitEv, __hmx_tramp_dta_76
     .p2align 4
 __hmx_tramp_dta_77:
     cmpb $0, __hmx_latch_dta_77(%rip)
@@ -913,8 +913,8 @@ __hmx_tramp_dta_77:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z8CacheWavPKcR19CacheResourceResult
-    .set _Z8CacheWavPKcR19CacheResourceResult, __hmx_tramp_dta_77
+    .weak _ZN10MemcardWii9TerminateEv
+    .set _ZN10MemcardWii9TerminateEv, __hmx_tramp_dta_77
     .p2align 4
 __hmx_tramp_dta_78:
     cmpb $0, __hmx_latch_dta_78(%rip)
@@ -924,8 +924,8 @@ __hmx_tramp_dta_78:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _Z9FileIsDLCPKc
-    .set _Z9FileIsDLCPKc, __hmx_tramp_dta_78
+    .weak _ZN10MidiParser4PollEv
+    .set _ZN10MidiParser4PollEv, __hmx_tramp_dta_78
     .p2align 4
 __hmx_tramp_dta_79:
     cmpb $0, __hmx_latch_dta_79(%rip)
@@ -935,8 +935,8 @@ __hmx_tramp_dta_79:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN10MemcardWii4InitEv
-    .set _ZN10MemcardWii4InitEv, __hmx_tramp_dta_79
+    .weak _ZN10MidiParser8sParsersB5cxx11E
+    .set _ZN10MidiParser8sParsersB5cxx11E, __hmx_tramp_dta_79
     .p2align 4
 __hmx_tramp_dta_80:
     cmpb $0, __hmx_latch_dta_80(%rip)
@@ -946,8 +946,8 @@ __hmx_tramp_dta_80:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN10MemcardWii9TerminateEv
-    .set _ZN10MemcardWii9TerminateEv, __hmx_tramp_dta_80
+    .weak _ZN10RndOverlay4FindE6Symbolb
+    .set _ZN10RndOverlay4FindE6Symbolb, __hmx_tramp_dta_80
     .p2align 4
 __hmx_tramp_dta_81:
     cmpb $0, __hmx_latch_dta_81(%rip)
@@ -957,8 +957,8 @@ __hmx_tramp_dta_81:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN10MidiParser4PollEv
-    .set _ZN10MidiParser4PollEv, __hmx_tramp_dta_81
+    .weak _ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_
+    .set _ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_, __hmx_tramp_dta_81
     .p2align 4
 __hmx_tramp_dta_82:
     cmpb $0, __hmx_latch_dta_82(%rip)
@@ -968,8 +968,8 @@ __hmx_tramp_dta_82:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN10MidiParser8sParsersB5cxx11E
-    .set _ZN10MidiParser8sParsersB5cxx11E, __hmx_tramp_dta_82
+    .weak _ZN11ByteGrinder10GrindArrayEllPhii
+    .set _ZN11ByteGrinder10GrindArrayEllPhii, __hmx_tramp_dta_82
     .p2align 4
 __hmx_tramp_dta_83:
     cmpb $0, __hmx_latch_dta_83(%rip)
@@ -979,8 +979,8 @@ __hmx_tramp_dta_83:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN10RndOverlay4FindE6Symbolb
-    .set _ZN10RndOverlay4FindE6Symbolb, __hmx_tramp_dta_83
+    .weak _ZN11CacheMgrWiiC1Ev
+    .set _ZN11CacheMgrWiiC1Ev, __hmx_tramp_dta_83
     .p2align 4
 __hmx_tramp_dta_84:
     cmpb $0, __hmx_latch_dta_84(%rip)
@@ -990,8 +990,8 @@ __hmx_tramp_dta_84:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_
-    .set _ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_, __hmx_tramp_dta_84
+    .weak _ZN11FakeSongMgr13GetSongConfigE6Symbol
+    .set _ZN11FakeSongMgr13GetSongConfigE6Symbol, __hmx_tramp_dta_84
     .p2align 4
 __hmx_tramp_dta_85:
     cmpb $0, __hmx_latch_dta_85(%rip)
@@ -1001,8 +1001,8 @@ __hmx_tramp_dta_85:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11ByteGrinder10GrindArrayEllPhii
-    .set _ZN11ByteGrinder10GrindArrayEllPhii, __hmx_tramp_dta_85
+    .weak _ZN11PlatformMgr10RegionInitEv
+    .set _ZN11PlatformMgr10RegionInitEv, __hmx_tramp_dta_85
     .p2align 4
 __hmx_tramp_dta_86:
     cmpb $0, __hmx_latch_dta_86(%rip)
@@ -1012,8 +1012,8 @@ __hmx_tramp_dta_86:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11CacheMgrWiiC1Ev
-    .set _ZN11CacheMgrWiiC1Ev, __hmx_tramp_dta_86
+    .weak _ZN11PlatformMgr11ContentDoneEv
+    .set _ZN11PlatformMgr11ContentDoneEv, __hmx_tramp_dta_86
     .p2align 4
 __hmx_tramp_dta_87:
     cmpb $0, __hmx_latch_dta_87(%rip)
@@ -1023,8 +1023,8 @@ __hmx_tramp_dta_87:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11FakeSongMgr13GetSongConfigE6Symbol
-    .set _ZN11FakeSongMgr13GetSongConfigE6Symbol, __hmx_tramp_dta_87
+    .weak _ZN11PlatformMgr12SetConnectedEb
+    .set _ZN11PlatformMgr12SetConnectedEb, __hmx_tramp_dta_87
     .p2align 4
 __hmx_tramp_dta_88:
     cmpb $0, __hmx_latch_dta_88(%rip)
@@ -1034,8 +1034,8 @@ __hmx_tramp_dta_88:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr10RegionInitEv
-    .set _ZN11PlatformMgr10RegionInitEv, __hmx_tramp_dta_88
+    .weak _ZN11PlatformMgr12SetDiskErrorE9DiskError
+    .set _ZN11PlatformMgr12SetDiskErrorE9DiskError, __hmx_tramp_dta_88
     .p2align 4
 __hmx_tramp_dta_89:
     cmpb $0, __hmx_latch_dta_89(%rip)
@@ -1045,8 +1045,8 @@ __hmx_tramp_dta_89:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr11ContentDoneEv
-    .set _ZN11PlatformMgr11ContentDoneEv, __hmx_tramp_dta_89
+    .weak _ZN11PlatformMgr13ClearDWCErrorEv
+    .set _ZN11PlatformMgr13ClearDWCErrorEv, __hmx_tramp_dta_89
     .p2align 4
 __hmx_tramp_dta_90:
     cmpb $0, __hmx_latch_dta_90(%rip)
@@ -1056,8 +1056,8 @@ __hmx_tramp_dta_90:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr12SetConnectedEb
-    .set _ZN11PlatformMgr12SetConnectedEb, __hmx_tramp_dta_90
+    .weak _ZN11PlatformMgr13ClearNetErrorEv
+    .set _ZN11PlatformMgr13ClearNetErrorEv, __hmx_tramp_dta_90
     .p2align 4
 __hmx_tramp_dta_91:
     cmpb $0, __hmx_latch_dta_91(%rip)
@@ -1067,8 +1067,8 @@ __hmx_tramp_dta_91:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr12SetDiskErrorE9DiskError
-    .set _ZN11PlatformMgr12SetDiskErrorE9DiskError, __hmx_tramp_dta_91
+    .weak _ZN11PlatformMgr13OnSignInUsersEPK9DataArray
+    .set _ZN11PlatformMgr13OnSignInUsersEPK9DataArray, __hmx_tramp_dta_91
     .p2align 4
 __hmx_tramp_dta_92:
     cmpb $0, __hmx_latch_dta_92(%rip)
@@ -1078,8 +1078,8 @@ __hmx_tramp_dta_92:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr13ClearDWCErrorEv
-    .set _ZN11PlatformMgr13ClearDWCErrorEv, __hmx_tramp_dta_92
+    .weak _ZN11PlatformMgr14ContentStartedEv
+    .set _ZN11PlatformMgr14ContentStartedEv, __hmx_tramp_dta_92
     .p2align 4
 __hmx_tramp_dta_93:
     cmpb $0, __hmx_latch_dta_93(%rip)
@@ -1089,8 +1089,8 @@ __hmx_tramp_dta_93:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr13ClearNetErrorEv
-    .set _ZN11PlatformMgr13ClearNetErrorEv, __hmx_tramp_dta_93
+    .weak _ZN11PlatformMgr14SetScreenSaverEb
+    .set _ZN11PlatformMgr14SetScreenSaverEb, __hmx_tramp_dta_93
     .p2align 4
 __hmx_tramp_dta_94:
     cmpb $0, __hmx_latch_dta_94(%rip)
@@ -1100,8 +1100,8 @@ __hmx_tramp_dta_94:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr13OnSignInUsersEPK9DataArray
-    .set _ZN11PlatformMgr13OnSignInUsersEPK9DataArray, __hmx_tramp_dta_94
+    .weak _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE
+    .set _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE, __hmx_tramp_dta_94
     .p2align 4
 __hmx_tramp_dta_95:
     cmpb $0, __hmx_latch_dta_95(%rip)
@@ -1111,8 +1111,8 @@ __hmx_tramp_dta_95:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr14ContentStartedEv
-    .set _ZN11PlatformMgr14ContentStartedEv, __hmx_tramp_dta_95
+    .weak _ZN11PlatformMgr15EnableProfanityEb
+    .set _ZN11PlatformMgr15EnableProfanityEb, __hmx_tramp_dta_95
     .p2align 4
 __hmx_tramp_dta_96:
     cmpb $0, __hmx_latch_dta_96(%rip)
@@ -1122,8 +1122,8 @@ __hmx_tramp_dta_96:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr14SetScreenSaverEb
-    .set _ZN11PlatformMgr14SetScreenSaverEb, __hmx_tramp_dta_96
+    .weak _ZN11PlatformMgr15GetLastDNSErrorEv
+    .set _ZN11PlatformMgr15GetLastDNSErrorEv, __hmx_tramp_dta_96
     .p2align 4
 __hmx_tramp_dta_97:
     cmpb $0, __hmx_latch_dta_97(%rip)
@@ -1133,8 +1133,8 @@ __hmx_tramp_dta_97:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE
-    .set _ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE, __hmx_tramp_dta_97
+    .weak _ZN11PlatformMgr15GetLastDWCErrorEv
+    .set _ZN11PlatformMgr15GetLastDWCErrorEv, __hmx_tramp_dta_97
     .p2align 4
 __hmx_tramp_dta_98:
     cmpb $0, __hmx_latch_dta_98(%rip)
@@ -1144,8 +1144,8 @@ __hmx_tramp_dta_98:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr15EnableProfanityEb
-    .set _ZN11PlatformMgr15EnableProfanityEb, __hmx_tramp_dta_98
+    .weak _ZN11PlatformMgr16ContentCancelledEv
+    .set _ZN11PlatformMgr16ContentCancelledEv, __hmx_tramp_dta_98
     .p2align 4
 __hmx_tramp_dta_99:
     cmpb $0, __hmx_latch_dta_99(%rip)
@@ -1155,8 +1155,8 @@ __hmx_tramp_dta_99:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr15GetLastDNSErrorEv
-    .set _ZN11PlatformMgr15GetLastDNSErrorEv, __hmx_tramp_dta_99
+    .weak _ZN11PlatformMgr16PrintParentalPinEv
+    .set _ZN11PlatformMgr16PrintParentalPinEv, __hmx_tramp_dta_99
     .p2align 4
 __hmx_tramp_dta_100:
     cmpb $0, __hmx_latch_dta_100(%rip)
@@ -1166,8 +1166,8 @@ __hmx_tramp_dta_100:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr15GetLastDWCErrorEv
-    .set _ZN11PlatformMgr15GetLastDWCErrorEv, __hmx_tramp_dta_100
+    .weak _ZN11PlatformMgr17GetLastNHTTPErrorEv
+    .set _ZN11PlatformMgr17GetLastNHTTPErrorEv, __hmx_tramp_dta_100
     .p2align 4
 __hmx_tramp_dta_101:
     cmpb $0, __hmx_latch_dta_101(%rip)
@@ -1177,8 +1177,8 @@ __hmx_tramp_dta_101:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr16ContentCancelledEv
-    .set _ZN11PlatformMgr16ContentCancelledEv, __hmx_tramp_dta_101
+    .weak _ZN11PlatformMgr17GetNetErrorStringEb
+    .set _ZN11PlatformMgr17GetNetErrorStringEb, __hmx_tramp_dta_101
     .p2align 4
 __hmx_tramp_dta_102:
     cmpb $0, __hmx_latch_dta_102(%rip)
@@ -1188,8 +1188,8 @@ __hmx_tramp_dta_102:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr16PrintParentalPinEv
-    .set _ZN11PlatformMgr16PrintParentalPinEv, __hmx_tramp_dta_102
+    .weak _ZN11PlatformMgr18RunNetStartUtilityEv
+    .set _ZN11PlatformMgr18RunNetStartUtilityEv, __hmx_tramp_dta_102
     .p2align 4
 __hmx_tramp_dta_103:
     cmpb $0, __hmx_latch_dta_103(%rip)
@@ -1199,8 +1199,8 @@ __hmx_tramp_dta_103:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr17GetLastNHTTPErrorEv
-    .set _ZN11PlatformMgr17GetLastNHTTPErrorEv, __hmx_tramp_dta_103
+    .weak _ZN11PlatformMgr18SetHomeMenuEnabledEb
+    .set _ZN11PlatformMgr18SetHomeMenuEnabledEb, __hmx_tramp_dta_103
     .p2align 4
 __hmx_tramp_dta_104:
     cmpb $0, __hmx_latch_dta_104(%rip)
@@ -1210,8 +1210,8 @@ __hmx_tramp_dta_104:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr17GetNetErrorStringEb
-    .set _ZN11PlatformMgr17GetNetErrorStringEb, __hmx_tramp_dta_104
+    .weak _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation
+    .set _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation, __hmx_tramp_dta_104
     .p2align 4
 __hmx_tramp_dta_105:
     cmpb $0, __hmx_latch_dta_105(%rip)
@@ -1221,8 +1221,8 @@ __hmx_tramp_dta_105:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr18RunNetStartUtilityEv
-    .set _ZN11PlatformMgr18RunNetStartUtilityEv, __hmx_tramp_dta_105
+    .weak _ZN11PlatformMgr22InitNintendoConnectionEv
+    .set _ZN11PlatformMgr22InitNintendoConnectionEv, __hmx_tramp_dta_105
     .p2align 4
 __hmx_tramp_dta_106:
     cmpb $0, __hmx_latch_dta_106(%rip)
@@ -1232,8 +1232,8 @@ __hmx_tramp_dta_106:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr18SetHomeMenuEnabledEb
-    .set _ZN11PlatformMgr18SetHomeMenuEnabledEb, __hmx_tramp_dta_106
+    .weak _ZN11PlatformMgr23CloseNintendoConnectionEbb
+    .set _ZN11PlatformMgr23CloseNintendoConnectionEbb, __hmx_tramp_dta_106
     .p2align 4
 __hmx_tramp_dta_107:
     cmpb $0, __hmx_latch_dta_107(%rip)
@@ -1243,8 +1243,8 @@ __hmx_tramp_dta_107:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation
-    .set _ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation, __hmx_tramp_dta_107
+    .weak _ZN11PlatformMgr24IsEthernetCableConnectedEv
+    .set _ZN11PlatformMgr24IsEthernetCableConnectedEv, __hmx_tramp_dta_107
     .p2align 4
 __hmx_tramp_dta_108:
     cmpb $0, __hmx_latch_dta_108(%rip)
@@ -1254,8 +1254,8 @@ __hmx_tramp_dta_108:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr22InitNintendoConnectionEv
-    .set _ZN11PlatformMgr22InitNintendoConnectionEv, __hmx_tramp_dta_108
+    .weak _ZN11PlatformMgr25SetPartyMicOptionsShowingEb
+    .set _ZN11PlatformMgr25SetPartyMicOptionsShowingEb, __hmx_tramp_dta_108
     .p2align 4
 __hmx_tramp_dta_109:
     cmpb $0, __hmx_latch_dta_109(%rip)
@@ -1265,8 +1265,8 @@ __hmx_tramp_dta_109:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr23CloseNintendoConnectionEbb
-    .set _ZN11PlatformMgr23CloseNintendoConnectionEbb, __hmx_tramp_dta_109
+    .weak _ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb
+    .set _ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb, __hmx_tramp_dta_109
     .p2align 4
 __hmx_tramp_dta_110:
     cmpb $0, __hmx_latch_dta_110(%rip)
@@ -1276,8 +1276,8 @@ __hmx_tramp_dta_110:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr24IsEthernetCableConnectedEv
-    .set _ZN11PlatformMgr24IsEthernetCableConnectedEv, __hmx_tramp_dta_110
+    .weak _ZN11PlatformMgr4InitEv
+    .set _ZN11PlatformMgr4InitEv, __hmx_tramp_dta_110
     .p2align 4
 __hmx_tramp_dta_111:
     cmpb $0, __hmx_latch_dta_111(%rip)
@@ -1287,8 +1287,8 @@ __hmx_tramp_dta_111:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr25SetPartyMicOptionsShowingEb
-    .set _ZN11PlatformMgr25SetPartyMicOptionsShowingEb, __hmx_tramp_dta_111
+    .weak _ZN11PlatformMgr4PollEv
+    .set _ZN11PlatformMgr4PollEv, __hmx_tramp_dta_111
     .p2align 4
 __hmx_tramp_dta_112:
     cmpb $0, __hmx_latch_dta_112(%rip)
@@ -1298,8 +1298,8 @@ __hmx_tramp_dta_112:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb
-    .set _ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb, __hmx_tramp_dta_112
+    .weak _ZN11PlatformMgr5OnMsgERK11ButtonUpMsg
+    .set _ZN11PlatformMgr5OnMsgERK11ButtonUpMsg, __hmx_tramp_dta_112
     .p2align 4
 __hmx_tramp_dta_113:
     cmpb $0, __hmx_latch_dta_113(%rip)
@@ -1309,8 +1309,8 @@ __hmx_tramp_dta_113:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr4InitEv
-    .set _ZN11PlatformMgr4InitEv, __hmx_tramp_dta_113
+    .weak _ZN11PlatformMgr5OnMsgERK13ButtonDownMsg
+    .set _ZN11PlatformMgr5OnMsgERK13ButtonDownMsg, __hmx_tramp_dta_113
     .p2align 4
 __hmx_tramp_dta_114:
     cmpb $0, __hmx_latch_dta_114(%rip)
@@ -1320,8 +1320,8 @@ __hmx_tramp_dta_114:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr4PollEv
-    .set _ZN11PlatformMgr4PollEv, __hmx_tramp_dta_114
+    .weak _ZN11PlatformMgr7PreInitEv
+    .set _ZN11PlatformMgr7PreInitEv, __hmx_tramp_dta_114
     .p2align 4
 __hmx_tramp_dta_115:
     cmpb $0, __hmx_latch_dta_115(%rip)
@@ -1331,8 +1331,8 @@ __hmx_tramp_dta_115:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr5OnMsgERK11ButtonUpMsg
-    .set _ZN11PlatformMgr5OnMsgERK11ButtonUpMsg, __hmx_tramp_dta_115
+    .weak _ZN11PlatformMgr7WiiPollEv
+    .set _ZN11PlatformMgr7WiiPollEv, __hmx_tramp_dta_115
     .p2align 4
 __hmx_tramp_dta_116:
     cmpb $0, __hmx_latch_dta_116(%rip)
@@ -1342,8 +1342,8 @@ __hmx_tramp_dta_116:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr5OnMsgERK13ButtonDownMsg
-    .set _ZN11PlatformMgr5OnMsgERK13ButtonDownMsg, __hmx_tramp_dta_116
+    .weak _ZN11PlatformMgrC1Ev
+    .set _ZN11PlatformMgrC1Ev, __hmx_tramp_dta_116
     .p2align 4
 __hmx_tramp_dta_117:
     cmpb $0, __hmx_latch_dta_117(%rip)
@@ -1353,8 +1353,8 @@ __hmx_tramp_dta_117:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr7PreInitEv
-    .set _ZN11PlatformMgr7PreInitEv, __hmx_tramp_dta_117
+    .weak _ZN11PlatformMgrD0Ev
+    .set _ZN11PlatformMgrD0Ev, __hmx_tramp_dta_117
     .p2align 4
 __hmx_tramp_dta_118:
     cmpb $0, __hmx_latch_dta_118(%rip)
@@ -1364,8 +1364,8 @@ __hmx_tramp_dta_118:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgr7WiiPollEv
-    .set _ZN11PlatformMgr7WiiPollEv, __hmx_tramp_dta_118
+    .weak _ZN11PlatformMgrD1Ev
+    .set _ZN11PlatformMgrD1Ev, __hmx_tramp_dta_118
     .p2align 4
 __hmx_tramp_dta_119:
     cmpb $0, __hmx_latch_dta_119(%rip)
@@ -1375,8 +1375,8 @@ __hmx_tramp_dta_119:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgrC1Ev
-    .set _ZN11PlatformMgrC1Ev, __hmx_tramp_dta_119
+    .weak _ZN12MidiReceiverC2Ev
+    .set _ZN12MidiReceiverC2Ev, __hmx_tramp_dta_119
     .p2align 4
 __hmx_tramp_dta_120:
     cmpb $0, __hmx_latch_dta_120(%rip)
@@ -1386,8 +1386,8 @@ __hmx_tramp_dta_120:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgrD0Ev
-    .set _ZN11PlatformMgrD0Ev, __hmx_tramp_dta_120
+    .weak _ZN12NetLoaderWiiC1ERK6String
+    .set _ZN12NetLoaderWiiC1ERK6String, __hmx_tramp_dta_120
     .p2align 4
 __hmx_tramp_dta_121:
     cmpb $0, __hmx_latch_dta_121(%rip)
@@ -1397,8 +1397,8 @@ __hmx_tramp_dta_121:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN11PlatformMgrD1Ev
-    .set _ZN11PlatformMgrD1Ev, __hmx_tramp_dta_121
+    .weak _ZN13CameraManager4PollEv
+    .set _ZN13CameraManager4PollEv, __hmx_tramp_dta_121
     .p2align 4
 __hmx_tramp_dta_122:
     cmpb $0, __hmx_latch_dta_122(%rip)
@@ -1408,8 +1408,8 @@ __hmx_tramp_dta_122:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN12MidiReceiverC2Ev
-    .set _ZN12MidiReceiverC2Ev, __hmx_tramp_dta_122
+    .weak _ZN13NetworkSocket11GetHostNameEv
+    .set _ZN13NetworkSocket11GetHostNameEv, __hmx_tramp_dta_122
     .p2align 4
 __hmx_tramp_dta_123:
     cmpb $0, __hmx_latch_dta_123(%rip)
@@ -1419,8 +1419,8 @@ __hmx_tramp_dta_123:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN12NetLoaderWiiC1ERK6String
-    .set _ZN12NetLoaderWiiC1ERK6String, __hmx_tramp_dta_123
+    .weak _ZN13NetworkSocket6CreateEb
+    .set _ZN13NetworkSocket6CreateEb, __hmx_tramp_dta_123
     .p2align 4
 __hmx_tramp_dta_124:
     cmpb $0, __hmx_latch_dta_124(%rip)
@@ -1430,8 +1430,8 @@ __hmx_tramp_dta_124:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13CameraManager4PollEv
-    .set _ZN13CameraManager4PollEv, __hmx_tramp_dta_124
+    .weak _ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp
+    .set _ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_tramp_dta_124
     .p2align 4
 __hmx_tramp_dta_125:
     cmpb $0, __hmx_latch_dta_125(%rip)
@@ -1441,8 +1441,8 @@ __hmx_tramp_dta_125:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13NetworkSocket11GetHostNameEv
-    .set _ZN13NetworkSocket11GetHostNameEv, __hmx_tramp_dta_125
+    .weak _ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE
+    .set _ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_tramp_dta_125
     .p2align 4
 __hmx_tramp_dta_126:
     cmpb $0, __hmx_latch_dta_126(%rip)
@@ -1452,8 +1452,8 @@ __hmx_tramp_dta_126:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13NetworkSocket6CreateEb
-    .set _ZN13NetworkSocket6CreateEb, __hmx_tramp_dta_126
+    .weak _ZN13RndAnimatable4LoadER9BinStream
+    .set _ZN13RndAnimatable4LoadER9BinStream, __hmx_tramp_dta_126
     .p2align 4
 __hmx_tramp_dta_127:
     cmpb $0, __hmx_latch_dta_127(%rip)
@@ -1463,8 +1463,8 @@ __hmx_tramp_dta_127:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp
-    .set _ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_tramp_dta_127
+    .weak _ZN13RndAnimatable4SaveER9BinStream
+    .set _ZN13RndAnimatable4SaveER9BinStream, __hmx_tramp_dta_127
     .p2align 4
 __hmx_tramp_dta_128:
     cmpb $0, __hmx_latch_dta_128(%rip)
@@ -1474,8 +1474,8 @@ __hmx_tramp_dta_128:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE
-    .set _ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_tramp_dta_128
+    .weak _ZN13RndAnimatable6HandleEP9DataArrayb
+    .set _ZN13RndAnimatable6HandleEP9DataArrayb, __hmx_tramp_dta_128
     .p2align 4
 __hmx_tramp_dta_129:
     cmpb $0, __hmx_latch_dta_129(%rip)
@@ -1485,8 +1485,8 @@ __hmx_tramp_dta_129:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13RndAnimatable4LoadER9BinStream
-    .set _ZN13RndAnimatable4LoadER9BinStream, __hmx_tramp_dta_129
+    .weak _ZN13RndAnimatableC2Ev
+    .set _ZN13RndAnimatableC2Ev, __hmx_tramp_dta_129
     .p2align 4
 __hmx_tramp_dta_130:
     cmpb $0, __hmx_latch_dta_130(%rip)
@@ -1496,8 +1496,8 @@ __hmx_tramp_dta_130:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13RndAnimatable4SaveER9BinStream
-    .set _ZN13RndAnimatable4SaveER9BinStream, __hmx_tramp_dta_130
+    .weak _ZN14ProfilePicture13FetchUserDataEv
+    .set _ZN14ProfilePicture13FetchUserDataEv, __hmx_tramp_dta_130
     .p2align 4
 __hmx_tramp_dta_131:
     cmpb $0, __hmx_latch_dta_131(%rip)
@@ -1507,8 +1507,8 @@ __hmx_tramp_dta_131:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13RndAnimatable6HandleEP9DataArrayb
-    .set _ZN13RndAnimatable6HandleEP9DataArrayb, __hmx_tramp_dta_131
+    .weak _ZN14ProfilePicture15ReceiveUserDataEv
+    .set _ZN14ProfilePicture15ReceiveUserDataEv, __hmx_tramp_dta_131
     .p2align 4
 __hmx_tramp_dta_132:
     cmpb $0, __hmx_latch_dta_132(%rip)
@@ -1518,8 +1518,8 @@ __hmx_tramp_dta_132:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN13RndAnimatableC2Ev
-    .set _ZN13RndAnimatableC2Ev, __hmx_tramp_dta_132
+    .weak _ZN14ProfilePicture16FetchUserPictureEv
+    .set _ZN14ProfilePicture16FetchUserPictureEv, __hmx_tramp_dta_132
     .p2align 4
 __hmx_tramp_dta_133:
     cmpb $0, __hmx_latch_dta_133(%rip)
@@ -1529,8 +1529,8 @@ __hmx_tramp_dta_133:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN14ProfilePicture13FetchUserDataEv
-    .set _ZN14ProfilePicture13FetchUserDataEv, __hmx_tramp_dta_133
+    .weak _ZN14ProfilePicture18ReceiveUserPictureEv
+    .set _ZN14ProfilePicture18ReceiveUserPictureEv, __hmx_tramp_dta_133
     .p2align 4
 __hmx_tramp_dta_134:
     cmpb $0, __hmx_latch_dta_134(%rip)
@@ -1540,8 +1540,8 @@ __hmx_tramp_dta_134:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN14ProfilePicture15ReceiveUserDataEv
-    .set _ZN14ProfilePicture15ReceiveUserDataEv, __hmx_tramp_dta_134
+    .weak _ZN14WiiCommerceMgr4InitEv
+    .set _ZN14WiiCommerceMgr4InitEv, __hmx_tramp_dta_134
     .p2align 4
 __hmx_tramp_dta_135:
     cmpb $0, __hmx_latch_dta_135(%rip)
@@ -1551,8 +1551,8 @@ __hmx_tramp_dta_135:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN14ProfilePicture16FetchUserPictureEv
-    .set _ZN14ProfilePicture16FetchUserPictureEv, __hmx_tramp_dta_135
+    .weak _ZN15VirtualKeyboard12PlatformPollEv
+    .set _ZN15VirtualKeyboard12PlatformPollEv, __hmx_tramp_dta_135
     .p2align 4
 __hmx_tramp_dta_136:
     cmpb $0, __hmx_latch_dta_136(%rip)
@@ -1562,8 +1562,8 @@ __hmx_tramp_dta_136:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN14ProfilePicture18ReceiveUserPictureEv
-    .set _ZN14ProfilePicture18ReceiveUserPictureEv, __hmx_tramp_dta_136
+    .weak _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii
+    .set _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii, __hmx_tramp_dta_136
     .p2align 4
 __hmx_tramp_dta_137:
     cmpb $0, __hmx_latch_dta_137(%rip)
@@ -1573,8 +1573,8 @@ __hmx_tramp_dta_137:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN14WiiCommerceMgr4InitEv
-    .set _ZN14WiiCommerceMgr4InitEv, __hmx_tramp_dta_137
+    .weak _ZN15VirtualKeyboard17PlatformTerminateEv
+    .set _ZN15VirtualKeyboard17PlatformTerminateEv, __hmx_tramp_dta_137
     .p2align 4
 __hmx_tramp_dta_138:
     cmpb $0, __hmx_latch_dta_138(%rip)
@@ -1584,8 +1584,8 @@ __hmx_tramp_dta_138:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN15VirtualKeyboard12PlatformPollEv
-    .set _ZN15VirtualKeyboard12PlatformPollEv, __hmx_tramp_dta_138
+    .weak _ZN16WiiNetworkSocket4InitEv
+    .set _ZN16WiiNetworkSocket4InitEv, __hmx_tramp_dta_138
     .p2align 4
 __hmx_tramp_dta_139:
     cmpb $0, __hmx_latch_dta_139(%rip)
@@ -1595,8 +1595,8 @@ __hmx_tramp_dta_139:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii
-    .set _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii, __hmx_tramp_dta_139
+    .weak _ZN18LightPresetManager4PollEv
+    .set _ZN18LightPresetManager4PollEv, __hmx_tramp_dta_139
     .p2align 4
 __hmx_tramp_dta_140:
     cmpb $0, __hmx_latch_dta_140(%rip)
@@ -1606,8 +1606,8 @@ __hmx_tramp_dta_140:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN15VirtualKeyboard17PlatformTerminateEv
-    .set _ZN15VirtualKeyboard17PlatformTerminateEv, __hmx_tramp_dta_140
+    .weak _ZN18LightPresetManager5EnterEv
+    .set _ZN18LightPresetManager5EnterEv, __hmx_tramp_dta_140
     .p2align 4
 __hmx_tramp_dta_141:
     cmpb $0, __hmx_latch_dta_141(%rip)
@@ -1617,8 +1617,8 @@ __hmx_tramp_dta_141:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN16WiiNetworkSocket4InitEv
-    .set _ZN16WiiNetworkSocket4InitEv, __hmx_tramp_dta_141
+    .weak _ZN3Hmx6Object7PreLoadER9BinStream
+    .set _ZN3Hmx6Object7PreLoadER9BinStream, __hmx_tramp_dta_141
     .p2align 4
 __hmx_tramp_dta_142:
     cmpb $0, __hmx_latch_dta_142(%rip)
@@ -1628,8 +1628,8 @@ __hmx_tramp_dta_142:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN18LightPresetManager4PollEv
-    .set _ZN18LightPresetManager4PollEv, __hmx_tramp_dta_142
+    .weak _ZN5Synth10StopAllSfxEb
+    .set _ZN5Synth10StopAllSfxEb, __hmx_tramp_dta_142
     .p2align 4
 __hmx_tramp_dta_143:
     cmpb $0, __hmx_latch_dta_143(%rip)
@@ -1639,8 +1639,8 @@ __hmx_tramp_dta_143:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN18LightPresetManager5EnterEv
-    .set _ZN18LightPresetManager5EnterEv, __hmx_tramp_dta_143
+    .weak _ZN5Synth15GetMasterVolumeEv
+    .set _ZN5Synth15GetMasterVolumeEv, __hmx_tramp_dta_143
     .p2align 4
 __hmx_tramp_dta_144:
     cmpb $0, __hmx_latch_dta_144(%rip)
@@ -1650,8 +1650,8 @@ __hmx_tramp_dta_144:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN3Hmx6Object7PreLoadER9BinStream
-    .set _ZN3Hmx6Object7PreLoadER9BinStream, __hmx_tramp_dta_144
+    .weak _ZN5Synth15SetMasterVolumeEf
+    .set _ZN5Synth15SetMasterVolumeEf, __hmx_tramp_dta_144
     .p2align 4
 __hmx_tramp_dta_145:
     cmpb $0, __hmx_latch_dta_145(%rip)
@@ -1661,8 +1661,8 @@ __hmx_tramp_dta_145:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN5Synth10StopAllSfxEb
-    .set _ZN5Synth10StopAllSfxEb, __hmx_tramp_dta_145
+    .weak _ZN7HDCache10WriteAsyncEiiPKv
+    .set _ZN7HDCache10WriteAsyncEiiPKv, __hmx_tramp_dta_145
     .p2align 4
 __hmx_tramp_dta_146:
     cmpb $0, __hmx_latch_dta_146(%rip)
@@ -1672,8 +1672,8 @@ __hmx_tramp_dta_146:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN5Synth15GetMasterVolumeEv
-    .set _ZN5Synth15GetMasterVolumeEv, __hmx_tramp_dta_146
+    .weak _ZN7Memcard9TerminateEv
+    .set _ZN7Memcard9TerminateEv, __hmx_tramp_dta_146
     .p2align 4
 __hmx_tramp_dta_147:
     cmpb $0, __hmx_latch_dta_147(%rip)
@@ -1683,8 +1683,8 @@ __hmx_tramp_dta_147:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN5Synth15SetMasterVolumeEf
-    .set _ZN5Synth15SetMasterVolumeEf, __hmx_tramp_dta_147
+    .weak _ZN8KeyChain6getKeyEiPhS0_
+    .set _ZN8KeyChain6getKeyEiPhS0_, __hmx_tramp_dta_147
     .p2align 4
 __hmx_tramp_dta_148:
     cmpb $0, __hmx_latch_dta_148(%rip)
@@ -1694,8 +1694,8 @@ __hmx_tramp_dta_148:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN7HDCache10WriteAsyncEiiPKv
-    .set _ZN7HDCache10WriteAsyncEiiPKv, __hmx_tramp_dta_148
+    .weak _ZN9AsyncFile10WriteAsyncEPKvi
+    .set _ZN9AsyncFile10WriteAsyncEPKvi, __hmx_tramp_dta_148
     .p2align 4
 __hmx_tramp_dta_149:
     cmpb $0, __hmx_latch_dta_149(%rip)
@@ -1705,8 +1705,8 @@ __hmx_tramp_dta_149:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN7Memcard9TerminateEv
-    .set _ZN7Memcard9TerminateEv, __hmx_tramp_dta_149
+    .weak _ZN9AsyncFile16UncompressedSizeEv
+    .set _ZN9AsyncFile16UncompressedSizeEv, __hmx_tramp_dta_149
     .p2align 4
 __hmx_tramp_dta_150:
     cmpb $0, __hmx_latch_dta_150(%rip)
@@ -1716,8 +1716,8 @@ __hmx_tramp_dta_150:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN8KeyChain6getKeyEiPhS0_
-    .set _ZN8KeyChain6getKeyEiPhS0_, __hmx_tramp_dta_150
+    .weak _ZN9AsyncFile3EofEv
+    .set _ZN9AsyncFile3EofEv, __hmx_tramp_dta_150
     .p2align 4
 __hmx_tramp_dta_151:
     cmpb $0, __hmx_latch_dta_151(%rip)
@@ -1727,8 +1727,8 @@ __hmx_tramp_dta_151:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile10WriteAsyncEPKvi
-    .set _ZN9AsyncFile10WriteAsyncEPKvi, __hmx_tramp_dta_151
+    .weak _ZN9AsyncFile3NewEPKci
+    .set _ZN9AsyncFile3NewEPKci, __hmx_tramp_dta_151
     .p2align 4
 __hmx_tramp_dta_152:
     cmpb $0, __hmx_latch_dta_152(%rip)
@@ -1738,8 +1738,8 @@ __hmx_tramp_dta_152:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile16UncompressedSizeEv
-    .set _ZN9AsyncFile16UncompressedSizeEv, __hmx_tramp_dta_152
+    .weak _ZN9AsyncFile4FailEv
+    .set _ZN9AsyncFile4FailEv, __hmx_tramp_dta_152
     .p2align 4
 __hmx_tramp_dta_153:
     cmpb $0, __hmx_latch_dta_153(%rip)
@@ -1749,8 +1749,8 @@ __hmx_tramp_dta_153:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile3EofEv
-    .set _ZN9AsyncFile3EofEv, __hmx_tramp_dta_153
+    .weak _ZN9AsyncFile4ReadEPvi
+    .set _ZN9AsyncFile4ReadEPvi, __hmx_tramp_dta_153
     .p2align 4
 __hmx_tramp_dta_154:
     cmpb $0, __hmx_latch_dta_154(%rip)
@@ -1760,8 +1760,8 @@ __hmx_tramp_dta_154:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile3NewEPKci
-    .set _ZN9AsyncFile3NewEPKci, __hmx_tramp_dta_154
+    .weak _ZN9AsyncFile4SeekEii
+    .set _ZN9AsyncFile4SeekEii, __hmx_tramp_dta_154
     .p2align 4
 __hmx_tramp_dta_155:
     cmpb $0, __hmx_latch_dta_155(%rip)
@@ -1771,8 +1771,8 @@ __hmx_tramp_dta_155:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile4FailEv
-    .set _ZN9AsyncFile4FailEv, __hmx_tramp_dta_155
+    .weak _ZN9AsyncFile4SizeEv
+    .set _ZN9AsyncFile4SizeEv, __hmx_tramp_dta_155
     .p2align 4
 __hmx_tramp_dta_156:
     cmpb $0, __hmx_latch_dta_156(%rip)
@@ -1782,8 +1782,8 @@ __hmx_tramp_dta_156:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile4ReadEPvi
-    .set _ZN9AsyncFile4ReadEPvi, __hmx_tramp_dta_156
+    .weak _ZN9AsyncFile4TellEv
+    .set _ZN9AsyncFile4TellEv, __hmx_tramp_dta_156
     .p2align 4
 __hmx_tramp_dta_157:
     cmpb $0, __hmx_latch_dta_157(%rip)
@@ -1793,8 +1793,8 @@ __hmx_tramp_dta_157:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile4SeekEii
-    .set _ZN9AsyncFile4SeekEii, __hmx_tramp_dta_157
+    .weak _ZN9AsyncFile5FlushEv
+    .set _ZN9AsyncFile5FlushEv, __hmx_tramp_dta_157
     .p2align 4
 __hmx_tramp_dta_158:
     cmpb $0, __hmx_latch_dta_158(%rip)
@@ -1804,8 +1804,8 @@ __hmx_tramp_dta_158:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile4SizeEv
-    .set _ZN9AsyncFile4SizeEv, __hmx_tramp_dta_158
+    .weak _ZN9AsyncFile5WriteEPKvi
+    .set _ZN9AsyncFile5WriteEPKvi, __hmx_tramp_dta_158
     .p2align 4
 __hmx_tramp_dta_159:
     cmpb $0, __hmx_latch_dta_159(%rip)
@@ -1815,8 +1815,8 @@ __hmx_tramp_dta_159:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile4TellEv
-    .set _ZN9AsyncFile4TellEv, __hmx_tramp_dta_159
+    .weak _ZN9AsyncFile8ReadDoneERi
+    .set _ZN9AsyncFile8ReadDoneERi, __hmx_tramp_dta_159
     .p2align 4
 __hmx_tramp_dta_160:
     cmpb $0, __hmx_latch_dta_160(%rip)
@@ -1826,8 +1826,8 @@ __hmx_tramp_dta_160:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile5FlushEv
-    .set _ZN9AsyncFile5FlushEv, __hmx_tramp_dta_160
+    .weak _ZN9AsyncFile9ReadAsyncEPvi
+    .set _ZN9AsyncFile9ReadAsyncEPvi, __hmx_tramp_dta_160
     .p2align 4
 __hmx_tramp_dta_161:
     cmpb $0, __hmx_latch_dta_161(%rip)
@@ -1837,8 +1837,8 @@ __hmx_tramp_dta_161:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile5WriteEPKvi
-    .set _ZN9AsyncFile5WriteEPKvi, __hmx_tramp_dta_161
+    .weak _ZN9AsyncFile9TerminateEv
+    .set _ZN9AsyncFile9TerminateEv, __hmx_tramp_dta_161
     .p2align 4
 __hmx_tramp_dta_162:
     cmpb $0, __hmx_latch_dta_162(%rip)
@@ -1848,8 +1848,8 @@ __hmx_tramp_dta_162:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile8ReadDoneERi
-    .set _ZN9AsyncFile8ReadDoneERi, __hmx_tramp_dta_162
+    .weak _ZN9AsyncFile9WriteDoneERi
+    .set _ZN9AsyncFile9WriteDoneERi, __hmx_tramp_dta_162
     .p2align 4
 __hmx_tramp_dta_163:
     cmpb $0, __hmx_latch_dta_163(%rip)
@@ -1859,8 +1859,8 @@ __hmx_tramp_dta_163:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile9ReadAsyncEPvi
-    .set _ZN9AsyncFile9ReadAsyncEPvi, __hmx_tramp_dta_163
+    .weak _ZN9AsyncFileC2EPKci
+    .set _ZN9AsyncFileC2EPKci, __hmx_tramp_dta_163
     .p2align 4
 __hmx_tramp_dta_164:
     cmpb $0, __hmx_latch_dta_164(%rip)
@@ -1870,8 +1870,8 @@ __hmx_tramp_dta_164:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile9TerminateEv
-    .set _ZN9AsyncFile9TerminateEv, __hmx_tramp_dta_164
+    .weak _ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID
+    .set _ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID, __hmx_tramp_dta_164
     .p2align 4
 __hmx_tramp_dta_165:
     cmpb $0, __hmx_latch_dta_165(%rip)
@@ -1881,8 +1881,8 @@ __hmx_tramp_dta_165:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFile9WriteDoneERi
-    .set _ZN9AsyncFile9WriteDoneERi, __hmx_tramp_dta_165
+    .weak _ZNK11PlatformMgr15GetOwnerOfGuestEi
+    .set _ZNK11PlatformMgr15GetOwnerOfGuestEi, __hmx_tramp_dta_165
     .p2align 4
 __hmx_tramp_dta_166:
     cmpb $0, __hmx_latch_dta_166(%rip)
@@ -1892,8 +1892,8 @@ __hmx_tramp_dta_166:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZN9AsyncFileC2EPKci
-    .set _ZN9AsyncFileC2EPKci, __hmx_tramp_dta_166
+    .weak _ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser
+    .set _ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser, __hmx_tramp_dta_166
     .p2align 4
 __hmx_tramp_dta_167:
     cmpb $0, __hmx_latch_dta_167(%rip)
@@ -1903,8 +1903,8 @@ __hmx_tramp_dta_167:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID
-    .set _ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID, __hmx_tramp_dta_167
+    .weak _ZNK11PlatformMgr16IsSignedIntoLiveEi
+    .set _ZNK11PlatformMgr16IsSignedIntoLiveEi, __hmx_tramp_dta_167
     .p2align 4
 __hmx_tramp_dta_168:
     cmpb $0, __hmx_latch_dta_168(%rip)
@@ -1914,8 +1914,8 @@ __hmx_tramp_dta_168:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK11PlatformMgr15GetOwnerOfGuestEi
-    .set _ZNK11PlatformMgr15GetOwnerOfGuestEi, __hmx_tramp_dta_168
+    .weak _ZNK11PlatformMgr18HasOnlinePrivilegeEi
+    .set _ZNK11PlatformMgr18HasOnlinePrivilegeEi, __hmx_tramp_dta_168
     .p2align 4
 __hmx_tramp_dta_169:
     cmpb $0, __hmx_latch_dta_169(%rip)
@@ -1925,8 +1925,8 @@ __hmx_tramp_dta_169:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser
-    .set _ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser, __hmx_tramp_dta_169
+    .weak _ZNK11PlatformMgr7GetNameEi
+    .set _ZNK11PlatformMgr7GetNameEi, __hmx_tramp_dta_169
     .p2align 4
 __hmx_tramp_dta_170:
     cmpb $0, __hmx_latch_dta_170(%rip)
@@ -1936,8 +1936,8 @@ __hmx_tramp_dta_170:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK11PlatformMgr16IsSignedIntoLiveEi
-    .set _ZNK11PlatformMgr16IsSignedIntoLiveEi, __hmx_tramp_dta_170
+    .weak _ZNK13WiiProfileMgr12IsIndexValidEi
+    .set _ZNK13WiiProfileMgr12IsIndexValidEi, __hmx_tramp_dta_170
     .p2align 4
 __hmx_tramp_dta_171:
     cmpb $0, __hmx_latch_dta_171(%rip)
@@ -1947,8 +1947,8 @@ __hmx_tramp_dta_171:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK11PlatformMgr18HasOnlinePrivilegeEi
-    .set _ZNK11PlatformMgr18HasOnlinePrivilegeEi, __hmx_tramp_dta_171
+    .weak _ZNK13WiiProfileMgr13GetIdForIndexEi
+    .set _ZNK13WiiProfileMgr13GetIdForIndexEi, __hmx_tramp_dta_171
     .p2align 4
 __hmx_tramp_dta_172:
     cmpb $0, __hmx_latch_dta_172(%rip)
@@ -1958,8 +1958,8 @@ __hmx_tramp_dta_172:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK11PlatformMgr7GetNameEi
-    .set _ZNK11PlatformMgr7GetNameEi, __hmx_tramp_dta_172
+    .weak _ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser
+    .set _ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser, __hmx_tramp_dta_172
     .p2align 4
 __hmx_tramp_dta_173:
     cmpb $0, __hmx_latch_dta_173(%rip)
@@ -1969,8 +1969,8 @@ __hmx_tramp_dta_173:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK13WiiProfileMgr12IsIndexValidEi
-    .set _ZNK13WiiProfileMgr12IsIndexValidEi, __hmx_tramp_dta_173
+    .weak _ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE
+    .set _ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE, __hmx_tramp_dta_173
     .p2align 4
 __hmx_tramp_dta_174:
     cmpb $0, __hmx_latch_dta_174(%rip)
@@ -1980,8 +1980,8 @@ __hmx_tramp_dta_174:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK13WiiProfileMgr13GetIdForIndexEi
-    .set _ZNK13WiiProfileMgr13GetIdForIndexEi, __hmx_tramp_dta_174
+    .weak _ZTI10WiiContent
+    .set _ZTI10WiiContent, __hmx_tramp_dta_174
     .p2align 4
 __hmx_tramp_dta_175:
     cmpb $0, __hmx_latch_dta_175(%rip)
@@ -1991,8 +1991,8 @@ __hmx_tramp_dta_175:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser
-    .set _ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser, __hmx_tramp_dta_175
+    .weak _ZTI11RndPollable
+    .set _ZTI11RndPollable, __hmx_tramp_dta_175
     .p2align 4
 __hmx_tramp_dta_176:
     cmpb $0, __hmx_latch_dta_176(%rip)
@@ -2002,8 +2002,8 @@ __hmx_tramp_dta_176:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE
-    .set _ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE, __hmx_tramp_dta_176
+    .weak _ZTI13RndAnimatable
+    .set _ZTI13RndAnimatable, __hmx_tramp_dta_176
     .p2align 4
 __hmx_tramp_dta_177:
     cmpb $0, __hmx_latch_dta_177(%rip)
@@ -2013,8 +2013,8 @@ __hmx_tramp_dta_177:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTI10WiiContent
-    .set _ZTI10WiiContent, __hmx_tramp_dta_177
+    .weak _ZTI8WorldDir
+    .set _ZTI8WorldDir, __hmx_tramp_dta_177
     .p2align 4
 __hmx_tramp_dta_178:
     cmpb $0, __hmx_latch_dta_178(%rip)
@@ -2024,8 +2024,8 @@ __hmx_tramp_dta_178:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTI11RndPollable
-    .set _ZTI11RndPollable, __hmx_tramp_dta_178
+    .weak _ZTI9AsyncFile
+    .set _ZTI9AsyncFile, __hmx_tramp_dta_178
     .p2align 4
 __hmx_tramp_dta_179:
     cmpb $0, __hmx_latch_dta_179(%rip)
@@ -2035,8 +2035,8 @@ __hmx_tramp_dta_179:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTI13RndAnimatable
-    .set _ZTI13RndAnimatable, __hmx_tramp_dta_179
+    .weak _ZTT13RndAnimatable
+    .set _ZTT13RndAnimatable, __hmx_tramp_dta_179
     .p2align 4
 __hmx_tramp_dta_180:
     cmpb $0, __hmx_latch_dta_180(%rip)
@@ -2046,8 +2046,8 @@ __hmx_tramp_dta_180:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTI8WorldDir
-    .set _ZTI8WorldDir, __hmx_tramp_dta_180
+    .weak _ZTV9AsyncFile
+    .set _ZTV9AsyncFile, __hmx_tramp_dta_180
     .p2align 4
 __hmx_tramp_dta_181:
     cmpb $0, __hmx_latch_dta_181(%rip)
@@ -2057,8 +2057,8 @@ __hmx_tramp_dta_181:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTI9AsyncFile
-    .set _ZTI9AsyncFile, __hmx_tramp_dta_181
+    .weak _ZThn64_N11PlatformMgr11ContentDoneEv
+    .set _ZThn64_N11PlatformMgr11ContentDoneEv, __hmx_tramp_dta_181
     .p2align 4
 __hmx_tramp_dta_182:
     cmpb $0, __hmx_latch_dta_182(%rip)
@@ -2068,8 +2068,8 @@ __hmx_tramp_dta_182:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTT13RndAnimatable
-    .set _ZTT13RndAnimatable, __hmx_tramp_dta_182
+    .weak _ZThn64_N11PlatformMgr14ContentStartedEv
+    .set _ZThn64_N11PlatformMgr14ContentStartedEv, __hmx_tramp_dta_182
     .p2align 4
 __hmx_tramp_dta_183:
     cmpb $0, __hmx_latch_dta_183(%rip)
@@ -2079,8 +2079,8 @@ __hmx_tramp_dta_183:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTV9AsyncFile
-    .set _ZTV9AsyncFile, __hmx_tramp_dta_183
+    .weak _ZThn64_N11PlatformMgr16ContentCancelledEv
+    .set _ZThn64_N11PlatformMgr16ContentCancelledEv, __hmx_tramp_dta_183
     .p2align 4
 __hmx_tramp_dta_184:
     cmpb $0, __hmx_latch_dta_184(%rip)
@@ -2090,8 +2090,8 @@ __hmx_tramp_dta_184:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZThn64_N11PlatformMgr11ContentDoneEv
-    .set _ZThn64_N11PlatformMgr11ContentDoneEv, __hmx_tramp_dta_184
+    .weak _ZThn64_N11PlatformMgrD0Ev
+    .set _ZThn64_N11PlatformMgrD0Ev, __hmx_tramp_dta_184
     .p2align 4
 __hmx_tramp_dta_185:
     cmpb $0, __hmx_latch_dta_185(%rip)
@@ -2101,8 +2101,8 @@ __hmx_tramp_dta_185:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZThn64_N11PlatformMgr14ContentStartedEv
-    .set _ZThn64_N11PlatformMgr14ContentStartedEv, __hmx_tramp_dta_185
+    .weak _ZThn64_N11PlatformMgrD1Ev
+    .set _ZThn64_N11PlatformMgrD1Ev, __hmx_tramp_dta_185
     .p2align 4
 __hmx_tramp_dta_186:
     cmpb $0, __hmx_latch_dta_186(%rip)
@@ -2112,8 +2112,8 @@ __hmx_tramp_dta_186:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZThn64_N11PlatformMgr16ContentCancelledEv
-    .set _ZThn64_N11PlatformMgr16ContentCancelledEv, __hmx_tramp_dta_186
+    .weak _ZTv0_n104_N13RndAnimatable4LoadER9BinStream
+    .set _ZTv0_n104_N13RndAnimatable4LoadER9BinStream, __hmx_tramp_dta_186
     .p2align 4
 __hmx_tramp_dta_187:
     cmpb $0, __hmx_latch_dta_187(%rip)
@@ -2123,8 +2123,8 @@ __hmx_tramp_dta_187:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZThn64_N11PlatformMgrD0Ev
-    .set _ZThn64_N11PlatformMgrD0Ev, __hmx_tramp_dta_187
+    .weak _ZTv0_n24_N11PlatformMgrD0Ev
+    .set _ZTv0_n24_N11PlatformMgrD0Ev, __hmx_tramp_dta_187
     .p2align 4
 __hmx_tramp_dta_188:
     cmpb $0, __hmx_latch_dta_188(%rip)
@@ -2134,8 +2134,8 @@ __hmx_tramp_dta_188:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZThn64_N11PlatformMgrD1Ev
-    .set _ZThn64_N11PlatformMgrD1Ev, __hmx_tramp_dta_188
+    .weak _ZTv0_n24_N11PlatformMgrD1Ev
+    .set _ZTv0_n24_N11PlatformMgrD1Ev, __hmx_tramp_dta_188
     .p2align 4
 __hmx_tramp_dta_189:
     cmpb $0, __hmx_latch_dta_189(%rip)
@@ -2145,8 +2145,8 @@ __hmx_tramp_dta_189:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTv0_n104_N13RndAnimatable4LoadER9BinStream
-    .set _ZTv0_n104_N13RndAnimatable4LoadER9BinStream, __hmx_tramp_dta_189
+    .weak _ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb
+    .set _ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb, __hmx_tramp_dta_189
     .p2align 4
 __hmx_tramp_dta_190:
     cmpb $0, __hmx_latch_dta_190(%rip)
@@ -2156,8 +2156,8 @@ __hmx_tramp_dta_190:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTv0_n24_N11PlatformMgrD0Ev
-    .set _ZTv0_n24_N11PlatformMgrD0Ev, __hmx_tramp_dta_190
+    .weak _ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp
+    .set _ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_tramp_dta_190
     .p2align 4
 __hmx_tramp_dta_191:
     cmpb $0, __hmx_latch_dta_191(%rip)
@@ -2167,8 +2167,8 @@ __hmx_tramp_dta_191:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTv0_n24_N11PlatformMgrD1Ev
-    .set _ZTv0_n24_N11PlatformMgrD1Ev, __hmx_tramp_dta_191
+    .weak _ZTv0_n88_N13RndAnimatable4SaveER9BinStream
+    .set _ZTv0_n88_N13RndAnimatable4SaveER9BinStream, __hmx_tramp_dta_191
     .p2align 4
 __hmx_tramp_dta_192:
     cmpb $0, __hmx_latch_dta_192(%rip)
@@ -2178,41 +2178,8 @@ __hmx_tramp_dta_192:
     call __hmx_stub_first_hit@PLT
 1:  xorl %eax, %eax
     ret
-    .weak _ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb
-    .set _ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb, __hmx_tramp_dta_192
-    .p2align 4
-__hmx_tramp_dta_193:
-    cmpb $0, __hmx_latch_dta_193(%rip)
-    jne 1f
-    movb $1, __hmx_latch_dta_193(%rip)
-    leaq __hmx_name_dta_193(%rip), %rdi
-    call __hmx_stub_first_hit@PLT
-1:  xorl %eax, %eax
-    ret
-    .weak _ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp
-    .set _ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp, __hmx_tramp_dta_193
-    .p2align 4
-__hmx_tramp_dta_194:
-    cmpb $0, __hmx_latch_dta_194(%rip)
-    jne 1f
-    movb $1, __hmx_latch_dta_194(%rip)
-    leaq __hmx_name_dta_194(%rip), %rdi
-    call __hmx_stub_first_hit@PLT
-1:  xorl %eax, %eax
-    ret
-    .weak _ZTv0_n88_N13RndAnimatable4SaveER9BinStream
-    .set _ZTv0_n88_N13RndAnimatable4SaveER9BinStream, __hmx_tramp_dta_194
-    .p2align 4
-__hmx_tramp_dta_195:
-    cmpb $0, __hmx_latch_dta_195(%rip)
-    jne 1f
-    movb $1, __hmx_latch_dta_195(%rip)
-    leaq __hmx_name_dta_195(%rip), %rdi
-    call __hmx_stub_first_hit@PLT
-1:  xorl %eax, %eax
-    ret
     .weak _ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE
-    .set _ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_tramp_dta_195
+    .set _ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE, __hmx_tramp_dta_192
 
     .section .rodata
 __hmx_name_dta_0:
@@ -2292,320 +2259,314 @@ __hmx_name_dta_36:
 __hmx_name_dta_37:
     .asciz "_Z10ThreadCallP14ThreadCallback"
 __hmx_name_dta_38:
-    .asciz "_Z11FileIsLocalPKc"
-__hmx_name_dta_39:
     .asciz "_Z11JoypadResetv"
-__hmx_name_dta_40:
+__hmx_name_dta_39:
     .asciz "_Z11UsingHolmesi"
-__hmx_name_dta_41:
+__hmx_name_dta_40:
     .asciz "_Z12KeyboardInitv"
-__hmx_name_dta_42:
+__hmx_name_dta_41:
     .asciz "_Z12KeyboardPollv"
-__hmx_name_dta_43:
+__hmx_name_dta_42:
     .asciz "_Z13CacheResourcePKcPN3Hmx6ObjectE"
-__hmx_name_dta_44:
+__hmx_name_dta_43:
     .asciz "_Z13RndGxDrawDonev"
-__hmx_name_dta_45:
+__hmx_name_dta_44:
     .asciz "_Z14CDReadExternalRP11DVDFileInfoiy"
-__hmx_name_dta_46:
+__hmx_name_dta_45:
     .asciz "_Z14GetMapFileNameR6String"
-__hmx_name_dta_47:
+__hmx_name_dta_46:
     .asciz "_Z14ThreadCallInitv"
-__hmx_name_dta_48:
+__hmx_name_dta_47:
     .asciz "_Z14ThreadCallPollv"
-__hmx_name_dta_49:
+__hmx_name_dta_48:
     .asciz "_Z15HolmesResolveIPv"
-__hmx_name_dta_50:
+__hmx_name_dta_49:
     .asciz "_Z15InitDefaultHeapv"
-__hmx_name_dta_51:
+__hmx_name_dta_50:
     .asciz "_Z15JoypadTerminatev"
-__hmx_name_dta_52:
+__hmx_name_dta_51:
     .asciz "_Z16GetWiiJoypadTypei"
-__hmx_name_dta_53:
+__hmx_name_dta_52:
     .asciz "_Z16HolmesClientInitv"
-__hmx_name_dta_54:
+__hmx_name_dta_53:
     .asciz "_Z16HolmesClientOpenPKciRjRi"
-__hmx_name_dta_55:
+__hmx_name_dta_54:
     .asciz "_Z16HolmesClientPollv"
-__hmx_name_dta_56:
+__hmx_name_dta_55:
     .asciz "_Z16HolmesClientReadiiiPvP4File"
-__hmx_name_dta_57:
+__hmx_name_dta_56:
     .asciz "_Z17CaptureStackTraceiPj"
-__hmx_name_dta_58:
+__hmx_name_dta_57:
     .asciz "_Z17GetSystemLanguage6Symbol"
-__hmx_name_dta_59:
+__hmx_name_dta_58:
     .asciz "_Z17HolmesClientCloseP4Filei"
-__hmx_name_dta_60:
+__hmx_name_dta_59:
     .asciz "_Z17HolmesClientPrintPKc"
-__hmx_name_dta_61:
+__hmx_name_dta_60:
     .asciz "_Z17HolmesClientWriteiiiPKv"
-__hmx_name_dta_62:
+__hmx_name_dta_61:
     .asciz "_Z17KeyboardTerminatev"
-__hmx_name_dta_63:
+__hmx_name_dta_62:
     .asciz "_Z17ThreadCallPreInitv"
-__hmx_name_dta_64:
+__hmx_name_dta_63:
     .asciz "_Z18HolmesClientReInitv"
-__hmx_name_dta_65:
+__hmx_name_dta_64:
     .asciz "_Z18PlatformDebugBreakv"
-__hmx_name_dta_66:
+__hmx_name_dta_65:
     .asciz "_Z19HolmesClientSysExecPKc"
-__hmx_name_dta_67:
+__hmx_name_dta_66:
     .asciz "_Z19ThreadCallTerminatev"
-__hmx_name_dta_68:
+__hmx_name_dta_67:
     .asciz "_Z20HolmesClientReadDoneP4File"
-__hmx_name_dta_69:
+__hmx_name_dta_68:
     .asciz "_Z20HolmesClientTruncateii"
-__hmx_name_dta_70:
-    .asciz "_Z21FileQualifiedFilenamePciPKc"
-__hmx_name_dta_71:
+__hmx_name_dta_69:
     .asciz "_Z21HolmesClientTerminatev"
-__hmx_name_dta_72:
+__hmx_name_dta_70:
     .asciz "_Z22HolmesClientStackTracePKcPjiR6String"
-__hmx_name_dta_73:
+__hmx_name_dta_71:
     .asciz "_Z22SetGPHangDetectEnabledbPKc"
-__hmx_name_dta_74:
+__hmx_name_dta_72:
     .asciz "_Z23RB3InitNativeNetSessionv"
-__hmx_name_dta_75:
+__hmx_name_dta_73:
     .asciz "_Z27RB3MetaPerfIntegrityCheckAtPKc"
-__hmx_name_dta_76:
+__hmx_name_dta_74:
     .asciz "_Z6CDReadiiiPv"
-__hmx_name_dta_77:
+__hmx_name_dta_75:
     .asciz "_Z8CacheWavPKcR19CacheResourceResult"
-__hmx_name_dta_78:
-    .asciz "_Z9FileIsDLCPKc"
-__hmx_name_dta_79:
+__hmx_name_dta_76:
     .asciz "_ZN10MemcardWii4InitEv"
-__hmx_name_dta_80:
+__hmx_name_dta_77:
     .asciz "_ZN10MemcardWii9TerminateEv"
-__hmx_name_dta_81:
+__hmx_name_dta_78:
     .asciz "_ZN10MidiParser4PollEv"
-__hmx_name_dta_82:
+__hmx_name_dta_79:
     .asciz "_ZN10MidiParser8sParsersB5cxx11E"
-__hmx_name_dta_83:
+__hmx_name_dta_80:
     .asciz "_ZN10RndOverlay4FindE6Symbolb"
-__hmx_name_dta_84:
+__hmx_name_dta_81:
     .asciz "_ZN10WiiContent9EnumerateEPKcPFvS1_S1_EbS1_"
-__hmx_name_dta_85:
+__hmx_name_dta_82:
     .asciz "_ZN11ByteGrinder10GrindArrayEllPhii"
-__hmx_name_dta_86:
+__hmx_name_dta_83:
     .asciz "_ZN11CacheMgrWiiC1Ev"
-__hmx_name_dta_87:
+__hmx_name_dta_84:
     .asciz "_ZN11FakeSongMgr13GetSongConfigE6Symbol"
-__hmx_name_dta_88:
+__hmx_name_dta_85:
     .asciz "_ZN11PlatformMgr10RegionInitEv"
-__hmx_name_dta_89:
+__hmx_name_dta_86:
     .asciz "_ZN11PlatformMgr11ContentDoneEv"
-__hmx_name_dta_90:
+__hmx_name_dta_87:
     .asciz "_ZN11PlatformMgr12SetConnectedEb"
-__hmx_name_dta_91:
+__hmx_name_dta_88:
     .asciz "_ZN11PlatformMgr12SetDiskErrorE9DiskError"
-__hmx_name_dta_92:
+__hmx_name_dta_89:
     .asciz "_ZN11PlatformMgr13ClearDWCErrorEv"
-__hmx_name_dta_93:
+__hmx_name_dta_90:
     .asciz "_ZN11PlatformMgr13ClearNetErrorEv"
-__hmx_name_dta_94:
+__hmx_name_dta_91:
     .asciz "_ZN11PlatformMgr13OnSignInUsersEPK9DataArray"
-__hmx_name_dta_95:
+__hmx_name_dta_92:
     .asciz "_ZN11PlatformMgr14ContentStartedEv"
-__hmx_name_dta_96:
+__hmx_name_dta_93:
     .asciz "_ZN11PlatformMgr14SetScreenSaverEb"
-__hmx_name_dta_97:
+__hmx_name_dta_94:
     .asciz "_ZN11PlatformMgr14StartProfanityEPKcPN3Hmx6ObjectE"
-__hmx_name_dta_98:
+__hmx_name_dta_95:
     .asciz "_ZN11PlatformMgr15EnableProfanityEb"
-__hmx_name_dta_99:
+__hmx_name_dta_96:
     .asciz "_ZN11PlatformMgr15GetLastDNSErrorEv"
-__hmx_name_dta_100:
+__hmx_name_dta_97:
     .asciz "_ZN11PlatformMgr15GetLastDWCErrorEv"
-__hmx_name_dta_101:
+__hmx_name_dta_98:
     .asciz "_ZN11PlatformMgr16ContentCancelledEv"
-__hmx_name_dta_102:
+__hmx_name_dta_99:
     .asciz "_ZN11PlatformMgr16PrintParentalPinEv"
-__hmx_name_dta_103:
+__hmx_name_dta_100:
     .asciz "_ZN11PlatformMgr17GetLastNHTTPErrorEv"
-__hmx_name_dta_104:
+__hmx_name_dta_101:
     .asciz "_ZN11PlatformMgr17GetNetErrorStringEb"
-__hmx_name_dta_105:
+__hmx_name_dta_102:
     .asciz "_ZN11PlatformMgr18RunNetStartUtilityEv"
-__hmx_name_dta_106:
+__hmx_name_dta_103:
     .asciz "_ZN11PlatformMgr18SetHomeMenuEnabledEb"
-__hmx_name_dta_107:
+__hmx_name_dta_104:
     .asciz "_ZN11PlatformMgr19SetNotifyUILocationE14NotifyLocation"
-__hmx_name_dta_108:
+__hmx_name_dta_105:
     .asciz "_ZN11PlatformMgr22InitNintendoConnectionEv"
-__hmx_name_dta_109:
+__hmx_name_dta_106:
     .asciz "_ZN11PlatformMgr23CloseNintendoConnectionEbb"
-__hmx_name_dta_110:
+__hmx_name_dta_107:
     .asciz "_ZN11PlatformMgr24IsEthernetCableConnectedEv"
-__hmx_name_dta_111:
+__hmx_name_dta_108:
     .asciz "_ZN11PlatformMgr25SetPartyMicOptionsShowingEb"
-__hmx_name_dta_112:
+__hmx_name_dta_109:
     .asciz "_ZN11PlatformMgr28GetNetErrorStringAsDataArrayEb"
-__hmx_name_dta_113:
+__hmx_name_dta_110:
     .asciz "_ZN11PlatformMgr4InitEv"
-__hmx_name_dta_114:
+__hmx_name_dta_111:
     .asciz "_ZN11PlatformMgr4PollEv"
-__hmx_name_dta_115:
+__hmx_name_dta_112:
     .asciz "_ZN11PlatformMgr5OnMsgERK11ButtonUpMsg"
-__hmx_name_dta_116:
+__hmx_name_dta_113:
     .asciz "_ZN11PlatformMgr5OnMsgERK13ButtonDownMsg"
-__hmx_name_dta_117:
+__hmx_name_dta_114:
     .asciz "_ZN11PlatformMgr7PreInitEv"
-__hmx_name_dta_118:
+__hmx_name_dta_115:
     .asciz "_ZN11PlatformMgr7WiiPollEv"
-__hmx_name_dta_119:
+__hmx_name_dta_116:
     .asciz "_ZN11PlatformMgrC1Ev"
-__hmx_name_dta_120:
+__hmx_name_dta_117:
     .asciz "_ZN11PlatformMgrD0Ev"
-__hmx_name_dta_121:
+__hmx_name_dta_118:
     .asciz "_ZN11PlatformMgrD1Ev"
-__hmx_name_dta_122:
+__hmx_name_dta_119:
     .asciz "_ZN12MidiReceiverC2Ev"
-__hmx_name_dta_123:
+__hmx_name_dta_120:
     .asciz "_ZN12NetLoaderWiiC1ERK6String"
-__hmx_name_dta_124:
+__hmx_name_dta_121:
     .asciz "_ZN13CameraManager4PollEv"
-__hmx_name_dta_125:
+__hmx_name_dta_122:
     .asciz "_ZN13NetworkSocket11GetHostNameEv"
-__hmx_name_dta_126:
+__hmx_name_dta_123:
     .asciz "_ZN13NetworkSocket6CreateEb"
-__hmx_name_dta_127:
+__hmx_name_dta_124:
     .asciz "_ZN13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp"
-__hmx_name_dta_128:
+__hmx_name_dta_125:
     .asciz "_ZN13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE"
-__hmx_name_dta_129:
+__hmx_name_dta_126:
     .asciz "_ZN13RndAnimatable4LoadER9BinStream"
-__hmx_name_dta_130:
+__hmx_name_dta_127:
     .asciz "_ZN13RndAnimatable4SaveER9BinStream"
-__hmx_name_dta_131:
+__hmx_name_dta_128:
     .asciz "_ZN13RndAnimatable6HandleEP9DataArrayb"
-__hmx_name_dta_132:
+__hmx_name_dta_129:
     .asciz "_ZN13RndAnimatableC2Ev"
-__hmx_name_dta_133:
+__hmx_name_dta_130:
     .asciz "_ZN14ProfilePicture13FetchUserDataEv"
-__hmx_name_dta_134:
+__hmx_name_dta_131:
     .asciz "_ZN14ProfilePicture15ReceiveUserDataEv"
-__hmx_name_dta_135:
+__hmx_name_dta_132:
     .asciz "_ZN14ProfilePicture16FetchUserPictureEv"
-__hmx_name_dta_136:
+__hmx_name_dta_133:
     .asciz "_ZN14ProfilePicture18ReceiveUserPictureEv"
-__hmx_name_dta_137:
+__hmx_name_dta_134:
     .asciz "_ZN14WiiCommerceMgr4InitEv"
-__hmx_name_dta_138:
+__hmx_name_dta_135:
     .asciz "_ZN15VirtualKeyboard12PlatformPollEv"
-__hmx_name_dta_139:
+__hmx_name_dta_136:
     .asciz "_ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii"
-__hmx_name_dta_140:
+__hmx_name_dta_137:
     .asciz "_ZN15VirtualKeyboard17PlatformTerminateEv"
-__hmx_name_dta_141:
+__hmx_name_dta_138:
     .asciz "_ZN16WiiNetworkSocket4InitEv"
-__hmx_name_dta_142:
+__hmx_name_dta_139:
     .asciz "_ZN18LightPresetManager4PollEv"
-__hmx_name_dta_143:
+__hmx_name_dta_140:
     .asciz "_ZN18LightPresetManager5EnterEv"
-__hmx_name_dta_144:
+__hmx_name_dta_141:
     .asciz "_ZN3Hmx6Object7PreLoadER9BinStream"
-__hmx_name_dta_145:
+__hmx_name_dta_142:
     .asciz "_ZN5Synth10StopAllSfxEb"
-__hmx_name_dta_146:
+__hmx_name_dta_143:
     .asciz "_ZN5Synth15GetMasterVolumeEv"
-__hmx_name_dta_147:
+__hmx_name_dta_144:
     .asciz "_ZN5Synth15SetMasterVolumeEf"
-__hmx_name_dta_148:
+__hmx_name_dta_145:
     .asciz "_ZN7HDCache10WriteAsyncEiiPKv"
-__hmx_name_dta_149:
+__hmx_name_dta_146:
     .asciz "_ZN7Memcard9TerminateEv"
-__hmx_name_dta_150:
+__hmx_name_dta_147:
     .asciz "_ZN8KeyChain6getKeyEiPhS0_"
-__hmx_name_dta_151:
+__hmx_name_dta_148:
     .asciz "_ZN9AsyncFile10WriteAsyncEPKvi"
-__hmx_name_dta_152:
+__hmx_name_dta_149:
     .asciz "_ZN9AsyncFile16UncompressedSizeEv"
-__hmx_name_dta_153:
+__hmx_name_dta_150:
     .asciz "_ZN9AsyncFile3EofEv"
-__hmx_name_dta_154:
+__hmx_name_dta_151:
     .asciz "_ZN9AsyncFile3NewEPKci"
-__hmx_name_dta_155:
+__hmx_name_dta_152:
     .asciz "_ZN9AsyncFile4FailEv"
-__hmx_name_dta_156:
+__hmx_name_dta_153:
     .asciz "_ZN9AsyncFile4ReadEPvi"
-__hmx_name_dta_157:
+__hmx_name_dta_154:
     .asciz "_ZN9AsyncFile4SeekEii"
-__hmx_name_dta_158:
+__hmx_name_dta_155:
     .asciz "_ZN9AsyncFile4SizeEv"
-__hmx_name_dta_159:
+__hmx_name_dta_156:
     .asciz "_ZN9AsyncFile4TellEv"
-__hmx_name_dta_160:
+__hmx_name_dta_157:
     .asciz "_ZN9AsyncFile5FlushEv"
-__hmx_name_dta_161:
+__hmx_name_dta_158:
     .asciz "_ZN9AsyncFile5WriteEPKvi"
-__hmx_name_dta_162:
+__hmx_name_dta_159:
     .asciz "_ZN9AsyncFile8ReadDoneERi"
-__hmx_name_dta_163:
+__hmx_name_dta_160:
     .asciz "_ZN9AsyncFile9ReadAsyncEPvi"
-__hmx_name_dta_164:
+__hmx_name_dta_161:
     .asciz "_ZN9AsyncFile9TerminateEv"
-__hmx_name_dta_165:
+__hmx_name_dta_162:
     .asciz "_ZN9AsyncFile9WriteDoneERi"
-__hmx_name_dta_166:
+__hmx_name_dta_163:
     .asciz "_ZN9AsyncFileC2EPKci"
-__hmx_name_dta_167:
+__hmx_name_dta_164:
     .asciz "_ZNK11PlatformMgr11GetOnlineIDEiP8OnlineID"
-__hmx_name_dta_168:
+__hmx_name_dta_165:
     .asciz "_ZNK11PlatformMgr15GetOwnerOfGuestEi"
-__hmx_name_dta_169:
+__hmx_name_dta_166:
     .asciz "_ZNK11PlatformMgr15IsUserAWiiGuestEPK9LocalUser"
-__hmx_name_dta_170:
+__hmx_name_dta_167:
     .asciz "_ZNK11PlatformMgr16IsSignedIntoLiveEi"
-__hmx_name_dta_171:
+__hmx_name_dta_168:
     .asciz "_ZNK11PlatformMgr18HasOnlinePrivilegeEi"
-__hmx_name_dta_172:
+__hmx_name_dta_169:
     .asciz "_ZNK11PlatformMgr7GetNameEi"
-__hmx_name_dta_173:
+__hmx_name_dta_170:
     .asciz "_ZNK13WiiProfileMgr12IsIndexValidEi"
-__hmx_name_dta_174:
+__hmx_name_dta_171:
     .asciz "_ZNK13WiiProfileMgr13GetIdForIndexEi"
-__hmx_name_dta_175:
+__hmx_name_dta_172:
     .asciz "_ZNK13WiiProfileMgr15GetIndexForUserEPK9LocalUser"
-__hmx_name_dta_176:
+__hmx_name_dta_173:
     .asciz "_ZNK7SongMgr17GetSongsInContentE6SymbolRSt6vectorIiSaIiEE"
-__hmx_name_dta_177:
+__hmx_name_dta_174:
     .asciz "_ZTI10WiiContent"
-__hmx_name_dta_178:
+__hmx_name_dta_175:
     .asciz "_ZTI11RndPollable"
-__hmx_name_dta_179:
+__hmx_name_dta_176:
     .asciz "_ZTI13RndAnimatable"
-__hmx_name_dta_180:
+__hmx_name_dta_177:
     .asciz "_ZTI8WorldDir"
-__hmx_name_dta_181:
+__hmx_name_dta_178:
     .asciz "_ZTI9AsyncFile"
-__hmx_name_dta_182:
+__hmx_name_dta_179:
     .asciz "_ZTT13RndAnimatable"
-__hmx_name_dta_183:
+__hmx_name_dta_180:
     .asciz "_ZTV9AsyncFile"
-__hmx_name_dta_184:
+__hmx_name_dta_181:
     .asciz "_ZThn64_N11PlatformMgr11ContentDoneEv"
-__hmx_name_dta_185:
+__hmx_name_dta_182:
     .asciz "_ZThn64_N11PlatformMgr14ContentStartedEv"
-__hmx_name_dta_186:
+__hmx_name_dta_183:
     .asciz "_ZThn64_N11PlatformMgr16ContentCancelledEv"
-__hmx_name_dta_187:
+__hmx_name_dta_184:
     .asciz "_ZThn64_N11PlatformMgrD0Ev"
-__hmx_name_dta_188:
+__hmx_name_dta_185:
     .asciz "_ZThn64_N11PlatformMgrD1Ev"
-__hmx_name_dta_189:
+__hmx_name_dta_186:
     .asciz "_ZTv0_n104_N13RndAnimatable4LoadER9BinStream"
-__hmx_name_dta_190:
+__hmx_name_dta_187:
     .asciz "_ZTv0_n24_N11PlatformMgrD0Ev"
-__hmx_name_dta_191:
+__hmx_name_dta_188:
     .asciz "_ZTv0_n24_N11PlatformMgrD1Ev"
-__hmx_name_dta_192:
+__hmx_name_dta_189:
     .asciz "_ZTv0_n72_N13RndAnimatable6HandleEP9DataArrayb"
-__hmx_name_dta_193:
+__hmx_name_dta_190:
     .asciz "_ZTv0_n80_N13RndAnimatable12SyncPropertyER8DataNodeP9DataArrayi6PropOp"
-__hmx_name_dta_194:
+__hmx_name_dta_191:
     .asciz "_ZTv0_n88_N13RndAnimatable4SaveER9BinStream"
-__hmx_name_dta_195:
+__hmx_name_dta_192:
     .asciz "_ZTv0_n96_N13RndAnimatable4CopyEPKN3Hmx6ObjectENS1_8CopyTypeE"
 
     .bss
@@ -2995,12 +2956,6 @@ __hmx_latch_dta_190:
 __hmx_latch_dta_191:
     .zero 1
 __hmx_latch_dta_192:
-    .zero 1
-__hmx_latch_dta_193:
-    .zero 1
-__hmx_latch_dta_194:
-    .zero 1
-__hmx_latch_dta_195:
     .zero 1
 
     // ---- DATA stubs (each: own writable zero-filled reservation) ----
