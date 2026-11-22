@@ -22,8 +22,11 @@
 //                   press Confirm to commit the (default-focus) guitar part.
 //                   Only `guitar` is supported; other syms log + skip.
 //   diff:<easy|medium|hard|expert|0-3>
-//                 → on the choose_diff view, press DDown to the top-down list
-//                   index (Easy0/Medium1/Hard2/Expert3) then Confirm.
+//                 → on the choose_diff view, press DDown/DUp ONE at a time,
+//                   reading choose_diff.lst's real selection and waiting out
+//                   each scroll, then Confirm once the target is selected;
+//                   logs "diff VERIFIED"/"MISMATCH" against the user's
+//                   difficulty (StepDiffVerb).
 // Both are multi-frame state machines (StepPadVerb): readiness-gated on the real
 // overshell view, self-paced on the pad queue, and they dismiss a confirm_action
 // dialog (part denial / diff confirm) with a bounded extra Confirm. This is the
@@ -61,6 +64,8 @@
 #include "ui/UIPanel.h"
 #include "ui/UIComponent.h"
 #include "ui/UILabel.h"   // UILabel — N6 seldiff raw-token clear
+#include "ui/UIList.h"    // UIList — diff: reads choose_diff.lst selection
+#include "obj/Task.h"     // TheTaskMgr.UISeconds — diff: press pacing clock
 #include "ui/UIPicture.h" // UIPicture::SetHookTex — N8 album-art smear re-show kill
 #include "rndobj/Text.h"  // RndText::RawText — detect the raw %S %I SONGS leak
 #include "meta_band/BandSongMgr.h"        // TheSongMgr (N6 song+artist text)
@@ -290,8 +295,8 @@ extern "C" bool RB3JoypadPadQueueBusy();
 // The `diff:<easy|medium|hard|expert|0-3>` verb drives the REAL choose_diff
 // overshell view with actual pad presses (DDown x index + Confirm) — no
 // programmatic BandUser::SetDifficulty. ParseDifficulty/DifficultyName below
-// turn the token into the top-down list INDEX the pad presses navigate to
-// (Easy=0 / Medium=1 / Hard=2 / Expert=3, default focus Easy).
+// turn the token into the Difficulty the closed-loop StepDiffVerb navigates
+// choose_diff.lst to (it reads the list's selection; no assumed start focus).
 
 // Parse a difficulty token: easy/medium/hard/expert OR the numeric 0-3. We do
 // NOT call the game's SymToDifficulty for the numeric form — it asserts on a
@@ -739,21 +744,88 @@ struct PadVerbState {
     int cursor  = -1;    // gVerbCursor this state belongs to (-1 == inactive)
     int phase   = kPadPhaseIdle;
     int retries = 0;     // confirm_action dismissals used (bounded to 4)
+    float startUI = -1.0f;  // diff: UI-seconds clock when the closed loop began
+    float nextUI  = 0.0f;   // diff: earliest UI-seconds time for the next press
 };
 PadVerbState gPadVerb;
 
-// Enqueue a pad verb's primary presses (called once, entering kPadPhaseAct).
-// diff:<d> scrolls DDown to the top-down list index (Easy0/Medium1/Hard2/Expert3,
-// default focus Easy) then Confirms; part:guitar Confirms the default focus.
-void PadVerbEnqueuePrimary(const Verb &v) {
-    if (v.kind == kVerbDiff) {
-        int idx = (int)v.diff;
-        for (int i = 0; i < idx; i++)
-            RB3JoypadEnqueuePad(kPadBitDDown);
-        RB3JoypadEnqueuePad(kPadBitConfirm);
-    } else {  // kVerbPart — guitar default focus: a single Confirm commits it
-        RB3JoypadEnqueuePad(kPadBitConfirm);
+// The pad-0 user's overshell slot (or null) — the slot OvershellView() reads.
+OvershellSlot *LocalOvershellSlot() {
+    OvershellPanel *ov = TheBandUI.GetOvershell();
+    if (!ov)
+        return nullptr;
+    for (int i = 0; i < 4; i++) {
+        OvershellSlot *s = ov->GetSlot(i);
+        if (s && s->GetUser() && s->GetUser()->IsLocal())
+            return s;
     }
+    return nullptr;
+}
+
+// The choose_diff view's list (overshell slot dir `choose_diff.lst`), or null.
+UIList *ChooseDiffList() {
+    OvershellSlot *slot = LocalOvershellSlot();
+    ObjectDir *dir = slot ? slot->DataDir() : nullptr;
+    return dir ? dir->Find<UIList>("choose_diff.lst", false) : nullptr;
+}
+
+// The list entry symbol for a difficulty (overshell_dir.dta setup_static_lists:
+// overshell_easy / overshell_medium / overshell_hard / overshell_expert).
+Symbol ChooseDiffSym(Difficulty d) {
+    switch (d) {
+    case kDifficultyEasy:   return Symbol("overshell_easy");
+    case kDifficultyMedium: return Symbol("overshell_medium");
+    case kDifficultyHard:   return Symbol("overshell_hard");
+    default:                return Symbol("overshell_expert");
+    }
+}
+
+int ChooseDiffIndex(Symbol s) {
+    for (int d = kDifficultyEasy; d <= kDifficultyExpert; d++)
+        if (s == ChooseDiffSym((Difficulty)d))
+            return d;
+    return -1;
+}
+
+// Enqueue a pad verb's primary presses (called once, entering kPadPhaseAct).
+// part:guitar Confirms the default focus. diff:<d> is CLOSED-LOOP (see
+// StepDiffVerb): it never enqueues a blind press sequence here.
+//
+// Why closed-loop: UIListState::Scroll ignores a scroll while the list is still
+// animating the previous one (mTargetShowing != mFirstShowing), and UIList drops
+// a Confirm while scrolling — retail behaviour, a fast real player loses presses
+// the same way. The old verb queued DDown x idx + Confirm back to back (one
+// press per 7 polls), so only the FIRST DDown landed: diff:expert played Medium
+// (measured 2026-11-22: endgame read MEDIUM, {rb3_overshell} diff:medium).
+void PadVerbEnqueuePrimary(const Verb &v) {
+    if (v.kind == kVerbPart)  // guitar default focus: a single Confirm commits it
+        RB3JoypadEnqueuePad(kPadBitConfirm);
+}
+
+// One closed-loop step of diff:<d>, called only when the pad queue is idle.
+// Reads the list's real selection, presses ONE DDown/DUp toward the target and
+// waits for the list to stop scrolling; Confirms only once the target entry is
+// selected and still. Returns true when the Confirm has been enqueued.
+bool StepDiffVerb(const Verb &v, int frame) {
+    UIList *list = ChooseDiffList();
+    if (!list)
+        return false;  // overshell list not resolvable yet; the press cap bounds us
+    static Message isScrollingMsg("is_scrolling");
+    if (list->Handle(isScrollingMsg, false).Int() != 0)
+        return false;  // wait for the scroll animation to settle
+    Symbol cur = list->SelectedSym(false);
+    Symbol want = ChooseDiffSym(v.diff);
+    if (cur == want) {
+        RB3JoypadEnqueuePad(kPadBitConfirm);
+        MILO_LOG("RB3 input: diff -> '%s' selected, Confirm (frame %d)\n", want.Str(), frame);
+        return true;
+    }
+    int curIdx = ChooseDiffIndex(cur);
+    int bit = (curIdx >= 0 && curIdx > (int)v.diff) ? kPad_DUp : kPadBitDDown;
+    RB3JoypadEnqueuePad(bit);
+    MILO_LOG("RB3 input: diff -> at '%s', want '%s', press %s (frame %d)\n",
+             cur.Str() ? cur.Str() : "?", want.Str(), bit == kPad_DUp ? "DUp" : "DDown", frame);
+    return false;
 }
 
 // Returns true iff the aid took effect (a live MetaPerformer existed). On replay
@@ -1036,6 +1108,25 @@ bool StepPadVerb(const Verb &v, int frame) {
 
     switch (gPadVerb.phase) {
     case kPadPhaseAct:
+        if (v.kind == kVerbDiff) {
+            // Bounded in UI time (frame rate is uncapped headless, so frames are
+            // no clock): 4 entries need at most 3 scrolls; 15 s covers dropped
+            // presses many times over, then give up LOUDLY (never hang).
+            float now = TheTaskMgr.UISeconds();
+            if (gPadVerb.startUI < 0.0f)
+                gPadVerb.startUI = now;
+            if (now < gPadVerb.nextUI)
+                return false;  // pace presses ~1/6 s apart, like a quick player
+            gPadVerb.nextUI = now + 0.15f;
+            if (now - gPadVerb.startUI > 15.0f) {
+                MILO_LOG("RB3 input: diff FAILED: '%s' never selected on choose_diff "
+                         "(frame %d) -- difficulty NOT set\n", DifficultyName(v.diff), frame);
+                return true;
+            }
+            if (StepDiffVerb(v, frame))
+                gPadVerb.phase = kPadPhaseDrain;
+            return false;
+        }
         PadVerbEnqueuePrimary(v);
         MILO_LOG("RB3 input: %s -> enqueued primary pad presses (frame %d)\n",
                  VerbName(v), frame);
@@ -1053,6 +1144,24 @@ bool StepPadVerb(const Verb &v, int frame) {
             MILO_LOG("RB3 input: %s -> confirm_action dialog, Confirm (retry %d)\n",
                      VerbName(v), gPadVerb.retries);
             return false;  // stay in Drain; re-check after this Confirm drains
+        }
+        if (v.kind == kVerbDiff) {
+            // A Confirm dropped by a still-scrolling list leaves the view on
+            // choose_diff: go round the closed loop again (bounded above).
+            if (view == Symbol("choose_diff") && gPadVerb.retries < 4) {
+                gPadVerb.retries++;
+                gPadVerb.phase = kPadPhaseAct;
+                MILO_LOG("RB3 input: diff -> still on choose_diff after Confirm, retry %d\n",
+                         gPadVerb.retries);
+                return false;
+            }
+            OvershellSlot *slot = LocalOvershellSlot();
+            BandUser *bu = slot ? slot->GetUser() : nullptr;
+            Difficulty got = bu ? bu->GetDifficulty() : kNumDifficulties;
+            MILO_LOG("RB3 input: diff %s: wanted '%s', user difficulty is '%s' (view='%s' frame %d)\n",
+                     got == v.diff ? "VERIFIED" : "MISMATCH", DifficultyName(v.diff),
+                     DifficultyName(got), view.Str() ? view.Str() : "(none)", frame);
+            return true;
         }
         MILO_LOG("RB3 input: %s complete (view='%s' retries=%d frame %d)\n",
                  VerbName(v), view.Str() ? view.Str() : "(none)",

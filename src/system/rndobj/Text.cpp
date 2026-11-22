@@ -757,6 +757,12 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
                     ParseMarkup(cur, &curStyle, style.size, style.zOffset);
                 int adv = parsed - cur;
                 cur = parsed;
+                // Markup bytes own (zero-width) slots in charWidths (see
+                // ComputeCharWidths), so the char index must skip them too.
+                // Without this every wrap point after a tag indexes widths
+                // that many slots early: "<alt>j</alt> 156,973" measured as
+                // just the icon, so right/centre alignment ignored the number.
+                charCount += adv;
                 curCharLen = DecodeUTF8(curChar, cur);
                 if (curStyle.brk == true) {
                     activeMarkup = true;
