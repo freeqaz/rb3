@@ -66,13 +66,12 @@ _Z10CDReadDonev	func	assert-unreachable
 _Z10JoypadInitv	func	assert-unreachable	
 _Z10JoypadPollv	func	assert-unreachable	
 _Z10ThreadCallP14ThreadCallback	func	assert-unreachable	
-_Z11FileIsLocalPKc	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); returns 0(false); VERIFIED both call sites (obj/DataFile.cpp CachedDataFile, os/File.cpp NewFile) gate on UsingCD() which is itself a no-op(false) on native, so the false-vs-true distinction never reaches a branch on native
 _Z11JoypadResetv	func	assert-unreachable	
 _Z11UsingHolmesi	func	assert-unreachable	
 _Z12KeyboardInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Wii USB keyboard peripheral init — native input goes through rb3_joypad_native.cpp, not this Wii API
 _Z12KeyboardPollv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Wii USB keyboard poll — same as KeyboardInit, native input goes through rb3_joypad_native.cpp not this Wii API
 _Z13CacheResourcePKcPN3Hmx6ObjectE	func	assert-unreachable	
-_Z13RndGxDrawDonev	func	assert-unreachable	
+_Z13RndGxDrawDonev	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; Wii GX GPU fence (GXDrawDone: block until the GX FIFO drains). Callers UILabel.cpp:391, PatchDir.cpp:286, Rso_Utl.cpp:178 only need prior draws complete; native submission has no CPU-visible FIFO to drain, so returning is the native answer
 _Z14CDReadExternalRP11DVDFileInfoiy	func	assert-unreachable	
 _Z14GetMapFileNameR6String	func	assert-unreachable	
 _Z14ThreadCallInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Wii inter-core ThreadCall messaging init — same as ThreadCallPreInit, unused on native
@@ -90,25 +89,23 @@ _Z17GetSystemLanguage6Symbol	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2
 _Z17HolmesClientCloseP4Filei	func	assert-unreachable	
 _Z17HolmesClientPrintPKc	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Holmes debug print — loses a debug log line only, not gameplay-visible
 _Z17HolmesClientWriteiiiPKv	func	assert-unreachable	
-_Z17KeyboardTerminatev	func	assert-unreachable	
+_Z17KeyboardTerminatev	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; exit path only (SystemTerminate, System.cpp:316); Init/Poll already ok-noop, no USB keyboard state exists to tear down
 _Z17ThreadCallPreInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Wii inter-core ThreadCall messaging pre-init — native uses std::thread, not the Wii IPC mechanism
 _Z18HolmesClientReInitv	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 rb3-tests StubCensus gate); Holmes debug/telemetry client re-init — same as HolmesClientInit, benign no-op
 _Z18PlatformDebugBreakv	func	assert-unreachable	
 _Z19HolmesClientSysExecPKc	func	assert-unreachable	
-_Z19ThreadCallTerminatev	func	assert-unreachable	
+_Z19ThreadCallTerminatev	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; exit path only (SystemTerminate, System.cpp:319); ThreadCallInit/Poll already ok-noop, nothing to tear down
 _Z20HolmesClientReadDoneP4File	func	assert-unreachable	
 _Z20HolmesClientTruncateii	func	assert-unreachable	
-_Z21FileQualifiedFilenamePciPKc	func	assert-unreachable	
-_Z21HolmesClientTerminatev	func	assert-unreachable	
+_Z21HolmesClientTerminatev	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; exit path only (Debug.cpp:455); HolmesClientInit/Poll/ReInit already ok-noop, no Holmes connection exists
 _Z22HolmesClientStackTracePKcPjiR6String	func	assert-unreachable	
 _Z22SetGPHangDetectEnabledbPKc	func	ok-noop	hit during boot smoke 2026-07-05 (W0.2.S4 boot-smoke gate); Wii GX graphics-pipe hang-detection debug toggle — no GX backend on native (replaced by the WebGPU renderer), no-op safe
 _Z23RB3InitNativeNetSessionv	func	assert-unreachable	rb3-dta compiles os/System.cpp (whose native SystemInit now calls RB3InitNativeNetSession) but does not link rb3_netsession_native.cpp; rb3-dta never calls SystemInit, so this weak no-op never executes. rb3-native links the strong def, which wins.
 _Z27RB3MetaPerfIntegrityCheckAtPKc	func	assert-unreachable	discovered W0.2.S4: os/File.cpp (rb3 77304bba, song-end MetaPerformer ctor-miscompile fix) calls this from NewFile(); rb3-dta compiles os/File.cpp but not band3/MetaPerformer.cpp (no MetaPerformer in a DTA-only parser), so the strong def is absent there. rb3-native links the strong def, which wins.
 _Z6CDReadiiiPv	func	assert-unreachable	
 _Z8CacheWavPKcR19CacheResourceResult	func	assert-unreachable	
-_Z9FileIsDLCPKc	func	assert-unreachable	
 _ZN10MemcardWii4InitEv	func	assert-unreachable	
-_ZN10MemcardWii9TerminateEv	func	assert-unreachable	
+_ZN10MemcardWii9TerminateEv	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; exit path only (SystemTerminate, System.cpp:314 TheMC.Terminate()); native saves do not go through the Wii NAND memcard layer
 _ZN10MidiParser4PollEv	func	assert-unreachable	
 _ZN10MidiParser8sParsersB5cxx11E	func	assert-unreachable	
 _ZN10RndOverlay4FindE6Symbolb	func	assert-unreachable	
@@ -168,7 +165,7 @@ _ZN14ProfilePicture18ReceiveUserPictureEv	func	assert-unreachable
 _ZN14WiiCommerceMgr4InitEv	func	assert-unreachable	
 _ZN15VirtualKeyboard12PlatformPollEv	func	assert-unreachable	
 _ZN15VirtualKeyboard14ShowKeyboardUIEPK9LocalUseri6StringS3_S3_ii	func	assert-unreachable	
-_ZN15VirtualKeyboard17PlatformTerminateEv	func	assert-unreachable	
+_ZN15VirtualKeyboard17PlatformTerminateEv	func	ok-noop	hit during boot-to-song 2026-11-22; 2026-11-22 rb3-wii-clean triage; retail body is empty (src/system/os/VirtualKeyboard_Wii.cpp:7); exit path via VirtualKeyboard::Terminate
 _ZN16WiiNetworkSocket4InitEv	func	assert-unreachable	
 _ZN18LightPresetManager4PollEv	func	assert-unreachable	
 _ZN18LightPresetManager5EnterEv	func	assert-unreachable	

@@ -28,6 +28,7 @@
 #ifdef HX_NATIVE
 
 #include "os/File.h"
+#include "os/Debug.h"
 #include <cstdio>
 #include <cstring>
 #include <chrono>      // steady_clock (RB3_FAKE_ASYNC_OPEN_MS timer)
@@ -1419,6 +1420,59 @@ File *HmxNativeOpenFile(const char *path, int mode) {
 #endif
     NativeStdioFile *f = new NativeStdioFile(path, mode);
     return MaybeWrapFakeAsync(f, mode); // NewFile callers check ->Fail() and release on failure
+}
+
+// ---------------------------------------------------------------------------
+// Path-classification helpers from os/File_Wii.cpp and AsyncFileWii, which the
+// native link does not compile (they sit next to DVD/Holmes code). They used to
+// be weak "assert-unreachable" stubs returning 0, and they ARE reached on every
+// run: CacheResource (rndobj/Utl.cpp), CacheWav (synth/Utl.cpp), Movie::Begin,
+// BandDirector and SongInfoCopy call them. A 0 there was a silent wrong answer:
+// FileQualifiedFilename left its output buffer unwritten (the String overload in
+// os/File.cpp then copied uninitialised stack), FileExistsOnCD said no gen/ file
+// exists, so CacheResource fell through to the Holmes host-cache request.
+//
+// Native semantics: the native build reads the disc image's files directly from
+// the data root, i.e. it is in File_Wii's "on disc" position whatever UsingCD()
+// says, and there is no Holmes host share to qualify paths against.
+
+// Retail body (File_Wii.cpp FileIsDLC), pure string logic.
+bool FileIsDLC(const char *file) {
+    if (strncmp(file, "nand/", 5) == 0) {
+        MILO_WARN("File accessed via nand/ path %s", file);
+        return true;
+    }
+    return strncmp(file, "dlc/", 4) == 0;
+}
+
+// Retail body (File_Wii.cpp): on Wii a "local" file is a DLC/NAND file.
+bool FileIsLocal(const char *file) { return FileIsDLC(file); }
+
+// Retail's UsingCD() branch of File_Wii.cpp: the path is used as is. The other
+// branch prefixes the Holmes host share and rewrites '/' to '\\', which has no
+// native meaning (no Holmes host; native opens game paths relative to the data
+// root).
+void FileQualifiedFilename(char *out, int, const char *in) {
+    MILO_ASSERT(in && out, 173);
+    strcpy(out, in);
+}
+
+// AsyncFileWii::FileExistsOnCD asks whether a file is on the disc. The native
+// "disc" is the data root, so open it through HmxNativeOpenFile (same path
+// handling as every game read) and check Fail(). Not FileExists(): native
+// NewFile deliberately returns a failing handle instead of nullptr, so
+// FileExists() answers true for any non-empty path on native.
+class AsyncFileWii {
+public:
+    static bool FileExistsOnCD(const char *);
+};
+bool AsyncFileWii::FileExistsOnCD(const char *file) {
+    if (!file || !*file)
+        return false;
+    File *f = HmxNativeOpenFile(file, 0x40002 | FILE_OPEN_NOARK);
+    bool exists = f && !f->Fail();
+    delete f;
+    return exists;
 }
 
 #endif // HX_NATIVE

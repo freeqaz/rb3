@@ -49,7 +49,6 @@ _Z14CleanupGpuMeshP7RndMesh	func	assert-unreachable	The RB3 GPU backend caches p
 _Z22DrawParticlesBillboardP14RndParticleSys	func	assert-unreachable	
 _Z25HolmesClientCacheResourcePKcS0_	func	assert-unreachable	
 _ZN11SynthSample7NewInstEbii	func	assert-unreachable	
-_ZN12AsyncFileWii14FileExistsOnCDEPKc	func	assert-unreachable	
 _ZN12BandDirector12IsMusicVideoEv	func	assert-unreachable	
 _ZN12WaveFileDataC1ER8WaveFile	func	assert-unreachable	
 _ZN12WaveFileDataD1Ev	func	assert-unreachable	
