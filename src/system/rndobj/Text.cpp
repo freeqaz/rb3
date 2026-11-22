@@ -19,9 +19,6 @@
 #include "utl/UTF8.h"
 #include "utl/Symbols.h"
 #include <string.h>
-#ifdef HX_NATIVE
-#include <cstring>
-#endif
 
 #ifdef HX_NATIVE
 // W17 R3-UIDUMP provenance draw-scope (engine-owned, game-fed via
@@ -716,265 +713,267 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
         line0.unk28.v.z = 0.0f;
         line0.unk58 =
             segmentLength(0, textLen, 0, numChars, charWidths, text);
-        return;
-    }
+        // Retail falls through to the alignment pass below (target: the
+        // no-wrap block branches to the cell-diff/GetHorizontalAlignOffset
+        // loop), so an unwrapped centred/right-aligned line is offset too.
+    } else {
+        WrapPoint stackBuf[256];
+        // Main DP wrap algorithm.
+        WrapPoint *wps = stackBuf;
+        if (numChars > 256) {
+            wps = new WrapPoint[numChars + 1];
+        }
+        memset(wps, 0, numChars * sizeof(WrapPoint));
 
-    WrapPoint stackBuf[256];
-    // Main DP wrap algorithm.
-    WrapPoint *wps = stackBuf;
-    if (numChars > 256) {
-        wps = new WrapPoint[numChars + 1];
-    }
-    memset(wps, 0, numChars * sizeof(WrapPoint));
+        Style curStyle = style;
 
-    Style curStyle = style;
+        wps[0].byteIdx = 0;
+        wps[0].charIdx = 0;
+        wps[0].cost = 0;
+        wps[0].bestPrevIdx = -1;
+        wps[0].nextIdx = -1;
+        wps[0].bestLineLen = 0.0f;
+        wps[0].style = curStyle;
+        wps[0].isLineEnd = true;
+        wps[0].isHardBreak = true;
 
-    wps[0].byteIdx = 0;
-    wps[0].charIdx = 0;
-    wps[0].cost = 0;
-    wps[0].bestPrevIdx = -1;
-    wps[0].nextIdx = -1;
-    wps[0].bestLineLen = 0.0f;
-    wps[0].style = curStyle;
-    wps[0].isLineEnd = true;
-    wps[0].isHardBreak = true;
+        int charCount = 0;
+        const char *cur = text;
 
-    int charCount = 0;
-    const char *cur = text;
+        float minW = mWrapWidth * 0.7f;
+        float goodW = mWrapWidth * 0.95f;
+        unsigned short curChar;
+        int numWp = 1;
+        bool activeMarkup = curStyle.brk;
+        int curCharLen = DecodeUTF8(curChar, cur);
 
-    float minW = mWrapWidth * 0.7f;
-    float goodW = mWrapWidth * 0.95f;
-    unsigned short curChar;
-    int numWp = 1;
-    bool activeMarkup = curStyle.brk;
-    int curCharLen = DecodeUTF8(curChar, cur);
-
-    while (curChar != 0) {
-        while (curChar != 0 && curChar != '\n') {
-        soft_loop_top:
-            if (curChar == '<' && mTextMarkup) {
-                const char *parsed =
-                    ParseMarkup(cur, &curStyle, style.size, style.zOffset);
-                int adv = parsed - cur;
-                cur = parsed;
-                // Markup bytes own (zero-width) slots in charWidths (see
-                // ComputeCharWidths), so the char index must skip them too.
-                // Without this every wrap point after a tag indexes widths
-                // that many slots early: "<alt>j</alt> 156,973" measured as
-                // just the icon, so right/centre alignment ignored the number.
-                charCount += adv;
-                curCharLen = DecodeUTF8(curChar, cur);
-                if (curStyle.brk == true) {
-                    activeMarkup = true;
+        while (curChar != 0) {
+            while (curChar != 0 && curChar != '\n') {
+            soft_loop_top:
+                if (curChar == '<' && mTextMarkup) {
+                    const char *parsed =
+                        ParseMarkup(cur, &curStyle, style.size, style.zOffset);
+                    int adv = parsed - cur;
+                    cur = parsed;
+                    // Markup bytes own (zero-width) slots in charWidths (see
+                    // ComputeCharWidths), so the char index must skip them too.
+                    // Without this every wrap point after a tag indexes widths
+                    // that many slots early: "<alt>j</alt> 156,973" measured as
+                    // just the icon, so right/centre alignment ignored the number.
+                    charCount += adv;
+                    curCharLen = DecodeUTF8(curChar, cur);
+                    if (curStyle.brk == true) {
+                        activeMarkup = true;
+                    }
+                    if (curChar == 0 || curChar == '\n') break;
+                    goto soft_loop_top;
                 }
-                if (curChar == 0 || curChar == '\n') break;
-                goto soft_loop_top;
-            }
 
-            int byteIdx = cur - text;
-            if (activeMarkup) {
-                if (canBreak(text, byteIdx - 1)) {
-                    int prevWp = numWp - 1;
-                    int bestWp = -1;
-                    int bestCost = 100000;
-                    float bestLineLen = 0.0f;
-                    bool overflow = false;
-                    WrapPoint *cand = &wps[prevWp];
-                    while (prevWp >= 0) {
-                        float lineLen = segmentLength(
-                            cand->byteIdx,
-                            byteIdx,
-                            cand->charIdx,
-                            charCount,
-                            charWidths,
-                            text
-                        );
-                        MILO_ASSERT(lineLen >= bestLineLen, 0x4CC);
-                        unsigned int pen = 10;
-                        if (lineLen > mWrapWidth) {
-                            if (prevWp != numWp - 1 && bestWp != -1) {
-                                overflow = true;
-                            }
-                        } else {
-                            if (lineLen < goodW) {
-                                float fullLen = segmentLength(
-                                    cand->byteIdx,
-                                    textLen,
-                                    cand->charIdx,
-                                    numChars,
-                                    charWidths,
-                                    text
-                                );
-                                if (fullLen >= mWrapWidth) {
-                                    pen = (unsigned int)(int)(
-                                        (1.0f - lineLen / mWrapWidth) * 60.0f
+                int byteIdx = cur - text;
+                if (activeMarkup) {
+                    if (canBreak(text, byteIdx - 1)) {
+                        int prevWp = numWp - 1;
+                        int bestWp = -1;
+                        int bestCost = 100000;
+                        float bestLineLen = 0.0f;
+                        bool overflow = false;
+                        WrapPoint *cand = &wps[prevWp];
+                        while (prevWp >= 0) {
+                            float lineLen = segmentLength(
+                                cand->byteIdx,
+                                byteIdx,
+                                cand->charIdx,
+                                charCount,
+                                charWidths,
+                                text
+                            );
+                            MILO_ASSERT(lineLen >= bestLineLen, 0x4CC);
+                            unsigned int pen = 10;
+                            if (lineLen > mWrapWidth) {
+                                if (prevWp != numWp - 1 && bestWp != -1) {
+                                    overflow = true;
+                                }
+                            } else {
+                                if (lineLen < goodW) {
+                                    float fullLen = segmentLength(
+                                        cand->byteIdx,
+                                        textLen,
+                                        cand->charIdx,
+                                        numChars,
+                                        charWidths,
+                                        text
                                     );
-                                    if (lineLen < minW)
-                                        pen += 200;
+                                    if (fullLen >= mWrapWidth) {
+                                        pen = (unsigned int)(int)(
+                                            (1.0f - lineLen / mWrapWidth) * 60.0f
+                                        );
+                                        if (lineLen < minW)
+                                            pen += 200;
+                                    }
                                 }
                             }
+                            int tc = (int)pen + cand->cost;
+                            if (tc <= bestCost) {
+                                bestCost = tc;
+                                bestWp = prevWp;
+                                bestLineLen = lineLen;
+                            }
+                            if (cand->isHardBreak || overflow)
+                                break;
+                            cand--;
+                            prevWp--;
                         }
-                        int tc = (int)pen + cand->cost;
-                        if (tc <= bestCost) {
-                            bestCost = tc;
-                            bestWp = prevWp;
-                            bestLineLen = lineLen;
-                        }
-                        if (cand->isHardBreak || overflow)
-                            break;
-                        cand--;
-                        prevWp--;
+                        MILO_ASSERT(bestWp != -1, 0x4FD);
+                        WrapPoint *nxt = &wps[numWp];
+                        nxt->byteIdx = byteIdx;
+                        nxt->charIdx = charCount;
+                        nxt->cost = bestCost;
+                        nxt->bestPrevIdx = bestWp;
+                        nxt->nextIdx = -1;
+                        nxt->bestLineLen = bestLineLen;
+                        nxt->style = curStyle;
+                        nxt->isLineEnd = true;
+                        nxt->isHardBreak = false;
+                        wps[bestWp].isLineEnd = false;
+                        numWp++;
                     }
-                    MILO_ASSERT(bestWp != -1, 0x4FD);
-                    WrapPoint *nxt = &wps[numWp];
-                    nxt->byteIdx = byteIdx;
-                    nxt->charIdx = charCount;
-                    nxt->cost = bestCost;
-                    nxt->bestPrevIdx = bestWp;
-                    nxt->nextIdx = -1;
-                    nxt->bestLineLen = bestLineLen;
-                    nxt->style = curStyle;
-                    nxt->isLineEnd = true;
-                    nxt->isHardBreak = false;
-                    wps[bestWp].isLineEnd = false;
-                    numWp++;
+                    if (activeMarkup != curStyle.brk) {
+                        MILO_ASSERT(curStyle.brk == false, 0x511);
+                        activeMarkup = false;
+                    }
                 }
-                if (activeMarkup != curStyle.brk) {
-                    MILO_ASSERT(curStyle.brk == false, 0x511);
-                    activeMarkup = false;
-                }
+                cur += curCharLen;
+                curCharLen = DecodeUTF8(curChar, cur);
+                charCount++;
             }
+
+            // Hard break (newline or nul). Add a hard-break wrap point; if it was
+            // a newline, advance past it and continue the outer loop.
+            {
+                int byteEnd = cur - text;
+                int prevWp = numWp - 1;
+                int bestWp = -1;
+                int bestCost = 100000;
+                float bestLineLen = 0.0f;
+                bool overflow = false;
+                WrapPoint *cand = &wps[prevWp];
+                while (prevWp >= 0) {
+                    float lineLen = segmentLength(
+                        cand->byteIdx,
+                        byteEnd,
+                        cand->charIdx,
+                        charCount,
+                        charWidths,
+                        text
+                    );
+                    unsigned int pen = 10;
+                    if (lineLen > mWrapWidth) {
+                        if (prevWp != numWp - 1 && bestWp != -1) {
+                            overflow = true;
+                        }
+                    } else {
+                        if (mAlign & 0x20) {
+                            float fullLen = segmentLength(
+                                cand->byteIdx,
+                                textLen,
+                                cand->charIdx,
+                                numChars,
+                                charWidths,
+                                text
+                            );
+                            if (fullLen >= mWrapWidth) {
+                                pen = (unsigned int)(int)(
+                                    (1.0f - lineLen / mWrapWidth) * 30.0f
+                                );
+                                if (lineLen < minW)
+                                    pen += 100;
+                            }
+                        } else {
+                            if (charCount - cand->charIdx <= 4)
+                                pen = 50;
+                        }
+                    }
+                    int tc = (int)pen + cand->cost;
+                    if (tc < bestCost) {
+                        bestCost = tc;
+                        bestWp = prevWp;
+                        bestLineLen = lineLen;
+                    }
+                    if (cand->isHardBreak || overflow)
+                        break;
+                    cand--;
+                    prevWp--;
+                }
+                MILO_ASSERT(bestWp != -1, 0x55F);
+                WrapPoint *nxt = &wps[numWp];
+                nxt->byteIdx = byteEnd;
+                nxt->charIdx = charCount;
+                nxt->cost = bestCost;
+                nxt->bestPrevIdx = bestWp;
+                nxt->nextIdx = -1;
+                nxt->bestLineLen = bestLineLen;
+                nxt->style = curStyle;
+                nxt->isLineEnd = true;
+                nxt->isHardBreak = true;
+                wps[bestWp].isLineEnd = false;
+                numWp++;
+            }
+            if (curChar == 0)
+                break;
+            // '\n' — step past it and continue.
             cur += curCharLen;
             curCharLen = DecodeUTF8(curChar, cur);
             charCount++;
         }
 
-        // Hard break (newline or nul). Add a hard-break wrap point; if it was
-        // a newline, advance past it and continue the outer loop.
+        // Link bestPrevIdx -> nextIdx.
         {
-            int byteEnd = cur - text;
-            int prevWp = numWp - 1;
-            int bestWp = -1;
-            int bestCost = 100000;
-            float bestLineLen = 0.0f;
-            bool overflow = false;
-            WrapPoint *cand = &wps[prevWp];
-            while (prevWp >= 0) {
-                float lineLen = segmentLength(
-                    cand->byteIdx,
-                    byteEnd,
-                    cand->charIdx,
-                    charCount,
-                    charWidths,
-                    text
-                );
-                unsigned int pen = 10;
-                if (lineLen > mWrapWidth) {
-                    if (prevWp != numWp - 1 && bestWp != -1) {
-                        overflow = true;
-                    }
-                } else {
-                    if (mAlign & 0x20) {
-                        float fullLen = segmentLength(
-                            cand->byteIdx,
-                            textLen,
-                            cand->charIdx,
-                            numChars,
-                            charWidths,
-                            text
-                        );
-                        if (fullLen >= mWrapWidth) {
-                            pen = (unsigned int)(int)(
-                                (1.0f - lineLen / mWrapWidth) * 30.0f
-                            );
-                            if (lineLen < minW)
-                                pen += 100;
-                        }
-                    } else {
-                        if (charCount - cand->charIdx <= 4)
-                            pen = 50;
-                    }
-                }
-                int tc = (int)pen + cand->cost;
-                if (tc < bestCost) {
-                    bestCost = tc;
-                    bestWp = prevWp;
-                    bestLineLen = lineLen;
-                }
-                if (cand->isHardBreak || overflow)
-                    break;
-                cand--;
-                prevWp--;
+            int idx = numWp - 1;
+            while (idx != 0) {
+                int prev = wps[idx].bestPrevIdx;
+                wps[prev].nextIdx = idx;
+                idx = prev;
             }
-            MILO_ASSERT(bestWp != -1, 0x55F);
-            WrapPoint *nxt = &wps[numWp];
-            nxt->byteIdx = byteEnd;
-            nxt->charIdx = charCount;
-            nxt->cost = bestCost;
-            nxt->bestPrevIdx = bestWp;
-            nxt->nextIdx = -1;
-            nxt->bestLineLen = bestLineLen;
-            nxt->style = curStyle;
-            nxt->isLineEnd = true;
-            nxt->isHardBreak = true;
-            wps[bestWp].isLineEnd = false;
-            numWp++;
         }
-        if (curChar == 0)
-            break;
-        // '\n' — step past it and continue.
-        cur += curCharLen;
-        curCharLen = DecodeUTF8(curChar, cur);
-        charCount++;
-    }
 
-    // Link bestPrevIdx -> nextIdx.
-    {
-        int idx = numWp - 1;
-        while (idx != 0) {
-            int prev = wps[idx].bestPrevIdx;
-            wps[prev].nextIdx = idx;
-            idx = prev;
-        }
-    }
-
-    // Build Line entries by forward-walking nextIdx from wps[0]. The line
-    // start (cs) comes from wp->byteIdx directly — wrap points already sit at
-    // post-space positions, so no leading-whitespace strip is needed. Trailing
-    // whitespace (space/tab/newline) is trimmed off ce.
-    {
-        WrapPoint *wp = &wps[0];
-        while (wp->nextIdx != -1) {
-            WrapPoint *ne = &wps[wp->nextIdx];
-            Line tmpLine;
-            tmpLine.lineStyle = wp->style;
-            tmpLine.unk18 = text + wp->byteIdx;
-            tmpLine.unk1c = text + ne->byteIdx;
-            tmpLine.startIdx = wp->charIdx;
-            tmpLine.endIdx = ne->charIdx;
-            tmpLine.unk58 = ne->bestLineLen;
-            while (tmpLine.unk1c > tmpLine.unk18) {
-                char p = tmpLine.unk1c[-1];
-                if (p != ' ' && p != '\n' && p != '\t')
-                    break;
-                --tmpLine.unk1c;
+        // Build Line entries by forward-walking nextIdx from wps[0]. The line
+        // start (cs) comes from wp->byteIdx directly — wrap points already sit at
+        // post-space positions, so no leading-whitespace strip is needed. Trailing
+        // whitespace (space/tab/newline) is trimmed off ce.
+        {
+            WrapPoint *wp = &wps[0];
+            while (wp->nextIdx != -1) {
+                WrapPoint *ne = &wps[wp->nextIdx];
+                Line tmpLine;
+                tmpLine.lineStyle = wp->style;
+                tmpLine.unk18 = text + wp->byteIdx;
+                tmpLine.unk1c = text + ne->byteIdx;
+                tmpLine.startIdx = wp->charIdx;
+                tmpLine.endIdx = ne->charIdx;
+                tmpLine.unk58 = ne->bestLineLen;
+                while (tmpLine.unk1c > tmpLine.unk18) {
+                    char p = tmpLine.unk1c[-1];
+                    if (p != ' ' && p != '\n' && p != '\t')
+                        break;
+                    --tmpLine.unk1c;
+                }
+                lines.push_back(tmpLine);
+                wp = ne;
             }
-            lines.push_back(tmpLine);
-            wp = ne;
         }
-    }
 
-    if (wps != stackBuf) {
-        delete[] wps;
-    }
+        if (wps != stackBuf) {
+            delete[] wps;
+        }
 
-    if (lines.size() == 0) {
-        Line emptyLine;
-        emptyLine.lineStyle = style;
-        emptyLine.unk18 = text;
-        emptyLine.unk1c = text;
-        emptyLine.unk58 = 0.0f;
-        lines.push_back(emptyLine);
+        if (lines.size() == 0) {
+            Line emptyLine;
+            emptyLine.lineStyle = style;
+            emptyLine.unk18 = text;
+            emptyLine.unk1c = text;
+            emptyLine.unk58 = 0.0f;
+            lines.push_back(emptyLine);
+        }
     }
 
     // Find max font cell-diff across fonts used in this text. Inline to force
@@ -1236,31 +1235,6 @@ void SetupCharVerts(
         vert[3].uv.Set(vert[2].uv.x, vert[0].uv.y);
         float topZ = f5;
         float botZ = f5 - f6;
-#ifdef HX_NATIVE
-        // Native-only: the wide-atlas CellDiff() correction (see Font.h) grows
-        // the instrument-icon glyph height, but the quad stays anchored at the
-        // line top (f5), pushing the icon's visual CENTER ~half the added height
-        // below the milo-authored anchor. In the song-select difficulty grid the
-        // dots are fixed-transform meshes authored at the icon's center, so the
-        // grown-but-top-anchored icon hangs ~22-28px below its dot row. Re-center
-        // the glyph quad on its anchor by exactly the height the correction added
-        // (0.5 * (f6_corrected - f6_raw)); keep the corrected height (f6) so the
-        // icon SHAPE stays right. Scoped to the color-icon font via its material
-        // name containing "icon" — the same heuristic the engine uses
-        // (Rnd_Wgpu_RB3.cpp isColorIconFont). Square-atlas / letter fonts have
-        // CellDiff()==RawCellDiff() (delta 0) AND no "icon" in their name, so
-        // normal UI text is untouched.
-        RndMat *iconMat = font->GetMat();
-        if (iconMat) {
-            const char *matName = iconMat->Name();
-            if (matName && matName[0] && std::strstr(matName, "icon") != nullptr) {
-                float f6Raw = style.size * font->RawCellDiff();
-                float shift = 0.5f * (f6 - f6Raw);
-                topZ += shift;
-                botZ += shift;
-            }
-        }
-#endif
         vert[0].pos.Set(fref + f7, f4, topZ);
         vert[1].pos.Set(fref - f7, f4, botZ);
         vert[2].pos.Set(f1 + (fref - f7), f4, botZ);
