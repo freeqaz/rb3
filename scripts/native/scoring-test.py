@@ -39,13 +39,23 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEFAULT_BIN = os.path.join(REPO, "native", "build-native", "rb3-native")
 DEFAULT_DATA = os.path.join(REPO, "orig-assets", "extracted")
 
-# Boot-to-gameplay nav (the V1 one-song sequence; nofail+autohit at the end).
+# Boot-to-gameplay nav; nofail+autohit at the end.
 # NOTE: deliberately NO jump — the song plays to its natural end.
+#
+# TWO downs, not the V1 recipe's one. The music library opens highlighting
+# RANDOM SONG; one down lands on the "123" HEADER, and selecting a header queues
+# every song under it (MusicLibrary::SelectNode kNodeHeader) — a 2-song setlist
+# (20thcenturyboy, 25or6to4), so the endgame read "SONG 1 OF 2" (measured
+# 2026-11-22: {meta_performer num_songs} = 2). The second down lands on the song
+# row itself. Both the setlist and the difficulty are VERIFIED at game_screen
+# below rather than assumed from the script.
+EXPECT_SONG = "20thcenturyboy"
+EXPECT_DIFF = "expert"
 NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
-    "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:part:guitar,@400:diff:expert,"
+    "@320:down,@335:down,@350:msg:music_library:select_highlighted_node,"
+    f"@380:part:guitar,@400:diff:{EXPECT_DIFF},"
     "@500:nofail,@520:autohit"
 )
 
@@ -144,7 +154,18 @@ def main():
         if scr != "game_screen":
             log(f"FAIL: never reached game_screen (last={scr})"); return 1
         song = evl(port, "{meta_performer song}")
-        log(f"game_screen reached; song={song}")
+        nsongs = evl(port, "{meta_performer num_songs}")
+        ov = evl(port, "{rb3_overshell}") or ""
+        diff = next((f[5:] for f in str(ov).split("|") if f.startswith("diff:")), None)
+        log(f"game_screen reached; song={song} num_songs={nsongs} difficulty={diff}")
+        # Verify the nav actually produced what the script asked for: a single
+        # quickplay song at the requested difficulty. (The old blind DDown x3 +
+        # Confirm played Medium while this test reported Expert.)
+        if song != EXPECT_SONG or nsongs != 1:
+            log(f"FAIL: setlist is not the single song {EXPECT_SONG} "
+                f"(song={song} num_songs={nsongs})"); return 1
+        if diff != EXPECT_DIFF:
+            log(f"FAIL: difficulty is {diff}, script asked for {EXPECT_DIFF}"); return 1
 
         # play to natural end with continuous autohit; track peak in-game score
         t0 = time.time(); started = False; peak = 0
