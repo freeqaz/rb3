@@ -188,7 +188,7 @@ const char *GetFontCharForHarmonyMics(int num_mics, int idx) {
 
 #pragma push
 #pragma force_active on
-inline const char *GetFontCharForProDrums(int idx) {
+RB3_CROSS_TU_INLINE const char *GetFontCharForProDrums(int idx) {
     return SystemConfig(instrument_icons, drum_pro)->Str(idx + 1);
 }
 #pragma pop

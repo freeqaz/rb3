@@ -7,6 +7,10 @@
 
 #include <cstdlib>
 
+// BandRnd rereads the geometry owner for every draw. WgpuRnd supplies its
+// own invalidation for the pointer-keyed mesh cache.
+void InvalidateGpuMesh(RndMesh *) {}
+
 namespace {
 void BandRndAtExit() { gBandRnd.Shutdown(); }
 } // namespace

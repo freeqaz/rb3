@@ -585,7 +585,7 @@ extern int RunViewer(int argc, char **argv);  // rb3_viewer.cpp — standalone .
 //
 // Env-var matrix for RB3_GAME mode:
 //   RB3_DATA=<path>    — root of extracted Xbox ARK assets (required)
-//   MILO_HEADLESS=1    — suppress Dawn window (no DISPLAY / CI / render-skip)
+//   MILO_HEADLESS=1    — suppress the Dawn window (CI / offscreen rendering)
 //   MILO_WIDTH/HEIGHT  — window size when not headless (default 1280×720)
 //   MILO_AUDIO=1       — open miniaudio output device even when MILO_HEADLESS=1;
 //                        overrides the headless audio skip in AudioDevice::Init.
@@ -669,7 +669,10 @@ static int RunGame(int argc, char **argv) {
 
     // Stand up the GpuDevice FIRST (before chdir + RB3 MemMgr boot) — same
     // ordering rationale as RB3_RENDER_MESH.
-    bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
+    bool headless = getenv("MILO_HEADLESS") != nullptr;
+#ifndef __APPLE__
+    headless = headless || getenv("DISPLAY") == nullptr;
+#endif
     int W = getenv("MILO_WIDTH")  ? atoi(getenv("MILO_WIDTH"))  : 1280;
     int H = getenv("MILO_HEIGHT") ? atoi(getenv("MILO_HEIGHT")) : 720;
     // BandRnd uses its own clear color (the generic Rnd_Wgpu MILO_CLEAR_COLOR

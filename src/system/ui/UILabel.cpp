@@ -477,7 +477,7 @@ Symbol UILabel::TextToken() const { return mTextToken; }
 DECOMP_FORCEFUNC(UILabel, UILabel, TextObj())
 #pragma push
 #pragma force_active on
-inline RndText *UILabel::TextObj() { return mText; }
+RB3_CROSS_TU_INLINE RndText *UILabel::TextObj() { return mText; }
 #pragma pop
 
 const char *UILabel::GetDefaultText() const {

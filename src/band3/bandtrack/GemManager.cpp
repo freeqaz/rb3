@@ -1656,7 +1656,7 @@ void GemManager::UpdateEnabledSlots() {
 
 #pragma push
 #pragma force_active on
-inline int GemManager::GetMaxSlots() const { return mTrackConfig.GetMaxSlots(); }
+RB3_CROSS_TU_INLINE int GemManager::GetMaxSlots() const { return mTrackConfig.GetMaxSlots(); }
 #pragma pop
 
 #line 87 "TrackDir.h"

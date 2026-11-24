@@ -1664,7 +1664,11 @@ Symbol magic("magic");
 Symbol main_hub_screen("main_hub_screen");
 Symbol main_panel("main_panel");
 Symbol main_performer("main_performer");
+#if defined(HX_NATIVE) && defined(__APPLE__)
+Symbol rb3_symbol_major("major");
+#else
 Symbol major("major");
+#endif
 Symbol major_format("major_format");
 Symbol make_a_setlist("make_a_setlist");
 Symbol make_a_setlist_by_line("make_a_setlist_by_line");

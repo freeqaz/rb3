@@ -56,7 +56,7 @@ void CharBoneDir::Terminate() { delete sResources; }
 
 #pragma push
 #pragma force_active on
-inline CharBoneDir *CharBoneDir::FindResource(const char *cc) {
+RB3_CROSS_TU_INLINE CharBoneDir *CharBoneDir::FindResource(const char *cc) {
     return sResources->Find<CharBoneDir>(cc, false);
 }
 #pragma pop

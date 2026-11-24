@@ -101,7 +101,7 @@ DECOMP_FORCEFUNC(Bitmap, RndBitmap, PixelBytes())
 
 #pragma push
 #pragma force_active on
-inline int RndBitmap::PixelBytes() const { return mRowBytes * mHeight; }
+RB3_CROSS_TU_INLINE int RndBitmap::PixelBytes() const { return mRowBytes * mHeight; }
 #pragma pop
 
 int RndBitmap::PaletteBytes() const {

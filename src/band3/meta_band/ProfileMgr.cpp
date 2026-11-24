@@ -43,7 +43,7 @@
 #include "utl/Symbols4.h"
 
 INIT_REVS(ProfileMgr);
-MicClientID sNullMicClientID;
+HX_WII_ONLY(MicClientID sNullMicClientID;)
 ProfileMgr TheProfileMgr;
 
 typedef void (Game::*GameFunc)(float);

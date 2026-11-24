@@ -64,6 +64,29 @@ VALID_CLASSES = {"assert-unreachable", "ok-noop", "data-blob"}
 # class -> single-char code used in the <set>_stub_table.inc
 CLS_CODE = {"assert-unreachable": "A", "ok-noop": "N", "data-blob": "D"}
 
+# The registry spells these vector types using libstdc++ mangling. Mach-O
+# still uses Itanium C++ names, with libc++'s inline namespace and allocator.
+MACOS_SYMBOLS = {
+    "_ZN10NetSession7SendMsgERKSt6vectorIP10RemoteUserSaIS2_EER10NetMessage10PacketType":
+        "_ZN10NetSession7SendMsgERKNSt3__16vectorIP10RemoteUserNS0_9allocatorIS3_EEEER10NetMessage10PacketType",
+    "_ZN11PlatformMgr16EnumerateFriendsEiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectE":
+        "_ZN11PlatformMgr16EnumerateFriendsEiRNSt3__16vectorIP6FriendNS0_9allocatorIS3_EEEEPN3Hmx6ObjectE",
+    "_ZN11PlatformMgr32RegisterEnumerateFriendsCallbackEPFbiRSt6vectorIP6FriendSaIS2_EEPN3Hmx6ObjectEE":
+        "_ZN11PlatformMgr32RegisterEnumerateFriendsCallbackEPFbiRNSt3__16vectorIP6FriendNS0_9allocatorIS3_EEEEPN3Hmx6ObjectEE",
+    "_ZN11RockCentral16UpdateFriendListEP7ProfileSt6vectorIP6FriendSaIS4_EER14DataResultListPN3Hmx6ObjectE":
+        "_ZN11RockCentral16UpdateFriendListEP7ProfileNSt3__16vectorIP6FriendNS2_9allocatorIS5_EEEER14DataResultListPN3Hmx6ObjectE",
+    "_ZN11RockCentral16UpdateFriendListEiSt6vectorIP6FriendSaIS2_EER14DataResultListPN3Hmx6ObjectE":
+        "_ZN11RockCentral16UpdateFriendListEiNSt3__16vectorIP6FriendNS0_9allocatorIS3_EEEER14DataResultListPN3Hmx6ObjectE",
+    "_ZN14WiiCommerceMgr19SpecifyContentUnitsERKSt6vectorItSaItEE":
+        "_ZN14WiiCommerceMgr19SpecifyContentUnitsERKNSt3__16vectorItNS0_9allocatorItEEEE",
+    "_ZN15SessionSearcher16GetSearchResultsERSt6vectorIP15NetSearchResultSaIS2_EE":
+        "_ZN15SessionSearcher16GetSearchResultsERNSt3__16vectorIP15NetSearchResultNS0_9allocatorIS3_EEEE",
+    "_ZN20MovieInternalBuffers3NewESt6vectorIP4BINKSaIS2_EE":
+        "_ZN20MovieInternalBuffers3NewENSt3__16vectorIP4BINKNS0_9allocatorIS3_EEEE",
+    "_ZNK10NetSession16GetLocalUserListERSt6vectorIP9LocalUserSaIS2_EE":
+        "_ZNK10NetSession16GetLocalUserListERNSt3__16vectorIP9LocalUserNS0_9allocatorIS3_EEEE",
+}
+
 # ---------------------------------------------------------------------------
 # band3 header text (UNCHANGED from W0.2.S1/S2 — do not reflow, the committed
 # band3_link_stubs.s must stay byte-identical when --set band3 is regenerated).
@@ -376,6 +399,37 @@ def bss_size(row) -> int:
     sys.exit(f"data row {row['symbol']} is missing a bss=<N> note")
 
 
+def emit_macos(rows, cfg: StubSet):
+    out = [
+        "// Generated weak link stubs. Edit the registry and rebuild.\n",
+        "extern void __hmx_stub_first_hit(const char *name);\n\n",
+    ]
+    if cfg.special_verbatim:
+        out.append(
+            "__attribute__((weak)) void _Z12EndianSwapEqIiEvRT_(unsigned int *value) {\n"
+            "    *value = __builtin_bswap32(*value);\n"
+            "}\n\n"
+        )
+    for row in rows:
+        name = row["symbol"]
+        symbol = MACOS_SYMBOLS.get(name, name)
+        if row["kind"] == "data":
+            out.append(
+                f"__attribute__((weak, aligned(16))) unsigned char {symbol}"
+                f"[{bss_size(row)}] = {{0}};\n"
+            )
+        else:
+            out.append(
+                f"__attribute__((weak)) int {symbol}(void) {{\n"
+                "    static char hit;\n"
+                "    if (!__atomic_exchange_n(&hit, 1, __ATOMIC_RELAXED))\n"
+                f'        __hmx_stub_first_hit("{name}");\n'
+                "    return 0;\n"
+                "}\n"
+            )
+    return "".join(out)
+
+
 def emit_legacy(rows, cfg: StubSet):
     funcs = sorted((r for r in rows if r["kind"] == "func"), key=lambda r: r["symbol"])
     datas = sorted((r for r in rows if r["kind"] == "data"), key=lambda r: r["symbol"])
@@ -539,13 +593,23 @@ def main():
     ap.add_argument("--registry", type=Path, default=None,
                      help="override the registry path (single --set only)")
     ap.add_argument("--output", type=Path, default=None,
-                     help="override the .s output path (single --set only)")
+                     help="override the generated source path (single --set only)")
+    ap.add_argument("--macos", action="store_true",
+                     help="generate Mach-O weak definitions as C with --set and --output")
     ap.add_argument("--table-output", type=Path, default=None,
                      help="override the C++ census table path, loud mode only (single --set only)")
     ap.add_argument("--check", action="store_true",
                      help="don't write; exit 1 if generated output differs from what's on disk "
                           "(idempotency / drift gate)")
     args = ap.parse_args()
+
+    if args.macos:
+        if args.all or not args.output or args.table_output or args.check or args.mode != "loud":
+            ap.error("--macos requires one stub set and --output")
+        cfg = STUB_SETS[args.set]
+        rows = parse_registry(args.registry or cfg.registry)
+        args.output.write_text(emit_macos(rows, cfg), encoding="utf-8")
+        return 0
 
     sets = list(STUB_SETS) if args.all else [args.set]
     if len(sets) > 1 and (args.registry or args.output or args.table_output):

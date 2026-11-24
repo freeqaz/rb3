@@ -109,6 +109,9 @@
 // glue TU's include path (it links milo-engine).
 #include "rb3_rnd_backend.h"  // RB3RndBackend:: (rb3 or dc3 engine GPU backend)
 #include <GLFW/glfw3.h>
+#ifdef __APPLE__
+#include "CrkdGuitar.h"
+#endif
 #endif
 
 #include <cstdlib>
@@ -259,19 +262,17 @@ void EnsureWiiGuitarMapped() {
     }
 }
 
-// Wire pad 0: associate the first local BandUser, mark connected, pin a guitar
-// breed so JoypadControllerTypePadNum(0) -> wii_guitar -> NewController builds a
-// GuitarController. Idempotent — runs once, and is compatible with the lazy
-// SynthUser() wiring in rb3_game_input.cpp (same user, same pad, additive type).
-void EnsurePad0Wired() {
-    JoypadData *d = JoypadGetPadData(0);
+// Associate a local user and pin the Wii guitar breed used by the native
+// controller and instrument mappings. Pad 0 also accepts keyboard input.
+void WireGuitarPad(int pad) {
+    JoypadData *d = JoypadGetPadData(pad);
     if (!d)
         return;
     if (!d->mUser && TheBandUserMgr) {
         std::vector<LocalBandUser *> &locals = TheBandUserMgr->GetLocalBandUsers();
-        if (!locals.empty()) {
-            AssociateUserAndPad(locals[0], 0);
-            locals[0]->DebugSetControllerTypeOverride(kControllerGuitar);
+        if (static_cast<size_t>(pad) < locals.size()) {
+            AssociateUserAndPad(locals[pad], pad);
+            locals[pad]->DebugSetControllerTypeOverride(kControllerGuitar);
         }
     }
     if (!d->mConnected)
@@ -287,6 +288,46 @@ void EnsurePad0Wired() {
         d->mType = kJoypadWiiHxGuitar;
     }
 }
+
+void SetGuitarWhammy(JoypadData &pad, float amount) {
+    pad.mSticks[0][1] = -amount;
+    pad.mSticks[1][0] = 2.0f * amount - 1.0f;
+}
+
+#if defined(__APPLE__) && !defined(__EMSCRIPTEN__)
+milo::CrkdGuitars<kNumJoypads> sCrkdGuitars;
+
+unsigned int CrkdButtons(const milo::CrkdGuitarState &guitar) {
+    using Guitar = milo::CrkdGuitarState;
+    const unsigned b = guitar.buttons;
+    return (b & Guitar::Green ? kBtnFret0 : 0) | (b & Guitar::Red ? kBtnFret1 : 0) |
+           (b & Guitar::Yellow ? kBtnFret2 : 0) | (b & Guitar::Blue ? kBtnFret3 : 0) |
+           (b & Guitar::Orange ? kBtnFret4 : 0) | (b & Guitar::Overdrive ? kBtnStar : 0) |
+           (b & Guitar::Start ? kBtnStart : 0) | (b & Guitar::Up ? kBtnStrumUp : 0) |
+           (b & Guitar::Down ? kBtnStrumDown : 0) | (b & Guitar::Left ? kBtnDLeft : 0) |
+           (b & Guitar::Right ? kBtnDRight : 0);
+}
+
+void PollAdditionalGuitars() {
+    for (int pad = 1; pad < kNumJoypads; ++pad) {
+        const auto &guitar = sCrkdGuitars[pad];
+        JoypadData &data = *JoypadGetPadData(pad);
+        const bool wasConnected = data.mConnected;
+        if (guitar.connected) {
+            WireGuitarPad(pad);
+            SetGuitarWhammy(data, guitar.whammy);
+            if (!wasConnected)
+                JoypadPushThroughMsg(JoypadConnectionMsg(data.mUser, true, pad));
+            SendButtonMessages(pad, CrkdButtons(guitar));
+        } else if (wasConnected) {
+            SetGuitarWhammy(data, 0.0f);
+            SendButtonMessages(pad, 0);
+            data.mConnected = false;
+            JoypadPushThroughMsg(JoypadConnectionMsg(data.mUser, false, pad));
+        }
+    }
+}
+#endif
 
 #ifdef __EMSCRIPTEN__
 // Install JS keydown/keyup listeners maintaining window._rb3Keys as a bitmask
@@ -610,7 +651,7 @@ void JoypadReset() {
     // Re-establish pad 0's user association + connected guitar breed. Do NOT
     // ResetAllUsersPads() here: the synth-user wiring in rb3_game_input.cpp may
     // already have bound pad 0, and blowing it away would desync gSynthUser.
-    EnsurePad0Wired();
+    WireGuitarPad(0);
 }
 
 void JoypadTerminate() {
@@ -630,7 +671,7 @@ void JoypadPoll() {
     // Until a local user exists + pad 0 is connected, there is nothing to drive.
     // (rb3_game_input.cpp's SynthUser() also connects pad 0; either path is fine.)
     if (!d->mConnected) {
-        EnsurePad0Wired();
+        WireGuitarPad(0);
         if (!d->mConnected)
             return;
     }
@@ -674,7 +715,7 @@ void JoypadPoll() {
     }
 
     unsigned int btns = 0;
-    bool whammyHeld = false;
+    float whammy = 0.0f;
 
     // Headless message-path proof (off by default): RB3_JOYPAD_TEST_BTN=<bit>
     // holds that JoypadButton bit down so SendButtonMessages broadcasts a
@@ -792,17 +833,25 @@ void JoypadPoll() {
     float whammy01 = (float)ReadWebGamepadWhammy();
     if (whammy01 < 0.0f) whammy01 = 0.0f;
     if (whammy01 > 1.0f) whammy01 = 1.0f;
-    float webRx = -1.0f + 2.0f * whammy01;
-    if (webRx < -1.0f) webRx = -1.0f;
-    if (webRx > 1.0f) webRx = 1.0f;
-    d->mSticks[1][0] = webRx; // RX (negative_rx / traditional whammy)
-    (void)whammyHeld;
+    SetGuitarWhammy(*d, whammy01);
+    (void)whammy;
 #else
     GLFWwindow *w = RB3RndBackend::Gpu().Window();
     if (!w)
         return; // headless (MILO_HEADLESS=1) — no window; HTTP/script harness drives input
-    // --- USB gamepad (optional, Phase 4): face -> fret, dpad -> strum --------
-    if (glfwJoystickIsGamepad(0)) {
+#ifdef __APPLE__
+    sCrkdGuitars.Poll();
+    PollAdditionalGuitars();
+    const auto &guitar = sCrkdGuitars[0];
+    if (guitar.connected) {
+        btns |= CrkdButtons(guitar);
+        whammy = guitar.whammy;
+    }
+    const bool useStandardGamepad = !guitar.connected;
+#else
+    const bool useStandardGamepad = true;
+#endif
+    if (useStandardGamepad && glfwJoystickIsGamepad(0)) {
         GLFWgamepadstate gp;
         if (glfwGetGamepadState(0, &gp)) {
             if (gp.buttons[GLFW_GAMEPAD_BUTTON_A]) btns |= kBtnFret0;
@@ -818,7 +867,7 @@ void JoypadPoll() {
             if (gp.buttons[GLFW_GAMEPAD_BUTTON_START]) btns |= kBtnStart;
             // Right trigger as whammy.
             if ((gp.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] + 1.0f) * 0.5f > 0.3f)
-                whammyHeld = true;
+                whammy = 1.0f;
         }
     }
     // --- Keyboard (the headline path) ----------------------------------------
@@ -841,12 +890,9 @@ void JoypadPoll() {
     // Whammy: hold Space (desktop). wii_guitar uses TRADITIONAL_WHAMMY_VAL ->
     // -(RX+1)/2, so driving RX below engages whammy; we set both axes so any
     // breed (ly_whammy / negative_rx_whammy / traditional) reads the value.
-    if (glfwGetKey(w, GLFW_KEY_SPACE) == GLFW_PRESS) whammyHeld = true;
+    if (glfwGetKey(w, GLFW_KEY_SPACE) == GLFW_PRESS) whammy = 1.0f;
 
-    // Drive both whammy axes so whichever the controller cfg reads sees it.
-    // GetWhammyBar does min(0, axis); engaged = negative.
-    d->mSticks[0][1] = whammyHeld ? -1.0f : 0.0f; // LY  (ly_whammy)
-    d->mSticks[1][0] = whammyHeld ?  1.0f : 0.0f; // RX  (negative_rx_whammy -> -RX)
+    SetGuitarWhammy(*d, whammy);
 #endif // __EMSCRIPTEN__
 
     // SESSION-TELEMETRY input tap (keyboard / USB-gamepad path).

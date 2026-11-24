@@ -19,9 +19,9 @@ TaskUnits RndAnimatable::RateToTaskUnits(Rate myRate) { return gRateUnits[myRate
 
 #pragma push
 #pragma force_active on
-inline TaskUnits RndAnimatable::Units() const { return gRateUnits[mRate]; }
+RB3_CROSS_TU_INLINE TaskUnits RndAnimatable::Units() const { return gRateUnits[mRate]; }
 
-inline float RndAnimatable::FramesPerUnit() { return gRateFpu[mRate]; }
+RB3_CROSS_TU_INLINE float RndAnimatable::FramesPerUnit() { return gRateFpu[mRate]; }
 #pragma pop
 
 bool RndAnimatable::ConvertFrames(float &f) {

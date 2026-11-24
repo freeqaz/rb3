@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 # build-macos.sh — turnkey macOS (Apple Silicon / Intel) build for rb3-native.
 #
-# THIS SCRIPT IS RUN ON A MAC. It cannot be verified on the Linux dev host; the
-# CMake wiring it drives was regression-tested on Linux (rb3-native builds +
-# runs), and mirrors the proven dc3-native macOS recipe. See
-# docs/native/MACOS_BUILD.md for the full writeup and troubleshooting.
+# See docs/native/MACOS_BUILD.md for the build, prerequisites and smoke test.
 #
 # What it does:
 #   1. Sanity-checks prerequisites (Xcode CLT, cmake, ninja, brew deps, Dawn).
@@ -63,11 +60,12 @@ xcode-select -p >/dev/null 2>&1 || { echo "MISSING: Xcode Command Line Tools —
 need cmake  "brew install cmake"
 need ninja  "brew install ninja"
 need brew   "install Homebrew from https://brew.sh"
+need python3 "brew install python"
 
 # Homebrew libs the native link needs (glfw, vorbis/ogg, zlib is in the SDK).
-for pkg in glfw libvorbis libogg; do
+for pkg in glfw libvorbis libogg googletest; do
     if ! brew list --versions "$pkg" >/dev/null 2>&1; then
-        echo "MISSING brew pkg: $pkg — run: brew install glfw libvorbis libogg"
+        echo "MISSING brew pkg: $pkg — run: brew install $pkg"
         fail=1
     fi
 done
@@ -110,8 +108,12 @@ echo "==> DONE: ${BIN}"
 echo
 echo "Run it (needs extracted Xbox ARK assets — set RB3_DATA to their root):"
 echo "  export RB3_DATA=/path/to/rb3/orig-assets/extracted"
+echo "  # desktop launch:"
+echo "  RB3_GAME=1 \"${BIN}\""
 echo "  # headless full-game boot + HTTP debug API on :8080 (see scripts/native/*.py):"
-echo "  RB3_GAME=1 RB3_HTTP=1 \"${BIN}\""
+echo "  MILO_HEADLESS=1 RB3_GAME=1 RB3_HTTP=1 \"${BIN}\""
 echo "  #   curl localhost:8080/api/health ; curl -o shot.png localhost:8080/api/screenshot"
 echo "  # or dump a .milo scene tree:"
 echo "  \"${BIN}\" /abs/path/to/scene.milo_xbox"
+echo "  # Metal smoke test without game assets:"
+echo "  MILO_HEADLESS=1 RB3_GPU_SMOKE=1 \"${BIN}\""

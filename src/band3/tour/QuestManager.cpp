@@ -62,7 +62,7 @@ void QuestManager::ConfigureQuestFilterData(DataArray *da) {
 
 #pragma push
 #pragma force_active on
-inline bool QuestManager::HasQuestFilter(Symbol s) const { return GetQuestFilter(s); }
+RB3_CROSS_TU_INLINE bool QuestManager::HasQuestFilter(Symbol s) const { return GetQuestFilter(s); }
 #pragma pop
 
 GigFilter *QuestManager::GetQuestFilter(Symbol s) const {
@@ -88,7 +88,7 @@ void QuestManager::ConfigureFixedSetlistData(DataArray *da) {
 
 #pragma push
 #pragma force_active on
-inline bool QuestManager::HasFixedSetlist(Symbol s) const { return GetFixedSetlist(s); }
+RB3_CROSS_TU_INLINE bool QuestManager::HasFixedSetlist(Symbol s) const { return GetFixedSetlist(s); }
 #pragma pop
 
 FixedSetlist *QuestManager::GetFixedSetlist(Symbol s) const {

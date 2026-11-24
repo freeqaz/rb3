@@ -187,7 +187,11 @@ Symbol min_yaw("min_yaw");
 Symbol min_z("min_z");
 Symbol mini_leaderboards_title_friends("mini_leaderboards_title_friends");
 Symbol minnote("minnote");
+#if defined(HX_NATIVE) && defined(__APPLE__)
+Symbol rb3_symbol_minor("minor");
+#else
 Symbol minor("minor");
+#endif
 Symbol minor_format("minor_format");
 Symbol minor_pixels("minor_pixels");
 Symbol minus("minus");
@@ -858,12 +862,12 @@ Symbol point_test("point_test");
 Symbol point_value("point_value");
 Symbol pointer_position("pointer_position");
 Symbol points("points");
-#if !defined(HX_NATIVE) || defined(__EMSCRIPTEN__)
+#if !defined(HX_NATIVE) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
 // native-desktop: omitted — collides with POSIX poll() (miniaudio's ALSA worker
 // calls libc poll(), and ELF tolerates the data/func clash). The web build is
 // also HX_NATIVE but uses WebAudio (no ALSA → nothing pulls libc poll), and
 // strict wasm-ld errors on the undefined `poll` resolving to libc's poll() — so
-// it MUST be defined there. The Wii matched build (!HX_NATIVE) is unaffected.
+// it MUST be defined there. macOS gives the symbol a distinct linker name.
 Symbol poll("poll");
 #endif
 Symbol polls("polls");

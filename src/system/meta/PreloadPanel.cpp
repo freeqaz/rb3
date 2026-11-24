@@ -151,7 +151,7 @@ void PreloadPanel::ContentFailed(const char *cc) {
 
 #pragma push
 #pragma force_active on
-inline Symbol PreloadPanel::CurrentSong() const {
+RB3_CROSS_TU_INLINE Symbol PreloadPanel::CurrentSong() const {
     return TypeDef()->FindSym(current_song);
 }
 #pragma pop

@@ -44,7 +44,7 @@
 #include "utl/Locale.h"
 #include "utl/Symbols.h"
 
-MicClientID sNullMicClientID;
+HX_WII_ONLY(MicClientID sNullMicClientID;)
 
 NewOvershellLocalUserMsg::NewOvershellLocalUserMsg(LocalBandUser *user)
     : Message(Type(), user) {}

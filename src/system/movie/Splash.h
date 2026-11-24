@@ -85,7 +85,12 @@ public:
 
 extern Splash *TheSplasher;
 
-RETAIL_DONT_INLINE_FUNC void PollTheSplasher() {
+#ifdef HX_NATIVE
+inline
+#else
+RETAIL_DONT_INLINE_FUNC
+#endif
+void PollTheSplasher() {
     if (TheSplasher != nullptr)
         TheSplasher->Poll();
 }

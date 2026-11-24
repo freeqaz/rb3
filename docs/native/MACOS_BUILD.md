@@ -1,13 +1,12 @@
 # Building `rb3-native` on macOS (Apple Silicon + Intel)
 
-Status: **BUILDABLE-PENDING-MAC-VERIFY** (2026-07-13).
+The native port uses Apple Clang, Cocoa and Metal on macOS. The RB3 Wii
+decompilation build remains separate. For native game boot, use an extracted RB3
+Xbox 360 ARK asset tree.
 
-The CMake wiring below was added by mirroring the **proven `dc3-native` macOS
-recipe** (DC3 shares this exact engine) and was **regression-tested on Linux**
-(rb3-native still configures, compiles, and runs). It has **not** been compiled
-on real macOS hardware from this repo yet — the dev host is Linux and cannot
-produce a macOS binary. Everything here is correct-by-construction; the
-Mac-only steps you must run are called out in the last section.
+On November 23, 2026, the Apple M3 build on macOS 15.7.4 linked and ran the
+minimal engine and Metal readback smoke tests. The game entry point initialized
+its 1280×720 renderer. Gameplay verification needs the extracted asset tree.
 
 Turnkey script: [`scripts/native/build-macos.sh`](../../scripts/native/build-macos.sh)
 (`scripts/native/build-macos.sh --help`). This doc is the manual/explanatory
@@ -31,11 +30,6 @@ platform pieces are already cross-platform:
 | Signal backtrace (`execinfo.h` / `backtrace`) | libSystem | Exists on macOS — no guard needed. |
 | `malloc_trim` heap trim | n/a | Already guarded `#if defined(__GLIBC__)...` → no-op on macOS. |
 
-`native/src/**` has **no** other Linux-only surface (no `/proc`, epoll,
-`sysinfo`, `pthread_setname_np`, `<linux/*>`; `dlfcn.h` and `clock_gettime`
-are portable). All macOS work lives in **`native/CMakeLists.txt`**, inside
-`if(APPLE)` guards — Linux is untouched.
-
 ### What the APPLE guards do (in `native/CMakeLists.txt`)
 
 1. **Compat flags** — the Linux `__GNUC_STDC_INLINE__` / `__GCC_ATOMIC_*`
@@ -52,12 +46,14 @@ are portable). All macOS work lives in **`native/CMakeLists.txt`**, inside
 5. **Dawn_DIR default** — the Linux `../dc3-decomp-deps/dawn` (Vulkan) is not
    usable on macOS; the APPLE default is `~/dc3-deps/dawn/lib/cmake/Dawn`
    (overridable with `-DDawn_DIR=`).
-6. **Linker flags** — GNU `-Wl,--allow-multiple-definition` → Apple ld64
-   `-Wl,-ld_classic -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress`.
+6. **Linking** — Apple's default linker checks for missing and duplicate
+   definitions. Cross-file callers use the original implementations, and the
+   weak stubs for off-path platform calls use the macOS libc++ names.
 
-No engine changes are needed: the pinned engine SHA (`MILO_ENGINE_PIN` in
-`native/CMakeLists.txt`) already contains `MetalSurface.mm` and the Metal
-surface path.
+The Apple build generates Mach-O weak link definitions from the existing stub
+registries and compiles the Cocoa WebGPU backend as Objective-C++. The debug
+HTTP server uses Darwin libc and the ordinary health, screenshot and input
+routes. The ELF x86-64 replay API requires its original host ABI.
 
 ---
 
@@ -68,7 +64,7 @@ surface path.
 xcode-select --install
 
 # Build tools + native link deps (zlib ships with the macOS SDK)
-brew install cmake ninja glfw libvorbis libogg
+brew install cmake ninja pkgconf glfw libvorbis libogg googletest python
 ```
 
 The shared engine must be a sibling of `rb3/`:
@@ -76,9 +72,16 @@ The shared engine must be a sibling of `rb3/`:
 `git HEAD` at the SHA in `native/CMakeLists.txt`'s `MILO_ENGINE_PIN`
 (a mismatch only warns).
 
-### Building Dawn for macOS (Metal) — one-time, ~15 min
+### Dawn for macOS (Metal)
 
-The Linux Dawn under `../dc3-decomp-deps` is Vulkan and will **not** link on
+If a sibling DC3 checkout has already bootstrapped Dawn, reuse it.
+
+```bash
+# From the RB3 repository root. DAWN_DIR is the install prefix.
+DAWN_DIR="$PWD/../dawn-prebuilt" scripts/native/build-macos.sh
+```
+
+To build Dawn from source, use the recipe below. The Linux Dawn under `../dc3-decomp-deps` is Vulkan and will **not** link on
 macOS. Build a Metal Dawn once:
 
 ```bash
@@ -124,77 +127,68 @@ Or just: `scripts/native/build-macos.sh` (does all prereq checks + the above).
 Expected output: `rb3/native/build-macos/rb3-native` (a Mach-O arm64/x86_64
 executable).
 
-The `undefined symbol` link warnings for a handful of store/network/PlatformMgr
-symbols are **expected** (weak stubs / out-of-scope Wii backends), same as on
-Linux; `-undefined,dynamic_lookup` tolerates them.
-
 ---
 
 ## Running it
 
-The harness is **headless-first**, driven over an HTTP debug API — identical to
-the Linux workflow (`scripts/native/song-end-test.py`,
-`scripts/native/song-select-capture.py`). It needs the extracted **Xbox** ARK
-assets; point `RB3_DATA` at their root (mirrors the Linux default
-`rb3/orig-assets/extracted`).
+Run from the RB3 repository root. macOS uses a Cocoa window by default.
+Set `MILO_HEADLESS=1` when using the HTTP debug workflow without a window.
 
 ```bash
-export RB3_DATA=/path/to/rb3/orig-assets/extracted
+export RB3_DATA="$PWD/orig-assets/extracted"
+export RB3_DTA_OVERLAY="$PWD/native/dta"
 
-# Full game boot + HTTP debug server (default :8080; RB3_HTTP_PORT overrides):
-RB3_GAME=1 RB3_HTTP=1 ./build-macos/rb3-native
-#   curl localhost:8080/api/health
-#   curl -o shot.png localhost:8080/api/screenshot
-#   curl -XPOST localhost:8080/api/input -d 'green'      # nav verbs
-#   curl 'localhost:8080/api/dta/eval?...'               # live engine state
+# Full-game desktop launch
+RB3_GAME=1 native/build-macos/rb3-native
 
-# Or dump a .milo scene tree (no assets needed beyond the file):
-./build-macos/rb3-native /abs/path/to/scene.milo_xbox
+# Offscreen launch with the debug server on loopback
+MILO_HEADLESS=1 RB3_GAME=1 RB3_HTTP=1 native/build-macos/rb3-native
+# In another terminal
+curl -fsS http://127.0.0.1:8080/api/health
+curl -fsS -o /tmp/rb3-frame.png http://127.0.0.1:8080/api/screenshot
+
+# Asset-independent Metal smoke test
+MILO_HEADLESS=1 RB3_GPU_SMOKE=1 RB3_GPU_SMOKE_PNG=/tmp/rb3-gpu-smoke.png \
+    native/build-macos/rb3-native
 ```
 
-Other modes (env-gated, see `native/src/main_native.cpp`): `RB3_VIEWER=1`
-(standalone `.milo` renderer), `RB3_GPU_SMOKE=1` (clear-color PNG),
-`RB3_RENDER_MESH=1`. Windowed vs offscreen follows the engine's GLFW path; the
-default debug flow renders offscreen and reads back via `/api/screenshot`.
+Set `RB3_HTTP_PORT` to use a different port. To inspect a single scene, pass an
+absolute `.milo_xbox` path to the binary without `RB3_GAME`, or use
+`RB3_VIEWER=1` with the extracted asset tree to render a scene.
+
+### CRKD Guitar LM
+
+Use PS3 mode (USB `12BA:0100`) for the desktop build. The game assigns each
+connected CRKD to its own local pad. Click stick 2 for Start and use Select or
+tilt for overdrive. The frets, strum bar, D-pad and analog whammy are mapped
+from the controller's HID layout.
 
 ### Assets
 
 `RB3_DATA` must contain the arkhelper-extracted Xbox assets (the same tree the
 Linux build reads): `config/`, `songs/`, the `.milo_xbox` scenes, moggs, etc.
-Extraction is not part of this build — reuse the tree the Linux/web builds
-already use, or extract with the repo's ARK tooling. `.mogg` decryption keys are
-supplied natively (`rb3_keychain_native.cpp`); prefer Xbox assets (audio/Bink).
+Reuse the tree that the Linux build reads, or run
+`scripts/milo/extract_ark.sh --hdr /path/to/rb3/gen/main_xbox.hdr` with
+`arkhelper` on a host where that tool runs. The ARK parts must be alongside the
+header. Game boot reads `config/band_preinit_keep.dta` and
+`config/band_keep.dta` from this tree.
+
+The archive stores the shared system files under the literal `(..)/(..)`
+directories. For the default extraction location, add the following symlink
+from the repository root if `system` does not exist yet.
+
+```sh
+ln -s 'orig-assets/extracted/(..)/(..)/system' system
+```
 
 ---
 
 ## Optional targets
 
-- **Tests** (`rb3-tests`): `brew install googletest`, then add `-DBUILD_TESTS=ON`
-  (GTest via Homebrew). Inherits the same APPLE wiring.
+- **Tests** (`rb3-tests`): GTest comes from Homebrew. The native configuration
+  enables this target by default. Set `-DBUILD_TESTS=OFF` in a manual configure
+  to build only the application without requiring GTest.
 - **`rb3-dta`** (headless DTA parser): builds the same way, but note it is
   **currently broken on master on all platforms** — unrelated to macOS — because
   in-progress session-telemetry TUs reference `RB3LoadDet*` symbols not in
   rb3-dta's link set. `rb3-native` is unaffected.
-
----
-
-## Mac-only steps YOU must still verify
-
-Everything below is unverifiable on the Linux dev host:
-
-1. **Build Metal Dawn** (above) and confirm `find_package(Dawn)` succeeds — the
-   biggest unknown. Dawn CMake-package/version drift is the most likely failure.
-2. **`-ld_classic`** — deprecated in the newest Xcode (16+). If the linker
-   rejects it, drop it and rely on `-undefined,dynamic_lookup` alone, or add
-   `-Wl,-no_warn_duplicate_libraries`. The duplicate-symbol tolerance
-   (`-multiply_defined,suppress`) is what needs the classic linker.
-3. **Apple clang `-fms-compatibility` edge cases** — the decomp headers lean on
-   MSVC-compat parsing; the `stdarg.h`/`_VA_LIST_T` workaround handles the known
-   va_list clash, but other Apple-clang-vs-Linux-clang differences may surface.
-4. **libc++ vs libstdc++** — a handful of STL idioms in the matched fork could
-   differ; the `include/` `__wrap_iter` shim is libc++-shaped already (good).
-5. **Run one scene / one song** end-to-end and capture a screenshot to confirm
-   the Metal path renders (acceptance in NATIVE_PORT_ROADMAP.md Phase 6).
-
-Report back the first compile/link error if any — most will be a missing brew
-dep, a Dawn version mismatch, or an `-ld_classic` rejection, each with a quick fix.

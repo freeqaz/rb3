@@ -18,6 +18,8 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <memory>
+#include <atomic>
 #include <condition_variable>
 #include <cstdint>
 
@@ -97,13 +99,13 @@ private:
     void HandleDrawLog(Command& cmd);
     void HandleUIDump(Command& cmd);   // W17 R3-UIDUMP (native/src/rb3_uidump.cpp)
 
-    volatile bool mRunning = false;
+    std::atomic<bool> mRunning{false};
     int mPort = 0;
     std::thread mServerThread;
 
     std::mutex mQueueMutex;
-    std::vector<Command*> mPendingCommands;
-    std::vector<Command*> mPendingScreenshots;
+    std::vector<std::shared_ptr<Command>> mPendingCommands;
+    std::vector<std::shared_ptr<Command>> mPendingScreenshots;
 
     void* mServer = nullptr; // opaque httplib::Server*
 

@@ -24,7 +24,7 @@ DECOMP_FORCEFUNC(Profile, Profile, GetPadNum())
 
 #pragma push
 #pragma force_active on
-inline const char *Profile::GetName() const { return GetLocalUser()->UserName(); }
+RB3_CROSS_TU_INLINE const char *Profile::GetName() const { return GetLocalUser()->UserName(); }
 
 inline int Profile::GetPadNum() const { return mPadNum; }
 #pragma pop

@@ -200,7 +200,7 @@ PatchSticker *PatchLayer::GetSticker(bool b) const {
         return sStickerOwner->GetSticker(mStickerCategory, mStickerIdx, b);
 }
 
-inline bool PatchLayer::HasSticker() const { return mStickerCategory.Str() != gNullStr; }
+RB3_CROSS_TU_INLINE bool PatchLayer::HasSticker() const { return mStickerCategory.Str() != gNullStr; }
 DECOMP_FORCEBLOCK(PatchDir, (bool (PatchLayer::*fp)() const),
     fp = &PatchLayer::HasSticker;
 )

@@ -1084,16 +1084,16 @@ Symbol tier("tier");
 Symbol tilt("tilt");
 Symbol tilt_camera("tilt_camera");
 Symbol tilt_correction("tilt_correction");
-// Under EMSCRIPTEN, libc++ <chrono> chain pulls <time.h> in transitively,
+// On Emscripten and macOS, libc++ pulls <time.h> in transitively,
 // declaring ::time(time_t*) before this line — a function-vs-variable name
 // clash. The rename below mirrors utl/TimeSymbol.h's _hmx_time_sym alias so
 // the extern decl + definition both bind the same identifier (interned Symbol
 // value "time" is unchanged at runtime; equality is by pointer).
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || (defined(HX_NATIVE) && defined(__APPLE__))
 #define time _hmx_time_sym
 #endif
 Symbol time("time");
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || (defined(HX_NATIVE) && defined(__APPLE__))
 #undef time
 #endif
 Symbol time_between("time_between");

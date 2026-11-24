@@ -30,9 +30,9 @@ void ContentMgr::AddCallbackFile(const char *cc1, const char *cc2) {
 
 #pragma push
 #pragma force_active on
-inline bool ContentMgr::RefreshDone() const { return mState == kDiscoveryEnumerating; }
+RB3_CROSS_TU_INLINE bool ContentMgr::RefreshDone() const { return mState == kDiscoveryEnumerating; }
 
-inline bool ContentMgr::RefreshInProgress() {
+RB3_CROSS_TU_INLINE bool ContentMgr::RefreshInProgress() {
     return (u32)mState > 7 || !((1 << mState) & 0xC3U);
 }
 #pragma pop

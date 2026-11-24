@@ -111,7 +111,7 @@
 #ifdef VERSION_SZBE69_B8
 DECOMP_FORCEACTIVE(App, "_unresolved func.\n")
 #endif
-MicClientID sNullMicClientID(-1, -1);
+HX_WII_ONLY(MicClientID sNullMicClientID(-1, -1);)
 ModalCallbackFunc *gRealCallback;
 
 #ifdef HX_NATIVE

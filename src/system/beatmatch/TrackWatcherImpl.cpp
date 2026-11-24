@@ -595,7 +595,7 @@ bool TrackWatcherImpl::HasAnyGemInProgress() const {
 
 #pragma push
 #pragma force_active on
-inline bool TrackWatcherImpl::Playable(int gemID) {
+RB3_CROSS_TU_INLINE bool TrackWatcherImpl::Playable(int gemID) {
     return mGemList->GetGem(gemID).PlayableBy(mPlayerSlot);
 }
 #pragma pop

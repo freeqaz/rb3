@@ -518,7 +518,7 @@ void Character::DrawShadow(const Transform &tf, const Plane &pl) {
 
 #pragma push
 #pragma force_active on
-inline CharServoBone *Character::BoneServo() {
+RB3_CROSS_TU_INLINE CharServoBone *Character::BoneServo() {
     if (mDriver)
         return dynamic_cast<CharServoBone *>(mDriver->GetBones());
     else

@@ -125,7 +125,7 @@ void Gem::AddRep(
 
 #pragma push
 #pragma force_active on
-inline bool Gem::UseRGChordStyle() const {
+RB3_CROSS_TU_INLINE bool Gem::UseRGChordStyle() const {
     return mGameGem.IsRealGuitarChord() || mInArpeggio || mGameGem.IsMuted();
 }
 #pragma pop

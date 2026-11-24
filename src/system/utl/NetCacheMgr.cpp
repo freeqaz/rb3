@@ -209,7 +209,11 @@ void NetCacheMgr::DeleteNetCacheLoader(NetCacheLoader *ncl) {
     }
 }
 
+#ifdef HX_NATIVE
+extern Symbol local;
+#else
 static Symbol local("local");
+#endif
 
 Symbol NetCacheMgr::CheatNextServer() {
     std::list<ServerData>::iterator s = mServers.begin();

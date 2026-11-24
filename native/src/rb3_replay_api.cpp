@@ -39,6 +39,8 @@
 
 #include "rb3_http_server.h"
 
+#if defined(__x86_64__) && !defined(__APPLE__)
+
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -492,3 +494,16 @@ bool RB3ReplayApiHandle(int type, RB3HttpServer::Command& cmd) {
         default: return false;
     }
 }
+
+#else
+
+// The replay wire format assumes an ELF load bias and the SysV x86-64 ABI.
+bool RB3ReplayApiEnabled() {
+    return false;
+}
+
+bool RB3ReplayApiHandle(int, RB3HttpServer::Command&) {
+    return false;
+}
+
+#endif

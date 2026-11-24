@@ -15,7 +15,16 @@
 // in its own file (see roadmap §"MWCC paired-singles").
 #pragma once
 
-#ifdef HX_NATIVE
+#if defined(HX_NATIVE) && !defined(RB3_SKIP_MWCC_COMPAT)
+
+#ifdef __APPLE__
+// Two matched-fork call sites still use the C++14 shuffle API.
+#define _LIBCPP_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE
+// The matched fork uses std::mem_fun / mem_fun_t / const_mem_fun_t /
+// mem_fun_ref (VocalPlayer, Faders, PatchDir). rb3-web defines the same macro
+// for emscripten's libc++; doing it here keeps those Wii TUs untouched.
+#define _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
+#endif
 
 // Foundational decomp headers. In the MWCC/ninja build these reach every TU via
 // the project's include setup + PCH; many leaf headers (e.g. utl/Symbol.h)
@@ -68,4 +77,4 @@ typedef struct __vec2x32float__ {
 //   #pragma pool_data / dont_inline / fp_contract / force_active / aux
 // Nothing to define here for them — listed for documentation.
 
-#endif // HX_NATIVE
+#endif // HX_NATIVE && !RB3_SKIP_MWCC_COMPAT

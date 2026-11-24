@@ -48,7 +48,7 @@
 #include "utl/Symbols.h"
 
 MetaPerformer *MetaPerformer::sMetaPerformer;
-MicClientID sNullMicClientID;
+HX_WII_ONLY(MicClientID sNullMicClientID;)
 
 PerformerStatsInfo::PerformerStatsInfo()
     : mInstrumentMask(0), mScoreType(kScoreBand), unkc(-1), unk10(-1),

@@ -924,7 +924,7 @@ void BandDirector::SetCrowd(Symbol s) {
     HandleType(msg);
 }
 
-inline BandCharacter *BandDirector::GetCharacter(int idx) const {
+RB3_CROSS_TU_INLINE BandCharacter *BandDirector::GetCharacter(int idx) const {
     if (TheBandWardrobe)
         return TheBandWardrobe->GetCharacter(idx);
     else

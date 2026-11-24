@@ -125,11 +125,11 @@ DECOMP_FORCEFUNC(UIEventMgr, UIEventMgr, HasActiveTransitionEvent())
 
 #pragma push
 #pragma force_active on
-inline bool UIEventMgr::HasActiveDialogEvent() const {
+RB3_CROSS_TU_INLINE bool UIEventMgr::HasActiveDialogEvent() const {
     return mDialogEventQueue.CurrentEvent();
 }
 
-inline bool UIEventMgr::HasActiveTransitionEvent() const {
+RB3_CROSS_TU_INLINE bool UIEventMgr::HasActiveTransitionEvent() const {
     return mTransitionEventQueue.CurrentEvent();
 }
 #pragma pop
