@@ -173,6 +173,9 @@ void RB3HttpServer::HandleScreenshot(Command& cmd) {
         cmd.result.error = "Framebuffer readback failed (headless mode required)";
         return;
     }
+    // The presented game frame is opaque. Its alpha channel holds render
+    // effect data and is not a transparency mask for the screenshot.
+    for (size_t i = 3; i < pixels.size(); i += 4) pixels[i] = 255;
     std::vector<uint8_t> png;
     if (!WritePNGToMemory(png, pixels.data(), w, h)) {
         cmd.result.error = "PNG encoding failed";

@@ -17,6 +17,9 @@
 
 #include "rb3_http_server.h"
 
+// macOS gives the DTA globals distinct linker names in Symbols4.h, so httplib
+// can use its regular Darwin socket calls there.
+#if !defined(__APPLE__)
 // ----- libc poll()/send() collision shim -----------------------------------
 // RB3's decomp interns global Symbols whose bare linker names collide with libc
 // socket functions httplib uses (utl/Symbols4.cpp: `Symbol poll`, `Symbol
@@ -47,6 +50,7 @@ static inline ssize_t rb3_httplib_send(int fd, const void* buf, size_t n, int fl
 }
 #define poll rb3_httplib_poll
 #define send rb3_httplib_send
+#endif
 
 #include <httplib.h>
 
@@ -166,10 +170,10 @@ void RB3HttpServer::ServerThread() {
 RB3HttpServer::CommandResult RB3HttpServer::QueueAndWait(
     CommandType type, const std::string& p1, const std::string& p2
 ) {
-    Command cmd;
-    cmd.type = type;
-    cmd.param1 = p1;
-    cmd.param2 = p2;
+    auto cmd = std::make_shared<Command>();
+    cmd->type = type;
+    cmd->param1 = p1;
+    cmd->param2 = p2;
 
     {
         std::lock_guard<std::mutex> lk(mQueueMutex);
@@ -179,31 +183,27 @@ RB3HttpServer::CommandResult RB3HttpServer::QueueAndWait(
             return down;
         }
         if (type == kCmdScreenshot)
-            mPendingScreenshots.push_back(&cmd);
+            mPendingScreenshots.push_back(cmd);
         else
-            mPendingCommands.push_back(&cmd);
+            mPendingCommands.push_back(cmd);
     }
 
-    {
-        std::unique_lock<std::mutex> lk(cmd.mtx);
-        cmd.cv.wait_for(lk, std::chrono::seconds(10), [&] { return cmd.done; });
-    }
-
-    if (!cmd.done) {
+    std::unique_lock<std::mutex> lk(cmd->mtx);
+    if (!cmd->cv.wait_for(lk, std::chrono::seconds(10), [&] { return cmd->done; })) {
         CommandResult timeout;
         timeout.error = "Command timed out (main thread not polling?)";
         return timeout;
     }
-    return cmd.result;
+    return cmd->result;
 }
 
 void RB3HttpServer::ProcessCommands() {
-    std::vector<Command*> batch;
+    std::vector<std::shared_ptr<Command>> batch;
     {
         std::lock_guard<std::mutex> lk(mQueueMutex);
         batch.swap(mPendingCommands);
     }
-    for (Command* cmd : batch) {
+    for (const auto& cmd : batch) {
         switch (cmd->type) {
             case kCmdDtaEval: HandleDtaEval(*cmd); break;
             case kCmdInput:   HandleInput(*cmd); break;
@@ -224,12 +224,12 @@ void RB3HttpServer::ProcessCommands() {
 }
 
 void RB3HttpServer::ProcessScreenshots() {
-    std::vector<Command*> batch;
+    std::vector<std::shared_ptr<Command>> batch;
     {
         std::lock_guard<std::mutex> lk(mQueueMutex);
         batch.swap(mPendingScreenshots);
     }
-    for (Command* cmd : batch) {
+    for (const auto& cmd : batch) {
         HandleScreenshot(*cmd);
         {
             std::lock_guard<std::mutex> lk(cmd->mtx);
