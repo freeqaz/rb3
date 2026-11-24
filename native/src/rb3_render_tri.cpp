@@ -209,10 +209,10 @@ int RunRenderTri() {
         bd.entryCount = 5; bd.entries = e;
         sceneBG = gpu.Device().CreateBindGroup(&bd);
     }
-    // Group 1: material UBO + 6 tex + 2 samplers + cube + detail
+    // Group 1: material UBO and default textures, including refraction.
     wgpu::BindGroup matBG;
     {
-        wgpu::BindGroupEntry e[11] = {};
+        wgpu::BindGroupEntry e[14] = {};
         e[0].binding = 0;  e[0].buffer = matBuf; e[0].size = sizeof(MaterialUniforms);
         e[1].binding = 1;  e[1].textureView = whiteView;
         e[2].binding = 2;  e[2].sampler = sampler;
@@ -224,9 +224,12 @@ int RunRenderTri() {
         e[8].binding = 8;  e[8].textureView = blackCubeView;
         e[9].binding = 9;  e[9].sampler = sampler;
         e[10].binding = 10; e[10].textureView = flatNormalView;
+        e[11].binding = 11; e[11].textureView = flatNormalView;
+        e[12].binding = 12; e[12].textureView = blackView;
+        e[13].binding = 13; e[13].sampler = sampler;
         wgpu::BindGroupDescriptor bd{};
         bd.layout = pipelines.MaterialLayout();
-        bd.entryCount = 11; bd.entries = e;
+        bd.entryCount = 14; bd.entries = e;
         matBG = gpu.Device().CreateBindGroup(&bd);
     }
     // Group 2: object UBO
@@ -352,6 +355,10 @@ int RunRenderTri() {
     }
     printf("rb3-native: center pixel RGBA = (%u,%u,%u,%u); non-clear pixels = %d / %d\n",
            center[0], center[1], center[2], center[3], nonClear, W * H);
+    if (center[3] != 255 || nonClear == 0 || nonClear == W * H) {
+        fprintf(stderr, "rb3-native: triangle readback did not contain geometry and background\n");
+        return 1;
+    }
 
     const char* outPath = getenv("RB3_RENDER_TRI_PNG");
     char defPath[] = "/tmp/rb3_render_tri.png";
