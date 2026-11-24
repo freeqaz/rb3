@@ -5,8 +5,8 @@
 
 One row per `getenv()`-backed native-compat flag found under `milo-native-engine/src` + `rb3/native/src`. See `docs/native/engine-arch-review-2026-07-05/06-arch-crosscut.md` §3 and `execution/W0.6/PLAN.md` for the design this is generated from.
 
-**Total flags:** 471  
-**By class:** compat=2, debug=3, diagnostic=1, feature=27, perf=22, probe=159, tuning=3, unknown=151, workaround=103  
+**Total flags:** 474  
+**By class:** compat=2, debug=4, diagnostic=1, feature=27, perf=22, probe=161, tuning=3, unknown=151, workaround=103  
 **Default-ON workarounds (the number §W5.3 must drive to 0):** 78
 
 | name | class | default | owner | faithful-status | sites |
@@ -83,6 +83,7 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MESH_DUMP` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_AUDIO` | unknown | unknown | unclassified | n/a | 2 |
 | `MILO_AUDIO_BACKEND` | unknown | unknown | unclassified | n/a | 1 |
+| `MILO_AUDIO_TRACE` | probe | off | audio | probe: prints one 'AudioDevice: sample ... start' line (name, frames, rate, channels, format) each time a SampleInstNative starts. Log only, no playback change [SampleInst_Native.cpp:68] | 1 |
 | `MILO_BACKGROUND_AUDIO` | feature | off | audio | live: =1 keeps the desktop output playing when the game window is in the background and starved. Unset = mute: when the window has no focus and no frame has finished for 500 ms the mix is ramped to silence, and it comes back when the window has focus or 30 frames in a row each took under 100 ms (audio/BackgroundMute.h). A compositor that stops presenting a hidden window drops the main loop to about one frame a second, and the streams it decodes then play in bursts. Never applies headless or on the web [audio/AudioDevice.cpp] | 1 |
 | `MILO_CAM_ASPECT` | unknown | unknown | unclassified | n/a | 1 |
 | `MILO_CAM_DEBUG` | unknown | unknown | unclassified | n/a | 1 |
@@ -102,6 +103,8 @@ One row per `getenv()`-backed native-compat flag found under `milo-native-engine
 | `MILO_FRAME_TIMES` | probe | off | render/perf | n/a: writes one CSV row per frame to <path> (frame period, thread CPU time, BeginDrawing->EndDrawing time, time spent collecting flare point-test answers, tests recorded, answers delivered, oldest answer's age in frames; WgpuRnd::WriteFrameTimes, lane W16-SB). Measurement only, no draw change [Rnd_Wgpu.cpp] | 1 |
 | `MILO_FULLSCREEN` | feature | off | render/window | n/a: open the window fullscreen on the primary monitor at its desktop mode (no mode switch); F11 / Alt+Enter toggle at run time either way. For a player (dc3 scripts/play.sh --fullscreen, dc3 PLAN L-1/H-18) [GpuDevice.cpp] | 1 |
 | `MILO_GLFW_PLATFORM` | feature | off | render/window | n/a: Linux window system for GLFW: x11, wayland or any (default: GLFW's choice, Wayland when WAYLAND_DISPLAY is set). A window whose surface WebGPU cannot present to is re-opened through X11 either way (dc3 PLAN H-33) [GpuDevice.cpp] | 1 |
+| `MILO_GLYPH_ZMODE` | debug | off | render | n/a: A/B override of rndshape::kGlyphKeepsMatZMode (np-overlay-zmode): keep = glyph pages draw with their font material's z mode (retail RndText; on by shape in rb3-xenon), off = force zmode 0 (the old port behaviour; still the DC3 and rb3 Wii shape default). Any other value or unset = the shape's default [Mesh_Wgpu.cpp:255] | 1 |
+| `MILO_GLYPH_ZMODE_LOG` | probe | off | render | probe: prints each font material's z mode once per (material, pass depth) with whether glyph pages keep it ([glyph-zmode] lines). Log only [Mesh_Wgpu.cpp:265] | 1 |
 | `MILO_GPU_COUNTERS` | perf | off | render/perf | n/a: log-only. MILO_GPU_COUNTERS=N prints one [GPUCOUNT] line every N frames (0 or non-numeric: every 600) with the live bind-group cache size, creates/hits/evictions, uniform-ring sizes, grows and WriteBuffer counts, pipelines, GPU meshes and textures (lane np-drawperf, H-30/H-31 bounds check); unset = no line. No draw change [Rnd_Wgpu.cpp] | 1 |
 | `MILO_GPU_LABELS` | perf | off | render/perf | n/a: Dawn use_user_defined_labels_in_backend toggle (Vulkan object names for RenderDoc/GFXReconstruct/validation). 1 = on, 0 = off; unset = on only when a Vulkan layer env (VK_INSTANCE_LAYERS, VK_LOADER_LAYERS_ENABLE, ENABLE_VULKAN_RENDERDOC_CAPTURE) is set. Debug names only, no draw change; off saves the per-object name build + vkSetDebugUtilsObjectNameEXT (5-8% of the DC3 main thread, lane np-cpu-perf) [GpuDevice.cpp] | 1 |
 | `MILO_GPU_PASS_TRACE` | perf | off | render/perf | n/a: log-only. MILO_GPU_PASS_TRACE=N (with MILO_GPU_TIMERS) prints, every Nth timed frame, one [GPUPASS] line listing the frame's render passes in the order they were opened with each pass's colour/depth load and store ops (the cost of a pass break on a tile-based GPU is its load and store); unset or 0 = no line. No draw change [gfx/GpuTimers.cpp] | 1 |
