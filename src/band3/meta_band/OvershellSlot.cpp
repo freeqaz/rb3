@@ -53,7 +53,16 @@
 #include "utl/Symbols4.h"
 #include <cstddef>
 
+#ifndef HX_NATIVE
 MicClientID sNullMicClientID;
+#else
+namespace {
+class OfflineInviteProvider final : public UIListProvider, public Hmx::Object {
+public:
+    int NumData() const override { return 0; }
+};
+}
+#endif
 
 OvershellSlot::OvershellSlot(
     int i, OvershellPanel *panel, OvershellDir *dir, BandUserMgr *umgr, SessionMgr *smgr
@@ -79,13 +88,10 @@ OvershellSlot::OvershellSlot(
     setupProviders[0] = mCharProvider;
     setupProviders[1] = mSwappableProfilesProvider;
 #ifdef HX_NATIVE
-    // The invite-friends provider slot is `0` (no Wii invite provider). The bare
-    // literal binds to DataNode(int) -> kDataInt 0, so when the overshell_dir.dta
-    // `setup_providers` handler does `{invite_friends.lst set_provider $invite_provider}`,
-    // DataNode::GetObj calls LiteralStr on an int node and MILO_FAILs (clang LP64;
-    // MWCC's `0` selected the Hmx::Object* overload). Pass an explicit null object so
-    // the slot is kDataObject null and SetProvider(0) yields an empty list.
-    setupProviders[2] = (Hmx::Object *)0;
+    // The overshell script always binds a provider for the invitation list.
+    // Offline, give it an empty provider with process lifetime.
+    static OfflineInviteProvider offlineInvites;
+    setupProviders[2] = &offlineInvites;
 #else
     setupProviders[2] = 0;
 #endif
