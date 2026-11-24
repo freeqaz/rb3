@@ -93,7 +93,7 @@ set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
 # dc3-decomp (since 2026-08-19) and rb3-xenon (since 2026-11-06) carry FORCE
 # for the same reason. A -DMILO_ENGINE_PIN on the command line is therefore
 # ignored; MILO_ENGINE_PATH above has no FORCE, so -DMILO_ENGINE_PATH works.
-set(MILO_ENGINE_PIN "6b3458309173c7642d3ac9b5fe7054605ee7c2d8"
+set(MILO_ENGINE_PIN "5d18e85bb9cac431855985e77b03f8896e694889"
     CACHE STRING "Engine commit SHA verified against" FORCE)
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
