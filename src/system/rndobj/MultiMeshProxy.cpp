@@ -1,7 +1,13 @@
 #include "rndobj/MultiMeshProxy.h"
 #include "utl/Symbols.h"
 
-RndMultiMeshProxy::RndMultiMeshProxy() : mMultiMesh(this), mIndex(0) {}
+RndMultiMeshProxy::RndMultiMeshProxy()
+    : mMultiMesh(this),
+#ifdef HX_NATIVE
+      mIndex() {}
+#else
+      mIndex(0) {}
+#endif
 
 void RndMultiMeshProxy::SetMultiMesh(
     RndMultiMesh *mesh, const std::list<RndMultiMesh::Instance>::iterator &it

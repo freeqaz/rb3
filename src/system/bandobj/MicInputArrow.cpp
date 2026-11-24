@@ -5,7 +5,7 @@
 
 INIT_REVS(MicInputArrow);
 
-MicClientID sNullMicClientID(-1, -1);
+HX_WII_ONLY(MicClientID sNullMicClientID(-1, -1);)
 
 void MicInputArrow::Init() {
     Register();

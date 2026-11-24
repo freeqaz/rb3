@@ -66,7 +66,7 @@ bool sDumpLyricPlates;
 bool sDumpPlateStates;
 bool gDebugSpew;
 
-MicClientID sNullMicClientID(-1, -1);
+HX_WII_ONLY(MicClientID sNullMicClientID(-1, -1);)
 
 inline TambourineGemPool::TambourineGemPool() {
     for (int i = 0; i < 25; i++) {

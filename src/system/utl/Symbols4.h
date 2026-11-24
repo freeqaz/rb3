@@ -181,7 +181,11 @@ extern Symbol min_yaw;
 extern Symbol min_z;
 extern Symbol mini_leaderboards_title_friends;
 extern Symbol minnote;
+#if defined(HX_NATIVE) && defined(__APPLE__)
+extern Symbol rb3_symbol_minor;
+#else
 extern Symbol minor;
+#endif
 extern Symbol minor_format;
 extern Symbol minor_pixels;
 extern Symbol minus;
@@ -823,7 +827,11 @@ extern Symbol point_test;
 extern Symbol point_value;
 extern Symbol pointer_position;
 extern Symbol points;
+#if defined(HX_NATIVE) && defined(__APPLE__)
+extern Symbol poll __asm__("_rb3_dta_symbol_poll");
+#else
 extern Symbol poll;
+#endif
 extern Symbol polls;
 extern Symbol pool_category;
 extern Symbol pool_debug;
@@ -1504,7 +1512,11 @@ extern Symbol selected_sym;
 extern Symbol selecting_color;
 extern Symbol self;
 extern Symbol self_shadow;
+#if defined(HX_NATIVE) && defined(__APPLE__)
+extern Symbol send __asm__("_rb3_dta_symbol_send");
+#else
 extern Symbol send;
+#endif
 extern Symbol send_back_sound_msg_to_all;
 extern Symbol send_friendlist_changed;
 extern Symbol send_generic_request;

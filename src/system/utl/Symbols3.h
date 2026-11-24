@@ -1643,7 +1643,11 @@ extern Symbol magic;
 extern Symbol main_hub_screen;
 extern Symbol main_panel;
 extern Symbol main_performer;
+#if defined(HX_NATIVE) && defined(__APPLE__)
+extern Symbol rb3_symbol_major;
+#else
 extern Symbol major;
+#endif
 extern Symbol major_format;
 extern Symbol make_a_setlist;
 extern Symbol make_a_setlist_by_line;

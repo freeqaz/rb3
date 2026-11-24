@@ -4,7 +4,11 @@
 #include "beatmatch/TrackWatcherParent.h"
 #include <algorithm>
 
+#ifdef HX_NATIVE
+extern bool gKickAutoplay;
+#else
 bool gKickAutoplay;
+#endif
 
 DrumTrackWatcherImpl::DrumTrackWatcherImpl(
     int track,

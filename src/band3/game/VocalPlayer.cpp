@@ -50,7 +50,7 @@
 #include <functional>
 #include <utility>
 
-MicClientID sNullMicClientID;
+HX_WII_ONLY(MicClientID sNullMicClientID;)
 
 VocalPlayer::VocalPlayer(
     BandUser *user, BeatMaster *bmaster, Band *band, int tracknum, Performer *perf, int i7
