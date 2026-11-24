@@ -209,7 +209,7 @@ int Lyric::StartTick() const { return mVocalNotes[0]->GetTick(); }
 
 #pragma push
 #pragma force_active on
-inline float Lyric::Width() const { return mXWidth; }
+RB3_CROSS_TU_INLINE float Lyric::Width() const { return mXWidth; }
 #pragma pop
 
 float Lyric::EndPos() const { return Width() + mBeginPos.x; }

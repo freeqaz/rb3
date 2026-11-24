@@ -175,7 +175,7 @@ void GameGem::CopyGem(GameGem *gem, int i) {
 
 #pragma push
 #pragma force_active on
-inline bool GameGem::IsRealGuitar() const { return mRealGuitar; }
+RB3_CROSS_TU_INLINE bool GameGem::IsRealGuitar() const { return mRealGuitar; }
 #pragma pop
 
 bool GameGem::IsRealGuitarChord() const {
@@ -229,7 +229,7 @@ RGNoteType GameGem::GetRGNoteType(unsigned int string) const {
 
 #pragma push
 #pragma force_active on
-inline unsigned char GameGem::GetHandPosition() const { return mHandPosition; }
+RB3_CROSS_TU_INLINE unsigned char GameGem::GetHandPosition() const { return mHandPosition; }
 #pragma pop
 
 int GameGem::GetRGChordID() const { return mRGChordID; }

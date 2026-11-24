@@ -131,11 +131,11 @@ RndMesh *GemRepTemplate::CreateTail() {
 
 #pragma push
 #pragma force_active on
-inline int GemRepTemplate::GetRequiredVertCount(int i) const {
+RB3_CROSS_TU_INLINE int GemRepTemplate::GetRequiredVertCount(int i) const {
     return mTailVerts.size() * (i + 1);
 }
 
-inline int GemRepTemplate::GetRequiredFaceCount(int i) const {
+RB3_CROSS_TU_INLINE int GemRepTemplate::GetRequiredFaceCount(int i) const {
     return (mTailVerts.size() - 1) * i * 2;
 }
 #pragma pop

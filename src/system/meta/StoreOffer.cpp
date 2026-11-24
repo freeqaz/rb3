@@ -349,7 +349,7 @@ Symbol StoreOffer::OfferType() const {
 
 #pragma push
 #pragma force_active on
-inline const char *StoreOffer::OfferName() const { return mPackedData->GetName(); }
+RB3_CROSS_TU_INLINE const char *StoreOffer::OfferName() const { return mPackedData->GetName(); }
 #pragma pop
 
 bool StoreOffer::IsNewRelease() const { return mPackedData->mNewRelease; }
@@ -498,7 +498,7 @@ Symbol StoreOffer::VocalPartsSym() const {
 
 #pragma push
 #pragma force_active on
-inline const char *StoreOffer::Artist() const { return mPackedData->GetArtist(); }
+RB3_CROSS_TU_INLINE const char *StoreOffer::Artist() const { return mPackedData->GetArtist(); }
 #pragma pop
 
 const char *StoreOffer::AlbumName() const { return mPackedData->GetAlbumName(); }

@@ -330,7 +330,7 @@ DECOMP_FORCEFUNC(BandSongMetadata, BandSongMetadata, HasKeys())
 
 #pragma push
 #pragma force_active on
-inline bool BandSongMetadata::HasKeys() const {
+RB3_CROSS_TU_INLINE bool BandSongMetadata::HasKeys() const {
     return HasPart(keys, false) || HasPart(real_keys, false);
 }
 #pragma pop

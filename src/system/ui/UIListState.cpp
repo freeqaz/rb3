@@ -32,8 +32,8 @@ int UIListState::SelectedDisplay() const {
 
 #pragma push
 #pragma force_active on
-inline bool UIListState::IsScrolling() const { return mFirstShowing != mTargetShowing; }
-inline int UIListState::MinDisplay() const { return mMinDisplay; }
+RB3_CROSS_TU_INLINE bool UIListState::IsScrolling() const { return mFirstShowing != mTargetShowing; }
+RB3_CROSS_TU_INLINE int UIListState::MinDisplay() const { return mMinDisplay; }
 #pragma pop
 
 int UIListState::MaxDisplay() const { return mMaxDisplay; }
@@ -41,7 +41,7 @@ float UIListState::Speed() const { return mSpeed; }
 
 #pragma push
 #pragma force_active on
-inline bool UIListState::ScrollPastMinDisplay() const { return mScrollPastMinDisplay; }
+RB3_CROSS_TU_INLINE bool UIListState::ScrollPastMinDisplay() const { return mScrollPastMinDisplay; }
 #pragma pop
 
 bool UIListState::ScrollPastMaxDisplay() const { return mScrollPastMaxDisplay; }
@@ -78,8 +78,8 @@ DECOMP_FORCEFUNC(UIListState, UIListState, Provider())
 
 #pragma push
 #pragma force_active on
-inline UIListProvider *UIListState::Provider() { return mProvider; }
-inline UIListProvider *UIListState::Provider() const { return mProvider; }
+RB3_CROSS_TU_INLINE UIListProvider *UIListState::Provider() { return mProvider; }
+RB3_CROSS_TU_INLINE UIListProvider *UIListState::Provider() const { return mProvider; }
 #pragma pop
 
 int UIListState::WrapShowing(int i) const {

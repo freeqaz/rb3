@@ -76,9 +76,9 @@ DECOMP_FORCEFUNC(Quest, Quest, HasCustomOutro())
 
 #pragma push
 #pragma force_active on
-inline bool Quest::HasCustomIntro() const { return QuestEmptySymbolHack(mIntroVignette); }
+RB3_CROSS_TU_INLINE bool Quest::HasCustomIntro() const { return QuestEmptySymbolHack(mIntroVignette); }
 
-inline bool Quest::HasCustomOutro() const { return QuestEmptySymbolHack(mOutroVignette); }
+RB3_CROSS_TU_INLINE bool Quest::HasCustomOutro() const { return QuestEmptySymbolHack(mOutroVignette); }
 #pragma pop
 
 Symbol Quest::GetCustomIntro() const {

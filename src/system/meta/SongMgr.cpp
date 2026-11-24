@@ -51,7 +51,7 @@ void SongMgr::Init() {
 
 #pragma push
 #pragma force_active on
-inline bool SongMgr::HasSong(int id) const {
+RB3_CROSS_TU_INLINE bool SongMgr::HasSong(int id) const {
     return mAvailableSongs.find(id) != mAvailableSongs.end();
 }
 #pragma pop

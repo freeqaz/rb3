@@ -36,4 +36,30 @@
 #define RETAIL_DONT_INLINE_CLASS DONT_INLINE_CLASS
 #endif
 
+// An `inline` definition in a .cpp (inside a `#pragma force_active on` block)
+// that other translation units still call. MWCC emits the out-of-line copy the
+// retail binary has, so this MUST stay exactly `inline` there. On the macOS
+// native build the definition is made a plain external one so Apple ld64
+// resolves the cross-TU callers. Defined here rather than in a header each .cpp
+// includes because an extra #include line would shift __LINE__ and with it the
+// DECOMP_FORCEACTIVE/FORCEFUNC symbol names on the MWCC build.
+#if defined(HX_NATIVE) && defined(__APPLE__)
+#define RB3_CROSS_TU_INLINE
+#else
+#define RB3_CROSS_TU_INLINE inline
+#endif
+
+// One-line native/Wii selectors. Use these instead of a multi-line
+// #ifdef HX_NATIVE block in a .cpp that has DECOMP_FORCE* macros below it: the
+// extra lines would shift __LINE__ in the generated MWCC symbol names.
+//   HX_WII_ONLY(MicClientID sNullMicClientID;)   // defined in another TU natively
+//   HX_NATIVE_ONLY(extern) float gAvg;           // declaration natively
+#ifdef HX_NATIVE
+#define HX_WII_ONLY(...)
+#define HX_NATIVE_ONLY(...) __VA_ARGS__
+#else
+#define HX_WII_ONLY(...) __VA_ARGS__
+#define HX_NATIVE_ONLY(...)
+#endif
+
 #endif

@@ -72,7 +72,7 @@ DECOMP_FORCEFUNC(UISlider, UISlider, Current())
 
 #pragma push
 #pragma force_active on
-inline int UISlider::Current() const { return mCurrent; }
+RB3_CROSS_TU_INLINE int UISlider::Current() const { return mCurrent; }
 #pragma pop
 
 float UISlider::Frame() const {

@@ -260,7 +260,7 @@ DECOMP_FORCEFUNC(AccomplishmentProgress, AccomplishmentProgress, HasNewAwards())
 
 #pragma push
 #pragma force_active on
-inline bool AccomplishmentProgress::HasNewAwards() const { return !mNewAwards.empty(); }
+RB3_CROSS_TU_INLINE bool AccomplishmentProgress::HasNewAwards() const { return !mNewAwards.empty(); }
 #pragma pop
 
 Symbol AccomplishmentProgress::GetFirstNewAward() const {

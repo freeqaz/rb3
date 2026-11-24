@@ -104,7 +104,7 @@ void MetaMusicLoader::LoadFile() {
 
 #pragma push
 #pragma force_active on
-inline bool MetaMusic::Loaded() {
+RB3_CROSS_TU_INLINE bool MetaMusic::Loaded() {
     bool isLoaded = 0;
     if (mPlayFromBuffer == 0 || (mBuf != 0 && mFile == 0)) {
         isLoaded = 1;

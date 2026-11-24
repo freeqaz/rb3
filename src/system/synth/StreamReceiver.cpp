@@ -62,7 +62,7 @@ DECOMP_FORCEFUNC(StreamReceiver, StreamReceiver, BytesWriteable())
 
 #pragma push
 #pragma force_active on
-inline int StreamReceiver::BytesWriteable() {
+RB3_CROSS_TU_INLINE int StreamReceiver::BytesWriteable() {
 #ifdef HX_NATIVE
     // Pre-Play decode cap (see mTotalWrittenEver in the header). Until the
     // first Play() (mState is only ever kInit/kReady before it, and never
@@ -136,7 +136,7 @@ DECOMP_FORCEFUNC(StreamReceiver, StreamReceiver, Ready())
 
 #pragma push
 #pragma force_active on
-inline bool StreamReceiver::Ready() { return mState != kInit; }
+RB3_CROSS_TU_INLINE bool StreamReceiver::Ready() { return mState != kInit; }
 #pragma pop
 
 void StreamReceiver::Play() {

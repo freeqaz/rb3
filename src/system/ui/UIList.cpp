@@ -213,15 +213,15 @@ void UIList::PostLoad(BinStream &bs) {
 
 #pragma push
 #pragma force_active on
-inline int UIList::NumDisplay() const { return mListState.NumDisplay(); }
-inline float UIList::Speed() const { return mListState.Speed(); }
-inline int UIList::FirstShowing() const { return mListState.FirstShowing(); }
+RB3_CROSS_TU_INLINE int UIList::NumDisplay() const { return mListState.NumDisplay(); }
+RB3_CROSS_TU_INLINE float UIList::Speed() const { return mListState.Speed(); }
+RB3_CROSS_TU_INLINE int UIList::FirstShowing() const { return mListState.FirstShowing(); }
 #pragma pop
 int UIList::Selected() const { return mListState.Selected(); }
 int UIList::SelectedDisplay() const { return mListState.SelectedDisplay(); }
 #pragma push
 #pragma force_active on
-inline int UIList::SelectedData() const { return mListState.SelectedData(); }
+RB3_CROSS_TU_INLINE int UIList::SelectedData() const { return mListState.SelectedData(); }
 #pragma pop
 int UIList::SelectedPos() const { return mListState.Selected(); }
 
@@ -236,18 +236,18 @@ Symbol UIList::SelectedSym(bool fail) const {
 
 #pragma push
 #pragma force_active on
-inline bool UIList::IsScrolling() const { return mListState.IsScrolling(); }
+RB3_CROSS_TU_INLINE bool UIList::IsScrolling() const { return mListState.IsScrolling(); }
 #pragma pop
 
 UIListState &UIList::GetListState() { return mListState; }
 
 #pragma push
 #pragma force_active on
-inline UIList *UIList::ChildList() {
+RB3_CROSS_TU_INLINE UIList *UIList::ChildList() {
     return mListDir->SubList(mListState.SelectedDisplay(), mWidgets);
 }
 inline UIList *UIList::ParentList() { return mParent; }
-inline UIListDir *UIList::GetUIListDir() const { return mListDir; }
+RB3_CROSS_TU_INLINE UIListDir *UIList::GetUIListDir() const { return mListDir; }
 #pragma pop
 
 void UIList::SetNumDisplay(int i) {

@@ -6,7 +6,7 @@ static inline const char *TrackSymStr() { return "TRACK_SYMBOLS"; }
 
 #pragma push
 #pragma force_active on
-inline Symbol TrackTypeToSym(TrackType type) {
+RB3_CROSS_TU_INLINE Symbol TrackTypeToSym(TrackType type) {
     return DataGetMacro(TrackSymStr())->Sym(type);
 }
 #pragma pop

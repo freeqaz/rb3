@@ -265,7 +265,7 @@ WiiProfile *WiiProfileMgr::GetProfileForIndex(int idx) {
 
 #pragma push
 #pragma force_active on
-inline WiiProfile *WiiProfileMgr::GetProfileForPad(int pad) {
+RB3_CROSS_TU_INLINE WiiProfile *WiiProfileMgr::GetProfileForPad(int pad) {
     return GetProfileForIndex(GetIndexForPad(pad));
 }
 #pragma pop

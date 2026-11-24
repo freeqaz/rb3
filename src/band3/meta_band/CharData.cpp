@@ -57,7 +57,7 @@ bool PrefabChar::IsCustomizable() const { return PrefabMgr::PrefabIsCustomizable
 
 #pragma push
 #pragma force_active on
-inline Symbol PrefabChar::GetPrefabName() const { return mBandCharDesc->Name(); }
+RB3_CROSS_TU_INLINE Symbol PrefabChar::GetPrefabName() const { return mBandCharDesc->Name(); }
 #pragma pop
 
 void PrefabChar::LoadPortrait() {

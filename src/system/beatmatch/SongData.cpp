@@ -1182,7 +1182,7 @@ void SongData::EnableGems(int i1, float f1, float f2) {
 
 #pragma push
 #pragma force_active on
-inline GameGemList *SongData::GetGemListByDiff(int track, int diff) {
+RB3_CROSS_TU_INLINE GameGemList *SongData::GetGemListByDiff(int track, int diff) {
 #ifdef HX_NATIVE
     // No-chart native guard: empty mGemDBs -> OOB abort. Hand back the shared
     // empty gem list (see SongData.h). Wii always has a chart -> never empty.

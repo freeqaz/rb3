@@ -667,14 +667,14 @@ CharClipDriver *CharDriver::FirstPlaying() {
 
 #pragma push
 #pragma force_active on
-inline CharClip *CharDriver::FirstClip() {
+RB3_CROSS_TU_INLINE CharClip *CharDriver::FirstClip() {
     if (mFirst)
         return mFirst->GetClip();
     else
         return nullptr;
 }
 
-inline CharClip *CharDriver::FirstPlayingClip() {
+RB3_CROSS_TU_INLINE CharClip *CharDriver::FirstPlayingClip() {
     CharClipDriver *d = FirstPlaying();
     if (d)
         return d->GetClip();

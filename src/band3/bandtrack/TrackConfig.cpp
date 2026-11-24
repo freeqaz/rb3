@@ -14,7 +14,7 @@ int TrackConfig::TrackNum() const { return mTrackNum; }
 
 #pragma push
 #pragma force_active on
-inline int TrackConfig::GetMaxSlots() const { return mMaxSlots; }
+RB3_CROSS_TU_INLINE int TrackConfig::GetMaxSlots() const { return mMaxSlots; }
 #pragma pop
 
 DECOMP_FORCEFUNC(TrackConfig, TrackConfig, GetMaxSlots())
