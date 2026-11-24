@@ -23,20 +23,8 @@ std::vector<ObjVersion> sRevStack;
 
 #ifdef HX_NATIVE
 #include <set>
-// Native use-after-free guard for the ObjRef back-reference system. Under clang
-// LP64, deep venue/character teardown (unloading the splash sv8 venue backdrop on
-// the main_hub transition: Character -> RndDir::DeleteObjects -> CharDriver::~)
-// destructs a CharDriver whose mBones ObjPtr still points at an already-freed
-// CharBonesObject. The ~ObjPtr then does `mPtr->Release(this)`; because
-// CharBonesObject inherits Hmx::Object *virtually*, computing the Hmx::Object*
-// `this` for that non-virtual call reads the vbase offset out of the freed
-// object's vtable → SIGSEGV before Release even runs. Track freed object
-// addresses (keyed by the Hmx::Object subobject pointer, recorded at the very end
-// of ~Object — the same pointer the ObjPtr stored as mPtr for the common case of
-// a non-most-derived-virtual T) in a bounded ring; ObjPtr::~ObjPtr consults it on
-// the RAW mPtr bits (no vtable read) and skips Release if the target was freed.
-// (RB3 analog of dc3-decomp's SafeReleaseFromRing — the back-ref died with the
-// object, so there is nothing to release.)
+#include <mutex>
+// ObjPtr teardown checks this registry before accessing a virtual base (details below).
 static std::set<const void *> &HxFreedAddrs() {
     static std::set<const void *> s;
     return s;
@@ -47,9 +35,19 @@ static std::vector<const void *> &HxFreedRing() {
 }
 static const size_t kHxFreedRingMax = 8192;
 static size_t gHxFreedHead = 0;
+// _MemAlloc runs on the audio and HTTP threads as well as the game thread.
+static std::mutex gHxFreedMutex;
+static thread_local bool gHxGrowingFreedSet = false;
 void HxNoteFreedAddr(const void *p) {
     if (!p)
         return;
+    std::lock_guard<std::mutex> lock(gHxFreedMutex);
+    // Inserting a node calls _MemAlloc. Skip its range lookup while the
+    // registry owns the lock and the set is changing.
+    struct GrowthScope {
+        GrowthScope() { gHxGrowingFreedSet = true; }
+        ~GrowthScope() { gHxGrowingFreedSet = false; }
+    } growth;
     std::vector<const void *> &ring = HxFreedRing();
     std::set<const void *> &set = HxFreedAddrs();
     if (ring.size() >= kHxFreedRingMax) {
@@ -62,9 +60,11 @@ void HxNoteFreedAddr(const void *p) {
     set.insert(p);
 }
 bool HxAddrWasFreed(const void *p) {
+    std::lock_guard<std::mutex> lock(gHxFreedMutex);
     return p && HxFreedAddrs().count(p) != 0;
 }
 void HxNoteReusedAddr(const void *p) {
+    std::lock_guard<std::mutex> lock(gHxFreedMutex);
     HxFreedAddrs().erase(p);
 }
 #endif
@@ -595,6 +595,21 @@ BEGIN_PROPSYNCS(Hmx::Object)
 END_PROPSYNCS
 
 #ifdef HX_NATIVE
+// Native use-after-free guard for the ObjRef back-reference system. Under clang
+// LP64, deep venue/character teardown (unloading the splash sv8 venue backdrop on
+// the main_hub transition: Character -> RndDir::DeleteObjects -> CharDriver::~)
+// destructs a CharDriver whose mBones ObjPtr still points at an already-freed
+// CharBonesObject. The ~ObjPtr then does `mPtr->Release(this)`; because
+// CharBonesObject inherits Hmx::Object *virtually*, computing the Hmx::Object*
+// `this` for that non-virtual call reads the vbase offset out of the freed
+// object's vtable → SIGSEGV before Release even runs. Track freed object
+// addresses (keyed by the Hmx::Object subobject pointer, recorded at the very end
+// of ~Object — the same pointer the ObjPtr stored as mPtr for the common case of
+// a non-most-derived-virtual T) in a bounded ring; ObjPtr::~ObjPtr consults it on
+// the RAW mPtr bits (no vtable read) and skips Release if the target was freed.
+// (RB3 analog of dc3-decomp's SafeReleaseFromRing — the back-ref died with the
+// object, so there is nothing to release.)
+//
 // Belt-and-suspenders range version of HxNoteReusedAddr for the allocator. When
 // _MemAlloc hands back a block [p, p+n), any freed-set entry inside that range is
 // proven stale (its memory was just recycled). HxNoteReusedAddr only clears the
@@ -609,18 +624,9 @@ END_PROPSYNCS
 // the Wii translation unit's line numbering — keeps DECOMP_FORCEACTIVE symbol
 // names (which embed __LINE__) byte-identical on the MWCC build.
 void HxNoteFreedRangeReused(const void *p, size_t n) {
-    if (!p || n == 0)
+    if (!p || !n || gHxGrowingFreedSet)
         return;
-    // Reentrancy guard: this runs from inside _MemAlloc (operator new -> _MemAlloc).
-    // HxFreedAddrs() is a std::set whose node allocation also routes through
-    // operator new -> _MemAlloc -> here. erase() never allocates, so the only way
-    // to reenter mid-mutation is if a guard-owned container is growing
-    // (HxNoteFreedAddr's set.insert). Skip when nested so we never mutate the same
-    // std::set while it is mid-insert.
-    static thread_local bool inHxFreedRange = false;
-    if (inHxFreedRange)
-        return;
-    inHxFreedRange = true;
+    std::lock_guard<std::mutex> lock(gHxFreedMutex);
     std::set<const void *> &set = HxFreedAddrs();
     const char *lo = (const char *)p;
     const char *hi = lo + n;
@@ -628,6 +634,5 @@ void HxNoteFreedRangeReused(const void *p, size_t n) {
     while (it != set.end() && (const char *)*it < hi) {
         set.erase(it++);
     }
-    inHxFreedRange = false;
 }
 #endif
