@@ -330,6 +330,22 @@ if(EMSCRIPTEN)
 endif()
 add_subdirectory(${MILO_ENGINE_PATH} ${CMAKE_BINARY_DIR}/milo-engine)
 
+if(APPLE)
+    # The Cocoa SDK owns BOOL and null in these engine translation units.
+    set_property(SOURCE
+        ${MILO_ENGINE_PATH}/src/gfx/GpuDevice.cpp
+        ${MILO_ENGINE_PATH}/src/gfx/MetalSurface.mm
+        ${MILO_ENGINE_PATH}/src/platform/ThermalState_Mac.mm
+        TARGET_DIRECTORY milo-engine APPEND PROPERTY COMPILE_DEFINITIONS RB3_SKIP_MWCC_COMPAT)
+    if(TARGET imgui)
+        # This WebGPU backend creates a Cocoa CAMetalLayer.
+        get_target_property(_imgui_sources imgui SOURCES)
+        list(FILTER _imgui_sources INCLUDE REGEX "/imgui_impl_wgpu[.]cpp$")
+        set_source_files_properties(${_imgui_sources}
+            TARGET_DIRECTORY imgui PROPERTIES COMPILE_OPTIONS "-x;objective-c++")
+    endif()
+endif()
+
 # ============================================================================
 # RB3-Wii matched-fork source globs.
 #   rb3-dta (milestone a) needs only: obj/utl/os/math.
@@ -466,12 +482,40 @@ endforeach()
 set(DTA_LEXER ${REPO_ROOT}/src/system/obj/DataFlex.c)
 set_source_files_properties(${DTA_LEXER} PROPERTIES LANGUAGE C)
 
+# MS compatibility can emit SDK signal helpers as duplicate C definitions.
+set_source_files_properties(
+    ${REPO_ROOT}/src/system/synth/tomcrypt/aes.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/crypt.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/ctr.c
+    PROPERTIES LANGUAGE C
+               COMPILE_OPTIONS "-fno-ms-extensions;-fno-ms-compatibility"
+)
+
+# The checked-in stubs use the ELF x86-64 assembler syntax. Generate the
+# same weak symbols and first-hit calls for Mach-O from their registries.
+if(APPLE)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    set(_stub_generator ${REPO_ROOT}/scripts/native/gen_band3_link_stubs.py)
+endif()
+foreach(_stub_set IN ITEMS dta rndobj_synth band3)
+    if(APPLE)
+        set(${_stub_set}_link_stubs ${CMAKE_CURRENT_BINARY_DIR}/${_stub_set}_link_stubs.c)
+        add_custom_command(OUTPUT ${${_stub_set}_link_stubs}
+            COMMAND ${Python3_EXECUTABLE} ${_stub_generator}
+                --macos --set ${_stub_set} --output ${${_stub_set}_link_stubs}
+            DEPENDS ${_stub_generator} ${CMAKE_CURRENT_SOURCE_DIR}/src/${_stub_set}_stub_registry.tsv
+            VERBATIM)
+    else()
+        set(${_stub_set}_link_stubs ${CMAKE_CURRENT_SOURCE_DIR}/src/${_stub_set}_link_stubs.s)
+    endif()
+endforeach()
+
 # Native shims (shared by both targets).
 set(NATIVE_SHIMS
     ${CMAKE_SOURCE_DIR}/src/rvl_shims.cpp
     ${CMAKE_SOURCE_DIR}/src/native_link_glue.cpp
     ${CMAKE_SOURCE_DIR}/src/native_file.cpp   # stdio-backed File for the read path
-    ${CMAKE_SOURCE_DIR}/src/dta_link_stubs.s  # weak no-op stubs for off-path symbols
+    ${dta_link_stubs}
 )
 
 # ============================================================================
@@ -498,6 +542,7 @@ function(rb3_configure_target tgt)
         ${REPO_ROOT}/src/band3               # game/ tour/ meta_band/ net_band/ bandtrack/ headers
         ${REPO_ROOT}/src/network             # net/ Platform/ Protocol/ online headers
         ${REPO_ROOT}/src/system/oggvorbis
+        ${REPO_ROOT}/src/system/speex/include
         ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt's <angled> sibling includes
     target_link_libraries(${tgt} PRIVATE milo-engine)
     if(NOT EMSCRIPTEN)
@@ -524,17 +569,8 @@ function(rb3_configure_target tgt)
     # stubs that rb3-native gets via dta_link_stubs.s (omitted on web — the
     # missing_stubs.js / -sERROR_ON_UNDEFINED_SYMBOLS=0 pair handles UNRESOLVED
     # references, but only --allow-multiple-definition handles DUPLICATE ones).
-    #
-    # macOS (Apple ld64) has no --allow-multiple-definition; the equivalent is
-    # -multiply_defined,suppress, which only the classic linker honors — hence
-    # -ld_classic. -undefined,dynamic_lookup mirrors GNU ld's tolerance of the
-    # unresolved refs the weak stubs would otherwise satisfy. Mirrors dc3-native.
-    if(APPLE)
-        target_link_options(${tgt} PRIVATE
-            -Wl,-ld_classic
-            -Wl,-undefined,dynamic_lookup
-            -Wl,-multiply_defined,suppress)
-    else()
+    # macOS resolves duplicates and missing references at link time.
+    if(NOT APPLE)
         target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
     endif()
 endfunction()
@@ -808,10 +844,10 @@ add_executable(rb3-native
     ${NATIVE_SHIMS}
     # weak no-op stubs for the off-path symbols rndobj/synth pull in
     # (Wii GX backend, Bink, libogg, tomcrypt, Striper, engine GPU, game globals)
-    ${CMAKE_SOURCE_DIR}/src/rndobj_synth_link_stubs.s
+    ${rndobj_synth_link_stubs}
     # weak no-op stubs for the boot-path symbols defined by the band3/bandobj/char
     # TUs that don't yet compile under clang (see _NATIVE_FORK_EXCLUDE)
-    ${CMAKE_SOURCE_DIR}/src/band3_link_stubs.s
+    ${band3_link_stubs}
     # loud-by-default census for the band3_link_stubs.s weak trampolines (W0.2)
     ${CMAKE_SOURCE_DIR}/src/rb3_stub_census.cpp
 )
@@ -1219,27 +1255,6 @@ target_compile_definitions(rb3-web PRIVATE
     _LIBCPP_ENABLE_CXX17_REMOVED_BINDERS
     _LIBCPP_ENABLE_CXX17_REMOVED_AUTO_PTR
     _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
-)
-
-# speex headers live under src/system/speex/include — rb3_configure_target only
-# adds the oggvorbis sibling path. dc3-native links system libspeex; rb3-web has
-# no equivalent (RB3's matched-fork bundles its own speex), so we just add the
-# include path. The speex .cpp implementations are off the boot path under
-# matched fork, but pulling the headers lets Codec.h (used by network/) compile.
-target_include_directories(rb3-web PRIVATE
-    ${REPO_ROOT}/src/system/speex/include
-)
-
-# W3c Part A: tomcrypt C files (.mogg decryption). LANGUAGE C, and they need
-# -fno-ms-* — rb3_configure_target applies -fms-compatibility target-wide, which
-# makes <signal.h>'s __sigbits emit as a non-inline global (duplicate symbol
-# across the three TUs). Mirrors rb3-native + DC3-web's tomcrypt handling.
-set_source_files_properties(
-    ${REPO_ROOT}/src/system/synth/tomcrypt/aes.c
-    ${REPO_ROOT}/src/system/synth/tomcrypt/crypt.c
-    ${REPO_ROOT}/src/system/synth/tomcrypt/ctr.c
-    PROPERTIES LANGUAGE C
-               COMPILE_OPTIONS "-fno-ms-extensions;-fno-ms-compatibility"
 )
 
 # Extend the engine helper's base export list with RB3's tick symbol. Later
